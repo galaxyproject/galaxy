@@ -45,6 +45,12 @@ from galaxy.model.dataset_collections import (
     builder,
     query,
 )
+from galaxy.model.dataset_collections.adapters import (
+    CollectionAdapter,
+    recover_adapter,
+    TransientCollectionAdapterDatasetInstanceElement,
+    validate_collection_adapter_src_dict,
+)
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
@@ -2020,14 +2026,38 @@ class BaseDataToolParameter(ToolParameter):
                 raise ValueError(f"At most {self.max} datasets are required for {self.name}")
 
 
-def src_id_to_item(
-    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
-) -> Union[
+ItemFromSrcAny = Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
-]:
+    CollectionAdapter,
+]
+ItemFromSrcCollection = Union[
+    DatasetCollectionElement,
+    HistoryDatasetCollectionAssociation,
+    CollectionAdapter,
+]
+
+
+def src_id_to_item(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> ItemFromSrcAny:
+    adapter_model = None
+    if value["src"] == "CollectionAdapter":
+        adapter_model = validate_collection_adapter_src_dict(value)
+        adapting = adapter_model.adapting
+        if isinstance(adapting, list):
+            elements = []
+            for item in adapting:
+                element = TransientCollectionAdapterDatasetInstanceElement(
+                    item.name,
+                    cast(HistoryDatasetAssociation, src_id_to_item(sa_session, item.dict(), security)),
+                )
+                elements.append(element)
+            return recover_adapter(elements, adapter_model)
+        else:
+            value = adapting.dict()
     src_to_class = {
         "hda": HistoryDatasetAssociation,
         "ldda": LibraryDatasetDatasetAssociation,
@@ -2042,8 +2072,19 @@ def src_id_to_item(
         raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
     if not item:
         raise ValueError("Invalid input id passed to job submission API.")
+    if adapter_model is not None:
+        item = recover_adapter(item, adapter_model)
     item.extra_params = {k: v for k, v in value.items() if k not in ("src", "id")}
     return item
+
+
+def src_id_to_item_collection(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> ItemFromSrcCollection:
+    rval = src_id_to_item(sa_session, value, security)
+    if isinstance(rval, (LibraryDatasetDatasetAssociation, HistoryDatasetAssociation)):
+        raise ValueError("Expected to find collection, but got single dataset wrapper")
+    return cast(ItemFromSrcCollection, rval)
 
 
 class DataToolParameter(BaseDataToolParameter):
@@ -2133,6 +2174,7 @@ class DataToolParameter(BaseDataToolParameter):
                 HistoryDatasetAssociation,
                 HistoryDatasetCollectionAssociation,
                 LibraryDatasetDatasetAssociation,
+                CollectionAdapter,
             ]
         ] = []
         if isinstance(value, list):
@@ -2184,7 +2226,11 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
             value_to_check: Union[
-                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation
+                DatasetInstance,
+                DatasetCollection,
+                DatasetCollectionElement,
+                HistoryDatasetCollectionAssociation,
+                CollectionAdapter,
             ] = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
@@ -2492,7 +2538,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         session = trans.sa_session
 
         other_values = other_values or {}
-        rval: Optional[Union[DatasetCollectionElement, HistoryDatasetCollectionAssociation]] = None
+        rval: Optional[ItemFromSrcCollection] = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional and not self.default_object:
@@ -2512,9 +2558,14 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             # a DatasetCollectionElement instead of a
             # HistoryDatasetCollectionAssociation.
             rval = value
-        elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
-            if value["src"] == "hdca":
-                rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
+        elif isinstance(value, CollectionAdapter):
+            rval = value
+        elif (
+            isinstance(value, MutableMapping)
+            and "src" in value
+            and ("id" in value or value["src"] == "CollectionAdapter")
+        ):
+            rval = src_id_to_item_collection(sa_session=trans.sa_session, value=value, security=trans.security)
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
@@ -2606,6 +2657,12 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         # append matching subcollections
         for hdca, implicit_conversion in self.match_multirun_collections(trans, history, dataset_collection_matcher):
             subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
+            collection_type = hdca.collection.collection_type
+            if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
+                if collection_type.endswith("paired"):
+                    subcollection_type = "paired"
+                else:
+                    subcollection_type = "single_datasets"
             name = hdca.name
             if implicit_conversion:
                 name = f"{name} (with implicit datatype conversion)"
@@ -2840,13 +2897,19 @@ parameter_types: Dict[str, Type[ToolParameter]] = dict(
 
 def history_item_dict_to_python(value, app, name):
     if isinstance(value, MutableMapping) and "src" in value:
-        if value["src"] not in ("hda", "dce", "ldda", "hdca"):
+        if value["src"] not in ("hda", "dce", "ldda", "hdca", "CollectionAdapter"):
             raise ParameterValueError(f"Invalid value {value}", name)
         return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
 
 
 def history_item_to_json(value, app, use_security):
     src = None
+
+    # unwrap adapter
+    collection_adapter: Optional[CollectionAdapter] = None
+    if isinstance(value, CollectionAdapter):
+        collection_adapter = value
+        return collection_adapter.to_adapter_model().dict()
     if isinstance(value, MutableMapping) and "src" in value and "id" in value:
         return value
     elif isinstance(value, DatasetCollectionElement):
@@ -2862,4 +2925,5 @@ def history_item_to_json(value, app, use_security):
         src = "hda"
     if src is not None:
         object_id = cached_id(value)
-        return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
+        rval = {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
+        return rval

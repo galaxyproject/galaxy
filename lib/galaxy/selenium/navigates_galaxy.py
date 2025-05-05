@@ -932,13 +932,24 @@ class NavigatesGalaxy(HasDriver):
         if not hide_source_items:
             self.collection_builder_hide_originals()
 
-        self.ensure_collection_builder_filters_cleared()
         assert len(test_paths) == 2
-        self.collection_builder_click_paired_item("forward", 0)
-        self.collection_builder_click_paired_item("reverse", 1)
+        self.collection_builder_pair_rows(0, 1)
+
+        row0 = self.components.collection_builders.list_wizard.row._(index=0)
+        row0.link_button.assert_absent()
 
         self.collection_builder_set_name(name)
         self.collection_builder_create()
+
+    def collection_builder_pair_rows(self, row_forward: int, row_reverse: int):
+        row0 = self.components.collection_builders.list_wizard.row._(index=row_forward)
+        row1 = self.components.collection_builders.list_wizard.row._(index=row_reverse)
+
+        row0.unlink_button.assert_absent()
+        row1.unlink_button.assert_absent()
+
+        row0.link_button.wait_for_and_click()
+        row1.link_button.wait_for_and_click()
 
     def _collection_upload_start(self, test_paths, ext, genome, collection_type):
         # Perform upload of files and open the collection builder for specified
@@ -2057,6 +2068,26 @@ class NavigatesGalaxy(HasDriver):
             return False
         return item_component.details.is_displayed
 
+    def history_panel_build_list_auto(self):
+        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu")
+
+    def history_panel_build_list_advanced(self):
+        return self.use_bootstrap_dropdown(option="advanced build list", menu="selected content menu")
+
+    def history_panel_build_list_of_pairs(self):
+        self.history_panel_build_list_advanced()
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.which_builder(builder="list:paired").wait_for_and_click()
+        list_wizard.wizard_next_button.wait_for_and_click()
+        list_wizard.auto_pairing.wait_for_visible()
+        list_wizard.wizard_next_button.wait_for_and_click()
+
+    def history_panel_build_rule_builder_for_selection(self):
+        self.history_panel_build_list_advanced()
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.which_builder(builder="rules").wait_for_and_click()
+        list_wizard.wizard_next_button.wait_for_and_click()
+
     def collection_builder_set_name(self, name):
         # small sleep here seems to be needed in the case of the
         # collection builder even though we wait for the component
@@ -2074,13 +2105,12 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector('[data-description="hide original elements"]')
 
     def collection_builder_create(self):
-        self.wait_for_and_click_selector("button.create-collection")
-
-    def ensure_collection_builder_filters_cleared(self):
-        clear_filters = self.components.collection_builders.clear_filters
-        element = clear_filters.wait_for_present()
-        if "disabled" not in element.get_attribute("class").split(" "):
-            self.collection_builder_clear_filters()
+        list_wizard_create = self.components.collection_builders.list_wizard.create
+        modal_create = self.components.collection_builders.modals.create
+        if not list_wizard_create.is_absent:
+            list_wizard_create.wait_for_and_click()
+        else:
+            modal_create.wait_for_and_click()
 
     def collection_builder_clear_filters(self):
         clear_filters = self.components.collection_builders.clear_filters

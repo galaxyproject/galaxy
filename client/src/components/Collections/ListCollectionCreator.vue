@@ -9,13 +9,13 @@ import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
-import { stripExtension } from "./common/stripExtension";
-import { useCollectionCreator } from "./common/useCollectionCreator";
-import { useExtensionFiltering } from "./common/useExtensionFilter";
+import { stripExtension, useUpdateIdentifiersForRemoveExtensions } from "./common/stripExtension";
+import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
@@ -33,16 +33,17 @@ interface Props {
     suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
+    mode: Mode;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "on-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
     (e: "on-cancel"): void;
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
 }>();
-
-const { showElementExtension } = useExtensionFiltering(props);
 
 const state = ref("build");
 const duplicateNames = ref<string[]>([]);
@@ -51,13 +52,7 @@ const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
 const atLeastOneElement = ref(true);
 
-const initialElementsById = computed(() => {
-    const byId = {} as Record<string, HistoryItemSummary>;
-    for (const initialElement of props.initialElements) {
-        byId[initialElement.id] = initialElement;
-    }
-    return byId;
-});
+const { updateIdentifierIfUnchanged } = useUpdateIdentifiersForRemoveExtensions(props);
 
 const atLeastOneDatasetIsSelected = computed(() => {
     return selectedDatasetElements.value.length > 0;
@@ -92,7 +87,17 @@ const listHasMixedExtensions = computed(() => {
     const extensions = new Set(inListElements.value.map((e) => e.extension));
     return extensions.size > 1;
 });
-const { removeExtensions, hideSourceItems, onUpdateHideSourceItems, isElementInvalid } = useCollectionCreator(props);
+const {
+    removeExtensions,
+    hideSourceItems,
+    onUpdateHideSourceItems,
+    isElementInvalid,
+    collectionName,
+    onUpdateCollectionName,
+    onCollectionCreate,
+    showElementExtension,
+    showButtonsForModal,
+} = useCollectionCreator(props, emit);
 
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
@@ -172,27 +177,11 @@ function _validateElements() {
 }
 
 function removeExtensionsToggle() {
-    const byId = initialElementsById.value;
-
     removeExtensions.value = !removeExtensions.value;
-    if (removeExtensions.value) {
-        workingElements.value.forEach((el) => {
-            const oName = byId[el.id]?.name;
-            if (oName && el.name == oName) {
-                el.name = stripExtension(oName);
-            }
-        });
-    } else {
-        workingElements.value.forEach((el) => {
-            const originalName = byId[el.id]?.name;
-            if (originalName) {
-                const strippedOriginalName = stripExtension(originalName);
-                if (strippedOriginalName && el.name == strippedOriginalName) {
-                    el.name = originalName;
-                }
-            }
-        });
-    }
+    const removeExtensionsValue = removeExtensions.value;
+    workingElements.value.forEach((el) => {
+        updateIdentifierIfUnchanged(el, removeExtensionsValue);
+    });
     _mangleDuplicateNames();
 }
 
@@ -254,7 +243,7 @@ function clickSelectAll() {
 }
 const { confirm } = useConfirmDialog();
 
-async function clickedCreate(collectionName: string) {
+async function attemptCreate() {
     checkForDuplicates();
 
     const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
@@ -270,9 +259,17 @@ async function clickedCreate(collectionName: string) {
     }
 
     if (state.value !== "error" && (atLeastOneElement.value || confirmed)) {
-        emit("on-create", returnedElements, collectionName, hideSourceItems.value);
+        const identifiers = returnedElements.map((element) => ({
+            id: element.id,
+            name: element.name,
+            //TODO: this allows for list:list even if the implementation does not - reconcile
+            src: "src" in element ? element.src : element.history_content_type == "dataset" ? "hda" : "hdca",
+        })) as CollectionElementIdentifiers;
+        onCollectionCreate("list", identifiers);
     }
 }
+
+defineExpose({ attemptCreate });
 
 function checkForDuplicates() {
     var valid = true;
@@ -413,11 +410,15 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 :show-upload="!fromSelection"
                 :suggested-name="props.suggestedName"
+                :show-buttons="showButtonsForModal"
+                :collection-name="collectionName"
+                :mode="mode"
+                @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
                 @remove-extensions-toggle="removeExtensionsToggle"
-                @clicked-create="clickedCreate">
+                @clicked-create="attemptCreate">
                 <template v-slot:help-content>
                     <p>
                         {{
@@ -669,7 +670,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             <DatasetCollectionElementView
                                 class="w-100"
                                 :element="selectionAsHdaSummary(value)"
-                                :hide-extension="!showElementExtension(selectionAsHdaSummary(value))"
+                                :hide-extension="!showElementExtension"
                                 @onRename="(name) => renameElement(value, name)" />
                         </template>
                     </FormSelectMany>

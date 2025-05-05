@@ -449,6 +449,23 @@ collection_builders:
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
+    
+  modals:
+    selectors:
+      create: "button.create-collection"
+
+  list_wizard:
+    selectors:
+      create: ".wizard-actions .btn-primary"
+      which_builder: '[data-which-builder="${builder}"]'
+      wizard_next_button: '.wizard-actions .go-next-btn'
+      auto_pairing: '[data-description="auto pairing"]'
+      dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
+    row:
+      selectors:
+        _: '[row-index="${index}"]'
+        link_button: '${_} .paired-action-icon.fa-link'
+        unlink_button: '${_} .paired-action-icon.fa-unlink'
 
 histories:
   selectors:

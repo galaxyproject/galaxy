@@ -597,7 +597,7 @@ class TestCollectionDefElementInternal(TypedDict):
 class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
-    collection_type: CollectionType
+    collection_type: Optional[CollectionType]
     fields: Optional[List[FieldDict]]
     elements: List[TestCollectionDefElementDict]
     name: str

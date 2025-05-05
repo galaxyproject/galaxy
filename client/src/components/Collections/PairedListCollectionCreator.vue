@@ -32,6 +32,7 @@ import {
     type MatchingFunction,
     matchOnlyIfExact,
     matchOnPercentOfStartingAndEndingLCS,
+    splitElementsByFilter,
     statelessAutoPairFnBuilder,
 } from "./pairing";
 
@@ -378,16 +379,7 @@ function clickClearFilters() {
 }
 
 function splitByFilter() {
-    const filters = [new RegExp(forwardFilter.value), new RegExp(reverseFilter.value)];
-    const split: [HDASummary[], HDASummary[]] = [[], []];
-    workingElements.value.forEach((e) => {
-        filters.forEach((filter, i) => {
-            if (e.name && filter.test(e.name)) {
-                split[i]?.push(e);
-            }
-        });
-    });
-    return split;
+    return splitElementsByFilter(workingElements.value, forwardFilter.value, reverseFilter.value);
 }
 // ===========================================================================
 

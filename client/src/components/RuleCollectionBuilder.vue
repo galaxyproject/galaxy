@@ -517,7 +517,7 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
+            <b-row v-if="mode == 'modal'" class="mx-auto">
                 <GButton
                     tooltip
                     :title="titleCancel"
@@ -698,6 +698,11 @@ export default {
             type: String,
             required: false,
             default: "aggrid",
+        },
+        mode: {
+            type: String,
+            required: false,
+            default: "modal", // set to wizard to use embedded formatting
         },
     },
     data: function () {
@@ -1190,6 +1195,10 @@ export default {
                 }
             }
         },
+        validInput: function (newState) {
+            console.log("watching validInput....");
+            this.$emit("validInput", newState);
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1433,6 +1442,9 @@ export default {
                 });
             }
         },
+        attemptCreate() {
+            this.createCollection();
+        },
         createCollection() {
             const asJson = {
                 rules: this.rules,
@@ -1450,15 +1462,27 @@ export default {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    const deferreds = Object.entries(elements).map(([name, els]) => {
-                        // This looks like a promise but it is not one because creationFn and
-                        // oncreate are references to function from the backbone models which means
-                        // they are expecting their arguments in a different order. So, looks like,
-                        // jQuery.Deferred and therefore jQuery are still dependencies
-                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                    });
-                    const promises = deferreds.map(deferredToPromise);
-                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    if (this.creationFn) {
+                        const deferreds = Object.entries(elements).map(([name, els]) => {
+                            // This looks like a promise but it is not one because creationFn and
+                            // oncreate are references to function from the backbone models which means
+                            // they are expecting their arguments in a different order. So, looks like,
+                            // jQuery.Deferred and therefore jQuery are still dependencies
+                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                        });
+                        const promises = deferreds.map(deferredToPromise);
+                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    } else {
+                        const request = Object.entries(elements).map(([name, els]) => {
+                            return {
+                                name,
+                                elementIdentifiers: els,
+                                collectionType: collectionType,
+                                hideSourceItems,
+                            };
+                        });
+                        this.$emit("onAttemptCreate", request);
+                    }
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();

@@ -34,18 +34,6 @@
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
-                <span v-localize>Build List of Dataset Pairs</span>
-            </b-dropdown-item>
-            <b-dropdown-item
-                v-if="showBuildOptions"
-                data-description="build collection from rules"
-                @click="buildCollectionFromRules">
-                <span v-localize>Build Collection from Rules</span>
-            </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptionForAll" />
             <b-dropdown-item
                 v-if="showBuildOptionForAll"
@@ -69,6 +57,42 @@
             <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
                 <span v-localize>Remove tags</span>
             </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptions" />
+            <b-dropdown-item v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
+                <span v-localize>Auto Build List</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
+                <span v-localize>Advanced Build List</span>
+            </b-dropdown-item>
+            <b-dropdown-group header-classes="subtle-header" header="Advanced">
+                <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
+                    <span v-localize>Build Dataset List</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of pairs"
+                    @click="buildListOfPairs">
+                    <span v-localize>Build List of Dataset Pairs</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of paires 2"
+                    @click="buildListOfPairsV2">
+                    <span v-localize>Build List of Dataset Pairs (v2)</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of paired_or_unpaired"
+                    @click="buildListOfMixedPaired">
+                    <span v-localize>Build List with Optional Pairing</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build collection from rules"
+                    @click="buildCollectionFromRules">
+                    <span v-localize>Build Collection from Rules</span>
+                </b-dropdown-item>
+            </b-dropdown-group>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -146,6 +170,7 @@
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
             hide-on-create
+            :use-beta-components="useBetaComponents"
             default-hide-source-items
             @created-collection="createdCollection" />
     </section>
@@ -170,6 +195,7 @@ import { StatelessTags } from "components/Tags";
 
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
 
@@ -204,6 +230,7 @@ export default {
             selectedDbKey: { id: "?", text: "unspecified (?)" },
             selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
+            useBetaComponents: false,
         };
     },
     computed: {
@@ -305,6 +332,12 @@ export default {
         },
     },
     methods: {
+        listWizard(advanced) {
+            const { setSelectedItems } = useCollectionBuilderItemSelection();
+            const selection = Array.from(this.contentSelection.values());
+            setSelectedItems(selection);
+            this.$router.push({ path: `/collection/new_list?advanced=${advanced}` });
+        },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
             this.runOnSelection(hideSelectedContent);
@@ -389,6 +422,18 @@ export default {
         buildListOfPairs() {
             this.collectionModalType = "list:paired";
             this.collectionSelection = Array.from(this.contentSelection.values());
+            this.useBetaComponents = false;
+            this.collectionModalShow = true;
+        },
+        buildListOfPairsV2() {
+            this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.useBetaComponents = true;
+            this.collectionModalShow = true;
+        },
+        buildListOfMixedPaired() {
+            this.collectionModalType = "list:paired_or_unpaired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
             this.collectionModalShow = true;
         },
         createdCollection(collection) {
@@ -412,5 +457,11 @@ export default {
 .modal-with-selector {
     overflow: initial;
     min-height: 300px; /* To make room for the selector */
+}
+
+.subtle-header {
+    font-size: 0.74375rem;
+    color: #404862;
+    font-weight: normal;
 }
 </style>

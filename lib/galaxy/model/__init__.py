@@ -1887,8 +1887,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def add_parameter(self, name, value):
         self.parameters.append(JobParameter(name, value))
 
-    def add_input_dataset(self, name, dataset=None, dataset_id=None):
-        assoc = JobToInputDatasetAssociation(name, dataset)
+    def add_input_dataset(self, name, dataset=None, dataset_id=None, adapter_json=None):
+        assoc = JobToInputDatasetAssociation(name, dataset, adapter_json)
         if dataset is None and dataset_id is not None:
             assoc.dataset_id = dataset_id
         add_object_to_object_session(self, assoc)
@@ -1903,12 +1903,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         add_object_to_object_session(self, joda)
         self.output_datasets.append(joda)
 
-    def add_input_dataset_collection(self, name, dataset_collection):
-        self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
+    def add_input_dataset_collection(self, name, dataset_collection, adapter_json=None):
+        self.input_dataset_collections.append(
+            JobToInputDatasetCollectionAssociation(name, dataset_collection, adapter_json)
+        )
 
-    def add_input_dataset_collection_element(self, name, dataset_collection_element):
+    def add_input_dataset_collection_element(self, name, dataset_collection_element, adapter_json=None):
         self.input_dataset_collection_elements.append(
-            JobToInputDatasetCollectionElementAssociation(name, dataset_collection_element)
+            JobToInputDatasetCollectionElementAssociation(name, dataset_collection_element, adapter_json)
         )
 
     def add_output_dataset_collection(self, name, dataset_collection_instance):
@@ -2525,11 +2527,13 @@ class JobToInputDatasetAssociation(Base, RepresentById):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
     dataset_version: Mapped[Optional[int]]
     name: Mapped[str] = mapped_column(String(255), nullable=True)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset: Mapped["HistoryDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
     job: Mapped["Job"] = relationship(back_populates="input_datasets")
 
-    def __init__(self, name, dataset):
+    def __init__(self, name, dataset, adapter_json=None):
         self.name = name
+        self.adapter = adapter_json
         add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.dataset_version = 0  # We start with version 0 and update once the job is ready
@@ -2566,12 +2570,14 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=True)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collections")
 
-    def __init__(self, name, dataset_collection):
+    def __init__(self, name, dataset_collection, adapter_json=None):
         self.name = name
         self.dataset_collection = dataset_collection
+        self.adapter = adapter_json
 
 
 class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
@@ -2583,12 +2589,14 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
         ForeignKey("dataset_collection_element.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset_collection_element: Mapped["DatasetCollectionElement"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collection_elements")
 
-    def __init__(self, name, dataset_collection_element):
+    def __init__(self, name, dataset_collection_element, adapter_json=None):
         self.name = name
         self.dataset_collection_element = dataset_collection_element
+        self.adapter = adapter_json
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given

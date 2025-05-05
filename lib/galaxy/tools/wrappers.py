@@ -19,7 +19,10 @@ from typing import (
     Union,
 )
 
-from typing_extensions import TypeAlias
+from typing_extensions import (
+    Self,
+    TypeAlias,
+)
 
 from galaxy.model import (
     DatasetCollection,
@@ -492,6 +495,14 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def file_name(self) -> str:
         return str(self)
 
+    @property
+    def has_single_item(self) -> bool:
+        return True
+
+    @property
+    def single_item(self) -> Self:
+        return self
+
     def __getattr__(self, key: Any) -> Any:
         if key in ("extra_files_path", "files_path"):
             if not self.compute_environment:
@@ -778,6 +789,14 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             invalid_chars=invalid_chars,
             include_collection_name=include_collection_name,
         )
+
+    @property
+    def has_single_item(self) -> bool:
+        return self.__input_supplied and len(self.__element_instance_list) == 1
+
+    @property
+    def single_item(self) -> Optional["DatasetCollectionElementWrapper"]:
+        return self[0]
 
     @property
     def is_input_supplied(self) -> bool:

@@ -19,10 +19,22 @@ import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCol
 // as the backend/model layer of Galaxy would understand them. Rules is a collection
 // builder but not a collection type, paired:paired:list is a valid collection type but
 // not something we would ever make a builder for.
-export type CollectionBuilderType = "list" | "paired" | "list:paired" | "rules";
-export type DatasetPair = {
-    forward: HDASummary;
-    reverse: HDASummary;
+export type CollectionBuilderType =
+    | "list"
+    | "paired"
+    | "list:paired"
+    | "rules"
+    | "list:paired_or_unpaired"
+    | "list:list"
+    | "list:list:paired";
+
+interface HasName {
+    name: string | null;
+}
+
+export type GenericPair<T extends HasName> = {
+    forward: T;
+    reverse: T;
     name: string;
 };
 
@@ -31,6 +43,8 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     "list:paired": "list of pairs",
     paired: "dataset pair",
 };
+
+export type DatasetPair = GenericPair<HDASummary>;
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(
