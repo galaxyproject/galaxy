@@ -42,6 +42,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -94,7 +95,6 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
-from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
@@ -603,6 +603,9 @@ class WorkflowModule:
                     effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
+                if not progress.subworkflow_structure and history_query.direct_match(data):
+                    continue
+
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")

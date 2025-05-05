@@ -409,7 +409,7 @@ do
           framework_test=1
           shift 1
           ;;
-      -w|--framework-workflows)
+      -w|-framework-workflows|--framework-workflows)
           marker="workflow"
           report_file="run_framework_workflows_tests.html"
           framework_workflows_test=1
