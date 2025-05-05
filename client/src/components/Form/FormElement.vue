@@ -382,7 +382,6 @@ function onAlert(value: string | undefined) {
                     :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :multiple="attrs.multiple"
@@ -399,7 +398,6 @@ function onAlert(value: string | undefined) {
                     :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :optional="isOptional"
@@ -425,7 +423,6 @@ function onAlert(value: string | undefined) {
                     v-else-if="isUriDataField"
                     :id="props.id"
                     v-model="currentValue"
-                    :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
                     v-else-if="formDataField"
