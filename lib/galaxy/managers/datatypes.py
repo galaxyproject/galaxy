@@ -11,7 +11,7 @@ from galaxy.datatypes._schema import (
     DatatypeConverterList,
     DatatypeDetails,
     DatatypesCombinedMap,
-    DatatypesEDAMDetailsDict, 
+    DatatypesEDAMDetailsDict,
     DatatypesMap,
     DatatypeVisualizationMapping,
     DatatypeVisualizationMappingsList,
@@ -124,41 +124,45 @@ def view_edam_data(
         return datatypes_registry.edam_data
 
 
-def view_visualization_mappings(datatypes_registry: Registry, datatype: Optional[str] = None) -> DatatypeVisualizationMappingsList:
+def view_visualization_mappings(
+    datatypes_registry: Registry, datatype: Optional[str] = None
+) -> DatatypeVisualizationMappingsList:
     """
     Get datatype visualization mappings from the registry.
-    
+
     Args:
         datatypes_registry: The datatypes registry
         datatype: If provided, return only the mapping for this datatype extension
-        
+
     Returns:
         A list of datatype visualization mappings
     """
     mappings = []
-    
+
     # Get all mappings
     all_mappings = datatypes_registry.get_all_visualization_mappings()
-    
+
     # Filter for a specific datatype if requested
     if datatype and datatype in all_mappings:
         mapping_info = all_mappings[datatype]
-        mappings.append({
-            "datatype": datatype,
-            "visualization": mapping_info["visualization"],
-            "default_params": mapping_info.get("default_params")
-        })
+        mappings.append(
+            {
+                "datatype": datatype,
+                "visualization": mapping_info["visualization"],
+                "default_params": mapping_info.get("default_params"),
+            }
+        )
     elif not datatype:
         for dt, mapping_info in all_mappings.items():
-            mappings.append({
-                "datatype": dt,
-                "visualization": mapping_info["visualization"],
-                "default_params": mapping_info.get("default_params")
-            })
-    
+            mappings.append(
+                {
+                    "datatype": dt,
+                    "visualization": mapping_info["visualization"],
+                    "default_params": mapping_info.get("default_params"),
+                }
+            )
+
     return parse_obj_as(DatatypeVisualizationMappingsList, mappings)
-
-
 
 
 __all__ = (

@@ -24,35 +24,13 @@ export async function fetchDatatypeVisualizations(): Promise<DatatypeVisualizati
     }
 }
 
-/**
- * Updates a datatype visualization mapping
- */
-export async function updateDatatypeVisualization(mapping: DatatypeVisualization): Promise<DatatypeVisualization> {
-    try {
-        const { data } = await axios.put(withPrefix(`/api/datatypes/visualizations/${mapping.datatype}`), mapping);
-        return data;
-    } catch (error) {
-        rethrowSimple(error);
-    }
-}
-
-/**
- * Deletes a datatype visualization mapping
- */
-export async function deleteDatatypeVisualization(datatype: string): Promise<void> {
-    try {
-        await axios.delete(withPrefix(`/api/datatypes/visualizations/${datatype}`));
-    } catch (error) {
-        rethrowSimple(error);
-    }
-}
 
 /**
  * Gets the preferred visualization for a specific datatype
  */
 export async function getPreferredVisualization(datatype: string): Promise<DatatypeVisualization | null> {
     try {
-        const url = withPrefix(`/api/datatypes/visualizations/${datatype}`);
+        const url = withPrefix(`/api/datatypes/${datatype}/visualizations`);
         const { data } = await axios.get(url);
 
         // If the API returns an array with one item, return that item

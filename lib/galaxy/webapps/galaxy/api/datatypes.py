@@ -11,7 +11,10 @@ from typing import (
     Union,
 )
 
-from fastapi import Path, Query
+from fastapi import (
+    Path,
+    Query,
+)
 
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
@@ -168,7 +171,7 @@ class FastAPIDatatypes:
         """Gets a map of datatypes and their corresponding EDAM data.
         EDAM data contains the EDAM iri, label, and definition."""
         return view_edam_data(self.datatypes_registry, True)
-        
+
     @router.get(
         "/api/datatypes/visualizations",
         public=True,
@@ -179,9 +182,9 @@ class FastAPIDatatypes:
     async def visualizations(self) -> DatatypeVisualizationMappingsList:
         """Gets a list of all datatype visualization mappings."""
         return view_visualization_mappings(self.datatypes_registry)
-        
+
     @router.get(
-        "/api/datatypes/visualizations/{datatype}",
+        "/api/datatypes/{datatype}/visualizations",
         public=True,
         summary="Returns the visualization mapping for a specific datatype",
         response_description="Visualization mapping for the specified datatype",
@@ -197,7 +200,7 @@ class FastAPIDatatypes:
         ),
     ) -> DatatypeVisualizationMappingsList:
         """Gets the visualization mapping for a specific datatype.
-        
+
         Mappings are defined in the datatypes_conf.xml configuration file.
         """
         return view_visualization_mappings(self.datatypes_registry, datatype)
