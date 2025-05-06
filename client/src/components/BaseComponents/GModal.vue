@@ -126,7 +126,8 @@ defineExpose({ showModal, hideModal });
                     h2
                     :separator="props.size === 'large'"
                     :size="headingSize"
-                    class="g-modal-title mb-0">
+                    class="g-modal-title mb-0"
+                    :class="props.size === 'large' ? '' : 'ml-2'">
                     {{ props.title }}
                 </Heading>
 
