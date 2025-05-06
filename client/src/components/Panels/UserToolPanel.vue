@@ -3,17 +3,17 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faInfoCircle, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
-import { GalaxyApi, type MessageException, type UnprivilegedToolResponse } from "@/api";
+import { type UnprivilegedToolResponse } from "@/api";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import ActivityPanel from "./ActivityPanel.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-const errorMsg = ref<MessageException | undefined>();
 
 interface Props {
     inPanel?: boolean;
@@ -31,17 +31,11 @@ const emit = defineEmits(["unprivileged-tool-clicked", "onInsertTool", "onEditTo
 
 library.add(faEye, faArrowDown, faInfoCircle, faPlus);
 
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { unprivilegedTools, canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
 async function loadUnprivilegedTools(offset: number, limit: number) {
-    const { data, error } = await GalaxyApi().GET("/api/unprivileged_tools");
-    if (error) {
-        errorMsg.value = error;
-        return { items: [], total: 0 };
-    } else {
-        return {
-            items: data,
-            total: data.length,
-        };
-    }
+    return { items: unprivilegedTools.value || [], total: unprivilegedTools.value?.length || 0 };
 }
 const uuidRegex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 
@@ -86,7 +80,7 @@ function newTool() {
 </script>
 
 <template>
-    <ActivityPanel title="Custom Tools">
+    <ActivityPanel v-if="canUseUnprivilegedTools" title="Custom Tools">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
@@ -100,7 +94,12 @@ function newTool() {
                 </BButton>
             </BButtonGroup>
         </template>
-        <ScrollList :loader="loadUnprivilegedTools" :item-key="(tool) => tool.uuid" :in-panel="inPanel">
+        <!-- key ScrollList on length of unprivilegedTools so that we rerender if the tools in the store change-->
+        <ScrollList
+            :key="unprivilegedTools?.length"
+            :loader="loadUnprivilegedTools"
+            :item-key="(tool) => tool.uuid"
+            :in-panel="inPanel">
             <template v-slot:header>
                 <p>Loading...</p>
             </template>

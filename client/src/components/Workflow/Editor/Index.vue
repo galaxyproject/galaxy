@@ -29,7 +29,7 @@
         </b-modal>
         <ActivityBar
             ref="activityBar"
-            :default-activities="workflowEditorActivities"
+            :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false"
@@ -232,6 +232,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -575,6 +576,14 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const unprivilegedToolStore = useUnprivilegedToolStore();
+        const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+        const workflowActivities = computed(() =>
+            workflowEditorActivities.filter(
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
+            )
+        );
+
         return {
             id,
             name,
@@ -630,6 +639,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            workflowActivities,
         };
     },
     data() {
@@ -655,7 +665,6 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
-            workflowEditorActivities,
             faTimes,
             faCog,
             faSave,

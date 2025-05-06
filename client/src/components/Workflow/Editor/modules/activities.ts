@@ -136,7 +136,7 @@ export const workflowEditorActivities = [
         panel: true,
         title: "Custom Tools",
         to: null,
-        tooltip: "Search and run user-defined tools",
+        tooltip: "List and create user-defined tools",
         visible: true,
     },
     {

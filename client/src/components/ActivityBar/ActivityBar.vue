@@ -12,6 +12,7 @@ import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
@@ -68,6 +69,9 @@ const userStore = useUserStore();
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
 
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
 if (props.initialActivity) {
     activityStore.toggledSideBar = props.initialActivity;
 }
@@ -91,7 +95,11 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
+const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
+
+const activities = computed(() =>
+    storeActivities.value.filter((activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value)
+);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -144,7 +152,7 @@ function onDragEnter(evt: MouseEvent) {
 function onDragLeave(evt: MouseEvent) {
     if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
-        activities.value = activities.value.filter((a) => a.id !== dragId);
+        storeActivities.value = storeActivities.value.filter((a) => a.id !== dragId);
     }
 }
 
@@ -162,7 +170,7 @@ function onDragOver(evt: MouseEvent) {
             if (targetActivity && targetActivity.id !== dragId) {
                 const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
                 activitiesTemp.splice(targetIndex, 0, dragItem.value);
-                activities.value = activitiesTemp;
+                storeActivities.value = activitiesTemp;
             }
         }
     }

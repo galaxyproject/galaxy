@@ -2,6 +2,7 @@
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
 import { nextTick, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 import { parse, stringify } from "yaml";
 
 import {
@@ -10,6 +11,7 @@ import {
     type MessageException,
     type UnprivilegedToolResponse,
 } from "@/api";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import { setupMonaco } from "./YamlJs";
 
@@ -18,6 +20,8 @@ import Heading from "@/components/Common/Heading.vue";
 // loaded monaco-editor from `node_modules`
 loader.config({ monaco });
 const { unload, monacoRef } = useMonaco();
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const router = useRouter();
 
 const disposeConfig = ref<() => void>();
 watch(
@@ -93,6 +97,8 @@ async function saveTool() {
         errorMsg.value = error;
     } else {
         persistedTool.value = data;
+        unprivilegedToolStore.load(true);
+        router.push(`/tools/editor/${data.uuid}`);
     }
 }
 </script>
