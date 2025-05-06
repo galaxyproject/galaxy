@@ -2,21 +2,17 @@
     <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
     <div v-else class="p-2">
         <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
-        <div v-if="contentObject.datasets && contentObject.datasets.length > 0">
-            <div v-for="(dataset, datasetIndex) in contentObject.datasets" :key="datasetIndex">
-                <Heading size="sm">{{ dataset.name }} ({{ dataset.uid || "n/a" }})</Heading>
-                <div v-for="(file, fileIndex) in dataset.files" :key="fileIndex">
-                    <ConfigureSelector
-                        :labels="labels"
-                        :object-name="getObjectName(file)"
-                        :object-title="`${fileIndex + 1}: ${getFileName(file)}`"
-                        object-type="history_dataset_id"
-                        @change="onChange(file, $event)" />
-                </div>
+        <div v-if="urlReferences.length > 0">
+            <div v-for="(ref, index) in urlReferences" :key="index">
+                <ConfigureSelector
+                    :object-name="getDisplayLabel(ref.value)"
+                    :object-title="formatKeyPath(ref.keyPath)"
+                    object-type="history_dataset_id"
+                    @change="onChange(ref.keyPath, $event)" />
             </div>
         </div>
-        <BAlert v-else variant="warning" show>No datasets found.</BAlert>
-        <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
+        <BAlert v-else variant="warning" show>No URL-like fields found.</BAlert>
+        <FormElementLabel title="Height" help="Specify the height of the view in pixels.">
             <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight" />
         </FormElementLabel>
     </div>
@@ -24,38 +20,18 @@
 
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, type Ref, ref, watch } from "vue";
+import { type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import type { OptionType } from "@/components/SelectionField/types";
+import { getAppRoot } from "@/onload";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
-import Heading from "@/components/Common/Heading.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 
-interface DatasetEntryType {
-    files?: Array<FileEntryType>;
-    name: string;
-    uid: string;
-}
-
-interface FileEntryType {
-    __gx_dataset_id?: string;
-    __gx_dataset_label?: DatasetLabel;
-    __gx_dataset_name?: string;
-    fileType: string;
-    url: string;
-    options?: {
-        obsIndex?: string;
-        obsType?: string;
-    };
-}
-
 interface VitessceType {
-    datasets?: Array<DatasetEntryType>;
     __gx_height?: number;
     [key: string]: unknown;
 }
@@ -65,7 +41,6 @@ const DEFAULT_HEIGHT = 400;
 const props = defineProps<{
     name: string;
     content: string;
-    labels?: Array<WorkflowLabel>;
 }>();
 
 const emit = defineEmits<{
@@ -77,32 +52,74 @@ const contentObject: Ref<VitessceType> = ref({});
 const errorMessage = ref();
 const hasChanged = ref(false);
 const height = ref();
+const urlReferences: Ref<UrlReference[]> = ref([]);
 
-const hasLabels = computed(() => props.labels !== undefined);
+const urlRegex = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s]+$/;
 
-function getFileName(file: FileEntryType) {
-    const fileDetailsParts = [file.options?.obsType, file.options?.obsIndex].filter(Boolean);
-    const fileDetails = fileDetailsParts.length ? `(${fileDetailsParts.join(", ")})` : "";
-    return `${file.fileType} ${fileDetails}`;
+interface UrlReference {
+    keyPath: (string | number)[];
+    value: string;
 }
 
-function getObjectName(file: FileEntryType) {
-    return file.__gx_dataset_label?.input || file.__gx_dataset_label?.output || file.__gx_dataset_name || file.url;
+function isUrl(value: unknown): value is string {
+    return typeof value === "string" && urlRegex.test(value);
 }
 
-function onChange(file: FileEntryType, option: OptionType) {
-    if (hasLabels.value && option.data && option.data.label) {
-        Vue.set(file, "url", undefined);
-        Vue.set(file, "__gx_dataset_id", undefined);
-        Vue.set(file, "__gx_dataset_name", undefined);
-        Vue.set(file, "__gx_dataset_label", option.data.label);
-    } else if (option.id) {
-        Vue.set(file, "url", undefined);
-        Vue.set(file, "__gx_dataset_id", option.id);
-        Vue.set(file, "__gx_dataset_name", option.name);
-        Vue.set(file, "__gx_dataset_label", undefined);
+function findAllUrlFields(obj: unknown, path: (string | number)[] = []): UrlReference[] {
+    const results: UrlReference[] = [];
+    if (Array.isArray(obj)) {
+        obj.forEach((item, index) => {
+            results.push(...findAllUrlFields(item, [...path, index]));
+        });
+    } else if (typeof obj === "object" && obj !== null) {
+        for (const [key, value] of Object.entries(obj)) {
+            if (isUrl(value)) {
+                results.push({ keyPath: [...path, key], value });
+            }
+            results.push(...findAllUrlFields(value, [...path, key]));
+        }
     }
-    hasChanged.value = true;
+    return results;
+}
+
+function onChange(keyPath: (string | number)[], option: OptionType) {
+    const parentPath = keyPath.slice(0, -1);
+    const urlKey = keyPath[keyPath.length - 1];
+    const parent = parentPath.reduce((acc: any, key) => acc?.[key], contentObject.value);
+    if (parent && (typeof urlKey === "string" || typeof urlKey === "number")) {
+        const target = parent as Record<string | number, any>;
+        target[urlKey] = `${window.location.origin}${getAppRoot()}api/datasets/${option.id}/display`;
+        hasChanged.value = true;
+        urlReferences.value = findAllUrlFields(contentObject.value);
+    }
+}
+
+function formatKeyPath(keyPath: (string | number)[]): string {
+    return keyPath
+        .map((key) => {
+            if (typeof key === "number" || /^\d+$/.test(String(key))) {
+                return ` ${Number(key) + 1}`;
+            } else {
+                const part = String(key);
+                return part.charAt(0).toUpperCase() + part.slice(1);
+            }
+        })
+        .reduce((acc, part, idx, arr) => {
+            if (idx > 0 && /^\s\d+$/.test(part)) {
+                return acc.slice(0, -1).concat(`${acc[acc.length - 1]}${part}`);
+            }
+            return acc.concat(part);
+        }, [] as string[])
+        .join(" > ");
+}
+
+function getDisplayLabel(value: string): string {
+    if (value.startsWith("galaxy://")) {
+        const query = value.replace("galaxy://", "");
+        const params = Object.fromEntries(new URLSearchParams(query));
+        return params.dataset_name || params.dataset_label || value;
+    }
+    return value;
 }
 
 function onHeight(newHeight: number) {
@@ -118,6 +135,7 @@ function parseContent() {
     try {
         contentObject.value = JSON.parse(props.content);
         height.value = contentObject.value.__gx_height || DEFAULT_HEIGHT;
+        urlReferences.value = findAllUrlFields(contentObject.value);
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = `Failed to parse: ${e}`;
