@@ -40,7 +40,7 @@
             <span v-localize class="footer-section-name">References</span>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
-                <template v-if="xref.reftype == 'bio.tools'">
+                <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
                         <FontAwesomeIcon
@@ -55,13 +55,13 @@
                             icon="external-link-alt" /> </a
                     >)
                 </template>
-                <template v-else-if="xref.reftype == 'bioconductor'">
+                <template v-else-if="xref.type == 'bioconductor'">
                     Bioconductor Package:
                     <a :href="`https://bioconductor.org/packages/${xref.value}/`" target="_blank"
                         >{{ xref.value }} (doi:10.18129/B9.bioc.{{ xref.value }})</a
                     >
                 </template>
-                <template v-else> {{ xref.reftype }}: {{ xref.value }} </template>
+                <template v-else> {{ xref.type }}: {{ xref.value }} </template>
             </div>
         </div>
         <div v-if="hasCreators" class="mb-1">

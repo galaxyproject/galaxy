@@ -86,7 +86,7 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs", [])
-        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
+        return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -192,7 +192,7 @@ class YamlToolSource(ToolSource):
             inherit_format = output_dict.get("inherit_format", None)
             inherit_metadata = output_dict.get("inherit_metadata", None)
         default_format_source = output_dict.get("format_source", None)
-        default_metadata_source = output_dict.get("metadata_source", "")
+        default_metadata_source = output_dict.get("metadata_source", None)
         filters = []
         dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
 

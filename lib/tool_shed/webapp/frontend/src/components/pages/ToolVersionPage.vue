@@ -156,11 +156,11 @@ const linkedFromOlderRevision = computed(() => {
                 <q-list bordered separator>
                     <q-item v-for="xref in xrefs" :key="xref.value">
                         <q-item-section>
-                            <q-item-label overline>REFERENCE {{ xref.reftype }}</q-item-label>
-                            <q-item-label v-if="xref.reftype == 'bio.tools'">
+                            <q-item-label overline>REFERENCE {{ xref.type }}</q-item-label>
+                            <q-item-label v-if="xref.type == 'bio.tools'">
                                 <bio-tools-link :id="xref.value" />
                             </q-item-label>
-                            <q-item-label v-else-if="xref.reftype == 'bioconductor'">
+                            <q-item-label v-else-if="xref.type == 'bioconductor'">
                                 <bioconductor-link :id="xref.value" />
                             </q-item-label>
                             <q-item-label v-else>

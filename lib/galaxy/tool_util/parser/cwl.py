@@ -159,7 +159,7 @@ class CwlToolSource(ToolSource):
             output.format = "expression.json"
         output.change_format = []
         output.format_source = None
-        output.metadata_source = ""
+        output.metadata_source = None
         output.parent = None
         output.label = None
         output.count = None
