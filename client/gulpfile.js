@@ -19,7 +19,6 @@ const PLUGIN_BUILD_IDS = [
     "example",
     "fits_graph_viewer",
     "hyphyvision",
-    "jqplot/jqplot_bar",
     "mvpapp",
     "nora",
     "nvd3/nvd3_bar",
