@@ -1,66 +1,33 @@
-<template>
-    <b-row align-v="center">
-        <b-col>
-            <b-form-input :id="id" v-model="displayValue" :class="['ui-input', cls]" :readonly="true" />
-        </b-col>
-    </b-row>
-</template>
+<script setup lang="ts">
+import { type DataUri, isDataUriCollection, isDataUriData, isDataUriFile } from "./types";
 
-<script>
-export default {
-    props: {
-        value: {
-            type: Object,
-        },
-        id: {
-            type: String,
-            default: "",
-        },
-        multiple: {
-            type: Boolean,
-            default: false,
-        },
-        cls: {
-            // Refers to an optional custom css class name
-            type: String,
-            default: null,
-        },
-    },
-    computed: {
-        displayValue: {
-            get() {
-                return this.value.url;
-            },
-            set(newVal, oldValue) {
-                if (newVal !== this.value.url) {
-                    this.$emit("input", this.value);
-                }
-            },
-        },
-        currentValue: {
-            get() {
-                const v = this.value ?? "";
-                if (Array.isArray(v)) {
-                    if (v.length === 0) {
-                        return "";
-                    }
-                    return this.multiple
-                        ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
-                        : String(this.value[0]);
-                }
-                return String(v);
-            },
-            set(newVal, oldVal) {
-                if (newVal !== oldVal) {
-                    this.$emit("input", newVal);
-                }
-            },
-        },
-    },
-};
+import FormDataUriElement from "./FormDataUriElement.vue";
+
+const props = defineProps<{
+    value: DataUri;
+}>();
 </script>
-<style scoped>
-.ui-input-linked {
-    border-left-width: 0.5rem;
-}
-</style>
+
+<template>
+    <FormDataUriElement
+        v-if="isDataUriCollection(props.value)"
+        :value="{
+            class: 'Collection',
+            elements: props.value.elements,
+            identifier: props.value.name || 'Collection',
+        }" />
+    <FormDataUriElement
+        v-else-if="isDataUriFile(props.value)"
+        :value="{
+            class: 'File',
+            identifier: props.value.name || 'Dataset',
+            location: props.value.location || props.value.url,
+        }" />
+    <FormDataUriElement
+        v-else-if="isDataUriData(props.value)"
+        :value="{
+            class: 'File',
+            identifier: props.value.name || 'Data',
+            location: props.value.location || props.value.url,
+        }" />
+</template>

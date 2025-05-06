@@ -9,14 +9,13 @@ import { computed, ref, useAttrs } from "vue";
 
 import { linkify } from "@/utils/utils";
 
-import { isLandingData } from "./Elements/FormData/types";
+import { isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormData from "./Elements/FormData/FormData.vue";
 import FormDataUri from "./Elements/FormData/FormDataUri.vue";
-import FormLandingData from "./Elements/FormData/FormLandingData.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormError from "./Elements/FormError.vue";
@@ -170,15 +169,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
-const isLandingDataField = computed(() => Boolean(formDataField.value) && isLandingData(props.value));
-const isUriDataField = computed(() => {
-    const dataField = props.type == "data";
-    if (dataField && props.value && "src" in props.value) {
-        const src = props.value.src;
-        return src == "url";
-    }
-    return false;
-});
+const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -425,11 +416,6 @@ function onAlert(value: string | undefined) {
                 <FormDataUri
                     v-else-if="isUriDataField"
                     :id="props.id"
-                    v-model="currentValue"
-                    :multiple="attrs.multiple" />
-                <FormLandingData
-                    v-else-if="isLandingDataField"
-                    :id="id"
                     :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData

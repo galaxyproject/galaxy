@@ -1,19 +1,32 @@
 <script setup lang="ts">
 import { BCollapse, BLink } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
-import type { LandingDataCollectionElement, LandingDataFileElement } from "./types";
+import { type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
 
 const props = defineProps<{
-    value: LandingDataCollectionElement | LandingDataFileElement;
-    fileType?: string;
+    value: DataUriCollectionElement;
 }>();
 
 const expanded = ref(false);
+
+const fileType = computed(() => {
+    if (!isDataUriCollectionElementCollection(props.value)) {
+        return props.value.extension || props.value.filetype || props.value.ext;
+    }
+    return null;
+});
+
+const location = computed(() => {
+    if (!isDataUriCollectionElementCollection(props.value)) {
+        return props.value.location || props.value.url;
+    }
+    return null;
+});
 </script>
 
 <template>
-    <div v-if="props.value.class === 'Collection'">
+    <div v-if="isDataUriCollectionElementCollection(props.value)">
         <div
             tabindex="0"
             role="button"
@@ -21,21 +34,21 @@ const expanded = ref(false);
             @click="expanded = !expanded"
             @keydown.enter="expanded = !expanded">
             <strong>{{ props.value.identifier || "Collection" }}</strong>
-            <i>({{ props.value.type }})</i>
+            <i v-if="props.value.type">({{ props.value.type }})</i>
             <span class="float-right"> {{ expanded ? "Hide" : "Show" }} elements </span>
         </div>
         <BCollapse :visible="expanded" class="pl-2">
-            <FormLandingDataElement v-for="(element, index) in props.value.elements" :key="index" :value="element" />
+            <FormDataUriElement v-for="(element, index) in props.value.elements" :key="index" :value="element" />
         </BCollapse>
     </div>
-    <div v-else-if="props.value.class === 'File'">
+    <div v-else>
         <div class="form-example-data-element rounded d-flex justify-content-between align-items-center w-100">
             <div class="w-50">
                 <strong>{{ props.value.identifier || "Dataset" }}</strong>
-                <i v-if="props.fileType">({{ props.fileType }})</i>
+                <i v-if="fileType">({{ fileType }})</i>
             </div>
-            <BLink v-if="props.value.location" class="location-link w-50" :href="props.value.location" target="_blank">
-                <i>{{ props.value.location }}</i>
+            <BLink v-if="location" class="location-link w-50" :href="props.value.location" target="_blank">
+                <i>{{ location }}</i>
             </BLink>
         </div>
     </div>
