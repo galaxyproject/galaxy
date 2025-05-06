@@ -32,7 +32,7 @@ IncomingNotRequiredDatasetCollectionDescription = NotRequired[List["DatasetColle
 # Use IncomingNotRequired when concrete key: Optional[str] = None would be incorrect
 
 
-class ToolOutputBaseModelG(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
+class GenericToolOutputBaseModel(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
     name: Annotated[
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
@@ -40,11 +40,11 @@ class ToolOutputBaseModelG(BaseModel, Generic[IncomingNotRequiredBoolT, Incoming
     hidden: IncomingNotRequiredBoolT
 
 
-IncomingToolOutputBaseModel = ToolOutputBaseModelG[NotRequired[bool], NotRequired[str]]
+IncomingToolOutputBaseModel = GenericToolOutputBaseModel[NotRequired[bool], NotRequired[str]]
 
 
-class ToolOutputDatasetG(
-    ToolOutputBaseModelG[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+class GenericToolOutputDataset(
+    GenericToolOutputBaseModel[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
     type: Literal["data"]
@@ -63,11 +63,15 @@ class ToolOutputDatasetG(
     ] = None
 
 
-ToolOutputDataset = ToolOutputDatasetG[bool, str]
-IncomingToolOutputDataset = ToolOutputDatasetG[
-    NotRequired[bool],
-    NotRequired[str],
-]
+class ToolOutputDataset(GenericToolOutputDataset[bool, str]): ...
+
+
+class IncomingToolOutputDataset(
+    GenericToolOutputDataset[
+        NotRequired[bool],
+        NotRequired[str],
+    ]
+): ...
 
 
 class ToolOutputCollectionStructure(BaseModel):
@@ -78,19 +82,21 @@ class ToolOutputCollectionStructure(BaseModel):
     discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
 
 
-class ToolOutputCollectionG(
-    ToolOutputBaseModelG[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+class GenericToolOutputCollection(
+    GenericToolOutputBaseModel[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
     type: Literal["collection"]
     structure: ToolOutputCollectionStructure
 
 
-ToolOutputCollection = ToolOutputCollectionG[bool, str]
-IncomingToolOutputCollection = ToolOutputCollectionG[NotRequired[bool], NotRequired[str]]
+class ToolOutputCollection(GenericToolOutputCollection[bool, str]): ...
 
 
-class ToolOutputSimple(ToolOutputBaseModelG):
+class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool], NotRequired[str]]): ...
+
+
+class ToolOutputSimple(GenericToolOutputBaseModel):
     pass
 
 
