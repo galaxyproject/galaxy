@@ -156,12 +156,34 @@ Please mind `http` and `https`.
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
+    <!-- DEPRECATED This provider is deprecated and will be phased out. -->
     <provider name="Elixir">
         <client_id>...</client_id>
         <client_secret>...</client_secret>
         <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
         <prompt>consent</prompt>
         <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
+    <!-- # In order to get any scopes, you have to register your service with Life science, see documentation at https://lifescience-ri.eu/ls-login.html  -->
+    <provider name="Lifescience">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/lifescience/callback</redirect_uri>
+        <prompt>consent</prompt>
+        <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
+    <!-- # In order to get any scopes, you have to register your service with e-INFRA CZ AAI at https://spadmin.e-infra.cz/  -->
+    <provider name="Einfracz">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/einfracz/callback</redirect_uri>
+        <prompt>consent</prompt>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
