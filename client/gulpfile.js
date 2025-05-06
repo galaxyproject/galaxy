@@ -20,7 +20,6 @@ const PLUGIN_BUILD_IDS = [
     "fits_graph_viewer",
     "hyphyvision",
     "mvpapp",
-    "nora",
     "tiffviewer",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
