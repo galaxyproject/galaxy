@@ -24,7 +24,6 @@ const PLUGIN_BUILD_IDS = [
     "nora",
     "nvd3/nvd3_bar",
     "pv",
-    "scatterplot",
     "tiffviewer",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
