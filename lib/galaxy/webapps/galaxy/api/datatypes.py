@@ -14,6 +14,7 @@ from typing import (
 from fastapi import (
     Path,
     Query,
+    Response,
 )
 
 from galaxy.datatypes.registry import Registry
@@ -78,6 +79,72 @@ class FastAPIDatatypes:
     ) -> Union[List[DatatypeDetails], List[str]]:
         """Gets the list of all available data types."""
         return view_index(self.datatypes_registry, extension_only, upload_only)
+
+    @router.get(
+        "/api/datatypes/{datatype}",
+        public=True,
+        summary="Get details for a specific datatype",
+        response_description="Detailed information about a datatype",
+    )
+    async def show(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get information for",
+            examples=["bam", "h5", "vcf"],
+        ),
+    ):
+        """Gets detailed information about a specific datatype.
+
+        Includes information about:
+        - Basic properties (description, mime type, etc.)
+        - Available converters
+        - EDAM mappings
+        - Preferred visualization
+        """
+        # Get the datatype object
+        dt_object = self.datatypes_registry.get_datatype_by_extension(datatype)
+        if dt_object is None:
+            return Response(status_code=404, content=f"Datatype '{datatype}' not found")
+
+        # Basic information
+        result = {
+            "extension": datatype,
+            "description": getattr(dt_object, "description", None),
+            "display_in_upload": datatype in self.datatypes_registry.upload_file_formats,
+            "mimetype": self.datatypes_registry.get_mimetype_by_extension(datatype),
+            "is_binary": getattr(dt_object, "is_binary", False),
+        }
+
+        # Add composite files if applicable
+        composite_files = getattr(dt_object, "composite_files", None)
+        if composite_files:
+            result["composite_files"] = [{"name": k, **v.dict()} for k, v in composite_files.items()]
+
+        # Add EDAM information if available
+        edam_format = self.datatypes_registry.edam_formats.get(datatype)
+        if edam_format:
+            result["edam_format"] = edam_format
+
+        edam_data = self.datatypes_registry.edam_data.get(datatype)
+        if edam_data:
+            result["edam_data"] = edam_data
+
+        # Add converter information
+        converters = self.datatypes_registry.get_converters_by_datatype(datatype)
+        if converters:
+            result["converters"] = list(converters.keys())
+
+        # Add preferred visualization if any
+        preferred_viz = self.datatypes_registry.get_preferred_visualization(datatype)
+        if preferred_viz:
+            result["preferred_visualization"] = {
+                "visualization": preferred_viz["visualization"],
+                "default_params": preferred_viz.get("default_params"),
+            }
+
+        return result
 
     @router.get(
         "/api/datatypes/mapping",
