@@ -14,8 +14,11 @@ const props = defineProps<{
     show?: boolean;
     size?: ComponentSize;
     confirm?: boolean;
+    okText?: string;
+    cancelText?: string;
     footer?: boolean;
     title?: string;
+    fixedHeight?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -29,7 +32,7 @@ const emit = defineEmits<{
 const sizeClass = computed(() => {
     const classObject: ComponentSizeClassList = {};
     classObject[prefix(props.size ?? "medium")] = true;
-    return classObject;
+    return { ...classObject, "g-fixed-height": props.fixedHeight };
 });
 
 const dialog = ref<HTMLDialogElement | null>(null);
@@ -118,18 +121,17 @@ defineExpose({ showModal, hideModal });
     <dialog ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
         <section>
             <header>
-                <template v-if="props.title">
-                    <Heading
-                        v-if="props.size === 'large'"
-                        h2
-                        :separator="props.size === 'large'"
-                        :size="headingSize"
-                        class="g-modal-title mb-0">
-                        {{ props.title }}
-                    </Heading>
-                </template>
+                <Heading
+                    v-if="props.title"
+                    h2
+                    :separator="props.size === 'large'"
+                    :size="headingSize"
+                    class="g-modal-title mb-0">
+                    {{ props.title }}
+                </Heading>
 
                 <slot name="header"></slot>
+
                 <GButton icon-only class="g-modal-close-button" transparent size="large" @click="hideModal(false)">
                     <FontAwesomeIcon fixed-width :icon="faXmark" />
                 </GButton>
@@ -140,10 +142,13 @@ defineExpose({ showModal, hideModal });
             </div>
 
             <footer v-if="props.footer || props.confirm">
-                <slot name="footer"></slot>
+                <div class="g-modal-footer-content">
+                    <slot name="footer"></slot>
+                </div>
+
                 <div v-if="props.confirm" class="g-modal-confirm-buttons">
-                    <GButton @click="hideModal(false)"> Cancel </GButton>
-                    <GButton color="blue" @click="hideModal(true)"> Ok </GButton>
+                    <GButton @click="hideModal(false)"> {{ props.cancelText ?? "Cancel" }} </GButton>
+                    <GButton color="blue" @click="hideModal(true)"> {{ props.okText ?? "Ok" }} </GButton>
                 </div>
             </footer>
         </section>
@@ -185,17 +190,26 @@ defineExpose({ showModal, hideModal });
 
     &.g-small {
         width: var(--g-modal-width, 600px);
-        height: var(--g-modal-height, 700px);
+
+        &.g-fixed-height {
+            height: var(--g-modal-height, 700px);
+        }
     }
 
     &.g-medium {
         width: var(--g-modal-width, 900px);
-        height: var(--g-modal-height, 750px);
+
+        &.g-fixed-height {
+            height: var(--g-modal-height, 750px);
+        }
     }
 
     &.g-large {
         width: var(--g-modal-width, 1450px);
-        height: var(--g-modal-height, 800px);
+
+        &.g-fixed-height {
+            height: var(--g-modal-height, 800px);
+        }
     }
 
     header {
@@ -204,6 +218,17 @@ defineExpose({ showModal, hideModal });
         gap: var(--spacing-1);
 
         .g-modal-title {
+            flex-grow: 1;
+        }
+    }
+
+    footer {
+        margin: calc(var(--spacing-3) * -1);
+        padding: var(--spacing-3);
+        border-top: 1px solid var(--color-grey-200);
+        display: flex;
+
+        .g-modal-footer-content {
             flex-grow: 1;
         }
     }

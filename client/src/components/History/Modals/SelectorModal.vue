@@ -114,7 +114,13 @@ const modalBodyClasses = computed(() => {
 </script>
 
 <template>
-    <GModal ref="modal" size="small" :show.sync="propShowModal" :class="modalBodyClasses" :title="localize(title)">
+    <GModal
+        ref="modal"
+        size="small"
+        fixed-height
+        :show.sync="propShowModal"
+        :class="modalBodyClasses"
+        :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
                 ref="filterMenuRef"
