@@ -1,4 +1,5 @@
 import json
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
@@ -135,18 +136,29 @@ class YamlToolSource(ToolSource):
         return error_on_exit_code()
 
     def parse_help(self) -> Optional[HelpContent]:
-        content = self.root_dict.get("help", None)
-        if content:
-            return HelpContent(format="markdown", content=content)
+        help = self.root_dict.get("help")
+        format = "markdown"
+        if isinstance(help, dict):
+            format = help.get("format", "markdown")
+        if isinstance(help, str):
+            return HelpContent(format=format, content=help)
+        elif help and "content" in help:
+            return HelpContent(format=format, content=help["content"])
         else:
             return None
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp]):
-        outputs = self.root_dict.get("outputs", {})
+        outputs = self.root_dict.get("outputs", [])
+        if isinstance(outputs, MutableMapping):
+            for name, output_dict in outputs.items():
+                output_dict["name"] = name
+            outputs = outputs.values()
+
         output_defs = []
         output_collection_defs = []
-        for name, output_dict in outputs.items():
+        for output_dict in outputs:
             output_type = output_dict.get("type", "data")
+            name = output_dict["name"]
             if output_type == "data":
                 output_defs.append(self._parse_output(app, name, output_dict))
             elif output_type == "collection":
@@ -213,7 +225,7 @@ class YamlToolSource(ToolSource):
         return rval
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile", "16.04")
+        return self.root_dict.get("profile") or "16.04"
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
@@ -229,7 +241,7 @@ class YamlToolSource(ToolSource):
 
     def to_string(self):
         # TODO: Unit test for dumping/restoring
-        return json.dumps(self.root_dict)
+        return json.dumps(self.root_dict, ensure_ascii=False, sort_keys=False)
 
 
 def _parse_test(i, test_dict) -> ToolSourceTest:
@@ -365,27 +377,27 @@ class YamlInputSource(InputSource):
         return YamlPageSource(self.input_dict["blocks"])
 
     def parse_test_input_source(self):
-        test_dict = self.input_dict.get("test", None)
-        assert test_dict is not None, "conditional must contain a `test` definition"
+        test_dict = self.input_dict.get("test_parameter", None)
+        assert test_dict is not None, "conditional must contain a `test_parameter` definition"
         return YamlInputSource(test_dict)
 
     def parse_when_input_sources(self):
         input_dict = self.input_dict
 
         sources = []
-        for value, block in input_dict.get("when", {}).items():
-            if value is True:
-                value = "true"
-            elif value is False:
-                value = "false"
-            else:
-                value = str(value)
-
-            # str here to lose type information like XML, needed?
-            if not isinstance(block, list):
-                block = [block]
-            case_page_source = YamlPageSource(block)
-            sources.append((value, case_page_source))
+        if "when" in input_dict:
+            for key, value in input_dict["when"].items():
+                # casting to string because default value for BooleanToolParameter.legal_values is "true" / "false"
+                # Unfortunate, but I guess that's ok for now?
+                discriminator = "true" if key is True else "false" if key is False else key
+                case_page_source = YamlPageSource(value)
+                sources.append((discriminator, case_page_source))
+        else:
+            for value in input_dict.get("whens", []):
+                key = value.get("discriminator")
+                discriminator = "true" if key is True else "false" if key is False else key
+                case_page_source = YamlPageSource(value["parameters"])
+                sources.append((discriminator, case_page_source))
         return sources
 
     def parse_validators(self) -> List[AnyValidatorModel]:
