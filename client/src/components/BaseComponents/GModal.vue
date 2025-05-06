@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * Popup modal component. Offers a main slot, a heading slot, and a footer slot.
+ */
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
@@ -11,13 +15,21 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
+    /** Controls if the modal is showing. Syncable */
     show?: boolean;
+    /** Controls the modals size. If unset, size can be controlled via css `width` and `height` */
     size?: ComponentSize;
+    /** Shows confirm an cancel buttons in the footer, and sends out `ok` and `cancel` events */
     confirm?: boolean;
+    /** Custom text for the Ok confirm button */
     okText?: string;
+    /** Custom text for the Cancel confirm button */
     cancelText?: string;
+    /** Renders the footer region, even if confirm is disabled */
     footer?: boolean;
+    /** Text to display in the title */
     title?: string;
+    /** Fixes the height of the modal to a pre-set height based on `size` */
     fixedHeight?: boolean;
 }>();
 
@@ -31,7 +43,11 @@ const emit = defineEmits<{
 
 const sizeClass = computed(() => {
     const classObject: ComponentSizeClassList = {};
-    classObject[prefix(props.size ?? "medium")] = true;
+
+    if (props.size) {
+        classObject[prefix(props.size)] = true;
+    }
+
     return { ...classObject, "g-fixed-height": props.fixedHeight };
 });
 
@@ -157,10 +173,6 @@ defineExpose({ showModal, hideModal });
 </template>
 
 <style lang="scss" scoped>
-/**
- * If you want more control over the size of the modal, set the custom props `--g-modal-width` and `--g-modal-height`
- */
-
 .g-dialog {
     background-color: var(--background-color);
     border-radius: var(--spacing-2);
@@ -190,26 +202,26 @@ defineExpose({ showModal, hideModal });
     }
 
     &.g-small {
-        width: var(--g-modal-width, 600px);
+        width: 600px;
 
         &.g-fixed-height {
-            height: var(--g-modal-height, 700px);
+            height: 700px;
         }
     }
 
     &.g-medium {
-        width: var(--g-modal-width, 900px);
+        width: 900px;
 
         &.g-fixed-height {
-            height: var(--g-modal-height, 750px);
+            height: 750px;
         }
     }
 
     &.g-large {
-        width: var(--g-modal-width, 1450px);
+        width: 1450px;
 
         &.g-fixed-height {
-            height: var(--g-modal-height, 800px);
+            height: 800px;
         }
     }
 
