@@ -27,7 +27,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "heatmap",
     "ngl",
     "molstar",
-    "msa",
     "openlayers",
     "openseadragon",
     "pca",
