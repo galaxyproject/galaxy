@@ -21,7 +21,6 @@ const PLUGIN_BUILD_IDS = [
     "hyphyvision",
     "mvpapp",
     "nora",
-    "nvd3/nvd3_bar",
     "pv",
     "tiffviewer",
 ];
