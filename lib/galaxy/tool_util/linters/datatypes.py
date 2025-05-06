@@ -79,7 +79,7 @@ class ValidDatatypes(Linter):
             for elem in tool_xml.findall(f".//*[@{attrib}]"):
                 # skip help section, "format" in help has a different meaning
                 if elem.tag == "help":
-                    return
+                    continue
                 formats = elem.get(attrib, "").split(",")
                 # Certain elements (e.g. `data`) can only have one format. This
                 # is checked separately by linting against the XSD.
