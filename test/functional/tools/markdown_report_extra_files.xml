@@ -1,0 +1,53 @@
+<tool id="markdown_report_extra_files" name="markdown_report_extra_files" version="1.0">
+    <command><![CDATA[
+        mkdir '$output_report.extra_files_path';
+        cp '$__tool_directory__/data/1.bed' '$output_report.extra_files_path/test.bed';
+        cp '$__tool_directory__/data/rgWebLogo3_test.jpg' '$output_report.extra_files_path/rgWebLogo3_test.jpg';
+        echo "I am writing this to standard output!";
+        cp '${tool_markdown}' '${output_report}';
+    ]]></command>
+    <configfiles>
+        <configfile name="tool_markdown"><![CDATA[
+# ${title}
+
+Here is an image we just stuck in an extra files path
+
+```galaxy
+history_dataset_as_image(output=output_report, path="rgWebLogo3_test.jpg")
+```
+
+This is a fancy table using fancy table features for an extra files.
+
+```galaxy
+history_dataset_as_table(output=output_report, path="test.bed", title="A Fancy Title!", footer="Here is a small legend.")
+```
+
+The standard out for this tool execution is:
+
+```galaxy
+tool_stdout()
+```
+
+This is my document and I have populated the title from a parameter.
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="title" type="text" label="Title"/>
+    </inputs>
+    <outputs>
+        <!-- <data name="output_directory" format="html"/> -->
+        <data name="output_report" format="tool_markdown"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="title" value="foobar" />
+            <output name="output_report" ftype="tool_markdown">
+                <assert_contents>
+                    <has_line line="# foobar" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

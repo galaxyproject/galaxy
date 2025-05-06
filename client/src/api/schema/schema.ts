@@ -615,6 +615,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return JSON content Galaxy will use to render Markdown reports */
+        get: operations["report_api_datasets__dataset_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{dataset_id}/storage": {
         parameters: {
             query?: never;
@@ -17047,6 +17064,27 @@ export interface components {
              */
             values: string;
         };
+        /** ToolReportForDataset */
+        ToolReportForDataset: {
+            /**
+             * Content
+             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @default
+             */
+            content: string | null;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_time?: string | null;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_version?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ToolStep */
         ToolStep: {
             /**
@@ -20320,7 +20358,10 @@ export interface operations {
     };
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
+                filename?: string | null;
+            };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20631,6 +20672,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    report_api_datasets__dataset_id__report_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolReportForDataset"];
                 };
             };
             /** @description Request Error */
