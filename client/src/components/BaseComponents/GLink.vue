@@ -3,7 +3,6 @@ import type { Placement } from "@popperjs/core";
 import { computed, ref } from "vue";
 import type { RouterLink } from "vue-router";
 
-import type { ComponentSize } from "@/components/BaseComponents/componentVariants";
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useResolveElement } from "@/composables/resolveElement";
@@ -17,7 +16,6 @@ const props = defineProps<{
     disabled?: boolean;
     title?: string;
     disabledTitle?: string;
-    size?: ComponentSize;
     tooltip?: boolean;
     tooltipPlacement?: Placement;
     dark?: boolean;
