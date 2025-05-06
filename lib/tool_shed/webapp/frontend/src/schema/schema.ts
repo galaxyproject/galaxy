@@ -812,6 +812,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_baseurl"
+            /**
+             * Type
+             * @constant
+             */
+            type: "baseurl"
         }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
@@ -855,6 +860,11 @@ export interface components {
             parameter_type: "gx_boolean"
             /** Truevalue */
             truevalue?: string | null
+            /**
+             * Type
+             * @constant
+             */
+            type: "boolean"
             /**
              * Value
              * @default false
@@ -935,6 +945,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_color"
+            /**
+             * Type
+             * @constant
+             */
+            type: "color"
             /** Value */
             value?: string | null
         }
@@ -973,6 +988,11 @@ export interface components {
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"]
+            /**
+             * Type
+             * @constant
+             */
+            type: "conditional"
             /** Whens */
             whens: components["schemas"]["ConditionalWhen"][]
         }
@@ -1231,6 +1251,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data_collection"
+            /**
+             * Type
+             * @constant
+             */
+            type: "data_collection"
             /** Value */
             value: {
                 [key: string]: unknown
@@ -1269,6 +1294,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data_column"
+            /**
+             * Type
+             * @constant
+             */
+            type: "data_column"
             /** Value */
             value?: number | number[] | null
         }
@@ -1319,6 +1349,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data"
+            /**
+             * Type
+             * @constant
+             */
+            type: "data"
         }
         /**
          * DescriptorType
@@ -1395,6 +1430,11 @@ export interface components {
              */
             parameter_type: "gx_directory_uri"
             /**
+             * Type
+             * @constant
+             */
+            type: "directory"
+            /**
              * Validators
              * @default []
              */
@@ -1456,6 +1496,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_drill_down"
+            /**
+             * Type
+             * @constant
+             */
+            type: "drill_down"
         }
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
@@ -1579,6 +1624,11 @@ export interface components {
              */
             parameter_type: "gx_float"
             /**
+             * Type
+             * @constant
+             */
+            type: "float"
+            /**
              * Validators
              * @default []
              */
@@ -1619,6 +1669,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_genomebuild"
+            /**
+             * Type
+             * @constant
+             */
+            type: "genomebuild"
         }
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
@@ -1653,6 +1708,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_group_tag"
+            /**
+             * Type
+             * @constant
+             */
+            type: "group_tag"
         }
         /** HelpContent */
         HelpContent: {
@@ -1695,6 +1755,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_hidden"
+            /**
+             * Type
+             * @constant
+             */
+            type: "hidden"
             /**
              * Validators
              * @default []
@@ -1814,6 +1879,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_integer"
+            /**
+             * Type
+             * @constant
+             */
+            type: "integer"
             /**
              * Validators
              * @default []
@@ -2006,6 +2076,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             */
+            type: "repeat"
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -2304,6 +2379,11 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_rules"
+            /**
+             * Type
+             * @constant
+             */
+            type: "rules"
         }
         /** SectionParameterModel */
         SectionParameterModel: {
@@ -2366,6 +2446,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             */
+            type: "section"
         }
         /** SelectParameterModel */
         SelectParameterModel: {
@@ -2385,7 +2470,10 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Multiple */
+            /**
+             * Multiple
+             * @default false
+             */
             multiple: boolean
             /** Name */
             name: string
@@ -2402,7 +2490,15 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_select"
-            /** Validators */
+            /**
+             * Type
+             * @constant
+             */
+            type: "select"
+            /**
+             * Validators
+             * @default []
+             */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
         }
         /** Service */
@@ -2580,6 +2676,11 @@ export interface components {
              */
             parameter_type: "gx_text"
             /**
+             * Type
+             * @constant
+             */
+            type: "text"
+            /**
              * Validators
              * @default []
              */
@@ -2670,11 +2771,14 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
-            /** Name */
-            name: string
+            label?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2686,8 +2790,11 @@ export interface components {
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
-            /** Name */
+            label?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: string
             structure: components["schemas"]["ToolOutputCollectionStructure"]
             /**
@@ -2699,43 +2806,49 @@ export interface components {
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
             /** Collection Type */
-            collection_type: string | null
+            collection_type?: string | null
             /** Collection Type From Rules */
-            collection_type_from_rules: string | null
+            collection_type_from_rules?: string | null
             /** Collection Type Source */
-            collection_type_source: string | null
+            collection_type_source?: string | null
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null
             /** Structured Like */
-            structured_like: string | null
+            structured_like?: string | null
         }
         /** ToolOutputDataset */
         ToolOutputDataset: {
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null
-            /** Format */
+            /**
+             * Format
+             * @description The short name for the output datatype.
+             */
             format: string
             /** Format Source */
-            format_source: string | null
+            format_source?: string | null
             /** From Work Dir */
             from_work_dir?: string | null
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
+            label?: string | null
             /** Metadata Source */
-            metadata_source: string | null
-            /** Name */
+            metadata_source?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: string
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -2746,11 +2859,14 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
-            /** Name */
-            name: string
+            label?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2760,11 +2876,14 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
-            /** Name */
-            name: string
+            label?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2774,11 +2893,14 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
-            /** Name */
-            name: string
+            label?: string | null
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
