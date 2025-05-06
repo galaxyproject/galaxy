@@ -184,6 +184,7 @@ Please mind `http` and `https`.
         <client_secret>...</client_secret>
         <redirect_uri>http://localhost:8080/authnz/einfracz/callback</redirect_uri>
         <prompt>consent</prompt>
+        <icon>https://www.e-infra.cz/img/logo.svg</icon>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
