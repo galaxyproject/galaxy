@@ -98,9 +98,9 @@ watch(() => props.colHeaders, resizeOnNextTick);
         <AgGridVue
             id="rules-ag-grid"
             ref="agGrid"
-            :rowData="data"
-            :columnDefs="agColumnHeaders"
-            :defaultColDef="defaultColDef"
+            :row-data="data"
+            :column-defs="agColumnHeaders"
+            :default-col-def="defaultColDef"
             :style="style"
             :row-height="20"
             :header-height="30"
