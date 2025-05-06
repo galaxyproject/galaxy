@@ -1,10 +1,10 @@
 <template>
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
-            <span v-localize class="footer-section-name">Citations</span>
+            <span v-localize class="footer-section-name">References</span>
             <b-button
                 v-b-tooltip.hover
-                title="Copy all citations as BibTeX"
+                title="Copy all references as BibTeX"
                 style="cursor: pointer"
                 variant="link"
                 size="sm"
@@ -37,22 +37,16 @@
             <License :license-id="license" />
         </div>
         <div v-if="hasReferences" class="mb-1">
-            <span v-localize class="footer-section-name">References</span>
+            <span v-localize class="footer-section-name">External links</span>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
                 <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <FontAwesomeIcon
-                            v-b-tooltip.hover
-                            title="Visit bio.tools reference"
-                            icon="external-link-alt" /> </a
+                        <FontAwesomeIcon v-b-tooltip.hover title="Visit bio.tools page" icon="external-link-alt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
-                        <FontAwesomeIcon
-                            v-b-tooltip.hover
-                            title="Visit OpenEBench reference"
-                            icon="external-link-alt" /> </a
+                        <FontAwesomeIcon v-b-tooltip.hover title="Visit OpenEBench page" icon="external-link-alt" /> </a
                     >)
                 </template>
                 <template v-else-if="xref.type == 'bioconductor'">
@@ -163,7 +157,7 @@ export default {
                 const bibtex = cite.format("bibtex", {});
                 text += bibtex;
             });
-            copy(text, "Citations copied to your clipboard as BibTeX");
+            copy(text, "References copied to your clipboard as BibTeX");
         },
     },
 };

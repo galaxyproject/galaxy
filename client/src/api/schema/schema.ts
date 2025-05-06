@@ -1746,7 +1746,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return all the citations for the tools used to produce the datasets in the history. */
+        /** Return all the references for the tools used to produce the datasets in the history. */
         get: operations["citations_api_histories__history_id__citations_get"];
         put?: never;
         post?: never;

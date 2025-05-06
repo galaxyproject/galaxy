@@ -41,7 +41,7 @@ const citationHtml = computed(() => {
         <span v-html="citationHtml" />
 
         <a v-if="link" :href="link" target="_blank">
-            Visit Citation
+            Visit reference
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </a>
     </div>
