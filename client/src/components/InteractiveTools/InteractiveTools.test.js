@@ -38,8 +38,21 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("renders table with interactive tools", async () => {
-        expect(wrapper.get("#interactive-tool-table").exists() === true).toBeTruthy();
-        expect(wrapper.findAll("td > a").length).toBe(2);
+        expect(wrapper.get("#interactive-tool-table").exists()).toBeTruthy();
+        // Each entry has 2 links: one to open inline and one to open in new tab
+        expect(wrapper.findAll("td > a").length).toBe(4);
+    });
+
+    it("displays interactive tool information correctly", async () => {
+        const firstTool = testInteractiveToolsResponse[0];
+        const toolName = wrapper.find(`#link-${firstTool.id}`);
+        expect(toolName.text()).toContain(firstTool.name);
+
+        // Check if the external link is present
+        const externalLink = wrapper.find(`#external-link-${firstTool.id}`);
+        expect(externalLink.exists()).toBeTruthy();
+        expect(externalLink.attributes("href")).toBe(firstTool.target);
+        expect(externalLink.attributes("target")).toBe("_blank");
     });
 
     it("removes the interactive tool when it is gone from store", async () => {
