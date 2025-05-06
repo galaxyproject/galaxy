@@ -24,7 +24,7 @@ const styleClasses = computed(() => {
     gap: 0;
 
     &:not(.g-vertical) {
-        &:deep(.g-button) {
+        &:deep(> .g-button) {
             &:not(:nth-child(1 of .g-button)) {
                 border-top-left-radius: 0;
                 border-bottom-left-radius: 0;
@@ -42,7 +42,7 @@ const styleClasses = computed(() => {
     &.g-vertical {
         flex-direction: column;
 
-        &:deep(.g-button) {
+        &:deep(> .g-button) {
             &:not(:nth-child(1 of .g-button)) {
                 border-top-left-radius: 0;
                 border-top-right-radius: 0;
