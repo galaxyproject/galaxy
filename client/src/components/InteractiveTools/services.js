@@ -8,11 +8,12 @@ export class Services {
     }
 
     async stopInteractiveTool(id) {
-        const url = `${this.root}api/entry_points/${id}`;
-        const response = await axios.delete(url);
-        return response.data;
-    }
-    catch(e) {
-        rethrowSimple(e);
+        try {
+            const url = `${this.root}api/entry_points/${id}`;
+            const response = await axios.delete(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
     }
 }
