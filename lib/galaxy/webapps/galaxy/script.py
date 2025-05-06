@@ -3,6 +3,12 @@ from argparse import ArgumentParser
 
 import uvicorn
 
+try:
+    import galaxy.client
+    default_client_path = os.path.dirname(galaxy.client.__file__)
+except ImportError:
+    default_client_path = "node_modules/@galaxyproject/galaxy-client"
+
 
 def main() -> None:
     parser = ArgumentParser(
@@ -12,9 +18,7 @@ def main() -> None:
     parser.add_argument("--config", "-c", help="Galaxy config file")
     parser.add_argument("--single-user", "-s", help="Single user mode as user SINGLE_USER")
     parser.add_argument("--bind", "-b", default="localhost:8080", help="Bind to <host>:<port>")
-    parser.add_argument(
-        "--client-path", "-n", default="node_modules/@galaxyproject/galaxy-client", help="Path to Galaxy client"
-    )
+    parser.add_argument("--client-path", "-n", default=default_client_path, help="Path to Galaxy client")
     args = parser.parse_args()
     if args.config:
         os.environ["GALAXY_CONFIG_FILE"] = args.config
