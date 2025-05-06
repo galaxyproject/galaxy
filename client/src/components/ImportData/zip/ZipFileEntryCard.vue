@@ -36,7 +36,7 @@ const sizeLimitExceeded = computed(() => {
 });
 
 const sizeLimitExceededMessage = computed(() => {
-    return localize("File is too large to import due to browser limitations.");
+    return localize("File is too large to extract. Please extract on your computer or upload the entire zip file.");
 });
 
 const badges = [
