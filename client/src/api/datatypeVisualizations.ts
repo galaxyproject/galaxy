@@ -24,7 +24,6 @@ export async function fetchDatatypeVisualizations(): Promise<DatatypeVisualizati
     }
 }
 
-
 /**
  * Gets the preferred visualization for a specific datatype
  */
