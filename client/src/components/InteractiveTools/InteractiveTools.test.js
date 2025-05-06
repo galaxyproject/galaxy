@@ -60,17 +60,16 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
             return wrapper.find(tag + toolId).exists();
         }
         const toolId = testInteractiveToolsResponse[0].id;
-        expect(checkIfExists("#link-", toolId) === true).toBeTruthy();
+        expect(checkIfExists("#link-", toolId)).toBeTruthy();
 
         // drop the tested tool from store
         const store = useEntryPointStore();
         await store.entryPoints.splice(0, 1);
 
-        expect(checkIfExists("#link-", toolId) === false).toBeTruthy();
+        expect(checkIfExists("#link-", toolId)).toBeFalsy();
     });
 
     it("sends a delete request after the stop button is pressed", async () => {
-        axiosMock = new MockAdapter(axios);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         await wrapper.get(`#stop-${testInteractiveToolsResponse[0].id}`).trigger("click");
         expect(axiosMock.history.delete.length).toBe(1);
@@ -80,7 +79,6 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("shows an error message if the tool deletion fails", async () => {
-        axiosMock = new MockAdapter(axios);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).networkError();
         await wrapper.get(`#stop-${testInteractiveToolsResponse[0].id}`).trigger("click");
         await flushPromises();
