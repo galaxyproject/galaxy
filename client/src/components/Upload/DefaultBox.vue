@@ -5,21 +5,21 @@ import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
 
 import type { HDASummary } from "@/api";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
 import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
-import type { CollectionType } from "../History/adapters/buildCollectionModal";
 import { defaultModel, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
-import CollectionCreatorIndex from "../Collections/CollectionCreatorIndex.vue";
-import LoadingSpan from "../LoadingSpan.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     chunkUploadSize: number;
@@ -54,7 +54,7 @@ const emit = defineEmits<{
 }>();
 
 const collectionModalShow = ref(false);
-const collectionType = ref<CollectionType>("list");
+const collectionType = ref<CollectionBuilderType>("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
 const counterRunning = ref(0);
@@ -323,7 +323,7 @@ function eventWarning(index: string, message: string) {
 }
 
 /** Update collection type */
-function updateCollectionType(newCollectionType: CollectionType) {
+function updateCollectionType(newCollectionType: CollectionBuilderType) {
     collectionType.value = newCollectionType;
 }
 
