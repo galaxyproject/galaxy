@@ -982,8 +982,13 @@ export default {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
                 let collectionType;
+                // true iff there aren't multiple levels of list identifiers - so we can simplify the display
+                let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
+                    if (collectionType == "list:paired" || collectionType == "list") {
+                        flatishList = true;
+                    }
                 } else {
                     // give a bunch of different options if not constrained with given input
                     collectionType = "list:list:list:paired";
@@ -992,8 +997,11 @@ export default {
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
-                        // TODO: drop the numeral at the end if only flat list
-                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        if (flatishList) {
+                            metadataOptions["identifier" + index] = _l("List Identifier");
+                        } else {
+                            metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        }
                     } else {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
