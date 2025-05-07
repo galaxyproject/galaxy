@@ -1,37 +1,53 @@
 // Example usage of the Galaxy API client
-import { createGalaxyApi, type HistorySummary } from "./index";
+import { createGalaxyApi } from "./index";
 
 // Create a client
 const api = createGalaxyApi("https://usegalaxy.org");
 
-// Example function to get histories
-async function getHistories() {
-  const { data, error } = await api.GET("/api/histories");
-  
-  if (error) {
-    console.error("Error fetching histories:", error);
-    return [];
-  }
-  
-  return data;
-}
+// Example function to get a list of tools
+async function getTools() {
+    const { data, error } = await api.GET("/api/tools");
 
-// Example function with type safety
-async function getHistoryById(id: string): Promise<HistorySummary | null> {
-  const { data, error } = await api.GET("/api/histories/{history_id}", {
-    params: {
-      path: {
-        history_id: id
-      }
+    if (error) {
+        console.error("Error fetching tools:", error);
+        return [];
     }
-  });
-  
-  if (error || !data) {
-    console.error("Error fetching history:", error);
-    return null;
-  }
-  
-  return data;
+
+    // Log tool count
+    console.log(`Found ${data.length} tools`);
+
+    // Group tools by section
+    const sections: Record<string, any[]> = {};
+    for (const tool of data) {
+        const section = tool.panel_section_name || "Ungrouped";
+        if (!sections[section]) sections[section] = [];
+        sections[section].push(tool);
+    }
+
+    // Print summary
+    Object.keys(sections).forEach((section) => {
+        console.log(`${section}: ${sections[section].length} tools`);
+    });
+
+    return data;
 }
 
-export { getHistories, getHistoryById };
+// Example function to get a specific tool by ID
+async function getToolById(id: string) {
+    const { data, error } = await api.GET("/api/tools/{tool_id}", {
+        params: {
+            path: {
+                tool_id: id,
+            },
+        },
+    });
+
+    if (error || !data) {
+        console.error("Error fetching tool:", error);
+        return null;
+    }
+
+    return data;
+}
+
+export { getTools, getToolById };

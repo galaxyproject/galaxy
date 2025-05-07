@@ -11,24 +11,21 @@ export * from "./api-types";
 
 // SimpleError class for error handling
 export class SimpleError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "GalaxyApiError";
-  }
+    constructor(message: string) {
+        super(message);
+        this.name = "GalaxyApiError";
+    }
 }
 
 // Re-export the client functions
-export { 
-  createGalaxyApi, 
-  type GalaxyApiClient
-};
+export { createGalaxyApi, type GalaxyApiClient };
 
 // For backward compatibility - creates a client with default settings
 export function GalaxyApi() {
-  return createGalaxyApi();
+    return createGalaxyApi();
 }
 
 // Utility function to format error messages
 export function formatErrorMessage(error: any): string {
-  return errorMessageAsString(error);
+    return errorMessageAsString(error);
 }

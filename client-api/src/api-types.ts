@@ -40,35 +40,35 @@ export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSumma
 export type HistorySortByLiteral = "create_time" | "name" | "update_time" | "username" | undefined;
 
 export interface HistoryContentsStats {
-  id: string;
-  update_time: string;
-  size: number;
-  contents_active: components["schemas"]["HistoryActiveContentCounts"];
+    id: string;
+    update_time: string;
+    size: number;
+    contents_active: components["schemas"]["HistoryActiveContentCounts"];
 }
 
 export interface HistorySummaryExtended extends HistorySummary, HistoryContentsStats {
-  user_id: string | null;
+    user_id: string | null;
 }
 
 export interface SelectableObjectStore extends ConcreteObjectStoreModel {
-  object_store_id: string;
+    object_store_id: string;
 }
 
 export type DatasetEntry = HDASummary | HDADetailed | HDAInaccessible;
 
 export interface DCECollection extends DCESummary {
-  element_type: "dataset_collection";
-  object: DCObject;
+    element_type: "dataset_collection";
+    object: DCObject;
 }
 
 export interface DCEDataset extends DCESummary {
-  element_type: "hda";
-  object: HDAObject;
+    element_type: "hda";
+    object: HDAObject;
 }
 
 export interface SubCollection extends DCObject {
-  name: string;
-  hdca_id: string;
+    name: string;
+    hdca_id: string;
 }
 
 export type CollectionEntry = HDCASummary | SubCollection;
@@ -76,31 +76,31 @@ export type HistoryItemSummary = HDASummary | HDCASummary;
 
 // Utility functions
 export function isHDA(entry?: HistoryItemSummary): entry is HDASummary {
-  return entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset";
+    return entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset";
 }
 
 export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is HDCASummary {
-  return (
-    entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
-  );
+    return (
+        entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
+    );
 }
 
 export function isDCE(item: object): item is DCESummary {
-  return item && "element_type" in item;
+    return item && "element_type" in item;
 }
 
 export function isCollectionElement(element: DCESummary): element is DCECollection {
-  return element.element_type === "dataset_collection";
+    return element.element_type === "dataset_collection";
 }
 
 export function isDatasetElement(element: DCESummary): element is DCEDataset {
-  return element.element_type === "hda";
+    return element.element_type === "hda";
 }
 
 export function hasDetails(entry: DatasetEntry): entry is HDADetailed {
-  return "peek" in entry;
+    return "peek" in entry;
 }
 
 export function isInaccessible(entry: DatasetEntry): entry is HDAInaccessible {
-  return "accessible" in entry && !entry.accessible;
+    return "accessible" in entry && !entry.accessible;
 }

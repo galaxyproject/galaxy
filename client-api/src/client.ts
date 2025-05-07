@@ -7,9 +7,9 @@ import { type GalaxyApiPaths } from "./api-types";
  * @returns The Galaxy API client
  */
 export function createGalaxyApi(baseUrl: string = window.location.origin) {
-  return createClient<GalaxyApiPaths>({ 
-    baseUrl: baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl 
-  });
+    return createClient<GalaxyApiPaths>({
+        baseUrl: baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl,
+    });
 }
 
 export type GalaxyApiClient = ReturnType<typeof createGalaxyApi>;

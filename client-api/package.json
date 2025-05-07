@@ -24,10 +24,7 @@
     "prepublishOnly": "npm run clean && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "examples:tools": "node src/examples/listTools.mjs",
-    "examples:histories": "node src/examples/historyOperations.mjs",
-    "examples:auth": "node src/examples/authentication.mjs"
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "galaxy",
