@@ -44,10 +44,10 @@
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
-    "rimraf": "^5.0.5",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
-    "tsup": "^8.0.2",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.3",
-    "vitest": "^1.6.1"
+    "vitest": "^3.1.3"
   }
 }
