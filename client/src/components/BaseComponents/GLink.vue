@@ -38,6 +38,7 @@ const styleClasses = computed(() => {
     return {
         "g-dark": props.dark,
         "g-thin": props.thin,
+        "g-disabled": props.disabled,
     };
 });
 
@@ -88,6 +89,7 @@ const linkElementRef = useResolveElement(linkRef);
     vertical-align: unset;
     user-select: text;
     font-weight: bold;
+    text-decoration: none;
 
     &:hover,
     &:focus,
@@ -112,6 +114,12 @@ const linkElementRef = useResolveElement(linkRef);
 
     &.g-thin {
         font-weight: normal;
+    }
+
+    &.g-disabled {
+        text-decoration: underline;
+        color: var(--color-grey-500) !important;
+        cursor: default;
     }
 }
 </style>
