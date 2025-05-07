@@ -34,6 +34,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "drawrna",
     "h5web",
     "heatmap",
+    "jupyterlite",
     "kepler",
     "ngl",
     "molstar",
