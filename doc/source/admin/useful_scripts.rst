@@ -60,6 +60,10 @@ Deleting old job metrics
 
 Galaxy stores job metrics in two tables: `job_metrics_text` and `job_metrics_numeric`.  To free up space and delete old job metrics records, please use the galaxy-delete-job-metrics script.
 
+Warning: these tables store useful data; you should only use this script if you need to reclaim space. 
+
+To view disk usage by table you can use gxadmin, a command line utility for Galaxy admins: `gxadmin query pg-table-size` (Ref: https://github.com/galaxyproject/gxadmin).
+
 .. code-block:: console
 
     $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_job_metrics.py

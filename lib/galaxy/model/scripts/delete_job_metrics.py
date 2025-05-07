@@ -16,8 +16,9 @@ from galaxy.model.orm.scripts import get_config
 
 DESCRIPTION = """
 Remove old job metrics records from database.
-Executing this script will permanently delete all text and numeric job metrics up to the supplied `updated` date/time argument."
-You should only do this if you need to reclaim space.
+Executing this script will permanently delete all text and numeric job metrics up to the supplied `updated` date/time argument.
+Warning: the job_metric_numeric and job_metric_text tables store useful data; you should only use this script if you need to reclaim space.
+To view disk usage by table you can use gxadmin, a command line utility for Galaxy admins: `gxadmin query pg-table-size` (Ref: https://github.com/galaxyproject/gxadmin).
 """
 
 
