@@ -63,6 +63,12 @@ from galaxy.web.framework import (
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
+try:
+    import galaxy.web_client
+    default_static_dir = os.path.dirname(galaxy.web_client.__file__)
+except ImportError:
+    default_static_dir = "static/"
+
 log = logging.getLogger(__name__)
 
 
@@ -1153,7 +1159,7 @@ def build_url_map(app, global_conf, **local_conf):
         return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
-    static_dir = get_static_from_config("static_dir", "static/")
+    static_dir = get_static_from_config("static_dir", default_static_dir)
     static_dir_bare = static_dir.directory.rstrip("/")
     urlmap["/static"] = static_dir
     urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
@@ -1162,8 +1168,8 @@ def build_url_map(app, global_conf, **local_conf):
     urlmap["/static/welcome.html"] = get_static_from_config(
         "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
     )
-    urlmap["/favicon.ico"] = get_static_from_config(
-        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
+    urlmap["/static/favicon.svg"] = get_static_from_config(
+        "static_favicon_dir", f"{static_dir_bare}/favicon.svg", sample=default_url_path("static/favicon.svg")
     )
     urlmap["/robots.txt"] = get_static_from_config(
         "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")
