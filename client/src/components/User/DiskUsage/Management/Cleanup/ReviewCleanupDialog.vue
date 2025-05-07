@@ -155,6 +155,19 @@ function onSort(props: { sortBy: SortableKey; sortDesc: boolean }) {
     sortDesc.value = props.sortDesc;
 }
 
+function isItemSelected(item: CleanableItem): boolean {
+    return selectedItems.value.some((selectedItem) => selectedItem.id === item.id);
+}
+
+function toggleItemSelection(item: CleanableItem): void {
+    const index = selectedItems.value.findIndex((selectedItem) => selectedItem.id === item.id);
+    if (index === -1) {
+        selectedItems.value = [...selectedItems.value, item];
+    } else {
+        selectedItems.value = selectedItems.value.filter((selectedItem) => selectedItem.id !== item.id);
+    }
+}
+
 async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
     try {
         const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
@@ -237,7 +250,10 @@ defineExpose({
                     @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <BFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
+                <BFormCheckbox
+                    :key="data.index"
+                    :checked="isItemSelected(data.item)"
+                    @change="toggleItemSelection(data.item)" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
