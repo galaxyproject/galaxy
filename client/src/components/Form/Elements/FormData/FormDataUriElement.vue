@@ -47,7 +47,7 @@ const location = computed(() => {
                 <strong>{{ props.value.identifier || "Dataset" }}</strong>
                 <i v-if="fileType">({{ fileType }})</i>
             </div>
-            <BLink v-if="location" class="location-link w-50" :href="props.value.location" target="_blank">
+            <BLink v-if="location" class="location-link w-50" :href="location" target="_blank">
                 <i>{{ location }}</i>
             </BLink>
         </div>

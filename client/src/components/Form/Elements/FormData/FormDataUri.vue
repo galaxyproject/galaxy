@@ -22,6 +22,7 @@ const props = defineProps<{
             class: 'File',
             identifier: props.value.name || 'Dataset',
             location: props.value.location || props.value.url,
+            ext: props.value.extension || props.value.filetype || props.value.ext,
         }" />
     <FormDataUriElement
         v-else-if="isDataUriData(props.value)"
@@ -29,5 +30,6 @@ const props = defineProps<{
             class: 'File',
             identifier: props.value.name || 'Data',
             location: props.value.location || props.value.url,
+            ext: props.value.extension || props.value.filetype || props.value.ext,
         }" />
 </template>
