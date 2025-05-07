@@ -11,7 +11,11 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
     deps: {
-      inline: ['openapi-fetch'],
+      optimizer: {
+        web: {
+          include: ['openapi-fetch']
+        }
+      }
     },
   },
 });
