@@ -2,6 +2,7 @@
     "compilerOptions": {
         "target": "es2020",
         "module": "es2020",
+        "moduleResolution": "node",
         
         "verbatimModuleSyntax": true,
         
@@ -13,6 +14,7 @@
         "allowJs": true,
         "checkJs": false,
         "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
         "noUncheckedIndexedAccess": true,
         
         // Necessary for now, was previously the default setting
