@@ -32,6 +32,7 @@ from galaxy.exceptions import (
     ToolMissingException,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.model import (
     Job,
     PostJobAction,
@@ -149,7 +150,9 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
-def to_cwl(value, hda_references, step: Optional[WorkflowStep] = None):
+def to_cwl(
+    value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
+):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
@@ -179,7 +182,7 @@ def to_cwl(value, hda_references, step: Optional[WorkflowStep] = None):
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
-                "path": value.get_file_name(),
+                "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
@@ -187,22 +190,33 @@ def to_cwl(value, hda_references, step: Optional[WorkflowStep] = None):
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
-            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in value.dataset_elements]
+            return [
+                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                for dce in value.dataset_elements
+            ]
         else:
             # Could be record or nested lists
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object, hda_references=hda_references, step=step
+                    element.element_object,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
                 )
             return rval
     elif isinstance(value, list):
-        return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
+        return [
+            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+        ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
-        return {k: to_cwl(v, hda_references=hda_references, step=step) for k, v in value.items()}
+        return {
+            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            for k, v in value.items()
+        }
     else:
         return value
 

@@ -945,7 +945,7 @@ class UserToolEvaluator(ToolEvaluator):
         from galaxy.workflow.modules import to_cwl
 
         hda_references: List[model.HistoryDatasetAssociation] = []
-        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references)
+        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):
