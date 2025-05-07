@@ -32,7 +32,7 @@ CONTAINER_TYPE = "container_type"
 
 class CorePluginFormatter(JobMetricFormatter):
     def __init__(self, timezone: Optional[str]):
-        self.tz = None
+        self.tz: Optional[zoneinfo.ZoneInfo] = None
         self.strftime_format = "%Y-%m-%d %H:%M:%S"
         self.__init_tz(timezone)
 
