@@ -16,7 +16,7 @@ import CreatingWhat from "./wizard/CreatingWhat.vue";
 import PasteData from "./wizard/PasteData.vue";
 import SelectDataset from "./wizard/SelectDataset.vue";
 import SelectFolder from "./wizard/SelectFolder.vue";
-import SourceFromCollection from "./wizard/SourceFromCollection.vue";
+import SourceFromCollectionApplyRules from "./wizard/SourceFromCollectionApplyRules.vue";
 import SourceFromDatasetAsTable from "./wizard/SourceFromDatasetAsTable.vue";
 import SourceFromPastedData from "./wizard/SourceFromPastedData.vue";
 import SourceFromRemoteFiles from "./wizard/SourceFromRemoteFiles.vue";
@@ -192,7 +192,7 @@ function onRuleCreate() {
                 <SourceFromRemoteFiles :selected="sourceFrom === 'remote_files'" @select="setSourceForm" />
                 <SourceFromPastedData :selected="sourceFrom === 'pasted_table'" @select="setSourceForm" />
                 <SourceFromDatasetAsTable :selected="sourceFrom === 'dataset_as_table'" @select="setSourceForm" />
-                <SourceFromCollection
+                <SourceFromCollectionApplyRules
                     v-if="creatingWhat == 'collections'"
                     :selected="sourceFrom === 'collection'"
                     @select="setSourceForm" />
