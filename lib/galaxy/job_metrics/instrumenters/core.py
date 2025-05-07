@@ -3,7 +3,6 @@
 import datetime
 import json
 import logging
-import zoneinfo
 from typing import (
     Any,
     Dict,
@@ -18,6 +17,12 @@ from ..formatting import (
     seconds_to_str,
 )
 from ..safety import Safety
+
+try:
+    import zoneinfo
+except ImportError:
+    # Python < 3.9
+    from backports import zoneinfo  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 
