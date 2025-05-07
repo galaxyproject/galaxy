@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faCircleNotch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watch } from "vue";
 
 import { type ArchiveSource, isGalaxyZipExport, isRoCrateZip, useZipExplorer } from "@/composables/zipExplorer";
 
@@ -21,7 +22,15 @@ async function loadZip() {
     }
 }
 
-loadZip();
+watch(
+    () => props.zipSource,
+    (newValue) => {
+        if (newValue) {
+            loadZip();
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>

@@ -126,6 +126,9 @@ watch(
 );
 
 async function onZipSourceChanged(source?: ArchiveSource) {
+    if (zipSource.value === source) {
+        return;
+    }
     errorMessage.value = undefined;
     resetExplorer();
     zipSource.value = source;
@@ -140,7 +143,9 @@ async function onZipSourceChanged(source?: ArchiveSource) {
 archiveExplorerEventBus.on((key, source) => {
     if (key === "set-archive-source") {
         onZipSourceChanged(source);
-        wizard.goTo("zip-file-preview");
+        if (source) {
+            wizard.goTo("zip-file-preview");
+        }
     }
 });
 </script>
