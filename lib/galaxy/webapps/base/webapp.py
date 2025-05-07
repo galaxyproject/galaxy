@@ -64,8 +64,8 @@ from galaxy.web.framework import (
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
 try:
-    import galaxy.client
-    default_static_dir = os.path.dirname(galaxy.client.__file__)
+    import galaxy.web_client
+    default_static_dir = os.path.dirname(galaxy.web_client.__file__)
 except ImportError:
     default_static_dir = "static/"
 

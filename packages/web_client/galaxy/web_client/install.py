@@ -5,24 +5,24 @@ import shutil
 import sys
 
 
-DESCRIPTION = """Install Galaxy client from package path.
+DESCRIPTION = """Install Galaxy web client from package path.
 
-This utility installs the Galaxy client from its Python package location to
+This utility installs the Galaxy web client from its Python package location to
 another location, typically in order to be served by a proxy server in
 production Galaxy installations.
 
-The --mode option specifies how the client is installed:
+The --mode option specifies how the web client is installed:
 
     relative (default):
-        Create a symlink at DEST with a relative path target to the Galaxy
+        Create a symlink at DEST with a relative path target to the Galaxy web
         client's package directory
 
     absolute:
-        Create a symlink at DEST with an absolute path target to the Galaxy
+        Create a symlink at DEST with an absolute path target to the Galaxy web
         client's package directory
 
     copy:
-        Copy the Galaxy client to DEST
+        Copy the Galaxy web client to DEST
 """
 
 CLIENT = os.path.join(os.path.dirname(__file__))
@@ -34,7 +34,7 @@ def main(argv=None):
     args = _arg_parser().parse_args(argv)
 
     dist = os.path.join(CLIENT, "dist")
-    assert os.path.exists(dist), f"ERROR: Cannot find client at expected path: {dist}"
+    assert os.path.exists(dist), f"ERROR: Cannot find web client at expected path: {dist}"
     if args.mode in ("absolute", "relative"):
         _symlink(args.dest, args.mode == "absolute", args.force_overwrite)
     elif args.mode == "copy":
