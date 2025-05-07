@@ -126,7 +126,7 @@ class InputsUsed(Linter):
                 continue
             if not is_valid_cheetah_placeholder(param_name):
                 continue
-            if _param_in_compiled_cheetah(param, param_name, code):
+            if _param_in_compiled_cheetah(param_name, code):
                 continue
             if param_name in filter_code:
                 continue
