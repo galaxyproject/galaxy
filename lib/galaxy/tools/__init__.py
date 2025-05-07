@@ -3869,7 +3869,9 @@ class FilterDatasetsTool(DatabaseOperationTool):
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
             if element_identifier in element_identifiers_to_replace:
-                new_elements[element_identifier] = replacement_dataset.copy(copy_tags=dce.element_object.tags, flush=False)
+                new_elements[element_identifier] = replacement_dataset.copy(
+                    copy_tags=dce.element_object.tags, flush=False
+                )
                 continue
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
@@ -3918,7 +3920,12 @@ class FilterDatasetsTool(DatabaseOperationTool):
                 if valid:
                     elements_to_copy.append(element)
 
-        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy, element_identifiers_to_replace=element_identifiers_to_replace, replacement_dataset=replacement_dataset)
+        new_elements = self._get_new_elements(
+            history=history,
+            elements_to_copy=elements_to_copy,
+            element_identifiers_to_replace=element_identifiers_to_replace,
+            replacement_dataset=replacement_dataset,
+        )
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
