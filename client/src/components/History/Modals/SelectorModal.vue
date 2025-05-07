@@ -105,7 +105,6 @@ function setFilterValue(newFilter: string, newValue: string) {
 // https://github.com/galaxyproject/galaxy/issues/17711
 const modalBodyClasses = computed(() => {
     return [
-        "history-selector-modal-body",
         showAdvanced.value
             ? "history-selector-modal-body-allow-overflow"
             : "history-selector-modal-body-prevent-overflow",
@@ -171,11 +170,6 @@ const modalBodyClasses = computed(() => {
 </template>
 
 <style scoped lang="scss">
-.history-selector-modal-body {
-    display: flex;
-    flex-direction: column;
-}
-
 .history-selector-modal-body-allow-overflow {
     overflow: visible;
 }
