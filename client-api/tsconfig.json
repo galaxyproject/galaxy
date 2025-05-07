@@ -1,8 +1,22 @@
 {
     "compilerOptions": {
-      "baseUrl": ".",
-      "paths": {
-        "@/*": ["src/*"]
-      }
-    }
-  }
+        "target": "es2020",
+        "module": "es2020",
+        
+        "verbatimModuleSyntax": true,
+        
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+        
+        "allowJs": true,
+        "checkJs": false,
+        "allowSyntheticDefaultImports": true,
+        "noUncheckedIndexedAccess": true,
+        
+        // Necessary for now, was previously the default setting
+        "resolvePackageJsonExports": false
+    },
+    "include": ["./src/**/*.ts"]
+}
