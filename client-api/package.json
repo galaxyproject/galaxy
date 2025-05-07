@@ -3,11 +3,25 @@
   "version": "1.0.0",
   "description": "A client library for the Galaxy API",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -30,7 +44,9 @@
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
+    "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
+    "tsup": "^8.0.2",
     "typescript": "^5.8.3",
     "vitest": "^1.6.1"
   }

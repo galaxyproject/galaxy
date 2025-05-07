@@ -120,8 +120,18 @@ Key symlinks:
 To work on this package:
 
 1. Make changes to the API type definitions in the main Galaxy client
-2. The type changes will automatically be available in this package
-3. No separate build process is required
+2. The type changes will automatically be available in this package via symlinks
+3. Build the library for distribution:
+   ```bash
+   # Install dependencies
+   npm install
+
+   # Build the library
+   npm run build
+   
+   # Watch mode for development
+   npm run dev
+   ```
 
 ### Testing
 
