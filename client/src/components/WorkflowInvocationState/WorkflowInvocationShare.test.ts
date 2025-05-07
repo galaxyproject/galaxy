@@ -8,6 +8,7 @@ import { useServerMock } from "@/api/client/__mocks__/index";
 import { useUserStore } from "@/stores/userStore";
 
 import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 // Constants
 const WORKFLOW_OWNER = "test-user";
@@ -40,8 +41,7 @@ const CLIPBOARD_MSG = "The link to the invocation has been copied to your clipbo
 
 const SELECTORS = {
     SHARE_ICON_BUTTON: "[data-button-share]",
-    MODAL: "[data-description='share invocation modal']",
-};
+} as const;
 
 // Mock the toast composable to track the messages
 const MSG = 0;
@@ -168,12 +168,12 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare();
 
         // Initially, the modal is not visible and opens when the button is clicked
-        expect(wrapper.find(SELECTORS.MODAL).attributes("visible")).toBeUndefined();
+        expect(wrapper.find(GModal).props("show")).toBeFalsy();
         await openShareModal(wrapper);
-        expect(wrapper.find(SELECTORS.MODAL).attributes("visible")).toBe("true");
+        expect(wrapper.find(GModal).props("show")).toBeTruthy();
 
-        expect(wrapper.find(SELECTORS.MODAL).text()).toContain(TEST_WORKFLOW.name);
-        expect(wrapper.find(SELECTORS.MODAL).text()).toContain(TEST_HISTORY.name);
+        expect(wrapper.find(GModal).text()).toContain(TEST_WORKFLOW.name);
+        expect(wrapper.find(GModal).text()).toContain(TEST_HISTORY.name);
     });
 
     it("shares the workflow and history when the share button is clicked, and copies link", async () => {
@@ -182,7 +182,7 @@ describe("WorkflowInvocationShare", () => {
         await openShareModal(wrapper);
 
         // Click the share button in the modal
-        wrapper.find(SELECTORS.MODAL).vm.$emit("ok");
+        wrapper.find(GModal).vm.$emit("ok");
         await flushPromises();
 
         // We have 2 toasts
@@ -201,16 +201,16 @@ describe("WorkflowInvocationShare", () => {
     it("renders nothing when the user does not own the workflow", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(false);
         expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
-        expect(wrapper.find(SELECTORS.MODAL).exists()).toBe(false);
+        expect(wrapper.find(GModal).exists()).toBeFalsy();
     });
 
     it("just copies link and does not open modal if both workflow and history are already shareable", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        expect(wrapper.find(SELECTORS.MODAL).attributes("visible")).toBeUndefined();
+        expect(wrapper.find(GModal).props("visible")).toBeFalsy();
         await openShareModal(wrapper);
-        expect(wrapper.find(SELECTORS.MODAL).attributes("visible")).toBeUndefined();
+        expect(wrapper.find(GModal).props("visible")).toBeFalsy();
 
         // Instead we already have a singular toast with the link copied message
         const toasts = toastMock.mock.calls;
