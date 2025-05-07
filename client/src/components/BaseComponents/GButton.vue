@@ -127,6 +127,7 @@ useAccessibleHover(
         :aria-describedby="describedBy"
         :aria-disabled="props.disabled"
         :disabled="baseComponent === 'button' && props.disabled"
+        tabindex="0"
         v-bind="$attrs"
         @click="onClick">
         <slot></slot>
@@ -329,6 +330,11 @@ useAccessibleHover(
                 }
             }
         }
+    }
+
+    // bootstrap override. TODO: remove
+    &:disabled {
+        opacity: 1;
     }
 }
 </style>
