@@ -31,7 +31,7 @@ class TapisOAuth2(BaseOAuth2):
     USE_BASIC_AUTH = True
 
     # Upstream this is initialized to None, but it is expected this will be a list of tuples
-    EXTRA_DATA = [  # type: ignore[assignment]
+    EXTRA_DATA = [
         ("refresh_token", "refresh_token"),
     ]
 
@@ -92,6 +92,7 @@ class TapisOAuth2(BaseOAuth2):
         )
         self.process_error(response)
         result = response.get("result")
+        assert result
         token = result.get("access_token")
         # ignore B026, we keep the same signature as the base class
         return self.do_auth(token, response=response, *args, **kwargs)  # noqa: B026
