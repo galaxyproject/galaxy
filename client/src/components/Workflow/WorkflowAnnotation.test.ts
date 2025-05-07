@@ -127,7 +127,7 @@ describe("WorkflowAnnotation renders", () => {
             if (version === "run_form") {
                 expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).exists()).toBe(false);
             } else {
-                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toBe(TEST_HISTORY.name);
+                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toContain(TEST_HISTORY.name);
             }
 
             // Since this is the user's own workflow, the indicators link

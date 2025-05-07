@@ -4,6 +4,7 @@ import { createPopper } from "@popperjs/core";
 import { watchImmediate } from "@vueuse/core";
 import { ref } from "vue";
 
+import { useAccessibleHover } from "@/composables/accessibleHover";
 import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
@@ -76,6 +77,8 @@ function hide() {
         modifiers: [...(options.modifiers ?? []), { name: "eventListeners", enabled: false }],
     }));
 }
+
+useAccessibleHover(() => props.reference, show, hide);
 
 defineExpose({
     show,
