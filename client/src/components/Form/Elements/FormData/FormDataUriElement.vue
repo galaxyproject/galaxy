@@ -26,7 +26,7 @@ const location = computed(() => {
 </script>
 
 <template>
-    <div v-if="isDataUriCollectionElementCollection(props.value)">
+    <div v-if="isDataUriCollectionElementCollection(props.value)" data-description="uri element collection">
         <div
             tabindex="0"
             role="button"
@@ -41,13 +41,18 @@ const location = computed(() => {
             <FormDataUriElement v-for="(element, index) in props.value.elements" :key="index" :value="element" />
         </BCollapse>
     </div>
-    <div v-else>
+    <div v-else data-description="uri element file">
         <div class="form-example-data-element rounded d-flex justify-content-between align-items-center w-100">
             <div class="w-50">
-                <strong>{{ props.value.identifier || "Dataset" }}</strong>
-                <i v-if="fileType">({{ fileType }})</i>
+                <strong data-description="uri element identifier">{{ props.value.identifier || "Dataset" }}</strong>
+                <i v-if="fileType" data-description="uri element ext">({{ fileType }})</i>
             </div>
-            <BLink v-if="location" class="location-link w-50" :href="location" target="_blank">
+            <BLink
+                v-if="location"
+                class="location-link w-50"
+                :href="location"
+                target="_blank"
+                data-description="uri location">
                 <i>{{ location }}</i>
             </BLink>
         </div>
