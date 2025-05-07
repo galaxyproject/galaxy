@@ -15,4 +15,32 @@
         <requirement type="npm" version="0.0.0" package="@galaxyproject/jupyterlite"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.ipynb" ftype="ipynb" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is JupyterLite?
+
+**JupyterLite** is a lightweight version of JupyterLab that runs entirely in your web browser—no server required. It allows you to create, edit, and run notebooks using WebAssembly-based Python kernels (like Pyodide) or JavaScript kernels, all without installing anything on your local machine.
+
+This integration brings JupyterLite directly into Galaxy, enabling you to:
+
+- Open and run notebooks attached to Galaxy datasets.
+- Perform interactive data analysis within the Galaxy interface.
+- Save notebooks back into your Galaxy history.
+
+#### Key Features
+
+- **Fully Browser-Based**: No backend required—everything runs in the browser.
+- **Notebook Editing**: Create and edit `.ipynb` notebooks with code, text, and outputs.
+- **Language Support**: Run Python (via Pyodide) and other WebAssembly-compatible kernels.
+- **Galaxy Integration**: Open notebooks from your Galaxy datasets and export your changes directly back into your history.
+
+Whether you're exploring data, prototyping analyses, or documenting workflows, JupyterLite provides a smooth, install-free notebook experience right inside Galaxy.
+
+To learn more, visit:
+[https://jupyterlite.readthedocs.io/](https://jupyterlite.readthedocs.io/)
+    ]]></help>
 </visualization>
