@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BCollapse, BLink } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
 import { type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
 
@@ -9,20 +9,6 @@ const props = defineProps<{
 }>();
 
 const expanded = ref(false);
-
-const fileType = computed(() => {
-    if (!isDataUriCollectionElementCollection(props.value)) {
-        return props.value.extension || props.value.filetype || props.value.ext;
-    }
-    return null;
-});
-
-const location = computed(() => {
-    if (!isDataUriCollectionElementCollection(props.value)) {
-        return props.value.location || props.value.url;
-    }
-    return null;
-});
 </script>
 
 <template>
@@ -34,7 +20,7 @@ const location = computed(() => {
             @click="expanded = !expanded"
             @keydown.enter="expanded = !expanded">
             <strong>{{ props.value.identifier || "Collection" }}</strong>
-            <i v-if="props.value.type">({{ props.value.type }})</i>
+            <i v-if="props.value.collection_type">({{ props.value.collection_type }})</i>
             <span class="float-right"> {{ expanded ? "Hide" : "Show" }} elements </span>
         </div>
         <BCollapse :visible="expanded" class="pl-2">
@@ -45,15 +31,15 @@ const location = computed(() => {
         <div class="form-example-data-element rounded d-flex justify-content-between align-items-center w-100">
             <div class="w-50">
                 <strong data-description="uri element identifier">{{ props.value.identifier || "Dataset" }}</strong>
-                <i v-if="fileType" data-description="uri element ext">({{ fileType }})</i>
+                <i v-if="props.value.ext" data-description="uri element ext">({{ props.value.ext }})</i>
             </div>
             <BLink
-                v-if="location"
+                v-if="props.value.location"
                 class="location-link w-50"
-                :href="location"
+                :href="props.value.location"
                 target="_blank"
                 data-description="uri location">
-                <i>{{ location }}</i>
+                <i>{{ props.value.location }}</i>
             </BLink>
         </div>
     </div>

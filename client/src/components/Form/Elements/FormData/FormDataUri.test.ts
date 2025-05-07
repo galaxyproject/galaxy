@@ -1,13 +1,7 @@
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import {
-    SINGULAR_DATA_URI,
-    SINGULAR_FILE_URI,
-    SINGULAR_FILE_URI_ALIAS,
-    SINGULAR_LIST_URI,
-    SINGULAR_LIST_URI_ALIAS,
-} from "./testData/uriData";
+import { SINGULAR_DATA_URI, SINGULAR_FILE_URI, SINGULAR_LIST_URI } from "./testData/uriData";
 import { type DataUri, type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
 
 import FormDataUri from "./FormDataUri.vue";
@@ -30,25 +24,19 @@ function initWrapper(value: DataUri) {
     return wrapper;
 }
 
-function assertLocationIsFound(
-    wrapper: Wrapper<Vue>,
-    uriData: DataUri | DataUriCollectionElement,
-    locationKey = "url"
-) {
-    if (!(locationKey in uriData)) {
-        throw new Error(
-            `The DataUri type is not DataUriData, or is expected to have the wrong location key: "${locationKey}"`
-        );
+function assertLocationIsFound(wrapper: Wrapper<Vue>, uriData: DataUri | DataUriCollectionElement) {
+    if (!("location" in uriData)) {
+        throw new Error("The DataUri type does not have a url property");
     }
 
-    expect(wrapper.find(SELECTORS.URI_LOCATION).text()).toBe(uriData[locationKey as keyof typeof uriData]);
+    expect(wrapper.find(SELECTORS.URI_LOCATION).text()).toBe(uriData.location);
 }
 
 function assertIdentifierIsFound(
     wrapper: Wrapper<Vue>,
     uriData: DataUri | DataUriCollectionElement,
     hasIdentifier = false,
-    expectIdentifier = "Dataset"
+    expectIdentifier = "File"
 ) {
     if (hasIdentifier) {
         if (!("identifier" in uriData)) {
@@ -57,30 +45,6 @@ function assertIdentifierIsFound(
         expect(wrapper.find(SELECTORS.URI_IDENTIFIER).text()).toBe((uriData as DataUriCollectionElement).identifier);
     } else {
         expect(wrapper.find(SELECTORS.URI_IDENTIFIER).text()).toBe(expectIdentifier);
-    }
-}
-
-function assertUriDataCollectionValues(wrapper: Wrapper<Vue>, testUriDataCollection: DataUri, locationKey = "url") {
-    if (!("elements" in testUriDataCollection)) {
-        throw new Error("The `DataUri` type is not `DataUriCollection`");
-    }
-    expect(wrapper.findAll(SELECTORS.URI_ELEMENT_COLLECTION).length).toBe(1);
-
-    const collectionElements = wrapper.findAll(SELECTORS.URI_ELEMENT_FILE);
-    expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
-
-    for (let i = 0; i < collectionElements.length; i++) {
-        const element = collectionElements.at(i);
-        const expectedElement = testUriDataCollection.elements[i];
-        if (!expectedElement) {
-            throw new Error("No element found");
-        }
-
-        expect(isDataUriCollectionElementCollection(expectedElement)).toBe(false);
-
-        assertLocationIsFound(element, expectedElement, locationKey);
-
-        assertIdentifierIsFound(element, expectedElement, true);
     }
 }
 
@@ -97,31 +61,35 @@ describe("FormDataUri", () => {
         const wrapper = initWrapper(SINGULAR_FILE_URI);
         expect(wrapper.findAll(SELECTORS.URI_ELEMENT_FILE).length).toBe(1);
 
-        assertLocationIsFound(wrapper, SINGULAR_FILE_URI, "location");
+        assertLocationIsFound(wrapper, SINGULAR_FILE_URI);
         assertIdentifierIsFound(wrapper, SINGULAR_FILE_URI);
     });
 
-    it("renders a singular file input correctly with alias", () => {
-        const wrapper = initWrapper(SINGULAR_FILE_URI_ALIAS);
-        expect(wrapper.findAll(SELECTORS.URI_ELEMENT_FILE).length).toBe(1);
-
-        assertLocationIsFound(wrapper, SINGULAR_FILE_URI_ALIAS);
-        assertIdentifierIsFound(wrapper, SINGULAR_FILE_URI_ALIAS);
-    });
-
     it("renders a singular list input correctly", () => {
-        const testUriData = SINGULAR_LIST_URI;
+        const testUriDataCollection = SINGULAR_LIST_URI;
 
-        const wrapper = initWrapper(testUriData);
+        const wrapper = initWrapper(testUriDataCollection);
 
-        assertUriDataCollectionValues(wrapper, testUriData, "location");
-    });
+        if (!("elements" in testUriDataCollection)) {
+            throw new Error("The `DataUri` type is not `DataUriCollection`");
+        }
+        expect(wrapper.findAll(SELECTORS.URI_ELEMENT_COLLECTION).length).toBe(1);
 
-    it("renders a singular list input correctly with alias", () => {
-        const testUriData = SINGULAR_LIST_URI_ALIAS;
+        const collectionElements = wrapper.findAll(SELECTORS.URI_ELEMENT_FILE);
+        expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
 
-        const wrapper = initWrapper(testUriData);
+        for (let i = 0; i < collectionElements.length; i++) {
+            const element = collectionElements.at(i);
+            const expectedElement = testUriDataCollection.elements[i];
+            if (!expectedElement) {
+                throw new Error("No element found");
+            }
 
-        assertUriDataCollectionValues(wrapper, testUriData);
+            expect(isDataUriCollectionElementCollection(expectedElement)).toBe(false);
+
+            assertLocationIsFound(element, expectedElement);
+
+            assertIdentifierIsFound(element, expectedElement, true);
+        }
     });
 });

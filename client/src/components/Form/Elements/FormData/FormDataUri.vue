@@ -12,24 +12,20 @@ const props = defineProps<{
     <FormDataUriElement
         v-if="isDataUriCollection(props.value)"
         :value="{
-            class: 'Collection',
-            elements: props.value.elements,
+            ...props.value,
             identifier: props.value.name || 'Collection',
         }" />
     <FormDataUriElement
         v-else-if="isDataUriFile(props.value)"
         :value="{
-            class: 'File',
-            identifier: props.value.name || 'Dataset',
-            location: props.value.location || props.value.url,
-            ext: props.value.extension || props.value.filetype || props.value.ext,
+            ...props.value,
+            identifier: props.value.name || 'File',
         }" />
     <FormDataUriElement
         v-else-if="isDataUriData(props.value)"
         :value="{
+            ...props.value,
             class: 'File',
             identifier: props.value.name || 'Data',
-            location: props.value.location || props.value.url,
-            ext: props.value.extension || props.value.filetype || props.value.ext,
         }" />
 </template>

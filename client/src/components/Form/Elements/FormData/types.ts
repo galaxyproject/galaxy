@@ -3,62 +3,57 @@
  * `lib/galaxy/tool_util_models/parameters.py`.
  */
 
-type BaseDataUri = {
-    // Must have one of these 2
-    url?: string;
-    location?: string; // alias for `url`
+interface DatasetHash {
+    hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+    hash_value: string;
+}
 
-    extension?: string;
-    filetype?: string; // alias for `ext`)
-    ext?: string;
+interface BaseDataUri {
+    location: string;
+    name?: string | null;
+    ext: string;
+    dbkey?: string;
+    deferred?: boolean;
+    created_from_basename?: string | null;
+    info?: string | null;
+    hashes?: DatasetHash[] | null;
+    space_to_tab?: boolean;
+    to_posix_lines?: boolean;
+}
 
-    name?: string;
-};
-
-type DataUriData = BaseDataUri & {
+interface DataUriData extends BaseDataUri {
     src: "url";
-};
+}
 
-type DataUriFile = BaseDataUri & {
-    // Must have one of these 2
-    class?: "File";
-    class_?: "File"; // alias for `class`
-};
+interface DataUriFile extends BaseDataUri {
+    class: "File";
+}
 
-export type DataUriCollectionElementFile = DataUriFile & {
+export interface DataUriCollectionElementFile extends DataUriFile {
     identifier: string;
-};
+}
 
-export type DataUriCollectionElementCollection = {
-    // Must have one of these 2
-    class?: "Collection";
-    class_?: "Collection"; // alias for `class`
-
+export interface DataUriCollectionElementCollection {
+    class: "Collection";
     identifier: string;
-
-    type?: string;
-    collection_type?: string;
-
+    collection_type: string;
     elements: DataUriCollectionElement[];
-};
+}
 
-type DataUriCollection = {
-    // Must have one of these 2
-    class?: "Collection";
-    class_?: "Collection"; // alias for `class`
-
+interface DataUriCollection {
+    class: "Collection";
     collection_type: string;
     elements: DataUriCollectionElement[];
     deferred?: boolean;
-    name?: string;
-};
+    name?: string | null;
+}
 
 export type DataUriCollectionElement = DataUriCollectionElementFile | DataUriCollectionElementCollection;
 
 export type DataUri = DataUriData | DataUriFile | DataUriCollection;
 
 function isBaseDataUri(item: object): item is BaseDataUri {
-    return Boolean(item) && ("url" in item || "location" in item);
+    return Boolean(item) && "location" in item && "ext" in item;
 }
 
 export function isDataUriData(item: object): item is DataUriData {
@@ -66,17 +61,11 @@ export function isDataUriData(item: object): item is DataUriData {
 }
 
 export function isDataUriFile(item: object): item is DataUriFile {
-    return (
-        (isBaseDataUri(item) && ("class" in item || "class_" in item) && (item as DataUriFile).class === "File") ||
-        (item as DataUriFile).class_ === "File"
-    );
+    return isBaseDataUri(item) && "class" in item && item.class === "File";
 }
 
 export function isDataUriCollection(item: object): item is DataUriCollection {
-    return (
-        (("class" in item || "class_" in item) && (item as DataUriCollection).class === "Collection") ||
-        (item as DataUriCollection).class_ === "Collection"
-    );
+    return Boolean(item) && "class" in item && item.class === "Collection" && "elements" in item;
 }
 
 export function isDataUri(item: object): item is DataUri {
@@ -86,7 +75,7 @@ export function isDataUri(item: object): item is DataUri {
 export function isDataUriCollectionElementCollection(
     item: DataUriCollectionElement
 ): item is DataUriCollectionElementCollection {
-    return item.class === "Collection" || item.class_ === "Collection";
+    return item.class === "Collection";
 }
 
 export type DataOption = {
