@@ -77,7 +77,7 @@ class TapisOAuth2(BaseOAuth2):
         self.process_error(self.data)
         state = self.validate_state()
         data, params = None, None
-            data = self.auth_complete_params(state)
+        data = self.auth_complete_params(state)
 
         response = self.request_access_token(
             self.access_token_url(),
@@ -88,8 +88,8 @@ class TapisOAuth2(BaseOAuth2):
             method=self.ACCESS_TOKEN_METHOD,
         )
         self.process_error(response)
-        result = response.get("result")
-        token = result.get("access_token")
+        result = response.get("result") or {}
+        token = result.get("access_token") or {}
         # ignore B026, we keep the same signature as the base class
         return self.do_auth(token, response=response, *args, **kwargs)  # noqa: B026
 
