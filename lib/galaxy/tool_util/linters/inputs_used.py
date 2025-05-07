@@ -130,12 +130,19 @@ class InputsUsed(Linter):
                 continue
             if param_name in filter_code:
                 continue
-            # TODO We need to check if the referenced parameter is the current one
-            if (
-                tool_xml.find("./inputs//param/options[@from_dataset]") is not None
-                or tool_xml.find("./inputs//param/options/filter[@ref]") is not None
-            ):
+            from_dataset = [
+                options.attrib["from_dataset"] for options in tool_xml.findall("./inputs//param/options[@from_dataset]")
+            ]
+            if param_name in from_dataset:
                 continue
+            ref = [filter.attrib["ref"] for filter in tool_xml.findall("./inputs//param/options/filter[@ref]")]
+            if param_name in ref:
+                continue
+            # check in parameter has a expression validator (e.g. tools with a non-commercial-use parameter)
+            validator = param.find("./validator")
+            if validator is not None and validator.attrib.get("type") == "expression" and "value" in validator.text:
+                continue
+
             if param.getparent().tag == "conditional":
                 continue
 
