@@ -89,8 +89,11 @@ class TapisOAuth2(BaseOAuth2):
         )
         self.process_error(response)
         result = response.get("result")
-        assert result
+        if not result:
+            raise ValueError("No result found in Tapis authentication response")
         token = result.get("access_token")
+        if not token:
+            raise ValueError("No access token found in Tapis authentication response")
         # ignore B026, we keep the same signature as the base class
         return self.do_auth(token, response=response, *args, **kwargs)  # noqa: B026
 
