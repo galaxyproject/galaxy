@@ -5,10 +5,13 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { useRouter } from "vue-router/composables";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -20,6 +23,8 @@ import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+
+const router = useRouter();
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
@@ -45,6 +50,8 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<WorkflowSummary | null>(null);
 const workflowImportedAttempted = ref(false);
+
+const { confirm } = useConfirmDialog();
 
 async function onImport() {
     if (!workflow.value || !workflow.value.owner) {
@@ -85,6 +92,32 @@ const executeButtonTooltip = computed(() => {
         return localize("Execute this workflow");
     }
 });
+
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+async function rerunWorkflow() {
+    if (!props.invocation) {
+        return;
+    }
+    if (props.invocation.history_id === currentHistoryId.value) {
+        router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
+        return;
+    }
+    const confirmed = await confirm(
+        localize(
+            "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?"
+        ),
+        {
+            title: localize("Change History and Rerun Workflow"),
+            okTitle: localize("Change History and Rerun"),
+            okVariant: "primary",
+        }
+    );
+
+    if (confirmed) {
+        router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
+    }
+}
 </script>
 
 <template>
@@ -159,7 +192,7 @@ const executeButtonTooltip = computed(() => {
                         color="blue"
                         size="small"
                         :disabled="workflow.deleted"
-                        :to="`/workflows/rerun?invocation_id=${props.invocation.id}`">
+                        @click="rerunWorkflow">
                         <FontAwesomeIcon :icon="faRedo" fixed-width />
                         <span v-localize>Rerun Workflow</span>
                     </GButton>
