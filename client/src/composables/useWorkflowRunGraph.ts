@@ -1,6 +1,7 @@
 import { faCheckCircle, faExclamationCircle, faSpinner, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref } from "vue";
 
+import { type DataUri, isDataUri, isDataUriCollection } from "@/components/Form/Elements/FormData/types";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
@@ -28,7 +29,7 @@ interface BaseDataToolParameterInput {
 }
 interface DataToolParameterInput extends BaseDataToolParameterInput {}
 interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {}
-export type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | null;
+export type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | DataUri | null;
 
 interface WorkflowRunStepInfo {
     headerClass?: Record<string, boolean>;
@@ -126,7 +127,14 @@ export function useWorkflowRunGraph(
         if (modelClass === "BooleanToolParameter") {
             return getStepDescription(dataInput as boolean, true);
         } else if (modelClass === "DataToolParameter" || modelClass === "DataCollectionToolParameter") {
-            dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
+            if (dataInput && typeof dataInput === "object" && isDataUri(dataInput)) {
+                return getStepDescription(
+                    dataInput.name || (isDataUriCollection(dataInput) ? "Collection provided" : "File provided"),
+                    true
+                );
+            } else {
+                dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
+            }
             const inputVals = dataInput?.values;
             const options = formInput?.options;
 
