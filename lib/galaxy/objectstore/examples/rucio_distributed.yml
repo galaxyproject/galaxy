@@ -20,8 +20,8 @@ backends:
     download_schemes:
       - rse: TEST
         scheme: file
-        ignore_checksum: False
+        ignore_checksum: false
     cache:
       path: database/object_store_cache_rucio
       size: 1000
-      cache_updated_data: True
+      cache_updated_data: true
