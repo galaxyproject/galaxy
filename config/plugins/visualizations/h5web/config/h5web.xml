@@ -20,6 +20,11 @@
         <requirement type="npm" version="0.5.1" package="@galaxyproject/h5web"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/hdf5.h5" ftype="h5"/>
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is H5Web?
 
