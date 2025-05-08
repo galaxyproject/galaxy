@@ -3,10 +3,8 @@ import { computed, ref } from "vue";
 
 import type { DatatypeVisualization } from "@/api/datatypeVisualizations";
 import {
-    deleteDatatypeVisualization,
     fetchDatatypeVisualizations,
     getPreferredVisualization,
-    updateDatatypeVisualization,
 } from "@/api/datatypeVisualizations";
 
 export const useDatatypeVisualizationsStore = defineStore("datatypeVisualizations", () => {
@@ -69,52 +67,7 @@ export const useDatatypeVisualizationsStore = defineStore("datatypeVisualization
         }
     }
 
-    /**
-     * Update a visualization mapping
-     */
-    async function updateMapping(mapping: DatatypeVisualization) {
-        loadingStates.value[mapping.datatype] = true;
-        errorStates.value[mapping.datatype] = "";
-
-        try {
-            const updatedMapping = await updateDatatypeVisualization(mapping);
-
-            // Update in our store
-            const index = visualizationMappings.value.findIndex((m) => m.datatype === mapping.datatype);
-            if (index >= 0) {
-                visualizationMappings.value[index] = updatedMapping;
-            } else {
-                visualizationMappings.value.push(updatedMapping);
-            }
-
-            return updatedMapping;
-        } catch (error) {
-            errorStates.value[mapping.datatype] = error instanceof Error ? error.message : String(error);
-            throw error;
-        } finally {
-            loadingStates.value[mapping.datatype] = false;
-        }
-    }
-
-    /**
-     * Delete a visualization mapping
-     */
-    async function deleteMapping(datatype: string) {
-        loadingStates.value[datatype] = true;
-        errorStates.value[datatype] = "";
-
-        try {
-            await deleteDatatypeVisualization(datatype);
-
-            // Remove from our store
-            visualizationMappings.value = visualizationMappings.value.filter((m) => m.datatype !== datatype);
-        } catch (error) {
-            errorStates.value[datatype] = error instanceof Error ? error.message : String(error);
-            throw error;
-        } finally {
-            loadingStates.value[datatype] = false;
-        }
-    }
+    // Note: Update and delete operations removed as they're now configured via XML only
 
     return {
         visualizationMappings,
@@ -123,7 +76,5 @@ export const useDatatypeVisualizationsStore = defineStore("datatypeVisualization
         mappingByDatatype,
         loadAllMappings,
         getPreferredVisualizationForDatatype,
-        updateMapping,
-        deleteMapping,
     };
 });
