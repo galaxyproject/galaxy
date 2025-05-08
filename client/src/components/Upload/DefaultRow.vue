@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faFileArchive, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
@@ -127,7 +127,7 @@ initializeExplorableArchive();
 
 <template>
     <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
-        <div class="d-flex justify-content-around">
+        <div class="d-flex justify-content-around align-items-center">
             <div>
                 <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" fixed-width />
                 <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" fixed-width />
@@ -198,16 +198,15 @@ initializeExplorableArchive();
                     @click="removeUpload" />
                 <FontAwesomeIcon v-else icon="fa-exclamation" />
             </div>
+
             <GButton
                 v-if="isExplorable"
                 class="btn-explore-archive"
                 size="small"
                 title="Explore the contents of a remote or local compressed archive and upload individual files"
                 :disabled="isAnonymous"
-                color="blue"
                 disabled-title="You must be logged in to use this feature"
                 @click="exploreZipContents">
-                <FontAwesomeIcon :icon="faFileArchive" />
                 <span v-localize>Explore</span>
             </GButton>
         </div>
