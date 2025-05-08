@@ -117,7 +117,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             title="Workflow Preview"
             hide-header
             fixed-height
-            dialog-class="workflow-card-preview-modal w-auto"
+            class="workflow-card-preview-modal"
             centered>
             <template v-slot:header>
                 <WorkflowPublishedButtons
