@@ -67,17 +67,6 @@ onBeforeUnmount(() => {
     }
 });
 
-watchImmediate(
-    () => props.show,
-    () => {
-        if (props.show) {
-            showModal();
-        } else {
-            hideModal();
-        }
-    }
-);
-
 function showModal() {
     dialog.value?.showModal();
 }
@@ -88,6 +77,17 @@ function hideModal(ok = false) {
     isOk = ok;
     dialog.value?.close();
 }
+
+watchImmediate(
+    () => props.show,
+    () => {
+        if (props.show) {
+            showModal();
+        } else {
+            hideModal();
+        }
+    }
+);
 
 function onClickDialog(event: MouseEvent) {
     if ((event.target as HTMLElement | null)?.tagName === "DIALOG") {
