@@ -14,6 +14,8 @@ pnpm add @galaxyproject/client-api
 
 ## Usage
 
+### Basic Usage
+
 ```typescript
 import { createGalaxyApi } from "@galaxyproject/client-api";
 
@@ -37,9 +39,31 @@ import { GalaxyApi } from "@galaxyproject/client-api";
 const legacyApi = GalaxyApi(); // Uses current origin
 ```
 
+### Usage with API Keys and Custom Headers
+
+```typescript
+import { createGalaxyApi } from "@galaxyproject/client-api";
+
+// Create a client with API key authentication and custom headers
+const api = createGalaxyApi({
+    baseUrl: "https://usegalaxy.org",
+    apiKey: "your-api-key-here",
+    headers: {
+        Accept: "application/json",
+    },
+    fetchOptions: {
+        credentials: "include", // Include cookies for CORS requests
+        cache: "no-cache", // Don't cache responses
+    },
+});
+
+// Now all requests will include the API key header and custom options
+const { data, error } = await api.GET("/api/histories");
+```
+
 ## Type Safety
 
-This package provides TypeScript types for all Galaxy API endpoints and models:
+This package provides TypeScript types for Galaxy API endpoints and models:
 
 ```typescript
 import { createGalaxyApi, type HistorySummary, type DatasetEntry } from "@galaxyproject/client-api";
@@ -58,9 +82,11 @@ const myHistory: HistorySummary = {
 };
 ```
 
-## Example
+## Examples
 
-The package includes a simple example in the `src/example.ts` file that demonstrates how to use the client:
+See more in `src/example.ts` that demonstrate how to use the client:
+
+### Basic Example
 
 ```typescript
 import { createGalaxyApi } from "@galaxyproject/client-api";
@@ -84,18 +110,13 @@ async function getTools() {
 }
 ```
 
-## Design Notes
+## Notes
 
-This package uses symlinks to reference API type definitions from the main Galaxy client while providing a standalone client implementation. This approach was chosen to:
+This package uses a symlink to reference API type definitions from the main Galaxy client while providing a standalone client implementation. This approach was chosen to:
 
 1. Minimize duplication of type definitions
 2. Ensure type definitions stay in sync with the main codebase
 3. Allow the client to work independently of Galaxy's internal utilities
-
-Key symlinks:
-
-- `src/api` → `../../client/src/api` (for type definitions)
-- `src/utils/error.ts` - Custom error handling utilities
 
 ## Development
 
@@ -126,24 +147,6 @@ To work on this package:
 ### Version Synchronization
 
 This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `lib/galaxy/version.py` file but formatted to comply with npm's semver requirements.
-
-#### Version Mapping
-
-Galaxy's version scheme is mapped to npm semver as follows:
-
-| Galaxy Format                              | npm/semver Format            | Example      |
-| ------------------------------------------ | ---------------------------- | ------------ |
-| VERSION_MAJOR="25.0", VERSION_MINOR=""     | major.minor.patch            | 25.0.0       |
-| VERSION_MAJOR="25.0", VERSION_MINOR="dev0" | major.minor.patch-prerelease | 25.0.0-dev.0 |
-| VERSION_MAJOR="25.0", VERSION_MINOR="rc1"  | major.minor.patch-prerelease | 25.0.0-rc.1  |
-
-The script directly converts the Galaxy version to a semver-compatible format:
-
-1. It splits Galaxy's major version (e.g., "25.0") into major and minor components
-2. It adds a patch component (always "0" for direct conversions)
-3. For prereleases (dev, rc), it adds the appropriate prerelease identifier
-
-#### Publishing Notes
 
 **Important:** npm does not allow republishing the same version, even for development versions. When making changes to the client API during development:
 

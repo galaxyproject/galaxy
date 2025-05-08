@@ -1,12 +1,39 @@
 // Example usage of the Galaxy API client
 import { createGalaxyApi } from "./index";
 
-// Create a client
-const api = createGalaxyApi("https://usegalaxy.org");
+//
+// Basic usage - just provide a base URL
+//
+const basicApi = createGalaxyApi("https://usegalaxy.org");
+
+//
+// Advanced usage - with API key authentication and custom headers
+//
+const authenticatedApi = createGalaxyApi({
+    baseUrl: "https://usegalaxy.org",
+    apiKey: "your-api-key-here",
+    headers: {
+        Accept: "application/json",
+        "User-Agent": "GalaxyClientApp/1.0",
+    },
+});
+
+//
+// Example with request options (timeouts, credentials, etc.)
+//
+const apiWithOptions = createGalaxyApi({
+    baseUrl: "https://usegalaxy.org",
+    fetchOptions: {
+        credentials: "include", // Include cookies for CORS requests
+        cache: "no-cache", // Don't cache responses
+        timeout: 30000, // 30 second timeout
+    },
+});
 
 // Example function to get a list of tools
 async function getTools() {
-    const { data, error } = await api.GET("/api/tools");
+    // Using the basic API
+    const { data, error } = await basicApi.GET("/api/tools");
 
     if (error) {
         console.error("Error fetching tools:", error);
@@ -34,7 +61,8 @@ async function getTools() {
 
 // Example function to get a specific tool by ID
 async function getToolById(id: string) {
-    const { data, error } = await api.GET("/api/tools/{tool_id}", {
+    // Using the authenticated API
+    const { data, error } = await authenticatedApi.GET("/api/tools/{tool_id}", {
         params: {
             path: {
                 tool_id: id,
@@ -50,4 +78,28 @@ async function getToolById(id: string) {
     return data;
 }
 
-export { getTools, getToolById };
+// Example function to create a dataset in a history
+async function createDataset(historyId: string, name: string, content: string) {
+    // Using the API with custom options
+    const { data, error } = await apiWithOptions.POST("/api/histories/{history_id}/contents", {
+        params: {
+            path: {
+                history_id: historyId,
+            },
+        },
+        body: {
+            name,
+            content,
+            type: "file",
+        },
+    });
+
+    if (error) {
+        console.error("Error creating dataset:", error);
+        return null;
+    }
+
+    return data;
+}
+
+export { getTools, getToolById, createDataset };
