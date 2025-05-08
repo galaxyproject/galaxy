@@ -273,6 +273,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
+    "CONVERTER_archive_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "pileup_interval",
