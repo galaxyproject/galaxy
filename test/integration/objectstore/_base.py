@@ -34,15 +34,25 @@ OBJECT_STORE_CONFIG = string.Template(
 )
 RUCIO_OBJECT_STORE_CONFIG = string.Template(
     """
-<object_store type="rucio">
-    <rucio_auth account="${rucio_account}" host="http://${host}:${port}" username="${rucio_username}" password="${rucio_password}" type="userpass" />
-    <rucio_connection host="http://${host}:${port}"/>
-    <rucio_upload_scheme rse="${rucio_rse}" scheme="file" scope="galaxy"/>
-    <rucio_download_scheme rse="${rucio_rse}" scheme="file"/>
-    <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
-    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_rucio"/>
-    <extra_dir type="temp" path="${temp_directory}"/>
-</object_store>
+    type: rucio
+    upload_rse_name: ${rucio_rse}
+    upload_scheme: file
+    register_only: false
+    download_schemes:
+      - rse: ${rucio_rse}
+        scheme: file
+        ignore_checksum: false
+    scope: galaxy
+    host: http://${host}:${port}
+    account: ${rucio_account}
+    auth_host: http://${host}:${port}
+    username: ${rucio_username}
+    password: ${rucio_password}
+    auth_type: userpass
+    cache:
+      path: ${temp_directory}/object_store_cache
+      size: 1000
+      cache_updated_data: ${cache_updated_data}
 """
 )
 AZURE_OBJECT_STORE_CONFIG = string.Template(
@@ -257,7 +267,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        config_path = os.path.join(temp_directory, "object_store_conf.yml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True

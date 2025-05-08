@@ -40,7 +40,7 @@ from galaxy.util.config_templates import (
 
 ObjectStoreTemplateVariableType = TemplateVariableType
 ObjectStoreTemplateVariableValueType = TemplateVariableValueType
-ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata"]
+ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio"]
 
 
 class S3AuthTemplate(StrictModel):
@@ -320,6 +320,40 @@ class OnedataObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
+class RucioObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["rucio"]
+    scope: str
+    upload_rse_name: str
+    upload_scheme: Optional[Any] = None
+    download_schemes: Optional[Any] = None
+    auth_host: str
+    host: str
+    auth_type: str
+    account: Union[str, TemplateExpansion]
+    username: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+    badges: BadgeList = None
+    register_only: Optional[bool] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class RucioObjectStoreConfiguration(StrictModel):
+    type: Literal["rucio"]
+    scope: str
+    upload_rse_name: str
+    upload_scheme: Optional[Any] = None
+    download_schemes: Optional[Any] = None
+    register_only: Optional[bool] = False
+    auth_host: str
+    host: str
+    auth_type: str
+    account: str
+    username: str
+    password: str
+    badges: BadgeList = None
+
+
 ObjectStoreTemplateConfiguration = Annotated[
     Union[
         AwsS3ObjectStoreTemplateConfiguration,
@@ -328,6 +362,7 @@ ObjectStoreTemplateConfiguration = Annotated[
         DiskObjectStoreTemplateConfiguration,
         AzureObjectStoreTemplateConfiguration,
         OnedataObjectStoreTemplateConfiguration,
+        RucioObjectStoreTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -340,10 +375,10 @@ ObjectStoreConfiguration = Annotated[
         AzureObjectStoreConfiguration,
         GenericS3ObjectStoreConfiguration,
         OnedataObjectStoreConfiguration,
+        RucioObjectStoreConfiguration,
     ],
     Field(discriminator="type"),
 ]
-
 
 ObjectStoreTemplateVariable = TemplateVariable
 ObjectStoreTemplateSecret = TemplateSecret
@@ -415,6 +450,7 @@ TypesToConfigurationClasses: Dict[ObjectStoreTemplateType, Type[ObjectStoreConfi
     "azure_blob": AzureObjectStoreConfiguration,
     "disk": DiskObjectStoreConfiguration,
     "onedata": OnedataObjectStoreConfiguration,
+    "rucio": RucioObjectStoreConfiguration,
 }
 
 

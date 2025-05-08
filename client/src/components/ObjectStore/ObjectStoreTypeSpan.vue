@@ -12,6 +12,7 @@ const MESSAGES = {
     generic_s3:
         "This is a storage location based on the Amazon Simple Storage Service (S3) interface, but likely not stored by Amazon. The AWS interface has become an industry standard and many storage vendors support it and use it to expose object based storage.",
     onedata: "This is a storage location based on the Onedata system.",
+    rucio: "This is a storage location based on the RUCIO system https://rucio.cern.ch/.",
 };
 
 interface Props {
