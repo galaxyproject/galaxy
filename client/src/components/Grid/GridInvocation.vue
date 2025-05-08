@@ -57,7 +57,10 @@ const effectiveTitle = computed(() => {
 
 const extraProps = computed(() => {
     if (forBatch.value) {
-        return Object.fromEntries(props.invocationsList.map((invocation) => [invocation.id, invocation]));
+        return Object.fromEntries(
+            // invocationsList is possibly undefined
+            (props.invocationsList ?? []).map((invocation) => [invocation.id, invocation])
+        );
     }
     const params: {
         workflow_id?: string;

@@ -11,11 +11,9 @@ from galaxy import (
     web,
 )
 from galaxy.webapps.base.controller import HTTPBadRequest
-from tool_shed.util import (
-    metadata_util,
-    repository_util,
-)
+from tool_shed.util import metadata_util
 from tool_shed.webapp.model import RepositoryMetadata
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)
@@ -84,7 +82,7 @@ class RepositoryRevisionsController(BaseShedAPIController):
             rd_tups = metadata["repository_dependencies"]["repository_dependencies"]
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup[0:4]
-                repository_dependency = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+                repository_dependency = get_repository_by_name_and_owner(trans.sa_session, name, owner)
                 if repository_dependency is None:
                     log.debug(f"Cannot locate repository dependency {name} owned by {owner}.")
                     continue

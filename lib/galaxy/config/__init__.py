@@ -124,6 +124,10 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "celery.utils.functional",
         },
+        "sentry_sdk.errors": {
+            "level": "INFO",
+            "qualname": "sentry_sdk.errors",
+        },
     },
     "filters": {
         "stack": {
@@ -310,7 +314,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = config_kwargs.get("__file__", None)
+            self.config_file = config_kwargs.get("__file__") or config_kwargs.get("config_file")
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
@@ -1103,7 +1107,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_celery_config()
 
         # load in the chat_prompts if openai api key is configured
-        if self.openai_api_key:
+        if self.ai_api_key:
             self._load_chat_prompts()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)

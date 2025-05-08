@@ -26,7 +26,7 @@ describe("collectionAttributesStore", () => {
         setActivePinia(createPinia());
 
         server.use(
-            http.get("/api/dataset_collections/{id}/attributes", ({ response }) => {
+            http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {
                 return response(200).json(fetchCollectionAttributesMock());
             })
         );

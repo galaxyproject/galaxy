@@ -11,9 +11,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import scoped_session
 
 from galaxy.model import CeleryUserRateLimit
-from galaxy.model.scoped_session import galaxy_scoped_session
 
 
 class GalaxyTaskBeforeStart:
@@ -45,7 +45,7 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
     def __init__(
         self,
         tasks_per_user_per_sec: float,
-        ga_scoped_session: galaxy_scoped_session,
+        ga_scoped_session: scoped_session,
     ):
         try:
             self.task_exec_countdown_secs = 1 / tasks_per_user_per_sec
@@ -68,7 +68,7 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
 
     @abstractmethod
     def calculate_task_start_time(
-        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         return now
 
@@ -80,7 +80,7 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
     """
 
     def calculate_task_start_time(
-        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         update_stmt = (
             update(CeleryUserRateLimit)
@@ -125,7 +125,7 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
     )
 
     def calculate_task_start_time(
-        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         last_scheduled_time = None
         last_scheduled_time = sa_session.scalars(self._select_stmt, {"userid": user_id}).first()

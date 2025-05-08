@@ -63,6 +63,7 @@ export interface Operation {
     icon: IconDefinition;
     condition?: (data: RowData, config: GalaxyConfiguration) => boolean;
     handler: (data: RowData) => OperationHandlerReturn;
+    loading?: (data: RowData, config: GalaxyConfiguration) => boolean;
 }
 
 interface OperationHandlerMessage {

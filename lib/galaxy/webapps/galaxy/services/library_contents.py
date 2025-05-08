@@ -22,7 +22,9 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
+    ImplicitlyConvertedDatasetAssociation,
     Library,
+    LibraryDatasetDatasetAssociation,
     tags,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -189,7 +191,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
             content_conv = self.get_library_dataset(
                 trans, payload.converted_dataset_id, check_ownership=False, check_accessible=False
             )
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+            assoc = ImplicitlyConvertedDatasetAssociation(
                 parent=content.library_dataset_dataset_association,
                 dataset=content_conv.library_dataset_dataset_association,
                 file_type=content_conv.library_dataset_dataset_association.extension,
@@ -285,13 +287,13 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 rval.append(ld)
         return rval
 
-    def _create_response(self, trans, payload, output, library_id):
+    def _create_response(self, trans: ProvidesHistoryContext, payload, output, library_id: DecodedDatabaseIdField):
         rval = []
         for v in output.values():
             if payload.extended_metadata is not None:
                 # If there is extended metadata, store it, attach it to the dataset, and index it
                 self.create_extended_metadata(trans, payload.extended_metadata)
-            if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+            if isinstance(v, LibraryDatasetDatasetAssociation):
                 v = v.library_dataset
             url = self._url_for(trans, library_id, v.id, payload.create_type)
             rval.append(dict(id=v.id, name=v.name, url=url))

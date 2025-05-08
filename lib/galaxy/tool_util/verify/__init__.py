@@ -284,7 +284,7 @@ def get_compressed_formats(attributes):
     return None if decompress else []
 
 
-def files_diff(file1, file2, attributes=None):
+def files_diff(file1: str, file2: str, attributes=None):
     """Check the contents of 2 files for differences."""
     attributes = attributes or {}
 
@@ -301,9 +301,9 @@ def files_diff(file1, file2, attributes=None):
         compressed_formats = get_compressed_formats(attributes)
         is_pdf = False
         try:
-            with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file2, compressed_formats=compressed_formats, mode="r") as fh:
                 history_data = fh.readlines()
-            with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file1, compressed_formats=compressed_formats, mode="r") as fh:
                 local_file = fh.readlines()
         except UnicodeDecodeError:
             if file1.endswith(".pdf") or file2.endswith(".pdf"):

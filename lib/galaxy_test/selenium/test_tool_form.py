@@ -139,8 +139,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         assert_input_order(["Text B", "Text C", "Text A"])
         self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
         assert_input_order(["Text C", "Text B", "Text A"])
-        self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
-        assert_input_order(["Text C", "Text B", "Text A"])
+        # no longer clickable, don't need to check the no-op here anymore.
+        # self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        # assert_input_order(["Text C", "Text B", "Text A"])
 
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(1)

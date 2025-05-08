@@ -8,11 +8,16 @@ from galaxy.app_unittest_utils.toolbox_support import (
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.util import parse_xml
 from tool_shed.tools import tool_version_manager
+from ._util import TestToolShedApp
 
 DEFAULT_GUID = "123456"
 
 
 class TestToolPanelManager(BaseToolBoxTestCase):
+    def setUp(self):
+        super().setUp()
+        self.ts_app = TestToolShedApp()
+
     def get_new_toolbox(self):
         return SimplifiedToolBox(self)
 
@@ -203,4 +208,4 @@ class TestToolPanelManager(BaseToolBoxTestCase):
 
     @property
     def tvm(self):
-        return tool_version_manager.ToolVersionManager(self.app)
+        return tool_version_manager.ToolVersionManager(self.ts_app)

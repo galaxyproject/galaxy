@@ -1,0 +1,26 @@
+RBT_PARAMETER_FILE_V1.00
+TITLE R_1YET
+RECEPTOR_FILE R_1YET_protein.mol2
+RECEPTOR_FLEX 3.0
+
+##################################################################
+### CAVITY DEFINITION: REFERENCE LIGAND METHOD
+##################################################################
+SECTION MAPPER
+        SITE_MAPPER RbtLigandSiteMapper
+        REF_MOL 1YET_c.sd
+        RADIUS 6.0
+        SMALL_SPHERE 1.0
+        MIN_VOLUME 100
+        MAX_CAVITIES 1
+        VOL_INCR 0.0
+        GRIDSTEP 0.5
+END_SECTION
+
+#################################
+#CAVITY RESTRAINT PENALTY
+#################################
+SECTION CAVITY
+        SCORING_FUNCTION        RbtCavityGridSF
+        WEIGHT                  1.0
+END_SECTION

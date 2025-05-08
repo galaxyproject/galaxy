@@ -1,7 +1,6 @@
 import json
 from typing import (
     Any,
-    cast,
     Dict,
     List,
     Optional,
@@ -81,8 +80,7 @@ def validateInputsBy(inputsBy: Optional[str]) -> Optional[str]:
     if inputsBy is not None:
         if not isinstance(inputsBy, str):
             raise ValueError(f"Invalid type for inputsBy {inputsBy}")
-        inputsByStr = cast(str, inputsBy)
-        inputsByArray: List[str] = inputsByStr.split("|")
+        inputsByArray: List[str] = inputsBy.split("|")
         for inputsByItem in inputsByArray:
             if inputsByItem not in VALID_INPUTS_BY_ITEMS:
                 raise ValueError(f"Invalid inputsBy delineation {inputsByItem}")
@@ -230,6 +228,9 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator deleted",
         description="Whether the creator of this Workflow has been deleted.",
     )
+    doi: Optional[List[str]] = Field(
+        None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
     steps: Dict[
         int,
         Annotated[
@@ -257,6 +258,16 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         ...,
         title="Email Hash",
         description="The hash of the email of the creator of this workflow",
+    )
+    readme: Optional[str] = Field(
+        ...,
+        title="Readme",
+        description="The detailed markdown readme of the workflow.",
+    )
+    help: Optional[str] = Field(
+        ...,
+        title="Help",
+        description="The detailed help text for how to use the workflow and debug problems with it.",
     )
     slug: Optional[str] = Field(
         ...,

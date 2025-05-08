@@ -23,7 +23,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <ObjectStoreSelectButtonPopover :target="target" :title="title">
+    <ObjectStoreSelectButtonPopover :target="target" :title="title ?? ''">
         <DescribeObjectStore :what="what" :storage-info="objectStore"> </DescribeObjectStore>
     </ObjectStoreSelectButtonPopover>
 </template>

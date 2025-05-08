@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Surface Plot" embeddable="true">
+    <description>Surface Plot from http://plotly.com</description>
+    <tags>
+        <tag>Plotly</tag>
+        <tag>3D</tag>
+        <tag>Surface</tag>
+    </tags>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext">tabular</test>
+            <test test_attr="ext">csv</test>
+        </data_source>
+    </data_sources>
+    <params>
+        <param required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="script" src="../../plotly/static/dist/index.js" css="../../plotly/static/dist/index.css" />
+    <specs>
+        <variant>surface</variant>
+    </specs>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/matrix_generator_for_pc_and_lda_output.tabular" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is the Surface Plot Viewer?
+
+This visualization allows you to create interactive 3D surface plots from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
+
+After selecting a dataset, a three-dimensional surface will be rendered based on your data, providing a detailed view of gradients, peaks, and valleys.
+
+#### Key Features
+
+- **3D Surface Rendering**: Visualize two-variable functions or surfaces with height and color.
+- **Interactive Controls**: Rotate, zoom, and pan the 3D plot freely.
+- **Color Mapping**: Colors reflect the surface height values for enhanced interpretation.
+- **Perspective Exploration**: Explore complex relationships and patterns in three dimensions.
+
+This tool is ideal for visualizing geographical data, scientific surfaces, or any 3D matrix-like dataset.
+
+To learn more about Plotly, visit:
+[https://plotly.com/](https://plotly.com/)
+    ]]></help>
+</visualization>

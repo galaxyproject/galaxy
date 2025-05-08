@@ -25,8 +25,15 @@ from galaxy.files.uris import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
+    DatasetPermissions,
     FormDefinition,
+    FormValues,
+    GalaxySession,
+    HistoryDatasetAssociation,
+    Job,
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
+    LibraryDatasetDatasetInfoAssociation,
     LibraryFolder,
     Role,
 )
@@ -126,7 +133,7 @@ def handle_library_params(
 def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     if not history:
         history = trans.history
-    hda = trans.app.model.HistoryDatasetAssociation(
+    hda = HistoryDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -173,11 +180,11 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
+        ld = LibraryDataset(folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
         trans.sa_session.commit()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
-    ldda = trans.app.model.LibraryDatasetDatasetAssociation(
+    ldda = LibraryDatasetDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -229,21 +236,19 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         # If the user has added field contents, we'll need to create a new form_values and info_association
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
-        form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
+        form_values = FormValues(library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
         trans.sa_session.commit()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
-        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(
-            ldda, library_bunch.template, form_values
-        )
+        info_association = LibraryDatasetDatasetInfoAssociation(ldda, library_bunch.template, form_values)
         trans.sa_session.add(info_association)
         trans.sa_session.commit()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
-            dp = trans.app.model.DatasetPermissions(
+            dp = DatasetPermissions(
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)
@@ -382,11 +387,11 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     """
     Create the upload job.
     """
-    job = trans.app.model.Job()
+    job = Job()
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
-    if isinstance(galaxy_session, trans.model.GalaxySession):
+    if isinstance(galaxy_session, GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id

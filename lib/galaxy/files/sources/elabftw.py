@@ -888,11 +888,14 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             f"?format=binary",
         )
         try:
-            with session.get(
-                url,
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                stream=True,
-            ) as response, open(native_path, "wb") as file:
+            with (
+                session.get(
+                    url,
+                    timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                    stream=True,
+                ) as response,
+                open(native_path, "wb") as file,
+            ):
                 response.raise_for_status()
                 for chunk in response.iter_content(512):
                     file.write(chunk)

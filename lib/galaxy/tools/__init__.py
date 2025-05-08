@@ -45,9 +45,16 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution import output_collect
+from galaxy.job_execution.output_collect import (
+    BaseJobContext,
+    MetadataSourceProvider,
+    PermissionProvider,
+)
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    HistoryDatasetCollectionAssociation,
     Job,
+    JobToOutputDatasetAssociation,
     StoredWorkflow,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -77,14 +84,9 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
-    HelpContent,
     InputSource,
     PageSource,
     ToolSource,
-)
-from galaxy.tool_util.parser.output_objects import (
-    ToolOutput,
-    ToolOutputCollection,
 )
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
@@ -110,6 +112,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -150,7 +153,6 @@ from galaxy.tools.parameters.dataset_matcher import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
-    Group,
     Repeat,
     Section,
     UploadDataset,
@@ -219,10 +221,21 @@ from .execute import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm.scoping import scoped_session
+
     from galaxy.app import UniverseApplication
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
+    from galaxy.model import LibraryFolder
+    from galaxy.objectstore import ObjectStore
+    from galaxy.schema.schema import JobState
+    from galaxy.tool_util.parser.output_objects import (
+        ToolOutputBase,
+        ToolOutputCollection,
+    )
+    from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tools.actions.metadata import SetMetadataToolAction
+    from galaxy.tools.parameters import ToolInputsT
 
 log = logging.getLogger(__name__)
 
@@ -421,9 +434,9 @@ class PersistentToolTagManager(AbstractToolTagManager):
 
     def reset_tags(self):
         log.info(
-            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation.id))))})"
+            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(model.ToolTagAssociation.id))))})"
         )
-        self.sa_session.execute(delete(self.app.model.ToolTagAssociation))
+        self.sa_session.execute(delete(model.ToolTagAssociation))
         self.sa_session.commit()
 
     def handle_tags(self, tool_id, tool_definition_source):
@@ -433,13 +446,13 @@ class PersistentToolTagManager(AbstractToolTagManager):
             for tag_name in tag_names:
                 if tag_name == "":
                     continue
-                stmt = select(self.app.model.Tag).filter_by(name=tag_name).limit(1)
+                stmt = select(model.Tag).filter_by(name=tag_name).limit(1)
                 tag = self.sa_session.scalars(stmt).first()
                 if not tag:
-                    tag = self.app.model.Tag(name=tag_name)
+                    tag = model.Tag(name=tag_name)
                     self.sa_session.add(tag)
                     self.sa_session.commit()
-                    tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                    tta = model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                     self.sa_session.add(tta)
                     self.sa_session.commit()
                 else:
@@ -447,7 +460,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
                         if tagged_tool.tool_id == tool_id:
                             break
                     else:
-                        tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
+                        tta = model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                         self.sa_session.add(tta)
                         self.sa_session.commit()
 
@@ -641,6 +654,7 @@ class ToolBox(AbstractToolBox):
                 tools = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
             if tools:
                 tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
+                assert tool
                 if len(tools) > 1:
                     tool_version_select_field = self.__build_tool_version_select_field(tools, tool.id, set_selected)
                 break
@@ -690,7 +704,7 @@ class ToolBox(AbstractToolBox):
         """
         id = self.app.security.decode_id(workflow_id)
         session = self.app.model.context
-        stored = session.get(StoredWorkflow, id)
+        stored = session.get_one(StoredWorkflow, id)
         return stored.latest_workflow
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
@@ -763,6 +777,186 @@ class _Options(Bunch):
     refresh: str
 
 
+class JobContext(BaseJobContext):
+    def __init__(
+        self,
+        tool: "Tool",
+        tool_provided_metadata: "BaseToolProvidedMetadata",
+        job: Job,
+        job_working_directory: str,
+        permission_provider,
+        metadata_source_provider,
+        input_dbkey,
+        object_store: "ObjectStore",
+        final_job_state: "JobState",
+        max_discovered_files: Optional[int],
+        flush_per_n_datasets=None,
+    ):
+        self.tool = tool
+        self._metadata_source_provider = metadata_source_provider
+        self._permission_provider = permission_provider
+        self._input_dbkey = input_dbkey
+        self.app = tool.app
+        self._sa_session = tool.sa_session
+        self._job = job
+        self.job_working_directory = job_working_directory
+        self.tool_provided_metadata = tool_provided_metadata
+        self._object_store = object_store
+        self.final_job_state = final_job_state
+        self._flush_per_n_datasets = flush_per_n_datasets
+        self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
+        self.discovered_file_count = 0
+        self._tag_handler = None
+
+    @property
+    def change_datatype_actions(self):
+        return self.job.get_change_datatype_actions()
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.job.galaxy_session)
+        return self._tag_handler
+
+    @property
+    def work_context(self):
+        return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
+
+    @property
+    def sa_session(self) -> "scoped_session":
+        return self._sa_session
+
+    @property
+    def permission_provider(self) -> PermissionProvider:
+        return self._permission_provider
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return self._metadata_source_provider
+
+    @property
+    def job(self) -> Job:
+        return self._job
+
+    @property
+    def flush_per_n_datasets(self) -> Optional[int]:
+        return self._flush_per_n_datasets
+
+    @property
+    def input_dbkey(self) -> str:
+        return self._input_dbkey
+
+    @property
+    def object_store(self) -> "ObjectStore":
+        return self._object_store
+
+    @property
+    def user(self):
+        if self.job:
+            user = self.job.user
+        else:
+            user = None
+        return user
+
+    def persist_object(self, obj):
+        self.sa_session.add(obj)
+
+    def flush(self):
+        self.sa_session.commit()
+
+    def get_library_folder(self, destination: Dict[str, Any]):
+        folder_id = destination.get("library_folder_id")
+        assert folder_id
+        decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
+        library_folder = self.app.library_folder_manager.get(self.work_context, decoded_folder_id)
+        return library_folder
+
+    def get_hdca(self, object_id):
+        hdca = self.sa_session.query(HistoryDatasetCollectionAssociation).get(int(object_id))
+        return hdca
+
+    def create_library_folder(self, parent_folder: "LibraryFolder", name: str, description: str):
+        nested_folder = self.app.library_folder_manager.create(self.work_context, parent_folder.id, name, description)
+        return nested_folder
+
+    def create_hdca(self, name, structure):
+        history = self.job.history
+        trans = self.work_context
+        collection_manager = self.app.dataset_collection_manager
+        hdca = collection_manager.precreate_dataset_collection_instance(trans, history, name, structure=structure)
+        return hdca
+
+    def add_output_dataset_association(self, name, dataset):
+        assoc = JobToOutputDatasetAssociation(name, dataset)
+        assoc.job = self.job
+        self.sa_session.add(assoc)
+
+    def add_library_dataset_to_folder(self, library_folder, ld):
+        trans = self.work_context
+        ldda = ld.library_dataset_dataset_association
+        trans.sa_session.add(ldda)
+
+        trans = self.work_context
+        trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
+        trans.sa_session.add(ld)
+        trans.sa_session.commit()
+
+        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+        trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
+        # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
+        trans.app.security_agent.set_all_dataset_permissions(
+            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), flush=False, new=True
+        )
+        library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
+        trans.sa_session.add(library_folder)
+        trans.sa_session.commit()
+
+        trans.sa_session.add(ld)
+        trans.sa_session.commit()
+
+    def add_datasets_to_history(self, datasets, for_output_dataset=None):
+        sa_session = self.sa_session
+        assert self.job.history
+        self.job.history.stage_addition(datasets)
+        pending_histories = {self.job.history}
+        if for_output_dataset is not None:
+            # Need to update all associated output hdas, i.e. history was
+            # shared with job running
+            for copied_dataset in for_output_dataset.dataset.history_associations:
+                if copied_dataset == for_output_dataset:
+                    continue
+                for dataset in datasets:
+                    new_data = dataset.copy()
+                    copied_dataset.history.stage_addition(new_data)
+                    pending_histories.add(copied_dataset.history)
+                    sa_session.add(new_data)
+        for history in pending_histories:
+            history.add_pending_items()
+
+    def output_collection_def(self, name):
+        tool = self.tool
+        if name not in tool.output_collections:
+            return None
+        output_collection_def = tool.output_collections[name]
+        return output_collection_def
+
+    def output_def(self, name):
+        tool = self.tool
+        if name not in tool.outputs:
+            return None
+        output_collection_def = tool.outputs[name]
+        return output_collection_def
+
+    def job_id(self):
+        return self.job.id
+
+    def get_job_id(self):
+        return self.job.id
+
+    def get_implicit_collection_jobs_association_id(self):
+        return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
+
+
 class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
@@ -818,7 +1012,7 @@ class Tool(UsesDictVisibleKeys):
         self.require_login = False
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
-        self.dynamic_tool = None
+        self.dynamic_tool: Optional[model.DynamicTool] = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -828,11 +1022,11 @@ class Tool(UsesDictVisibleKeys):
         self.input_params: List[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
         self.tool_shed: Optional[str] = None
-        self.repository_name = None
-        self.repository_owner = None
-        self.changeset_revision = None
-        self.installed_changeset_revision = None
-        self.sharable_url = None
+        self.repository_name: Optional[str] = None
+        self.repository_owner: Optional[str] = None
+        self.changeset_revision: Optional[str] = None
+        self.installed_changeset_revision: Optional[str] = None
+        self.sharable_url: Optional[str] = None
         self.npages = 0
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
@@ -848,7 +1042,7 @@ class Tool(UsesDictVisibleKeys):
         self.tool_errors = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
-        self.outputs: Dict[str, ToolOutput] = {}
+        self.outputs: Dict[str, ToolOutputBase] = {}
         self.output_collections: Dict[str, ToolOutputCollection] = {}
         self._is_workflow_compatible = None
         self.__help = None
@@ -1128,6 +1322,7 @@ class Tool(UsesDictVisibleKeys):
 
         # Short description of the tool
         self.description = tool_source.parse_description()
+        self.icon = tool_source.parse_icon()
 
         # Versioning for tools
         self.version_string_cmd = None
@@ -1431,7 +1626,7 @@ class Tool(UsesDictVisibleKeys):
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
-        self.inputs: Dict[str, Union[Group, ToolParameter]] = {}
+        self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
         if pages.inputs_defined:
@@ -1493,11 +1688,11 @@ class Tool(UsesDictVisibleKeys):
                 self.input_required = True
                 break
 
-    def parse_outputs(self, tool_source):
+    def parse_outputs(self, tool_source: ToolSource):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
-        self.outputs, self.output_collections = tool_source.parse_outputs(self)
+        self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
 
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio(self, tool_source: ToolSource):
@@ -1522,15 +1717,13 @@ class Tool(UsesDictVisibleKeys):
                     citations.append(citation)
         return citations
 
-    def parse_input_elem(
-        self, page_source: PageSource, enctypes, context=None
-    ) -> Dict[str, Union[Group, ToolParameter]]:
+    def parse_input_elem(self, page_source: PageSource, enctypes, context=None) -> "ToolInputsT":
         """
         Parse a parent element whose children are inputs -- these could be
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval: Dict[str, Union[Group, ToolParameter]] = {}
+        rval: ToolInputsT = {}
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1563,8 +1756,9 @@ class Tool(UsesDictVisibleKeys):
                     value_from = value_from.split(":")
                     temp_value_from = locals().get(value_from[0])
                     assert value_ref
-                    group_c.test_param = rval[value_ref]
-                    assert isinstance(group_c.test_param, ToolParameter)
+                    group_c_test_param = rval[value_ref]
+                    assert isinstance(group_c_test_param, ToolParameter)
+                    group_c.test_param = group_c_test_param
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
                         temp_value_from = getattr(temp_value_from, attr)
@@ -1697,6 +1891,8 @@ class Tool(UsesDictVisibleKeys):
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
             self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            assert self.repository_owner
+            assert self.repository_name
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
@@ -1927,21 +2123,25 @@ class Tool(UsesDictVisibleKeys):
             validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
 
     def completed_jobs(
-        self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
-    ) -> Dict[int, Optional[model.Job]]:
-        completed_jobs: Dict[int, Optional[model.Job]] = {}
+        self,
+        trans,
+        use_cached_job: bool,
+        all_params: List[ToolStateJobInstancePopulatedT],
+    ) -> Dict[int, Optional[Job]]:
+        completed_jobs: Dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job:
+            if use_cached_job and trans.user:
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
+                require_name_match = param.get("__when_value__") is not False
                 completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
+                    user=trans.user,
                     tool_id=tool_id,
                     tool_version=self.version,
                     param=param,
                     param_dump=param_dump,
-                    job_state=None,
+                    require_name_match=require_name_match,
                 )
             else:
                 completed_jobs[i] = None
@@ -1973,7 +2173,9 @@ class Tool(UsesDictVisibleKeys):
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        if use_cached_job:
+            mapping_params.param_template["__use_cached_job__"] = use_cached_job
+        completed_jobs: Dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,
@@ -2031,7 +2233,7 @@ class Tool(UsesDictVisibleKeys):
         execution_slice: ExecutionSlice,
         history: model.History,
         execution_cache: ToolExecutionCache,
-        completed_job: Optional[model.Job],
+        completed_job: Optional[Job],
         collection_info: Optional[MatchingCollections],
         job_callback: Optional[JobCallbackT],
         preferred_object_store_id: Optional[str],
@@ -2164,7 +2366,7 @@ class Tool(UsesDictVisibleKeys):
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
         dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = None,
-        completed_job: Optional[model.Job] = None,
+        completed_job: Optional[Job] = None,
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
@@ -2379,7 +2581,7 @@ class Tool(UsesDictVisibleKeys):
         out_collections,
         tool_provided_metadata,
         tool_working_directory,
-        job,
+        job: Job,
         input_ext,
         input_dbkey,
         inp_data=None,
@@ -2392,9 +2594,9 @@ class Tool(UsesDictVisibleKeys):
         # given the job_execution import is the only one, probably makes sense to refactor this out
         # into job_wrapper.
         tool = self
-        permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
-        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
-        job_context = output_collect.JobContext(
+        permission_provider = PermissionProvider(inp_data, tool.app.security_agent, job)
+        metadata_source_provider = MetadataSourceProvider(inp_data)
+        job_context = JobContext(
             tool,
             tool_provided_metadata,
             job,
@@ -2728,10 +2930,10 @@ class Tool(UsesDictVisibleKeys):
         def map_to_history(value):
             id = None
             source = None
-            if isinstance(value, self.app.model.HistoryDatasetAssociation):
+            if isinstance(value, model.HistoryDatasetAssociation):
                 id = value.dataset.id
                 source = hda_source_dict
-            elif isinstance(value, self.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance(value, HistoryDatasetCollectionAssociation):
                 id = value.collection.id
                 source = hdca_source_dict
             else:
@@ -3255,14 +3457,15 @@ class DataManagerTool(OutputParameterJSONTool):
                     create=True,
                     preserve_symlinks=True,
                 )
+                hda.metadata.is_bundle = True
 
         else:
             raise Exception("Unknown data manager mode encountered type...")
 
     def get_default_history_by_trans(self, trans, create=False):
         def _create_data_manager_history(user):
-            history = trans.app.model.History(name="Data Manager History (automatically created)", user=user)
-            data_manager_association = trans.app.model.DataManagerHistoryAssociation(user=user, history=history)
+            history = model.History(name="Data Manager History (automatically created)", user=user)
+            data_manager_association = model.DataManagerHistoryAssociation(user=user, history=history)
             trans.sa_session.add_all((history, data_manager_association))
             trans.sa_session.commit()
             return history

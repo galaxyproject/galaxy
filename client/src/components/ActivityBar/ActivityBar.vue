@@ -9,12 +9,12 @@ import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
-import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -25,6 +25,7 @@ import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -89,7 +90,7 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities } = storeToRefs(activityStore);
+const { activities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -100,7 +101,6 @@ const isDragging = ref(false);
 
 // computed values
 const canDrag = computed(() => isActiveSideBar("settings"));
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
@@ -325,9 +325,13 @@ defineExpose({
                 </template>
             </b-nav>
         </div>
-        <FlexPanel v-if="isSideBarOpen && !hidePanel" side="left" :collapsible="false">
+        <FlexPanel
+            v-if="isSideBarOpen && !hidePanel"
+            side="left"
+            :collapsible="false"
+            :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />

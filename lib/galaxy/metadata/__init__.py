@@ -5,6 +5,12 @@ import json
 import os
 import shutil
 from logging import getLogger
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import galaxy.model
 from galaxy.model import store
@@ -14,6 +20,9 @@ from galaxy.model.metadata import (
 )
 from galaxy.model.store import DirectoryModelExportStore
 from galaxy.util import safe_makedirs
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm.scoping import scoped_session
 
 log = getLogger(__name__)
 
@@ -57,7 +66,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         self,
         datasets_dict,
         out_collections,
-        sa_session,
+        sa_session: "scoped_session",
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -69,12 +78,15 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
+        compute_version_path: Optional[str] = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
+        validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job=None,
+        job: Optional[galaxy.model.Job] = None,
+        link_data_only: bool = False,
         kwds=None,
     ):
         """Setup files needed for external metadata collection.
@@ -133,7 +145,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         self,
         datasets_dict,
         out_collections,
-        sa_session,
+        sa_session: "scoped_session",
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -145,21 +157,22 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
-        compute_version_path=None,
+        compute_version_path: Optional[str] = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
-        validate_outputs=False,
+        validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job=None,
-        link_data_only=False,
+        job: Optional[galaxy.model.Job] = None,
+        link_data_only: bool = False,
         kwds=None,
     ):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
         if not job:
             job = sa_session.query(galaxy.model.Job).get(self.job_id)
+            assert job
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
@@ -234,7 +247,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 json.dump(object_store_conf, f)
 
             # setup tool
-            tool_as_dict = {}
+            tool_as_dict: Dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}

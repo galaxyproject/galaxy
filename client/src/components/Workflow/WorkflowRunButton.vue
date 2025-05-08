@@ -55,6 +55,6 @@ function routeToPath() {
         @click="routeToPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
-        <span v-if="full" v-localize>Run</span>
+        <span v-if="full" v-localize>Run Workflow</span>
     </BButton>
 </template>

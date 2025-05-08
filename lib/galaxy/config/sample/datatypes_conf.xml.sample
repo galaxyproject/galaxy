@@ -8,6 +8,7 @@
     <datatype extension="source.go" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Go source file"/>
     <datatype extension="source.rs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Rust source file" />
     <datatype extension="source.cs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C# source file" />
+    <datatype extension="markdown" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Markdown is a lightweight markup language for creating formatted text." description_url="https://commonmark.org"/>
     <datatype extension="hep.root" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="ROOT binary file."/>
     <datatype extension="jp2" type="galaxy.datatypes.binary:JP2" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
@@ -88,6 +89,7 @@
     </datatype>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
+      <converter file="bigbed_to_bed_converter.xml" target_datatype="bed"/>
       <display file="ucsc/bigbed.xml"/>
       <display file="igb/bb.xml"/>
     </datatype>
@@ -106,6 +108,7 @@
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true">
       <converter file="csv_to_tabular.xml" target_datatype="tabular"/>
     </datatype>
+    <datatype extension="geocsv" type="galaxy.datatypes.tabular:GeoCSV" description="CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields." description_url="https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv" />
     <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
     </datatype>
@@ -124,8 +127,10 @@
     <datatype extension="gz" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576"/>
     <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
+    <datatype extension="cytoscapejson" type="galaxy.datatypes.text:CytoscapeJson" mimetype="application/json" display_in_upload="true" description="Cytoscape JSON format for network visualization, typically containing 'nodes' and 'edges' in a JSON object." description_url="https://js.cytoscape.org/#notation/elements-json" />
     <datatype extension="imgt.json" type="galaxy.datatypes.text:ImgtJson" mimetype="application/json" display_in_upload="True"/>
     <datatype extension="geojson" type="galaxy.datatypes.text:GeoJson" mimetype="application/json" display_in_upload="True"/>
+    <datatype extension="vitesscejson" type="galaxy.datatypes.text:VitessceJson" mimetype="application/json" display_in_upload="True"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:DataManagerJson" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
     <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html"/>
@@ -305,6 +310,7 @@
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
+    <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory" />
     <datatype extension="ome_zarr" type="galaxy.datatypes.images:OMEZarr" />
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
@@ -532,7 +538,7 @@
     <datatype extension="juicer_medium_tabix.gz" type="galaxy.datatypes.interval:JuicerMediumTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="bed_tabix.gz" type="galaxy.datatypes.interval:BedTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gff_tabix.gz" type="galaxy.datatypes.interval:GffTabix" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
+    <datatype extension="bgzip" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
@@ -587,6 +593,7 @@
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true"/>
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true"/>
+    <datatype extension="tool_markdown" type="galaxy.datatypes.text:Text"/>
     <datatype extension="expression.json" type="galaxy.datatypes.text:ExpressionJson" display_in_upload="true"/>
     <!-- graph datatypes -->
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
@@ -732,6 +739,7 @@
     <datatype extension="rdata.camera.quick" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
     <datatype extension="rdata.se" type="galaxy.datatypes.hdf5:HDF5SummarizedExperiment"  mimetype="text/html" display_in_upload="true"/>
     <datatype extension="rdock_as" type="galaxy.datatypes.binary:Binary" description="rDock active site format" subclass="true" display_in_upload="true"/>
+    <datatype extension="prm" type="galaxy.datatypes.text:Prm" mimetype="text/plain" description="rDock prm format for system definition files, scoring function definition files and search protocol definition files" description_url="https://rdock.github.io/documentation/html_docs/reference-guide/file-formats.html" display_in_upload="true" />
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -744,6 +752,8 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true"/>
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true"/>
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true"/>
+    <datatype extension="vtpascii" type="galaxy.datatypes.constructive_solid_geometry:VtpAscii" display_in_upload="true"/>
+    <datatype extension="vtpbinary" type="galaxy.datatypes.constructive_solid_geometry:VtpBinary" display_in_upload="true"/>
     <!-- Metagenomic Datatypes -->
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="true" mimetype="application/json">
       <display file="biom/biom_simple.xml"/>
@@ -952,13 +962,14 @@
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
     <!-- media datatypes -->
-    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav"/>
-    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
-    <datatype extension="ogg" type="galaxy.datatypes.media:Ogg" display_in_upload="true" mimetype="audio/ogg"/>
+    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav" description="Waveform Audio File Format"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3" description="MP3 is a lossy coding format for digital audio" />
+    <datatype extension="ogg" type="galaxy.datatypes.media:Ogg" display_in_upload="true" mimetype="audio/ogg" description="Ogg is a digital multimedia container format designed to provide for efficient streaming and manipulation of digital multimedia." description_url="https://xiph.org/ogg/"/>
     <datatype extension="wma" type="galaxy.datatypes.media:Wma" display_in_upload="true" mimetype="audio/x-ms-wma"/>
     <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
     <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
     <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
+    <datatype extension="flac" type="galaxy.datatypes.media:Flac" display_in_upload="true" mimetype="audio/flac" description="Free Lossless Audio Codec" description_url="https://xiph.org/flac/"/>
     <datatype extension="webm" type="galaxy.datatypes.media:Webm" display_in_upload="true" mimetype="video/webm"/>
     <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
     <datatype extension="mov" type="galaxy.datatypes.media:Mov" display_in_upload="true" mimetype="video/quicktime"/>
@@ -1021,6 +1032,8 @@
     <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/chain.html"/>
     <datatype extension="ucsc.net" type="galaxy.datatypes.chain:Net" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/net.html"/>
     <datatype extension="bcsp" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Binary format of k-mer hash table which is only compatible with Fairy"/>
+    <!-- rdeval types -->
+    <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
   </registration>
   <sniffers>
     <!--
@@ -1047,6 +1060,8 @@
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpAscii"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkXml"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
@@ -1225,7 +1240,9 @@
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:ImgtJson"/>
+    <sniffer type="galaxy.datatypes.text:CytoscapeJson"/>
     <sniffer type="galaxy.datatypes.text:GeoJson"/>
+    <sniffer type="galaxy.datatypes.text:VitessceJson"/>
     <sniffer type="galaxy.datatypes.text:PithyaResult"/>
     <sniffer type="galaxy.datatypes.text:BCSLts"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
@@ -1237,6 +1254,7 @@
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:CMAP"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
+    <sniffer type="galaxy.datatypes.tabular:GeoCSV"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.metacyto:mSummary"/>
     <sniffer type="galaxy.datatypes.metacyto:mStats"/>

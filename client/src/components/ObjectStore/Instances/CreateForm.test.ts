@@ -84,7 +84,7 @@ const { server, http } = useServerMock();
 
 describe("CreateForm", () => {
     it("should render a form with admin markdown converted to HTML in help", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: STANDARD_TEMPLATE,
             },
@@ -102,7 +102,7 @@ describe("CreateForm", () => {
     });
 
     it("should post to create a new object store on submit", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: SIMPLE_TEMPLATE,
             },
@@ -129,7 +129,7 @@ describe("CreateForm", () => {
     });
 
     it("should indicate an error on failure", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: SIMPLE_TEMPLATE,
             },

@@ -42,6 +42,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -54,7 +55,11 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser import get_input_source
-from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
+from galaxy.tool_util.parser.output_objects import (
+    ToolExpressionOutput,
+    ToolOutput,
+    ToolOutputCollection,
+)
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
@@ -90,7 +95,7 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat,
 )
-from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
@@ -116,6 +121,7 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.workflow.run import WorkflowProgress
 
@@ -129,6 +135,12 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
+
+
+class OptionDict(TypedDict):
+    label: str
+    value: str
+    selected: bool
 
 
 class ConditionalStepWhen(BooleanToolParameter):
@@ -163,6 +175,7 @@ def to_cwl(value, hda_references, step):
             properties = {
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
+                "format": value.extension,
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
@@ -322,9 +335,14 @@ class WorkflowModule:
         the step.
         """
         if inputs := self.get_inputs():
-            return self.state.encode(Bunch(inputs=inputs), self.trans.app, nested=nested)
-        else:
-            return self.state.inputs
+            try:
+                return self.state.encode(Bunch(inputs=inputs), self.trans.app, nested=nested)
+            except ValueError:
+                log.warning("Tool state invalid for workflow module", exc_info=True)
+                # Always preferable to save unmodified and continue, I think ... we're explicit about alterations when retrieving any workflow,
+                # and it is what we do if we don't have the tool installed (assuming this is a tool).
+                pass
+        return self.state.inputs
 
     def get_export_state(self):
         return self.get_state(nested=True)
@@ -585,6 +603,9 @@ class WorkflowModule:
                     effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
+                if not progress.subworkflow_structure and history_query.direct_match(data):
+                    continue
+
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
@@ -1054,15 +1075,15 @@ class InputDataModule(InputModule):
         return [dict(name="output", extensions=extensions, optional=optional)]
 
     def get_filter_set(self, connections=None):
-        filter_set = []
+        filter_set = set()  # Use a set to ensure unique extensions
         if connections:
             for oc in connections:
                 for ic in oc.input_step.module.get_data_inputs():
                     if "extensions" in ic and ic["extensions"] != "input" and ic["name"] == oc.input_name:
-                        filter_set += ic["extensions"]
+                        filter_set.update(ic["extensions"])
         if not filter_set:
-            filter_set = ["data"]
-        return ", ".join(filter_set)
+            filter_set = {"data"}
+        return ", ".join(sorted(filter_set))
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
@@ -1110,34 +1131,8 @@ class InputDataCollectionModule(InputModule):
     collection_type = default_collection_type
 
     def get_inputs(self):
-        parameter_def = self._parse_state_into_dict()
-        collection_type = parameter_def["collection_type"]
-        tag = parameter_def["tag"]
-        optional = parameter_def["optional"]
-        collection_type_source = dict(
-            name="collection_type", label="Collection type", type="text", value=collection_type
-        )
-        collection_type_source["options"] = [
-            {"value": "list", "label": "List of Datasets"},
-            {"value": "paired", "label": "Dataset Pair"},
-            {"value": "list:paired", "label": "List of Dataset Pairs"},
-        ]
-        input_collection_type = TextToolParameter(None, collection_type_source)
-        tag_source = dict(
-            name="tag",
-            label="Tag filter",
-            type="text",
-            optional="true",
-            value=tag,
-            help="Tags to automatically filter inputs",
-        )
-        input_tag = TextToolParameter(None, tag_source)
-        inputs = {}
-        inputs["collection_type"] = input_collection_type
-        inputs["optional"] = optional_param(optional)
-        inputs["format"] = format_param(self.trans, parameter_def.get("format"))
-        inputs["tag"] = input_tag
-        return inputs
+        # migrated to frontend
+        return {}
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
@@ -1446,7 +1441,7 @@ class InputParameterModule(WorkflowModule):
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
-            static_options = []
+            static_options: List[List[ParameterOption]] = []
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
@@ -1472,7 +1467,7 @@ class InputParameterModule(WorkflowModule):
                                 ].static_options
                             )
 
-            options = None
+            options: Optional[List[OptionDict]] = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1481,19 +1476,20 @@ class InputParameterModule(WorkflowModule):
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
-                intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
-                intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
-                d = defaultdict(set)  # Collapse labels with same values
-                for label, value, _ in intxn_opts:
-                    d[value].add(label)
+                intxn_vals = set.intersection(*({option.value for option in options} for options in static_options))
+                intxn_opts = {option for options in static_options for option in options if option.value in intxn_vals}
+                collapsed_labels = defaultdict(set)  # Collapse labels with same values
+                for option in intxn_opts:
+                    collapsed_labels[option.value].add(option.name)
                 options = [
                     {
-                        "label": ", ".join(label),
+                        "label": ", ".join(labels),
                         "value": value,
                         "selected": bool(default_value and value == default_value),
                     }
-                    for value, label in d.items()
+                    for value, labels in collapsed_labels.items()
                 ]
+                options.sort(key=lambda x: x["label"])
 
             return options
         except Exception:
@@ -1844,16 +1840,19 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
+    def __init__(
+        self, trans: "ProvidesUserContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+    ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
         self.tool = None
         if getattr(trans.app, "toolbox", None):
-            self.tool = trans.app.toolbox.get_tool(
-                tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
-            )
+            if not self.tool:
+                self.tool = trans.app.toolbox.get_tool(
+                    tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
+                )
         if self.tool:
             current_tool_version = str(self.tool.version)
             if exact_tools and self.tool_version and self.tool_version != current_tool_version:
@@ -1867,10 +1866,10 @@ class ToolModule(WorkflowModule):
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
                     self.tool = None
-        self.post_job_actions = {}
-        self.runtime_post_job_actions = {}
-        self.workflow_outputs = []
-        self.version_changes = []
+        self.post_job_actions: Dict[str, Any] = {}
+        self.runtime_post_job_actions: Dict[str, Any] = {}
+        self.workflow_outputs: List[Dict[str, Any]] = []
+        self.version_changes: List[str] = []
 
     # ---- Creating modules from various representations ---------------------
 
@@ -2062,10 +2061,10 @@ class ToolModule(WorkflowModule):
             for name, tool_output in self.tool.outputs.items():
                 if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
-                extra_kwds = {}
+                extra_kwds: Dict[str, Any] = {}
                 if isinstance(tool_output, ToolExpressionOutput):
                     extra_kwds["parameter"] = True
-                if tool_output.collection:
+                if isinstance(tool_output, ToolOutputCollection):
                     extra_kwds["collection"] = True
                     collection_type = tool_output.structure.collection_type
                     if not collection_type and tool_output.structure.collection_type_from_rules:
@@ -2077,10 +2076,14 @@ class ToolModule(WorkflowModule):
                                 collection_type = rule_set.collection_type
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
-                    formats = ["input"]  # TODO: fix
-                elif tool_output.format_source is not None:
+                    formats: List[Optional[str]] = ["input"]  # TODO: fix
+                elif (
+                    isinstance(tool_output, (ToolOutput, ToolExpressionOutput, ToolOutputCollection))
+                    and tool_output.format_source is not None
+                ):
                     formats = ["input"]  # default to special name "input" which remove restrictions on connections
                 else:
+                    assert isinstance(tool_output, (ToolOutput, ToolExpressionOutput))
                     formats = [tool_output.format]
                 for change_format_model in tool_output.change_format:
                     format = change_format_model["format"]
@@ -2271,7 +2274,9 @@ class ToolModule(WorkflowModule):
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
+        tool = trans.app.toolbox.get_tool(
+            step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+        )
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
@@ -2394,9 +2399,15 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(trans, use_cached_job, param_combinations)
+        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(
+            trans,
+            use_cached_job,
+            param_combinations,
+        )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
+            if use_cached_job:
+                mapping_params.param_template["__use_cached_job__"] = use_cached_job
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
 
             validate_outputs = False
@@ -2613,7 +2624,7 @@ class WorkflowModuleInjector:
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step: WorkflowStep, step_args=None, steps=None, **kwargs):
+    def inject(self, step: WorkflowStep, step_args=None, steps=None, allow_tool_state_corrections=False, **kwargs):
         """Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -2646,7 +2657,12 @@ class WorkflowModuleInjector:
 
             subworkflow = step.subworkflow
             assert subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map=unjsonified_subworkflow_param_map)
+            populate_module_and_state(
+                self.trans,
+                subworkflow,
+                param_map=unjsonified_subworkflow_param_map,
+                allow_tool_state_corrections=allow_tool_state_corrections,
+            )
 
     def inject_all(self, workflow: Workflow, param_map=None, ignore_tool_missing_exception=False, **kwargs):
         param_map = param_map or {}

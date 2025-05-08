@@ -10,6 +10,35 @@ History
 
 
 -------------------
+24.2.3 (2025-03-16)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix private role name performance issue by `@jdavcs <https://github.com/jdavcs>`_ in `#19679 <https://github.com/galaxyproject/galaxy/pull/19679>`_
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix user preferences secret (without vault) lost on save by `@davelopez <https://github.com/davelopez>`_ in `#19610 <https://github.com/galaxyproject/galaxy/pull/19610>`_
+* Disable chatgxy wizard for anon users by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19628 <https://github.com/galaxyproject/galaxy/pull/19628>`_
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

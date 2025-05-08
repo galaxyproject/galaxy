@@ -3,6 +3,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     overload,
     Union,
 )
@@ -39,7 +40,10 @@ from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.mapping import GalaxyModelMapping
-from galaxy.schema.schema import DatasetCollectionInstanceType
+from galaxy.schema.schema import (
+    DatasetCollectionInstanceType,
+    HistoryContentSource,
+)
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import (
@@ -451,24 +455,24 @@ class DatasetCollectionManager:
     def copy(
         self,
         trans: ProvidesHistoryContext,
-        parent,
-        source,
+        parent: model.History,
+        source: Literal[HistoryContentSource.hdca],
         encoded_source_id,
-        copy_elements=False,
-        dataset_instance_attributes=None,
+        copy_elements: bool = False,
+        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
         """
-        assert source == "hdca"  # for now
+        assert source == HistoryContentSource.hdca  # for now
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
-        copy_kwds = {}
-        if copy_elements:
-            copy_kwds["element_destination"] = parent  # e.g. a history
-        if dataset_instance_attributes is not None:
-            copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
-        new_hdca = source_hdca.copy(flush=False, **copy_kwds)
+        element_destination = parent if copy_elements else None
+        new_hdca = source_hdca.copy(
+            flush=False,
+            element_destination=element_destination,
+            dataset_instance_attributes=dataset_instance_attributes,
+        )
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
@@ -685,7 +689,7 @@ class DatasetCollectionManager:
 
     def get_dataset_collection(self, trans, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
-        collection = trans.sa_session.get(trans.app.model.DatasetCollection, collection_id)
+        collection = trans.sa_session.get(model.DatasetCollection, collection_id)
         return collection
 
     def apply_rules(self, hdca, rule_set, handle_dataset):
@@ -792,7 +796,7 @@ class DatasetCollectionManager:
         self, trans: ProvidesHistoryContext, id, check_ownership=False, check_accessible=True
     ) -> model.HistoryDatasetCollectionAssociation:
         instance_id = trans.app.security.decode_id(id) if isinstance(id, str) else id
-        collection_instance = trans.sa_session.get(trans.app.model.HistoryDatasetCollectionAssociation, instance_id)
+        collection_instance = trans.sa_session.get(model.HistoryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("History dataset collection association not found")
         # TODO: that sure looks like a bug, we can't check ownership using the history of the object we're checking ownership for ...
@@ -813,7 +817,7 @@ class DatasetCollectionManager:
                 "Functionality (getting library dataset collection with ownership check) unimplemented."
             )
         instance_id = int(trans.security.decode_id(id))
-        collection_instance = trans.sa_session.get(trans.app.model.LibraryDatasetCollectionAssociation, instance_id)
+        collection_instance = trans.sa_session.get(model.LibraryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("Library dataset collection association not found")
         if check_accessible:

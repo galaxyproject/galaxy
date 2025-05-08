@@ -8,8 +8,7 @@ from typing import (
     Optional,
 )
 
-from galaxy.util import asbool
-from .output_models import (
+from galaxy.tool_util_models.tool_outputs import (
     DatasetCollectionDescriptionT,
     DiscoverViaT,
     FilePatternDatasetCollectionDescription as FilePatternDatasetCollectionDescriptionModel,
@@ -17,6 +16,7 @@ from .output_models import (
     SortKeyT,
     ToolProvidedMetadataDatasetCollection as ToolProvidedMetadataDatasetCollectionModel,
 )
+from galaxy.util import asbool
 from .util import is_dict
 
 DEFAULT_EXTRA_FILENAME_PATTERN = (
@@ -58,7 +58,7 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
 
 
 def dataset_collector_descriptions_from_output_dict(as_dict):
-    discover_datasets_dicts = as_dict.get("discover_datasets", [])
+    discover_datasets_dicts = as_dict.get("discover_datasets") or []
     if is_dict(discover_datasets_dicts):
         discover_datasets_dicts = [discover_datasets_dicts]
     dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)

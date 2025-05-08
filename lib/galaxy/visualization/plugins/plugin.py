@@ -118,7 +118,10 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "name": self.name,
             "html": self.config.get("name"),
             "description": self.config.get("description"),
+            "data_sources": self.config.get("data_sources"),
+            "help": self.config.get("help"),
             "logo": self.config.get("logo"),
+            "tags": self.config.get("tags"),
             "title": self.config.get("title"),
             "target": self.config.get("render_target", "galaxy_main"),
             "embeddable": self.config.get("embeddable"),
@@ -126,6 +129,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "settings": self.config.get("settings"),
             "specs": self.config.get("specs"),
             "tracks": self.config.get("tracks"),
+            "tests": self.config.get("tests"),
             "href": self._get_url(),
         }
 
@@ -264,6 +268,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars["embedded"] = self._parse_embedded(embedded)
+        render_vars["host_url"] = trans.request.host_url
         render_vars["static_url"] = url_for(f"/{self.static_path}/")
         render_vars.update(vars={})
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})

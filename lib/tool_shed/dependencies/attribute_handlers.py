@@ -21,9 +21,9 @@ from tool_shed.repository_types.util import (
 from tool_shed.util import (
     hg_util,
     metadata_util,
-    repository_util,
     xml_util,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 if TYPE_CHECKING:
     from tool_shed.context import ProvidesRepositoriesContext
@@ -128,7 +128,7 @@ class RepositoryDependencyAttributeHandler:
             # Populate the changeset_revision attribute with the latest installable metadata revision for
             # the defined repository.  We use the latest installable revision instead of the latest metadata
             # revision to ensure that the contents of the revision are valid.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
             if repository:
                 lastest_installable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(
                     self.app, repository

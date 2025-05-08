@@ -278,7 +278,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div v-if="searchWorker || !props.userWorker">
+    <div v-if="searchWorker || !props.useWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"

@@ -124,10 +124,9 @@ class OIDCAuthnzBase(IdentityProvider):
             return False
         refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
         # do not attempt to use refresh token that is already expired
-        if int(refresh_token_decoded["exp"]) > int(time.time()):
+        if int(refresh_token_decoded["exp"]) <= int(time.time()):
             # in the future we might want to log out the user here
             return False
-        log.info(custos_authnz_token.access_token)
         oauth2_session = self._create_oauth2_session()
         token_endpoint = self.config.token_endpoint
         if self.config.iam_client_secret:
@@ -491,10 +490,10 @@ class OIDCAuthnzBase(IdentityProvider):
         if "@" in username:
             username = username.split("@")[0]  # username created from username portion of email
         username = util.ready_name_for_url(username).lower()
-        if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
+        if trans.sa_session.query(User).filter_by(username=username).first():
             # if username already exists in database, append integer and iterate until unique username found
             count = 0
-            while trans.sa_session.query(trans.app.model.User).filter_by(username=(f"{username}{count}")).first():
+            while trans.sa_session.query(User).filter_by(username=(f"{username}{count}")).first():
                 count += 1
             return f"{username}{count}"
         else:

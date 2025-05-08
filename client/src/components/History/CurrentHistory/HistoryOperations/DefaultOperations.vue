@@ -52,10 +52,12 @@ async function runOperation(operation: () => Promise<unknown>) {
 <template>
     <section>
         <BDropdown
+            v-b-tooltip.hover
             no-caret
             size="sm"
             variant="link"
             class="rounded-0"
+            title="Operations"
             toggle-class="text-decoration-none rounded-0"
             data-description="history action menu">
             <template v-slot:button-content>

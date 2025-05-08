@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
@@ -50,8 +52,8 @@ const { server, http } = useServerMock();
 describe("BroadcastForm.vue", () => {
     function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("disabled")).toBe(enabled ? undefined : "disabled");
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("title")).toBe(
+        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
+        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
             enabled ? "" : "Please fill all required fields"
         );
     }

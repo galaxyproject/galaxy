@@ -101,6 +101,7 @@ function onHighlight() {
             <div class="btn-group float-left">
                 <BButton
                     v-if="showError"
+                    v-b-tooltip.hover
                     class="px-1"
                     title="Error"
                     size="sm"
@@ -114,6 +115,7 @@ function onHighlight() {
 
                 <BButton
                     v-if="showDownloads"
+                    v-b-tooltip.hover
                     class="px-1"
                     title="Copy Link"
                     size="sm"
@@ -124,6 +126,7 @@ function onHighlight() {
 
                 <BButton
                     v-if="showInfo"
+                    v-b-tooltip.hover
                     class="params-btn px-1"
                     title="Dataset Details"
                     size="sm"
@@ -135,6 +138,7 @@ function onHighlight() {
 
                 <BButton
                     v-if="writable && showRerun"
+                    v-b-tooltip.hover
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
@@ -146,6 +150,7 @@ function onHighlight() {
 
                 <BButton
                     v-if="showVisualizations"
+                    v-b-tooltip.hover
                     class="visualize-btn px-1"
                     title="Visualize"
                     size="sm"
@@ -157,6 +162,7 @@ function onHighlight() {
 
                 <BButton
                     v-if="showHighlight"
+                    v-b-tooltip.hover
                     class="highlight-btn px-1"
                     title="Show Related Items"
                     size="sm"

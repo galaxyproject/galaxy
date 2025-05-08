@@ -239,7 +239,6 @@ class WorkflowInvoker:
 
                 if not workflow_invocation_step:
                     workflow_invocation_step = WorkflowInvocationStep()
-                    assert workflow_invocation_step
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     ensure_object_added_to_session(workflow_invocation_step, object_in_session=workflow_invocation)
                     workflow_invocation_step.workflow_step = step
@@ -247,7 +246,6 @@ class WorkflowInvoker:
 
                     workflow_invocation.steps.append(workflow_invocation_step)
 
-                assert workflow_invocation_step
                 incomplete_or_none = self._invoke_step(workflow_invocation_step)
                 if incomplete_or_none is False:
                     step_delayed = delayed_steps = True

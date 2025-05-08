@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="NGL Viewer">
-    <description>NGL Viewer is a WebGL based molecular visualization hosted at http://arose.github.io/ngl/.</description>
+<visualization name="NGL Viewer" embeddable="true">
+    <description>Display Molecular Structures of Proteins, DNA and more</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">molecules.PDB</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">pdb</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.11" package="@galaxyproject/ngl"/>
+        <requirement type="npm" version="0.0.29" package="@galaxyproject/ngl"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
@@ -304,4 +303,26 @@
             <value>1.0</value>
         </input>
     </settings>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/newbox.pdb" ftype="pdb" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is NGL?
+
+NGL is an interactive 3D viewer for exploring molecular structures such as proteins, nucleic acids, and small molecules. It runs directly in your browser and makes it easy to inspect structural data in detail.
+
+Currently, NGL in this interface supports **PDB** structure files. After selecting a compatible dataset, you'll see a 3D view where you can rotate, zoom, and customize how the molecule is displayed.
+
+#### Key Features
+
+- **Real-Time 3D Rendering**: Explore structures from any angle with smooth, responsive controls.
+- **Flexible Representations**: Visualize the molecule as cartoons, surfaces, sticks, spheres, and more.
+- **Highlighting and Coloring**: Focus on specific chains, residues, or ligands with various color schemes.
+- **Optimized for Large Structures**: Efficiently handles large biomolecular assemblies.
+
+To learn more about NGL and its capabilities, visit:
+[http://nglviewer.org/ngl/api/](http://nglviewer.org/ngl/api/)
+    ]]></help>
 </visualization>

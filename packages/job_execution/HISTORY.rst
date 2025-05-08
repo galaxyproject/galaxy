@@ -10,6 +10,29 @@ History
 
 
 -------------------
+24.2.3 (2025-03-16)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use materialized datasets in pulsar job runner by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19807 <https://github.com/galaxyproject/galaxy/pull/19807>`_
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 24.2.0 (2025-02-11)
 -------------------
 

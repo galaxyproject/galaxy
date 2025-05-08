@@ -225,7 +225,7 @@ const gridConfig: GridConfig = {
     getData: getData,
     plural: "Quotas",
     sortBy: "name",
-    sortDesc: true,
+    sortDesc: false,
     sortKeys: ["name", "description", "update_time"],
     title: "Quotas",
 };

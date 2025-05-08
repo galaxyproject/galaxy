@@ -58,6 +58,14 @@ function openUrl(url, target = null) {
     }
 }
 
+function extensionTabClick(tab) {
+    if (tab.url) {
+        openUrl(tab.url, tab.target);
+    } else if (typeof tab.onclick === "function") {
+        tab.onclick();
+    }
+}
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
     props.windowTab.onclick();
@@ -103,7 +111,7 @@ onMounted(() => {
                 :url="tab.url"
                 :tooltip="tab.tooltip"
                 :target="tab.target"
-                @click="tab.onclick ? tab.onclick : undefined" />
+                @click="extensionTabClick(tab)" />
             <MastheadItem
                 id="help"
                 icon="fa-question"

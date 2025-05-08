@@ -1,37 +1,47 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BRow } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
+import { BAlert } from "bootstrap-vue";
+import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
-library.add(faPlus);
+import GButton from "@/components/BaseComponents/GButton.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 interface Props {
-    message: String | null | undefined;
-    createButtonId: string;
+    header: string;
+    message?: string;
     createRoute: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-const router = useRouter();
+const createUrl = props.createRoute;
+
+const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user" }, { title: props.header }]);
 </script>
 
 <template>
     <div>
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <div>
+                <GButton
+                    :id="`create-button-${header.toLowerCase().replace(/ /g, '-')}`"
+                    tooltip
+                    title="Create new file source"
+                    size="small"
+                    outline
+                    color="blue"
+                    :to="createUrl">
+                    <FontAwesomeIcon :icon="faPlus" />
+                    {{ localize("Create") }}
+                </GButton>
+            </div>
+        </BreadcrumbHeading>
+
         <BAlert v-if="message" show dismissible>
             {{ message || "" }}
         </BAlert>
-        <BRow class="mb-3">
-            <BCol>
-                <BButton :id="createButtonId" class="m-1 float-right" @click="router.push(createRoute)">
-                    <FontAwesomeIcon icon="plus" />
-                    {{ localize("Create") }}
-                </BButton>
-            </BCol>
-        </BRow>
     </div>
 </template>

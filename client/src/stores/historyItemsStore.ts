@@ -10,7 +10,7 @@ import { computed, ref, set } from "vue";
 
 import { type HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
-import { mergeArray } from "@/store/historyStore/model/utilities";
+import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 

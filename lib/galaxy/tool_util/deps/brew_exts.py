@@ -446,7 +446,6 @@ def execute(cmds, env=None):
         subprocess_kwds["env"] = env
     p = subprocess.Popen(cmds, **subprocess_kwds)
     # log = p.stdout.read()
-    global VERBOSE
     stdout, stderr = p.communicate()
     if p.returncode != 0:
         raise CommandLineException(" ".join(cmds), stdout, stderr)

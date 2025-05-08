@@ -5,11 +5,13 @@ on:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,14 +22,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.13']
+        python-version: ['3.9', '3.13']
     steps:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
       - uses: actions/setup-node@v4
         with:
-          node-version: '18.12.1'
+          node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
       - uses: actions/setup-python@v5

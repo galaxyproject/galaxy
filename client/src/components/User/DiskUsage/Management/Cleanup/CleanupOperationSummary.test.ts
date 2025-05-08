@@ -72,7 +72,7 @@ async function mountCleanupOperationSummaryWith(
     refreshOperationId = null,
     refreshDelay = 0
 ) {
-    const wrapper = mount(CleanupOperationSummary, {
+    const wrapper = mount(CleanupOperationSummary as object, {
         propsData: { operation, refreshOperationId, refreshDelay },
         localVue,
     });

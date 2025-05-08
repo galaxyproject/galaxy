@@ -5,7 +5,7 @@ from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.webapps.base.controller import BaseUIController
-from tool_shed.util.repository_util import get_repository_by_name_and_owner
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class HgController(BaseUIController):
         path_info = kwd.get("path_info", None)
         if path_info and len(path_info.split("/")) == 2:
             owner, name = path_info.split("/")
-            repository = get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         if repository:
             if repository.deprecated:
                 raise ObjectNotFound("Requested repository not found or deprecated.")

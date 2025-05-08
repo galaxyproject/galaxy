@@ -1,24 +1,18 @@
-export const DEFAULT_FILE_NAME = "New File";
-export const USER_FILE_PREFIX = "gxuserfiles://";
-export const URI_PREFIXES = [
-    "http://",
-    "https://",
-    "ftp://",
-    "file://",
-    "gxfiles://",
-    "gximport://",
-    "gxuserimport://",
-    USER_FILE_PREFIX,
-    "gxftp://",
-    "drs://",
-    "invenio://",
-    "zenodo://",
-    "dataverse://",
-    "elabftw://",
-];
+import { isUrl } from "./url";
 
-export function isUrl(content) {
-    return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
+export const DEFAULT_FILE_NAME = "New File";
+
+export function isGalaxyFile(content) {
+    if (content === undefined || content === null) {
+        return false;
+    }
+    const galaxyRegexPattern = /Galaxy\d+-\[(.*?)\](\..+)/;
+    const match = content.match(galaxyRegexPattern);
+    if (match) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 export function uploadPayload(items, historyId, composite = false) {
@@ -30,6 +24,11 @@ export function uploadPayload(items, historyId, composite = false) {
                 let fileName = item.fileName;
                 if (fileName === DEFAULT_FILE_NAME) {
                     fileName = null;
+                }
+                if (isGalaxyFile(item.fileName)) {
+                    const modifiedFileName = item.fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
+                    item.fileName = modifiedFileName;
+                    fileName = modifiedFileName;
                 }
                 // consolidate exclusive file content attributes
                 const urlContent = (item.fileUri || item.filePath || item.fileContent || "").trim();

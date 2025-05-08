@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import {
-    faCaretDown,
-    faCaretUp,
-    faExclamation,
-    faLink,
-    faPlus,
-    faSpinner,
-    faUnlink,
-} from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
-import { isDatasetElement, isDCE } from "@/api";
+import {
+    type DCESummary,
+    type HDAObject,
+    type HistoryItemSummary,
+    isDatasetElement,
+    isDCE,
+    isHDCA,
+    isHistoryItem,
+} from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
+import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
+import { containsDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
-import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
+import FormDataContextButtons from "./FormDataContextButtons.vue";
+import FormDataExtensions from "./FormDataExtensions.vue";
+import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
-
-const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
-    list: "list",
-    "list:paired": "list of dataset pairs",
-    paired: "dataset pair",
-};
 
 type SelectOption = {
     label: string;
     value: DataOption | null;
 };
+
+type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
 
 const props = withDefaults(
     defineProps<{
@@ -51,9 +51,11 @@ const props = withDefaults(
         };
         extensions?: Array<string>;
         type?: "data" | "data_collection";
-        collectionTypes?: Array<string>;
+        collectionTypes?: Array<CollectionType>;
         flavor?: string;
         tag?: string;
+        userDefinedTitle?: string;
+        workflowRun?: boolean;
     }>(),
     {
         loading: false,
@@ -62,16 +64,17 @@ const props = withDefaults(
         value: undefined,
         extensions: () => [],
         type: "data",
-        collectionTypes: undefined,
+        collectionTypes: () => [],
         flavor: undefined,
         tag: undefined,
+        userDefinedTitle: undefined,
     }
 );
 
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input", "alert"]);
+const $emit = defineEmits(["input", "alert", "focus"]);
 
 // Determines wether values should be processed as linked or unlinked
 const currentLinked = ref(true);
@@ -83,13 +86,11 @@ const currentField = ref(0);
 const currentHighlighting: Ref<string | null> = ref(null);
 
 // Drag/Drop related values
-const dragData: Ref<EventData | null> = ref(null);
+const dragData: Ref<EventData[]> = ref([]);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
-// Collection creator modal settings
-const collectionModalShow = ref(false);
-const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
-const { currentHistoryId } = storeToRefs(useHistoryStore());
+const workflowTab = ref("");
+
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
     if (!extensions || extensions.length == 0 || extensions.indexOf("data") >= 0) {
@@ -212,7 +213,13 @@ const formattedOptions = computed(() => {
         // Populate keep-options from cache
         Object.entries(keepOptions).forEach(([key, option]) => {
             if (option.value && getSourceType(option.value) === currentSource.value) {
-                result.unshift(option);
+                // check if option (with same id) is already in result, if yes replace it with keepOption
+                const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
+                if (existingOptionIndex >= 0) {
+                    result[existingOptionIndex] = option;
+                } else {
+                    result.unshift(option);
+                }
             }
         });
         // Sort entries by hid
@@ -253,6 +260,16 @@ const variant = computed(() => {
     return VARIANTS[variantKey];
 });
 
+const formSelectionRef = ref<InstanceType<typeof FormSelection> | null>(null);
+/**
+ * Determines if the `FormSelection` field is a simple select or a column select field
+ */
+const usingSimpleSelect = computed(
+    () =>
+        !formSelectionRef.value ||
+        ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false)
+);
+
 /**
  * Clears highlighting with delay
  */
@@ -267,7 +284,11 @@ function clearHighlighting(timeout = 1000) {
  */
 function createValue(val?: Array<DataOption> | DataOption | null) {
     if (val) {
-        const values = Array.isArray(val) ? val : [val];
+        let values = Array.isArray(val) ? val : [val];
+
+        // Remove duplicates based on item.id
+        values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
+
         if (variant.value && values.length > 0 && values[0]) {
             const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
@@ -331,67 +352,58 @@ function getSourceType(val: DataOption) {
 }
 
 /** Add values from drag/drop or data dialog sources */
-function handleIncoming(incoming: Record<string, unknown>, partial = true) {
+function handleIncoming(incoming: Record<string, unknown> | Record<string, unknown>[], partial = true) {
     if (incoming) {
         const values = Array.isArray(incoming) ? incoming : [incoming];
-        const extensions = values.map((v) => v.extension || v.elements_datatypes).filter((v) => (v ? true : false));
+
+        // ensure all incoming values are isHistoryOrCollectionItem
+        if (!values.every(isHistoryOrCollectionItem)) {
+            return false;
+        }
+
+        const extensions = Array.from(
+            new Set(
+                values
+                    .map(getExtensionsForItem)
+                    .flat()
+                    .filter((v) => v !== null && v !== undefined)
+            )
+        ) as string[];
+
         if (!canAcceptDatatype(extensions)) {
             return false;
         }
-        if (values.some((v) => !canAcceptSrc(v.history_content_type, v.collection_type))) {
+        if (
+            values.some((v) => {
+                const { historyContentType } = getSrcAndContentType(v);
+                const collectionType = "collection_type" in v && v.collection_type ? v.collection_type : undefined;
+                return !canAcceptSrc(historyContentType, collectionType);
+            })
+        ) {
             return false;
         }
         if (values.length > 0) {
             const incomingValues: Array<DataOption> = [];
-            values.forEach((v) => {
+            values.forEach((currVal) => {
                 // Map incoming objects to data option values
-                let newSrc;
-                if (isDCE(v)) {
-                    if (isDatasetElement(v)) {
-                        newSrc = SOURCE.DATASET;
-                        v = v.object;
-                    } else {
-                        newSrc = SOURCE.COLLECTION_ELEMENT;
-                    }
-                } else {
-                    newSrc =
-                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
-                }
-                const newHid = v.hid;
-                const newId = v.id;
-                const newName = v.name ? v.name : newId;
-                const newValue: DataOption = {
-                    id: newId,
-                    src: newSrc,
-                    batch: false,
-                    map_over_type: undefined,
-                    hid: newHid,
-                    name: newName,
-                    keep: true,
-                    tags: [],
-                };
-                if (v.collection_type && props.collectionTypes?.length > 0) {
-                    if (!props.collectionTypes.includes(v.collection_type)) {
-                        const mapOverType = props.collectionTypes.find((collectionType) =>
-                            v.collection_type.endsWith(collectionType)
-                        );
-                        if (!mapOverType) {
-                            return false;
-                        }
-                        newValue["batch"] = true;
-                        newValue["map_over_type"] = mapOverType;
-                    }
+                const newValue = toDataOption(currVal);
+                if (!newValue) {
+                    return false;
                 }
                 // Verify that new value has corresponding option
-                const keepKey = `${newId}_${newSrc}`;
-                const existingOptions = props.options && props.options[newSrc];
-                const foundOption = existingOptions && existingOptions.find((option) => option.id === newId);
+                const keepKey = `${newValue.id}_${newValue.src}`;
+                const existingOptions = props.options && props.options[newValue.src];
+                const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
                 if (!foundOption && !(keepKey in keepOptions)) {
-                    keepOptions[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
+                    keepOptions[keepKey] = {
+                        label: `${newValue.hid || "Selected"}: ${newValue.name}`,
+                        value: newValue,
+                    };
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
             });
+            let hasDuplicates = false;
             if (incomingValues.length > 0 && incomingValues[0]) {
                 // Set new value
                 const config = currentVariant.value;
@@ -400,19 +412,66 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                     if (config.multiple) {
                         const newValues = currentValue.value ? currentValue.value.slice() : [];
                         incomingValues.forEach((v) => {
-                            newValues.push(v);
+                            if (containsDataOption(newValues, v)) {
+                                hasDuplicates = true;
+                            } else {
+                                newValues.push(v);
+                            }
                         });
                         currentValue.value = newValues;
                     } else {
+                        if (containsDataOption(currentValue.value ?? [], firstValue)) {
+                            hasDuplicates = true;
+                        }
                         currentValue.value = [firstValue];
                     }
                 } else {
                     currentValue.value = incomingValues;
                 }
             }
+            if (hasDuplicates) {
+                return false;
+            }
         }
     }
     return true;
+}
+
+function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
+    const { newSrc, datasetCollectionDataset } = getSrcAndContentType(item);
+    let v: HistoryOrCollectionItem | HDAObject;
+    if (datasetCollectionDataset) {
+        v = datasetCollectionDataset;
+    } else {
+        v = item;
+    }
+    const newHid = isHistoryItem(v) ? v.hid : undefined;
+    const newId = v.id;
+    const newName = isHistoryItem(v) && v.name ? v.name : newId;
+    const newValue: DataOption = {
+        id: newId,
+        src: newSrc,
+        batch: false,
+        map_over_type: undefined,
+        hid: newHid,
+        name: newName,
+        keep: true,
+        tags: [],
+    };
+    if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
+        const itemCollectionType = v.collection_type;
+        if (!props.collectionTypes.includes(itemCollectionType as CollectionType)) {
+            const mapOverType = props.collectionTypes.find((collectionType) =>
+                itemCollectionType.endsWith(collectionType)
+            );
+            if (!mapOverType) {
+                return null;
+            }
+            newValue["batch"] = true;
+            newValue["map_over_type"] = mapOverType;
+        }
+    }
+    return newValue;
 }
 
 /**
@@ -437,6 +496,9 @@ function onBrowse() {
 }
 
 function canAcceptDatatype(itemDatatypes: string | Array<string>) {
+    // TODO: Shouldn't we enforce a datatype (at least "data") because of the case:
+    // What if the drop item is a `DCESummary`, then it has no extension (?) and we
+    // pass it as a valid item regardless of its elements' datatypes.
     if (!(props.extensions?.length > 0) || props.extensions.includes("data")) {
         return true;
     }
@@ -453,6 +515,39 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
         return false;
     }
     return true;
+}
+
+/**
+ * Given an element, determine the source and content type.
+ * Also returns the collection element dataset object if it exists.
+ */
+function getSrcAndContentType(element: HistoryOrCollectionItem): {
+    historyContentType: HistoryContentType;
+    newSrc: string;
+    datasetCollectionDataset: HDAObject | undefined;
+} {
+    let historyContentType: HistoryContentType;
+    let newSrc: string;
+    let datasetCollectionDataset: HDAObject | undefined;
+    if (isDCE(element)) {
+        if (isDatasetElement(element)) {
+            historyContentType = "dataset";
+            newSrc = SOURCE.DATASET;
+            datasetCollectionDataset = element.object;
+        } else {
+            historyContentType = "dataset_collection";
+            newSrc = SOURCE.COLLECTION_ELEMENT;
+        }
+    } else {
+        historyContentType = element.history_content_type;
+        newSrc =
+            "src" in element && typeof element.src === "string"
+                ? element.src
+                : historyContentType === "dataset_collection"
+                ? SOURCE.COLLECTION
+                : SOURCE.DATASET;
+    }
+    return { historyContentType, newSrc, datasetCollectionDataset };
 }
 
 function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
@@ -477,7 +572,7 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
             // if no collection_type is set all collections are valid
             return true;
         } else {
-            if (props.collectionTypes.includes(collectionType)) {
+            if (props.collectionTypes.includes(collectionType as CollectionType)) {
                 return true;
             }
             if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
@@ -497,69 +592,120 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = ["list", "list:paired", "paired"];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
 
-function buildNewCollection(collectionType: string) {
-    if (!["list", "list:paired", "paired"].includes(collectionType)) {
-        throw Error(`Unknown collection type: ${collectionType}`);
-    }
-    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
-    collectionModalShow.value = true;
+const currentCollectionTypeTab = ref<CollectionBuilderType | undefined>(
+    effectiveCollectionTypes?.[0] as CollectionBuilderType | undefined
+);
+
+/**
+ * Get the extension(s) for a given item
+ */
+function getExtensionsForItem(item: HistoryOrCollectionItem): string | string[] | null {
+    return "extension" in item ? item.extension : "elements_datatypes" in item ? item.elements_datatypes : null;
 }
 
-function createdCollection(collection: any) {
-    handleIncoming(collection);
+function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollectionItem {
+    return isHistoryItem(item) || isDCE(item);
+}
+
+/**
+ * Helper function to handle collection type changes safely
+ */
+function handleCollectionTypeChange(value: string): void {
+    // The API returns strings but we need to convert them to the correct type
+    currentCollectionTypeTab.value = value as CollectionBuilderType;
+}
+
+function getNameForItem(item: HistoryOrCollectionItem): string {
+    if (isHistoryItem(item)) {
+        return item.name ?? `Item ${item.hid}`;
+    } else if (isDCE(item)) {
+        return item.element_identifier;
+    } else {
+        throw new Error("Unknown item type");
+    }
 }
 
 // Drag/Drop event handlers
-function onDragEnter(evt: MouseEvent) {
-    const eventData = eventStore.getDragData();
-    if (eventData) {
-        const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
+function onDragEnter(evt: DragEvent) {
+    const eventData = eventStore.getDragItems();
+
+    if (eventData?.length) {
         let highlightingState = "success";
-        if (!canAcceptDatatype(extensions)) {
-            highlightingState = "warning";
-            $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-        } else if (
-            !canAcceptSrc(
-                eventData.history_content_type as "dataset" | "dataset_collection",
-                eventData.collection_type as string
-            )
-        ) {
-            highlightingState = "warning";
-            $emit("alert", `${eventData.history_content_type} is not an acceptable input type for this parameter.`);
+        for (const item of eventData) {
+            if (isHistoryOrCollectionItem(item)) {
+                const extensions = getExtensionsForItem(item);
+                const { historyContentType } = getSrcAndContentType(item);
+                const collectionType =
+                    "collection_type" in item && item.collection_type ? item.collection_type : undefined;
+
+                if (extensions && !canAcceptDatatype(extensions)) {
+                    highlightingState = "warning";
+                    $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
+                } else if (!canAcceptSrc(historyContentType, collectionType)) {
+                    highlightingState = "warning";
+                    $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
+                }
+                // Check if the item is already in the current value
+                const option = toDataOption(item);
+                const isAlreadyInValue = containsDataOption(currentValue.value ?? [], option);
+                if (isAlreadyInValue) {
+                    highlightingState = "warning";
+                    $emit("alert", `${getNameForItem(item)} is already selected.`);
+                }
+            }
         }
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    }
-}
-
-function onDragLeave(evt: MouseEvent) {
-    if (dragTarget.value === evt.target) {
-        currentHighlighting.value = null;
-        $emit("alert", undefined);
-    }
-}
-
-function onDrop() {
-    if (dragData.value) {
-        let accept = false;
-        if (eventStore.multipleDragData) {
-            accept = handleIncoming(Object.values(dragData.value) as any, false);
-        } else {
-            accept = handleIncoming(dragData.value);
-        }
-        if (accept) {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
+        // if any item in DataTransfer is a file
+        const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
+        if (hasFiles) {
             currentHighlighting.value = "success";
+            $emit("alert", "Drop files in the upload area below to create datasets.");
+            workflowTab.value = "create";
+            dragTarget.value = evt.target;
+        }
+    }
+}
+
+function onDragLeave(evt: DragEvent) {
+    if (dragTarget.value === evt.target) {
+        if (props.workflowRun && evt.dataTransfer?.items) {
+            setTimeout(() => {
+                currentHighlighting.value = null;
+                $emit("alert", undefined);
+            }, 3000);
+        } else {
+            currentHighlighting.value = null;
+            $emit("alert", undefined);
+        }
+    }
+}
+
+function onDrop(e: DragEvent) {
+    if (dragData.value.length) {
+        if (handleIncoming(dragData.value, dragData.value.length === 1)) {
+            currentHighlighting.value = "success";
+            if (props.workflowRun) {
+                workflowTab.value = "view";
+            }
         } else {
             currentHighlighting.value = "warning";
         }
         $emit("alert", undefined);
-        dragData.value = null;
+        dragData.value = [];
+        clearHighlighting();
+    } else if (props.workflowRun && e.dataTransfer?.files?.length) {
+        $emit("alert", undefined);
+        dragData.value = [];
         clearHighlighting();
     }
 }
@@ -640,118 +786,128 @@ const noOptionsWarningMessage = computed(() => {
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <div class="d-flex flex-column">
-            <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start">
-                <BButton
-                    v-for="(v, index) in variant"
-                    :key="index"
-                    v-b-tooltip.hover.bottom
-                    :pressed="currentField === index"
-                    :title="v.tooltip"
-                    @click="currentField = index">
-                    <FontAwesomeIcon :icon="['far', v.icon]" />
-                </BButton>
-                <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
-                    <span v-else class="font-weight-bold">...</span>
-                </BButton>
-                <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
-                    <BButton
-                        v-for="collectionType in effectiveCollectionTypes"
-                        :key="collectionType"
-                        v-b-tooltip.hover.bottom
-                        :title="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
-                        :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
-                        @click="buildNewCollection(collectionType)">
-                        <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    </BButton>
-                </BButtonGroup>
-            </BButtonGroup>
-            <div v-if="restrictsExtensions">
-                <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
-                    accepted formats
-                    <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
-                    <FontAwesomeIcon v-else :icon="faCaretDown" />
-                </BButton>
-                <BCollapse v-model="formatsVisible">
-                    <ul class="pl-3 m-0">
-                        <li v-for="extension in extensions" :key="extension">{{ extension }}</li>
-                    </ul>
-                </BCollapse>
-                <BTooltip :target="formatsButtonId" noninteractive placement="bottom" triggers="hover">
-                    <div class="form-data-extensions-tooltip">
-                        <span v-for="extension in extensions" :key="extension">{{ extension }}</span>
-                    </div>
-                </BTooltip>
+        <div class="d-flex flex-gapx-1">
+            <div class="d-flex flex-column">
+                <FormDataContextButtons
+                    :variant="variant"
+                    :current-field="currentField"
+                    :can-browse="canBrowse"
+                    :loading="props.loading"
+                    :workflow-run="props.workflowRun"
+                    :collection-types="props.collectionTypes"
+                    :current-source="currentSource || undefined"
+                    :is-populated="currentValue && currentValue.length > 0"
+                    show-field-options
+                    :show-view-create-options="props.workflowRun && !usingSimpleSelect"
+                    :workflow-tab.sync="workflowTab"
+                    @create-collection-type="handleCollectionTypeChange"
+                    @on-browse="onBrowse"
+                    @set-current-field="(value) => (currentField = value)" />
+
+                <FormDataExtensions
+                    v-if="restrictsExtensions && !props.workflowRun"
+                    :extensions="props.extensions"
+                    :formats-button-id="formatsButtonId"
+                    :formats-visible.sync="formatsVisible" />
+            </div>
+
+            <div class="w-100 d-flex flex-gapx-1">
+                <FormSelect
+                    v-if="currentVariant && !currentVariant.multiple"
+                    v-model="currentValue"
+                    class="w-100"
+                    :class="{
+                        'form-select': props.workflowRun,
+                        'align-self-start': !props.workflowRun,
+                    }"
+                    :multiple="currentVariant.multiple"
+                    :optional="currentVariant.multiple || optional"
+                    :options="formattedOptions"
+                    :placeholder="`Select a ${placeholder}`">
+                    <template v-slot:no-options>
+                        <BAlert
+                            :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
+                            variant="warning"
+                            show>
+                            {{ noOptionsWarningMessage }}
+                        </BAlert>
+                    </template>
+                </FormSelect>
+                <FormSelection
+                    v-else-if="currentVariant?.multiple"
+                    ref="formSelectionRef"
+                    v-model="currentValue"
+                    class="w-100"
+                    :data="formattedOptions"
+                    optional
+                    multiple>
+                    <template v-slot:no-options>
+                        <BAlert class="py-2 my-0" variant="warning" show>
+                            {{ noOptionsWarningMessage }}
+                        </BAlert>
+                    </template>
+                </FormSelection>
+            </div>
+
+            <FormDataContextButtons
+                v-if="props.workflowRun && usingSimpleSelect"
+                compact
+                :collection-types="props.collectionTypes"
+                :current-source="currentSource || undefined"
+                :is-populated="currentValue && currentValue.length > 0"
+                show-view-create-options
+                :workflow-tab.sync="workflowTab"
+                @create-collection-type="handleCollectionTypeChange" />
+        </div>
+
+        <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
+            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
+                <BFormCheckbox
+                    v-if="currentVariant.batch === BATCH.ENABLED"
+                    v-model="currentLinked"
+                    class="checkbox no-highlight"
+                    switch>
+                    <span v-if="currentLinked">
+                        <FontAwesomeIcon :icon="faLink" />
+                        <b v-localize class="mr-1">Linked:</b>
+                        <span v-localize>Datasets will be run in matched order with other datasets.</span>
+                    </span>
+                    <span v-else>
+                        <FontAwesomeIcon :icon="faUnlink" />
+                        <b v-localize class="mr-1">Unlinked:</b>
+                        <span v-localize>Dataset will be run against *all* other datasets.</span>
+                    </span>
+                </BFormCheckbox>
+                <div class="info text-info">
+                    <FontAwesomeIcon :icon="faExclamation" />
+                    <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                        The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
+                        tool.
+                    </span>
+                    <span v-else v-localize class="ml-1">
+                        This is a batch mode input field. Individual jobs will be triggered for each dataset.
+                    </span>
+                </div>
             </div>
         </div>
 
-        <FormSelect
-            v-if="currentVariant && !currentVariant.multiple"
-            v-model="currentValue"
-            class="align-self-start"
-            :multiple="currentVariant.multiple"
-            :optional="currentVariant.multiple || optional"
-            :options="formattedOptions"
-            :placeholder="`Select a ${placeholder}`">
-            <template v-slot:no-options>
-                <BAlert class="w-100 align-items-center" variant="warning" show>
-                    {{ noOptionsWarningMessage }}
-                </BAlert>
-            </template>
-        </FormSelect>
-        <FormSelection
-            v-else-if="currentVariant?.multiple"
-            v-model="currentValue"
-            :data="formattedOptions"
-            optional
-            multiple />
-
-        <CollectionCreatorModal
-            v-if="currentHistoryId && effectiveCollectionTypes?.length > 0"
-            :history-id="currentHistoryId"
-            :collection-type="collectionModalType"
-            :extensions="props.extensions.filter((ext) => ext !== 'data')"
-            :show-modal.sync="collectionModalShow"
-            @created-collection="createdCollection" />
-
-        <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
-            <BFormCheckbox
-                v-if="currentVariant.batch === BATCH.ENABLED"
-                v-model="currentLinked"
-                class="checkbox no-highlight"
-                switch>
-                <span v-if="currentLinked">
-                    <FontAwesomeIcon :icon="faLink" />
-                    <b v-localize class="mr-1">Linked:</b>
-                    <span v-localize>Datasets will be run in matched order with other datasets.</span>
-                </span>
-                <span v-else>
-                    <FontAwesomeIcon :icon="faUnlink" />
-                    <b v-localize class="mr-1">Unlinked:</b>
-                    <span v-localize>Dataset will be run against *all* other datasets.</span>
-                </span>
-            </BFormCheckbox>
-            <div class="info text-info">
-                <FontAwesomeIcon :icon="faExclamation" />
-                <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
-                    The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
-                    tool.
-                </span>
-                <span v-else v-localize class="ml-1">
-                    This is a batch mode input field. Individual jobs will be triggered for each dataset.
-                </span>
-            </div>
-        </template>
+        <FormDataWorkflowRunTabs
+            v-if="props.workflowRun"
+            class="mt-3"
+            :current-value="currentValue"
+            :current-variant="currentVariant"
+            :can-browse="canBrowse"
+            :extensions="props.extensions"
+            :collection-type="currentCollectionTypeTab"
+            :step-title="props.userDefinedTitle"
+            :workflow-tab.sync="workflowTab"
+            @focus="$emit('focus')"
+            @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
     </div>
 </template>
 
 <style scoped lang="scss">
 .form-data {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5rem;
-
     .checkbox {
         grid-column: span 2;
     }
@@ -763,6 +919,39 @@ const noOptionsWarningMessage = computed(() => {
 </style>
 
 <style lang="scss">
+// To ensure the field options, select field and the workflow run options are all the same height
+.form-data {
+    .form-select {
+        .multiselect,
+        .multiselect__tags {
+            height: 100%;
+            min-height: auto;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .multiselect {
+            // the caret-down button
+            .multiselect__select {
+                height: 100%;
+                padding: 0;
+            }
+            // the selector containing the current value
+            .multiselect__tags {
+                .multiselect__single {
+                    margin-top: 5px;
+                }
+            }
+        }
+        .multiselect--active {
+            // the search input field
+            .multiselect__input {
+                height: 100%;
+                padding-left: 5px;
+            }
+        }
+    }
+}
+
 .form-data-extensions-tooltip {
     display: flex;
     flex-wrap: wrap;

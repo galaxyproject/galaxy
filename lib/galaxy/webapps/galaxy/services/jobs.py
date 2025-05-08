@@ -94,6 +94,7 @@ class JobsService(ServiceBase):
                 job_dict["decoded_job_id"] = job.id
             if user_details:
                 job_dict["user_email"] = job.get_user_email()
+                job_dict["user_id"] = job.user_id
             out.append(job_dict)
 
         return out

@@ -294,6 +294,8 @@ class Component:
         sub_components = {}
 
         for key, value in raw_value.items():
+            if key.endswith("mixin"):
+                continue
             if key == "selectors":
                 base_selector = None
                 if "_" in value:

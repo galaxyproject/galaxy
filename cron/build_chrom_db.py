@@ -17,7 +17,7 @@ import os
 import sys
 from urllib.parse import urlencode
 
-import parse_builds  # noqa: I100,I202
+import parse_builds
 
 from galaxy.util import requests
 

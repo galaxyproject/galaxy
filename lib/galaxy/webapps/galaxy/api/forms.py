@@ -4,7 +4,9 @@ API operations on FormDefinition objects.
 
 import logging
 
+from fastapi import Path
 from sqlalchemy import select
+from typing_extensions import Annotated
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
@@ -25,18 +27,23 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["forms"])
 
+FormIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Form ID", description="The encoded database identifier of the form."),
+]
+
 
 @router.cbv
 class FastAPIForms:
     form_manager: FormManager = depends(FormManager)
 
     @router.delete("/api/forms/{id}", require_admin=True)
-    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+    def delete(self, id: FormIDPathParam, trans: ProvidesUserContext = DependsOnTrans):
         form = self.form_manager.get(trans, id)
         self.form_manager.delete(trans, form)
 
     @router.post("/api/forms/{id}/undelete", require_admin=True)
-    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+    def undelete(self, id: FormIDPathParam, trans: ProvidesUserContext = DependsOnTrans):
         form = self.form_manager.get(trans, id)
         self.form_manager.undelete(trans, form)
 

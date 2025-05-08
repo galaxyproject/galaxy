@@ -37,6 +37,8 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Number, default: undefined },
+    populatedInputs: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -169,7 +171,7 @@ defineExpose({
             id="canvas-container"
             ref="canvas"
             class="canvas-content"
-            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
             @drop.prevent
             @dragover.prevent>
             <AdaptiveGrid
@@ -197,6 +199,7 @@ defineExpose({
                     :scale="scale"
                     :readonly="readonly"
                     :is-invocation="props.isInvocation"
+                    :populated-inputs="props.populatedInputs"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -236,11 +239,6 @@ defineExpose({
         left: 0px;
         top: 0px;
         overflow: hidden;
-
-        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
-        &.fixed-window-height {
-            height: 60vh;
-        }
     }
 
     .node-area {

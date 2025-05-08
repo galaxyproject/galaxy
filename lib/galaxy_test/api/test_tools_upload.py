@@ -220,9 +220,16 @@ class TestToolsUpload(ApiTestCase):
             csv_metadata = self._upload_and_get_details(fh, file_type="csv")
         assert csv_metadata["file_ext"] == "csv"
 
+    @skip_without_datatype("geocsv")
+    def test_geocsv_upload_auto(self):
+        csv_path = TestDataResolver().get_filename("1.csv")
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, file_type="auto")
+        assert csv_metadata["file_ext"] == "geocsv"
+
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
-        csv_path = TestDataResolver().get_filename("1.csv")
+        csv_path = TestDataResolver().get_filename("2.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
         assert csv_metadata["file_ext"] == "csv"
@@ -236,7 +243,7 @@ class TestToolsUpload(ApiTestCase):
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
-        csv_path = TestDataResolver().get_filename("1.csv")
+        csv_path = TestDataResolver().get_filename("2.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
         assert csv_metadata["file_ext"] == "csv"

@@ -36,8 +36,9 @@ import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
+
 import { directiveEntry } from "./directives.ts";
-import { fromSteps } from "./labels.ts";
 import MarkdownDialog from "./MarkdownDialog";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -237,7 +238,7 @@ export default {
             };
         },
         workflowLabels() {
-            return fromSteps(this.steps);
+            return this.isWorkflow ? fromSteps(this.steps) : undefined;
         },
     },
     created() {

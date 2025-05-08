@@ -17,7 +17,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { type Activity } from "@/stores/activityStore";
+import { type Activity } from "@/stores/activityStoreTypes";
 import { type EventData } from "@/stores/eventStore";
 
 export const defaultActivities = [

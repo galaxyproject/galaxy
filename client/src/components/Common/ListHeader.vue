@@ -2,28 +2,33 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { useUserStore } from "@/stores/userStore";
+import { type ListViewMode, useUserStore } from "@/stores/userStore";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
 
-type ListView = "grid" | "list";
 type SortBy = "create_time" | "update_time" | "name";
 
 interface Props {
+    listId: string;
     allSelected?: boolean;
     showSelectAll?: boolean;
     showViewToggle?: boolean;
+    showSortOptions?: boolean;
     selectAllDisabled?: boolean;
     indeterminateSelected?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     allSelected: false,
     showSelectAll: false,
     showViewToggle: false,
+    showSortOptions: false,
     selectAllDisabled: false,
     indeterminateSelected: false,
 });
@@ -36,7 +41,7 @@ const userStore = useUserStore();
 
 const sortDesc = ref(true);
 const sortBy = ref<SortBy>("update_time");
-const listViewMode = computed<ListView>(() => (userStore.preferredListViewMode as ListView) || "grid");
+const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
@@ -46,14 +51,13 @@ function onSort(newSortBy: SortBy) {
     }
 }
 
-function onToggleView(newView: ListView) {
-    userStore.setPreferredListViewMode(newView);
+function onToggleView(newView: ListViewMode) {
+    userStore.setListViewPreference(props.listId, newView);
 }
 
 defineExpose({
     sortBy,
     sortDesc,
-    listViewMode,
 });
 </script>
 
@@ -74,33 +78,35 @@ defineExpose({
         </div>
 
         <div class="list-header-filters">
-            <div>
+            <div v-if="showSortOptions">
                 Sort by:
-                <BButtonGroup>
-                    <BButton
+                <GButtonGroup>
+                    <GButton
                         id="sortby-name"
-                        v-b-tooltip.hover
-                        size="sm"
+                        tooltip
+                        size="small"
                         :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
                         :pressed="sortBy === 'name'"
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         @click="onSort('name')">
                         <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
                         Name
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         id="sortby-update-time"
-                        v-b-tooltip.hover
-                        size="sm"
+                        tooltip
+                        size="small"
                         :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
                         :pressed="sortBy === 'update_time'"
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         @click="onSort('update_time')">
                         <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
                         Update time
-                    </BButton>
-                </BButtonGroup>
+                    </GButton>
+                </GButtonGroup>
             </div>
 
             <slot name="extra-filter" />
@@ -108,29 +114,31 @@ defineExpose({
 
         <div v-if="showViewToggle">
             Display:
-            <BButtonGroup>
-                <BButton
+            <GButtonGroup>
+                <GButton
                     id="view-grid"
-                    v-b-tooltip
+                    tooltip
                     title="Grid view"
-                    size="sm"
-                    :pressed="listViewMode === 'grid'"
-                    variant="outline-primary"
+                    size="small"
+                    :pressed="currentListViewMode === 'grid'"
+                    outline
+                    color="blue"
                     @click="onToggleView('grid')">
                     <FontAwesomeIcon :icon="faGripVertical" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     id="view-list"
-                    v-b-tooltip
+                    tooltip
                     title="List view"
-                    size="sm"
-                    :pressed="listViewMode === 'list'"
-                    variant="outline-primary"
+                    size="small"
+                    :pressed="currentListViewMode === 'list'"
+                    outline
+                    color="blue"
                     @click="onToggleView('list')">
                     <FontAwesomeIcon :icon="faBars" />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </div>
     </div>
 </template>
@@ -140,6 +148,7 @@ defineExpose({
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 0.5rem 0;
 
     .list-header-filters {
         display: flex;

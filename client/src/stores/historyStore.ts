@@ -37,6 +37,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
+    const changingCurrentHistory = ref(false);
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -96,12 +97,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
     });
 
     async function setCurrentHistory(historyId: string) {
-        try {
-            const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
-            selectHistory(currentHistory);
-            setFilterText(historyId, "");
-        } catch (error) {
-            rethrowSimple(error);
+        if (!changingCurrentHistory.value) {
+            try {
+                changingCurrentHistory.value = true;
+                const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
+                selectHistory(currentHistory);
+                setFilterText(historyId, "");
+            } catch (error) {
+                rethrowSimple(error);
+            } finally {
+                changingCurrentHistory.value = false;
+            }
         }
     }
 
@@ -440,6 +446,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     return {
         histories,
+        changingCurrentHistory,
         currentHistory,
         currentHistoryId,
         currentFilterText,

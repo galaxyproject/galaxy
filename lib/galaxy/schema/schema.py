@@ -122,6 +122,17 @@ class DatasetCollectionPopulatedState(str, Enum):
     FAILED = "failed"  # some problem populating state, won't be populated
 
 
+# we use TypedDicts in the model layer and I don't know how to type with that enum
+# in the dict - it doesn't have the enum value magic that pydantic has.
+DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
+
+
+class DatasetSourceTransformActionType(str, Enum):
+    TO_POSIX_LINES = "to_posix_lines"
+    SPACES_TO_TABLES = "spaces_to_tabs"
+    DATATYPE_GROOM = "datatype_groom"
+
+
 # Generic and common Field annotations that can be reused across models
 
 RelativeUrlField = Annotated[
@@ -369,7 +380,6 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     quota_bytes: Optional[int] = Field(
         default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
     )
-    tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
 class UserUpdatePayload(Model):
@@ -742,6 +752,29 @@ class DatasetHash(Model):
     )
 
 
+HdaLddaField = Field(
+    DatasetSourceType.hda,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
+
+DatasetSourceTransformActionField: DatasetSourceTransformActionType = Field(
+    ...,
+    title="Action",
+    description="Action that was applied to dataset source content to transform it into the dataset",
+)
+DatasetSourceTransformActionDatatypeExtField: Optional[str] = Field(
+    None,
+    title="Datatype Extension",
+    description="If action is 'datatype_groom', this is the datatype that was used to find and run the grooming code as part of the transform action.",
+)
+
+
+class DatasetSourceTransform(Model):
+    action: DatasetSourceTransformActionType = DatasetSourceTransformActionField
+    datatype_ext: Optional[str] = DatasetSourceTransformActionDatatypeExtField
+
+
 class DatasetSource(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -753,7 +786,7 @@ class DatasetSource(Model):
         Optional[str], Field(None, title="Extra Files Path", description="The path to the extra files.")
     ]
     transform: Annotated[
-        Optional[List[Any]],  # TODO: type this
+        Optional[List[DatasetSourceTransform]],
         Field(
             None,
             title="Transform",
@@ -2085,6 +2118,11 @@ class JobSummary(JobBaseModel):
             "The email of the user that owns this job. "
             "Only the owner of the job and administrators can see this value."
         ),
+    )
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description="The encoded ID of the user that owns this job.",
     )
 
 
@@ -3696,12 +3734,13 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Title",
         description="The name of the page.",
+        min_length=1,
     )
     slug: str = Field(
         ...,  # Required
         title="Identifier",
-        description="The title slug for the page URL, must be unique.",
-        pattern=r"^[^/:?#]+$",
+        description="The identifying slug for the page URL, must be unique.",
+        pattern=r"^[a-z0-9-]+$",
     )
 
 
@@ -3737,6 +3776,24 @@ class ChatPayload(Model):
     )
 
 
+class ChatResponse(BaseModel):
+    response: str = Field(
+        ...,
+        title="Response",
+        description="The response to the chat query.",
+    )
+    error_code: Optional[int] = Field(
+        ...,
+        title="Error Code",
+        description="The error code, if any, for the chat query.",
+    )
+    error_message: Optional[str] = Field(
+        ...,
+        title="Error Message",
+        description="The error message, if any, for the chat query.",
+    )
+
+
 class CreatePagePayload(PageSummaryBase):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
@@ -3751,6 +3808,14 @@ class CreatePagePayload(PageSummaryBase):
         description="Encoded ID used by workflow generated reports.",
     )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
+
+
+class UpdatePagePayload(PageSummaryBase):
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
 
 
 class AsyncTaskResultSummary(Model):
@@ -3872,7 +3937,15 @@ class OAuth2State(BaseModel):
 
 
 class PageDetails(PageSummary):
+    annotation: Optional[str] = AnnotationField
     content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    generate_version: Optional[str] = GenerateVersionField
+    generate_time: Optional[str] = GenerateTimeField
+    model_config = ConfigDict(extra="allow")
+
+
+class ToolReportForDataset(BaseModel):
     content: Optional[str] = ContentField
     generate_version: Optional[str] = GenerateVersionField
     generate_time: Optional[str] = GenerateTimeField

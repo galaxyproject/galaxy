@@ -51,6 +51,12 @@
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
+                <b-form-group
+                    description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
+                    <b-form-checkbox id="send-notification" v-model="sendNotification" switch>
+                        Send a warning notification to users
+                    </b-form-checkbox>
+                </b-form-group>
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
@@ -104,6 +110,8 @@ import { jobsProvider } from "components/providers/JobProvider";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
+
+import { GalaxyApi } from "@/api";
 
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
@@ -167,6 +175,7 @@ export default {
             showAllRunning: false,
             titleSearch: `search jobs`,
             helpHtml: helpHtml,
+            sendNotification: false,
         };
     },
     computed: {
@@ -257,8 +266,69 @@ export default {
         onRefresh() {
             this.update();
         },
+        async sendNotificationToUsers() {
+            const cancelReason = this.stopMessage || "No reason provided";
+            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            // Group jobs by user
+            const userJobsMap = jobsToCancel.reduce((acc, job) => {
+                if (job.user_id) {
+                    if (!acc[job.user_id]) {
+                        acc[job.user_id] = [];
+                    }
+                    acc[job.user_id].push(job);
+                }
+                return acc;
+            }, {});
+            const userIds = Object.keys(userJobsMap);
+            const totalUsers = userIds.length;
+            let numSuccess = 0;
+            const errors = [];
+            for (const userId of userIds) {
+                const jobs = userJobsMap[userId];
+                const notificationMessage = `The following jobs (${jobs
+                    .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
+                    .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`;
+
+                const { error } = await GalaxyApi().POST("/api/notifications", {
+                    body: {
+                        notification: {
+                            source: "admin",
+                            variant: "warning",
+                            category: "message",
+                            content: {
+                                category: "message",
+                                subject: "Jobs Cancelled by Admin",
+                                message: notificationMessage,
+                            },
+                        },
+                        recipients: {
+                            user_ids: [userId],
+                        },
+                    },
+                });
+                if (error) {
+                    errors.push(error);
+                } else {
+                    numSuccess++;
+                }
+            }
+
+            if (errors.length) {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
+                this.status = "warning";
+            } else {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
+                this.status = "success";
+            }
+        },
+        getJobViewLink(jobId) {
+            return `${getAppRoot()}jobs/${jobId}/view`;
+        },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
+                if (this.sendNotification) {
+                    this.sendNotificationToUsers();
+                }
                 this.update();
                 this.selectedStopJobIds = [];
                 this.stopMessage = "";

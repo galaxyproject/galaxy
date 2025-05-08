@@ -1,14 +1,24 @@
-import { type CollectionEntry, type DCESummary, GalaxyApi, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
+import {
+    type CollectionEntry,
+    type components,
+    type DCESummary,
+    GalaxyApi,
+    type HDCADetailed,
+    type HDCASummary,
+    isHDCA,
+} from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
+
+export type CollectionType = string;
 
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionDetails(params: { id: string }): Promise<HDCADetailed> {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+export async function fetchCollectionDetails(params: { hdca_id: string }): Promise<HDCADetailed> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: { path: params },
     });
 
@@ -22,8 +32,8 @@ export async function fetchCollectionDetails(params: { id: string }): Promise<HD
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionSummary(params: { id: string }): Promise<HDCASummary> {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+export async function fetchCollectionSummary(params: { hdca_id: string }): Promise<HDCASummary> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: {
             path: params,
             query: { view: "collection" },
@@ -75,4 +85,41 @@ export async function fetchElementsFromCollection(params: {
         offset: params.offset ?? 0,
         limit: params.limit ?? DEFAULT_LIMIT,
     });
+}
+
+type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
+type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
+
+type NewCollectionOptions = {
+    name: string;
+    element_identifiers: CollectionElementIdentifiers;
+    collection_type: string;
+    history_id: string;
+    copy_elements?: boolean;
+    hide_source_items?: boolean;
+};
+
+export function createCollectionPayload(options: NewCollectionOptions): CreateNewCollectionPayload {
+    const hideSourceItems = options.hide_source_items === undefined ? true : options.hide_source_items;
+    return {
+        name: options.name,
+        history_id: options.history_id,
+        element_identifiers: options.element_identifiers,
+        collection_type: options.collection_type,
+        instance_type: "history",
+        copy_elements: options.copy_elements || true,
+        hide_source_items: hideSourceItems,
+    };
+}
+
+export async function createHistoryDatasetCollectionInstance(options: NewCollectionOptions) {
+    const payload = createCollectionPayload(options);
+    const { data, error } = await GalaxyApi().POST("/api/dataset_collections", {
+        body: payload,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }

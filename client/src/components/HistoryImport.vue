@@ -71,9 +71,9 @@
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
 
-                <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
+                <GButton class="import-button" color="blue" type="submit" :disabled="!importReady">
                     Import {{ identifierText }}
-                </b-button>
+                </GButton>
             </b-form>
         </div>
     </div>
@@ -98,6 +98,7 @@ import { fetchFileSources } from "@/api/remoteFiles";
 
 import ExternalLink from "./ExternalLink";
 
+import GButton from "./BaseComponents/GButton.vue";
 import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);
@@ -106,7 +107,7 @@ library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink },
+    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink, GButton },
     props: {
         invocationImport: {
             type: Boolean,

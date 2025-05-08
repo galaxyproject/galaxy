@@ -72,7 +72,6 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
 
         This is step 1 - Create and populate repositories package_matplotlib_1_2_0170 and package_numpy_1_7_0170.
         """
-        global running_standalone
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         if running_standalone:
@@ -98,7 +97,6 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         set to True. When matplotlib is selected for installation, the result should be that numpy is compiled
         and installed first.
         """
-        global running_standalone
         numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
         matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name

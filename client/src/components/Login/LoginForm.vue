@@ -81,7 +81,7 @@ async function submitLogin() {
     if (localStorage.getItem("redirect_url")) {
         redirect = localStorage.getItem("redirect_url");
     } else {
-        redirect = props.redirect;
+        redirect = props.redirect ?? null;
     }
 
     try {

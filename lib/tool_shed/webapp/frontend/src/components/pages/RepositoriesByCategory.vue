@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed } from "vue"
+import PaginatedRepositoriesGrid from "@/components/PaginatedRepositoriesGrid.vue"
 import { useCategoriesStore } from "@/stores"
-import RepositoriesGrid from "@/components/RepositoriesGrid.vue"
-import { nodeToRow, type RepositoryGridItem } from "@/components/RepositoriesGridInterface"
-import ErrorBanner from "@/components/ErrorBanner.vue"
-import LoadingDiv from "@/components/LoadingDiv.vue"
-import { graphql } from "@/gql"
-import type { Query, RelayRepositoryConnection } from "@/gql/graphql"
-import { useRelayInfiniteScrollQuery } from "@/relayClient"
+import { adaptPaginatedIndexResponse, type Query, type QueryResults } from "@/components/RepositoriesGridInterface"
+import { paginatedIndex } from "@/api"
+import { notifyOnCatch } from "@/util"
+
+interface Props {
+    categoryId: string
+}
+
 const categoriesStore = useCategoriesStore()
-
-const props = defineProps({
-    categoryId: {
-        type: String,
-        required: true,
-    },
-})
-
-void categoriesStore.getAll()
-
+categoriesStore.getAll()
 const category = computed(() => {
     const category = categoriesStore.byId(props.categoryId)
     return category
@@ -28,50 +21,26 @@ const categoryName = computed(() => {
     return category.value ? category.value.name : "Category"
 })
 
-const query = graphql(/* GraphQL */ `
-    query repositoriesByCategory($categoryId: String, $cursor: String) {
-        relayRepositoriesForCategory(encodedId: $categoryId, sort: NAME_ASC, first: 10, after: $cursor) {
-            edges {
-                cursor
-                node {
-                    ...RepositoryListItemFragment
-                }
-            }
-            pageInfo {
-                endCursor
-                hasNextPage
-            }
-        }
-    }
-`)
+const props = defineProps<Props>()
 
-function toResult(queryResult: Query): RelayRepositoryConnection {
-    const result = queryResult.relayRepositoriesForCategory
-    if (!result) {
-        throw Error("problem")
+async function onRequest(query: Query): Promise<QueryResults> {
+    try {
+        const data = await paginatedIndex({
+            page: query.page || 1,
+            page_size: query.rowsPerPage,
+            category_id: props.categoryId,
+            filter: query.filter,
+        })
+        return adaptPaginatedIndexResponse(data)
+    } catch (e) {
+        notifyOnCatch(e)
+        return { items: [], rowsNumber: 0 }
     }
-    return result as RelayRepositoryConnection
 }
-
-const { records, error, loading, onScroll } = useRelayInfiniteScrollQuery(
-    query,
-    { categoryId: props.categoryId },
-    toResult
-)
-
-const rows = computed(() => {
-    return records.value.map(nodeToRow)
-})
 </script>
+
 <template>
-    <loading-div v-if="loading" />
-    <error-banner error="Failed to load repository" v-else-if="error"> </error-banner>
     <q-page class="q-pa-md" v-if="categoryName">
-        <repositories-grid
-            :title="`Repositories for ${categoryName}`"
-            :rows="rows"
-            :on-scroll="onScroll"
-            :allow-search="true"
-        />
+        <paginated-repositories-grid :title="categoryName" :on-request="onRequest" :allow-search="true" />
     </q-page>
 </template>

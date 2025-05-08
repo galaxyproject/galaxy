@@ -8,6 +8,7 @@ from typing import (
     Dict,
 )
 
+from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
 
@@ -21,6 +22,9 @@ class ComputeEnvironment(metaclass=ABCMeta):
     """Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
+
+    def __init__(self):
+        self.materialized_objects: Dict[str, DeferrableObjectsT] = {}
 
     @abstractmethod
     def output_names(self):

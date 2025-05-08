@@ -6,6 +6,11 @@ import { type components, type GalaxyApiPaths } from "@/api/schema";
 export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
+ * Contains a dataset's text content and details
+ */
+export type DatasetTextContentDetails = components["schemas"]["DatasetTextContentDetails"];
+
+/**
  * Contains minimal information about a History.
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
@@ -172,6 +177,10 @@ export type DatasetCollectionAttributes = components["schemas"]["DatasetCollecti
 
 export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
 
+export interface SelectableObjectStore extends ConcreteObjectStoreModel {
+    object_store_id: string;
+}
+
 /**
  * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
  * with additional information to simplify its handling.
@@ -191,10 +200,14 @@ export interface SubCollection extends DCObject {
  */
 export type CollectionEntry = HDCASummary | SubCollection;
 
+export function isHDA(entry?: HistoryItemSummary): entry is HDASummary {
+    return entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset";
+}
+
 /**
  * Returns true if the given entry is a top level HDCA and false for sub-collections.
  */
-export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
+export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is HDCASummary {
     return (
         entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
     );
@@ -296,10 +309,8 @@ export function canMutateHistory(history: AnyHistory): boolean {
 
 export type DatasetHash = components["schemas"]["DatasetHash"];
 
-export type DatasetTransform = {
-    action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
-    datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
-};
+export type DatasetSource = components["schemas"]["DatasetSource"];
+export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
 
 /**
  * Base type for all exceptions returned by the API.

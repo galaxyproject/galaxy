@@ -6,10 +6,10 @@ import { BFormCheckbox } from "bootstrap-vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { getFullAppUrl } from "@/app/utils";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { getFullAppUrl } from "@/utils/utils";
 
 import type { Item, ShareOption } from "./item";
 

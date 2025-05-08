@@ -86,7 +86,7 @@ class GridData:
 
         # Process sort arguments.
         sort_by = kwargs.get("sort_by", self.default_sort_key)
-        sort_desc = string_as_bool(kwargs.get("sort_desc", True))
+        sort_desc = string_as_bool(kwargs.get("sort_desc", False))
         for column in self.columns:
             if column.key == sort_by:
                 query = column.sort(trans, query, not sort_desc, column_name=sort_by)

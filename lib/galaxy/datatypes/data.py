@@ -172,7 +172,7 @@ def _get_max_peek_size(data):
 
     max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
     if isinstance(data.datatype, text.Html):
-        max_peek_size = 10000000  # 10 MB for html
+        max_peek_size = 50000000  # 50 MB for html
     elif isinstance(data.datatype, binary.Binary):
         max_peek_size = 100000  # 100 KB for binary
     return max_peek_size
@@ -465,6 +465,7 @@ class Data(metaclass=DataMeta):
     def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
+        composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         composite_extensions.append("directory")  # for downloading directories.
         composite_extensions.append("zarr")  # for downloading zarr directories.

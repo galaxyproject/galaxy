@@ -42,7 +42,7 @@ describe("JobParameters/JobParameters.vue", () => {
             jobId: JOB_ID,
         };
 
-        const wrapper = mount(JobParameters, {
+        const wrapper = mount(JobParameters as object, {
             propsData,
             stubs: {
                 DatasetProvider: DatasetProvider,
@@ -92,7 +92,7 @@ describe("JobParameters/JobParameters.vue", () => {
         };
 
         const getSingleParam = async (propsData: { jobId: string; param: string }) => {
-            const wrapper = mount(JobParameters, {
+            const wrapper = mount(JobParameters as object, {
                 propsData,
                 stubs: {
                     DatasetProvider: DatasetProvider,

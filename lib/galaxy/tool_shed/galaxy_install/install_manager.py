@@ -800,7 +800,7 @@ class InstallRepositoryManager:
         )
         return (None, None)
 
-    def order_components_for_installation(self, tsr_ids, repo_info_dicts, tool_panel_section_keys):
+    def order_components_for_installation(self, tsr_ids: List[str], repo_info_dicts, tool_panel_section_keys):
         """
         Some repositories may have repository dependencies that are required to be installed
         before the dependent repository.  This method will inspect the list of repositories
@@ -820,7 +820,7 @@ class InstallRepositoryManager:
         prior_install_required_dict = repository_util.get_prior_import_or_install_required_dict(
             self.app, tsr_ids, repo_info_dicts
         )
-        processed_tsr_ids = []
+        processed_tsr_ids: List[str] = []
         while len(processed_tsr_ids) != len(prior_install_required_dict.keys()):
             tsr_id = suc.get_next_prior_import_or_install_required_dict_entry(
                 prior_install_required_dict, processed_tsr_ids

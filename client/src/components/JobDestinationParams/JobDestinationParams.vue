@@ -2,6 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { isAdminUser } from "@/api";
 import { useJobDestinationParametersStore } from "@/stores/jobDestinationParametersStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -20,7 +21,7 @@ const jobDestinationParams = computed(() => {
 </script>
 
 <template>
-    <div v-if="currentUser?.is_admin">
+    <div v-if="isAdminUser(currentUser)">
         <h2 class="h-md">Destination Parameters</h2>
         <table id="destination_parameters" class="tabletip info_data_table">
             <tbody>

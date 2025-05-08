@@ -1,15 +1,21 @@
 import os
 import tempfile
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy import model
-from galaxy.job_execution.output_collect import (
-    dataset_collector,
-    JobContext,
-)
+from galaxy.job_execution.output_collect import dataset_collector
 from galaxy.model.dataset_collections import builder
+from galaxy.schema.schema import JobState
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
+from galaxy.tools import JobContext
 from ..tools.test_history_imp_exp import _mock_app
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
 
 
 class PermissionProvider:
@@ -28,7 +34,7 @@ class MetadataSourceProvider:
         return None
 
 
-class Tool:
+class MockTool:
     def __init__(self, app):
         self.app = app
         self.sa_session = app.model.context
@@ -48,7 +54,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     u = model.User(email="collection@example.com", password="password")
     h = model.History(name="Test History", user=u)
 
-    tool = Tool(app)
+    tool = cast("Tool", MockTool(app))
     tool_provided_metadata = NullToolProvidedMetadata()
     job = model.Job()
     job.history = h
@@ -60,7 +66,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     metadata_source_provider = MetadataSourceProvider()
     object_store = app.object_store
     input_dbkey = "?"
-    final_job_state = "ok"
+    final_job_state = JobState.OK
     collection_description = FilePatternDatasetCollectionDescription(pattern="__name__")
     collection = model.DatasetCollection(collection_type="list", populated=False)
     sa_session.add(collection)

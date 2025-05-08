@@ -60,9 +60,10 @@ VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_c
 )
 class TestHashicorpVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
-        with tempfile.NamedTemporaryFile(mode="w", prefix="vault_hashicorp", delete=False) as tempconf, open(
-            VAULT_CONF_HASHICORP
-        ) as f:
+        with (
+            tempfile.NamedTemporaryFile(mode="w", prefix="vault_hashicorp", delete=False) as tempconf,
+            open(VAULT_CONF_HASHICORP) as f,
+        ):
             content = string.Template(f.read()).safe_substitute(
                 vault_address=os.environ.get("VAULT_ADDRESS"), vault_token=os.environ.get("VAULT_TOKEN")
             )
@@ -120,9 +121,10 @@ VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf
 )
 class TestCustosVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
-        with tempfile.NamedTemporaryFile(mode="w", prefix="vault_custos", delete=False) as tempconf, open(
-            VAULT_CONF_CUSTOS
-        ) as f:
+        with (
+            tempfile.NamedTemporaryFile(mode="w", prefix="vault_custos", delete=False) as tempconf,
+            open(VAULT_CONF_CUSTOS) as f,
+        ):
             content = string.Template(f.read()).safe_substitute(
                 custos_client_id=os.environ.get("CUSTOS_CLIENT_ID"),
                 custos_client_secret=os.environ.get("CUSTOS_CLIENT_SECRET"),

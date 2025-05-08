@@ -1,0 +1,20 @@
+<tool id="create_directory_index" name="Create directory index" version="1.0" profile="24.2">
+    <command><![CDATA[
+mkdir '$index.extra_files_path' &&
+cp '$reference' '$index.extra_files_path/1.fasta'
+    ]]></command>
+    <inputs>
+        <param name="reference" type="data" label="Select a genome to index" help="Build an index for this FASTA sequence." format="fasta"/>
+    </inputs>
+    <outputs>
+        <data name="index" format="bwa_mem2_index"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="reference" value="1.fasta"></param>
+            <output name="index" ftype="bwa_mem2_index">
+                <extra_files name="1.fasta" type="file" value="1.fasta"></extra_files>
+            </output>
+        </test>
+    </tests>
+</tool>

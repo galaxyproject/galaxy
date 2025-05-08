@@ -42,7 +42,7 @@ async function mountDatasetAttributes(conversion_disable = false) {
 async function buildWrapperWithError(error: string) {
     const axiosMock = new MockAdapter(axios);
     axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(400);
-    const wrapper = mount(DatasetAttributes, {
+    const wrapper = mount(DatasetAttributes as object, {
         propsData: {
             datasetId: DATASET_ID,
             messageText: error,

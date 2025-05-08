@@ -36,7 +36,7 @@ class CategoryManager:
                 raise exceptions.Conflict("A category with that name already exists.")
             else:
                 # Create the category
-                category = self.app.model.Category(name=name, description=description)
+                category = Category(name=name, description=description)
                 trans.sa_session.add(category)
                 trans.sa_session.commit()
             return category
