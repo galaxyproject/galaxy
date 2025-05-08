@@ -56,6 +56,11 @@
             <value>#ec1515</value>
         </input>
     </settings>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" ftype="geojson" label="Hurricane Irma" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is the OpenLayers Map Viewer?
 
