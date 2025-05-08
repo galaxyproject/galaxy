@@ -264,13 +264,3 @@
   api_key: ${user.user_vault.read_secret('preferences/elabftw/api_key')}
   writable: true
   endpoint: ${user.preferences['elabftw|endpoint']}
-
-- type: rspace
-  id: rspace
-  label: RSpace
-  doc: >
-    Transfer files from/to an RSpace instance. RSpace is an electronic lab notebook (ELN) designed for documenting,
-    managing and sharing scientific data.
-  endpoint: ${user.preferences['rspace|endpoint']}
-  api_key: ${user.user_vault.read_secret('preferences/rspace/api_key')}
-  writable: true
