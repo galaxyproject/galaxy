@@ -108,6 +108,7 @@ async function rerunWorkflow() {
             "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?"
         ),
         {
+            id: "change-history-rerun-workflow",
             title: localize("Change History and Rerun Workflow"),
             okTitle: localize("Change History and Rerun"),
             okVariant: "primary",

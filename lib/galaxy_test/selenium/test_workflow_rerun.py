@@ -39,6 +39,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # Route to rerun
         self._invocations_panel_open_latest_invocation()
         self.components.invocations.workflow_rerun_button.wait_for_and_click()
+
+        # Will trigger confirmation modal
+        self.components.invocations.change_history_rerun_confirm.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # Arriving on the rerun page, the history should have switched back to the original history
