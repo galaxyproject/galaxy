@@ -16,6 +16,11 @@
         <param required="true">dataset_id</param>
     </params>
     <entry_point entry_point_type="script" src="script.js" css="script.css"/>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.tiff" ftype="tiff" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is the TIFF Viewer?
 
