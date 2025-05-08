@@ -168,12 +168,12 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare();
 
         // Initially, the modal is not visible and opens when the button is clicked
-        expect(wrapper.find(GModal).props("show")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBeFalsy();
         await openShareModal(wrapper);
-        expect(wrapper.find(GModal).props("show")).toBeTruthy();
+        expect(wrapper.findComponent(GModal).props("show")).toBeTruthy();
 
-        expect(wrapper.find(GModal).text()).toContain(TEST_WORKFLOW.name);
-        expect(wrapper.find(GModal).text()).toContain(TEST_HISTORY.name);
+        expect(wrapper.findComponent(GModal).text()).toContain(TEST_WORKFLOW.name);
+        expect(wrapper.findComponent(GModal).text()).toContain(TEST_HISTORY.name);
     });
 
     it("shares the workflow and history when the share button is clicked, and copies link", async () => {
@@ -182,7 +182,7 @@ describe("WorkflowInvocationShare", () => {
         await openShareModal(wrapper);
 
         // Click the share button in the modal
-        wrapper.find(GModal).vm.$emit("ok");
+        wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
         // We have 2 toasts
@@ -201,16 +201,16 @@ describe("WorkflowInvocationShare", () => {
     it("renders nothing when the user does not own the workflow", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(false);
         expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
-        expect(wrapper.find(GModal).exists()).toBeFalsy();
+        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
     });
 
     it("just copies link and does not open modal if both workflow and history are already shareable", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        expect(wrapper.find(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
         await openShareModal(wrapper);
-        expect(wrapper.find(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
 
         // Instead we already have a singular toast with the link copied message
         const toasts = toastMock.mock.calls;
