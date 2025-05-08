@@ -140,16 +140,28 @@ const formInputs = computed(() => {
             });
 
             if (props.requestState) {
-                if (props.isRerun && props.requestState[rerunStateIndex]) {
-                    const value = props.requestState[rerunStateIndex];
-                    if (stepType === "data_input" || stepType === "data_collection_input") {
-                        // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
-                        //       does not provide an object with `values` property.
-                        stepAsInput.value = {
-                            values: !Array.isArray(value) ? [value] : value,
-                        };
-                    } else {
-                        stepAsInput.value = value;
+                if (props.isRerun) {
+                    const requestStateKeys = Object.keys(props.requestState);
+
+                    let value;
+                    if (props.requestState[rerunStateIndex]) {
+                        // request state has the step_label as key
+                        value = props.requestState[rerunStateIndex];
+                    } else if (requestStateKeys[i] !== undefined && requestStateKeys[i] === "") {
+                        // request state has "" as key on the `i` position
+                        value = Object.values(props.requestState)[i];
+                    }
+
+                    if (value) {
+                        if (stepType === "data_input" || stepType === "data_collection_input") {
+                            // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
+                            //       does not provide an object with `values` property.
+                            stepAsInput.value = {
+                                values: !Array.isArray(value) ? [value] : value,
+                            };
+                        } else {
+                            stepAsInput.value = value;
+                        }
                     }
                 } else if (props.requestState[stepLabel]) {
                     const value = props.requestState[stepLabel];
