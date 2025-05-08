@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faEdit, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPlay, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -183,19 +183,32 @@ async function rerunWorkflow() {
                         :tooltip="executeButtonTooltip"
                         :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
                         @onClick="emit('on-execute')" />
-                    <GButton
-                        v-else
-                        title="Rerun Workflow with same inputs"
-                        disabled-title="This workflow has been deleted."
-                        data-button-rerun
-                        tooltip
-                        color="blue"
-                        size="small"
-                        :disabled="workflow.deleted"
-                        @click="rerunWorkflow">
-                        <FontAwesomeIcon :icon="faRedo" fixed-width />
-                        <span v-localize>Rerun Workflow</span>
-                    </GButton>
+                    <GButtonGroup v-else>
+                        <GButton
+                            title="Run Workflow"
+                            disabled-title="This workflow has been deleted."
+                            data-button-run
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            :to="`/workflows/run?id=${workflow.id}&version=${workflow.version}`">
+                            <FontAwesomeIcon :icon="faPlay" fixed-width />
+                            <span v-localize>Run</span>
+                        </GButton>
+                        <GButton
+                            title="Rerun Workflow with same inputs"
+                            disabled-title="This workflow has been deleted."
+                            data-button-rerun
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            @click="rerunWorkflow">
+                            <FontAwesomeIcon :icon="faRedo" fixed-width />
+                            <span v-localize>Rerun</span>
+                        </GButton>
+                    </GButtonGroup>
                 </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">
