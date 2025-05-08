@@ -103,7 +103,14 @@ To work on this package:
 
 1. Make changes to the API type definitions in the main Galaxy client
 2. The type changes will automatically be available in this package via symlinks
-3. Build the library for distribution:
+3. Synchronize the version with Galaxy:
+
+    ```bash
+    # Update the version in package.json from Galaxy's version.py
+    npm run sync-version
+    ```
+
+4. Build the library for distribution:
 
     ```bash
     # Install dependencies
@@ -116,22 +123,69 @@ To work on this package:
     npm run dev
     ```
 
-### Testing
+### Version Synchronization
 
-The package includes tests built with Vitest:
+This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `lib/galaxy/version.py` file but formatted to comply with npm's semver requirements.
+
+#### Version Mapping
+
+Galaxy's version scheme is mapped to npm semver as follows:
+
+| Galaxy Format                              | npm/semver Format            | Example      |
+| ------------------------------------------ | ---------------------------- | ------------ |
+| VERSION_MAJOR="25.0", VERSION_MINOR=""     | major.minor.patch            | 25.0.0       |
+| VERSION_MAJOR="25.0", VERSION_MINOR="dev0" | major.minor.patch-prerelease | 25.0.0-dev.0 |
+| VERSION_MAJOR="25.0", VERSION_MINOR="rc1"  | major.minor.patch-prerelease | 25.0.0-rc.1  |
+
+The script directly converts the Galaxy version to a semver-compatible format:
+
+1. It splits Galaxy's major version (e.g., "25.0") into major and minor components
+2. It adds a patch component (always "0" for direct conversions)
+3. For prereleases (dev, rc), it adds the appropriate prerelease identifier
+
+#### Publishing Notes
+
+**Important:** npm does not allow republishing the same version, even for development versions. When making changes to the client API during development:
+
+1. Manually increment the version before publishing:
+
+    ```bash
+    # Example: Update from 25.0.0-dev.0 to 25.0.0-dev.1
+    npm version prerelease --preid=dev
+    ```
+
+2. Or edit the npm version directly in package.json:
+    ```json
+    {
+        "version": "25.0.0-dev.1"
+    }
+    ```
+
+There's also a script to automate this process of syncing with galaxy version that we may want to use in other contexts, too?:
 
 ```bash
-# Install dependencies
-npm install
+# Using npm script
+npm run sync-version
+```
 
+The script will:
+
+1. Read the version from Galaxy's `version.py` file
+2. Convert it to npm-compatible semver format
+3. Update the version in `package.json` if different
+
+Version synchronization should be performed before each release to ensure the client API version accurately reflects the Galaxy API version it supports.
+
+### Testing
+
+The package includes a few vitest tests as a sanity check, but we could do a lot more here:
+
+```bash
 # Run tests
 npm test
 
 # Run tests with watch mode (during development)
 npm run test:watch
-
-# Run tests with coverage report
-npm run test:coverage
 ```
 
 The tests verify:
@@ -139,4 +193,3 @@ The tests verify:
 - Client creation with default and custom base URLs
 - Basic API interaction with proper typing
 - Error handling
-- Backward compatibility with the original API

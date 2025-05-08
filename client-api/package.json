@@ -1,6 +1,6 @@
 {
   "name": "@galaxyproject/client-api",
-  "version": "1.0.0",
+  "version": "25.0.0-dev.0",
   "description": "A client library for the Galaxy API",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,7 +24,8 @@
     "prepublishOnly": "npm run clean && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sync-version": "node scripts/sync-version.js"
   },
   "keywords": [
     "galaxy",
