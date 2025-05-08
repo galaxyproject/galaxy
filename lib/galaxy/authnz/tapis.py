@@ -31,7 +31,7 @@ class TapisOAuth2(BaseOAuth2):
     USE_BASIC_AUTH = True
 
     # Upstream this is initialized to None, but it is expected this will be a list of tuples
-    EXTRA_DATA = [  # type: ignore[assignment]
+    EXTRA_DATA = [
         ("refresh_token", "refresh_token"),
     ]
 
@@ -76,23 +76,24 @@ class TapisOAuth2(BaseOAuth2):
         """Completes login process, must return user instance"""
         self.process_error(self.data)
         state = self.validate_state()
-        data, params = None, None
-        if self.ACCESS_TOKEN_METHOD == "GET":
-            params = self.auth_complete_params(state)
-        else:
-            data = self.auth_complete_params(state)
+
+        data = self.auth_complete_params(state)
 
         response = self.request_access_token(
             self.access_token_url(),
             data=data,
-            params=params,
+            params=None,
             headers=self.auth_headers(),
             auth=self.auth_complete_credentials(),
             method=self.ACCESS_TOKEN_METHOD,
         )
         self.process_error(response)
         result = response.get("result")
+        if not result:
+            raise ValueError("No result found in Tapis authentication response")
         token = result.get("access_token")
+        if not token:
+            raise ValueError("No access token found in Tapis authentication response")
         # ignore B026, we keep the same signature as the base class
         return self.do_auth(token, response=response, *args, **kwargs)  # noqa: B026
 
