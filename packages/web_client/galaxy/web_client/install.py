@@ -4,7 +4,6 @@ import os
 import shutil
 import sys
 
-
 DESCRIPTION = """Install Galaxy web client from package path.
 
 This utility installs the Galaxy web client from its Python package location to
