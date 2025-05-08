@@ -6,10 +6,6 @@ A standalone client library for the Galaxy API, built using the type definitions
 
 ```bash
 npm install @galaxyproject/client-api
-# or
-yarn add @galaxyproject/client-api
-# or
-pnpm add @galaxyproject/client-api
 ```
 
 ## Usage
