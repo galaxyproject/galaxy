@@ -1,7 +1,7 @@
 <template>
     <ActivityPanel title="Best Practices Review">
         <template v-if="showRefactor" v-slot:header>
-            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
+            <GLink class="refactor-button" @click="onRefactor"> Try to automatically fix issues. </GLink>
         </template>
         <LintSection
             :okay="checkAnnotation"
@@ -20,7 +20,7 @@
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
-            attribute-link="Provider Readme for your Workflow."
+            attribute-link="Provide Readme for your Workflow."
             @onClick="onAttributes('readme')" />
         <LintSection
             :okay="checkCreator"
@@ -101,6 +101,7 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
@@ -114,6 +115,7 @@ export default {
         FontAwesomeIcon,
         LintSection,
         ActivityPanel,
+        GLink,
     },
     props: {
         untypedParameters: {
@@ -125,6 +127,10 @@ export default {
             required: true,
         },
         annotation: {
+            type: String,
+            default: null,
+        },
+        readme: {
             type: String,
             default: null,
         },
@@ -180,7 +186,7 @@ export default {
             }
         },
         checkReadme() {
-            return !!this.annotation;
+            return !!this.readme;
         },
         checkLicense() {
             return !!this.license;

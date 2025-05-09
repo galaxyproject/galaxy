@@ -27,6 +27,7 @@ from starlette.responses import (
 from typing_extensions import Annotated
 
 from galaxy import util
+from galaxy.exceptions.utils import validation_error_to_message_exception
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
@@ -59,7 +60,6 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
-from galaxy.web.framework.decorators import validation_error_to_message_exception
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,

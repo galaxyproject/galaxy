@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-library.add(faAngleDoubleDown, faAngleDoubleUp);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     h1?: boolean;
@@ -54,10 +54,10 @@ const element = computed(() => {
 
 <template>
     <div v-if="props.separator" class="separator heading">
-        <b-button v-if="collapsible" variant="link" size="sm" @click="$emit('click')">
+        <GButton v-if="collapsible" transparent size="small" icon-only inline @click="$emit('click')">
             <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
-        </b-button>
+        </GButton>
         <div v-else class="stripe"></div>
         <component
             :is="element"
@@ -84,10 +84,10 @@ const element = computed(() => {
             props.truncate ? 'truncate' : '',
         ]"
         @click="$emit('click')">
-        <b-button v-if="collapsible" variant="link" size="sm">
-            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
-            <icon v-else fixed-width icon="angle-double-up" />
-        </b-button>
+        <GButton v-if="collapsible" transparent size="small" icon-only inline>
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
+        </GButton>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
     </component>

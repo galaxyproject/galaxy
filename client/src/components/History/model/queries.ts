@@ -1,4 +1,5 @@
 import { type components, GalaxyApi, type HistoryItemSummary, type HistorySummary } from "@/api";
+import { createHistoryDatasetCollectionInstance } from "@/api/datasetCollections";
 import { rethrowSimple } from "@/utils/simple-error";
 
 type BulkOperation = components["schemas"]["HistoryContentItemOperation"];
@@ -87,16 +88,8 @@ export async function createDatasetCollection(history: HistorySummary, inputs = 
         name: "list",
         element_identifiers: [],
         hide_source_items: true,
+        history_id: history.id,
     };
     const payload = Object.assign({}, defaults, inputs);
-
-    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents", {
-        params: { path: { history_id: history.id } },
-        body: { ...payload, instance_type: "history", type: "dataset_collection" },
-    });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
+    return createHistoryDatasetCollectionInstance(payload);
 }

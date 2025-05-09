@@ -5,6 +5,7 @@ import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -13,7 +14,7 @@ import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 import { stateIsTerminal } from "@/utils/utils";
 
-import type { CollectionType, DatasetPair } from "../History/adapters/buildCollectionModal";
+import type { CollectionBuilderType, DatasetPair } from "../History/adapters/buildCollectionModal";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
@@ -25,7 +26,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     historyId: string;
     show: boolean;
-    collectionType: CollectionType;
+    collectionType: CollectionBuilderType;
     selectedItems?: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     extensions?: string[];
@@ -328,7 +329,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createListCollection"
+            @on-create="createListCollection"
             @on-cancel="hideCreator" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
@@ -338,7 +339,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createListPairedCollection"
+            @on-create="createListPairedCollection"
             @on-cancel="hideCreator" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
@@ -348,7 +349,7 @@ function resetCreator() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             :suggested-name="props.suggestedName"
-            @clicked-create="createPairedCollection"
+            @on-create="createPairedCollection"
             @on-cancel="hideCreator" />
     </component>
 </template>

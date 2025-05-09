@@ -164,6 +164,7 @@ class ConfiguredFileSources:
             _ensure_loaded("http")
             _ensure_loaded("base64")
             _ensure_loaded("drs")
+            _ensure_loaded("remoteZip")
 
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")

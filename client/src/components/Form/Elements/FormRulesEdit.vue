@@ -11,6 +11,8 @@ import { computed, ref } from "vue";
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 library.add(faEdit);
 
 const props = defineProps({
@@ -70,10 +72,10 @@ function onCancel() {
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <b-button title="Edit Rules" @click="onEdit">
+        <GButton title="Edit Rules" @click="onEdit">
             <FontAwesomeIcon icon="fa-edit" />
             <span>Edit</span>
-        </b-button>
+        </GButton>
         <LoadingSpan v-if="loading" message="Loading collection details"> </LoadingSpan>
         <BAlert v-if="loadError" show variant="danger" dismissible @dismissed="loadError = undefined">
             {{ loadError }}

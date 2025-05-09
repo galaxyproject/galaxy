@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Editor" embeddable="true">
-    <description>Manually edit text</description>
+    <description>Manually edit text content</description>
+    <tags>
+        <tag>Text</tag>
+        <tag>Editor</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -12,7 +16,33 @@
         <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/aceeditor"/>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/aceeditor"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/2.txt" ftype="txt" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.cytoscapejson" ftype="json" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is the Editor?
+
+The Editor provides a simple and intuitive way to manually edit text files, such as plain text or code, directly in your browser.
+
+After selecting a dataset, its contents will appear in a text editor. You can freely modify the text and save your changes back into Galaxy.
+
+#### Key Features
+
+- **Editing**: Make direct edits to your text or code files.
+- **Responsive Interface**: Smooth typing and navigation, even for larger files.
+- **Search and Replace**: Quickly find and update text within your document.
+
+This tool is useful for small corrections, quick notes, or manual editing tasks without needing external software.
+
+To learn more about Ace Editor, visit:
+[https://ace.c9.io/](https://ace.c9.io/)
+    ]]></help>
 </visualization>

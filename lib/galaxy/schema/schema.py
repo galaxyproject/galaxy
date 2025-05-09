@@ -3945,6 +3945,13 @@ class PageDetails(PageSummary):
     model_config = ConfigDict(extra="allow")
 
 
+class ToolReportForDataset(BaseModel):
+    content: Optional[str] = ContentField
+    generate_version: Optional[str] = GenerateVersionField
+    generate_time: Optional[str] = GenerateTimeField
+    model_config = ConfigDict(extra="allow")
+
+
 class PageSummaryList(RootModel):
     root: List[PageSummary] = Field(
         default=[],

@@ -29,6 +29,7 @@ export const URI_PREFIXES = [
     "zenodo://",
     "dataverse://",
     "elabftw://",
+    "zip://",
 ];
 
 export function isUrl(content: string): boolean {

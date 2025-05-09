@@ -32,7 +32,7 @@ const localVue = getLocalVue();
 
 describe("UploadExamples.vue", () => {
     const urlData = [
-        { name: "Example 1", url: "https://example.com/data1.txt" },
+        { name: "Example 1", url: "https://example.com/data1.txt", ftype: "tabular" },
         { name: "Example 2", url: "https://example.com/data2.txt" },
     ];
 
@@ -75,7 +75,10 @@ describe("UploadExamples.vue", () => {
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(0).find("a").trigger("click");
-        expect(uploadPayload).toHaveBeenCalledWith([{ fileMode: "new", fileUri: urlData[0].url }], "fake-history-id");
+        expect(uploadPayload).toHaveBeenCalledWith(
+            [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
+            "fake-history-id"
+        );
         expect(sendPayload).toHaveBeenCalledWith("mockedPayload", {
             success: expect.any(Function),
             error: expect.any(Function),

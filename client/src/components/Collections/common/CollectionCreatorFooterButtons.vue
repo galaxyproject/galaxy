@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
-
 import localize from "@/utils/localization";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     validInput: boolean;
@@ -18,12 +18,12 @@ const emit = defineEmits<{
 
 <template>
     <div class="actions vertically-spaced d-flex justify-content-between">
-        <BButton tabindex="-1" @click="emit('clicked-cancel')">
+        <GButton tabindex="-1" @click="emit('clicked-cancel')">
             {{ localize("Cancel") }}
-        </BButton>
+        </GButton>
 
-        <BButton class="create-collection" variant="primary" :disabled="!validInput" @click="emit('clicked-create')">
+        <GButton class="create-collection" color="blue" :disabled="!validInput" @click="emit('clicked-create')">
             {{ localize("Create " + shortWhatIsBeingCreated) }}
-        </BButton>
+        </GButton>
     </div>
 </template>

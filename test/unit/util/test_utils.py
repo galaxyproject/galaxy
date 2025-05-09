@@ -140,3 +140,42 @@ def test_enum_values():
         B = "b"
 
     assert util.enum_values(Stuff) == ["a", "c", "b"]
+
+
+DOI_VALID_VALUES = [
+    "https://doi.org/10.1234/42",
+    "doi.org/10.1234/42",
+    "doi:10.1234/42",
+    "doi:10.1234567890/42",  # longer prefix
+    "doi:10.1234/42ab:%&*$//crazy-suffix/%/&/",
+    "doi:10.1234/aa",
+]
+
+
+@pytest.mark.parametrize("input", DOI_VALID_VALUES)
+def test_validate_doi_pass(input):
+    assert util.validate_doi(input)
+
+
+DOI_INVALID_VALUES = [
+    "http://doi.org/10.1234/42",
+    "invalid:10.1234/42",
+    "doi:11.1234/42",
+    "doi:101234/42",
+    "doi:10. 1234/42",
+    "doi:10.abc/42",
+    "doi:10.1234/ 42",
+    "doi:10.1234/42/a b",
+]
+
+
+@pytest.mark.parametrize("input", DOI_INVALID_VALUES)
+def test_validate_doi_fail(input):
+    assert not util.validate_doi(input)
+
+
+def test_validate_doi_fail_too_long():
+    long_suffix = "a" * (util.DOI_MAX_LENGTH - 12)
+    doi = f"doi:10.1000/{long_suffix}"
+    assert util.validate_doi(doi)
+    assert not util.validate_doi(doi + "a")  # Increase length by 1 past max limit

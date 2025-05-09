@@ -96,6 +96,7 @@ describe("Lint", () => {
                 untypedParameters: getUntypedWorkflowParameters(steps),
                 steps: steps,
                 annotation: "annotation",
+                readme: "readme",
                 license: null,
                 creator: null,
                 datatypesMapper: testDatatypesMapper,

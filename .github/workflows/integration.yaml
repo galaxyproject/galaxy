@@ -27,7 +27,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +70,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+          persist-credentials: false
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT

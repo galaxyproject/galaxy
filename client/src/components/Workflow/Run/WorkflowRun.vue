@@ -5,6 +5,7 @@ import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory } from "@/api";
+import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import { getWorkflowInfo } from "@/api/workflows";
 import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
@@ -32,8 +33,9 @@ interface Props {
     preferSimpleForm?: boolean;
     simpleFormTargetHistory?: string;
     simpleFormUseJobCache?: boolean;
-    requestState?: { [key: string]: unknown };
+    requestState?: WorkflowInvocationRequestInputs;
     instance?: boolean;
+    isRerun?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
     simpleFormUseJobCache: false,
     requestState: undefined,
     instance: false,
+    isRerun: false,
 });
 
 const loading = ref(true);
@@ -248,6 +251,7 @@ defineExpose({
                         :use-job-cache="simpleFormUseJobCache"
                         :can-mutate-current-history="canRunOnHistory"
                         :request-state="requestState"
+                        :is-rerun="props.isRerun"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />

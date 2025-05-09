@@ -66,18 +66,21 @@
                 :workflow-building-mode="workflowBuildingMode"
                 :workflow-run="workflowRun"
                 @change="onChange">
+                <template v-slot:workflow-run-form-title-badges>
+                    <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
+                </template>
                 <template v-slot:workflow-run-form-title-items>
-                    <b-button
+                    <GButton
                         v-if="syncWithGraph"
-                        class="text-decoration-none"
-                        size="sm"
-                        variant="link"
+                        size="small"
+                        color="blue"
+                        transparent
                         :title="activeNodeId === index ? 'Active' : 'View in Graph'"
                         :disabled="activeNodeId === index"
                         @click="$emit('update:active-node-id', index)">
                         <span class="fas fa-sitemap" />
                         <span class="fas fa-arrow-right" />
-                    </b-button>
+                    </GButton>
                 </template>
             </FormElement>
         </div>
@@ -89,8 +92,10 @@ import { set } from "vue";
 
 import { matchCase } from "@/components/Form/utilities";
 
+import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
 import FormCard from "./FormCard.vue";
 import FormRepeat from "./FormRepeat.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 export default {
@@ -99,6 +104,8 @@ export default {
         FormCard,
         FormElement,
         FormRepeat,
+        FormInputMismatchBadge,
+        GButton,
     },
     props: {
         inputs: {
@@ -161,6 +168,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        stepsNotMatchingRequest: {
+            type: Array,
+            default: () => [],
+        },
     },
     methods: {
         getPrefix(name, index) {
@@ -196,6 +207,9 @@ export default {
             input.cache.splice(b, 1, tmpA);
 
             this.onChangeForm();
+        },
+        valMismatches(name) {
+            return this.workflowRun && this.stepsNotMatchingRequest.map((step) => step.toString()).includes(name);
         },
     },
 };

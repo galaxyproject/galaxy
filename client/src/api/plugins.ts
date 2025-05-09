@@ -5,6 +5,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 export interface Dataset {
     id: string;
+    hid: string;
     name: string;
 }
 
@@ -38,6 +39,8 @@ export interface PluginData {
 }
 
 export interface ParamType {
+    ftype?: string;
+    label?: string;
     name: string;
     value: string;
 }

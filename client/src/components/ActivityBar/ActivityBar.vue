@@ -90,7 +90,7 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities, isSideBarOpen } = storeToRefs(activityStore);
+const { activities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -325,9 +325,13 @@ defineExpose({
                 </template>
             </b-nav>
         </div>
-        <FlexPanel v-if="isSideBarOpen && !hidePanel" side="left" :collapsible="false">
+        <FlexPanel
+            v-if="isSideBarOpen && !hidePanel"
+            side="left"
+            :collapsible="false"
+            :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />

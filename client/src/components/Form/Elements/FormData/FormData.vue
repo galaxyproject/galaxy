@@ -13,9 +13,10 @@ import {
     isHDCA,
     isHistoryItem,
 } from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
 import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -591,11 +592,16 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = ["list", "list:paired", "paired"];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
-const currentCollectionTypeTab = ref(effectiveCollectionTypes?.[0]);
+
+const currentCollectionTypeTab = ref<CollectionBuilderType | undefined>(
+    effectiveCollectionTypes?.[0] as CollectionBuilderType | undefined
+);
 
 /**
  * Get the extension(s) for a given item
@@ -606,6 +612,14 @@ function getExtensionsForItem(item: HistoryOrCollectionItem): string | string[] 
 
 function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollectionItem {
     return isHistoryItem(item) || isDCE(item);
+}
+
+/**
+ * Helper function to handle collection type changes safely
+ */
+function handleCollectionTypeChange(value: string): void {
+    // The API returns strings but we need to convert them to the correct type
+    currentCollectionTypeTab.value = value as CollectionBuilderType;
 }
 
 function getNameForItem(item: HistoryOrCollectionItem): string {
@@ -780,13 +794,13 @@ const noOptionsWarningMessage = computed(() => {
                     :can-browse="canBrowse"
                     :loading="props.loading"
                     :workflow-run="props.workflowRun"
-                    :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                    :collection-types="props.collectionTypes"
                     :current-source="currentSource || undefined"
                     :is-populated="currentValue && currentValue.length > 0"
                     show-field-options
                     :show-view-create-options="props.workflowRun && !usingSimpleSelect"
                     :workflow-tab.sync="workflowTab"
-                    @create-collection-type="(value) => (currentCollectionTypeTab = value)"
+                    @create-collection-type="handleCollectionTypeChange"
                     @on-browse="onBrowse"
                     @set-current-field="(value) => (currentField = value)" />
 
@@ -838,12 +852,12 @@ const noOptionsWarningMessage = computed(() => {
             <FormDataContextButtons
                 v-if="props.workflowRun && usingSimpleSelect"
                 compact
-                :collection-type="props.collectionTypes?.length ? props.collectionTypes[0] : undefined"
+                :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
                 show-view-create-options
                 :workflow-tab.sync="workflowTab"
-                @create-collection-type="(value) => (currentCollectionTypeTab = value)" />
+                @create-collection-type="handleCollectionTypeChange" />
         </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">

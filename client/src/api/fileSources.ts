@@ -58,6 +58,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with the Zenodo instance.",
     },
+    rspace: {
+        icon: faNetworkWired,
+        message: "This is a remote file source that connects with the Gallery of an RSpace instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {

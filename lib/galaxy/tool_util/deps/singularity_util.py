@@ -13,7 +13,12 @@ if TYPE_CHECKING:
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
+# --pid isolates the pid namespace. --ipc isolates
+# the ipc namespace, this fixes some issues with python multiprocessing.
+# --cleanenv makes sure the current environment is not inherited.
 DEFAULT_CLEANENV = True
+DEFAULT_IPC = True
+DEFAULT_PID = True
 DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
@@ -71,6 +76,8 @@ def build_singularity_run_command(
     guest_ports: Union[bool, List[str]] = False,
     container_name: Optional[str] = None,
     cleanenv: bool = DEFAULT_CLEANENV,
+    ipc: bool = DEFAULT_IPC,
+    pid: bool = DEFAULT_PID,
     no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
     volumes = volumes or []
@@ -89,8 +96,19 @@ def build_singularity_run_command(
     )
     command_parts.append("-s")
     command_parts.append("exec")
+    # Singularity mounts some directories, such as $HOME and $PWD by default.
+    # using --contain disables this behaviour and only allows explicitly
+    # requested volumes to be mounted. This gives fully full-control over
+    # the mounting behavior.
+    command_parts.append("--contain")
+    if working_directory:
+        command_parts.extend(["--pwd", shlex.quote(working_directory)])
     if cleanenv:
         command_parts.append("--cleanenv")
+    if ipc:
+        command_parts.append("--ipc")
+    if pid:
+        command_parts.append("--pid")
     if no_mount:
         command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:

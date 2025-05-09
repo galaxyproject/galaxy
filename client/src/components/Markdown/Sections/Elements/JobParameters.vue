@@ -35,7 +35,8 @@ const toolId = computed(() => {
 });
 const toolVersion = computed(() => {
     if (targetJobId.value) {
-        return jobStore.getJob(targetJobId.value)?.tool_version;
+        // TODO: `ShowFullJobResponse` does not have a `tool_version` property
+        return (jobStore.getJob(targetJobId.value) as any)?.tool_version;
     }
     return undefined;
 });
@@ -46,7 +47,7 @@ const { selectJobOptions, selectedJob, targetJobId } = useMappingJobs(jobIdRef, 
 
 async function init() {
     if (targetJobId.value) {
-        jobStore.fetchJob(targetJobId.value);
+        jobStore.fetchJob({ id: targetJobId.value });
     }
 }
 

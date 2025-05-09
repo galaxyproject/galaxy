@@ -83,6 +83,7 @@ from sqlalchemy import (
     inspect,
     Integer,
     join,
+    JSON,
     MetaData,
     not_,
     Numeric,
@@ -1515,7 +1516,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
     exit_code: Mapped[Optional[int]]
     traceback: Mapped[Optional[str]] = mapped_column(TEXT)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     job_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
@@ -1729,9 +1730,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         JobExternalOutputMetadata. It exists for a job but not a task.
         """
         return self.external_output_metadata
-
-    def get_session_id(self):
-        return self.session_id
 
     def get_user_id(self):
         return self.user_id
@@ -2462,11 +2460,6 @@ class Task(Base, JobLike, RepresentById):
         """
         # TODO: Merge into get_runner_external_id.
         return self.task_runner_external_id
-
-    def get_session_id(self):
-        # The Job's galaxy session is equal to the Job's session, so the
-        # Job's session is the same as the Task's session.
-        return self.get_job().get_session_id()
 
     def set_id(self, id):
         # This is defined in the SQL Alchemy's mapper and not here.
@@ -3241,9 +3234,9 @@ class HistoryAudit(Base):
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), primary_key=True)
     update_time: Mapped[datetime] = mapped_column(default=now, primary_key=True)
 
-    # This class should never be instantiated.
-    # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
-    __init__ = None  # type: ignore[assignment]
+    def __init__(self):
+        # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
+        raise RuntimeError("This class should never be instantiated")
 
     def __repr__(self):
         try:
@@ -7770,7 +7763,7 @@ class Event(Base, RepresentById):
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     message: Mapped[Optional[str]] = mapped_column(TrimmedString(1024))
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     tool_id: Mapped[Optional[str]] = mapped_column(String(255))
 
     history: Mapped[Optional["History"]] = relationship()
@@ -7829,7 +7822,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="CASCADE"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship(back_populates="histories")
     history: Mapped[Optional["History"]] = relationship(back_populates="galaxy_sessions")
@@ -8051,6 +8044,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     logo_url: Mapped[Optional[str]] = mapped_column(Text)
     help: Mapped[Optional[str]] = mapped_column(Text)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
+    doi: Mapped[Optional[List[str]]] = mapped_column(JSON)
 
     steps: Mapped[List["WorkflowStep"]] = relationship(
         "WorkflowStep",
@@ -8841,7 +8835,9 @@ class InputWithRequest:
 @dataclass
 class InputToMaterialize:
     hda: "HistoryDatasetAssociation"
-    input_dataset: "WorkflowRequestToInputDatasetAssociation"
+    input_dataset: Union[
+        "WorkflowRequestToInputDatasetAssociation", "WorkflowRequestToInputDatasetCollectionAssociation"
+    ]
 
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
@@ -8861,8 +8857,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
     step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
     input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
-    input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
-    input_dataset_collections = relationship(
+    input_datasets: Mapped[List["WorkflowRequestToInputDatasetAssociation"]] = relationship(
+        "WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation"
+    )
+    input_dataset_collections: Mapped[List["WorkflowRequestToInputDatasetCollectionAssociation"]] = relationship(
         "WorkflowRequestToInputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
     )
@@ -9159,12 +9157,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             request = input_dataset_assoc.request
             if request:
                 deferred = request.get("deferred", False)
-                if not deferred:
+                if not deferred and input_dataset_assoc.dataset:
                     hdas_to_materialize.append(
                         InputToMaterialize(
                             input_dataset_assoc.dataset,
                             input_dataset_assoc,
                         )
+                    )
+        for input_dataset_collection_association in self.input_dataset_collections:
+            request = input_dataset_collection_association.request
+            if request:
+                deferred = request.get("deferred", False)
+                if not deferred and input_dataset_collection_association.dataset_collection:
+                    hdas_to_materialize.extend(
+                        InputToMaterialize(hda, input_dataset_collection_association)
+                        for hda in input_dataset_collection_association.dataset_collection.dataset_instances
                     )
         return hdas_to_materialize
 
@@ -9356,7 +9363,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             self.input_step_parameters.append(request_to_content)
 
     def recover_inputs(self) -> Tuple[Dict[str, Any], str]:
-        inputs = {}
+        inputs: Dict[str, Any] = {}
         inputs_by = "name"
 
         have_referenced_steps_by_order_index = False
@@ -10446,9 +10453,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(
-        back_populates="social_auth"
-    )  # type:ignore[assignment, unused-ignore]
+    user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -11593,7 +11598,7 @@ class UserAction(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
+    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
     action: Mapped[Optional[str]] = mapped_column(Unicode(255))
     context: Mapped[Optional[str]] = mapped_column(Unicode(512))
     params: Mapped[Optional[str]] = mapped_column(Unicode(1024))

@@ -1,9 +1,7 @@
 <template>
     <div>
         <div v-if="!url">
-            <b-button id="select-btn" @click="reset">
-                <FontAwesomeIcon icon="folder-open" /> {{ selectText }}
-            </b-button>
+            <GButton id="select-btn" @click="reset"> <FontAwesomeIcon icon="folder-open" /> {{ selectText }} </GButton>
             <FilesDialog
                 :key="modalKey"
                 mode="directory"
@@ -13,17 +11,17 @@
         </div>
         <b-breadcrumb v-if="url" class="mb-0">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
-                <b-button class="pathname" variant="primary">
-                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}</b-button
-                >
+                <GButton class="pathname" color="blue">
+                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}
+                </GButton>
             </b-breadcrumb-item>
             <b-breadcrumb-item
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center">
-                <b-button class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
+                <GButton class="regular-path-chunk" :disabled="!editable" @click="removePath(index)">
                     {{ decodeURIComponent(pathChunk) }}
-                </b-button>
+                </GButton>
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
@@ -56,6 +54,8 @@ import _l from "utils/localization";
 
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 library.add(faFolder, faFolderOpen);
 
 const getDefaultValues = () => ({
@@ -69,6 +69,7 @@ export default {
     components: {
         FontAwesomeIcon,
         FilesDialog,
+        GButton,
     },
     props: {
         value: {

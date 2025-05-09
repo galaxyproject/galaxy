@@ -39,6 +39,14 @@ export const objectStoreTemplateTypes: ObjectStoreTemplateType = {
         icon: faNetworkWired,
         message: typeMessage("Onedata"),
     },
+    rucio: {
+        icon: faNetworkWired,
+        message: typeMessage("Rucio"),
+    },
+    irods: {
+        icon: faNetworkWired,
+        message: typeMessage("Irods"),
+    },
 };
 
 export const ObjectStoreValidFilters = {

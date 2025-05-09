@@ -237,7 +237,7 @@ class BioToolsValid(Linter):
         _, tool_node = _tool_xml_and_root(tool_source)
         xrefs = tool_source.parse_xrefs()
         for xref in xrefs:
-            if xref["reftype"] != "bio.tools":
+            if xref["type"] != "bio.tools":
                 continue
             metadata_source = ApiBiotoolsMetadataSource()
             if not metadata_source.get_biotools_metadata(xref["value"]):

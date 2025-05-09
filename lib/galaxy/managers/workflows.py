@@ -818,6 +818,13 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "logo_url" in data:
             workflow.logo_url = data["logo_url"]
+
+        dois = data.get("doi", None)
+        if dois:
+            for doi in dois:
+                if not util.validate_doi(doi):
+                    raise exceptions.RequestParameterInvalidException(f"Invalid DOI format: {doi}")
+            workflow.doi = data["doi"]
         try:
             if "help" in data:
                 workflow.help = data["help"]
@@ -1004,7 +1011,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
                 f.write(wf_dict["yaml_content"])
 
-    def _workflow_to_dict_run(self, trans, stored, workflow, history=None):
+    def _workflow_to_dict_run(self, trans: ProvidesUserContext, stored, workflow, history=None):
         """
         Builds workflow dictionary used by run workflow form
         """
@@ -1050,6 +1057,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 tool = trans.app.toolbox.get_tool(
                     step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid
                 )
+                if not tool:
+                    raise exceptions.MessageException(
+                        f"Following tool missing or inaccessible: '{step.tool_id}/{step.tool_uuid}'"
+                    )
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(
                     trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY, history=history
@@ -1245,6 +1256,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["readme"] = workflow.readme
         data["help"] = workflow.help
         data["logo_url"] = workflow.logo_url
+        data["doi"] = workflow.doi
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
@@ -1507,6 +1519,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data["help"] = workflow.help
         if workflow.logo_url is not None:
             data["logo_url"] = workflow.logo_url
+        if workflow.doi is not None:
+            data["doi"] = workflow.doi
 
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
@@ -1714,6 +1728,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["readme"] = workflow.readme
         item["help"] = workflow.help
         item["logo_url"] = workflow.logo_url
+        item["doi"] = workflow.doi
 
         steps = {}
         steps_to_order_index = {}
@@ -2040,8 +2055,14 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             if step.type == "tool":
                 if step.tool_id:
-                    if {"tool_id": step.tool_id, "tool_version": step.tool_version} not in tools:
-                        tools.append({"tool_id": step.tool_id, "tool_version": step.tool_version})
+                    if {
+                        "tool_id": step.tool_id,
+                        "tool_version": step.tool_version,
+                        "tool_uuid": step.tool_uuid,
+                    } not in tools:
+                        tools.append(
+                            {"tool_id": step.tool_id, "tool_version": step.tool_version, "tool_uuid": step.tool_uuid}
+                        )
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))
         return tools

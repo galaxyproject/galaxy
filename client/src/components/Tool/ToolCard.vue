@@ -119,7 +119,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 
 <template>
     <FormCardSticky
-        :error-message="errorText"
+        :error-message="errorText || ''"
         :description="props.description"
         :name="props.title"
         :version="props.version">

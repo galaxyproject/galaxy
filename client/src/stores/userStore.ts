@@ -39,6 +39,8 @@ export const useUserStore = defineStore("userStore", () => {
 
     const hasSeenUploadHelp = useUserLocalStorageFromHashId("user-store-seen-upload-help", false, hashedUserId);
 
+    const historyPanelWidth = useUserLocalStorageFromHashId("user-store-history-panel-width", 300, hashedUserId);
+
     let loadPromise: Promise<void> | null = null;
 
     function $reset() {
@@ -168,6 +170,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentFavorites,
         currentListViewPreferences,
         hasSeenUploadHelp,
+        historyPanelWidth,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,

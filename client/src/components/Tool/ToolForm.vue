@@ -86,7 +86,7 @@
                     id="execute"
                     title="Run Tool"
                     :disabled="!canMutateHistory"
-                    class="btn-sm"
+                    size="small"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />

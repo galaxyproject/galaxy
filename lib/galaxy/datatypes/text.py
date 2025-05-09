@@ -552,6 +552,51 @@ class ImgtJson(Json):
 
 
 @build_sniff_from_prefix
+class CytoscapeJson(Json):
+    """
+    Cytoscape JSON format for network visualization, typically containing 'nodes' and 'edges' in a JSON object.
+    https://js.cytoscape.org/#notation/elements-json
+    """
+
+    file_ext = "cytoscapejson"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "CytoscapeJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in Cytoscape JSON format by looking for 'nodes' and 'edges' keys.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.json')
+        >>> CytoscapeJson().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.cytoscapejson')
+        >>> CytoscapeJson().sniff(fname)
+        True
+        """
+        is_cytoscapejson = False
+        if self._looks_like_json(file_prefix):
+            is_cytoscapejson = self._looks_like_is_cytoscapejson(file_prefix)
+        return is_cytoscapejson
+
+    def _looks_like_is_cytoscapejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects 'nodes' and 'edges' to be present as keys in the JSON structure.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                if "generated_by" in segment_str or "target_cytoscapejs_version" in segment_str:
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
 class GeoJson(Json):
     """
     GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON).

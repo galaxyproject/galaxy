@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse, BPopover, BTooltip } from "bootstrap-vue";
+import { BCollapse, BPopover, BTooltip } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     extensions: string[];
@@ -33,14 +35,17 @@ const localFormatsVisible = computed({
         <span>{{ orList([...props.extensions]) }}</span>
     </div>
     <div v-else>
-        <BButton
+        <GButton
             :id="props.formatsButtonId"
-            class="ui-link d-flex align-items-center text-nowrap flex-gapx-1"
-            @click="localFormatsVisible = !localFormatsVisible">
+            size="small"
+            color="blue"
+            transparent
+            inline
+            :pressed.sync="localFormatsVisible">
             <span v-localize>accepted formats</span>
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
-        </BButton>
+        </GButton>
         <component
             :is="props.popover ? BPopover : BCollapse"
             v-model="localFormatsVisible"

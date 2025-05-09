@@ -2,19 +2,50 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Kepler.gl" embeddable="true">
     <description>Geospatial analysis tool for large-scale data sets</description>
+    <tags>
+        <tag>Geospatial</tag>
+        <tag>Map</tag>
+        <tag>Visualization</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">csv</test>
-            <test test_attr="ext" result_type="datatype">geojson</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">geocsv</test>
+            <test test_attr="ext">geojson</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
         <requirement type="npm" version="0.0.1" package="@galaxyproject/kepler"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geojson" ftype="geojson" label="Hurricane Irma" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.geocsv" ftype="geocsv" label="Dotted Line" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is Kepler.gl Viewer?
+
+Kepler.gl is a powerful tool for exploring and visualizing large-scale geospatial data directly in your browser.
+
+After selecting a dataset (CSV or GeoJSON), you can create interactive maps, apply different layers, and adjust styling to better understand spatial patterns in your data.
+
+#### Key Features
+
+- **Map Layers**: Visualize data with various layer types like points, arcs, lines, polygons, and more.
+- **Custom Styling**: Configure colors, size, radius, and opacity for better insights.
+- **Filtering**: Filter data by attributes and time ranges for dynamic analysis.
+- **Animation**: Animate your spatial-temporal data to see changes over time.
+
+This tool is ideal for visualizing GPS tracks, environmental data, urban mobility patterns, and much more.
+
+To learn more about Kepler.gl, visit:
+[https://kepler.gl/](https://kepler.gl/)
+    ]]></help>
 </visualization>

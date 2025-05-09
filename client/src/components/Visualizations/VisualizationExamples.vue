@@ -14,6 +14,7 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 const toast = useToast();
 
 interface UrlDataType {
+    ftype?: string;
     name: string;
     url: string;
 }
@@ -22,8 +23,11 @@ defineProps<{
     urlData?: Array<UrlDataType>;
 }>();
 
-function onSubmit(name: string, url: string) {
-    const data = uploadPayload([{ fileMode: "new", fileUri: url }], currentHistoryId.value);
+function onSubmit(name: string, url: string, ftype?: string) {
+    const data = uploadPayload(
+        [{ extension: ftype, fileName: name, fileMode: "new", fileUri: url }],
+        currentHistoryId.value
+    );
     sendPayload(data, {
         success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
         error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
@@ -51,7 +55,7 @@ function onSubmit(name: string, url: string) {
         <BDropdownText>
             <small class="text-primary text-uppercase">Upload Examples</small>
         </BDropdownText>
-        <BDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url)">
+        <BDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url, ud.ftype)">
             <span>
                 <FontAwesomeIcon :icon="faFileUpload" />
                 <span v-localize>{{ ud.name }}</span>

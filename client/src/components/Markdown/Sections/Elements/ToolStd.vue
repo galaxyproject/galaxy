@@ -27,7 +27,7 @@ const { selectJobOptions, selectedJob, targetJobId } = useMappingJobs(jobIdRef, 
 
 async function init() {
     if (targetJobId.value) {
-        jobStore.fetchJob(targetJobId.value);
+        jobStore.fetchJob({ id: targetJobId.value });
     }
 }
 
@@ -40,7 +40,7 @@ watch(
 );
 
 const jobContent = computed(() => {
-    let content: string | undefined;
+    let content: string | null | undefined;
     if (targetJobId.value) {
         const job = jobStore.getJob(targetJobId.value);
         content = job && job[props.name];

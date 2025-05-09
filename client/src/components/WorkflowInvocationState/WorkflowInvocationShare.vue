@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BModal } from "bootstrap-vue";
+import { BAlert, BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -13,6 +13,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "../BaseComponents/GButton.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 
 const CLIPBOARD_MSG = "The link to the invocation has been copied to your clipboard.";
@@ -97,17 +98,17 @@ function shareInvocationButtonClicked() {
 
 <template>
     <div v-if="owned">
-        <BButton
-            v-b-tooltip.noninteractive.hover
+        <GButton
             title="Share Invocation"
-            size="sm"
-            class="text-decoration-none"
-            data-description="share invocation icon button"
-            variant="link"
+            tooltip
+            size="small"
+            transparent
+            color="blue"
+            data-button-share
             :disabled="!workflow"
             @click="shareInvocationButtonClicked">
             <FontAwesomeIcon :icon="faShareAlt" fixed-width />
-        </BButton>
+        </GButton>
 
         <BModal
             v-model="modalToggle"

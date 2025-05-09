@@ -412,6 +412,19 @@ configuration).
 
 ![](file_source_zenodo_configuration.png)
 
+#### `rspace`
+
+The syntax for the `configuration` section of `rspace` templates looks like this.
+
+![](file_source_rspace_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_rspace_configuration.png)
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
@@ -491,6 +504,15 @@ and you are comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_file_source_form_full_zenodo.png)
+
+#### Allow Users to Define RSpace Instances as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_rspace.yaml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_rspace.png)
+
 
 ### Production OAuth 2.0 File Source Templates
 

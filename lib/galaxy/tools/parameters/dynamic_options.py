@@ -298,8 +298,11 @@ class ParamValueFilter(Filter):
 
     def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
         ref = other_values.get(self.ref_name, None)
-        if ref is None or is_runtime_value(ref):
+        if ref is None:
             ref = []
+        elif is_runtime_value(ref) and trans and trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+            # We're in the run form, can't possibly apply a param_value filter.
+            return options
 
         # - for HDCAs the list of contained HDAs is extracted
         # - single values are transformed in a single element list

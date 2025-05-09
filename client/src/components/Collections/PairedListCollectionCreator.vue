@@ -8,33 +8,41 @@ import {
     faUnlink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
+import { BAlert, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
-// import levenshteinDistance from '@/utils/levenshtein';
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+import { useExtensionFiltering } from "./common/useExtensionFilter";
+import {
+    COMMON_FILTERS,
+    type CommonFiltersType,
+    createPair,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+    type MatchingFunction,
+    matchOnlyIfExact,
+    matchOnPercentOfStartingAndEndingLCS,
+    statelessAutoPairFnBuilder,
+} from "./pairing";
 
 import Heading from "../Common/Heading.vue";
 import PairedElementView from "./PairedElementView.vue";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
-const COMMON_FILTERS = {
-    illumina: ["_1", "_2"],
-    Rs: ["_R1", "_R2"],
-    dot12s: [".1.fastq", ".2.fastq"],
-};
-const DEFAULT_FILTER: keyof typeof COMMON_FILTERS = "illumina";
 const MATCH_PERCENTAGE = 0.99;
 
 // Titles and help text
@@ -58,7 +66,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: DatasetPair[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-create", workingElements: DatasetPair[], collectionName: string, hideSourceItems: boolean): void;
     (e: "on-cancel"): void;
 }>();
 
@@ -123,23 +131,23 @@ const pairableElements = computed(() => {
     return pairable;
 });
 const autoPairButton = computed(() => {
-    let variant;
+    let variant: ComponentColor;
     let icon;
     let text;
     if (!canAutoPair.value) {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Specify simple filters to divide datasets into forward and reverse reads for pairing.");
     } else if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
-        variant = "primary";
+        variant = "blue";
         icon = faExclamationCircle;
         text = localize("Click to auto-pair datasets based on the current filters");
     } else if (pairableElements.value.length > 0) {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Auto-pair possible based on current filters");
     } else {
-        variant = "secondary";
+        variant = "grey";
         icon = faLink;
         text = localize("Click to attempt auto-pairing datasets");
     }
@@ -184,12 +192,7 @@ const noUnpairedElementsDisplayed = computed(() => {
     return numOfUnpairedForwardElements.value + numOfUnpairedReverseElements.value === 0;
 });
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+const { hasInvalidExtension } = useExtensionFiltering(props);
 
 function removeExtensionsToggle() {
     removeExtensions.value = !removeExtensions.value;
@@ -235,44 +238,14 @@ function _elementsSetUp() {
 }
 
 function initialFiltersSet() {
-    let illumina = 0;
-    let dot12s = 0;
-    let Rs = 0;
-    //should we limit the forEach? What if there are 1000s of elements?
-    props.initialElements.forEach((element) => {
-        if (element.name?.includes(".1.fastq") || element.name?.includes(".2.fastq")) {
-            dot12s++;
-        } else if (element.name?.includes("_R1") || element.name?.includes("_R2")) {
-            Rs++;
-        } else if (element.name?.includes("_1") || element.name?.includes("_2")) {
-            illumina++;
-        }
-    });
-    // if we cannot filter don't set an initial filter and hide all the data
-    if (illumina == 0 && dot12s == 0 && Rs == 0) {
+    const filterType = guessInitialFilterType(props.initialElements);
+    if (filterType === null) {
         forwardFilter.value = "";
         reverseFilter.value = "";
-    } else if (illumina > dot12s && illumina > Rs) {
-        changeFilters("illumina");
-    } else if (dot12s > illumina && dot12s > Rs) {
-        changeFilters("dot12s");
-    } else if (Rs > illumina && Rs > dot12s) {
-        changeFilters("Rs");
     } else {
-        changeFilters("illumina");
+        changeFilters(filterType);
     }
 }
-
-// TODO: Don't know if this is really necessary
-// function _ensureElementIds() {
-//     workingElements.value.forEach((element) => {
-//         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-//             console.warn("Element missing id", element);
-//         }
-//     });
-
-//     return workingElements.value;
-// }
 
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
@@ -300,11 +273,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
     }
 
     // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
+    if (hasInvalidExtension(element)) {
         return localize(`has an invalid format: ${element.extension}`);
     }
     return null;
@@ -379,45 +348,13 @@ function removePairFromUnpaired(fwd: HDASummary, rev: HDASummary) {
  * (will guess if not given)
  */
 function _createPair(fwd: HDASummary, rev: HDASummary, name?: string) {
-    // ensure existance and don't pair something with itself
-    if (!(fwd && rev) || fwd === rev) {
-        throw new Error(`Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`);
-    }
     name = name || _guessNameForPair(fwd, rev);
-    return { forward: fwd, name: name, reverse: rev };
+    return createPair(fwd, rev, name);
 }
 
-/** Try to find a good pair name for the given fwd and rev datasets */
 function _guessNameForPair(fwd: HDASummary, rev: HDASummary, willRemoveExtensions?: boolean) {
     willRemoveExtensions = willRemoveExtensions ? willRemoveExtensions : removeExtensions.value;
-    let fwdName = fwd.name;
-    let revName = rev.name;
-    const fwdNameFilter = fwdName?.replace(new RegExp(forwardFilter.value || ""), "");
-    const revNameFilter = revName?.replace(new RegExp(reverseFilter.value || ""), "");
-    if (!fwdNameFilter || !revNameFilter || !fwdName || !revName) {
-        return `${fwdName} & ${revName}`;
-    }
-    let lcs = _naiveStartingAndEndingLCS(fwdNameFilter, revNameFilter);
-    // remove url prefix if files were uploaded by url
-    const lastSlashIndex = lcs.lastIndexOf("/");
-    if (lastSlashIndex > 0) {
-        const urlprefix = lcs.slice(0, lastSlashIndex + 1);
-        lcs = lcs.replace(urlprefix, "");
-    }
-
-    if (willRemoveExtensions) {
-        const lastDotIndex = lcs.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            const extension = lcs.slice(lastDotIndex, lcs.length);
-            lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
-        }
-    }
-    if (lcs.endsWith(".") || lcs.endsWith("_")) {
-        lcs = lcs.substring(0, lcs.length - 1);
-    }
-    return lcs || `${fwdName} & ${revName}`;
+    return guessNameForPair(fwd, rev, forwardFilter.value, reverseFilter.value, willRemoveExtensions);
 }
 
 function clickAutopair() {
@@ -458,55 +395,15 @@ function splitByFilter() {
 /** Autopair by exact match */
 function autoPairSimple(params: { listA: HDASummary[]; listB: HDASummary[] }) {
     return autoPairFnBuilder({
-        match: (params) => {
-            params = params || {};
-            if (params.matchTo === params.possible) {
-                return {
-                    index: params.index,
-                    score: 1.0,
-                };
-            }
-            return params.bestMatch;
-        },
+        match: matchOnlyIfExact, // will only issue 1.0 scores if exact
         scoreThreshold: 0.6,
     })(params);
 }
 
-// TODO: Currently unused?
-/** Autopair by levenstein distance */
-// function autoPairLevenshtein(params: { listA: HDASummary[]; listB: HDASummary[] }) {
-//     return autoPairFnBuilder({
-//         match: (params) => {
-//             params = params || {};
-//             const distance = levenshteinDistance(params.matchTo, params.possible);
-//             const score = 1.0 - distance / Math.max(params.matchTo.length, params.possible.length);
-//             if (score > params.bestMatch.score) {
-//                 return {
-//                     index: params.index,
-//                     score: score,
-//                 };
-//             }
-//             return params.bestMatch;
-//         },
-//         scoreThreshold: MATCH_PERCENTAGE,
-//     })(params);
-// }
-
 /** Autopair by longest common substrings scoring */
 function autoPairLCS(params: { listA: HDASummary[]; listB: HDASummary[] }) {
     return autoPairFnBuilder({
-        match: (params) => {
-            params = params || {};
-            const match = _naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
-            const score = match / Math.max(params.matchTo.length, params.possible.length);
-            if (score > params.bestMatch.score) {
-                return {
-                    index: params.index,
-                    score: score,
-                };
-            }
-            return params.bestMatch;
-        },
+        match: matchOnPercentOfStartingAndEndingLCS,
         scoreThreshold: MATCH_PERCENTAGE,
     })(params);
 }
@@ -600,128 +497,25 @@ function unpairAll() {
 // ===========================================================================
 
 /** Returns an autopair function that uses the provided options.match function */
-function autoPairFnBuilder(options: {
-    match: (params: {
-        matchTo: string;
-        possible: string;
-        index: number;
-        bestMatch: { score: number; index: number };
-    }) => { score: number; index: number };
-    createPair?: (params: {
-        listA: HDASummary[];
-        indexA: number;
-        listB: HDASummary[];
-        indexB: number;
-    }) => DatasetPair | undefined;
-    preprocessMatch?: (params: {
-        matchTo: HDASummary;
-        possible: HDASummary;
-        index: number;
-        bestMatch: { score: number; index: number };
-    }) => { matchTo: string; possible: string; index: number; bestMatch: { score: number; index: number } };
-    scoreThreshold?: number;
-}) {
-    options = options || {};
-    options.createPair =
-        options.createPair ||
-        function _defaultCreatePair(params) {
-            params = params || {};
-            const a = params.listA.splice(params.indexA, 1)[0];
-            const b = params.listB.splice(params.indexB, 1)[0];
-            if (!a || !b) {
-                return undefined;
-            }
-            const aInBIndex = params.listB.indexOf(a);
-            const bInAIndex = params.listA.indexOf(b);
-            if (aInBIndex !== -1) {
-                params.listB.splice(aInBIndex, 1);
-            }
-            if (bInAIndex !== -1) {
-                params.listA.splice(bInAIndex, 1);
-            }
-            // return _pair(a, b, { silent: true });
-            return _pair(a, b);
-        };
-    // compile these here outside of the loop
-    let _regexps: RegExp[] = [];
-    function getRegExps() {
-        if (!_regexps.length) {
-            _regexps = [new RegExp(forwardFilter.value), new RegExp(reverseFilter.value)];
-        }
-        return _regexps;
-    }
-    // mangle params as needed
-    options.preprocessMatch =
-        options.preprocessMatch ||
-        function _defaultPreprocessMatch(params) {
-            const regexps = getRegExps();
-            return Object.assign(params, {
-                matchTo: params.matchTo.name?.replace(regexps[0] || "", ""),
-                possible: params.possible.name?.replace(regexps[1] || "", ""),
-                index: params.index,
-                bestMatch: params.bestMatch,
-            });
-        };
-
+function autoPairFnBuilder(options: { match: MatchingFunction; scoreThreshold?: number }) {
     return function _strategy(params: { listA: HDASummary[]; listB: HDASummary[] }) {
-        params = params || {};
-        const listA = params.listA;
-        const listB = params.listB;
-        let indexA = 0;
-        let indexB;
-
-        let bestMatch = {
-            score: 0.0,
-            index: -1,
-        };
-
-        const paired = [];
-        while (indexA < listA.length) {
-            const matchTo = listA[indexA];
-            bestMatch.score = 0.0;
-
-            if (!matchTo) {
-                continue;
-            }
-            for (indexB = 0; indexB < listB.length; indexB++) {
-                const possible = listB[indexB] as HDASummary;
-                if (listA[indexA] !== listB[indexB]) {
-                    bestMatch = options.match(
-                        options.preprocessMatch!({
-                            matchTo: matchTo,
-                            possible: possible,
-                            index: indexB,
-                            bestMatch: bestMatch,
-                        })
-                    );
-                    if (bestMatch.score === 1.0) {
-                        break;
-                    }
-                }
-            }
-            const scoreThreshold = options.scoreThreshold ? options.scoreThreshold : MATCH_PERCENTAGE;
-            if (bestMatch.score >= scoreThreshold) {
-                const createdPair = options.createPair!({
-                    listA: listA,
-                    indexA: indexA,
-                    listB: listB,
-                    indexB: bestMatch.index,
-                });
-                if (createdPair) {
-                    paired.push(createdPair);
-                }
-            } else {
-                indexA += 1;
-            }
-            if (!listA.length || !listB.length) {
-                return paired;
-            }
-        }
+        const scoreThreshold = options.scoreThreshold ? options.scoreThreshold : MATCH_PERCENTAGE;
+        const pairs = statelessAutoPairFnBuilder<HDASummary>(
+            options.match,
+            scoreThreshold,
+            forwardFilter.value,
+            reverseFilter.value,
+            removeExtensions.value
+        )(params);
+        const paired: DatasetPair[] = [];
+        pairs.forEach((pair: { forward: HDASummary; reverse: HDASummary; name: string }) => {
+            paired.push(_pair(pair.forward, pair.reverse, { name: pair.name }));
+        });
         return paired;
     };
 }
 
-function changeFilters(filter: keyof typeof COMMON_FILTERS) {
+function changeFilters(filter: CommonFiltersType) {
     forwardFilter.value = COMMON_FILTERS[filter][0] as string;
     reverseFilter.value = COMMON_FILTERS[filter][1] as string;
 }
@@ -757,7 +551,7 @@ async function clickedCreate(collectionName: string) {
     }
 
     if (state.value == "build" && (atLeastOnePair.value || confirmed)) {
-        emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
+        emit("on-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
 
@@ -773,44 +567,6 @@ function checkForDuplicates() {
         existingPairNames[pair.name] = true;
     });
     state.value = valid ? "build" : "duplicates";
-}
-
-// TODO: Where is this being used?
-// function stripExtension(name: string) {
-//     return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
-// }
-
-/** Return the concat'd longest common prefix and suffix from two strings */
-function _naiveStartingAndEndingLCS(s1: string, s2: string) {
-    var fwdLCS = "";
-    var revLCS = "";
-    var i = 0;
-    var j = 0;
-    while (i < s1.length && i < s2.length) {
-        if (s1[i] !== s2[i]) {
-            break;
-        }
-        fwdLCS += s1[i];
-        i += 1;
-    }
-    if (i === s1.length) {
-        return s1;
-    }
-    if (i === s2.length) {
-        return s2;
-    }
-
-    i = s1.length - 1;
-    j = s2.length - 1;
-    while (i >= 0 && j >= 0) {
-        if (s1[i] !== s2[j]) {
-            break;
-        }
-        revLCS = [s1[i], revLCS].join("");
-        i -= 1;
-        j -= 1;
-    }
-    return fwdLCS + revLCS;
 }
 </script>
 
@@ -1150,27 +906,27 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         </div>
                                     </div>
                                     <div class="paired-column flex-column no-flex column">
-                                        <BButtonGroup vertical>
-                                            <BButton
+                                        <GButtonGroup vertical>
+                                            <GButton
                                                 class="clear-filters-link"
                                                 :disabled="!canClearFilters"
-                                                size="sm"
-                                                :variant="hasFilter ? 'danger' : 'secondary'"
+                                                size="small"
+                                                :color="hasFilter ? 'red' : 'blue'"
                                                 @click="clickClearFilters">
                                                 <FontAwesomeIcon :icon="faTimes" fixed-width />
                                                 {{ localize("Clear Filters") }}
-                                            </BButton>
-                                            <BButton
+                                            </GButton>
+                                            <GButton
                                                 class="autopair-link"
                                                 :disabled="!canAutoPair"
-                                                size="sm"
+                                                size="small"
                                                 :title="autoPairButton.text"
                                                 :variant="autoPairButton.variant"
                                                 @click="clickAutopair">
                                                 <FontAwesomeIcon :icon="autoPairButton.icon" fixed-width />
                                                 {{ localize("Auto-pair") }}
-                                            </BButton>
-                                        </BButtonGroup>
+                                            </GButton>
+                                        </GButtonGroup>
                                     </div>
                                     <div class="reverse-column flex-column column">
                                         <div class="column-header">
@@ -1292,14 +1048,15 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     <div class="column-title paired-column-title" data-description="number of pairs">
                                         <span class="title"> {{ numOfPairs }} {{ localize("pairs") }}</span>
                                     </div>
-                                    <BButton
+                                    <GButton
                                         v-if="generatedPairs.length > 0"
-                                        variant="link"
-                                        size="sm"
+                                        color="blue"
+                                        transparent
+                                        size="small"
                                         @click.stop="unpairAll">
                                         <FontAwesomeIcon :icon="faUnlink" fixed-width />
                                         {{ localize("Unpair all") }}
-                                    </BButton>
+                                    </GButton>
                                 </div>
                                 <div class="paired-columns flex-column-container scroll-container flex-row">
                                     <ol class="column-datasets">

@@ -9,6 +9,7 @@ import localize from "@/utils/localization";
 
 import FormCard from "./FormCard.vue";
 import FormListElementOperations from "./FormListElementOperations.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 
@@ -142,11 +143,9 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <span v-b-tooltip.hover :title="buttonTooltip">
-            <b-button v-if="!props.sustainRepeats" :disabled="maxRepeats" @click="onInsert">
-                <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
-            </b-button>
-        </span>
+        <GButton v-if="!props.sustainRepeats" tooltip :title="buttonTooltip" :disabled="maxRepeats" @click="onInsert">
+            <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+            <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
+        </GButton>
     </div>
 </template>

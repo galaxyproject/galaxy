@@ -453,12 +453,20 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
+                        v-if="gridImplementation === 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
                         stretch-h="all"></HotTable>
+                    <RuleGrid
+                        v-else
+                        id="hot-table"
+                        ref="hotTable"
+                        :data="hotData.data"
+                        :col-headers="colHeadersDisplay"
+                        stretch-h="all"></RuleGrid>
                 </div>
             </div>
         </RuleModalMiddle>
@@ -577,6 +585,7 @@ import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInpu
 import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleGrid from "components/RuleBuilder/RuleGrid";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
@@ -616,6 +625,7 @@ export default {
     components: {
         TooltipOnHover,
         HotTable,
+        RuleGrid,
         RuleComponent,
         RuleTargetComponent,
         SavedRulesSelector,
@@ -679,6 +689,11 @@ export default {
             type: String,
             required: false,
             default: null,
+        },
+        gridImplementation: {
+            type: String,
+            required: false,
+            default: "aggrid",
         },
     },
     data: function () {
@@ -967,8 +982,13 @@ export default {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
                 let collectionType;
+                // true iff there aren't multiple levels of list identifiers - so we can simplify the display
+                let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
+                    if (collectionType == "list:paired" || collectionType == "list") {
+                        flatishList = true;
+                    }
                 } else {
                     // give a bunch of different options if not constrained with given input
                     collectionType = "list:list:list:paired";
@@ -977,8 +997,11 @@ export default {
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
-                        // TODO: drop the numeral at the end if only flat list
-                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        if (flatishList) {
+                            metadataOptions["identifier" + index] = _l("List Identifier");
+                        } else {
+                            metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        }
                     } else {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
@@ -1211,9 +1234,11 @@ export default {
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
         // Vue.nextTick() didn't work here.
-        setTimeout(() => {
-            this.$refs.hotTable.$el.click();
-        }, 200);
+        if (this.gridImplementation === "hot") {
+            setTimeout(() => {
+                this.$refs.hotTable.$el.click();
+            }, 200);
+        }
     },
     methods: {
         restoreRules(event) {

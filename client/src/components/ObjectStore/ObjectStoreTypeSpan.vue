@@ -12,6 +12,8 @@ const MESSAGES = {
     generic_s3:
         "This is a Galaxy storage based on the Amazon Simple Storage Service (S3) interface, but likely not stored by Amazon. The AWS interface has become an industry standard and many storage vendors support it and use it to expose object based storage.",
     onedata: "This is a Galaxy storage based on the Onedata system.",
+    rucio: "This is a Galaxy storage based on the RUCIO system https://rucio.cern.ch/.",
+    irods: "This is a Galaxy storage based on the iRODS system.",
 };
 
 interface Props {

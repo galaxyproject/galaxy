@@ -2727,6 +2727,8 @@ export interface components {
             format: string
             /** Format Source */
             format_source: string | null
+            /** From Work Dir */
+            from_work_dir?: string | null
             /** Hidden */
             hidden: boolean
             /** Label */
@@ -3006,8 +3008,8 @@ export interface components {
         }
         /** XrefDict */
         XrefDict: {
-            /** Reftype */
-            reftype: string
+            /** Type */
+            type: string
             /** Value */
             value: string
         }

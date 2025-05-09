@@ -152,15 +152,15 @@ const linkedFromOlderRevision = computed(() => {
             </q-card-section>
             <q-separator />
             <q-card-section v-if="xrefs.length > 0">
-                <div class="text-h5 q-mr-lg">References</div>
+                <div class="text-h5 q-mr-lg">External links</div>
                 <q-list bordered separator>
                     <q-item v-for="xref in xrefs" :key="xref.value">
                         <q-item-section>
-                            <q-item-label overline>REFERENCE {{ xref.reftype }}</q-item-label>
-                            <q-item-label v-if="xref.reftype == 'bio.tools'">
+                            <q-item-label overline>Catalog {{ xref.type }}</q-item-label>
+                            <q-item-label v-if="xref.type == 'bio.tools'">
                                 <bio-tools-link :id="xref.value" />
                             </q-item-label>
-                            <q-item-label v-else-if="xref.reftype == 'bioconductor'">
+                            <q-item-label v-else-if="xref.type == 'bioconductor'">
                                 <bioconductor-link :id="xref.value" />
                             </q-item-label>
                             <q-item-label v-else>
@@ -177,8 +177,8 @@ const linkedFromOlderRevision = computed(() => {
             </q-card-section>
             <q-separator />
             <q-card-section>
-                <div class="text-h5 q-mr-lg">Citations</div>
-                <span v-if="citations.length < 1"><i>This tool does not define any citations.</i></span>
+                <div class="text-h5 q-mr-lg">References</div>
+                <span v-if="citations.length < 1"><i>This tool does not define any references.</i></span>
                 <q-list bordered separator v-else>
                     <q-item v-for="(citation, index) in tool?.citations" :key="index">
                         <q-item-section>

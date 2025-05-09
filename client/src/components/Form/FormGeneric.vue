@@ -13,12 +13,12 @@
                 </template>
             </FormCard>
             <div class="mt-3">
-                <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
+                <GButton id="submit" color="blue" class="mr-1" @click="onSubmit()">
                     <span :class="submitIconClass" />{{ submitTitle | l }}
-                </b-button>
-                <b-button v-if="cancelRedirect" @click="onCancel()">
+                </GButton>
+                <GButton v-if="cancelRedirect" @click="onCancel()">
                     <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
-                </b-button>
+                </GButton>
             </div>
         </div>
     </UrlDataProvider>
@@ -33,11 +33,14 @@ import { withPrefix } from "utils/redirect";
 
 import { submitData } from "./services";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 export default {
     components: {
         FormCard,
         FormDisplay,
         UrlDataProvider,
+        GButton,
     },
     props: {
         id: {

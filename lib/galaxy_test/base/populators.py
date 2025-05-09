@@ -2133,6 +2133,7 @@ class BaseWorkflowPopulator(BasePopulator):
         assert_ok: bool = True,
     ) -> Response:
         invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
+        assert invoke_return.status_code < 300, invoke_return.json()
         invoke_return.raise_for_status()
         invocation_id = invoke_return.json()["id"]
 
@@ -3426,7 +3427,6 @@ def load_data_dict(
                 ).json()
             hdca_output = fetch_response["outputs"][0]
             hdca = dataset_populator.ds_entry(hdca_output)
-            hdca["hid"] = hdca_output["hid"]
             label_map[key] = hdca
             inputs[key] = hdca
             has_uploads = True

@@ -257,7 +257,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "xrefs" in get_json
         assert len(get_json["xrefs"]) == 1
         xref = get_json["xrefs"][0]
-        assert xref["reftype"] == "bio.tools"
+        assert xref["type"] == "bio.tools"
         assert xref["value"] == "bwa"
 
     @skip_without_tool("test_data_source")

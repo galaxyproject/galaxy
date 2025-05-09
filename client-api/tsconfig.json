@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "es2020",
+        "moduleResolution": "node",
+        
+        "verbatimModuleSyntax": true,
+        
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+        
+        "allowJs": true,
+        "checkJs": false,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "noUncheckedIndexedAccess": true,
+        
+        // Necessary for now, was previously the default setting
+        "resolvePackageJsonExports": false
+    },
+    "include": ["./src/**/*.ts"]
+}

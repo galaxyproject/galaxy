@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { BButton } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
@@ -13,6 +12,7 @@ import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 type Record = SelectionItem;
@@ -205,10 +205,10 @@ watch(
         @onOpen="onOpen"
         @onUndo="load()">
         <template v-slot:buttons>
-            <BButton v-if="allowUpload" size="sm" @click="onUpload">
+            <GButton v-if="allowUpload" size="small" @click="onUpload">
                 <Icon :icon="faUpload" />
                 Upload
-            </BButton>
+            </GButton>
         </template>
     </SelectionDialog>
 </template>

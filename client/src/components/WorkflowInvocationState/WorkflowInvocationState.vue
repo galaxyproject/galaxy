@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BBadge, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
@@ -19,6 +19,7 @@ import {
     runningCount as jobStatesSummaryRunningCount,
 } from "./util";
 
+import GButton from "../BaseComponents/GButton.vue";
 import ProgressBar from "../ProgressBar.vue";
 import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
@@ -259,19 +260,19 @@ async function onCancel() {
             :workflow-id="invocation.workflow_id"
             :success="props.success">
             <template v-slot:workflow-title-actions>
-                <BButton
+                <GButton
                     v-if="!invocationAndJobTerminal"
-                    v-b-tooltip.noninteractive.hover
                     title="Cancel scheduling of workflow invocation"
+                    tooltip
                     data-description="header cancel invocation button"
-                    size="sm"
-                    class="text-decoration-none"
-                    variant="link"
+                    size="small"
+                    transparent
+                    color="blue"
                     :disabled="cancellingInvocation || invocationState == 'cancelling'"
                     @click="onCancel">
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
                     Cancel
-                </BButton>
+                </GButton>
                 <WorkflowInvocationShare
                     :invocation-id="invocation.id"
                     :workflow-id="invocation.workflow_id"
@@ -339,10 +340,7 @@ async function onCancel() {
                     :store-id="storeId"
                     :is-full-page="props.isFullPage" />
             </BTab>
-            <WorkflowInvocationInputOutputTabs :invocation="invocation" :not-lazy="invocationAndJobTerminal" />
-            <!-- <BTab title="Workflow Overview">
-                <p>TODO: Insert readonly version of workflow editor here</p>
-            </BTab> -->
+            <WorkflowInvocationInputOutputTabs :invocation="invocation" :terminal="invocationAndJobTerminal" />
             <BTab
                 v-if="!props.isSubworkflow"
                 title="Report"
@@ -370,17 +368,17 @@ async function onCancel() {
                         variant="primary">
                         <FontAwesomeIcon :icon="faExclamation" />
                     </BBadge>
-                    <BButton
+                    <GButton
                         v-if="!props.isFullPage && !invocationAndJobTerminal"
-                        v-b-tooltip.noninteractive.hover
+                        tooltip
                         class="my-1"
                         title="Cancel scheduling of workflow invocation"
                         data-description="cancel invocation button"
-                        size="sm"
+                        size="small"
                         @click="onCancel">
                         <FontAwesomeIcon :icon="faTimes" fixed-width />
                         Cancel Workflow
-                    </BButton>
+                    </GButton>
                 </div>
             </template>
         </BTabs>

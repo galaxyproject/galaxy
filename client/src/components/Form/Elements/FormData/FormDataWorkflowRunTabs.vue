@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -27,7 +27,7 @@ const props = defineProps<{
     currentValue?: DataOption[];
     canBrowse?: boolean;
     extensions?: string[];
-    collectionType?: CollectionType;
+    collectionType?: CollectionBuilderType;
     stepTitle?: string;
     workflowTab: string;
 }>();

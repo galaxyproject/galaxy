@@ -615,6 +615,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return JSON content Galaxy will use to render Markdown reports */
+        get: operations["report_api_datasets__dataset_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{dataset_id}/storage": {
         parameters: {
             query?: never;
@@ -1746,7 +1763,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return all the citations for the tools used to produce the datasets in the history. */
+        /** Return all the references for the tools used to produce the datasets in the history. */
         get: operations["citations_api_histories__history_id__citations_get"];
         put?: never;
         post?: never;
@@ -3820,6 +3837,30 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proxy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Proxy
+         * @description Proxy a remote file to the client to avoid CORS issues.
+         */
+        get: operations["proxy_api_proxy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Proxy
+         * @description Proxy a remote file to the client to avoid CORS issues.
+         */
+        head: operations["proxy_api_proxy_head"];
         patch?: never;
         trace?: never;
     };
@@ -9370,7 +9411,8 @@ export interface components {
                 | "googledrive"
                 | "elabftw"
                 | "inveniordm"
-                | "zenodo";
+                | "zenodo"
+                | "rspace";
             /** Variables */
             variables?:
                 | (
@@ -14860,7 +14902,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
             /** Variables */
             variables?:
                 | (
@@ -16610,6 +16652,11 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * DOI
+             * @description A list of Digital Object Identifiers associated with this workflow.
+             */
+            doi?: string[] | null;
+            /**
              * Email Hash
              * @description The hash of the email of the creator of this workflow
              */
@@ -17041,6 +17088,27 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolReportForDataset */
+        ToolReportForDataset: {
+            /**
+             * Content
+             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @default
+             */
+            content: string | null;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_time?: string | null;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_version?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** ToolStep */
         ToolStep: {
@@ -17756,7 +17824,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
             /**
              * Uuid
              * Format: uuid4
@@ -17842,7 +17910,8 @@ export interface components {
                 | "googledrive"
                 | "elabftw"
                 | "inveniordm"
-                | "zenodo";
+                | "zenodo"
+                | "rspace";
             /** Uri Root */
             uri_root: string;
             /**
@@ -20315,7 +20384,10 @@ export interface operations {
     };
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
+                filename?: string | null;
+            };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20626,6 +20698,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    report_api_datasets__dataset_id__report_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolReportForDataset"];
                 };
             };
             /** @description Request Error */
@@ -31440,6 +31556,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    proxy_api_proxy_get: {
+        parameters: {
+            query: {
+                /** @description The URL of the remote file */
+                url: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    proxy_api_proxy_head: {
+        parameters: {
+            query: {
+                /** @description The URL of the remote file */
+                url: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

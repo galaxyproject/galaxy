@@ -9,6 +9,7 @@ import { computed, ref, useAttrs } from "vue";
 
 import { linkify } from "@/utils/utils";
 
+import { isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -29,6 +30,7 @@ import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
 import FormElementHeader from "./FormElementHeader.vue";
 import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const TYPE_TO_PLACEHOLDER: Record<string, string> = {
     text: "text input",
@@ -167,14 +169,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
-const isUriDataField = computed(() => {
-    const dataField = props.type == "data";
-    if (dataField && props.value && "src" in props.value) {
-        const src = props.value.src;
-        return src == "url";
-    }
-    return false;
-});
+const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -289,19 +284,33 @@ function onAlert(value: string | undefined) {
         <div class="ui-form-title" :class="{ 'card-header m-0 px-3 py-2': props.workflowRun }">
             <div>
                 <span v-if="collapsible || connectable">
-                    <b-button
+                    <GButton
                         v-if="collapsible && !connected"
-                        class="ui-form-collapsible-icon"
+                        color="blue"
+                        tooltip
+                        transparent
+                        inline
+                        icon-only
+                        data-collapsible
                         :title="collapseText"
                         @click="onCollapse">
-                        <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
-                        <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
-                    </b-button>
+                        <FontAwesomeIcon v-if="collapsed" fixed-with :icon="props.collapsedEnableIcon" />
+                        <FontAwesomeIcon v-else fixed-with :icon="props.collapsedDisableIcon" />
+                    </GButton>
 
-                    <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
-                        <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
-                        <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
-                    </b-button>
+                    <GButton
+                        v-if="connectable"
+                        color="blue"
+                        tooltip
+                        transparent
+                        inline
+                        icon-only
+                        data-connected
+                        :title="connectText"
+                        @click="onConnect">
+                        <FontAwesomeIcon v-if="connected" fixed-with :icon="props.connectedEnableIcon" />
+                        <FontAwesomeIcon v-else fixed-with :icon="props.connectedDisableIcon" />
+                    </GButton>
 
                     <span v-if="props.title" class="ui-form-title-text ml-1">
                         <label :for="props.id">{{ props.title }}</label>
@@ -332,6 +341,9 @@ function onAlert(value: string | undefined) {
                 :is-empty="isEmpty"
                 :is-optional="isOptional"
                 :extensions="attrs.extensions">
+                <template v-slot:badges>
+                    <slot name="workflow-run-form-title-badges" />
+                </template>
                 <template v-slot:action-items>
                     <slot name="workflow-run-form-title-items" />
                 </template>
@@ -364,10 +376,9 @@ function onAlert(value: string | undefined) {
                     :workflow-building-mode="workflowBuildingMode" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :multiple="attrs.multiple"
@@ -381,10 +392,9 @@ function onAlert(value: string | undefined) {
                                 props.type ?? ''
                             ))
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :optional="isOptional"
@@ -399,7 +409,7 @@ function onAlert(value: string | undefined) {
                         (props.type === undefined && attrs.options) ||
                         ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :data="attrs.data"
                     :display="attrs.display"
@@ -408,13 +418,12 @@ function onAlert(value: string | undefined) {
                     :multiple="attrs.multiple" />
                 <FormDataUri
                     v-else-if="isUriDataField"
-                    :id="id"
-                    v-model="currentValue"
+                    :id="props.id"
                     :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
                     v-else-if="formDataField"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :loading="loading"
                     :extensions="attrs.extensions"
@@ -431,7 +440,7 @@ function onAlert(value: string | undefined) {
                     @focus="addTempFocus" />
                 <FormDrilldown
                     v-else-if="props.type === 'drill_down'"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :options="attrs.options"
                     :multiple="attrs.multiple" />

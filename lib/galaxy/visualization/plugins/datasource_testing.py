@@ -129,14 +129,13 @@ def is_object_applicable(trans, target_object, data_source_tests):
                     #              target_object, getattr( target_object, 'id', '' ) )
                     continue
         elif test_attr == "ext" and test_type == "eq":
-            test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
-            if isinstance(target_object.datatype, type(test_result)) and _check_uri_support(
-                target_object, supported_protocols
-            ):
-                return True
-            else:
-                continue
-
+            if target_object.state in ["deferred", "ok"]:
+                test_result = trans.app.datatypes_registry.get_datatype_by_extension(test_result)
+                if isinstance(target_object.datatype, type(test_result)) and _check_uri_support(
+                    target_object, supported_protocols
+                ):
+                    return True
+            continue
         # NOTE: tests are OR'd, if any test passes - the visualization can be applied
         if test_fn(target_object, test_result) and _check_uri_support(target_object, supported_protocols):
             # log.debug( '\t test passed' )
