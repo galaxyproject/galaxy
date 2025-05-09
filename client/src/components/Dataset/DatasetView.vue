@@ -244,12 +244,12 @@ watch(
 }
 
 .hid-box {
-    font-weight: bold;
     margin-right: 0.5rem;
     white-space: nowrap;
 }
 
 .dataset-title {
+    font-weight: bold;
     white-space: normal;
     word-break: break-word;
 }
