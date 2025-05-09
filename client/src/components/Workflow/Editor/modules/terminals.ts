@@ -659,7 +659,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                         this.collectionTypes[0]?.collectionType?.endsWith("paired")
                     ) {
                         reason =
-                            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' to extract just the pairs out from this output.";
+                            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";
                     }
                 }
                 return new ConnectionAcceptable(false, reason);

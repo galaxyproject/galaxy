@@ -40,7 +40,7 @@ function resync() {
 }
 
 watch(currentForwardFilter, resync);
-watch(currentForwardFilter, resync);
+watch(currentReverseFilter, resync);
 </script>
 
 <template>

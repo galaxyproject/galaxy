@@ -382,7 +382,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' to extract just the pairs out from this output."
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output."
         );
     });
     it("rejects list:paired_or_unpaired -> paired connection", () => {
@@ -391,7 +391,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' to extract just the pairs out from this output."
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output."
         );
     });
     it("rejects list:paired_or_unpaired -> list connection", () => {

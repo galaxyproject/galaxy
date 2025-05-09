@@ -35,7 +35,7 @@ const handleDrop = (event: DragEvent) => {
 
 <template>
     <div class="paste-data">
-        <JaggedDataAlert :jaggedDataWarning="jaggedDataWarning" />
+        <JaggedDataAlert :jagged-data-warning="jaggedDataWarning" />
         <div
             class="dropzone"
             :class="{ highlight: isDragging }"
