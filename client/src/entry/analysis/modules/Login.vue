@@ -8,6 +8,10 @@ import { useConfig } from "@/composables/config";
 import ChangePassword from "@/components/Login/ChangePassword.vue";
 import LoginIndex from "@/components/Login/LoginIndex.vue";
 
+const props = defineProps<{
+    show?: string;
+}>();
+
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
@@ -51,6 +55,7 @@ const queryAttributeForceString = function (
             :show-welcome-with-login="config.show_welcome_with_login"
             :show-reset-link="config.enable_account_interface"
             :terms-url="config.terms_url"
-            :welcome-url="config.welcome_url" />
+            :welcome-url="config.welcome_url"
+            :show="props.show" />
     </div>
 </template>

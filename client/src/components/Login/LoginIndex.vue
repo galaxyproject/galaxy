@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import LoginForm from "@/components/Login/LoginForm.vue";
 import RegisterForm from "@/components/Login/RegisterForm.vue";
@@ -18,9 +18,10 @@ interface Props {
     serverMailConfigured?: boolean;
     showWelcomeWithLogin?: boolean;
     registrationWarningMessage?: string;
+    show?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     showLoginLink: true,
     showResetLink: true,
     redirect: undefined,
@@ -28,9 +29,17 @@ withDefaults(defineProps<Props>(), {
     welcomeUrl: undefined,
     mailingJoinAddr: undefined,
     registrationWarningMessage: undefined,
+    show: "login",
 });
 
-const showLogin = ref(true);
+const showLogin = ref(props.show !== "register");
+
+watch(
+    () => props.show,
+    (newShow) => {
+        showLogin.value = newShow !== "register";
+    },
+);
 
 function toggleLogin() {
     showLogin.value = !showLogin.value;
