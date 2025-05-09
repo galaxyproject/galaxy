@@ -654,6 +654,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "activation_email": "email_from",
         "ga4gh_service_organization_name": "organization_name",
         "ga4gh_service_organization_url": "organization_url",
+        "allow_user_creation": "allow_local_account_creation",
     }
 
     deprecated_options = list(renamed_options.keys()) + [
