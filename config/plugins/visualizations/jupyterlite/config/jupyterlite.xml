@@ -61,13 +61,13 @@ await gxy.api("/api/histories", method="GET")
 # Download a dataset by HID into the virtual filesystem
 await gxy.get(3)
 
-# Upload a local file to the current Galaxy history (renamed to "newname.txt")
+# Upload a local file to the associated Galaxy history (renamed to "newname.txt")
 await gxy.put("output.txt", "newname.txt")
 
-# List all datasets in the current history
+# List all datasets in the associated history
 await gxy.get_history()
 
-# Retrieve the current history ID (auto-detected from the dataset context)
+# Retrieve the associated history ID (auto-detected from the dataset context)
 await gxy.get_history_id()
 
 # Access the injected environment info (e.g., dataset ID and root URL)
