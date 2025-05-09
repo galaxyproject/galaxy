@@ -39,6 +39,7 @@ const { steps, loading, loadWorkflowOntoGraph } = useWorkflowRunGraph(
 );
 
 try {
+    datatypesMapperStore.createMapper();
     loadWorkflowOntoGraph();
 } catch (error) {
     errorMessage.value = errorMessageAsString(error);
@@ -66,6 +67,7 @@ try {
                 readonly />
         </BCard>
     </div>
+    <BAlert v-else variant="danger" show> Unable to load graph due to missing datatypes mapper. </BAlert>
 </template>
 
 <style scoped>

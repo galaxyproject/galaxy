@@ -417,6 +417,38 @@ steps: {}
 
     @selenium_test
     @managed_history
+    def test_modal_upload_updates_form(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content("goodbye land")
+
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+
+        self.perform_upload_of_pasted_content("hello world", on_current_page=True)
+
+        self.history_panel_wait_for_hid_ok(2)
+
+        builder = workflow_run.input.collection_builder._(label="input1")
+        # it is a div so I don't think it works to click directly but we can go to it and click
+        # on that part of the screen.
+        element = builder.element_by_hid(hid=2).wait_for_present()
+        action_chains = self.action_chains()
+        action_chains.move_to_element(element)
+        action_chains.click()
+        action_chains.perform()
+
+        input.collection_tab_build_link.wait_for_and_click()
+        builder.create.wait_for_and_click()
+
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(5)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "hello world"
+
+    @selenium_test
+    @managed_history
     def test_upload_list_from_workflow_simple(self):
         self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
         workflow_run = self.components.workflow_run

@@ -517,13 +517,6 @@ class ToolEvaluator:
                 unqualified_name = name.split("|__part__|")[-1]
                 if unqualified_name not in param_dict:
                     param_dict[unqualified_name] = param_dict[name]
-            output_path = str(param_dict[name])
-            # Conditionally create empty output:
-            # - may already exist (e.g. symlink output)
-            # - parent directory might not exist (e.g. Pulsar)
-            # TODO: put into JobIO, needed for fetch_data tasks
-            if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
-                open(output_path, "w").close()
 
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:

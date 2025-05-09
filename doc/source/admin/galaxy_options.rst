@@ -5757,6 +5757,56 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_tool_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    tool dependencies when installing tools from the Tool Shed or not.
+    Tool dependencies are the software packages and libraries required
+    for a tool to function properly. Tool dependencies are typically
+    specified in the tool's XML configuration using <requirement>
+    tags. Galaxy can automatically install these dependencies if the
+    tool_dependency_dir is properly configured in the galaxy.yml file.
+    This option should be set to false if containerized versions of
+    tools are used.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_repository_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    repository dependencies when installing tools from the Tool Shed.
+    Repository dependencies are other Tool Shed repositories that the
+    tool being installed depends on and they are commonly used with
+    tool suites. Repository dependencies ensure that all necessary
+    components are installed for the tool (or suite) to work correctly
+    within the Galaxy environment.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_resolver_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    resolver dependencies when installing tools from the Tool Shed.
+    Resolver dependencies is a mechanism used by Galaxy to locate and
+    make available the required software packages for Galaxy tools.
+    Galaxy uses dependency resolvers (e.g., Conda) to determine how to
+    satisfy these dependencies. This option should be set to false if
+    containerized versions of tools are used.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_failed_jobs_working_directory_cleanup``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

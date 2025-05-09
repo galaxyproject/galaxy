@@ -11,6 +11,8 @@ import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore
 
 import ScrollToTopButton from "./ScrollToTopButton.vue";
 import ToolsListTable from "./ToolsListTable.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faTimes);
@@ -81,13 +83,13 @@ function showAllTools() {
     <section class="tools-list">
         <div class="mb-2">
             <h1 class="h-lg">Search Results</h1>
-            <span v-if="itemsLoaded.length !== 0" class="row">
-                <span v-if="filterCount" class="col d-inline-block d-flex align-items-baseline flex-gapx-1">
+            <template v-if="itemsLoaded.length !== 0">
+                <span v-if="filterCount" class="d-flex align-items-center flex-gapx-1">
                     Found {{ itemsLoaded.length }} tools for
-                    <b-button id="popover-filters" class="ui-link">
+                    <GLink id="popover-filters">
                         {{ filterCount }}
                         {{ filterCount === 1 ? "filter" : "filters" }}.
-                    </b-button>
+                    </GLink>
                     <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
                         <template v-slot:title>Filters</template>
                         <div v-for="(value, filter) in filterSettings" :key="filter">
@@ -95,15 +97,15 @@ function showAllTools() {
                             >: {{ value }}
                         </div>
                     </b-popover>
-                    <b-button variant="link" size="sm" @click.stop="showAllTools">
+                    <GButton color="blue" size="small" transparent @click.stop="showAllTools">
                         <FontAwesomeIcon icon="fa-times" />
                         Clear filters
-                    </b-button>
+                    </GButton>
                 </span>
-                <span v-else class="col d-inline-block">
+                <span v-else class="d-inline-block">
                     No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
                 </span>
-            </span>
+            </template>
         </div>
         <div ref="scrollContainer" class="overflow-auto">
             <b-alert v-if="loading" class="m-2" variant="info" show>

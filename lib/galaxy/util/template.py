@@ -2,6 +2,10 @@
 
 import sys
 import traceback
+from typing import (
+    Optional,
+    Union,
+)
 
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
@@ -66,7 +70,7 @@ def fill_template(
     compiler_class=Compiler,
     first_exception=None,
     futurized=False,
-    python_template_version="3",
+    python_template_version: Optional[Union[str, Version]] = "3",
     **kwargs,
 ):
     """Fill a cheetah template out for specified context.
@@ -79,7 +83,9 @@ def fill_template(
         raise TypeError("Template text specified as None to fill_template.")
     if not context:
         context = kwargs
-    if isinstance(python_template_version, str):
+    if python_template_version is None:
+        python_template_version = Version("3")
+    elif isinstance(python_template_version, str):
         python_template_version = Version(python_template_version)
     try:
         klass = Template.compile(source=template_text, compilerClass=compiler_class)

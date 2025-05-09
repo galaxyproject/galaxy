@@ -1,6 +1,28 @@
 import logging
+from typing import (
+    List,
+    Optional,
+)
+
+from typing_extensions import Protocol
 
 log = logging.getLogger(__name__)
+
+
+# protocols for things that look like Galaxy model HDCAs and collections for this module
+class CollectionLike(Protocol):
+    collection_type: str
+
+
+class HdcaLike(Protocol):
+    collection: CollectionLike
+
+
+class DataCollectionParameterLike(Protocol):
+
+    @property
+    def collection_types(self) -> Optional[List[str]]:
+        """Return a list of collection type strings the parameter accepts."""
 
 
 class HistoryQuery:
@@ -17,7 +39,7 @@ class HistoryQuery:
         return HistoryQuery(**kwargs)
 
     @staticmethod
-    def from_collection_types(collection_types, collection_type_descriptions):
+    def from_collection_types(collection_types: Optional[List[str]], collection_type_descriptions):
         if collection_types:
             collection_type_descriptions = [
                 collection_type_descriptions.for_collection_type(t) for t in collection_types
@@ -33,12 +55,12 @@ class HistoryQuery:
         return HistoryQuery(**kwargs)
 
     @staticmethod
-    def from_parameter(param, collection_type_descriptions):
+    def from_parameter(param: DataCollectionParameterLike, collection_type_descriptions):
         """Take in a tool parameter element."""
         collection_types = param.collection_types
         return HistoryQuery.from_collection_types(collection_types, collection_type_descriptions)
 
-    def direct_match(self, hdca):
+    def direct_match(self, hdca: HdcaLike) -> bool:
         collection_type_descriptions = self.collection_type_descriptions
         if collection_type_descriptions is not None:
             for collection_type_description in collection_type_descriptions:
@@ -48,7 +70,7 @@ class HistoryQuery:
 
         return True
 
-    def can_map_over(self, hdca):
+    def can_map_over(self, hdca: HdcaLike):
         collection_type_descriptions = self.collection_type_descriptions
         if collection_type_descriptions is None:
             return False

@@ -15,7 +15,7 @@ from typing_extensions import (
 
 class XrefDict(TypedDict):
     value: str
-    reftype: str
+    type: str
 
 
 class Citation(BaseModel):

@@ -210,6 +210,9 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_list_or_nested_list_input.xml" />
+  <tool file="collection_list_2x_or_3x_nested.xml" />
+  <tool file="collection_paired_or_list_paired_input.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="discover_sort_by.xml" />
@@ -234,6 +237,9 @@
   <tool file="integer_default.xml" />
   <tool file="float_default.xml" />
   <tool file="all_output_types.xml" />
+  <tool file="markdown_report_simple.xml" />
+  <tool file="markdown_report_extra_files.xml" />
+  <tool file="markdown_report_from_script.xml" />
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />

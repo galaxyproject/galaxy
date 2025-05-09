@@ -295,9 +295,12 @@ class NavigatesGalaxy(HasDriver):
         """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
         try:
-            self.components.masthead._.wait_for_visible()
+            self.wait_for_masthead()
         except SeleniumTimeoutException as e:
             raise ClientBuildException(e)
+
+    def wait_for_masthead(self):
+        self.components.masthead._.wait_for_visible()
 
     def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
         path = f"workflow_landings/{uuid}?public={public}"
@@ -505,6 +508,10 @@ class NavigatesGalaxy(HasDriver):
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
             contents = self.api_get(f"histories/{history_id}/contents")
+            if contents and isinstance(contents, dict) and "err_msg" in contents:
+                raise Exception(f"Error getting history contents: {contents['err_msg']}")
+            if not isinstance(contents, list):
+                raise Exception(f"Expected list of contents, got {type(contents)} for {contents}")
             return [d["hid"] for d in contents]
 
         def history_has_hid(driver):
@@ -832,9 +839,18 @@ class NavigatesGalaxy(HasDriver):
         self._perform_upload(paste_data=paste_data, **kwd)
 
     def _perform_upload(
-        self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None, deferred=None
+        self,
+        test_path=None,
+        paste_data=None,
+        ext=None,
+        genome=None,
+        ext_all=None,
+        genome_all=None,
+        deferred=None,
+        on_current_page=False,
     ):
-        self.home()
+        if not on_current_page:
+            self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
@@ -1644,7 +1660,8 @@ class NavigatesGalaxy(HasDriver):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select_set_value(input_div_element, "{}: ".format(value["hid"]))
+            hid = value.pop("hid")
+            self.select_set_value(input_div_element, f"{hid}: ")
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow_disabled.wait_for_absent()

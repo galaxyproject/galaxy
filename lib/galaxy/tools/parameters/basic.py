@@ -41,7 +41,10 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
-from galaxy.model.dataset_collections import builder
+from galaxy.model.dataset_collections import (
+    builder,
+    query,
+)
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
@@ -70,7 +73,6 @@ from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
-    history_query,
     validation,
 )
 from .dataset_matcher import get_dataset_matcher_factory
@@ -2433,7 +2435,7 @@ class DataToolParameter(BaseDataToolParameter):
         assert self.multiple
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         # If multiple data parameter, treat like a list parameter.
-        return history_query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
+        return query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
 
 
 class DataCollectionToolParameter(BaseDataToolParameter):
@@ -2459,12 +2461,12 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
     @property
-    def collection_types(self):
+    def collection_types(self) -> Optional[List[str]]:
         return self._collection_types
 
     def _history_query(self, trans):
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
-        return history_query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
+        return query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
 
     def match_collections(self, trans, history, dataset_collection_matcher):
         dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(

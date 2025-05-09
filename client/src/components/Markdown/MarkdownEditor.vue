@@ -8,6 +8,7 @@
                     </div>
                     <div>
                         <b-form-radio-group
+                            v-if="!hasLabels"
                             v-model="editor"
                             v-b-tooltip.hover.bottom
                             button-variant="outline-primary"
@@ -47,7 +48,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { WorkflowLabel } from "./Editor/types";
 
@@ -57,7 +58,7 @@ import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 library.add(faQuestion);
 
-defineProps<{
+const props = defineProps<{
     markdownText: string;
     mode: "report" | "page";
     labels?: Array<WorkflowLabel>;
@@ -66,6 +67,8 @@ defineProps<{
 }>();
 
 const showHelpModal = ref<boolean>(false);
+
+const hasLabels = computed(() => props.labels !== undefined);
 
 const editor = ref("text");
 const editorOptions = ref([

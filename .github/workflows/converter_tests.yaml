@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+          persist-credentials: false
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
@@ -46,6 +47,7 @@ jobs:
         with:
           repository: galaxyproject/galaxy-test-data
           path: galaxy-test-data
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

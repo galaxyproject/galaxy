@@ -66,6 +66,9 @@
                 :workflow-building-mode="workflowBuildingMode"
                 :workflow-run="workflowRun"
                 @change="onChange">
+                <template v-slot:workflow-run-form-title-badges>
+                    <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
+                </template>
                 <template v-slot:workflow-run-form-title-items>
                     <GButton
                         v-if="syncWithGraph"
@@ -89,6 +92,7 @@ import { set } from "vue";
 
 import { matchCase } from "@/components/Form/utilities";
 
+import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
 import FormCard from "./FormCard.vue";
 import FormRepeat from "./FormRepeat.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -100,6 +104,7 @@ export default {
         FormCard,
         FormElement,
         FormRepeat,
+        FormInputMismatchBadge,
         GButton,
     },
     props: {
@@ -163,6 +168,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        stepsNotMatchingRequest: {
+            type: Array,
+            default: () => [],
+        },
     },
     methods: {
         getPrefix(name, index) {
@@ -198,6 +207,9 @@ export default {
             input.cache.splice(b, 1, tmpA);
 
             this.onChangeForm();
+        },
+        valMismatches(name) {
+            return this.workflowRun && this.stepsNotMatchingRequest.map((step) => step.toString()).includes(name);
         },
     },
 };

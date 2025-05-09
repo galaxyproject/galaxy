@@ -33,11 +33,19 @@ watch(elementName, () => {
 function clickDiscard() {
     emit("element-is-discarded", props.element);
 }
+
+watch(
+    () => props.element.name,
+    () => {
+        elementName.value = props.element.name || "...";
+    }
+);
 </script>
 
 <template>
     <div
         class="collection-element d-flex justify-content-between"
+        :data-hid="element.hid"
         :class="{ 'with-actions': hasActions }"
         role="button"
         tabindex="0"

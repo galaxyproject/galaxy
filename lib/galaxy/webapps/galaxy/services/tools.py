@@ -28,6 +28,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
+    User,
 )
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
@@ -302,10 +303,17 @@ class ToolsService(ServiceBase):
     #
     # -- Helper methods --
     #
-    def _get_tool(self, trans, id, tool_version=None, user=None) -> Tool:
+    def _get_tool(
+        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: Optional[User] = None
+    ) -> Tool:
         tool = trans.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
+            if user:
+                # FIXME: id as tool_uuid is for raw_tool_source endpoint, port to fastapi and fix
+                tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
+                if tool:
+                    return tool
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool

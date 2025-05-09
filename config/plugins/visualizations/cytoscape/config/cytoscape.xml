@@ -10,8 +10,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext">json</test>
-            <test test_attr="ext">sif</test>
+            <test test_attr="ext">cytoscapejson</test>
         </data_source>
     </data_sources>
     <params>
@@ -177,6 +176,11 @@
             <value>#C00000</value>
         </input>
     </settings>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.cytoscapejson" ftype="cytoscapejson" />
+        </test>
+    </tests>
     <help format="markdown"><![CDATA[
 ### What is Cytoscape Viewer?
 

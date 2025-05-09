@@ -8,10 +8,7 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import (
-    object_session,
-    Session,
-)
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
 from galaxy.datatypes.sniff import (
@@ -30,6 +27,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    required_object_session,
 )
 from galaxy.objectstore import (
     ObjectStore,
@@ -131,8 +129,7 @@ class DatasetInstanceMaterializer:
                 # we need a flush...
                 sa_session = self._sa_session
                 if sa_session is None:
-                    sa_session = object_session(dataset_instance)
-                assert sa_session
+                    sa_session = required_object_session(dataset_instance)
                 sa_session.add(materialized_dataset)
                 sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
@@ -179,8 +176,7 @@ class DatasetInstanceMaterializer:
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
-                sa_session = object_session(dataset_instance)
-            assert sa_session
+                sa_session = required_object_session(dataset_instance)
             sa_session.add(materialized_dataset_instance)
         if not in_place:
             materialized_dataset_instance.copy_from(

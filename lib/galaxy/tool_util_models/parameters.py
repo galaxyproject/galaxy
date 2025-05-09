@@ -27,13 +27,16 @@ from pydantic import (
     Field,
     field_validator,
     HttpUrl,
+    model_validator,
     RootModel,
     StrictBool,
     StrictFloat,
     StrictInt,
     StrictStr,
     Tag,
+    TypeAdapter,
 )
+from pydantic.json_schema import SkipJsonSchema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -338,17 +341,30 @@ CollectionStrT = Literal["hdca"]
 TestCaseDataSrcT = Literal["File"]
 
 
-class DataRequestHda(StrictModel):
+class LegacyRequestModelAttributes(StrictModel):
+    # Here for bioblend's sake, should be stripped
+    map_over_type: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+    hid: SkipJsonSchema[Optional[int]] = Field(None, exclude=True)
+    workflow_step_id: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+    label: SkipJsonSchema[Optional[str]] = Field(None, exclude=True)
+
+
+class DataRequestHda(LegacyRequestModelAttributes):
     src: Literal["hda"] = "hda"
     id: StrictStr
 
 
-class DataRequestLdda(StrictModel):
+class DataRequestLdda(LegacyRequestModelAttributes):
     src: Literal["ldda"] = "ldda"
     id: StrictStr
 
 
-class DataRequestHdca(StrictModel):
+class DataRequestLd(LegacyRequestModelAttributes):
+    src: Literal["ld"] = Field(deprecated=True)
+    id: StrictStr
+
+
+class DataRequestHdca(LegacyRequestModelAttributes):
     src: Literal["hdca"] = "hdca"
     id: StrictStr
 
@@ -358,10 +374,8 @@ class DatasetHash(StrictModel):
     hash_value: StrictStr
 
 
-class DataRequestUri(StrictModel):
-    # calling it url instead of uri to match data fetch schema...
-    src: Literal["url"] = "url"
-    url: StrictStr
+class BaseDataRequest(StrictModel):
+    url: StrictStr = Field(..., alias="location")
     name: Optional[StrictStr] = None
     ext: StrictStr
     dbkey: StrictStr = "?"
@@ -371,13 +385,94 @@ class DataRequestUri(StrictModel):
     hashes: Optional[List[DatasetHash]] = None
     space_to_tab: bool = False
     to_posix_lines: bool = False
+
     # to implement:
     # tags
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def allow_filetype_and_extension(cls, data: Any):
+        if isinstance(data, dict):
+            extension = data.get("filetype")
+            if extension:
+                data = data.copy()
+                data.pop("filetype")
+                data["ext"] = extension
+            extension = data.get("extension")
+            if extension:
+                data = data.copy()
+                data.pop("extension")
+                data["ext"] = extension
+        return data
 
 
-DataRequest: Type = cast(
-    Type, Annotated[union_type([DataRequestHda, DataRequestLdda, DataRequestUri]), Field(discriminator="src")]
-)
+class DataRequestUri(BaseDataRequest):
+    # calling it url instead of uri to match data fetch schema...
+    src: Literal["url"] = "url"
+
+
+class FileRequestUri(BaseDataRequest):
+    class_: Literal["File"] = Field(..., alias="class")
+    src: None = Field(None, exclude=True)
+
+
+class CollectionElementDataRequestUri(FileRequestUri):
+    class_: Literal["File"] = Field(..., alias="class")
+    identifier: StrictStr
+
+
+class CollectionElementCollectionRequestUri(StrictModel):
+    class_: Literal["Collection"] = Field(..., alias="class")
+    identifier: StrictStr
+    collection_type: StrictStr
+    elements: List[
+        Annotated[
+            Union["CollectionElementCollectionRequestUri", CollectionElementDataRequestUri],
+            Field(discriminator="class_"),
+        ]
+    ]
+
+    @model_validator(mode="before")
+    @classmethod
+    def allow_collection_type_by_type(cls, data: Any):
+        if isinstance(data, dict):
+            collection_type = data.get("type")
+            if collection_type:
+                data = data.copy()
+                data.pop("type")
+                data["collection_type"] = collection_type
+        return data
+
+
+class DataRequestCollectionUri(StrictModel):
+    class_: Literal["Collection"] = Field(..., alias="class")
+    collection_type: str
+    elements: List[
+        Annotated[
+            Union[CollectionElementCollectionRequestUri, CollectionElementDataRequestUri], Field(discriminator="class_")
+        ]
+    ]
+    deferred: StrictBool = False
+    name: Optional[StrictStr] = None
+    src: None = Field(None, exclude=True)
+
+
+_DataRequest = Annotated[
+    Union[DataRequestHda, DataRequestLdda, DataRequestLd, DataRequestUri], Field(discriminator="src")
+]
+DataRequest: Type = cast(Type, _DataRequest)
+
+DataOrCollectionRequest = Union[_DataRequest, FileRequestUri, DataRequestCollectionUri, DataRequestHdca]
+
+DataRequestHda.model_rebuild()
+DataRequestLd.model_rebuild()
+DataRequestLdda.model_rebuild()
+DataRequestUri.model_rebuild()
+DataRequestHdca.model_rebuild()
+DataRequestCollectionUri.model_rebuild()
+
+DataOrCollectionRequestAdapter: TypeAdapter[DataOrCollectionRequest] = TypeAdapter(DataOrCollectionRequest)
 
 
 class BatchDataInstance(StrictModel):
@@ -395,17 +490,17 @@ MultiDataRequest: Type = union_type([MultiDataInstance, list_type(MultiDataInsta
 
 
 class DataRequestInternalHda(StrictModel):
-    src: Literal["hda"] = "hda"
+    src: Literal["hda"]
     id: StrictInt
 
 
 class DataRequestInternalLdda(StrictModel):
-    src: Literal["ldda"] = "ldda"
+    src: Literal["ldda"]
     id: StrictInt
 
 
 class DataRequestInternalHdca(StrictModel):
-    src: Literal["hdca"] = "hdca"
+    src: Literal["hdca"]
     id: StrictInt
 
 
@@ -413,7 +508,8 @@ DataRequestInternal: Type = cast(
     Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestUri], Field(discriminator="src")]
 )
 DataRequestInternalDereferenced: Type = cast(
-    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")]
+    Type,
+    Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")],
 )
 DataJobInternal = DataRequestInternalDereferenced
 

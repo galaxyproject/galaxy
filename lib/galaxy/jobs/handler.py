@@ -315,8 +315,13 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             session.commit()
 
     def _check_job_at_startup(self, job: model.Job):
-        assert job.tool_id is not None
-        if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
+        assert job.tool_id or job.dynamic_tool_id
+        tool_uuid = None
+        if job.dynamic_tool and (uuid := job.dynamic_tool.uuid):
+            tool_uuid = uuid
+        if not self.app.toolbox.has_tool(
+            tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
+        ):
             log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
@@ -368,6 +373,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         try:
             config_job_destination = self.app.job_config.get_destination(job.destination_id)
             job_destination.resubmit = config_job_destination.resubmit
+            job_destination.env = config_job_destination.env
+            job_destination.tags = config_job_destination.tags
         except KeyError:
             log.debug(
                 "(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)",

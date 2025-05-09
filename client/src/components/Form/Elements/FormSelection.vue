@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItemButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, type PropType, ref, watch } from "vue";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 
@@ -15,13 +15,22 @@ import FormSelectMany from "./FormSelectMany/FormSelectMany.vue";
 
 library.add(faCaretDown);
 
-const emit = defineEmits(["input"]);
+export interface SelectOption {
+    label: string;
+    value: any;
+}
+
+const emit = defineEmits<{
+    (e: "input", value: any): void;
+}>();
+
 const props = defineProps({
     value: {
+        type: null as unknown as PropType<any>,
         default: null,
     },
     data: {
-        type: Array,
+        type: Array as PropType<SelectOption[] | null>,
         default: null,
     },
     display: {
@@ -33,7 +42,7 @@ const props = defineProps({
         default: false,
     },
     options: {
-        type: Array,
+        type: Array as PropType<any[] | null>,
         default: null,
     },
     multiple: {
@@ -46,20 +55,20 @@ const currentValue = computed({
     get: () => {
         return props.value;
     },
-    set: (val) => {
+    set: (val: any) => {
         emit("input", val);
     },
 });
 
 /** Provides formatted select options. */
-const currentOptions = computed(() => {
-    let result = [];
+const currentOptions = computed<SelectOption[]>(() => {
+    const result: SelectOption[] = [];
     const data = props.data;
     const options = props.options;
     if (options && options.length > 0) {
-        result = options.map((option) => ({ label: option[0], value: option[1] }));
+        result.push(...options.map((option) => ({ label: option[0], value: option[1] })));
     } else if (data && data.length > 0) {
-        result = data;
+        result.push(...data);
     }
     if (!props.display && !props.multiple && props.optional) {
         result.unshift({
@@ -76,7 +85,7 @@ const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
 
 watch(
     () => preferredFormSelectElement.value,
-    (newValue, oldValue) => {
+    (newValue: string | undefined, oldValue: string | undefined) => {
         if (oldValue !== undefined) {
             return;
         }
