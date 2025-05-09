@@ -40,7 +40,7 @@ from galaxy.util.config_templates import (
 
 ObjectStoreTemplateVariableType = TemplateVariableType
 ObjectStoreTemplateVariableValueType = TemplateVariableValueType
-ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio"]
+ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio", "irods"]
 
 
 class S3AuthTemplate(StrictModel):
@@ -354,6 +354,105 @@ class RucioObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
+# iRODS
+
+
+class IrodsAuthTemplate(StrictModel):
+    username: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+
+
+class IrodsAuth(StrictModel):
+    username: str
+    password: str
+
+
+class IrodsConnectionTemplate(StrictModel):
+    host: Union[str, TemplateExpansion]
+    port: Union[int, TemplateExpansion]
+    timeout: Optional[Union[int, TemplateExpansion]]
+    refresh_time: Optional[Union[int, TemplateExpansion]]
+    connection_pool_monitor_interval: Optional[Union[int, TemplateExpansion]]
+
+
+class IrodsConnection(StrictModel):
+    host: str
+    port: Optional[int]
+    timeout: Optional[int] = None
+    refresh_time: Optional[int] = None
+    connection_pool_monitor_interval: Optional[int] = None
+
+
+class IrodsPathTemplate(StrictModel):
+    path: Optional[Union[str, TemplateExpansion]] = ""
+
+
+class IrodsPath(StrictModel):
+    path: Optional[str] = ""
+
+
+class IrodsResourceTemplate(StrictModel):
+    name: Union[str, TemplateExpansion]
+
+
+class IrodsResource(StrictModel):
+    name: str
+
+
+class IrodsZoneTemplate(StrictModel):
+    name: Union[str, TemplateExpansion]
+
+
+class IrodsZone(StrictModel):
+    name: str
+
+
+class IrodsSslTemplate(StrictModel):
+    client_server_negotiation: Optional[Union[str, TemplateExpansion]] = ""
+    client_server_policy: Optional[Union[str, TemplateExpansion]] = ""
+    encryption_algorithm: Optional[Union[str, TemplateExpansion]] = ""
+    encryption_key_size: Optional[Union[int, TemplateExpansion]] = None
+    encryption_num_hash_rounds: Optional[Union[int, TemplateExpansion]] = None
+    encryption_salt_size: Optional[Union[int, TemplateExpansion]] = None
+    ssl_verify_server: Optional[Union[str, TemplateExpansion]] = ""
+    ssl_ca_certificate_file: Optional[Union[str, TemplateExpansion]] = ""
+
+
+class IrodsSsl(StrictModel):
+    client_server_negotiation: Optional[str] = ""
+    client_server_policy: Optional[str] = ""
+    encryption_algorithm: Optional[str] = ""
+    encryption_key_size: Optional[int] = None
+    encryption_num_hash_rounds: Optional[int] = None
+    encryption_salt_size: Optional[int] = None
+    ssl_verify_server: Optional[str] = ""
+    ssl_ca_certificate_file: Optional[str] = ""
+
+
+class IrodsObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["irods"]
+    auth: IrodsAuthTemplate
+    connection: IrodsConnectionTemplate
+    zone: IrodsZoneTemplate
+    resource: IrodsResourceTemplate
+    ssl: Optional[IrodsSslTemplate] = None
+    logical: Optional[IrodsPathTemplate] = None
+    badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class IrodsObjectStoreConfiguration(StrictModel):
+    type: Literal["irods"]
+    auth: IrodsAuth
+    connection: IrodsConnection
+    zone: IrodsZone
+    resource: IrodsResource
+    ssl: Optional[IrodsSsl] = None
+    logical: Optional[IrodsPath] = None
+    badges: BadgeList = None
+
+
 ObjectStoreTemplateConfiguration = Annotated[
     Union[
         AwsS3ObjectStoreTemplateConfiguration,
@@ -363,6 +462,7 @@ ObjectStoreTemplateConfiguration = Annotated[
         AzureObjectStoreTemplateConfiguration,
         OnedataObjectStoreTemplateConfiguration,
         RucioObjectStoreTemplateConfiguration,
+        IrodsObjectStoreTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -376,6 +476,7 @@ ObjectStoreConfiguration = Annotated[
         GenericS3ObjectStoreConfiguration,
         OnedataObjectStoreConfiguration,
         RucioObjectStoreConfiguration,
+        IrodsObjectStoreConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -451,6 +552,7 @@ TypesToConfigurationClasses: Dict[ObjectStoreTemplateType, Type[ObjectStoreConfi
     "disk": DiskObjectStoreConfiguration,
     "onedata": OnedataObjectStoreConfiguration,
     "rucio": RucioObjectStoreConfiguration,
+    "irods": IrodsObjectStoreConfiguration,
 }
 
 
