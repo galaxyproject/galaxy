@@ -294,6 +294,18 @@ watch(
 .header-details {
     margin-top: 0.5rem;
     padding-left: 1rem;
+    animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dataset-tabs-container {
