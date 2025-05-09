@@ -13,7 +13,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import GButton from "../BaseComponents/GButton.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
