@@ -1122,6 +1122,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 )
             self.user_preferences_extra = {"preferences": {}}
 
+        #default allow_local_account_creation to false if disable_local_accounts is true
+        if "disable_local_accounts" in kwargs and self.disable_local_accounts == True:
+            if self.allow_local_account_creation == True:
+                log.warning(
+                    f"allow_local_account_creation is enabled, but disable_local_accounts is "
+                    "enabled as well. Setting allow_local_account_creation to false "
+                )
+            self.allow_local_account_creation  = False
+
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
