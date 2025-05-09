@@ -52,6 +52,7 @@ The `gxy` Python module is available inside JupyterLite and provides helper func
 #### Examples
 
 ```python
+# Preloaded in the kernel — no installation required
 import gxy
 
 # Perform arbitrary Galaxy API requests
