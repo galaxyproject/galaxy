@@ -604,6 +604,12 @@
         </destination>
         <destination id="singularity_local" runner="local">
           <param id="singularity_enabled">true</param>
+          <!--Galaxy requests an isolated /tmp directory from singularity, which means
+              it will be mounted as read-only. This can cause some problems with tools that
+              do not use the TMP, TEMP, TMPDIR variable family properly. Setting
+              tmp_dir to true ensures that the /tmp directory in the container points
+              to the job specific working tmp directory.-->
+          <param id="tmp_dir">true</param>
           <!-- See the above documentation for docker_volumes, singularity_volumes works
                almost the same way. The only difference is that $default will expand with
                rw directories that in Docker would expand as ro if any of subdirectories are rw.
@@ -629,6 +635,18 @@
                argument by default. You can turn this off by setting singularity_cleanenv to `false`.
           -->
           <!-- <param id="singularity_cleanenv">true</param> -->
+          <!-- Singularity by default inherits the PID namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `pid` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_pid to `false`.
+          -->
+          <!-- <param id="singularity_pid">true</param> -->
+          <!-- Singularity by default inherits the IPC namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `ipc` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_ipc to `false`.
+          -->
+          <!-- <param id="singularity_ipc">true</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->
