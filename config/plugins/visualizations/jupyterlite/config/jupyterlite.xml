@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="JupyterLite" embeddable="true">
+    <description>Pyodide-based Jupyter Notebooks</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext">ipynb</test>
+        </data_source>
+    </data_sources>
+    <params>
+        <param required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="0.0.5" package="@galaxyproject/jupyterlite"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.ipynb" ftype="ipynb" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+### What is JupyterLite?
+
+**JupyterLite** is a lightweight version of JupyterLab that runs entirely in your web browser—no server required. It allows you to create, edit, and run notebooks using WebAssembly-based Python kernels (like Pyodide) or JavaScript kernels, all without installing anything on your local machine.
+
+This integration brings JupyterLite directly into Galaxy, enabling you to:
+
+- Open and run notebooks attached to Galaxy datasets.
+- Perform interactive data analysis within the Galaxy interface.
+- Save notebooks back into your Galaxy history.
+
+#### Key Features
+
+- **Fully Browser-Based**: No backend required—everything runs in the browser.
+- **Notebook Editing**: Create and edit `.ipynb` notebooks with code, text, and outputs.
+- **Language Support**: Run Python (via Pyodide) and other WebAssembly-compatible kernels.
+- **Galaxy Integration**: Open notebooks from your Galaxy datasets and export your changes directly back into your history.
+
+Whether you're exploring data, prototyping analyses, or documenting workflows, JupyterLite provides a smooth, install-free notebook experience right inside Galaxy.
+
+To learn more, visit:
+[https://jupyterlite.readthedocs.io/](https://jupyterlite.readthedocs.io/)
+
+---
+
+### What is `gxy`?
+
+The `gxy` Python module is available inside JupyterLite and provides helper functions to interact with your Galaxy history programmatically. It uses the Galaxy API in the background and supports operations like file upload, download, and metadata lookup—all within the browser.
+
+#### Examples
+
+```python
+# Preloaded in the kernel — no installation required
+import gxy
+
+# Perform arbitrary Galaxy API requests
+await gxy.api("/api/histories", method="GET")
+
+# Download a dataset by HID into the virtual filesystem
+await gxy.get(3)
+
+# Upload a local file to the associated Galaxy history (renamed to "newname.txt")
+await gxy.put("output.txt", "newname.txt")
+
+# List all datasets in the associated history
+await gxy.get_history()
+
+# Retrieve the associated history ID (auto-detected from the dataset context)
+await gxy.get_history_id()
+
+# Access the injected environment info (e.g., dataset ID and root URL)
+gxy.get_environment()
+```
+
+This makes it easy to load, process, and save data inside Jupyter notebooks while fully integrated with Galaxy’s dataset system.
+
+A complete reference of available functions is available at:
+[https://www.npmjs.com/package/@galaxyproject/jupyterlite](https://www.npmjs.com/package/@galaxyproject/jupyterlite)
+    ]]></help>
+</visualization>
