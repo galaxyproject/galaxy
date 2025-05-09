@@ -559,7 +559,7 @@
                 )
             }}
         </RuleModalHeader>
-        <RuleModalFooter>
+        <RuleModalFooter v-if="mode == 'modal'">
             <GButton class="creator-cancel-btn" tabindex="-1" @click="cancel"> {{ l("Close") }} </GButton>
         </RuleModalFooter>
     </StateDiv>
@@ -569,11 +569,11 @@
         <RuleModalMiddle>
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
-        <RuleModalFooter>
-            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">
-                {{ l("Close") }}
-            </GButton>
-            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'"> {{ l("Okay") }} </GButton>
+        <RuleModalFooter v-if="mode == 'modal'">
+            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
+                l("Close")
+            }}</GButton>
+            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{ l("Okay") }}</GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>
@@ -680,14 +680,16 @@ export default {
             required: false,
             default: true,
         },
-        // Callbacks sent in by modal code.
+        // Callbacks sent in by modal code, optional if mode is not modal
         oncancel: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         oncreate: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         ftpUploadSite: {
             type: String,
@@ -1196,7 +1198,6 @@ export default {
             }
         },
         validInput: function (newState) {
-            console.log("watching validInput....");
             this.$emit("validInput", newState);
         },
     },
@@ -1390,7 +1391,11 @@ export default {
                     this.doFullJobCheck(jobId);
                 } else {
                     startWatchingHistory();
-                    this.oncreate();
+                    this.$emit("onCreate", jobResponse.data);
+                    if (this.oncreate) {
+                        // legacy non-event handling
+                        this.oncreate();
+                    }
                 }
             };
             const doJobCheck = () => {
@@ -1488,7 +1493,10 @@ export default {
                 this.resetSource();
                 if (this.state !== "error") {
                     this.saveRulesFn(this.ruleSourceJson);
-                    this.oncreate();
+                    this.$emit("onCreate");
+                    if (this.oncreate) {
+                        this.oncreate();
+                    }
                 }
             } else {
                 const Galaxy = getGalaxyInstance();

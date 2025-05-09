@@ -13,6 +13,7 @@ import {
     faList,
     faPlay,
     faSitemap,
+    faTable,
     faUpload,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -163,6 +164,19 @@ export const defaultActivities = [
         tooltip: "Access data libraries",
         to: "/libraries",
         visible: true,
+    },
+    {
+        anonymous: true,
+        description: "Rule-based advanced import of datasets or collections.",
+        icon: faTable,
+        id: "rules",
+        mutable: false,
+        optional: true,
+        panel: false,
+        title: "Rule-based Data Import",
+        tooltip: "Launch rule-based advanced import of datasets or collections",
+        to: "/rules",
+        visible: false,
     },
 ] as const;
 

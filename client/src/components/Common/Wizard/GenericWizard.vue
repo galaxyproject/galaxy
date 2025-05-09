@@ -157,6 +157,15 @@ const stepsGridColumnsTemplate = computed(() => {
 const steps = computed<[string, WizardStep][]>(() => {
     return Object.entries(props.use.steps.value);
 });
+
+const bodyStyle = computed(() => {
+    const width = props.use.current.value.width;
+    if (width) {
+        return { width: width };
+    } else {
+        return {};
+    }
+});
 </script>
 
 <template>
@@ -197,7 +206,7 @@ const steps = computed<[string, WizardStep][]>(() => {
             <div class="step-content">
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
-                <div class="step-body w-100">
+                <div class="step-body w-100" :style="bodyStyle">
                     <slot>
                         <p>
                             Missing body for step <b>{{ props.use.current.value.label }}</b>

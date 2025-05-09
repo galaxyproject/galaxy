@@ -72,6 +72,7 @@ import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
+import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
 import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
@@ -507,6 +508,16 @@ export function getRouter(Galaxy) {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
+                    },
+                    {
+                        path: "rules",
+                        component: RulesStandalone,
+                        props: (route) => {
+                            return {
+                                mode: "standalone",
+                                ...route.query,
+                            };
+                        },
                     },
                     {
                         path: "tools/list",

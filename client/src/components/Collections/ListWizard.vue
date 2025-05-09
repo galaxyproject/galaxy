@@ -13,7 +13,11 @@ import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderIte
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useCollectionCreation } from "./common/useCollectionCreation";
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
+import {
+    attemptCreate,
+    type CollectionCreatorComponent,
+    type SupportedPairedOrPairedBuilderCollectionTypes,
+} from "./common/useCollectionCreator";
 import { type WhichListBuilder } from "./ListWizard/types";
 import { autoPairWithCommonFilters } from "./pairing";
 
@@ -40,9 +44,6 @@ const creationError = ref<string | null>(null);
 const collectionCreated = ref(false);
 
 type InferrableBuilder = "list" | "list:paired";
-type CollectionCreatorComponent =
-    | InstanceType<typeof ListCollectionCreator>
-    | InstanceType<typeof PairedOrUnpairedListCollectionCreator>;
 const collectionCreator = ref<CollectionCreatorComponent>();
 const { selectedItems } = storeToRefs(store);
 
@@ -155,26 +156,15 @@ const pairedListType = computed(() => {
     return whichBuilder.value == "list:paired_or_unpaired" ? "list:paired_or_unpaired" : "list:paired";
 });
 
-async function attemptCreate(creator: CollectionCreatorComponent) {
-    // fight typing to workaround https://github.com/vuejs/core/issues/10077
-    interface HasAttemptCreate {
-        attemptCreate: () => Promise<void>;
-    }
-
-    (creator as unknown as HasAttemptCreate).attemptCreate();
-}
-
 async function submit() {
     if (collectionCreator.value) {
-        attemptCreate(collectionCreator.value);
+        attemptCreate(collectionCreator);
     }
 }
 
 async function onCreate(payload: CreateNewCollectionPayload) {
     try {
-        const data = await createHistoryDatasetCollectionInstanceFull(payload);
-        console.log(data);
-        console.log("collection created!");
+        await createHistoryDatasetCollectionInstanceFull(payload);
         collectionCreated.value = true;
     } catch (e) {
         creationError.value = errorMessageAsString(e);
@@ -213,18 +203,9 @@ function goToAutoPairing() {
     wizard.goTo("auto-pairing");
 }
 
-function onRuleCreate() {
-    return 3;
-}
-
-function onRuleCancel() {
-    return 3;
-}
-
 const ruleState = ref(false);
 
 function onRuleState(newRuleState: boolean) {
-    console.log("in on Rule state...");
     ruleState.value = newRuleState;
 }
 </script>
@@ -292,8 +273,6 @@ function onRuleState(newRuleState: boolean) {
                     elements-type="datasets"
                     :initial-elements="selectedItems || []"
                     mode="wizard"
-                    :oncreate="onRuleCreate"
-                    :oncancel="onRuleCancel"
                     @onAttemptCreate="ruleOnAttemptCreate"
                     @validInput="onRuleState" />
             </div>
