@@ -37,7 +37,7 @@ class Configuration:
         self.template_cache_path = resolve_path(
             kwargs.get("template_cache_path", "database/compiled_templates/reports"), self.root
         )
-        self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
+        self.allow_local_account_creation = string_as_bool(kwargs.get("allow_local_account_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.log_actions = string_as_bool(kwargs.get("log_actions", "False"))
         self.brand = kwargs.get("brand", None)

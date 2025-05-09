@@ -143,7 +143,7 @@ class ConfigSerializer(base.ModelSerializer):
             "overwrite_model_recommendations": _use_config,
             "topk_recommendations": _use_config,
             "allow_user_impersonation": _use_config,
-            "allow_user_creation": _defaults_to(False),  # schema default is True
+            "allow_local_account_creation": _defaults_to(False),  # schema default is True
             "disable_local_accounts": _defaults_to(False),  # schema default is False
             "use_remote_user": _defaults_to(None),  # schema default is False; or config.single_user
             "single_user": _config_is_truthy,

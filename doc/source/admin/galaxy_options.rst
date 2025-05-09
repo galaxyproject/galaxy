@@ -3828,13 +3828,13 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``allow_user_creation``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allow_local_account_creation``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Allow unregistered users to create new accounts (otherwise, they
-    will have to be created by an admin).
+    Allow unregistered users to create new local (non-OIDC) accounts
+    (otherwise, they will have to be created by an admin).
 :Default: ``true``
 :Type: bool
 

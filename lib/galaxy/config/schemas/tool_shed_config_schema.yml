@@ -297,10 +297,11 @@ mapping:
         desc: |
           Force everyone to log in (disable anonymous access)
 
-      allow_user_creation:
+      allow_local_account_creation:
         type: bool
         default: true
         required: false
+        deprecated_alias: allow_user_creation
         desc: |
           Allow unregistered users to create new accounts (otherwise, they will have to
           be created by an admin).

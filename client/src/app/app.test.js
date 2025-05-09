@@ -47,7 +47,7 @@ describe("App base construction/initializiation defaults", () => {
         const app = getGalaxyInstance();
         expect(app.config && typeof app.config === "object").toBeTruthy();
         expect(app.config.allow_user_deletion).toBe(false);
-        expect(app.config.allow_user_creation).toBe(true);
+        expect(app.config.allow_local_account_creation).toBe(true);
         expect(app.config.wiki_url).toBe("https://galaxyproject.org/");
         expect(app.config.ftp_upload_site).toBe(null);
     });

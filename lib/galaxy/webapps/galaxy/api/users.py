@@ -610,7 +610,7 @@ class FastAPIUsers:
             email = payload.remote_user_email
             username = ""
             password = ""
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        if not trans.app.config.allow_local_account_creation and not trans.user_is_admin:
             raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
         if trans.app.config.use_remote_user and trans.user_is_admin:
             user = self.service.user_manager.get_or_create_remote_user(remote_user_email=email)
