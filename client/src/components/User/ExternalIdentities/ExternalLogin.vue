@@ -31,12 +31,14 @@ interface Props {
     loginPage?: boolean;
     excludeIdps?: string[];
     columnDisplay?: boolean;
+    disableLocalAccounts?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loginPage: false,
     excludeIdps: () => [],
     columnDisplay: true,
+    disableLocalAccounts: false,
 });
 
 const { config, isConfigLoaded } = useConfig();

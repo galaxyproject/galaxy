@@ -34,6 +34,7 @@ interface Props {
     allowUserCreation?: boolean;
     showWelcomeWithLogin?: boolean;
     registrationWarningMessage?: string;
+    disableLocalAccounts?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
     termsUrl: undefined,
     welcomeUrl: undefined,
     registrationWarningMessage: undefined,
+    disableLocalAccounts: false,
 });
 
 const emit = defineEmits<{
@@ -173,7 +175,7 @@ function returnToLogin() {
                             </BCardHeader>
 
                             <BCardBody :class="{ 'd-flex w-100': !loginColumnDisplay }">
-                                <div>
+                                <div v-if="!disableLocalAccounts">
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
                                         :label="localize('Public Name or Email Address')"
@@ -239,7 +241,8 @@ function returnToLogin() {
                                         <ExternalLogin
                                             login-page
                                             :exclude-idps="excludeIdps"
-                                            :column-display="loginColumnDisplay" />
+                                            :column-display="loginColumnDisplay"
+                                            :disable-local-accounts="disableLocalAccounts" />
                                     </div>
                                 </template>
                             </BCardBody>
@@ -247,7 +250,7 @@ function returnToLogin() {
                             <BCardFooter>
                                 <span v-if="!connectExternalProvider">
                                     Don't have an account?
-                                    <span v-if="allowUserCreation">
+                                    <span v-if="allowUserCreation || disableLocalAccounts">
                                         <a
                                             id="register-toggle"
                                             v-localize

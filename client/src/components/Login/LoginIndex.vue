@@ -18,6 +18,7 @@ interface Props {
     serverMailConfigured?: boolean;
     showWelcomeWithLogin?: boolean;
     registrationWarningMessage?: string;
+    disableLocalAccounts?: boolean;
     show?: string;
 }
 
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
     welcomeUrl: undefined,
     mailingJoinAddr: undefined,
     registrationWarningMessage: undefined,
+    disableLocalAccounts: false,
     show: "login",
 });
 
@@ -51,6 +53,7 @@ function toggleLogin() {
         <LoginForm
             v-if="showLogin"
             :allow-user-creation="allowUserCreation"
+            :disable-local-accounts="disableLocalAccounts"
             :enable-oidc="enableOidc"
             :redirect="redirect"
             :registration-warning-message="registrationWarningMessage"
