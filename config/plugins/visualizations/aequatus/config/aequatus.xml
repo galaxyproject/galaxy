@@ -18,13 +18,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Phylogenetic Aequatus?
+# What is Phylogenetic Aequatus?
 
 Aequatus is an interactive visualization tool for exploring gene structure and homology relationships across multiple species. It provides an intuitive and informative way to view and compare intron/exon structures, synteny, and evolutionary events such as gene duplications and losses.
 
 After selecting a compatible dataset (e.g., Ensembl-compliant gene trees or comparative genomics data), Aequatus will display an interactive graphical representation of the data directly in your browser.
 
-#### Key Features
+## Key Features
 
 - **Gene Structure Visualization**: View exon/intron structures across homologous genes, aligned against a reference gene.
 - **Homology Exploration**: Distinguish orthologs and paralogs with clear visual cues.

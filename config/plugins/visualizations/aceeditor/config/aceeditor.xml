@@ -28,13 +28,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Editor?
+# What is the Editor?
 
 The Editor provides a simple and intuitive way to manually edit text files, such as plain text or code, directly in your browser.
 
 After selecting a dataset, its contents will appear in a text editor. You can freely modify the text and save your changes back into Galaxy.
 
-#### Key Features
+## Key Features
 
 - **Editing**: Make direct edits to your text or code files.
 - **Responsive Interface**: Smooth typing and navigation, even for larger files.

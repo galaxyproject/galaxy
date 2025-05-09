@@ -23,13 +23,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the FITS Graph Viewer?
+# What is the FITS Graph Viewer?
 
 The FITS Graph Viewer provides a simple way to inspect table data from FITS (Flexible Image Transport System) files directly in your browser.
 
 After selecting a dataset, the FITS file's tabular data will be displayed, allowing you to explore it easily without needing specialized software.
 
-#### Key Features
+## Key Features
 
 - **Table Visualization**: View FITS table data quickly and clearly.
 - **Simple and Lightweight**: Focused on easy navigation and exploration.

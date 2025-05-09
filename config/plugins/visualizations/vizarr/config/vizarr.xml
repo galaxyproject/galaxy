@@ -22,13 +22,13 @@
         <param required="true">dataset_id</param>
     </params>
     <help format="markdown"><![CDATA[
-### What is the Vizarr Viewer?
+# What is the Vizarr Viewer?
 
 Vizarr Viewer allows you to explore Zarr-based image datasets, including OME-Zarr microscopy data, directly in your browser.
 
 After selecting a dataset, the multiscale image will be displayed with smooth zooming and panning capabilities.
 
-#### Key Features
+## Key Features
 
 - **Zarr and OME-Zarr Support**: Load standard Zarr-based images for scalable visualization.
 - **Multiscale Navigation**: Effortlessly zoom and pan through very large images.

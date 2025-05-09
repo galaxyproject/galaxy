@@ -101,13 +101,13 @@
         </input>
     </tracks>
     <help format="markdown"><![CDATA[
-### What is the Bar, Line and Scatter Viewer?
+# What is the Bar, Line and Scatter Viewer?
 
 This visualization allows you to create simple and interactive bar charts, line plots, and scatter plots using the [Plotly](https://plotly.com/) library.
 
 After selecting a dataset, you can pick the plot type, choose x- and y-axis values, customize colors, and configure options like stacking bars or filling areas under lines.
 
-#### Key Features
+## Key Features
 
 - **Chart Types**: Quickly switch between bar charts, line plots, and scatter plots.
 - **Stacking**: Stack bars or lines to better visualize cumulative values.

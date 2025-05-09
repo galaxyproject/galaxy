@@ -31,14 +31,14 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Molstar?
+# What is Molstar?
 
 Mol\* (**Molstar**) is a modern, fast, interactive 3D viewer for molecular structures such as proteins, nucleic acids, small molecules, and macromolecular assemblies. It enables detailed exploration of complex biological data directly in your web browser.
 
 Currently, Molstar in this interface supports formats such as **PDB**, **PQR**, **mmCIF**, **BinaryCIF**, **MOL2**, **SDF**, **XYZ**, **GRO**, **TOP**, and **TRAJ**.  
 After selecting a compatible dataset, you'll see a fully interactive 3D visualization where you can rotate, zoom, color, and inspect molecular models.
 
-#### Key Features
+## Key Features
 
 - **Real-Time 3D Rendering**: Explore structures smoothly at high performance, even for very large systems.
 - **Advanced Representations**: Display molecules as cartoons, surfaces, ball-and-stick, space-filling, and more.

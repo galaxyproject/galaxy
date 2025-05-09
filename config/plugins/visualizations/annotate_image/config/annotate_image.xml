@@ -28,13 +28,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Image Annotate?
+# What is Image Annotate?
 
 Image Annotate allows you to view an image and draw directly on it. You can highlight areas, circle items of interest, or add quick markings using your mouse or touchpad.
 
 After selecting an image dataset, it will be displayed. You can use the available drawing tools to annotate freely.
 
-#### Key Features
+## Key Features
 
 - **Drawing Tools**: Freehand draw, circle, or mark specific parts of the image.
 - **Simple Controls**: Easy-to-use context menu interface for quick annotations.

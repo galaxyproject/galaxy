@@ -182,13 +182,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Cytoscape Viewer?
+# What is Cytoscape Viewer?
 
 Cytoscape Viewer lets you explore graph and network data directly in your browser using the powerful [Cytoscape.js](https://js.cytoscape.org/) library.
 
 After selecting a graph dataset, the network will be displayed visually. You can interact with the graph, adjust layouts, highlight relationships, and run basic graph algorithms.
 
-#### Key Features
+## Key Features
 
 - **Layout Options**: Choose how your nodes are arranged (grid, circle, random, and more).
 - **Graph Exploration**: Zoom, pan, and select parts of the network for closer inspection.

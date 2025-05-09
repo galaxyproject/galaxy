@@ -117,13 +117,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Phylogenetic Tree Viewer?
+# What is the Phylogenetic Tree Viewer?
 
 The Phylogenetic Tree Viewer allows you to display and explore phylogenetic trees from Newick or NHX formatted files using the interactive [Phylocanvas.gl](https://phylocanvas.gl/) library.
 
 After selecting a dataset, the tree will be rendered with options to change its layout, customize colors, and adjust node and label styles.
 
-#### Key Features
+## Key Features
 
 - **Tree Layouts**: Choose among rectangular, circular, diagonal, radial, or hierarchical views.
 - **Node Shapes**: Customize leaf nodes with circles, squares, stars, or triangles.

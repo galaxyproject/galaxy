@@ -37,13 +37,13 @@
         </input>
     </tracks>
     <help format="markdown"><![CDATA[
-### What is the Venn Diagram Viewer?
+# What is the Venn Diagram Viewer?
 
 This visualization lets you create area-proportional Venn and Euler diagrams using the [venn.js](https://github.com/benfred/venn.js) library.
 
 After selecting a dataset, you can plot overlaps between different sets based on your selected observations.
 
-#### Key Features
+## Key Features
 
 - **Venn and Euler Diagrams**: Automatically draw diagrams based on your data.
 - **Area-Proportional**: Sizes of circles are proportional to set sizes and intersections.

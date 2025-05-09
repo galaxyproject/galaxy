@@ -30,13 +30,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is PCA 3D Plot?
+# What is PCA 3D Plot?
 
 **PCA 3D Plot** is a Galaxy visualization tool that allows you to perform **Principal Component Analysis (PCA)** on tabular datasets and visualize the first three principal components in an interactive **3D scatter plot**.
 
 PCA is a dimensionality reduction technique that helps you explore patterns, clusters, or separability between sample groups based on high-dimensional numeric features (e.g., gene expression, metabolite levels, or other sample measurements).
 
-#### How to Use
+## How to Use
 
 1. Select a tabular dataset with:
    - One or more metadata columns (e.g., SampleID, Group)
@@ -44,7 +44,7 @@ PCA is a dimensionality reduction technique that helps you explore patterns, clu
 2. Use the **"Color by"** dropdown to group samples visually by a metadata column (e.g., condition or class).
 3. Use the **"Start PCA at column"** dropdown to specify the first column containing numeric values to include in the PCA.
 
-#### Example Dataset Format
+## Example Dataset Format
 
 Here is a minimal example of a supported CSV file:
 
@@ -61,7 +61,7 @@ S6,Treatment,6.9,3.1,4.9,1.5
 - `"Group"` will be used to color points.
 - `"GeneA"` to `"GeneD"` will be used for PCA.
 
-#### Features
+## Features
 
 - Interactive 3D scatter plot powered by Plotly
 - Dropdowns to control PCA input and grouping
@@ -69,7 +69,7 @@ S6,Treatment,6.9,3.1,4.9,1.5
 - Automatic filtering of constant columns
 - Error handling for malformed or too-small datasets
 
-#### Limitations
+## Limitations
 
 - Requires at least 3 numeric and variable columns for PCA.
 - Datasets must be smaller than **256 KB** to ensure fast browser-side rendering.

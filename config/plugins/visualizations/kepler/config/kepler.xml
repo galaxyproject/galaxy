@@ -30,13 +30,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Kepler.gl Viewer?
+# What is Kepler.gl Viewer?
 
 Kepler.gl is a powerful tool for exploring and visualizing large-scale geospatial data directly in your browser.
 
 After selecting a dataset (CSV or GeoJSON), you can create interactive maps, apply different layers, and adjust styling to better understand spatial patterns in your data.
 
-#### Key Features
+## Key Features
 
 - **Map Layers**: Visualize data with various layer types like points, arcs, lines, polygons, and more.
 - **Custom Styling**: Configure colors, size, radius, and opacity for better insights.
