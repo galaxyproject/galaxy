@@ -25,7 +25,7 @@ import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import LibraryFolder
-from galaxy.model.dataset_collections import builder
+from galaxy.model.dataset_collections.builder import BoundCollectionBuilder
 from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.objectstore import (
     ObjectStore,
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
         ToolMetadataDatasetCollector,
     )
     from galaxy.model import DatasetInstance
+    from galaxy.model.dataset_collections.builder import CollectionBuilder
     from galaxy.model.dataset_collections.structure import UninitializedTree
     from galaxy.model.store import (
         DirectoryModelExportStore,
@@ -317,7 +318,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def populate_collection_elements(
         self,
         collection,
-        root_collection_builder,
+        root_collection_builder: BoundCollectionBuilder,
         discovered_files: Iterable["DiscoveredResult"],
         name=None,
         metadata_source_name=None,
@@ -362,7 +363,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self,
         chunk: Iterable["DiscoveredResult"],
         name,
-        root_collection_builder,
+        root_collection_builder: BoundCollectionBuilder,
         metadata_source_name,
         final_job_state,
         change_datatype_actions,
@@ -432,7 +433,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
         for element_identifiers, dataset in zip(element_datasets["element_identifiers"], element_datasets["datasets"]):
-            current_builder = root_collection_builder
+            current_builder: CollectionBuilder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
                 current_builder = current_builder.get_level(element_identifier)
             current_builder.add_dataset(element_identifiers[-1], dataset)
@@ -806,7 +807,7 @@ def persist_elements_to_hdca(
     add_to_discovered_files(elements)
 
     collection = hdca.collection
-    collection_builder = builder.BoundCollectionBuilder(collection)
+    collection_builder = BoundCollectionBuilder(collection)
     model_persistence_context.populate_collection_elements(
         collection,
         collection_builder,

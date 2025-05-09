@@ -1,6 +1,14 @@
-from typing import Union
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
+
+if TYPE_CHECKING:
+    from galaxy.tool_util_models.tool_source import FieldDict
 
 
 class CollectionTypeDescriptionFactory:
@@ -9,7 +17,7 @@ class CollectionTypeDescriptionFactory:
         # I think.
         self.type_registry = type_registry
 
-    def for_collection_type(self, collection_type, fields=None):
+    def for_collection_type(self, collection_type, fields: Optional[Union[str, List["FieldDict"]]] = None):
         assert collection_type is not None
         return CollectionTypeDescription(collection_type, self, fields=fields)
 
@@ -22,7 +30,10 @@ class CollectionTypeDescription:
     collection_type: str
 
     def __init__(
-        self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory, fields=None
+        self,
+        collection_type: Union[str, "CollectionTypeDescription"],
+        collection_type_description_factory: CollectionTypeDescriptionFactory,
+        fields: Optional[Union[str, List["FieldDict"]]] = None,
     ):
         if isinstance(collection_type, CollectionTypeDescription):
             self.collection_type = collection_type.collection_type

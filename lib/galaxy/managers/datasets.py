@@ -49,7 +49,9 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(
+    base.ModelManager[Dataset], secured.AccessibleManagerMixin[Dataset], deletable.PurgableManagerMixin
+):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -326,7 +328,7 @@ U = TypeVar("U", bound=DatasetInstance)
 
 class DatasetAssociationManager(
     base.ModelManager[U],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[U],
     secured.OwnableManagerMixin[U],
     deletable.PurgableManagerMixin,
 ):
