@@ -46,7 +46,6 @@ PATH_TEMPLATES = {
     "bwa_mem2_indexes": "{tool_data_path}/genomes/{dbkey}/bwa_mem_index/v2/{value}/{value}.fa",
     "hisat2_indexes": "{tool_data_path}/genomes/{dbkey}/hisat_index/v2/{value}/{value}",
     "rnastar_index2x_versioned": "{tool_data_path}/genomes/{dbkey}/rnastar_index/v{version}/{value}",
-
 }
 
 PATH_TYPES = {
@@ -104,7 +103,7 @@ class Color:
 
     @staticmethod
     def sprint(text, color, effect=None):
-        effect = effect or ''
+        effect = effect or ""
         return f"{color}{effect}{text}{Color.RESET}"
 
     @staticmethod
@@ -156,9 +155,7 @@ class DataTable:
 
     def _initialize_new_loc_file(self):
         fd, self.new_loc_file_path = tempfile.mkstemp(
-            suffix=".reorganize_tool_data.loc",
-            prefix=f"{self.name}.",
-            text=True
+            suffix=".reorganize_tool_data.loc", prefix=f"{self.name}.", text=True
         )
         self.new_loc_file = os.fdopen(fd, mode="wt")
 
@@ -217,7 +214,8 @@ class DataTable:
                 Color.print(f"WARNING: Expected sequence link exists but is not a link: {path}", Color.RED)
                 return
             assert os.path.islink(path), Color.sprint(
-                f"Expected sequence link is not a link (or does not exist): {path}", Color.RED, effect=Color.BOLD)
+                f"Expected sequence link is not a link (or does not exist): {path}", Color.RED, effect=Color.BOLD
+            )
             seq_path = self._table_path(entry, table="all_fasta")
             link_target = os.path.relpath(seq_path, start=os.path.dirname(table_path))
             if commit:
@@ -239,9 +237,9 @@ class DataTable:
         source = self._source_path(entry)
         dest = self._dest_path(entry)
         assert os.path.lexists(source) and os.path.exists(source), Color.sprint(
-            f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD)
-        assert not os.path.exists(dest), Color.sprint(
-            f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
+            f"ERROR: source path does not exist: {source}", Color.RED, effect=Color.BOLD
+        )
+        assert not os.path.exists(dest), Color.sprint(f"ERROR: dest path exists: {dest}", Color.RED, effect=Color.BOLD)
         if self.move_data:
             dest_parent = os.path.dirname(dest)
             if not os.path.exists(dest_parent):
@@ -275,12 +273,12 @@ class DataTable:
             Color.print(
                 f"ERROR: Encountered an exception while reorganizing data in {self.name} table: {self.loc_file_path}",
                 Color.RED,
-                effect=Color.BOLD
+                effect=Color.BOLD,
             )
             Color.print(
                 f"ERROR: Partial loc file rewrite can be found at: {self.new_loc_file_path}",
                 Color.RED,
-                effect=Color.BOLD
+                effect=Color.BOLD,
             )
             self.new_loc_file.close()
             raise
@@ -328,7 +326,7 @@ def parse_tdtc(tdtc, tool_data_path):
     assert root.tag == "tables", Color.sprint(
         f"ERROR: Root element should be <tables> (was: <{root.tag}>), is this a tool_data_table_conf.xml?: {tdtc}",
         Color.RED,
-        effect=Color.BOLD
+        effect=Color.BOLD,
     )
     for table in root.findall("table"):
         dt = DataTable.from_elem(table, tool_data_path=tool_data_path)
@@ -342,19 +340,19 @@ def parse_arguments(argv):
         "--tool-data-path",
         required=True,
         type=pathlib.Path,
-        help="root path of target tool data dir (can be the same as your existing tool data dir)"
+        help="root path of target tool data dir (can be the same as your existing tool data dir)",
     )
     parser.add_argument(
         "--commit",
         default=False,
         action="store_true",
-        help="commit changes (otherwise, only print what would be done without making changes)"
+        help="commit changes (otherwise, only print what would be done without making changes)",
     )
     parser.add_argument(
         "--prune-dirs",
         default=False,
         action="store_true",
-        help="prune empty parent directories left behind after reorganization"
+        help="prune empty parent directories left behind after reorganization",
     )
     parser.add_argument("tool_data_table_conf", nargs="+", type=pathlib.Path, help="path to a tool_data_table_conf.xml")
     return parser.parse_args(argv)
