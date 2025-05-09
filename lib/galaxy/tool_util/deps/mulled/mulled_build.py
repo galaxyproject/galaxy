@@ -222,6 +222,7 @@ def mull_targets(
     base_image=None,
     determine_base_image=True,
     invfile=INVFILE,
+    strict_channel_priority=True,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -321,7 +322,6 @@ def mull_targets(
         conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
         involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
 
-    involucro_args.append(command)
     if test_files:
         test_bind = []
         for test_file in test_files:
@@ -332,12 +332,19 @@ def mull_targets(
                 if os.path.exists(test_file.split(":")[0]):
                     test_bind.append(test_file)
         if test_bind:
-            involucro_args.insert(6, "-set")
-            involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
-    cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {shlex_join(cmd)}")
+            involucro_args.append("-set")
+            involucro_args.append(f"TEST_BINDS={','.join(test_bind)}")
+
+    if strict_channel_priority:
+        involucro_args.extend(["-set", "STRICT_CHANNEL_PRIORITY=1"])
+
+    involucro_args.append(command)
+
     if dry_run:
+        cmd = involucro_context.build_command(involucro_args)
+        print(f"Executing: {shlex_join(cmd)}")
         return 0
+
     ensure_installed(involucro_context, True)
     if singularity:
         if not os.path.exists(singularity_image_dir):
@@ -348,6 +355,9 @@ def mull_targets(
                 "base_image": dest_base_image or DEFAULT_BASE_IMAGE,
             }
             sin_def.write(fill_template)
+
+    cmd = involucro_context.build_command(involucro_args)
+
     with PrintProgress():
         ret = involucro_context.exec_command(involucro_args)
     if singularity:
@@ -376,10 +386,10 @@ class InvolucroContext(installable.InstallableContext):
         self.shell_exec = shell_exec or commands.shell
         self.verbose = verbose
 
-    def build_command(self, involucro_args):
+    def build_command(self, involucro_args: List[str]) -> List[str]:
         return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
 
-    def exec_command(self, involucro_args):
+    def exec_command(self, involucro_args: List[str]) -> int:
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         created_build_dir = False
@@ -457,6 +467,13 @@ def add_build_arguments(parser):
         dest="channels",
         default=",".join(DEFAULT_CHANNELS),
         help="Comma separated list of target conda channels.",
+    )
+    parser.add_argument(
+        "--disable_strict_channel_priority",
+        dest="strict_channel_priority",
+        default=True,
+        action="store_false",
+        help="Disable strict channel priority. Will decrease speed of the resolver and should only be used in exceptional cases.",
     )
     parser.add_argument(
         "--conda-version",
@@ -557,6 +574,9 @@ def args_to_mull_targets_kwds(args):
         kwds["singularity_image_dir"] = args.singularity_image_dir
     if hasattr(args, "invfile"):
         kwds["invfile"] = args.invfile
+    if hasattr(args, "verbose"):
+        kwds["verbose"] = args.verbose
+    kwds["strict_channel_priority"] = args.strict_channel_priority
 
     kwds["involucro_context"] = context_from_args(args)
 
