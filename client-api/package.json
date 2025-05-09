@@ -1,5 +1,5 @@
 {
-  "name": "@galaxyproject/client-api",
+  "name": "@galaxyproject/galaxy-api-client",
   "version": "25.0.0-dev.0",
   "description": "A client library for the Galaxy API",
   "type": "module",

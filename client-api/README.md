@@ -1,11 +1,11 @@
-# Galaxy Client API
+# Galaxy API Client
 
 A standalone client library for the Galaxy API, built using the type definitions from the main Galaxy client.
 
 ## Installation
 
 ```bash
-npm install @galaxyproject/client-api
+npm install @galaxyproject/galaxy-api-client
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install @galaxyproject/client-api
 ### Basic Usage
 
 ```typescript
-import { createGalaxyApi } from "@galaxyproject/client-api";
+import { createGalaxyApi } from "@galaxyproject/galaxy-api-client";
 
 // Create an instance of the Galaxy API client with a specific base URL
 const api = createGalaxyApi("https://usegalaxy.org");
@@ -31,14 +31,14 @@ if (error) {
 }
 
 // For backward compatibility
-import { GalaxyApi } from "@galaxyproject/client-api";
+import { GalaxyApi } from "@galaxyproject/galaxy-api-client";
 const legacyApi = GalaxyApi(); // Uses current origin
 ```
 
 ### Usage with API Keys and Custom Headers
 
 ```typescript
-import { createGalaxyApi } from "@galaxyproject/client-api";
+import { createGalaxyApi } from "@galaxyproject/galaxy-api-client";
 
 // Create a client with API key authentication and custom headers
 const api = createGalaxyApi({
@@ -62,7 +62,7 @@ const { data, error } = await api.GET("/api/histories");
 This package provides TypeScript types for Galaxy API endpoints and models:
 
 ```typescript
-import { createGalaxyApi, type HistorySummary, type DatasetEntry } from "@galaxyproject/client-api";
+import { createGalaxyApi, type HistorySummary, type DatasetEntry } from "@galaxyproject/galaxy-api-client";
 
 const api = createGalaxyApi();
 
@@ -85,7 +85,7 @@ See more in `src/example.ts` that demonstrate how to use the client:
 ### Basic Example
 
 ```typescript
-import { createGalaxyApi } from "@galaxyproject/client-api";
+import { createGalaxyApi } from "@galaxyproject/galaxy-api-client";
 
 // Create a client with a specific Galaxy instance
 const api = createGalaxyApi("https://usegalaxy.org");
