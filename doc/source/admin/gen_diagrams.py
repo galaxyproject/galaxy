@@ -19,14 +19,14 @@ from galaxy.files.templates.models import (
     InvenioFileSourceTemplateConfiguration,
     PosixFileSourceConfiguration,
     PosixFileSourceTemplateConfiguration,
+    RSpaceFileSourceConfiguration,
+    RSpaceFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
     WebdavFileSourceConfiguration,
     WebdavFileSourceTemplateConfiguration,
     ZenodoFileSourceConfiguration,
     ZenodoFileSourceTemplateConfiguration,
-    RSpaceFileSourceConfiguration,
-    RSpaceFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
