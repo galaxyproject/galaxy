@@ -126,14 +126,14 @@ function shareInvocationButtonClicked() {
             <LoadingSpan v-else-if="loading" message="Loading details for invocation" />
 
             <div v-else-if="workflow">
-                <p v-localize>
+                <p>
                     To share this invocation, you need to make sure that the workflow
                     <strong>"{{ workflow.name }}"</strong>
                     and history
                     <strong>"{{ historyStore.getHistoryNameById(props.historyId) }}"</strong>
                     are accessible via link.
                 </p>
-                <p v-localize>
+                <p>
                     You can do this by clicking the <i>"Share"</i>
                     button below. This will
                     <strong>make the workflow and history shareable</strong>
