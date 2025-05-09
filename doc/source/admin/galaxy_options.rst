@@ -3839,6 +3839,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``disable_local_accounts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Disable local accounts. If this option is set to true, at least
+    one OIDC provider needs  to be configured and will serve as the
+    account provider.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_deletion``
 ~~~~~~~~~~~~~~~~~~~~~~~
