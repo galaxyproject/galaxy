@@ -9,6 +9,7 @@ import { computed, ref, useAttrs } from "vue";
 
 import { linkify } from "@/utils/utils";
 
+import { isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -168,14 +169,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
-const isUriDataField = computed(() => {
-    const dataField = props.type == "data";
-    if (dataField && props.value && "src" in props.value) {
-        const src = props.value.src;
-        return src == "url";
-    }
-    return false;
-});
+const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -425,7 +419,7 @@ function onAlert(value: string | undefined) {
                 <FormDataUri
                     v-else-if="isUriDataField"
                     :id="props.id"
-                    v-model="currentValue"
+                    :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
                     v-else-if="formDataField"
