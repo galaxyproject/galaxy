@@ -3888,7 +3888,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
-        replacement_dataset = incoming["replacement"]
+        replacement_dataset = incoming.get("replacement")
         if hasattr(collection, "element_object"):
             # A list
             elements = collection.element_object.elements
