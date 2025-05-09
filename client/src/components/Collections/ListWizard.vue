@@ -80,7 +80,6 @@ function goToInferredBuilder() {
     if (builder == "list") {
         wizard.goTo("list-builder");
     } else if (builder == "list:paired") {
-        console.log("going to inferred builder...");
         wizard.goTo("list-paired-builder");
     }
 }
@@ -216,7 +215,7 @@ function onRuleState(newRuleState: boolean) {
             </BAlert>
         </div>
         <div v-if="collectionCreated">
-            <BAlert variant="success"> Collection created and it has been added to your history. </BAlert>
+            <BAlert variant="success" show> Collection created and it has been added to your history. </BAlert>
         </div>
         <div v-else-if="!selectedItems">Loading...</div>
         <div v-else-if="selectedItems.length == 0">
