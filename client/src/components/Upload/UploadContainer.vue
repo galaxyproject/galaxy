@@ -204,6 +204,7 @@ defineExpose({
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
+
         <DefaultBox
             v-if="showRegular || showCollection"
             v-show="regularTabActive || collectionTabActive"

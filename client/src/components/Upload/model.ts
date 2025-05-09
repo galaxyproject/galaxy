@@ -8,6 +8,10 @@ export interface UploadFile {
     url?: string | null;
 }
 
+export function isLocalFile(file: unknown): file is File {
+    return file !== null && typeof file === "object" && "name" in file && "size" in file;
+}
+
 export interface UploadItem {
     dbKey: string;
     deferred: boolean;

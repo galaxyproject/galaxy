@@ -326,6 +326,10 @@ class NavigatesGalaxy(HasDriver):
     def go_to_history_sharing(self, history_id: str) -> None:
         self.driver.get(self.build_url(f"histories/sharing?id={history_id}"))
 
+    def go_to_import_zip(self) -> None:
+        self.driver.get(self.build_url("import/zip"))
+        self.components.masthead._.wait_for_visible()
+
     def switch_to_main_panel(self):
         self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)
 

@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { useMarkdown } from "@/composables/markdown";
+
 import type { WizardReturnType, WizardStep } from "./useWizard";
 
 interface Props {
@@ -17,9 +19,22 @@ interface Props {
     /**
      * The title of the wizard.
      *
+     * This is displayed at the top of the wizard.
+     *
+     * The default component can be replaced by a slot named `header`.
+     *
      * @default "Generic Wizard"
      */
     title?: string;
+
+    /**
+     * Optional description of the wizard.
+     *
+     * This is displayed below the title. It supports Markdown.
+     *
+     * The default description behavior can be replaced by a slot named `description`.
+     */
+    description?: string;
 
     /**
      * The label for the submit button.
@@ -37,14 +52,27 @@ interface Props {
      * @default false
      */
     isBusy?: boolean;
+
+    /**
+     * The component to use as the container for the wizard.
+     *
+     * Can be either a BootstrapVue card or a div.
+     *
+     * @default "BCard"
+     */
+    containerComponent?: "BCard" | "div";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     use: undefined,
     title: "Generic Wizard",
+    description: undefined,
     submitButtonLabel: "Submit",
     isBusy: false,
+    containerComponent: "BCard",
 });
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const emit = defineEmits(["submit"]);
 
@@ -116,10 +144,17 @@ const steps = computed<[string, WizardStep][]>(() => {
 </script>
 
 <template>
-    <BCard class="wizard-container">
-        <BCardTitle>
-            <h2>{{ title }}</h2>
-        </BCardTitle>
+    <component :is="props.containerComponent" class="wizard-container">
+        <slot name="header">
+            <BCardTitle>
+                <h2>{{ title }}</h2>
+            </BCardTitle>
+        </slot>
+
+        <slot name="description">
+            <div v-if="props.description" v-html="renderMarkdown(props.description)" />
+        </slot>
+
         <BCardBody v-if="props.use?.steps?.value" class="wizard">
             <BCard>
                 <BCardBody class="wizard-steps">
@@ -146,7 +181,7 @@ const steps = computed<[string, WizardStep][]>(() => {
             <div class="step-content">
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
-                <div class="step-body">
+                <div class="step-body w-100">
                     <slot>
                         <p>
                             Missing body for step <b>{{ props.use.current.value.label }}</b>
@@ -168,7 +203,7 @@ const steps = computed<[string, WizardStep][]>(() => {
                 </button>
             </div>
         </BCardBody>
-    </BCard>
+    </component>
 </template>
 
 <style scoped lang="scss">

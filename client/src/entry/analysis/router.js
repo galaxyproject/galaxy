@@ -79,6 +79,8 @@ import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
+import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
+import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import EditObjectStoreInstance from "@/components/ObjectStore/Instances/EditInstance.vue";
 import ManageObjectStoreIndex from "@/components/ObjectStore/Instances/ManageIndex.vue";
@@ -745,6 +747,23 @@ export function getRouter(Galaxy) {
                         path: "workflows/:storedWorkflowId/invocations",
                         component: StoredWorkflowInvocations,
                         props: true,
+                    },
+                    {
+                        path: "import/zip",
+                        name: "ZipImportWizard",
+                        component: ZipImportWizard,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "import/zip/results",
+                        name: "ZipImportResults",
+                        component: ZipImportResults,
+                        props: (route) => ({
+                            workflowFileCount: Number(route.params.workflowFileCount),
+                            regularFileCount: Number(route.params.regularFileCount),
+                        }),
+                        redirect: redirectAnon(),
                     },
                 ],
             },
