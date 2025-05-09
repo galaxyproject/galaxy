@@ -77,7 +77,6 @@ gxy.get_environment()
 This makes it easy to load, process, and save data inside Jupyter notebooks while fully integrated with Galaxy’s dataset system.
 
 A complete reference of available functions is available at:
-
 [https://www.npmjs.com/package/@galaxyproject/jupyterlite](https://www.npmjs.com/package/@galaxyproject/jupyterlite)
     ]]></help>
 </visualization>
