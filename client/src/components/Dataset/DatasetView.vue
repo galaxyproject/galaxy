@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { BLink, BTab, BTabs, BCollapse } from "bootstrap-vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronUp, faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { STATES } from "@/components/History/Content/model/states";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 import Heading from "../Common/Heading.vue";
@@ -19,8 +20,11 @@ library.add(faChevronUp, faChevronDown, faSpinner);
 
 const datasetStore = useDatasetStore();
 const router = useRouter();
-const headerState = ref<"open" | "closed">("open");
 const iframeLoading = ref(true);
+
+// Use persistent toggle for header state
+const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
+const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 const props = defineProps({
     datasetId: {
@@ -81,7 +85,7 @@ const hasStateIcon = computed(() => {
 });
 
 function toggleHeader() {
-    headerState.value = headerState.value === "open" ? "closed" : "open";
+    toggleHeaderCollapse();
 }
 
 function onTabChange(tabIndex: number) {
