@@ -43,7 +43,7 @@ BACKENDS = {
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
     "lifescience": "social_core.backends.lifescience.LifeScienceOpenIdConnect",
     "einfracz": "social_core.backends.einfracz.EInfraCZOpenIdConnect",
-    "nfdi": "social_core.backends.nfdi.NFDIOpenIdConnect", 
+    "nfdi": "social_core.backends.nfdi.NFDIOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
