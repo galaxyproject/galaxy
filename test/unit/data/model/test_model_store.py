@@ -4,6 +4,7 @@ import json
 import os
 import pathlib
 import shutil
+import sys
 from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
@@ -17,6 +18,10 @@ from typing import (
 
 import pytest
 from rocrate.rocrate import ROCrate
+from rocrate_validator import (
+    models,
+    services,
+)
 from sqlalchemy import select
 
 from galaxy import model
@@ -551,6 +556,10 @@ def open_ro_crate(crate_directory):
 
 
 def validate_history_crate_directory(crate_directory):
+    # first validate against the base RO-Crate spec
+    validate_with_roc_validator(crate_directory=crate_directory, profile="ro-crate-1.1")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     validate_has_readme(crate)
 
@@ -603,9 +612,14 @@ def validate_other_entities(ro_crate: ROCrate):
 
 
 def validate_invocation_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     for e in crate.contextual_entities:
         print(e.type)
+
     validate_main_entity(crate)
     validate_create_action(crate)
     validate_other_entities(crate)
@@ -619,6 +633,10 @@ def validate_invocation_crate_directory(crate_directory):
 
 
 def validate_invocation_collection_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+
+    # then do Galaxy-specific validation
     ro_crate = open_ro_crate(crate_directory)
     workflow = ro_crate.mainEntity
     root = ro_crate.root_dataset
@@ -640,6 +658,31 @@ def validate_invocation_collection_crate_directory(crate_directory):
     assert len(collection["hasPart"]) == 2
     for dataset in collection["hasPart"]:
         assert dataset in root["hasPart"]
+
+
+def validate_with_roc_validator(crate_directory, profile):
+    # roc-validator changed the ValidationSettings argument data_path to rocrate_uri in
+    # v5.0.0+, but also dropped support for Python 3.9
+    if sys.version_info >= (3, 10):
+        settings = services.ValidationSettings(
+            rocrate_uri=crate_directory,
+            profile_identifier=profile,
+            requirement_severity=models.Severity.REQUIRED,
+            abort_on_first=False,  # do not stop on first issue
+        )
+    else:
+        settings = services.ValidationSettings(
+            data_path=crate_directory,
+            profile_identifier=profile,
+            requirement_severity=models.Severity.REQUIRED,
+            abort_on_first=False,  # do not stop on first issue
+            http_cache_timeout=0,  # do not use cache
+        )
+
+    result = services.validate(settings)
+
+    issues = result.get_issues()
+    assert len(issues) == 0, f"RO-Crate is invalid: {[issue.message for issue in issues]}"
 
 
 def test_export_history_with_missing_hid(tmp_path):
@@ -681,6 +724,10 @@ def test_export_simple_invocation_to_ro_crate(tmp_path):
     validate_invocation_crate_directory(tmp_path)
 
 
+@pytest.mark.xfail(
+    sys.version_info >= (3, 10),
+    reason="Awaiting resolution of validator issue https://github.com/crs4/rocrate-validator/issues/62",
+)
 def test_export_collection_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_collection_invocation(app)

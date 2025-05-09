@@ -31,12 +31,10 @@ function mountComponent(content = {}) {
         propsData: {
             name: "vitessce-view",
             content: JSON.stringify(content),
-            labels: [],
         },
         stubs: {
             ConfigureSelector: true,
             ConfigureHeader: true,
-            Heading: true,
         },
     });
 }
@@ -52,20 +50,19 @@ describe("ConfigureVitessce.vue", () => {
             stubs: {
                 ConfigureSelector: true,
                 ConfigureHeader: true,
-                Heading: true,
             },
         });
         expect(wrapper.text()).toContain("Failed to parse:");
         expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
     });
 
-    it("shows warning alert if no datasets are found", () => {
+    it("shows warning alert if no URL-like fields are found", () => {
         const wrapper = mountComponent({});
-        expect(wrapper.text()).toContain("No datasets found");
+        expect(wrapper.text()).toContain("No URL-like fields found.");
         expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
     });
 
-    it("renders ConfigureHeader and ConfigureSelector for each dataset/file", () => {
+    it("renders ConfigureHeader and ConfigureSelector for each URL field", () => {
         const wrapper = mountComponent({
             datasets: [
                 {
@@ -74,12 +71,12 @@ describe("ConfigureVitessce.vue", () => {
                     files: [
                         {
                             fileType: "obs",
-                            url: "some_url_1",
+                            url: "https://example.com/obs",
                             options: { obsType: "cell", obsIndex: "cell_id" },
                         },
                         {
                             fileType: "var",
-                            url: "some_url_2",
+                            url: "https://example.com/var",
                             options: { obsType: "gene" },
                         },
                     ],
@@ -90,7 +87,7 @@ describe("ConfigureVitessce.vue", () => {
                     files: [
                         {
                             fileType: "spatial",
-                            url: "some_url_3",
+                            url: "https://example.com/spatial",
                         },
                     ],
                 },
@@ -112,7 +109,7 @@ describe("ConfigureVitessce.vue", () => {
                 {
                     name: "Dataset 1",
                     uid: "ds1",
-                    files: [{ fileType: "obs", url: "url" }],
+                    files: [{ fileType: "obs", url: "https://example.com/obs" }],
                 },
             ],
         });

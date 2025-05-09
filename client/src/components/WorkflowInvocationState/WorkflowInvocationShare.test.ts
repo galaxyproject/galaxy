@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -39,7 +39,7 @@ const SHARE_SUCCESS_MSG = "Workflow and history are now shareable.";
 const CLIPBOARD_MSG = "The link to the invocation has been copied to your clipboard.";
 
 const SELECTORS = {
-    SHARE_ICON_BUTTON: "[data-description='share invocation icon button']",
+    SHARE_ICON_BUTTON: "[data-button-share]",
     MODAL: "[data-description='share invocation modal']",
 };
 
@@ -86,6 +86,27 @@ jest.mock("@/stores/workflowStore", () => {
     };
 });
 
+// Mock the history store to return the sample history
+jest.mock("@/stores/historyStore", () => {
+    const originalModule = jest.requireActual("@/stores/historyStore");
+    return {
+        ...originalModule,
+        useHistoryStore: () => ({
+            ...originalModule.useHistoryStore(),
+            getHistoryById: jest.fn().mockImplementation((historyId: string) => {
+                return {
+                    ...TEST_HISTORY,
+                    id: historyId,
+                    importable: historyId === `${TEST_HISTORY.id}-importable`,
+                };
+            }),
+            getHistoryNameById: jest.fn().mockImplementation(() => {
+                return TEST_HISTORY.name;
+            }),
+        }),
+    };
+});
+
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
@@ -98,13 +119,6 @@ const localVue = getLocalVue();
  */
 async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false) {
     server.use(
-        http.get("/api/histories/{history_id}", ({ response }) => {
-            return response(200).json({
-                ...TEST_HISTORY,
-                importable: bothShareable,
-            });
-        }),
-
         http.put("/api/workflows/{workflow_id}/enable_link_access", ({ response }) => {
             return response(200).json({
                 ...TEST_WORKFLOW,
@@ -117,11 +131,15 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         })
     );
 
-    const wrapper = shallowMount(WorkflowInvocationShare as object, {
+    const wrapper = mount(WorkflowInvocationShare as object, {
         propsData: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
-            historyId: TEST_HISTORY.id,
+            historyId: bothShareable ? `${TEST_HISTORY.id}-importable` : TEST_HISTORY.id,
+        },
+        stubs: {
+            FontAwesomeIcon: true,
+            BModal: true,
         },
         localVue,
         pinia: createTestingPinia(),

@@ -9,6 +9,7 @@ import { computed, ref, useAttrs } from "vue";
 
 import { linkify } from "@/utils/utils";
 
+import { isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -168,14 +169,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
 );
-const isUriDataField = computed(() => {
-    const dataField = props.type == "data";
-    if (dataField && props.value && "src" in props.value) {
-        const src = props.value.src;
-        return src == "url";
-    }
-    return false;
-});
+const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -347,6 +341,9 @@ function onAlert(value: string | undefined) {
                 :is-empty="isEmpty"
                 :is-optional="isOptional"
                 :extensions="attrs.extensions">
+                <template v-slot:badges>
+                    <slot name="workflow-run-form-title-badges" />
+                </template>
                 <template v-slot:action-items>
                     <slot name="workflow-run-form-title-items" />
                 </template>
@@ -379,10 +376,9 @@ function onAlert(value: string | undefined) {
                     :workflow-building-mode="workflowBuildingMode" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :multiple="attrs.multiple"
@@ -396,10 +392,9 @@ function onAlert(value: string | undefined) {
                                 props.type ?? ''
                             ))
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :readonly="attrs.readonly"
-                    :value="attrs.value"
                     :area="attrs.area"
                     :placeholder="computedPlaceholder"
                     :optional="isOptional"
@@ -414,7 +409,7 @@ function onAlert(value: string | undefined) {
                         (props.type === undefined && attrs.options) ||
                         ['data_column', 'genomebuild', 'group_tag', 'select'].includes(props.type ?? '')
                     "
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :data="attrs.data"
                     :display="attrs.display"
@@ -423,13 +418,12 @@ function onAlert(value: string | undefined) {
                     :multiple="attrs.multiple" />
                 <FormDataUri
                     v-else-if="isUriDataField"
-                    :id="id"
-                    v-model="currentValue"
+                    :id="props.id"
                     :value="attrs.value"
                     :multiple="attrs.multiple" />
                 <FormData
                     v-else-if="formDataField"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :loading="loading"
                     :extensions="attrs.extensions"
@@ -446,7 +440,7 @@ function onAlert(value: string | undefined) {
                     @focus="addTempFocus" />
                 <FormDrilldown
                     v-else-if="props.type === 'drill_down'"
-                    :id="id"
+                    :id="props.id"
                     v-model="currentValue"
                     :options="attrs.options"
                     :multiple="attrs.multiple" />

@@ -96,6 +96,7 @@ class JobMetrics:
             formatter = plugin_class.formatter
         else:
             formatter = DEFAULT_FORMATTER
+        assert formatter
         return formatter.format(key, value)
 
     def dictifiable_metrics(self, raw_metrics: List[RawMetric], allowed_safety: Safety) -> List[DictifiableMetric]:

@@ -23,6 +23,7 @@ import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
+import ToolReport from "components/Tool/ToolReport";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -87,6 +88,8 @@ import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
+import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
@@ -235,6 +238,11 @@ export function getRouter(Galaxy) {
                             src: `/datasets/${route.params.datasetId}/display/?preview=True`,
                             isPreview: true,
                         }),
+                    },
+                    {
+                        path: "datasets/:datasetId/report",
+                        component: ToolReport,
+                        props: true,
                     },
                     {
                         // legacy route, potentially used by 3rd parties
@@ -690,14 +698,23 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/run",
-                        component: Home,
+                        component: WorkflowRun,
                         redirect: redirectAnon(),
                         props: (route) => ({
-                            config: Galaxy.config,
-                            query: {
-                                workflow_id: route.query.id,
-                                version: route.query.version,
-                            },
+                            workflowId: route.query.id,
+                            version: route.query.version,
+                            instance: route.query.instance,
+                            preferSimpleForm: Galaxy.config.simplified_workflow_run_ui === "prefer",
+                            simpleFormTargetHistory: Galaxy.config.simplified_workflow_run_ui_target_history,
+                            simpleFormUseJobCache: Galaxy.config.simplified_workflow_run_ui_job_cache === "on",
+                        }),
+                    },
+                    {
+                        path: "workflows/rerun",
+                        component: WorkflowRerun,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            invocationId: route.query.invocation_id,
                         }),
                     },
                     {

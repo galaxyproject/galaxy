@@ -46,6 +46,8 @@
     </b-modal>
 </template>
 <script>
+import { useConfig } from "@/composables/config";
+
 export default {
     props: {
         repo: {
@@ -77,13 +79,17 @@ export default {
             default: false,
         },
     },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
+    },
     data() {
         return {
             modalShow: true,
             advancedShow: false,
-            installToolDependencies: true,
-            installRepositoryDependencies: true,
-            installResolverDependencies: true,
+            installToolDependencies: this.config.install_tool_dependencies,
+            installRepositoryDependencies: this.config.install_repository_dependencies,
+            installResolverDependencies: this.config.install_resolver_dependencies,
             toolConfig: null,
             toolSection: null,
         };

@@ -593,6 +593,7 @@
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true"/>
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true"/>
+    <datatype extension="tool_markdown" type="galaxy.datatypes.text:Text"/>
     <datatype extension="expression.json" type="galaxy.datatypes.text:ExpressionJson" display_in_upload="true"/>
     <!-- graph datatypes -->
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
@@ -608,8 +609,8 @@
     <datatype extension="sbol" type="galaxy.datatypes.triples:Sbol" description="The SBOL (Synthetic Biology Open Language) standard was developed by the synthetic biology community to create a standardized format for the electronic exchange of information on the structural and functional aspects of biological designs." description_url="https://sbolstandard.org" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
-    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true"/>
-    <datatype extension="docx" type="galaxy.datatypes.binary:Binary" subclass="true"/>
+    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" decription="XLSX is an XML-based file format that is natively used for Microsoft Excel spreadsheets" description_url="https://www.iso.org/standard/71691.html" />
+    <datatype extension="docx" type="galaxy.datatypes.binary:Docx" display_in_upload="true" decription="DOCX is an XML-based file format that is natively used for Microsoft Word documents" description_url="https://www.iso.org/standard/71691.html" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cat_db" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -1031,6 +1032,8 @@
     <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/chain.html"/>
     <datatype extension="ucsc.net" type="galaxy.datatypes.chain:Net" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/net.html"/>
     <datatype extension="bcsp" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Binary format of k-mer hash table which is only compatible with Fairy"/>
+    <!-- rdeval types -->
+    <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
   </registration>
   <sniffers>
     <!--

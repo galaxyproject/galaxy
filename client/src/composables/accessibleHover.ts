@@ -1,7 +1,8 @@
-import { type Ref, ref, watch } from "vue";
+import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
+import { ref, watch } from "vue";
 
 export function useAccessibleHover(
-    elementRef: Ref<HTMLElement | null>,
+    elementRef: MaybeRefOrGetter<HTMLElement | null>,
     onHoverEnter?: () => void,
     onHoverExit?: () => void
 ) {
@@ -29,8 +30,8 @@ export function useAccessibleHover(
     }
 
     watch(
-        () => elementRef.value,
-        () => {
+        () => toValue(elementRef),
+        (element) => {
             if (previousElement) {
                 exit();
                 previousElement.removeEventListener("mouseenter", enter);
@@ -40,15 +41,15 @@ export function useAccessibleHover(
                 previousElement.removeEventListener("keydown", keydown);
             }
 
-            if (elementRef.value) {
-                elementRef.value.addEventListener("mouseenter", enter);
-                elementRef.value.addEventListener("focus", enter);
-                elementRef.value.addEventListener("mouseleave", exit);
-                elementRef.value.addEventListener("blur", exit);
-                elementRef.value.addEventListener("keydown", keydown);
+            if (element) {
+                element.addEventListener("mouseenter", enter);
+                element.addEventListener("focus", enter);
+                element.addEventListener("mouseleave", exit);
+                element.addEventListener("blur", exit);
+                element.addEventListener("keydown", keydown);
             }
 
-            previousElement = elementRef.value;
+            previousElement = element;
         },
         {
             immediate: true,

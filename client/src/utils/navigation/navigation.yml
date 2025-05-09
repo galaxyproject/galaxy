@@ -711,6 +711,13 @@ workflow_run:
         element_by_hid: "${_} .collection-element[data-hid='${hid}']"
         <<: *upload_mixin
 
+  form_element:
+    selectors:
+      _: 'div.workflow-run-element[id="form-element-${index}"]'
+      select: '${_} .multiselect'
+      select_value: '${_} .multiselect__single'
+      changed_value_badge: '${_} .form-input-changed-input-badge'
+
   selectors:
     warning: '[data-description="workflow run warning"]'
     run_error: '[data-description="workflow run error"]'
@@ -719,7 +726,7 @@ workflow_run:
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
-    run_workflow_disabled: '#run-workflow[aria-disabled="true"]'
+    run_workflow_disabled: "#run-workflow.g-disabled"
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
@@ -907,6 +914,8 @@ invocations:
     state_details: '[data-description="workflow invocation state"]'
     progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
+    workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
+    change_history_rerun_confirm: '#change-history-rerun-workflow .btn-primary'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'

@@ -162,7 +162,7 @@ requests==2.32.3
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
 requests-unixsocket==0.4.1
-rich==14.0.0
+rich==13.9.4
 rich-argparse==1.7.0
 rocrate==0.13.0
 routes==2.5.1

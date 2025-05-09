@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Placement } from "@popperjs/core";
 import { computed, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { type RouterLink } from "vue-router";
 
-import { useAccessibleHover } from "@/composables/accessibleHover";
+import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
+import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useResolveElement } from "@/composables/resolveElement";
 import { useUid } from "@/composables/utils/uid";
 
@@ -62,56 +63,14 @@ const styleClasses = computed(() => {
     };
 });
 
-const baseComponent = computed(() => {
-    if (props.to) {
-        return RouterLink;
-    } else if (props.href) {
-        return "a" as const;
-    } else {
-        return "button" as const;
-    }
-});
-
-const currentTooltip = computed(() => {
-    if (props.disabled) {
-        return props.disabledTitle ?? props.title;
-    } else {
-        return props.title;
-    }
-});
-
-const currentTitle = computed(() => {
-    if (props.tooltip) {
-        return false;
-    } else {
-        return currentTooltip.value;
-    }
-});
-
+const baseComponent = useClickableElement(props);
+const currentTitle = useCurrentTitle(props);
 const tooltipId = useUid("g-tooltip");
 
-const describedBy = computed(() => {
-    if (props.tooltip && props.title) {
-        return tooltipId.value;
-    } else {
-        return false;
-    }
-});
+const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
-const tooltipRef = ref<InstanceType<typeof GTooltip>>();
-
 const buttonElementRef = useResolveElement(buttonRef);
-
-useAccessibleHover(
-    buttonElementRef,
-    () => {
-        tooltipRef.value?.show();
-    },
-    () => {
-        tooltipRef.value?.hide();
-    }
-);
 </script>
 
 <template>
@@ -119,12 +78,12 @@ useAccessibleHover(
         :is="baseComponent"
         ref="buttonRef"
         class="g-button"
-        :data-title="currentTooltip"
+        :data-title="currentTitle"
         :class="{ ...variantClasses, ...styleClasses }"
-        :to="props.to"
-        :href="props.to ?? props.href"
-        :title="currentTitle"
-        :aria-describedby="describedBy"
+        :to="!props.disabled ? props.to : ''"
+        :href="!props.disabled ? props.to ?? props.href : ''"
+        :title="props.tooltip ? false : currentTitle"
+        :aria-describedby="showTooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -132,18 +91,19 @@ useAccessibleHover(
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
-            v-if="props.tooltip && props.title"
+            v-if="showTooltip"
             :id="tooltipId"
-            ref="tooltipRef"
             :reference="buttonElementRef"
-            :text="currentTooltip"
+            :text="currentTitle"
             :placement="props.tooltipPlacement" />
     </component>
 </template>
 
 <style scoped lang="scss">
 .g-button {
-    display: inline-block;
+    display: inline-flex;
+    gap: var(--spacing-1);
+    align-items: center;
     margin: 0;
     border: 1px solid;
     border-radius: var(--spacing-1);
@@ -259,44 +219,28 @@ useAccessibleHover(
     }
 
     &.g-disabled {
-        background-color: var(--color-grey-100);
-        border-color: var(--color-grey-200);
-        color: var(--color-grey-500);
-
-        &:hover,
-        &:focus-visible {
-            background-color: var(--color-grey-100);
-            border-color: var(--color-grey-200);
-
-            &:active {
-                background-color: var(--color-grey-100);
-                border-color: var(--color-grey-200);
-                color: var(--color-grey-500);
-            }
-        }
+        background-color: var(--color-grey-100) !important;
+        border-color: var(--color-grey-200) !important;
+        color: var(--color-grey-500) !important;
 
         &:focus-visible {
-            border-color: var(--color-grey-500);
+            border-color: var(--color-grey-500) !important;
         }
 
         &.g-outline {
-            background-color: var(--background-color);
-            border-color: var(--color-grey-400);
-            color: var(--color-grey-400);
-
-            &:hover,
-            &:focus,
-            &:focus-visible {
-                background-color: var(--background-color);
-                border-color: var(--color-grey-400);
-                color: var(--color-grey-400);
-            }
+            background-color: var(--background-color) !important;
+            border-color: var(--color-grey-400) !important;
+            color: var(--color-grey-400) !important;
 
             &:focus-visible {
-                border-color: var(--color-grey-800);
-                background-color: var(--background-color);
-                color: var(--color-grey-500);
+                border-color: var(--color-grey-800) !important;
+                background-color: var(--background-color) !important;
+                color: var(--color-grey-500) !important;
             }
+        }
+
+        &.g-transparent {
+            background-color: rgb(100% 100% 100% / 0) !important;
         }
     }
 
