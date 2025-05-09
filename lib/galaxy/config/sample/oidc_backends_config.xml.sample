@@ -13,9 +13,6 @@ Quick Reference
 _______________
 
 - provider:         Sets the name of OpenID Connect (OIDC) Identity Provider (IdP).
-                    The following IdPs are currently supported:
-
-                        { "Google", "Globus" }
 
 - client id:        Sets the id of this client (i.e., your Galaxy instance) with the IdP, which is
                     obtained from the IdP at client registration.
@@ -25,6 +22,8 @@ _______________
                     See https://tools.ietf.org/html/rfc6749#section-2.3.1
 
 - label:            A label to identify this IDP to users in the UI. Defaults to the provider name if absent.
+
+- icon:             Image to be displayed on the login button.
 
 - require_create_confirmation:            A boolean value that decides whether a NewUserConfirmation page shows up.
 
@@ -189,6 +188,17 @@ Please mind `http` and `https`.
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
+    <!-- # Documentation is at https://doc.nfdi-aai.de/  -->
+    <provider name="nfdi">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/nfdi/callback</redirect_uri>
+        <prompt>consent</prompt>
+        <icon>url-of-image</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
     <provider name="Okta">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
@@ -250,8 +260,8 @@ Please mind `http` and `https`.
 	Federation Registry: https://aai.egi.eu/federation -->
         <client_id>...</client_id>
         <client_secret>...</client_secret>
-	<redirect_uri>http://localhost:8080/authnz/checkin/callback</redirect_uri>
-	<icon>https://im.egi.eu/im-dashboard/static/images/egicheckin.png</icon>
+        <redirect_uri>http://localhost:8080/authnz/checkin/callback</redirect_uri>
+        <icon>https://im.egi.eu/im-dashboard/static/images/egicheckin.png</icon>
         <prompt>consent</prompt>
 	<!-- (Optional) Which Check-in environment to use (prod, demo, dev), default is prod -->
 	<!-- <checkin_env>dev</checkin_env> -->
