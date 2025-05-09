@@ -20,6 +20,7 @@ library.add(faChevronUp, faChevronDown, faSpinner);
 const datasetStore = useDatasetStore();
 const router = useRouter();
 const headerState = ref<"open" | "closed">("open");
+const iframeLoading = ref(true);
 
 const props = defineProps({
     datasetId: {
@@ -73,7 +74,7 @@ const contentState = computed(() => {
     return dataset.value && STATES[dataset.value.state] ? STATES[dataset.value.state] : null;
 });
 
-const stateText = computed(() => dataset.value && dataset.value.state || "");
+const stateText = computed(() => (dataset.value && dataset.value.state) || "");
 
 const hasStateIcon = computed(() => {
     return contentState.value && contentState.value.icon;
@@ -93,6 +94,11 @@ function onTabChange(tabIndex: number) {
 
     if (tabIndex === TABS.ERROR && !showError.value) {
         return;
+    }
+
+    // Reset iframe loading state when switching to Preview tab
+    if (tabIndex === TABS.PREVIEW) {
+        iframeLoading.value = true;
     }
 
     const basePath = `/datasets/${props.datasetId}`;
@@ -130,25 +136,27 @@ function setActiveTabFromProp() {
 
 // Watch the 'tab' prop instead of the route path
 watch(() => props.tab, setActiveTabFromProp, { immediate: true });
+
+// Reset iframe loading when datasetId changes
+watch(
+    () => props.datasetId,
+    () => {
+        if (activeTab.value === TABS.PREVIEW) {
+            iframeLoading.value = true;
+        }
+    }
+);
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
         <header class="dataset-header flex-shrink-0">
-            <Heading
-                h1
-                separator
-                :collapse="headerState"
-                class="dataset-name"
-                @click="toggleHeader">
+            <Heading h1 separator :collapse="headerState" class="dataset-name" @click="toggleHeader">
                 <div class="item-identifier">
                     <span class="hid-box">{{ dataset.hid }}:</span>
                     <span class="dataset-title">{{ dataset.name }}</span>
                     <span v-if="contentState" class="state-pill ml-2" :class="`state-${dataset.state}`">
                         <span v-if="hasStateIcon" class="state-icon mr-1">
-                            <FontAwesomeIcon
-                                fixed-width
-                                :icon="contentState.icon"
-                                :spin="contentState.spin" />
+                            <FontAwesomeIcon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                         </span>
                         {{ stateText }}
                     </span>
@@ -180,12 +188,21 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
             <!-- Make BTabs fill its container and use flex column layout internally -->
             <BTabs pills card lazy class="h-100 d-flex flex-column" :value="activeTab" @input="onTabChange">
                 <BTab title="Preview" class="iframe-card">
-                    <!-- Iframe for dataset preview -->
-                    <iframe
-                        :src="displayUrl"
-                        title="galaxy dataset display frame"
-                        class="dataset-preview-iframe"
-                        frameborder="0"></iframe>
+                    <div class="preview-container position-relative h-100">
+                        <!-- Loading indicator for iframe -->
+                        <div v-if="iframeLoading" class="iframe-loading">
+                            <FontAwesomeIcon icon="spinner" spin size="2x" />
+                            <div class="mt-2">Loading preview...</div>
+                        </div>
+
+                        <!-- Iframe for dataset preview -->
+                        <iframe
+                            :src="displayUrl"
+                            title="galaxy dataset display frame"
+                            class="dataset-preview-iframe"
+                            frameborder="0"
+                            @load="iframeLoading = false"></iframe>
+                    </div>
                 </BTab>
                 <BTab title="Details">
                     <DatasetDetails :dataset-id="datasetId" />
@@ -251,12 +268,14 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
     white-space: nowrap;
 }
 
-.state-running, .state-upload {
+.state-running,
+.state-upload {
     background-color: #cff4fc;
     color: #055160;
 }
 
-.state-queued, .state-new {
+.state-queued,
+.state-new {
     background-color: #e2e3e5;
     color: #41464b;
 }
@@ -266,7 +285,8 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
     color: #0f5132;
 }
 
-.state-error, .state-failed_metadata {
+.state-error,
+.state-failed_metadata {
     background-color: #f8d7da;
     color: #842029;
 }
@@ -277,7 +297,7 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
 }
 
 .dataset-tabs-container {
-    min-height: 0; /* fix for flex-grow behavior in some contexts */
+    min-height: 0;
 }
 
 .dataset-tabs-container :deep(.nav-tabs) {
@@ -300,16 +320,33 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    /* Remove padding for the iframe tab, we add back for others */
     padding: 0;
     overflow: hidden;
 }
 
-.dataset-preview-iframe {
+.preview-container {
+    position: relative;
     flex-grow: 1;
+}
+
+.dataset-preview-iframe {
     border: none;
     width: 100%;
     height: 100%;
+}
+
+.iframe-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    z-index: 1;
 }
 
 .loading-message {
