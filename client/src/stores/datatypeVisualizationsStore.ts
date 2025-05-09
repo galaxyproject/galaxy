@@ -2,10 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import type { DatatypeVisualization } from "@/api/datatypeVisualizations";
-import {
-    fetchDatatypeVisualizations,
-    getPreferredVisualization,
-} from "@/api/datatypeVisualizations";
+import { fetchDatatypeVisualizations, getPreferredVisualization } from "@/api/datatypeVisualizations";
 
 export const useDatatypeVisualizationsStore = defineStore("datatypeVisualizations", () => {
     const visualizationMappings = ref<DatatypeVisualization[]>([]);
