@@ -40,7 +40,7 @@ const queryAttributeForceString = function (
         <LoginIndex
             v-else-if="isConfigLoaded"
             id="login-index"
-            :allow-user-creation="config.allow_user_creation"
+            :allow-user-creation="config.allow_local_account_creation"
             :enable-oidc="config.enable_oidc"
             :mailing-join-addr="config.mailing_join_addr"
             :prefer-custos-login="config.prefer_custos_login"

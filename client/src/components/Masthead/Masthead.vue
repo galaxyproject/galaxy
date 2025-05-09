@@ -120,13 +120,13 @@ onMounted(() => {
                 @click="openUrl('/about')" />
             <QuotaMeter />
             <MastheadItem
-                v-if="isAnonymous && config.allow_user_creation"
+                v-if="isAnonymous && config.allow_local_account_creation"
                 id="user"
                 class="loggedout-only"
                 title="Login or Register"
                 @click="openUrl('/login/start')" />
             <MastheadItem
-                v-if="isAnonymous && !config.allow_user_creation"
+                v-if="isAnonymous && !config.allow_local_account_creation"
                 id="user"
                 class="loggedout-only"
                 title="Login"

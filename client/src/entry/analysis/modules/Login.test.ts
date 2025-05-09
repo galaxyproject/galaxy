@@ -10,7 +10,7 @@ import Login from "./Login.vue";
 const localVue = getLocalVue(true);
 
 const configMock = {
-    allow_user_creation: true,
+    allow_local_account_creation: true,
     enable_oidc: true,
     mailing_join_addr: "mailing_join_addr",
     prefer_custos_login: true,
