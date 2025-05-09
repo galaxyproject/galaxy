@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { BLink, BTab, BTabs } from "bootstrap-vue";
+import { BLink, BTab, BTabs, BCollapse } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronUp, faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -12,8 +15,11 @@ import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 
+library.add(faChevronUp, faChevronDown, faSpinner);
+
 const datasetStore = useDatasetStore();
 const router = useRouter();
+const headerState = ref<"open" | "closed">("open");
 
 const props = defineProps({
     datasetId: {
@@ -58,11 +64,24 @@ const activeTab = ref<TabIndex>(TABS.PREVIEW);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
-const stateText = computed(() => dataset.value && STATES[dataset.value.state] && STATES[dataset.value.state].text);
 const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview=true`);
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
+
+const contentState = computed(() => {
+    return dataset.value && STATES[dataset.value.state] ? STATES[dataset.value.state] : null;
+});
+
+const stateText = computed(() => dataset.value && dataset.value.state || "");
+
+const hasStateIcon = computed(() => {
+    return contentState.value && contentState.value.icon;
+});
+
+function toggleHeader() {
+    headerState.value = headerState.value === "open" ? "closed" : "open";
+}
 
 function onTabChange(tabIndex: number) {
     if (!(tabIndex in tabIndexToName)) {
@@ -115,23 +134,44 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
         <header class="dataset-header flex-shrink-0">
-            <Heading h1 separator>{{ dataset.name }}</Heading>
-            <div v-if="stateText" class="mb-1">{{ stateText }}</div>
-            <div v-else-if="dataset.misc_blurb" class="blurb">
-                <span class="value">{{ dataset.misc_blurb }}</span>
-            </div>
-            <span v-if="dataset.file_ext" class="datatype">
-                <span v-localize class="prompt">format</span>
-                <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
-            </span>
-            <span v-if="dataset.genome_build" class="dbkey">
-                <span v-localize class="prompt">database</span>
-                <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(TABS.EDIT)">{{
-                    dataset.genome_build
-                }}</BLink>
-            </span>
-            <div v-if="dataset.misc_info" class="info">
-                <span class="value">{{ dataset.misc_info }}</span>
+            <Heading
+                h1
+                separator
+                :collapse="headerState"
+                class="dataset-name"
+                @click="toggleHeader">
+                <div class="item-identifier">
+                    <span class="hid-box">{{ dataset.hid }}:</span>
+                    <span class="dataset-title">{{ dataset.name }}</span>
+                    <span v-if="contentState" class="state-pill ml-2" :class="`state-${dataset.state}`">
+                        <span v-if="hasStateIcon" class="state-icon mr-1">
+                            <FontAwesomeIcon
+                                fixed-width
+                                :icon="contentState.icon"
+                                :spin="contentState.spin" />
+                        </span>
+                        {{ stateText }}
+                    </span>
+                </div>
+            </Heading>
+
+            <div v-if="headerState === 'open'" class="header-details">
+                <div v-if="dataset.misc_blurb" class="blurb">
+                    <span class="value">{{ dataset.misc_blurb }}</span>
+                </div>
+                <span v-if="dataset.file_ext" class="datatype">
+                    <span v-localize class="prompt">format</span>
+                    <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
+                </span>
+                <span v-if="dataset.genome_build" class="dbkey">
+                    <span v-localize class="prompt">database</span>
+                    <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(TABS.EDIT)">{{
+                        dataset.genome_build
+                    }}</BLink>
+                </span>
+                <div v-if="dataset.misc_info" class="info">
+                    <span class="value">{{ dataset.misc_info }}</span>
+                </div>
             </div>
         </header>
 
@@ -173,6 +213,67 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
 
 .dataset-header {
     margin-bottom: 1rem;
+}
+
+.item-identifier {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.dataset-name {
+    margin-bottom: 0;
+}
+
+.hid-box {
+    font-weight: bold;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+}
+
+.dataset-title {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.state-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+.state-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.state-running, .state-upload {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.state-queued, .state-new {
+    background-color: #e2e3e5;
+    color: #41464b;
+}
+
+.state-ok {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.state-error, .state-failed_metadata {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.header-details {
+    margin-top: 0.5rem;
+    padding-left: 1rem;
 }
 
 .dataset-tabs-container {
