@@ -13,6 +13,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { canMutateHistory } from "@/api";
+import BuildFileSetWizard from "@/components/Collections/BuildFileSetWizard";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
@@ -204,7 +205,21 @@ defineExpose({
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
-
+        <!-- to use the new rule seeding, but maybe central panel activity is sufficient...
+        <BTab
+            v-if="showRules"
+            id="rule-based-import"
+            title="Rule-based (beta)"
+            button-id="tab-title-link-rule-based-import"
+            no-body>
+            <BuildFileSetWizard
+                :file-sources-configured="fileSourcesConfigured"
+                :ftp-upload-site="currentUserId && ftpUploadSite"
+                :has-callback="hasCallback"
+                :history-id="currentHistoryId"
+                v-on="$listeners" />
+        </BTab>
+        -->
         <DefaultBox
             v-if="showRegular || showCollection"
             v-show="regularTabActive || collectionTabActive"

@@ -74,11 +74,27 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
+function dynamicIsLast() {
+    if (props.use.isLast.value) {
+        return true;
+    }
+
+    let nextStepIndex = props.use.index.value + 1;
+    let nextStepName = props.use.stepNames.value.at(nextStepIndex);
+
+    while (nextStepName && props.use.steps.value[nextStepName]?.isSkippable()) {
+        nextStepIndex++;
+        nextStepName = props.use.stepNames.value.at(nextStepIndex);
+    }
+
+    return !nextStepName;
+}
+
 const emit = defineEmits(["submit"]);
 
 function goNext() {
     if (props.use.current.value.isValid()) {
-        if (props.use.isLast.value) {
+        if (dynamicIsLast()) {
             emit("submit");
         }
 
@@ -169,7 +185,7 @@ const steps = computed<[string, WizardStep][]>(() => {
                             :disabled="(!allStepsBeforeAreValid(i) && props.use.isBefore(id)) || isBusy"
                             @click="props.use.goTo(id)">
                             <FontAwesomeIcon v-if="isStepDone(i)" :icon="faCheck" />
-                            <FontAwesomeIcon v-else-if="props.use.isLast && isBusy" :icon="faSpinner" spin />
+                            <FontAwesomeIcon v-else-if="dynamicIsLast() && isBusy" :icon="faSpinner" spin />
                             <span v-else>{{ determineDisplayStepIndex(i) }}</span>
                         </button>
                         <div class="step-label" v-text="step.label" />
@@ -197,16 +213,16 @@ const steps = computed<[string, WizardStep][]>(() => {
                 <button
                     class="go-next-btn"
                     :disabled="!props.use.current.value.isValid() || isBusy"
-                    :class="props.use.isLast.value ? 'btn-primary' : ''"
+                    :class="dynamicIsLast() ? 'btn-primary' : ''"
                     @click="goNext">
-                    {{ props.use.isLast.value ? submitButtonLabel : "Next" }}
+                    {{ dynamicIsLast() ? submitButtonLabel : "Next" }}
                 </button>
             </div>
         </BCardBody>
     </component>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 @import "theme/blue.scss";
 
 .wizard {

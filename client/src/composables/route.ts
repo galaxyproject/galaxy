@@ -1,6 +1,6 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 /** use a route query parameter as a boolean computed */
 export function useRouteQueryBool(
@@ -25,4 +25,13 @@ export function useRouteQueryNumber(parameter: MaybeRefOrGetter<string>, default
             return toValue(defaultValue);
         }
     });
+}
+
+export function useToolRouting() {
+    const router = useRouter();
+
+    function routeToTool(toolId: string) {
+        router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=latest`);
+    }
+    return { routeToTool };
 }
