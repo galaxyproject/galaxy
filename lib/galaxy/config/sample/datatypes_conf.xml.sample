@@ -42,6 +42,7 @@
         <converter file="bam_to_bai.xml" target_datatype="bai"/>
         <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
         <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
+        <visualization plugin="igv" />
         <display file="ucsc/bam.xml"/>
         <display file="ensembl/ensembl_bam.xml"/>
         <display file="igv/bam.xml"/>
@@ -221,6 +222,7 @@
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true">
         <infer_from suffix="h5" />
         <infer_from suffix="hdf5" />
+        <visualization plugin="h5web" />
     </datatype>
     <datatype extension="scool" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
     <datatype extension="grib" type="galaxy.datatypes.binary:Grib" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -526,6 +528,7 @@
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" auto_compressed_types="gz" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+      <visualization plugin="charts" default_params='{"chart_type":"scatter"}' />
       <display file="minerva/tabular.xml"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -554,6 +557,7 @@
         <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
         <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
         <converter file="uncompressed_to_gz.xml" target_datatype="vcf_bgzip"/>
+        <visualization plugin="jbrowse" />
         <display file="ucsc/vcf.xml"/>
         <display file="igv/vcf.xml"/>
         <display file="rviewer/vcf.xml" inherit="true"/>
@@ -1149,22 +1153,6 @@
     <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
   </registration>
 
-  <visualization_mappings>
-    <!-- 
-      This section maps datatypes to their preferred visualization plugins.
-      These visualizations will be used as the default preview when viewing datasets of the specified type.
-      
-      Attributes:
-      - datatype: The file extension/datatype to map
-      - visualization: The visualization plugin to use
-      - default_params: Optional JSON-formatted parameters to pass to the visualization
-    -->
-    <visualization_mapping datatype="h5" visualization="vitessce" />
-    <visualization_mapping datatype="bam" visualization="igv" />
-    <visualization_mapping datatype="vcf" visualization="jbrowse" />
-    <!-- Add more mappings as needed -->
-  </visualization_mappings>
-  
   <sniffers>
     <!--
     The order in which Galaxy attempts to determine data types is

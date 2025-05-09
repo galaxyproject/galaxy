@@ -316,6 +316,39 @@ class Registry:
                             self.datatypes_by_extension[extension].add_composite_file(
                                 name, optional=optional, mimetype=mimetype
                             )
+                        # Check for preferred visualization definitions
+                        for visualization_elem in elem.findall("visualization"):
+                            plugin = visualization_elem.get("plugin", None)
+                            default_params_str = visualization_elem.get("default_params", None)
+
+                            # Skip incomplete visualization definitions
+                            if not plugin:
+                                self.log.warning(
+                                    "Incomplete visualization definition (missing plugin) for datatype %s", extension
+                                )
+                                continue
+
+                            # Parse default parameters if provided
+                            default_params = None
+                            if default_params_str:
+                                try:
+                                    default_params = galaxy.util.safe_loads(default_params_str)
+                                except Exception:
+                                    self.log.exception(
+                                        "Error parsing default_params for visualization definition: %s -> %s",
+                                        extension,
+                                        plugin,
+                                    )
+                                    continue
+
+                            # Store the mapping
+                            self.visualization_mappings[extension] = {
+                                "visualization": plugin,
+                                "default_params": default_params,
+                            }
+
+                            self.log.debug("Loaded preferred visualization definition: %s -> %s", extension, plugin)
+
                         for _display_app in elem.findall("display"):
                             if elem not in self.display_app_containers:
                                 self.display_app_containers.append(elem)
@@ -441,58 +474,6 @@ class Registry:
 
         append_to_sniff_order()
 
-    def _load_visualization_mappings(self, root):
-        """
-        Load datatype to visualization mappings from the datatypes_conf.xml file.
-
-        Administrators can define preferred visualizations for datatypes in the
-        datatypes_conf.xml configuration file using the visualization_mappings section.
-
-        For example:
-
-        <visualization_mappings>
-            <visualization_mapping datatype="bam" visualization="igv" />
-            <visualization_mapping datatype="vcf" visualization="jbrowse" />
-            <visualization_mapping datatype="h5" visualization="vitessce" default_params='{"layer":"primary"}' />
-        </visualization_mappings>
-
-        These mappings are read-only and must be manually edited in the configuration file.
-        """
-        # Clear existing mappings
-        self.visualization_mappings = {}
-
-        # Find the visualization_mappings element
-        mappings_elem = root.find("visualization_mappings")
-        if mappings_elem is None:
-            # No mappings defined, that's okay
-            return
-
-        for mapping_elem in mappings_elem.findall("visualization_mapping"):
-            datatype = mapping_elem.get("datatype", None)
-            visualization = mapping_elem.get("visualization", None)
-            default_params_str = mapping_elem.get("default_params", None)
-
-            # Skip incomplete mappings
-            if not datatype or not visualization:
-                self.log.warning("Incomplete visualization mapping (missing datatype or visualization)")
-                continue
-
-            # Parse default parameters if provided
-            default_params = None
-            if default_params_str:
-                try:
-                    default_params = galaxy.util.safe_loads(default_params_str)
-                except Exception:
-                    self.log.exception(
-                        "Error parsing default_params for visualization mapping: %s -> %s", datatype, visualization
-                    )
-                    continue
-
-            # Store the mapping
-            self.visualization_mappings[datatype] = {"visualization": visualization, "default_params": default_params}
-
-            self.log.debug("Loaded visualization mapping: %s -> %s", datatype, visualization)
-
     def _load_build_sites(self, root):
         def load_build_site(build_site_config):
             # Take in either an XML element or simple dictionary from YAML and add build site for this.
@@ -552,14 +533,14 @@ class Registry:
         Get the preferred visualization mapping for a specific datatype extension.
         Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.
 
-        Preferred visualizations are defined in the datatypes_conf.xml configuration file using
-        the visualization_mappings section. These mappings determine which visualization plugin
+        Preferred visualizations are defined inline within each datatype definition in the
+        datatypes_conf.xml configuration file. These mappings determine which visualization plugin
         should be used by default when viewing datasets of a specific type.
 
         Example configuration:
-        <visualization_mappings>
-            <visualization_mapping datatype="bam" visualization="igv" />
-        </visualization_mappings>
+        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
+            <visualization plugin="igv" />
+        </datatype>
         """
         return self.visualization_mappings.get(datatype_extension)
 
@@ -568,7 +549,8 @@ class Registry:
         Get all datatype to visualization mappings.
         Returns a dictionary where keys are datatype extensions and values are mapping configurations.
 
-        Mappings are defined in the datatypes_conf.xml configuration file and are read-only.
+        Mappings are defined inline within each datatype definition in the datatypes_conf.xml
+        configuration file and are read-only.
         """
         return self.visualization_mappings
 
