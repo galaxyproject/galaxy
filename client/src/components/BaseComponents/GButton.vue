@@ -1,32 +1,51 @@
 <script setup lang="ts">
-import type { Placement } from "@popperjs/core";
+/**
+ * Button-like element that can be used for buttons, anchors, or router-links.
+ * Defaults to button behavior.
+ */
+
+import type { Placement } from "@floating-ui/dom";
 import { computed, ref } from "vue";
 import { type RouterLink } from "vue-router";
 
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useResolveElement } from "@/composables/resolveElement";
-import { useUid } from "@/composables/utils/uid";
 
 import { type ComponentColor, type ComponentSize, type ComponentVariantClassList, prefix } from "./componentVariants";
 
 import GTooltip from "./GTooltip.vue";
 
 const props = defineProps<{
+    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
+    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
     to?: string;
+    /** Which color scheme to use for the component. Not setting this will make the button appear grey */
     color?: ComponentColor;
+    /** Outline variant of the button. Can be used together with the `pressed` state */
     outline?: boolean;
+    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
+    /** Title attribute, or tooltip text */
     title?: string;
+    /** Alternative title to be displayed in a disabled state */
     disabledTitle?: string;
+    /** Displayed size of the component */
     size?: ComponentSize;
+    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
     tooltip?: boolean;
+    /** Controls the positioning of the tooltip, if a tooltip is active */
     tooltipPlacement?: Placement;
+    /** Inline variant of the button. Affects buttons size, and positioning */
     inline?: boolean;
+    /** Small, icon-only variant of the button */
     iconOnly?: boolean;
+    /** Variant of the button without background or outline. Can be used together with the `pressed` state */
     transparent?: boolean;
+    /** Variant of the button with more rounded corners */
     pill?: boolean;
+    /** Pressed state allows for a toggle-like behavior of the button. For use with the outline and transparent variants */
     pressed?: boolean;
 }>();
 
@@ -65,7 +84,6 @@ const styleClasses = computed(() => {
 
 const baseComponent = useClickableElement(props);
 const currentTitle = useCurrentTitle(props);
-const tooltipId = useUid("g-tooltip");
 
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
@@ -83,7 +101,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? props.to ?? props.href : ''"
         :title="props.tooltip ? false : currentTitle"
-        :aria-describedby="showTooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -92,7 +109,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
             v-if="showTooltip"
-            :id="tooltipId"
             :reference="buttonElementRef"
             :text="currentTitle"
             :placement="props.tooltipPlacement" />
@@ -274,8 +290,15 @@ const buttonElementRef = useResolveElement(buttonRef);
     }
 
     &.g-transparent:not(.g-pressed) {
-        border: 1px solid rgb(100% 100% 100% / 0);
+        border: 1px solid rgb(100% 100% 100% / 0) !important;
         background-color: rgb(100% 100% 100% / 0);
+
+        color: var(--color-grey-700);
+
+        &:hover,
+        &:focus-visible {
+            background-color: var(--color-grey-200);
+        }
 
         @each $color in "blue", "green", "red", "yellow", "orange" {
             &.g-#{$color} {

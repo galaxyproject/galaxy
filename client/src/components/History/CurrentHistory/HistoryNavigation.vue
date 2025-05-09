@@ -322,7 +322,6 @@ async function resumePausedJobs() {
 
         <SelectorModal
             v-if="!props.minimal"
-            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
             :additional-options="['center', 'multi']"

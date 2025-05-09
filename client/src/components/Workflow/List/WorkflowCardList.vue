@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
 import { reactive, ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
@@ -8,7 +7,9 @@ import type { SelectedWorkflow } from "./types";
 
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowRename from "./WorkflowRename.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
 interface Props {
     workflows: WorkflowSummary[];
@@ -77,6 +78,8 @@ function onInsert(workflow: WorkflowSummary) {
 function onInsertSteps(workflow: WorkflowSummary) {
     emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
 }
+
+const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </script>
 
 <template>
@@ -108,15 +111,29 @@ function onInsertSteps(workflow: WorkflowSummary) {
             :name="modalOptions.rename.name"
             @close="onRenameClose" />
 
-        <BModal
-            v-model="showPreview"
-            ok-only
-            size="xl"
+        <GModal
+            :show.sync="showPreview"
+            size="large"
+            title="Workflow Preview"
             hide-header
-            dialog-class="workflow-card-preview-modal w-auto"
+            fixed-height
+            class="workflow-card-preview-modal"
             centered>
-            <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" quick-view />
-        </BModal>
+            <template v-slot:header>
+                <WorkflowPublishedButtons
+                    v-if="workflowPublished?.workflowInfo"
+                    :id="modalOptions.preview.id"
+                    :workflow-info="workflowPublished?.workflowInfo" />
+            </template>
+
+            <WorkflowPublished
+                v-if="showPreview"
+                :id="modalOptions.preview.id"
+                ref="workflowPublished"
+                :show-heading="false"
+                :show-buttons="false"
+                quick-view />
+        </GModal>
     </div>
 </template>
 
