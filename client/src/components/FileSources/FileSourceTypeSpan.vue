@@ -15,6 +15,7 @@ const MESSAGES = {
     elabftw: "This is a remote file source that connects with an eLabFTW instance.",
     inveniordm: "This is a remote file source that connects with an InvenioRDM instance.",
     zenodo: "This is a remote file source that connects with https://zenodo.org/.",
+    rspace: "This is a remote file source that connects with an RSpace instance.",
 };
 
 interface Props {
