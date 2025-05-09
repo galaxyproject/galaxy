@@ -49,29 +49,34 @@ To learn more, visit:
 
 The `gxy` Python module is available inside JupyterLite and provides helper functions to interact with your Galaxy history programmatically. It uses the Galaxy API in the background and supports operations like file upload, download, and metadata lookup—all within the browser.
 
-#### Common functions
+#### Examples
 
-- `await gxy.api(endpoint, method="GET", data=None)`
-  Perform arbitrary Galaxy API requests.
+```python
+import gxy
 
-- `await gxy.get(3)`
-  Download a dataset by HID into the virtual filesystem.
+# Perform arbitrary Galaxy API requests
+await gxy.api("/api/histories", method="GET")
 
-- `await gxy.put("output.txt")`
-  Upload a local file to the current Galaxy history.
+# Download a dataset by HID into the virtual filesystem
+await gxy.get(3)
 
-- `await gxy.get_history()`
-  List all datasets in the current history.
+# Upload a local file to the current Galaxy history (renamed to "newname.txt")
+await gxy.put("output.txt", "newname.txt")
 
-- `await gxy.get_history_id()`
-  Retrieve the current history ID (auto-detected from the dataset context).
+# List all datasets in the current history
+await gxy.get_history()
 
-- `gxy.get_environment()`
-  Access the injected environment info (e.g., dataset ID and root URL).
+# Retrieve the current history ID (auto-detected from the dataset context)
+await gxy.get_history_id()
+
+# Access the injected environment info (e.g., dataset ID and root URL)
+gxy.get_environment()
+```
 
 This makes it easy to load, process, and save data inside Jupyter notebooks while fully integrated with Galaxy’s dataset system.
 
 A complete reference of available functions is available at:
+
 [https://www.npmjs.com/package/@galaxyproject/jupyterlite](https://www.npmjs.com/package/@galaxyproject/jupyterlite)
     ]]></help>
 </visualization>
