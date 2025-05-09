@@ -3912,7 +3912,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
             else:
                 if replacement_dataset:
                     message = f"Input collection has type {collection_type}, but replacing invalid elements with another dataset is only supported for simple list collections"
-                    raise Exception(message)
+                    raise exceptions.RequestParameterInvalidException(message)
                 valid = True
                 for child_element in element.child_collection.elements:
                     if not self.element_is_valid(child_element):
