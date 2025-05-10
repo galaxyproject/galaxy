@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -12,11 +12,12 @@ import { useDatasetStore } from "@/stores/datasetStore";
 
 import Heading from "../Common/Heading.vue";
 import DatasetError from "../DatasetInformation/DatasetError.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 
-library.add(faChevronUp, faChevronDown, faSpinner);
+library.add(faChevronUp, faChevronDown);
 
 const datasetStore = useDatasetStore();
 const router = useRouter();
@@ -195,8 +196,7 @@ watch(
                     <div class="preview-container position-relative h-100">
                         <!-- Loading indicator for iframe -->
                         <div v-if="iframeLoading" class="iframe-loading">
-                            <FontAwesomeIcon icon="spinner" spin size="2x" />
-                            <div class="mt-2">Loading preview...</div>
+                            <LoadingSpan message="Loading preview" />
                         </div>
 
                         <!-- Iframe for dataset preview -->
@@ -224,7 +224,9 @@ watch(
         </div>
     </div>
     <!-- Loading state indicator -->
-    <div v-else class="loading-message">Loading dataset details...</div>
+    <div v-else class="loading-message">
+        <LoadingSpan message="Loading dataset details" />
+    </div>
 </template>
 
 <style scoped>
