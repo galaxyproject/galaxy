@@ -520,7 +520,7 @@ class WorkflowProgress:
                         raise modules.FailWorkflowEvaluation(
                             why=InvocationFailureDatasetFailed(
                                 reason=FailureReason.dataset_failed,
-                                hda_id=replacement.id,
+                                hda_id=dataset_instance.id,
                                 workflow_step_id=connection.input_step_id,
                                 dependent_workflow_step_id=output_step_id,
                             )
