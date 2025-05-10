@@ -38,13 +38,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is VTK?
+# What is VTK?
 
 VTK (The Visualization Toolkit) is a powerful library for 3D computer graphics, image processing, and scientific visualization. In this interface, it enables interactive visual exploration of structured scientific data such as volumes and meshes.
 
 After selecting a dataset, a 3D viewport will display the data, allowing you to explore it with zoom, rotation, and slicing tools.
 
-#### Key Features
+## Key Features
 
 - **Volume and Surface Rendering**: Visualize image volumes, meshes, and geometry with multiple rendering modes.
 - **Interactive Controls**: Rotate, zoom, and pan the view to explore data from any angle.

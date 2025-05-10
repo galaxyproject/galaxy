@@ -38,7 +38,7 @@
         </test>
     </tests>
 <help format="markdown"><![CDATA[
-### What is Media Player?
+# What is Media Player?
 
 This visualization provides a simple and elegant way to play audio and video files directly in your browser.  
 Supported formats include MP3, MP4, OGG, and WAV.
@@ -47,7 +47,7 @@ After selecting a dataset, the Media Player will appear, allowing you to easily 
 
 This player is powered by [Plyr](https://github.com/sampotts/plyr), a lightweight and customizable media player library.
 
-#### Key Features
+## Key Features
 
 - **Playback Controls**: Play, pause, seek, adjust volume, and change playback speed.
 - **Audio and Video Support**: Supports both music and video content.

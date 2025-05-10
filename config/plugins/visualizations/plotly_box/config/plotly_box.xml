@@ -65,13 +65,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Box Plot Viewer?
+# What is the Box Plot Viewer?
 
 This visualization allows you to create interactive box plots from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
 
 After selecting a dataset, you can define labels for your axes, pick a series color, and easily plot statistical distributions with medians, quartiles, and outliers.
 
-#### Key Features
+## Key Features
 
 - **Box Plot Rendering**: Visualize the distribution of your data with medians, interquartile ranges, and whiskers.
 - **Custom Labels**: Add custom labels for both x-axis and y-axis.

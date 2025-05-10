@@ -62,13 +62,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the OpenLayers Map Viewer?
+# What is the OpenLayers Map Viewer?
 
 The OpenLayers Map Viewer provides a simple and fast way to visualize geospatial data in your browser using [OpenLayers](https://openlayers.org/).
 
 After selecting a dataset (GeoJSON or SHP), the map will be displayed. You can choose basic geometry types for simple drawings and adjust colors.
 
-#### Key Features
+## Key Features
 
 - **Map Display**: View spatial datasets quickly without needing additional tools.
 - **Geometry Options**: Select and draw basic shapes like lines, circles, and polygons.

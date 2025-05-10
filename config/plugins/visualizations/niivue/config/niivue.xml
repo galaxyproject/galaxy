@@ -89,13 +89,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Niivue Viewer?
+# What is the Niivue Viewer?
 
 Niivue Viewer enables you to explore 3D and 4D medical imaging datasets like NIfTI files interactively in your browser.
 
 After selecting a dataset, you can adjust visualization settings like colormaps, gamma, opacity, and interpolation to fine-tune how the volume appears.
 
-#### Key Features
+## Key Features
 
 - **Volume Rendering**: Display and explore 3D/4D neuroimaging data.
 - **Colormap Options**: Choose from a wide range of scientific color scales.

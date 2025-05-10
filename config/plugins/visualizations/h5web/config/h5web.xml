@@ -26,13 +26,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is H5Web?
+# What is H5Web?
 
 H5Web provides a powerful way to explore and visualize datasets stored in HDF5 files directly in your browser.
 
 After selecting an HDF5 dataset, you can browse its internal structure, inspect datasets, and view data using different visualization modes like heatmaps or line plots.
 
-#### Key Features
+## Key Features
 
 - **File Explorer**: Navigate through the hierarchical structure of HDF5 files.
 - **Data Visualization**: View datasets using appropriate visual representations (heatmaps, curves, matrices).

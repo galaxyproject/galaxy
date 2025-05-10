@@ -26,17 +26,17 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Multiple Sequence Alignment?
+# What is Multiple Sequence Alignment?
 
 This tool provides an **interactive multiple sequence alignment (MSA) viewer** powered by `alignment.js`. It is designed to work with FASTA-formatted alignments and enables users to explore conserved regions, positional variation, and sequence layout in a browser-friendly interface.
 
-#### Key Features
+## Key Features
 
 - **Axis Labels & Site Indexing**: Visual indicators for sequence names and site positions.
 - **Color-Coding**: Residues are color-coded by type for easy interpretation.
 - **Linked Scrolling**: Labels, sites, and sequences stay synchronized when scrolling.
 
-#### Supported Input
+## Supported Input
 
 - **FASTA** format with aligned sequences (e.g., output from Clustal, MAFFT, or MUSCLE)
 

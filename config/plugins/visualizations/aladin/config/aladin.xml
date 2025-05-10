@@ -21,13 +21,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the FITS Image Viewer?
+# What is the FITS Image Viewer?
 
 The FITS Image Viewer allows you to view astronomical FITS images (Flexible Image Transport System format) directly in your browser, using the lightweight Aladin Lite sky viewer.
 
 After selecting a dataset, the FITS image will be loaded into an interactive viewer, where you can zoom, pan, and explore the details of the image.
 
-#### Key Features
+## Key Features
 
 - **Interactive Viewing**: Zoom, pan, and navigate the FITS image with smooth controls.
 - **Responsive Interface**: Optimized for fast rendering in your browser.

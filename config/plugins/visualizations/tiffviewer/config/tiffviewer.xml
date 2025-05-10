@@ -22,13 +22,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the TIFF Viewer?
+# What is the TIFF Viewer?
 
 The TIFF Viewer provides a simple way to display TIFF images directly in your browser.
 
 After selecting a dataset, the TIFF image will be shown. No special configuration or adjustments are needed — it's a lightweight, easy-to-use viewer.
 
-#### Key Features
+## Key Features
 
 - **Display**: View TIFF images quickly without external software.
 - **Basic Interaction**: Pan and zoom to explore details.

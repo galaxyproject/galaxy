@@ -65,13 +65,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Histogram Viewer?
+# What is the Histogram Viewer?
 
 This visualization lets you create interactive histograms from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
 
 After selecting a dataset, you can configure axis labels, choose a series color, and plot the frequency distribution of your data values.
 
-#### Key Features
+## Key Features
 
 - **Histogram Plotting**: Easily visualize the distribution of numerical data.
 - **Custom Labels**: Add descriptive labels to your x-axis and y-axis.

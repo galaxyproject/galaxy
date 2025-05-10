@@ -21,7 +21,7 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is JupyterLite?
+# What is JupyterLite?
 
 **JupyterLite** is a lightweight version of JupyterLab that runs entirely in your web browser—no server required. It allows you to create, edit, and run notebooks using WebAssembly-based Python kernels (like Pyodide) or JavaScript kernels, all without installing anything on your local machine.
 
@@ -31,7 +31,7 @@ This integration brings JupyterLite directly into Galaxy, enabling you to:
 - Perform interactive data analysis within the Galaxy interface.
 - Save notebooks back into your Galaxy history.
 
-#### Key Features
+## Key Features
 
 - **Fully Browser-Based**: No backend required—everything runs in the browser.
 - **Notebook Editing**: Create and edit `.ipynb` notebooks with code, text, and outputs.
@@ -45,11 +45,11 @@ To learn more, visit:
 
 ---
 
-### What is `gxy`?
+## What is `gxy`?
 
 The `gxy` Python module is available inside JupyterLite and provides helper functions to interact with your Galaxy history programmatically. It uses the Galaxy API in the background and supports operations like file upload, download, and metadata lookup—all within the browser.
 
-#### Examples
+### Examples
 
 ```python
 # Preloaded in the kernel — no installation required

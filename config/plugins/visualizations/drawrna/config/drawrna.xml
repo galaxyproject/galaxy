@@ -24,13 +24,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is DrawRNA?
+# What is DrawRNA?
 
 This visualization renders RNA secondary structures from **dot-bracket notation** using an interactive 2D viewer. Dot-bracket notation is a compact text-based format where each base is represented by a character (usually `.`, `(`, and `)`), indicating base pairs and unpaired regions.
 
 When you select a compatible dataset (with `dbn` format), the RNA molecule's loops, stems, and unpaired regions will be drawn as a 2D diagram, making it easier to study the structure.
 
-#### Key Features
+## Key Features
 
 - **Interactive Layout**: Pan and zoom to explore large or complex RNA structures.
 - **Clear Base Pairing Display**: Highlights helices, loops, bulges, and junctions.
@@ -44,7 +44,7 @@ ACGUCAAUCGGCUAGUGCGUCAUGGAGUCAUGCAGUCUAACGACUGACUACGAUGUAC
 (((((..(((((.....)))))..((((((.....))))))..(((..)))..)))))
 ```
 
-#### About DrawRNA.js
+## About DrawRNA.js
 
 This visualization uses [DrawRNA.js](https://github.com/benediktrauscher/drawrnajs), an open-source JavaScript library for drawing RNA secondary structures based on NAVIEW layout principles.
 

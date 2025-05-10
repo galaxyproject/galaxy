@@ -27,13 +27,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is the Surface Plot Viewer?
+# What is the Surface Plot Viewer?
 
 This visualization allows you to create interactive 3D surface plots from your tabular or CSV data using the [Plotly](https://plotly.com/) library.
 
 After selecting a dataset, a three-dimensional surface will be rendered based on your data, providing a detailed view of gradients, peaks, and valleys.
 
-#### Key Features
+## Key Features
 
 - **3D Surface Rendering**: Visualize two-variable functions or surfaces with height and color.
 - **Interactive Controls**: Rotate, zoom, and pan the 3D plot freely.

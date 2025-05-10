@@ -30,13 +30,13 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is Tabulator?
+# What is Tabulator?
 
 Tabulator is an interactive table viewer for exploring tabular data such as CSV or tab-delimited files. It provides an easy way to look through rows and columns of your dataset directly in your browser.
 
 After selecting a dataset, the table will be displayed. You can click on column headers to sort the data, or use the search box to quickly find specific rows.
 
-#### Key Features
+## Key Features
 
 - **Sorting**: Click on any column header to sort the data ascending or descending.
 - **Filtering**: Use the search box to filter and find specific values in the table.

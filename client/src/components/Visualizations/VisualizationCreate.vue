@@ -5,6 +5,7 @@ import { useRouter } from "vue-router/composables";
 
 import { type Dataset, fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
+import { useMarkdown } from "@/composables/markdown";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { getTestExtensions, getTestUrls } from "./utilities";
@@ -13,8 +14,9 @@ import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDataExtensions from "@/components/Form/Elements/FormData/FormDataExtensions.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-import MarkdownDefault from "@/components/Markdown/Sections/MarkdownDefault.vue";
 import SelectionField from "@/components/SelectionField/SelectionField.vue";
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, increaseHeadingLevelBy: 2 });
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -88,7 +90,7 @@ defineExpose({ doQuery });
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>
-            <MarkdownDefault :content="plugin.help" />
+            <div v-html="renderMarkdown(plugin.help)" />
         </div>
         <div class="my-2 pb-2">
             <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">

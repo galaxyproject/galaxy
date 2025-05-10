@@ -31,7 +31,7 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-### What is OpenSeadragon Viewer?
+# What is OpenSeadragon Viewer?
 
 This visualization provides a powerful way to view high-resolution, zoomable images directly in your browser.  
 Supported formats include PNG, JPG, GIF and others.
@@ -40,7 +40,7 @@ After selecting a dataset, the OpenSeadragon viewer will appear, allowing you to
 
 This viewer is powered by [OpenSeadragon](https://openseadragon.github.io/), an open-source, web-based viewer for high-resolution zoomable images.
 
-#### Key Features
+## Key Features
 
 - **Smooth Zooming**: Navigate gigapixel images with fluid zoom and pan controls
 - **Multi-Resolution Support**: Efficiently loads only the needed image tiles
