@@ -323,6 +323,7 @@ watch(
 .dataset-tabs-container :deep(.tab-content) {
     flex-grow: 1;
     min-height: 0;
+    overflow: auto;
 }
 
 .dataset-tabs-container :deep(.tab-pane) {
@@ -330,6 +331,7 @@ watch(
     width: 100%;
     display: flex;
     flex-direction: column;
+    overflow: auto;
 }
 
 .dataset-tabs-container :deep(.iframe-card) {
