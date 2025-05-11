@@ -25,6 +25,8 @@
 
 **JupyterLite** is a lightweight version of JupyterLab that runs entirely in your web browser—no server required. It allows you to create, edit, and run notebooks using WebAssembly-based Python kernels (like Pyodide) or JavaScript kernels, all without installing anything on your local machine.
 
+For best performance, we recommend: 🦊 **Firefox**.
+
 This integration brings JupyterLite directly into Galaxy, enabling you to:
 
 - Open and run notebooks attached to Galaxy datasets.
