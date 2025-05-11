@@ -12,7 +12,7 @@
         <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.5" package="@galaxyproject/jupyterlite"/>
+        <requirement type="npm" version="0.0.10" package="@galaxyproject/jupyterlite"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" />
     <tests>
@@ -24,6 +24,8 @@
 # What is JupyterLite?
 
 **JupyterLite** is a lightweight version of JupyterLab that runs entirely in your web browser—no server required. It allows you to create, edit, and run notebooks using WebAssembly-based Python kernels (like Pyodide) or JavaScript kernels, all without installing anything on your local machine.
+
+For best performance, we recommend: 🦊 **Firefox**.
 
 This integration brings JupyterLite directly into Galaxy, enabling you to:
 
