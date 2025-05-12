@@ -911,22 +911,9 @@ class DefaultToolAction(ToolAction):
                 if getattr(dataset_collection, "hid", None):
                     collection_names.append(f"{dataset_collection.hid}")
 
-        for input_name, data in reversed(inp_data):
-            collection_hda_ids = set()
-            # output collection id and store included hda ids (to avoid extra inclusion in the list of datasets)
-            # two for loops because:
-            # - inp_dataset_collections stores the collections per input parameter in a dict
-            # - the values contain a list of pairs of DatasetCollectionsAssociations and a bool
+        for input_name in reversed(inp_data):
+            data = inp_data[input_name]
             if input_name in inp_dataset_collections:
-                for dataset_collection, _ in inp_dataset_collections[input_name]:
-                    if (
-                        getattr(dataset_collection, "collection", None) is None
-                        or getattr(dataset_collection.collection, "elements", None) is None
-                    ):
-                        continue
-                    for element in dataset_collection.collection.elements:
-                        collection_hda_ids.add(element.hda_id)
-            if getattr(data, "id", None) is None or data.id in collection_hda_ids:
                 continue
             if getattr(data, "hid", None):
                 input_names.append(f"{data.hid}")
