@@ -108,7 +108,7 @@ class CredentialsService:
         service_name: str,
         service_version: str,
     ) -> Optional[CredentialsRequirement]:
-        tool: Tool = self.app.toolbox.get_tool(tool_id, tool_version)
+        tool = self.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
             raise ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
         if not tool.allow_user_access(user):

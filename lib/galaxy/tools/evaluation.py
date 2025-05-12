@@ -18,7 +18,10 @@ from typing import (
 
 from packaging.version import Version
 from sqlalchemy import select
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    scoped_session,
+)
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
@@ -142,7 +145,7 @@ class UserCredentialsConfigurator:
     def __init__(
         self,
         vault: Vault,
-        session: galaxy_scoped_session,
+        session: scoped_session,
         user: model.User,
         environment_variables: list[dict[str, str]],
     ):
@@ -278,18 +281,15 @@ class ToolEvaluator:
             return hasattr(self.tool, "credentials") and bool(self.tool.credentials)
 
         if isinstance(self.app, StructuredApp):
-            structured_app = cast(StructuredApp, self.app)
-
             if (
                 tool_uses_credentials()
                 and self.tool.id is not None
                 and self.job.user is not None
-                and bool(structured_app.vault)
-                and bool(structured_app.model.session)
+                and bool(self.app.vault)
+                and bool(self.app.model.session)
             ):
-                sa_session = cast(galaxy_scoped_session, structured_app.model.session)
                 user_credentials_configurator = UserCredentialsConfigurator(
-                    structured_app.vault, sa_session, self.job.user, self.environment_variables
+                    self.app.vault, self.app.model.session, self.job.user, self.environment_variables
                 )
                 user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
         else:
