@@ -223,7 +223,7 @@ class ResourceRequirementExpression(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements, *_ = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = tool_source.parse_requirements()
         for rr in resource_requirements:
             if rr.runtime_required:
                 lint_ctx.warn(
