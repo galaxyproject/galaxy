@@ -51,33 +51,32 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(input_names: Optional[Collection[str]], prefix) -> str:
-    if input_names is None:
+def on_text_for_names(hids: Optional[Collection[str]], prefix) -> str:
+    if hids is None:
         return ""
-    # input_names may contain duplicates... this is because the first value in
+    # hids may contain duplicates... this is because the first value in
     # multiple input dataset parameters will appear twice once as param_name
     # and once as param_name1.
-    unique_names = []
-    for name in input_names:
-        if name not in unique_names:
-            unique_names.append(name)
-    input_names = unique_names
+    unique_hids = []
+    for hid in hids:
+        if hid not in unique_hids:
+            unique_hids.append(hid)
 
     # Build name for output datasets based on tool name and input names
-    if len(input_names) == 0:
+    if len(unique_hids) == 0:
         on_text = ""
-    elif len(input_names) == 1:
-        on_text = prefix + " " + input_names[0]
-    elif len(input_names) == 2:
-        on_text = prefix + "s {} and {}".format(*input_names)
-    elif len(input_names) == 3:
-        on_text = prefix + "s {}, {}, and {}".format(*input_names)
+    elif len(unique_hids) == 1:
+        on_text = prefix + " " + unique_hids[0]
+    elif len(unique_hids) == 2:
+        on_text = prefix + "s {} and {}".format(*unique_hids)
+    elif len(unique_hids) == 3:
+        on_text = prefix + "s {}, {}, and {}".format(*unique_hids)
     else:
-        on_text = prefix + "s {}, {}, and others".format(*input_names[:2])
+        on_text = prefix + "s {}, {}, and others".format(*unique_hids[:2])
     return on_text
 
 
 def on_text_for_dataset_and_collections(
-    dataset_names: Optional[Collection[str]] = None, collection_names: Optional[Collection[str]] = None
+    dataset_hids: Optional[Collection[str]] = None, collection_hids: Optional[Collection[str]] = None
 ) -> str:
-    return on_text_for_names(collection_names, "collection") + on_text_for_names(dataset_names, "dataset")
+    return on_text_for_names(collection_hids, "collection") + on_text_for_names(dataset_hids, "dataset")

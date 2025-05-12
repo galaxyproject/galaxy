@@ -32,6 +32,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     Job,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
@@ -904,20 +905,20 @@ class DefaultToolAction(ToolAction):
         return wrapped_params
 
     def _get_on_text(self, inp_data, inp_dataset_collections):
-        input_names = []
-        collection_names = []
+        input_hids = []
+        collection_hids = []
         for collections in inp_dataset_collections.values():
             for dataset_collection, _ in collections:
                 if isinstance(dataset_collection, HistoryDatasetCollectionAssociation):
-                    collection_names.append(str(dataset_collection.hid))
+                    collection_hids.append(str(dataset_collection.hid))
 
         for input_name in reversed(inp_data):
             data = inp_data[input_name]
             if input_name in inp_dataset_collections:
                 continue
             if getattr(data, "hid", None):
-                input_names.append(f"{data.hid}")
-        return on_text_for_dataset_and_collections(dataset_names=input_names, collection_names=collection_names)
+                input_hids.append(f"{data.hid}")
+        return on_text_for_dataset_and_collections(dataset_hids=input_hids, collection_hids=collection_hids)
 
     def _new_job_for_session(
         self, trans, tool: "Tool", history: Optional[History]
