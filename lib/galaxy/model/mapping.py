@@ -103,7 +103,7 @@ def _build_model_mapping(engine, map_install_models, thread_local_log) -> Galaxy
 
 
 def init_models_from_config(
-    config: Type["GalaxyAppConfiguration"],
+    config: "GalaxyAppConfiguration",
     map_install_models: bool = False,
     object_store: Optional["BaseObjectStore"] = None,
     trace_logger=None,
