@@ -258,6 +258,7 @@ defineExpose({
                                 v-else
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :indicator="activity.indicator"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
@@ -304,6 +305,7 @@ defineExpose({
                         :key="activity.id"
                         :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
+                        :indicator="activity.indicator"
                         :is-active="panelActivityIsActive(activity)"
                         :title="activity.title"
                         :tooltip="activity.tooltip"
@@ -316,6 +318,7 @@ defineExpose({
                         :key="activity.id"
                         :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
+                        :indicator="activity.indicator"
                         :is-active="isActiveRoute(activity.to)"
                         :title="activity.title"
                         :tooltip="activity.tooltip"
