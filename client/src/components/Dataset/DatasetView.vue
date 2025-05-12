@@ -182,7 +182,7 @@ watch(
                 card
                 lazy
                 class="h-100 d-flex flex-column"
-                :active-tab-index="TAB_VALUES.indexOf(activeTab)"
+                :value="TAB_VALUES.indexOf(activeTab)"
                 @input="(tabIndex) => onTabChange(TAB_VALUES[tabIndex])">
                 <BTab title="Preview" class="iframe-card">
                     <div class="preview-container position-relative h-100">
