@@ -1,7 +1,5 @@
-util
 tool_util_models
-
-tool_shed_schema
+util
 
 config
 files
@@ -9,6 +7,7 @@ job_metrics
 navigation
 objectstore
 schema
+tool_shed_schema
 tool_util
 
 data
