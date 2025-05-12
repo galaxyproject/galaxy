@@ -908,7 +908,7 @@ class DefaultToolAction(ToolAction):
         collection_names = []
         for collections in inp_dataset_collections.values():
             for dataset_collection, _ in collections:
-                if getattr(dataset_collection, "hid", None):
+                if isinstance(dataset_collection, HistoryDatasetCollectionAssociation):
                     collection_names.append(str(dataset_collection.hid))
 
         for input_name in reversed(inp_data):
