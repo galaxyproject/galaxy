@@ -17,6 +17,8 @@ class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "directory"
 
 
 instance = integration_util.integration_module_instance(EmbeddedPulsarIntegrationInstance)
@@ -24,6 +26,7 @@ instance = integration_util.integration_module_instance(EmbeddedPulsarIntegratio
 test_tools = integration_util.integration_tool_runner(
     [
         "cat_default",
+        "cat_user_defined",
         "collection_nested_default",
         "collection_creates_dynamic_nested_from_json",
         "composite",

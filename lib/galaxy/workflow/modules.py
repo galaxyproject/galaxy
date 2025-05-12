@@ -32,6 +32,7 @@ from galaxy.exceptions import (
     ToolMissingException,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.model import (
     Job,
     PostJobAction,
@@ -60,10 +61,12 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
+    Tool,
 )
 from galaxy.tools.execute import (
     execute,
@@ -147,7 +150,9 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
-def to_cwl(value, hda_references, step):
+def to_cwl(
+    value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
+):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
@@ -157,15 +162,16 @@ def to_cwl(value, hda_references, step):
     if isinstance(value, model.HistoryDatasetAssociation):
         # I think the following two checks are needed but they may
         # not be needed.
-        if not value.dataset.in_ready_state():
-            why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-            raise DelayedWorkflowEvaluation(why=why)
-        if not value.is_ok:
-            raise FailWorkflowEvaluation(
-                why=InvocationFailureDatasetFailed(
-                    reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+        if step:
+            if not value.dataset.in_ready_state():
+                why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
+                raise DelayedWorkflowEvaluation(why=why)
+            if not value.is_ok:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
                 )
-            )
         if value.ext == "expression.json":
             with open(value.get_file_name()) as f:
                 # OUR safe_loads won't work, will not load numbers, etc...
@@ -176,6 +182,7 @@ def to_cwl(value, hda_references, step):
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
+                "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
@@ -183,22 +190,33 @@ def to_cwl(value, hda_references, step):
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
-            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in value.dataset_elements]
+            return [
+                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                for dce in value.dataset_elements
+            ]
         else:
             # Could be record or nested lists
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object, hda_references=hda_references, step=step
+                    element.element_object,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
                 )
             return rval
     elif isinstance(value, list):
-        return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
+        return [
+            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+        ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
-        return {k: to_cwl(v, hda_references=hda_references, step=step) for k, v in value.items()}
+        return {
+            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            for k, v in value.items()
+        }
     else:
         return value
 
@@ -1853,8 +1871,10 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool = None
+        self.tool: Optional[Tool] = None
         if getattr(trans.app, "toolbox", None):
+            if trans.user and tool_uuid:
+                self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
             if not self.tool:
                 self.tool = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
@@ -1889,9 +1909,7 @@ class ToolModule(WorkflowModule):
         if tool_id is None and tool_uuid is None:
             tool_representation = d.get("tool_representation")
             if tool_representation:
-                create_request = {
-                    "representation": tool_representation,
-                }
+                create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
                 if not trans.user_is_admin:
                     raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
                 dynamic_tool = trans.app.dynamic_tool_manager.create_tool(trans, create_request, allow_load=False)
@@ -2106,7 +2124,9 @@ class ToolModule(WorkflowModule):
                         params["on_string"] = "input dataset(s)"
                         params["tool"] = self.tool
                         extra_kwds["label"] = fill_template(
-                            tool_output.label, context=params, python_template_version=self.tool.python_template_version
+                            tool_output.label,
+                            context=params,
+                            python_template_version=self.tool.python_template_version,
                         )
                     except Exception:
                         pass

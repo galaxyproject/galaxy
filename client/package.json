@@ -36,6 +36,7 @@
     "@fortawesome/free-regular-svg-icons": "^5.15.4",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.9",
+    "@guolao/vue-monaco-editor": "^1.5.4",
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",
     "@johmun/vue-tags-input": "^2.1.0",
@@ -86,6 +87,9 @@
     "lucide-vue": "^0.344.0",
     "markdown-it": "^13.0.2",
     "markdown-it-regexp": "^0.4.0",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-webpack-plugin": "^7.1.0",
+    "monaco-yaml": "^5.2.3",
     "object-hash": "^3.0.0",
     "openapi-fetch": "^0.10.6",
     "pinia": "^2.1.7",
@@ -99,6 +103,7 @@
     "rxjs": "^7.8.1",
     "rxjs-spy": "^8.0.2",
     "rxjs-spy-devtools-plugin": "^0.0.4",
+    "schema-to-ts": "^0.0.2",
     "simplify-js": "^1.2.4",
     "slugify": "^1.6.6",
     "stream-browserify": "^3.0.0",
@@ -123,7 +128,8 @@
     "vue2-teleport": "^1.0.1",
     "vuedraggable": "^2.24.3",
     "winbox": "^0.2.82",
-    "xml-beautifier": "^0.5.0"
+    "xml-beautifier": "^0.5.0",
+    "yaml": "^2.6.1"
   },
   "scripts": {
     "develop": "NODE_ENV=development gulp && webpack-dev-server",

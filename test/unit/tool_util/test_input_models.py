@@ -1,7 +1,7 @@
-from galaxy.tool_util.models import parse_tool
-from galaxy.tool_util.parameters.models import DataCollectionParameterModel
+from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.parameters import DataCollectionParameterModel
 
 
 def test_input_collection_type():

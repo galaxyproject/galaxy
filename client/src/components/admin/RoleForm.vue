@@ -11,6 +11,9 @@
                     <FormElementLabel title="Description" :required="true" :condition="!!description">
                         <FormInput id="role-description" v-model="description" />
                     </FormElementLabel>
+                    <FormElementLabel title="Role Type" :required="true">
+                        <FormSelection id="role-type" v-model="roleType" :data="roleTypes" />
+                    </FormElementLabel>
                     <FormElementLabel title="Groups">
                         <FormSelection
                             id="role-groups"
@@ -54,12 +57,18 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const errorMessage = ref("");
 const description = ref("");
+const roleType = ref();
 const groupIds = ref();
 const groupData = ref();
 const loading = ref(false);
 const name = ref("");
 const userIds = ref();
 const userData = ref();
+const roleTypes = [
+    { value: "admin", label: "Default" },
+    { value: "user_tool_execute", label: "Custom Tool Execution" },
+    { value: "user_tool_create", label: "Custom Tool Creation" },
+];
 
 const router = useRouter();
 
@@ -91,6 +100,7 @@ async function onSubmit() {
                 description: description.value,
                 group_ids: groupIds.value,
                 user_ids: userIds.value,
+                role_type: roleType.value,
             },
         });
         if (error) {

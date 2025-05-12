@@ -26,6 +26,7 @@ This documentation is in the midst of being ported and unified based on resource
    dependency_resolvers
    container_resolvers
    conda_faq
+   user_defined_tools
    db_migration
    reports
    useful_scripts

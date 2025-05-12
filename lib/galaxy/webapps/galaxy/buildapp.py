@@ -227,6 +227,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
+    webapp.add_client_route("/tools/editor")
+    webapp.add_client_route("/tools/editor/{uuid}")
     webapp.add_client_route("/tool_landings/{uuid}")
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
@@ -435,7 +437,6 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.connect("/api/tools/{id:.+?}", action="show", controller="tools")
     webapp.mapper.resource("tool", "tools", path_prefix="/api")
-    webapp.mapper.resource("dynamic_tools", "dynamic_tools", path_prefix="/api")
 
     webapp.mapper.connect(
         "/api/sanitize_allow", action="index", controller="sanitize_allow", conditions=dict(method=["GET"])

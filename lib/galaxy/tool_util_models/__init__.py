@@ -18,6 +18,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 from typing_extensions import (
@@ -27,19 +28,97 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
 from .assertions import assertions
-from .parameters import (
-    ToolParameterT,
-)
+from .parameters import ToolParameterT
 from .tool_outputs import (
+    IncomingToolOutput,
     ToolOutput,
 )
 from .tool_source import (
     Citation,
+    ContainerRequirement,
     HelpContent,
+    JavascriptRequirement,
     OutputCompareType,
+    ResourceRequirement,
     XrefDict,
 )
+
+
+def normalize_dict(values, keys: List[str]):
+    for key in keys:
+        items = values.get(key)
+        if isinstance(items, dict):  # dict-of-dicts format
+            # Transform dict-of-dicts to list-of-dicts
+            values[key] = [{"name": k, **v} for k, v in items.items()]
+
+
+class ToolSourceBase(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    version: Optional[str] = "1.0"
+    profile: Optional[float] = None
+    description: Optional[str] = None
+    container: Optional[str] = None
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
+    inputs: List[GalaxyToolParameterModel] = []
+    outputs: List[IncomingToolOutput] = []
+    citations: Optional[List[Citation]] = None
+    license: Optional[str] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Optional[HelpContent] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
+
+
+# repeated fields to get consistent order, ugh, FIXME obviously
+class UserToolSource(BaseModel):
+    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
+    id: Optional[str]
+    version: Optional[str]
+    name: str
+    description: Optional[str] = None
+    container: str
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
+    shell_command: Annotated[
+        str,
+        Field(
+            title="shell_command",
+            description="A string that contains the command to be executed. Parameters can be referenced inside $().",
+            examples=["head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'"],
+        ),
+    ]
+    inputs: List[GalaxyToolParameterModel] = []
+    outputs: List[IncomingToolOutput] = []
+    citations: Optional[List[Citation]] = None
+    license: Optional[str] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Optional[HelpContent] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
+
+
+class AdminToolSource(ToolSourceBase):
+    class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
+    command: str
+
+
+DynamicToolSources = Annotated[Union[UserToolSource, AdminToolSource], Field(discriminator="class_")]
 
 
 class ParsedTool(BaseModel):

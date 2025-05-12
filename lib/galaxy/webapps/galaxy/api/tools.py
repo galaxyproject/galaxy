@@ -38,6 +38,7 @@ from galaxy.schema.fetch_data import (
     FetchDataPayload,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
@@ -632,8 +633,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InsufficientPermissionsException(
                 "Only administrators may display tool sources on this Galaxy server."
             )
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"))
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=id)
         trans.response.headers["language"] = tool.tool_source.language
+        if dynamic_tool := getattr(tool, "dynamic_tool", None):
+            if dynamic_tool.value.get("class") == "GalaxyUserTool":
+                return UserToolSource(**dynamic_tool.value).model_dump_json(
+                    by_alias=True,
+                    exclude_defaults=True,
+                    exclude_unset=True,
+                )
         return tool.tool_source.to_string()
 
     @web.require_admin

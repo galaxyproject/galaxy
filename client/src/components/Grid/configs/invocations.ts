@@ -51,7 +51,7 @@ export async function getData(
     fetchHistoriesAndWorkflows(data);
     const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches];
+    return [data, totalMatches] as const;
 }
 
 /**

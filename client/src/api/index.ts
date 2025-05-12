@@ -330,3 +330,6 @@ export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSumma
 
 export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
 export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
+export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
+export type UserToolSource = components["schemas"]["UserToolSource-Input"];
+export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];

@@ -26,6 +26,7 @@ from typing import (
     Union,
 )
 from urllib.parse import unquote_plus
+from uuid import UUID
 
 import webob.exc
 from mako.template import Template
@@ -96,6 +97,7 @@ from galaxy.tool_util.parser.xml import (
     XmlPageSource,
     XmlToolSource,
 )
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
@@ -112,7 +114,10 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
-from galaxy.tool_util_models.tool_source import HelpContent
+from galaxy.tool_util_models.tool_source import (
+    HelpContent,
+    JavascriptRequirement,
+)
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -472,6 +477,8 @@ class ToolBox(AbstractToolBox):
     dependency management, etc.
     """
 
+    app: "UniverseApplication"
+
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
@@ -613,6 +620,30 @@ class ToolBox(AbstractToolBox):
 
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
+
+    def get_unprivileged_tool(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        dynamic_tool = self.app.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, tool_uuid)
+        return self.dynamic_tool_to_tool(dynamic_tool)
+
+    def get_unprivileged_tool_or_none(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        try:
+            return self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
+        except exceptions.InsufficientPermissionsException:
+            return None
+
+    def dynamic_tool_to_tool(self, dynamic_tool: Optional[model.DynamicTool]) -> Optional["Tool"]:
+        if dynamic_tool and dynamic_tool.active and dynamic_tool.value:
+            tool_source = YamlToolSource(dynamic_tool.value)
+            tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
+            tool.dynamic_tool = dynamic_tool
+            return tool
+        return None
+
+    def tool_for_job(self, job: model.Job, exact=True) -> Optional["Tool"]:
+        if job.dynamic_tool:
+            return self.dynamic_tool_to_tool(job.dynamic_tool)
+        else:
+            return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
 
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format
@@ -1044,6 +1075,11 @@ class Tool(UsesDictVisibleKeys):
         self.tool_source = tool_source
         self.outputs: Dict[str, ToolOutputBase] = {}
         self.output_collections: Dict[str, ToolOutputCollection] = {}
+        self.command: Optional[str] = None
+        self.base_command: Optional[List[str]] = None
+        self.arguments: Optional[List[str]] = []
+        self.shell_command: Optional[str] = None
+        self.javascript_requirements: Optional[List[JavascriptRequirement]] = None
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None
@@ -1286,6 +1322,9 @@ class Tool(UsesDictVisibleKeys):
             self.input_translator = None
 
         self.parse_command(tool_source)
+        self.parse_shell_command(tool_source)
+        self.parse_base_command(tool_source)
+        self.parse_arguments(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
         self.tmp_directory_vars = tool_source.parse_tmp_directory_vars()
 
@@ -1414,10 +1453,13 @@ class Tool(UsesDictVisibleKeys):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, javasscript_requirements = (
+            tool_source.parse_requirements_and_containers()
+        )
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements
+        self.javascript_requirements = javasscript_requirements
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
@@ -1616,6 +1658,15 @@ class Tool(UsesDictVisibleKeys):
         else:
             self.command = ""
             self.interpreter = None
+
+    def parse_shell_command(self, tool_source: ToolSource):
+        self.shell_command = tool_source.parse_shell_command()
+
+    def parse_base_command(self, tool_source: ToolSource):
+        self.base_command = tool_source.parse_base_command()
+
+    def parse_arguments(self, tool_source: ToolSource):
+        self.arguments = tool_source.parse_arguments()
 
     def parse_environment_variables(self, tool_source):
         return tool_source.parse_environment_variables()
@@ -2656,11 +2707,12 @@ class Tool(UsesDictVisibleKeys):
             tool_tup = (os.path.abspath(self.config_file), os.path.split(self.config_file)[-1])
         tarball_files.append(tool_tup)
         # TODO: This feels hacky.
-        tool_command = self.command.strip().split()[0]
-        tool_path = os.path.dirname(os.path.abspath(self.config_file))
-        # Add the tool XML to the tuple that will be used to populate the tarball.
-        if os.path.exists(os.path.join(tool_path, tool_command)):
-            tarball_files.append((os.path.join(tool_path, tool_command), tool_command))
+        if self.command:
+            tool_command = self.command.strip().split()[0]
+            tool_path = os.path.dirname(os.path.abspath(self.config_file))
+            # Add the tool XML to the tuple that will be used to populate the tarball.
+            if os.path.exists(os.path.join(tool_path, tool_command)):
+                tarball_files.append((os.path.join(tool_path, tool_command), tool_command))
         # Find and add macros and code files.
         for external_file in self.get_externally_referenced_paths(os.path.abspath(self.config_file)):
             external_file_abspath = os.path.abspath(os.path.join(tool_path, external_file))

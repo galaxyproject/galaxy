@@ -29,7 +29,7 @@
         </b-modal>
         <ActivityBar
             ref="activityBar"
-            :default-activities="workflowEditorActivities"
+            :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false"
@@ -105,6 +105,10 @@
                     @update:annotationCurrent="setAnnotation"
                     @update:logoUrlCurrent="setLogoUrl"
                     @update:helpCurrent="setHelp" />
+                <UserToolPanel
+                    v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
+                    :in-workflow-editor="true"
+                    @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -228,6 +232,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -256,6 +261,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 
@@ -279,6 +285,7 @@ export default {
         WorkflowPanel,
         NodeInspector,
         InputPanel,
+        UserToolPanel,
     },
     props: {
         workflowId: {
@@ -569,6 +576,14 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const unprivilegedToolStore = useUnprivilegedToolStore();
+        const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+        const workflowActivities = computed(() =>
+            workflowEditorActivities.filter(
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
+            )
+        );
+
         return {
             id,
             name,
@@ -624,6 +639,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            workflowActivities,
         };
     },
     data() {
@@ -649,7 +665,6 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
-            workflowEditorActivities,
             faTimes,
             faCog,
             faSave,
@@ -790,8 +805,8 @@ export default {
                 position: defaultPosition(this.graphOffset, this.transform),
             });
         },
-        onInsertTool(tool_id, tool_name) {
-            this._insertStep(tool_id, tool_name, "tool");
+        onInsertTool(tool_id, tool_name, toolUuid) {
+            this._insertStep(tool_id, tool_name, "tool", undefined, toolUuid);
         },
         async onInsertModule(module_id, module_name, state) {
             this._insertStep(module_name, module_name, module_id, state);
@@ -1052,7 +1067,7 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        async _insertStep(contentId, name, type, state) {
+        async _insertStep(contentId, name, type, state, toolUuid) {
             const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,
@@ -1064,13 +1079,14 @@ export default {
             const stepData = action.getNewStepData();
 
             const response = await getModule(
-                { name, type, content_id: contentId, tool_state: state },
+                { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
                 stepData.id,
                 this.stateStore.setLoadingState
             );
 
             const updatedStep = {
                 ...stepData,
+                tool_uuid: toolUuid,
                 tool_state: response.tool_state,
                 inputs: response.inputs,
                 outputs: response.outputs,

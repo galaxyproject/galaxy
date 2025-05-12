@@ -433,7 +433,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 client_outputs=self.__client_outputs(client, job_wrapper),
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
-                tool=job_wrapper.tool,
+                tool=job_wrapper.tool if job_wrapper.tool and job_wrapper.tool.tool_dir else None,
                 config_files=config_files,
                 dependencies_description=dependencies_description,
                 env=env,

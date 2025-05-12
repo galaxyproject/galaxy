@@ -346,7 +346,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -532,7 +532,9 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, *_ = (
+            self._tool_source.parse_requirements_and_containers()
+        )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
         assert containers[0].to_dict() == {

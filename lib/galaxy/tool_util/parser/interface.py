@@ -33,6 +33,7 @@ from galaxy.tool_util_models.tool_source import (
     DrillDownOptionsDict,
     FieldDict,
     HelpContent,
+    JavascriptRequirement,
     JsonTestCollectionDefCollectionElementDict,
     JsonTestCollectionDefDatasetElementDict,
     JsonTestCollectionDefDict,
@@ -48,7 +49,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
@@ -220,6 +221,18 @@ class ToolSource(metaclass=ABCMeta):
     def parse_command(self):
         """Return string contianing command to run."""
 
+    def parse_shell_command(self) -> Optional[str]:
+        """Return string that after input binding can be executed."""
+        return None
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return None
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        """Return list of strings to append to base_command."""
+        return None
+
     def parse_expression(self):
         """Return string contianing command to run."""
         return None
@@ -307,7 +320,9 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements_and_containers(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+    ) -> Tuple[
+        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+    ]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod

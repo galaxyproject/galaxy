@@ -22,6 +22,7 @@ from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
 )
+from galaxy.util import listify
 from .interface import (
     AssertionDict,
     AssertionList,
@@ -72,20 +73,20 @@ class YamlToolSource(ToolSource):
         return str(rval)
 
     def parse_description(self) -> str:
-        return self.root_dict.get("description", "")
+        return self.root_dict.get("description") or ""
 
     def parse_icon(self) -> Optional[str]:
         icon_elem = self.root_dict.get("icon", {})
         return icon_elem.get("src") if icon_elem is not None else None
 
     def parse_edam_operations(self) -> List[str]:
-        return self.root_dict.get("edam_operations", [])
+        return self.root_dict.get("edam_operations") or []
 
     def parse_edam_topics(self) -> List[str]:
-        return self.root_dict.get("edam_topics", [])
+        return self.root_dict.get("edam_topics") or []
 
     def parse_xrefs(self) -> List[XrefDict]:
-        xrefs = self.root_dict.get("xrefs", [])
+        xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
@@ -103,6 +104,16 @@ class YamlToolSource(ToolSource):
     def parse_expression(self):
         return self.root_dict.get("expression")
 
+    def parse_shell_command(self) -> Optional[str]:
+        return self.root_dict.get("shell_command")
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return listify(self.root_dict.get("base_command"))
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        return self.root_dict.get("arguments")
+
     def parse_environment_variables(self):
         return []
 
@@ -117,10 +128,21 @@ class YamlToolSource(ToolSource):
 
     def parse_requirements_and_containers(self):
         mixed_requirements = self.root_dict.get("requirements", [])
+        container = self.root_dict.get("container")
+        containers = self.root_dict.get("containers")
+        if container:
+            if isinstance(container, str):
+                container = {"identifier": container, "type": "docker", "explicit": True}
+            containers = [container]
+        elif containers:
+            containers = containers
+        else:
+            containers = []
         return requirements.parse_requirements_from_lists(
-            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
-            containers=self.root_dict.get("containers", []),
+            software_requirements=[r for r in mixed_requirements if r.get("type") == "package"],
+            containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+            javascript_requirements=[r for r in mixed_requirements if r.get("type") == "javascript"],
         )
 
     def parse_input_pages(self) -> PagesSource:

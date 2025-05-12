@@ -5,12 +5,81 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import (
+    Annotated,
     Literal,
     NotRequired,
     TypedDict,
 )
+
+
+class Container(BaseModel):
+    type: Literal["docker", "singularity"]
+    container_id: str
+
+
+class Requirement(BaseModel):
+    type: Literal["package", "set_environment"]
+
+
+class ContainerRequirement(BaseModel):
+    type: Literal["container"]
+    container: Container
+
+
+class PackageRequirement(Requirement):
+    type: Literal["package"]
+    name: str
+    version: Optional[str]
+
+
+class SetEnvironmentRequirement(Requirement):
+    type: Literal["set_environment"]
+    environment: str
+
+
+class ResourceRequirement(BaseModel):
+    type: Literal["resource"]
+    cores_min: Optional[Union[int, float]]
+    cores_max: Optional[Union[int, float]]
+    ram_min: Optional[Union[int, float]]
+    ram_max: Optional[Union[int, float]]
+    tmpdir_min: Optional[Union[int, float]]
+    tmpdir_max: Optional[Union[int, float]]
+    cuda_version_min: Optional[Union[int, float]]
+    cuda_compute_capability: Optional[Union[int, float]]
+    gpu_memory_min: Optional[Union[int, float]]
+    cuda_device_count_min: Optional[Union[int, float]]
+    cuda_device_count_max: Optional[Union[int, float]]
+    shm_size: Optional[Union[int, float]]
+
+
+class JavascriptRequirement(BaseModel):
+    type: Literal["javascript"]
+    expression_lib: Optional[
+        List[
+            Annotated[
+                str,
+                Field(
+                    title="expression_lib",
+                    description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
+                    examples=[
+                        r"""function pickValue() {
+    if (inputs.conditional_parameter.test_parameter == "a") {
+        return inputs.conditional_parameter.integer_parameter
+    } else {
+        return inputs.conditional_parameter.boolean_parameter
+    }
+}"""
+                    ],
+                ),
+            ]
+        ]
+    ]
 
 
 class XrefDict(TypedDict):
