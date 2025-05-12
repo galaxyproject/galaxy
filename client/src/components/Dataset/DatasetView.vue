@@ -270,26 +270,39 @@ watch(
 }
 
 .state-running,
-.state-upload {
+.state-upload,
+.state-setting_metadata,
+.state-new,
+.state-new_populated_state,
+.state-inaccessible {
     background-color: $state-running-bg;
-    color: darken($brand-warning, 30%);
+    color: $state-warning-text;
+}
+
+.state-paused,
+.state-deferred {
+    background-color: $state-info-bg;
+    color: $state-info-text;
 }
 
 .state-queued,
-.state-new {
+.state-placeholder {
     background-color: $state-default-bg;
     color: $text-color;
 }
 
-.state-ok {
-    background-color: theme-color-level("success", $alert-bg-level);
-    color: theme-color-level("success", $alert-color-level);
+.state-ok,
+.state-empty {
+    background-color: $state-success-bg;
+    color: $state-success-text;
 }
 
 .state-error,
-.state-failed_metadata {
-    background-color: theme-color-level("danger", $alert-bg-level);
-    color: theme-color-level("danger", $alert-color-level);
+.state-failed_metadata,
+.state-discarded,
+.state-failed_populated_state {
+    background-color: $state-danger-bg;
+    color: $state-danger-text;
 }
 
 .header-details {
@@ -360,7 +373,7 @@ watch(
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: $gray-100;
+    background-color: $brand-light;
     z-index: 1;
 }
 
