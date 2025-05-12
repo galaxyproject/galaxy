@@ -25,10 +25,10 @@ from galaxy.schema.fields import (
 from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parameters.convert import cwl_runtime_model
 from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
-    UserToolSource,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
