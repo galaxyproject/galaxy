@@ -221,7 +221,10 @@ watch(
     </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+
 .dataset-view {
     height: 100%;
 }
@@ -268,25 +271,25 @@ watch(
 
 .state-running,
 .state-upload {
-    background-color: #cff4fc;
-    color: #055160;
+    background-color: $state-running-bg;
+    color: darken($brand-warning, 30%);
 }
 
 .state-queued,
 .state-new {
-    background-color: #e2e3e5;
-    color: #41464b;
+    background-color: $state-default-bg;
+    color: $text-color;
 }
 
 .state-ok {
-    background-color: #d1e7dd;
-    color: #0f5132;
+    background-color: theme-color-level("success", $alert-bg-level);
+    color: theme-color-level("success", $alert-color-level);
 }
 
 .state-error,
 .state-failed_metadata {
-    background-color: #f8d7da;
-    color: #842029;
+    background-color: theme-color-level("danger", $alert-bg-level);
+    color: theme-color-level("danger", $alert-color-level);
 }
 
 .header-details {
@@ -357,7 +360,7 @@ watch(
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #f8f9fa;
+    background-color: $gray-100;
     z-index: 1;
 }
 
