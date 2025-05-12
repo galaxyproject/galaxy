@@ -306,15 +306,19 @@ watch(
 .header-details {
     margin-top: 0.5rem;
     padding-left: 1rem;
+    max-height: 500px;
     opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: all 0.25s ease;
+    overflow: hidden;
 }
 
-.header-enter,
+.header-enter, /* change to header-enter-from with Vue 3 */
 .header-leave-to {
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
     opacity: 0;
-    transform: translateY(-10px);
 }
 
 .dataset-tabs-container {
