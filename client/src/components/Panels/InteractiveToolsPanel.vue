@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
@@ -17,6 +18,9 @@ import UtcDate from "@/components/UtcDate.vue";
 const router = useRouter();
 const toolStore = useToolStore();
 const entryPointStore = useEntryPointStore();
+const interactiveToolsStore = useInteractiveToolsStore();
+
+// Get reactive refs from stores
 const { entryPoints } = storeToRefs(entryPointStore);
 
 const interactiveTools = ref<Tool[]>([]);
@@ -37,6 +41,9 @@ onMounted(async () => {
     await toolStore.fetchTools();
     interactiveTools.value = toolStore.getInteractiveTools();
     loading.value = false;
+
+    // Make sure we load active interactive tools
+    await interactiveToolsStore.getActiveTools();
 });
 
 function onToolClick(tool: Tool, evt: Event) {
@@ -45,8 +52,8 @@ function onToolClick(tool: Tool, evt: Event) {
     router.push(`/?tool_id=${encodeURIComponent(tool.id)}&version=latest`);
 }
 
-function stopInteractiveTool(toolId: string) {
-    entryPointStore.removeEntryPoint(toolId);
+function stopInteractiveTool(toolId: string, toolName: string) {
+    interactiveToolsStore.stopInteractiveTool(toolId, toolName);
 }
 
 function openInteractiveTool(toolId: string) {
@@ -82,7 +89,7 @@ function openInteractiveTool(toolId: string) {
                         <button
                             class="btn btn-sm btn-link text-danger"
                             title="Stop this interactive tool"
-                            @click="stopInteractiveTool(tool.id)">
+                            @click="stopInteractiveTool(tool.id, tool.name)">
                             <FontAwesomeIcon :icon="faStop" />
                         </button>
                     </div>

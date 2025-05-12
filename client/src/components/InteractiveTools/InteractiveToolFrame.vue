@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
 export interface Props {
     entryId: string;
@@ -10,6 +11,7 @@ export interface Props {
 
 const props = defineProps<Props>();
 const entryPointStore = useEntryPointStore();
+const interactiveToolsStore = useInteractiveToolsStore();
 const { entryPoints } = storeToRefs(entryPointStore);
 
 const loading = ref(true);
@@ -28,14 +30,18 @@ const frameUrl = computed(() => {
     return null;
 });
 
-onMounted(() => {
+onMounted(async () => {
     // Ensure we have the entry points loaded
-    entryPointStore.fetchEntryPoints().then(() => {
+    try {
+        await interactiveToolsStore.getActiveTools();
         loading.value = false;
         if (!entryPoint.value) {
             error.value = "Interactive tool not found. It may have been stopped or expired.";
         }
-    });
+    } catch (err) {
+        loading.value = false;
+        error.value = `Failed to load interactive tool: ${(err as Error).message}`;
+    }
 });
 </script>
 

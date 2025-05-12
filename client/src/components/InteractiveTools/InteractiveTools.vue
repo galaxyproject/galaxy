@@ -1,25 +1,23 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getAppRoot } from "@/onload/loadConfig";
-import { useEntryPointStore } from "@/stores/entryPointStore";
-
-import { Services } from "./services";
+import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
 import UtcDate from "@/components/UtcDate.vue";
 
 const filter = ref("");
-const messages = ref<string[]>([]);
 const nInteractiveTools = ref(0);
-const root = ref("");
-const services = ref<Services | null>(null);
 const router = useRouter();
 
-const entryPointStore = useEntryPointStore();
-const activeInteractiveTools = computed(() => entryPointStore.entryPoints);
+// Use the stores
+const interactiveToolsStore = useInteractiveToolsStore();
+
+// Get reactive refs from stores
+const { messages, activeTools } = storeToRefs(interactiveToolsStore);
 
 const fields = [
     {
@@ -54,7 +52,7 @@ const showNotFound = computed(() => {
 });
 
 const isActiveToolsListEmpty = computed(() => {
-    return activeInteractiveTools.value.length === 0;
+    return activeTools.value.length === 0;
 });
 
 const load = () => {
@@ -66,14 +64,7 @@ const filtered = (items: any[]) => {
 };
 
 const stopInteractiveTool = (toolId: string, toolName: string) => {
-    services.value
-        ?.stopInteractiveTool(toolId)
-        .then(() => {
-            entryPointStore.removeEntryPoint(toolId);
-        })
-        .catch((error: Error) => {
-            messages.value.push(`Failed to stop interactive tool ${toolName}: ${error.message}`);
-        });
+    interactiveToolsStore.stopInteractiveTool(toolId, toolName);
 };
 
 const createId = (tagLabel: string, id: string): string => {
@@ -85,8 +76,7 @@ const openInteractiveTool = (toolId: string) => {
 };
 
 onMounted(() => {
-    root.value = getAppRoot();
-    services.value = new Services({ root: root.value });
+    interactiveToolsStore.getActiveTools();
     load();
 });
 </script>
@@ -110,7 +100,7 @@ onMounted(() => {
             id="interactive-tool-table"
             striped
             :fields="fields"
-            :items="activeInteractiveTools"
+            :items="activeTools"
             :filter="filter"
             @filtered="filtered">
             <template v-slot:cell(actions)="row">
