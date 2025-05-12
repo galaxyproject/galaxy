@@ -12,6 +12,8 @@ export function buildersForCollectionType(collectionType: CollectionType): Colle
         return ["list:paired", "paired"];
     } else if (collectionType == "list:paired") {
         return ["list:paired"];
+    } else if (collectionType == "list:paired_or_unpaired") {
+        return ["list", "list:paired", "list:paired_or_unpaired"];
     } else {
         return [];
     }

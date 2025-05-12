@@ -4,14 +4,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
-import type { DatasetPair } from "../History/adapters/buildCollectionModal";
-import { useCollectionCreator } from "./common/useCollectionCreator";
+import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
 import { guessNameForPair } from "./pairing";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -35,13 +34,16 @@ interface Props {
     suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
+    mode: Mode;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "on-create", selectedPair: DatasetPair, collectionName: string, hideSourceItems: boolean): void;
-    (event: "on-cancel"): void;
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
+    (e: "on-cancel"): void;
 }>();
 
 const state = ref("build");
@@ -86,7 +88,16 @@ const pairHasMixedExtensions = computed(() => {
     );
 });
 
-const { removeExtensions, hideSourceItems, onUpdateHideSourceItems, isElementInvalid } = useCollectionCreator(props);
+const {
+    collectionName,
+    removeExtensions,
+    hideSourceItems,
+    onUpdateHideSourceItems,
+    isElementInvalid,
+    onCollectionCreate,
+    showButtonsForModal,
+    onUpdateCollectionName,
+} = useCollectionCreator(props, emit);
 
 // check if we have scrolled to the top or bottom of the scrollable div
 const scrollableDiv = ref<HTMLDivElement | null>(null);
@@ -257,14 +268,15 @@ function addUploadedFiles(files: HDASummary[]) {
     }
 }
 
-function clickedCreate(collectionName: string) {
+function attemptCreate() {
     if (state.value !== "error" && exactlyTwoValidElements.value) {
-        const returnedPair = {
-            forward: pairElements.value.forward as HDASummary,
-            reverse: pairElements.value.reverse as HDASummary,
-            name: collectionName,
-        };
-        emit("on-create", returnedPair, collectionName, hideSourceItems.value);
+        const forward = pairElements.value.forward as HDASummary;
+        const reverse = pairElements.value.reverse as HDASummary;
+        const returnedElems = [
+            { name: "forward", src: "src" in forward ? forward.src : "hda", id: forward.id },
+            { name: "reverse", src: "src" in reverse ? reverse.src : "hda", id: reverse.id },
+        ] as CollectionElementIdentifiers;
+        onCollectionCreate("paired", returnedElems);
     }
 }
 
@@ -313,9 +325,13 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                 collection-type="paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 :show-upload="!fromSelection"
+                :show-buttons="showButtonsForModal"
+                :collection-name="collectionName"
+                :mode="mode"
+                @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                @clicked-create="clickedCreate"
+                @clicked-create="attemptCreate"
                 @remove-extensions-toggle="removeExtensionsToggle">
                 <template v-slot:help-content>
                     <!-- TODO: Update help content for case where `fromSelection` is false -->

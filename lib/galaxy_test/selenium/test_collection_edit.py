@@ -52,7 +52,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.perform_upload(self.get_filename(filename), ext=ext)
         self._wait_for_and_select([1])
 
-        self._collection_dropdown("build list")
+        self.history_panel_build_list_auto()
 
         self.collection_builder_set_name("my cool list")
         self.collection_builder_create()

@@ -693,6 +693,8 @@ class GalaxyInteractorApi:
             collection_type=collection_def.collection_type,
             history_id=history_id,
         )
+        if collection_def.fields:
+            create_payload["fields"] = collection_def.fields
         return self._post("dataset_collections", data=create_payload, json=True).json()["id"]
 
     def _element_identifiers(self, collection_def):

@@ -64,7 +64,8 @@ class HistoryQuery:
         collection_type_descriptions = self.collection_type_descriptions
         if collection_type_descriptions is not None:
             for collection_type_description in collection_type_descriptions:
-                if collection_type_description.can_match_type(hdca.collection.collection_type):
+                matches = collection_type_description.can_match_type(hdca.collection.collection_type)
+                if matches:
                     return True
             return False
 

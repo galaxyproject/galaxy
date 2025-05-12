@@ -336,6 +336,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 DataSrcT = Literal["hda", "ldda"]
 MultiDataSrcT = Literal["hda", "ldda", "hdca"]
+# @jmchilton you meant CollectionSrcT - fix that at some point please.
 CollectionStrT = Literal["hdca"]
 
 TestCaseDataSrcT = Literal["File"]
@@ -625,6 +626,80 @@ class DataCollectionRequest(StrictModel):
 class DataCollectionRequestInternal(StrictModel):
     src: CollectionStrT
     id: StrictInt
+
+
+CollectionAdapterSrcT = Literal["CollectionAdapter"]
+
+
+class AdaptedDataCollectionRequestBase(StrictModel):
+    src: CollectionAdapterSrcT
+
+
+class AdaptedDataCollectionPromoteDatasetToCollectionRequest(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetToCollection"]
+    collection_type: Literal["list", "paired_or_unpaired"]
+    adapting: DataRequestHda
+
+
+# calling this name and element_identifier to align with fetch API, etc...
+class AdapterElementRequest(DataRequestHda):
+    name: str  # element_identifier
+
+
+class AdaptedDataCollectionPromoteDatasetsToCollectionRequest(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetsToCollection"]
+    # could allow list in here without changing much else I think but I'm trying to keep these tight in scope
+    collection_type: Literal["paired", "paired_or_unpaired"]
+    adapting: List[AdapterElementRequest]
+
+
+AdaptedDataCollectionRequest = Annotated[
+    Union[
+        AdaptedDataCollectionPromoteDatasetToCollectionRequest, AdaptedDataCollectionPromoteDatasetsToCollectionRequest
+    ],
+    Field(discriminator="adapter_type"),
+]
+AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type:ignore[var-annotated]
+
+
+class DatasetCollectionElementReference(StrictModel):
+    src: Literal["dce"]
+    id: StrictInt
+
+
+class AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteCollectionElementToCollection"]
+    adapting: DatasetCollectionElementReference
+
+
+class AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetToCollection"]
+    collection_type: Literal["list", "paired_or_unpaired"]
+    adapting: DataRequestInternalHda
+
+
+class AdapterElementRequestInternal(DataRequestInternalHda):
+    name: str  # element_identifier
+
+
+class AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
+    adapter_type: Literal["PromoteDatasetsToCollection"]
+    # could allow list in here without changing much else I think but I'm trying to keep these tight in scope
+    collection_type: Literal["paired", "paired_or_unpaired"]
+    adapting: List[AdapterElementRequestInternal]
+
+
+AdaptedDataCollectionRequestInternal = Annotated[
+    Union[
+        AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal,
+        AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal,
+        AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal,
+    ],
+    Field(discriminator="adapter_type"),
+]
+AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
+    AdaptedDataCollectionRequestInternal
+)  # type:ignore[var-annotated]
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):

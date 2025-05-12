@@ -355,7 +355,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
     "__BUILD_LIST__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "__APPLY_RULES__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
-    "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "__RELABEL_FROM_FILE__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "Grep1": safe_update(parse_version("1.0.1"), parse_version("1.0.4")),
     "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
@@ -3745,6 +3745,63 @@ class BuildListCollectionTool(DatabaseOperationTool):
         )
 
 
+class SplitPairedAndUnpairedTool(DatabaseOperationTool):
+    tool_type = "split_paired_and_unpaired"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        has_collection = incoming["input"]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        collection_type = collection.collection_type
+        assert collection_type in ["list", "list:paired", "list:paired_or_unpaired"]
+
+        unpaired_dce_copies = {}
+        paired_dce_copies = {}
+        paired_datasets = []
+
+        def _handle_unpaired(dce):
+            element_identifier = dce.element_identifier
+            assert getattr(dce.element_object, "history_content_type", None) == "dataset"
+            copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
+            unpaired_dce_copies[element_identifier] = copied_value
+
+        def _handle_paired(dce):
+            element_identifier = dce.element_identifier
+            copied_value = dce.element_object.copy(flush=False)
+            paired_dce_copies[element_identifier] = copied_value
+            paired_datasets.append(copied_value.elements[0].element_object)
+            paired_datasets.append(copied_value.elements[1].element_object)
+
+        if collection_type == "list":
+            for element in collection.elements:
+                _handle_unpaired(element)
+        elif collection_type == "list:paired":
+            for element in collection.elements:
+                _handle_paired(element)
+        elif collection_type == "list:paired_or_unpaired":
+            for element in collection.elements:
+                if getattr(element.element_object, "history_content_type", None) == "dataset":
+                    _handle_unpaired(element)
+                else:
+                    _handle_paired(element)
+
+        self._add_datasets_to_history(history, unpaired_dce_copies.values())
+        self._add_datasets_to_history(history, paired_datasets)
+        output_collections.create_collection(
+            self.outputs["output_unpaired"], "output_unpaired", elements=unpaired_dce_copies, propagate_hda_tags=False
+        )
+        output_collections.create_collection(
+            self.outputs["output_paired"], "output_paired", elements=paired_dce_copies, propagate_hda_tags=False
+        )
+
+
 class ExtractDatasetCollectionTool(DatabaseOperationTool):
     tool_type = "extract_dataset"
     require_terminal_states = False
@@ -3760,7 +3817,8 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             collection = has_collection.collection
 
         collection_type = collection.collection_type
-        assert collection_type in ["list", "paired"]
+        if collection_type not in ["list", "paired", "record", "paired_or_unpaired"]:
+            raise AssertionError(f"Unsupported collection type ({collection_type})")
         how = incoming["which"]["which_dataset"]
         if how == "first":
             extracted_element = collection.first_dataset_element

@@ -50,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -1714,6 +1715,11 @@ class CreateNewCollectionPayload(Model):
     folder_id: Optional[LibraryFolderDatabaseIdField] = Field(
         default=None,
         description="The ID of the library folder that will contain the collection. Required if `instance_type=library`.",
+    )
+    fields_: Optional[Union[str, List[FieldDict]]] = Field(
+        default=[],
+        description="List of fields to create for this collection. Set to 'auto' to guess fields from identifiers.",
+        alias="fields",
     )
 
 

@@ -287,3 +287,120 @@ EXAMPLE_6 = {
     "check": check_example_6,
     "output_hid": 8,
 }
+
+
+def check_example_flatten_with_indices(hdca, dataset_populator):
+    assert hdca["collection_type"] == "list"
+    assert hdca["element_count"] == 2
+    first_element = hdca["elements"][0]
+    assert first_element["element_identifier"] == "0_0", hdca
+    second_element = hdca["elements"][1]
+    assert second_element["element_identifier"] == "0_1", hdca
+
+
+EXAMPLE_FLATTEN_USING_INDICES = {
+    "rules": {
+        "rules": [
+            {
+                "type": "add_column_metadata",
+                "value": "index0",
+            },
+            {
+                "type": "add_column_value",
+                "value": "_",
+            },
+            {
+                "type": "add_column_metadata",
+                "value": "index1",
+            },
+            {
+                "type": "add_column_concatenate",
+                "target_column_0": 0,
+                "target_column_1": 1,
+            },
+            {
+                "type": "add_column_concatenate",
+                "target_column_0": 3,
+                "target_column_1": 2,
+            },
+        ],
+        "mapping": [
+            {
+                "type": "list_identifiers",
+                "columns": [4],
+            }
+        ],
+    },
+    "test_data": {
+        "type": "list:paired",
+        "elements": [
+            {
+                "identifier": "test0",
+                "elements": [
+                    {"identifier": "forward", "class": "File", "contents": "TestData123forward"},
+                    {"identifier": "reverse", "class": "File", "contents": "TestData123reverse"},
+                ],
+            },
+        ],
+    },
+    "check": check_example_flatten_with_indices,
+    "output_hid": 6,
+}
+
+
+def check_example_flatten_paired_or_unpaired(hdca, dataset_populator):
+    assert hdca["collection_type"] == "list"
+    assert hdca["element_count"] == 3
+    first_element = hdca["elements"][0]
+    assert first_element["element_identifier"] == "test0forward", hdca
+    second_element = hdca["elements"][1]
+    assert second_element["element_identifier"] == "test0reverse", hdca
+    third_element = hdca["elements"][2]
+    assert third_element["element_identifier"] == "test1unpaired", hdca
+
+
+EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED = {
+    "rules": {
+        "rules": [
+            {
+                "type": "add_column_metadata",
+                "value": "identifier0",
+            },
+            {
+                "type": "add_column_metadata",
+                "value": "identifier1",
+            },
+            {
+                "type": "add_column_concatenate",
+                "target_column_0": 0,
+                "target_column_1": 1,
+            },
+        ],
+        "mapping": [
+            {
+                "type": "list_identifiers",
+                "columns": [2],
+            },
+        ],
+    },
+    "test_data": {
+        "type": "list:paired_or_unpaired",
+        "elements": [
+            {
+                "identifier": "test0",
+                "elements": [
+                    {"identifier": "forward", "class": "File", "contents": "TestData123forward"},
+                    {"identifier": "reverse", "class": "File", "contents": "TestData123reverse"},
+                ],
+            },
+            {
+                "identifier": "test1",
+                "elements": [
+                    {"identifier": "unpaired", "class": "File", "contents": "TestData123unpaired"},
+                ],
+            },
+        ],
+    },
+    "check": check_example_flatten_paired_or_unpaired,
+    "output_hid": 8,
+}

@@ -33,6 +33,9 @@ interface Props {
     noItems?: boolean;
     collectionType?: string;
     showUpload: boolean;
+    showButtons?: boolean;
+    collectionName: string;
+    mode: "wizard" | "modal";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -41,9 +44,12 @@ const props = withDefaults(defineProps<Props>(), {
     extensionsToggle: false,
     showUpload: true,
     collectionType: undefined,
+    showButtons: true,
+    mode: "modal",
 });
 
 const emit = defineEmits<{
+    (e: "on-update-collection-name", name: string): void;
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
@@ -52,8 +58,8 @@ const emit = defineEmits<{
 }>();
 
 const currentTab = ref(Tabs.create);
-const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
+const name = ref(props.collectionName);
 
 // Upload properties
 const {
@@ -64,7 +70,7 @@ const {
 } = useUploadConfigurations(props.extensions);
 
 const validInput = computed(() => {
-    return collectionName.value.length > 0;
+    return props.collectionName.length > 0;
 });
 
 const defaultWhatIsBeingCreated = "collection";
@@ -93,10 +99,22 @@ function removeExtensionsToggle() {
     emit("remove-extensions-toggle");
 }
 
+function updateName(newName: string) {
+    name.value = newName;
+    emit("on-update-collection-name", newName);
+}
+
 watch(
     () => localHideSourceItems.value,
     () => {
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
+    }
+);
+
+watch(
+    () => props.collectionName,
+    () => {
+        name.value = props.collectionName;
     }
 );
 </script>
@@ -108,7 +126,7 @@ watch(
                 <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
             </div>
             <div v-else>
-                <CollectionCreatorHelpHeader>
+                <CollectionCreatorHelpHeader :mode="mode">
                     <slot name="help-content"></slot>
                 </CollectionCreatorHelpHeader>
 
@@ -127,12 +145,14 @@ watch(
                                 :extensions-toggle="extensionsToggle"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
-                                v-model="collectionName"
-                                :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                :value="name"
+                                :short-what-is-being-created="shortWhatIsBeingCreated"
+                                @input="updateName" />
                         </div>
                     </div>
 
                     <CollectionCreatorFooterButtons
+                        v-if="showButtons"
                         :short-what-is-being-created="shortWhatIsBeingCreated"
                         :valid-input="validInput"
                         @clicked-cancel="cancelCreate"
@@ -149,7 +169,7 @@ watch(
                     <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
                 <div v-else>
-                    <CollectionCreatorHelpHeader>
+                    <CollectionCreatorHelpHeader :mode="mode">
                         <slot name="help-content"></slot>
                     </CollectionCreatorHelpHeader>
 
@@ -167,12 +187,14 @@ watch(
                                     :render-extensions-toggle="renderExtensionsToggle"
                                     :extensions-toggle="extensionsToggle" />
                                 <CollectionNameInput
-                                    v-model="collectionName"
-                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                    :value="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated"
+                                    @input="updateName" />
                             </div>
                         </div>
 
                         <CollectionCreatorFooterButtons
+                            v-if="showButtons"
                             :short-what-is-being-created="shortWhatIsBeingCreated"
                             :valid-input="validInput"
                             @clicked-cancel="cancelCreate"
@@ -216,6 +238,17 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 @import "~@fortawesome/fontawesome-free/scss/solid";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/brands";
+
+// Outside the modal - we need to set a max width on the help so ellipses display
+// doesn't cause it to grow without bound. Would greater appreciate a better workaround.
+.collection-creator-bounded-help {
+    .header {
+        .main-help {
+            max-width: 600px;
+        }
+    }
+}
+
 .collection-creator {
     height: 100%;
     overflow: hidden;
@@ -354,11 +387,15 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                 .help-content {
                     p:first-child {
                         overflow: hidden;
-                        white-space: nowrap;
                         text-overflow: ellipsis;
                     }
                     > *:not(:first-child) {
                         display: none;
+                    }
+                }
+                .help-content-nowrap {
+                    p:first-child {
+                        white-space: nowrap;
                     }
                 }
             }

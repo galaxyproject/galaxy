@@ -652,7 +652,17 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                     );
                 }
             } else {
-                return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
+                let reason = "Incompatible collection type(s) for attachment.";
+                if (this.collectionTypes.length == 1) {
+                    if (
+                        otherCollectionType.collectionType?.endsWith("paired_or_unpaired") &&
+                        this.collectionTypes[0]?.collectionType?.endsWith("paired")
+                    ) {
+                        reason =
+                            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";
+                    }
+                }
+                return new ConnectionAcceptable(false, reason);
             }
         } else {
             return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");

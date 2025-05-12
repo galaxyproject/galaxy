@@ -14,6 +14,7 @@ interface Props {
     hasActions?: boolean;
     notEditable?: boolean;
     hideExtension?: boolean;
+    showHid?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -52,7 +53,7 @@ watch(
         @keyup.enter="emit('element-is-selected', element)"
         @click="emit('element-is-selected', element)">
         <span class="d-flex flex-gapx-1">
-            <span v-if="element.hid">{{ element.hid }}:</span>
+            <span v-if="element.hid ?? true">{{ element.hid }}:</span>
             <strong>
                 <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
                 <span v-else>{{ elementName }}</span>

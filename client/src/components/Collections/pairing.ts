@@ -1,12 +1,14 @@
+import type { GenericPair } from "@/components/History/adapters/buildCollectionModal";
+
 export const COMMON_FILTERS = {
-    illumina: ["_1", "_2"],
-    Rs: ["_R1", "_R2"],
-    dot12s: [".1.fastq", ".2.fastq"],
+    illumina: ["_1", "_2"] as [string, string],
+    Rs: ["_R1", "_R2"] as [string, string],
+    dot12s: [".1.fastq", ".2.fastq"] as [string, string],
 };
 export type CommonFiltersType = keyof typeof COMMON_FILTERS;
 export const DEFAULT_FILTER: CommonFiltersType = "illumina";
 
-interface HasName {
+export interface HasName {
     name: string | null;
 }
 
@@ -276,4 +278,120 @@ export function statelessAutoPairFnBuilder<T extends HasName>(
         }
         return paired;
     };
+}
+
+export function splitElementsByFilter<T extends HasName>(elements: T[], forwardFilter: string, reverseFilter: string) {
+    const filters = [new RegExp(forwardFilter), new RegExp(reverseFilter)];
+    const split: [T[], T[]] = [[], []];
+    elements.forEach((e) => {
+        filters.forEach((filter, i) => {
+            if (e.name && filter.test(e.name)) {
+                split[i]?.push(e);
+            }
+        });
+    });
+    return split;
+}
+
+export function autoDetectPairs<T extends HasName>(
+    listA: T[],
+    listB: T[],
+    forwardFilter: string,
+    reverseFilter: string,
+    willRemoveExtensions: boolean
+) {
+    function autoPairSimple(params: { listA: T[]; listB: T[] }) {
+        return statelessAutoPairFnBuilder<T>(
+            matchOnlyIfExact, // will only issue 1.0 scores if exact
+            0.6,
+            forwardFilter,
+            reverseFilter,
+            willRemoveExtensions
+        )(params);
+    }
+
+    function autoPairLCS(params: { listA: T[]; listB: T[] }) {
+        return statelessAutoPairFnBuilder<T>(
+            matchOnPercentOfStartingAndEndingLCS,
+            0.99,
+            forwardFilter,
+            reverseFilter,
+            willRemoveExtensions
+        )(params);
+    }
+
+    const listACopy = listA.slice();
+    const listBCopy = listB.slice();
+
+    let paired: GenericPair<T>[] = [];
+    const simplePaired = autoPairSimple({
+        listA: listACopy,
+        listB: listBCopy,
+    });
+    paired = simplePaired ? simplePaired : paired;
+    for (const pair of paired) {
+        const indexA = listACopy.indexOf(pair.forward);
+        if (indexA !== -1) {
+            listACopy.splice(indexA, 1);
+        }
+        const indexB = listBCopy.indexOf(pair.reverse);
+        if (indexB !== -1) {
+            listBCopy.splice(indexB, 1);
+        }
+    }
+
+    const pairedStrategy = autoPairLCS({
+        listA: listACopy,
+        listB: listBCopy,
+    });
+    paired = pairedStrategy ? paired.concat(pairedStrategy) : paired;
+    return paired;
+}
+
+export type AutoPairingResult<T extends HasName> = {
+    pairs: GenericPair<T>[];
+    unpaired: T[];
+    forwardFilter: string;
+    reverseFilter: string;
+};
+
+export function splitIntoPairedAndUnpaired<T extends HasName>(
+    elements: T[],
+    forwardFilter: string,
+    reverseFilter: string,
+    willRemoveExtensions: boolean
+): AutoPairingResult<T> {
+    if (forwardFilter === "" || reverseFilter === "") {
+        return { pairs: [], unpaired: elements.slice(), forwardFilter, reverseFilter };
+    }
+    const [forwardEls, reverseEls] = splitElementsByFilter(elements, forwardFilter, reverseFilter);
+    const pairs = autoDetectPairs(forwardEls, reverseEls, forwardFilter, reverseFilter, willRemoveExtensions);
+    const unpaired = elements.slice();
+    for (const pair of pairs) {
+        const indexF = unpaired.indexOf(pair.forward);
+        if (indexF !== -1) {
+            unpaired.splice(indexF, 1);
+        }
+        const indexR = unpaired.indexOf(pair.reverse);
+        if (indexR !== -1) {
+            unpaired.splice(indexR, 1);
+        }
+    }
+    return { pairs: pairs, unpaired: unpaired, forwardFilter, reverseFilter };
+}
+
+export function autoPairWithCommonFilters<T extends HasName>(elements: T[], willRemoveExtensions: boolean) {
+    const filterType = guessInitialFilterType(elements);
+    if (filterType) {
+        const [forwardFilter, reverseFilter] = COMMON_FILTERS[filterType];
+        const { pairs, unpaired } = splitIntoPairedAndUnpaired(
+            elements,
+            forwardFilter,
+            reverseFilter,
+            willRemoveExtensions
+        );
+        return { filterType, forwardFilter, reverseFilter, pairs, unpaired };
+    } else {
+        return { filterType, forwardFilter: undefined, reverseFilter: undefined, pairs: [], unpaired: elements };
+    }
 }

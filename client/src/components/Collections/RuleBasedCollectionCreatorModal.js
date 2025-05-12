@@ -1,6 +1,8 @@
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { rawToTable } from "@/components/Collections/tables";
+
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
@@ -58,22 +60,7 @@ function createCollectionViaRules(selection, defaultHideSourceItems = true) {
         importType = selection.dataType || "collections";
         elements = selection.elements;
     } else {
-        const hasNonWhitespaceChars = RegExp(/[^\s]/);
-        // Have pasted data, data from a history dataset, or FTP list.
-        const lines = selection.content
-            .split(/[\n\r]/)
-            .filter((line) => line.length > 0 && hasNonWhitespaceChars.exec(line));
-        // Really poor tabular parser - we should get a library for this or expose options? I'm not
-        // sure.
-        let hasTabs = false;
-        if (lines.length > 0) {
-            const firstLine = lines[0];
-            if (firstLine.indexOf("\t") >= 0) {
-                hasTabs = true;
-            }
-        }
-        const regex = hasTabs ? /\t/ : /\s+/;
-        elements = lines.map((line) => line.split(regex));
+        elements = rawToTable(selection.content);
         elementsType = selection.selectionType;
         importType = selection.dataType || "collections";
     }

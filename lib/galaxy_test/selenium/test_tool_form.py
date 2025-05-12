@@ -388,6 +388,16 @@ class TestLoggedInToolForm(SeleniumTestCase):
         self.screenshot("tool_apply_rules_example_4_final")
 
     @selenium_test
+    def test_run_apply_rules_paired_unpaired_flatten(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    def test_run_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
+        self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
+
+    @selenium_test
     @managed_history
     @skip_if_github_down
     @pytest.mark.gtn_screenshot

@@ -449,6 +449,25 @@ collection_builders:
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
+    
+  modals:
+    selectors:
+      create: "button.create-collection"
+
+  list_wizard:
+    selectors:
+      create: ".wizard-actions .btn-primary"
+      which_builder: '[data-which-builder="${builder}"]'
+      wizard_next_button: '.wizard-actions .go-next-btn'
+      auto_pairing: '[data-description="auto pairing"]'
+      dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
+      cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
+      cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+    row:
+      selectors:
+        _: '[row-index="${index}"]'
+        link_button: '${_} .paired-action-icon.fa-link'
+        unlink_button: '${_} .paired-action-icon.fa-unlink'
 
 histories:
   selectors:
@@ -688,6 +707,7 @@ upload_mixin:
     create_button: '${_} #btn-new'
     paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '${_} #upload-row-${n} .upload-text-content'
+    title: '${_} #upload-row-${n} .upload-title'
     row: '${_} #upload-row-${n}'
     status: '${_} [data-description="upload state alert"]'
     embedded_start_button: '${_} #btn-start'
@@ -1177,6 +1197,7 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
+# TODO: use the newer upload_mixin to avoid duplication
 upload:
   selectors:
     build_button: '#rule-based #btn-build'

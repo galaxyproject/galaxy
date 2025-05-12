@@ -565,7 +565,7 @@ class WorkflowModule:
         for input_dict in all_inputs:
             name = input_dict["name"]
             data = progress.replacement_for_input(self.trans, step, input_dict)
-            can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
+            can_map_over = hasattr(data, "collection") and data.collection.allow_implicit_mapping
 
             if not can_map_over:
                 continue
@@ -1177,6 +1177,12 @@ class InputDataCollectionModule(InputModule):
         else:
             collection_type = self.default_collection_type
         state_as_dict["collection_type"] = collection_type
+        if "fields" in inputs:
+            fields = inputs["fields"]
+        else:
+            fields = None
+        state_as_dict["collection_type"] = collection_type
+        state_as_dict["fields"] = fields
         return state_as_dict
 
 
@@ -2029,13 +2035,18 @@ class ToolModule(WorkflowModule):
                             )
                         )
                     elif isinstance(input, DataCollectionToolParameter):
+                        raw_collection_types = input.collection_types
+                        if not raw_collection_types:
+                            # we have some "" strings in the database and coming from the form
+                            # that we should probably want to represent as a None.
+                            raw_collection_types = None
                         inputs.append(
                             dict(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
                                 input_type="dataset_collection",
-                                collection_types=input.collection_types,
+                                collection_types=raw_collection_types,
                                 optional=input.optional,
                                 extensions=input.extensions,
                             )
