@@ -424,6 +424,9 @@ function unexpandedClick(event: Event) {
                         :state="state"
                         :item-urls="itemUrls"
                         :is-running-interactive-tool="itemIsRunningInteractiveTool"
+                        :interactive-tool-id="
+                            itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''
+                        "
                         @delete="onDelete"
                         @display="onDisplay"
                         @showCollectionInfo="onShowCollectionInfo"

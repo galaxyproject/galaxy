@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
 import { faStop } from "font-awesome-6";
 import { computed, type Ref, ref } from "vue";
 
+import { getAppRoot } from "@/onload/loadConfig";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { prependPath } from "@/utils/redirect";
 
 const props = defineProps({
@@ -15,6 +18,7 @@ const props = defineProps({
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
     isRunningInteractiveTool: { type: Boolean, default: false },
+    interactiveToolId: { type: String, default: "" },
 });
 
 const emit = defineEmits<{
@@ -26,6 +30,8 @@ const emit = defineEmits<{
     (e: "unhide"): void;
 }>();
 
+const entryPointStore = useEntryPointStore();
+const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
 const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
@@ -49,10 +55,29 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
 function onDelete($event: MouseEvent) {
-    if (isCollection.value) {
+    if (props.isRunningInteractiveTool) {
+        stopInteractiveTool();
+    } else if (isCollection.value) {
         deleteCollectionMenu.value?.show();
     } else {
         onDeleteItem();
+    }
+}
+
+async function stopInteractiveTool() {
+    if (!props.interactiveToolId) {
+        console.error("No interactive tool ID provided");
+        return;
+    }
+
+    try {
+        const root = getAppRoot();
+        const url = `${root}api/entry_points/${props.interactiveToolId}`;
+        await axios.delete(url);
+        entryPointStore.removeEntryPoint(props.interactiveToolId);
+    } catch (error) {
+        console.error("Failed to stop interactive tool:", error);
+        errorMessage.value = "Failed to stop interactive tool";
     }
 }
 
@@ -125,7 +150,6 @@ function onDisplay($event: MouseEvent) {
             size="sm"
             variant="link"
             @click.stop="onDelete($event)">
-            <!-- TODO: Actually do a stop here... -->
             <FontAwesomeIcon :icon="faStop" />
         </BButton>
         <BButton
