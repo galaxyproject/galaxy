@@ -38,10 +38,18 @@ const props = defineProps({
     },
 });
 
-const TABS = ["preview", "details", "visualize", "edit", "error"] as const;
-type TabName = typeof TABS[number];
+const TABS = {
+    PREVIEW: "preview",
+    DETAILS: "details",
+    VISUALIZE: "visualize",
+    EDIT: "edit",
+    ERROR: "error",
+} as const;
 
-const activeTab = ref<TabName>(TABS[0]);
+type TabName = (typeof TABS)[keyof typeof TABS];
+const TAB_VALUES = Object.values(TABS) as TabName[];
+
+const activeTab = ref<TabName>(TABS.PREVIEW);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
@@ -65,22 +73,22 @@ function toggleHeader() {
 }
 
 function onTabChange(tabName: TabName) {
-    if (!TABS.includes(tabName)) {
+    if (!TAB_VALUES.includes(tabName)) {
         console.error("Invalid tab name received:", tabName);
         return;
     }
 
-    if (tabName === "error" && !showError.value) {
+    if (tabName === TABS.ERROR && !showError.value) {
         return;
     }
 
     // Reset iframe loading state when switching to Preview tab
-    if (tabName === "preview") {
+    if (tabName === TABS.PREVIEW) {
         iframeLoading.value = true;
     }
 
     const basePath = `/datasets/${props.datasetId}`;
-    const targetPath = tabName === "preview" ? basePath : `${basePath}/${tabName}`;
+    const targetPath = tabName === TABS.PREVIEW ? basePath : `${basePath}/${tabName}`;
 
     // Always push the navigation request; vue-router handles duplicates if the path is identical.
     router.push(targetPath);
@@ -91,24 +99,24 @@ function setActiveTabFromProp() {
     const currentTabName = props.tab as string; // Use the prop value
 
     // Check if tab name is valid
-    if (!TABS.includes(currentTabName as TabName)) {
-        if (currentTabName !== "preview") {
+    if (!TAB_VALUES.includes(currentTabName as TabName)) {
+        if (currentTabName !== TABS.PREVIEW) {
             const previewPath = `/datasets/${props.datasetId}`;
             router.replace(previewPath);
             return;
         }
-        activeTab.value = "preview";
+        activeTab.value = TABS.PREVIEW;
         return;
     }
 
     // Handle error tab special case
-    if (currentTabName === "error" && !showError.value) {
-        if (currentTabName === "error") {
+    if (currentTabName === TABS.ERROR && !showError.value) {
+        if (currentTabName === TABS.ERROR) {
             const previewPath = `/datasets/${props.datasetId}`;
             router.replace(previewPath);
             return;
         }
-        activeTab.value = "preview";
+        activeTab.value = TABS.PREVIEW;
         return;
     }
 
@@ -124,7 +132,7 @@ watch(() => props.tab, setActiveTabFromProp, { immediate: true });
 watch(
     () => props.datasetId,
     () => {
-        if (activeTab.value === "preview") {
+        if (activeTab.value === TABS.PREVIEW) {
             iframeLoading.value = true;
         }
     }
@@ -156,7 +164,7 @@ watch(
                 </span>
                 <span v-if="dataset.genome_build" class="dbkey">
                     <span v-localize class="prompt">database</span>
-                    <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange('edit')">{{
+                    <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(TABS.EDIT)">{{
                         dataset.genome_build
                     }}</BLink>
                 </span>
@@ -169,7 +177,13 @@ watch(
         <!-- Tab container - make it grow to fill remaining space and handle overflow -->
         <div class="dataset-tabs-container flex-grow-1 overflow-hidden">
             <!-- Make BTabs fill its container and use flex column layout internally -->
-            <BTabs pills card lazy class="h-100 d-flex flex-column" :active-tab-index="TABS.indexOf(activeTab)" @input="tabIndex => onTabChange(TABS[tabIndex])">
+            <BTabs
+                pills
+                card
+                lazy
+                class="h-100 d-flex flex-column"
+                :active-tab-index="TAB_VALUES.indexOf(activeTab)"
+                @input="(tabIndex) => onTabChange(TAB_VALUES[tabIndex])">
                 <BTab title="Preview" class="iframe-card">
                     <div class="preview-container position-relative h-100">
                         <!-- Loading indicator for iframe -->
