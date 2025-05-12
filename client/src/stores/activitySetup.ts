@@ -23,19 +23,6 @@ import { type EventData } from "@/stores/eventStore";
 
 export const defaultActivities = [
     {
-        anonymous: false,
-        description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
-        icon: faLaptop,
-        id: "interactivetools",
-        mutable: false,
-        optional: false,
-        panel: true,
-        title: "Interactive Tools",
-        tooltip: "Show active interactive tools",
-        to: "/interactivetool_entry_points/list",
-        visible: true,
-    },
-    {
         anonymous: true,
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
         icon: faUpload,
@@ -85,6 +72,19 @@ export const defaultActivities = [
         title: "Workflow Invocations",
         tooltip: "Show all workflow runs",
         to: null,
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
+        icon: faLaptop,
+        id: "interactivetools",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "Interactive Tools",
+        tooltip: "Show Active and available Interactive tools",
+        to: "/interactivetool_entry_points/list",
         visible: true,
     },
     {
