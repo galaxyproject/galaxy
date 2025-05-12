@@ -26,8 +26,6 @@ AnyT = TypeVar("AnyT")
 NotRequired = Annotated[Optional[AnyT], Field(None)]
 IncomingNotRequiredBoolT = TypeVar("IncomingNotRequiredBoolT")
 IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
-IncomingNotRequiredDatasetCollectionDescriptionT = TypeVar("IncomingNotRequiredDatasetCollectionDescriptionT")
-IncomingNotRequiredDatasetCollectionDescription = NotRequired[List["DatasetCollectionDescriptionT"]]
 
 # Use IncomingNotRequired when concrete key: Optional[str] = None would be incorrect
 
@@ -40,7 +38,33 @@ class GenericToolOutputBaseModel(BaseModel, Generic[IncomingNotRequiredBoolT, In
     hidden: IncomingNotRequiredBoolT
 
 
-IncomingToolOutputBaseModel = GenericToolOutputBaseModel[NotRequired[bool], NotRequired[str]]
+DiscoverViaT = Literal["tool_provided_metadata", "pattern"]
+SortKeyT = Literal["filename", "name", "designation", "dbkey"]
+SortCompT = Literal["lexical", "numeric"]
+
+
+class DatasetCollectionDescription(BaseModel):
+    discover_via: DiscoverViaT
+    format: Optional[str]
+    visible: bool
+    assign_primary_output: bool
+    directory: Optional[str]
+    recurse: bool
+    match_relative_path: bool
+
+
+class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
+    discover_via: Literal["tool_provided_metadata"]
+
+
+class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
+    discover_via: Literal["pattern"]
+    sort_key: SortKeyT
+    sort_comp: SortCompT
+    pattern: str
+
+
+DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
 
 
 class GenericToolOutputDataset(
@@ -51,7 +75,7 @@ class GenericToolOutputDataset(
     format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
     format_source: Optional[str] = None
     metadata_source: Optional[str] = None
-    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
+    discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
     from_work_dir: Optional[
         Annotated[
             str,
@@ -79,7 +103,7 @@ class ToolOutputCollectionStructure(BaseModel):
     collection_type_source: Optional[str] = None
     collection_type_from_rules: Optional[str] = None
     structured_like: Optional[str] = None
-    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
+    discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
 
 
 class GenericToolOutputCollection(
@@ -114,35 +138,6 @@ class ToolOutputFloat(ToolOutputSimple):
 
 class ToolOutputBoolean(ToolOutputSimple):
     type: Literal["boolean"]
-
-
-DiscoverViaT = Literal["tool_provided_metadata", "pattern"]
-SortKeyT = Literal["filename", "name", "designation", "dbkey"]
-SortCompT = Literal["lexical", "numeric"]
-
-
-class DatasetCollectionDescription(BaseModel):
-    discover_via: DiscoverViaT
-    format: Optional[str]
-    visible: bool
-    assign_primary_output: bool
-    directory: Optional[str]
-    recurse: bool
-    match_relative_path: bool
-
-
-class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
-    discover_via: Literal["tool_provided_metadata"]
-
-
-class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
-    discover_via: Literal["pattern"]
-    sort_key: SortKeyT
-    sort_comp: SortCompT
-    pattern: str
-
-
-DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
 
 
 IncomingToolOutputT = Union[
