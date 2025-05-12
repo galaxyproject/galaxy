@@ -82,7 +82,6 @@ function onTabChange(tabName: TabName) {
         return;
     }
 
-    // Reset iframe loading state when switching to Preview tab
     if (tabName === TABS.PREVIEW) {
         iframeLoading.value = true;
     }
@@ -90,31 +89,25 @@ function onTabChange(tabName: TabName) {
     const basePath = `/datasets/${props.datasetId}`;
     const targetPath = tabName === TABS.PREVIEW ? basePath : `${basePath}/${tabName}`;
 
-    // Always push the navigation request; vue-router handles duplicates if the path is identical.
     router.push(targetPath);
 }
 
-// Set the active tab based on the current route
 function setActiveTabFromProp() {
-    const currentTabName = props.tab as string; // Use the prop value
+    const currentTabName = props.tab as string;
 
-    // Check if tab name is valid
     if (!TAB_VALUES.includes(currentTabName as TabName)) {
         if (currentTabName !== TABS.PREVIEW) {
             const previewPath = `/datasets/${props.datasetId}`;
             router.replace(previewPath);
-            return;
         }
         activeTab.value = TABS.PREVIEW;
         return;
     }
 
-    // Handle error tab special case
     if (currentTabName === TABS.ERROR && !showError.value) {
         if (currentTabName === TABS.ERROR) {
             const previewPath = `/datasets/${props.datasetId}`;
             router.replace(previewPath);
-            return;
         }
         activeTab.value = TABS.PREVIEW;
         return;
@@ -140,7 +133,7 @@ watch(
 </script>
 <template>
     <div v-if="dataset && !isLoading" class="dataset-view d-flex flex-column">
-        <header class="dataset-header flex-shrink-0">
+        <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <Heading h1 separator :collapse="headerState" class="dataset-name" @click="toggleHeader">
                 <div class="item-identifier">
                     <span class="hid-box">{{ dataset.hid }}:</span>
@@ -154,30 +147,35 @@ watch(
                 </div>
             </Heading>
 
-            <div v-if="headerState === 'open'" class="header-details">
-                <div v-if="dataset.misc_blurb" class="blurb">
-                    <span class="value">{{ dataset.misc_blurb }}</span>
+            <transition name="header">
+                <div v-if="headerState === 'open'" class="header-details">
+                    <div v-if="dataset.misc_blurb" class="blurb">
+                        <span class="value">{{ dataset.misc_blurb }}</span>
+                    </div>
+                    <span v-if="dataset.file_ext" class="datatype">
+                        <span v-localize class="prompt">format</span>
+                        <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
+                    </span>
+                    <span v-if="dataset.genome_build" class="dbkey">
+                        <span v-localize class="prompt">database</span>
+                        <BLink
+                            class="value font-weight-bold"
+                            data-label="Database/Build"
+                            @click="onTabChange(TABS.EDIT)"
+                            >{{ dataset.genome_build }}</BLink
+                        >
+                    </span>
+                    <div v-if="dataset.misc_info" class="info">
+                        <span class="value">{{ dataset.misc_info }}</span>
+                    </div>
                 </div>
-                <span v-if="dataset.file_ext" class="datatype">
-                    <span v-localize class="prompt">format</span>
-                    <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
-                </span>
-                <span v-if="dataset.genome_build" class="dbkey">
-                    <span v-localize class="prompt">database</span>
-                    <BLink class="value font-weight-bold" data-label="Database/Build" @click="onTabChange(TABS.EDIT)">{{
-                        dataset.genome_build
-                    }}</BLink>
-                </span>
-                <div v-if="dataset.misc_info" class="info">
-                    <span class="value">{{ dataset.misc_info }}</span>
-                </div>
-            </div>
+            </transition>
         </header>
 
         <!-- Tab container - make it grow to fill remaining space and handle overflow -->
         <div class="dataset-tabs-container flex-grow-1 overflow-hidden">
-            <!-- Make BTabs fill its container and use flex column layout internally -->
             <BTabs
+                :key="`tabs-${datasetId}`"
                 pills
                 card
                 lazy
@@ -308,18 +306,15 @@ watch(
 .header-details {
     margin-top: 0.5rem;
     padding-left: 1rem;
-    animation: slideDown 0.25s ease;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.header-enter,
+.header-leave-to {
+    opacity: 0;
+    transform: translateY(-10px);
 }
 
 .dataset-tabs-container {
