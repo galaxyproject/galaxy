@@ -1,8 +1,12 @@
 import logging
+from datetime import datetime
 from typing import (
     List,
+    Optional,
     Union,
 )
+
+from pydantic import BaseModel
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import (
@@ -14,14 +18,17 @@ from galaxy.managers.tools import (
     tool_payload_to_tool,
 )
 from galaxy.model import User
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parameters.convert import cwl_runtime_model
 from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
-    UnprivilegedToolResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -35,6 +42,17 @@ log = logging.getLogger(__name__)
 router = Router(tags=["dynamic_tools"])
 
 DatabaseIdOrUUID = Union[DecodedDatabaseIdField, str]
+
+
+class UnprivilegedToolResponse(BaseModel):
+    id: EncodedDatabaseIdField
+    uuid: str
+    active: bool
+    hidden: bool
+    tool_id: Optional[str]
+    tool_format: Optional[str]
+    create_time: datetime
+    representation: UserToolSource
 
 
 @router.cbv

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import (
     Optional,
     Union,
@@ -7,7 +6,6 @@ from typing import (
 from pydantic import BaseModel
 from typing_extensions import Literal
 
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.tool_util_models import (
     DynamicToolSources,
     UserToolSource,
@@ -38,17 +36,6 @@ class PathBasedDynamicToolCreatePayload(BaseDynamicToolCreatePayload):
     path: str
     tool_directory: Optional[str] = None
     allow_load: bool = True
-
-
-class UnprivilegedToolResponse(BaseModel):
-    id: EncodedDatabaseIdField
-    uuid: str
-    active: bool
-    hidden: bool
-    tool_id: Optional[str]
-    tool_format: Optional[str]
-    create_time: datetime
-    representation: UserToolSource
 
 
 DynamicToolPayload = Union[DynamicToolCreatePayload, PathBasedDynamicToolCreatePayload]
