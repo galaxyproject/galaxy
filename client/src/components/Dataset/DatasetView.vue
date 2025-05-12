@@ -238,16 +238,16 @@ onMounted(() => {
                         </div>
 
                         <!-- Show preferred visualization if available -->
-                    <template v-if="preferredVisualization">
-                        <VisualizationFrame
-                            :dataset-id="datasetId"
-                            :visualization="preferredVisualization"
-                            :visualization-params="preferredVisualizationParams" />
-                    </template>
-                    <!-- Default iframe preview otherwise -->
+                        <template v-if="preferredVisualization">
+                            <VisualizationFrame
+                                :dataset-id="datasetId"
+                                :visualization="preferredVisualization"
+                                :visualization-params="preferredVisualizationParams" />
+                        </template>
+                        <!-- Default iframe preview otherwise -->
                         <iframe
                             v-else
-                        :src="displayUrl"
+                            :src="displayUrl"
                             title="galaxy dataset display frame"
                             class="dataset-preview-iframe"
                             frameborder="0"
