@@ -1,5 +1,6 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
+
 import { GalaxyApi } from "@/api";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -61,7 +62,7 @@ const fields: FieldArray = [
                     } else {
                         emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
                             title: data.title,
-                        });    
+                        });
                     }
                 },
             },
