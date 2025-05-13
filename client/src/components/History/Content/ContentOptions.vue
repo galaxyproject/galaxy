@@ -12,6 +12,7 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
+    hasPurgeOption: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -21,9 +22,10 @@ const emit = defineEmits<{
     (e: "delete", recursive?: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
+    (e: "purge"): void;
 }>();
 
-const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
+const deleteMenu: Ref<BDropdown | null> = ref(null);
 
 const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
 
@@ -46,8 +48,8 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
 function onDelete($event: MouseEvent) {
-    if (isCollection.value) {
-        deleteCollectionMenu.value?.show();
+    if (isCollection.value || props.hasPurgeOption) {
+        deleteMenu.value?.show();
     } else {
         onDeleteItem();
     }
@@ -123,19 +125,33 @@ function onDisplay($event: MouseEvent) {
             size="sm"
             variant="link"
             @click.stop="onDelete($event)">
-            <icon v-if="isDataset" icon="trash" />
-            <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+            <icon v-if="isDataset && !props.hasPurgeOption" icon="trash" />
+            <BDropdown v-else ref="deleteMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
                 <template v-slot:button-content>
                     <icon icon="trash" />
                 </template>
-                <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
-                    <icon icon="file" />
-                    Collection only
-                </b-dropdown-item>
-                <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
-                    <icon icon="copy" />
-                    Collection and elements
-                </b-dropdown-item>
+                <template v-if="isCollection">
+                    <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
+                        <icon icon="file" />
+                        Collection only
+                    </b-dropdown-item>
+                    <b-dropdown-item
+                        title="Delete collection and elements"
+                        @click.prevent.stop="onDeleteItemRecursively">
+                        <icon icon="copy" />
+                        Collection and elements
+                    </b-dropdown-item>
+                </template>
+                <template v-else-if="props.hasPurgeOption">
+                    <b-dropdown-item title="Delete dataset" @click.prevent.stop="onDeleteItem">
+                        <icon icon="trash" />
+                        Delete dataset
+                    </b-dropdown-item>
+                    <b-dropdown-item title="Permanently delete dataset" @click.prevent.stop="emit('purge')">
+                        <icon icon="burn" />
+                        Permanently delete dataset
+                    </b-dropdown-item>
+                </template>
             </BDropdown>
         </BButton>
         <BButton
