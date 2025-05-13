@@ -37,7 +37,13 @@ withDefaults(
                         <FontAwesomeIcon v-else :icon="icon || faWrench" class="fa-fw" />
                         <Heading h1 inline bold size="text" itemprop="name">{{ name }}</Heading>
                         <span itemprop="description">{{ description }}</span>
-                        <span v-if="version" class="text-muted">(Galaxy Version {{ version }})</span>
+                        <span
+                            v-if="version"
+                            class="text-muted"
+                            data-description="galaxy tool version"
+                            :data-version="version"
+                            >(Galaxy Version {{ version }})</span
+                        >
                     </div>
                     <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                         <slot name="buttons" />
