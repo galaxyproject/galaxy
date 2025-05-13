@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="ChiRAViz">
-    <description>ChiRAViz</description>
+    <description>ChiRA tool for chimeric read data</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -15,4 +15,39 @@
         <requirement type="npm" version="0.0.0" package="@galaxyproject/chiraviz"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/script.js" css="dist/main.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.chira.sqlite" ftype="chira.sqlite" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# ChiRA Visualization Tool
+
+**ChiRAViz** is a visualization tool for exploring *chimeric read alignments* using datasets produced by the ChiRA tool, typically in `chira.sqlite` format.
+
+This visualization enables researchers to interactively examine structural variations, fusion transcripts, and other chimeric events identified from RNA-seq data.
+
+## How to Use
+
+1. **Input Dataset**: Select a dataset in `chira.sqlite` format. This should be generated using the [ChiRA tool](https://github.com/gglusman/ChiRA) from RNA sequencing data.
+2. **Visualization**: Once the dataset is loaded, you can:
+   - Navigate through detected chimeric junctions.
+   - Inspect fusion evidence, read alignments, and relevant gene annotations.
+   - Interact with graphical views to zoom, filter, and highlight key features.
+
+## Features
+
+- **Interactive Graphs**: Explore chimeric junctions in detail with responsive plots.
+- **Gene Annotations**: Visual cues help correlate fusion sites with gene models.
+- **Efficient Performance**: Supports large datasets with client-side rendering.
+
+## Requirements
+
+Ensure the input dataset has the `.chira.sqlite` extension and includes all necessary metadata from a successful ChiRA analysis run.
+
+---
+
+For more information on the ChiRA pipeline or to generate compatible files, visit the official repository:
+[https://github.com/gglusman/ChiRA](https://github.com/gglusman/ChiRA)
+    ]]></help>
 </visualization>
