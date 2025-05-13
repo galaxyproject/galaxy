@@ -406,7 +406,7 @@ export default {
             (value) => (annotation.value = value),
             showAttributes,
             "modify short description",
-            "annotation",
+            "annotation"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
