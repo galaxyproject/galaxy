@@ -64,9 +64,6 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
             return True
         return key in self._legacy_mapping
 
-    def __reversed__(self):
-        return reversed(self.data)
-
 
 def copy_identifiers(source, destination):
     if isinstance(source, dict):
