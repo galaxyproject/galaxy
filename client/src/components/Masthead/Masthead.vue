@@ -151,6 +151,21 @@ onMounted(() => {
                     },
                 ]"
                 @click="userLogout" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && config.single_user"
+                id="user"
+                class="loggedin-only"
+                icon="fa-user"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: 'fa-gear',
+                        handler: () => openUrl('/user'),
+                    },
+                ]"
+                @click="user" />
         </BNavbarNav>
         <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
