@@ -1,5 +1,9 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import {
+    isOnlyOneOIDCProviderConfigured,
+    redirectToSingleProvider,
+} from "components/User/ExternalIdentities/ExternalIDHelper";
 import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
@@ -18,6 +22,16 @@ const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
+
+async function performLogin() {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    if (!config.allow_local_account_creation && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
+        const redirectUri = await redirectToSingleProvider(oIDCIdps);
+        window.location = redirectUri;
+    } else {
+        openUrl("/login/start");
+    }
+}
 
 const props = defineProps({
     brand: {
@@ -119,12 +133,7 @@ onMounted(() => {
                 tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
             <QuotaMeter />
-            <MastheadItem
-                v-if="isAnonymous"
-                id="login"
-                class="loggedout-only"
-                title="Login"
-                @click="openUrl('/login/start')" />
+            <MastheadItem v-if="isAnonymous" id="login" class="loggedout-only" title="Login" @click="performLogin()" />
             <MastheadItem
                 v-if="isAnonymous && config.allow_local_account_creation"
                 id="register"
