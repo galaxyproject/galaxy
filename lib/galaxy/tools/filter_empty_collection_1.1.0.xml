@@ -1,6 +1,6 @@
 <tool id="__FILTER_EMPTY_DATASETS__"
       name="Filter empty datasets"
-      version="1.0.0"
+      version="1.1.0"
       tool_type="filter_empty_datasets_collection">
     <description></description>
     <type class="FilterEmptyDatasetsTool" module="galaxy.tools" />
@@ -11,6 +11,7 @@
     </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+        <param type="data" name="replacement" optional="true" label="Replace empty elements with this dataset" help="If provided, empty elements will be replaced with this dataset"/>
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered empty datasets)" >
