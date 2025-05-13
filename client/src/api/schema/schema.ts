@@ -875,26 +875,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/datatypes/visualizations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Returns a list of all datatype visualization mappings
-         * @description Gets a list of all datatype visualization mappings.
-         */
-        get: operations["visualizations_api_datatypes_visualizations_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/datatypes/{datatype}": {
         parameters: {
             query?: never;
@@ -23768,44 +23748,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    visualizations_api_datatypes_visualizations_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of all datatype visualization mappings */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatatypeVisualizationMappingsList"];
                 };
             };
             /** @description Request Error */
