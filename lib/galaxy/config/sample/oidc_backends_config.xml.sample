@@ -24,6 +24,8 @@ _______________
 
 - label:            A label to identify this IDP to users in the UI. Defaults to the provider name if absent.
 
+- icon:             Image to be displayed on the login button.
+
 - require_create_confirmation:            A boolean value that decides whether a NewUserConfirmation page shows up.
 
 
@@ -157,6 +159,7 @@ Please mind `http` and `https`.
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
+    <!-- DEPRECATED This provider is deprecated and will be phased out. -->
     <provider name="Elixir">
         <client_id>...</client_id>
         <client_secret>...</client_secret>
@@ -165,6 +168,39 @@ Please mind `http` and `https`.
         <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- Please note that offline_access scope can be required to obtain refresh tokens from your provider-->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
+    <!-- # In order to get any scopes, you have to register your service with Life science, see documentation at https://lifescience-ri.eu/ls-login.html  -->
+    <provider name="Lifescience">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/lifescience/callback</redirect_uri>
+        <prompt>consent</prompt>
+        <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
+    <!-- # In order to get any scopes, you have to register your service with e-INFRA CZ AAI at https://spadmin.e-infra.cz/  -->
+    <provider name="Einfracz">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/einfracz/callback</redirect_uri>
+        <prompt>consent</prompt>
+        <icon>https://www.e-infra.cz/img/logo.svg</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
+    </provider>
+
+    <!-- # Documentation is at https://doc.nfdi-aai.de/  -->
+    <provider name="nfdi">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/nfdi/callback</redirect_uri>
+        <prompt>consent</prompt>
+        <icon>url-of-image</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
@@ -229,8 +265,8 @@ Please mind `http` and `https`.
 	Federation Registry: https://aai.egi.eu/federation -->
         <client_id>...</client_id>
         <client_secret>...</client_secret>
-	<redirect_uri>http://localhost:8080/authnz/checkin/callback</redirect_uri>
-	<icon>https://im.egi.eu/im-dashboard/static/images/egicheckin.png</icon>
+        <redirect_uri>http://localhost:8080/authnz/checkin/callback</redirect_uri>
+        <icon>https://im.egi.eu/im-dashboard/static/images/egicheckin.png</icon>
         <prompt>consent</prompt>
 	<!-- (Optional) Which Check-in environment to use (prod, demo, dev), default is prod -->
 	<!-- <checkin_env>dev</checkin_env> -->
