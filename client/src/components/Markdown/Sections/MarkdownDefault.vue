@@ -4,12 +4,16 @@ import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { computed } from "vue";
 
+//@ts-ignore
+import markdownItKatex from "./Plugins/markdown-it-katex";
+
 const mdNewline = markdownItRegexp(/<br>/, () => {
     return "<div style='clear:both;'/><br>";
 });
 
 const md = MarkdownIt();
 md.use(mdNewline);
+md.use(markdownItKatex, { throwOnError: false });
 
 const props = defineProps<{
     content: string;

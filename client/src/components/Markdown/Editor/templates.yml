@@ -27,6 +27,16 @@ Markdown:
         - First item
         - Second item
         - Third item
+  - title: "Equation Inline"
+    description: "Mathematics using KaTeX"
+    cell:
+      name: "markdown"
+      content: $c = \sqrt{a^2 + b^2}$
+  - title: "Equation Block"
+    description: "Mathematics using KaTeX"
+    cell:
+      name: "markdown"
+      content: $$c = \sqrt{a^2 + b^2}$$
 
 Galaxy:
   - title: "Collection"
