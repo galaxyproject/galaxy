@@ -260,7 +260,6 @@ class VisualizationController(
         )
 
     @web.expose
-    @web.require_login("use Galaxy visualizations", use_panels=True)
     def saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
         """
         Load a visualization and render it.

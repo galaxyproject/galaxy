@@ -652,7 +652,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/visualizations/list_published"),
                     },
                     {
                         path: "visualizations/list_published",
