@@ -617,7 +617,6 @@ export function getRouter(Galaxy) {
                         component: VisualizationCreate,
                         name: "VisualizationsCreate",
                         props: true,
-                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations/display",

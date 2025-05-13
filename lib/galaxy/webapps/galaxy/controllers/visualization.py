@@ -218,7 +218,6 @@ class VisualizationController(
 
     # ------------------------- registry.
     @web.expose
-    @web.require_login("use Galaxy visualizations", use_panels=True)
     def render(self, trans, visualization_name, embedded=None, **kwargs):
         """
         Render the appropriate visualization template, parsing the `kwargs`
