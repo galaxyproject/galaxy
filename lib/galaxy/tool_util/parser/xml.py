@@ -708,7 +708,13 @@ class XmlToolSource(ToolSource):
             return citations
 
         for citation_elem in citations_elem:
-            citation = parse_citation_elem(citation_elem)
+            try:
+                citation = parse_citation_elem(citation_elem)
+            except Exception:
+                if Version(self.parse_profile()) < Version("24.2"):
+                    continue
+                else:
+                    raise
             if citation:
                 citations.append(citation)
 

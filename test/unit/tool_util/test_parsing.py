@@ -20,6 +20,10 @@ from galaxy.tool_util.parser.output_models import (
 )
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import galaxy_directory
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.unittest import TestCase
 
 TOOL_XML_1 = """
@@ -946,6 +950,23 @@ class TestCollectionCatGroupTag(FunctionalTestToolTestCase):
         assert output_model.label is None
         output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
         assert output_dataset_model.metadata_source == "input1"
+
+
+def test_old_invalid_citation_dont_cause_failure_to_load():
+    with as_file(resource_path(__name__, "invalid_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    assert tool_source.parse_citations() == []
+
+
+def test_invalid_citation_not_allowed_in_modern_tools():
+    with as_file(resource_path(__name__, "invalid_citation_24.2.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    exc = None
+    try:
+        tool_source.parse_citations()
+    except Exception as e:
+        exc = e
+    assert exc is not None
 
 
 class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
