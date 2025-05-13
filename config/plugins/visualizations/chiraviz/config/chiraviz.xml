@@ -21,7 +21,7 @@
         </test>
     </tests>
     <help format="markdown"><![CDATA[
-# ChiRA Visualization Tool
+# What is RNA ChiRAViz?
 
 **ChiRAViz** is a visualization tool for exploring *chimeric read alignments* using datasets produced by the ChiRA tool, typically in `chira.sqlite` format.
 
