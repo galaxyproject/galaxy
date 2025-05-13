@@ -62,7 +62,7 @@ U = TypeVar("U", model.History, model.Page, model.StoredWorkflow, model.Visualiz
 class SharableModelManager(
     base.ModelManager[U],
     secured.OwnableManagerMixin[U],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[U],
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):

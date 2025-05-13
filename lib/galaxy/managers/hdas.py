@@ -14,6 +14,7 @@ from typing import (
     List,
     Optional,
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -82,6 +83,9 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.util.compression_utils import get_fileobj
+
+if TYPE_CHECKING:
+    from galaxy.model import LibraryDatasetDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -182,7 +186,9 @@ class HDAManager(
         )
         user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
-            dataset_instance = self.get_accessible(request.content, user)
+            dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = self.get_accessible(
+                request.content, user
+            )
         else:
             dataset_instance = self.ldda_manager.get_accessible(request.content, user)
         history = self.app.history_manager.by_id(request.history_id)

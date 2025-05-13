@@ -72,7 +72,10 @@ from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetInstance,
+    )
     from galaxy.tool_util.parser.output_objects import ToolOutput
     from galaxy.tools import Tool
 
@@ -268,11 +271,10 @@ class DefaultToolAction(ToolAction):
                 if not value:
                     return
 
-                collection = None
                 child_collection = False
                 if isinstance(value, CollectionAdapter):
                     # collection was created for this execution, use it as is
-                    collection = value
+                    collection: Union[CollectionAdapter, DatasetCollection] = value
                 elif hasattr(value, "child_collection"):
                     # if we are mapping a collection over a tool, so value is a DCE and
                     # we only require the child_collection
@@ -305,7 +307,7 @@ class DefaultToolAction(ToolAction):
                         if not datatype.matches_any(input.formats):
                             conversion_required = True
                             break
-                processed_dataset_dict = {}
+                processed_dataset_dict: Dict[DatasetInstance, DatasetInstance] = {}
                 for i, v in enumerate(collection.dataset_instances):
                     processed_dataset = None
                     if conversion_required:

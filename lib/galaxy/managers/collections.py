@@ -5,6 +5,7 @@ from typing import (
     List,
     Optional,
     overload,
+    TYPE_CHECKING,
     Union,
 )
 from zipfile import ZipFile
@@ -35,6 +36,7 @@ from galaxy.managers.hdas import (
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model import DatasetCollection
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
@@ -52,10 +54,19 @@ from galaxy.short_term_storage import (
 )
 from galaxy.util import validation
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollectionInstance,
+        HistoryDatasetAssociation,
+    )
+    from galaxy.tool_util_models.tool_source import FieldDict
+
 log = logging.getLogger(__name__)
 
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
 ERROR_NO_COLLECTION_TYPE = "Create called without specifying a collection type."
+
+HDCAElementObjectType = Union[DatasetCollection, "HistoryDatasetAssociation"]
 
 
 class DatasetCollectionManager:
@@ -122,11 +133,11 @@ class DatasetCollectionManager:
             dataset_collection = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
         elif not has_structure:
             collection_type_description = structure.collection_type_description
-            dataset_collection = model.DatasetCollection(populated=False)
+            dataset_collection = DatasetCollection(populated=False)
             dataset_collection.collection_type = collection_type_description.collection_type
         else:
             collection_type_description = structure.collection_type_description
-            dataset_collection = model.DatasetCollection(populated=False)
+            dataset_collection = DatasetCollection(populated=False)
             dataset_collection.collection_type = collection_type_description.collection_type
             elements = []
             for index, (identifier, substructure) in enumerate(structure.children):
@@ -170,16 +181,16 @@ class DatasetCollectionManager:
         elements=None,
         implicit_collection_info=None,
         trusted_identifiers=None,
-        hide_source_items=False,
+        hide_source_items: bool = False,
         tags=None,
-        copy_elements=False,
+        copy_elements: bool = False,
         history=None,
-        set_hid=True,
+        set_hid: bool = True,
         flush=True,
         completed_job=None,
         output_name=None,
-        fields=None,
-    ):
+        fields: Optional[Union[str, List["FieldDict"]]] = None,
+    ) -> "DatasetCollectionInstance":
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -235,9 +246,9 @@ class DatasetCollectionManager:
         implicit_output_name=None,
         implicit_inputs=None,
         tags=None,
-        set_hid=True,
-        flush=True,
-    ):
+        set_hid: bool = True,
+        flush: bool = True,
+    ) -> "DatasetCollectionInstance":
         if isinstance(parent, model.History):
             dataset_collection_instance: Union[
                 model.HistoryDatasetCollectionAssociation,
@@ -287,11 +298,11 @@ class DatasetCollectionManager:
         collection_type,
         element_identifiers=None,
         elements=None,
-        hide_source_items=None,
-        copy_elements=False,
+        hide_source_items: bool = False,
+        copy_elements: bool = False,
         history=None,
-        fields=None,
-    ):
+        fields: Optional[Union[str, List["FieldDict"]]] = None,
+    ) -> DatasetCollection:
         # Make sure at least one of these is None.
         assert element_identifiers is None or elements is None
         if element_identifiers is None and elements is None:
@@ -330,7 +341,7 @@ class DatasetCollectionManager:
             dataset_collection = builder.build_collection(type_plugin, elements, fields=fields)
         else:
             # TODO: Pass fields here - need test case first.
-            dataset_collection = model.DatasetCollection(populated=False)
+            dataset_collection = DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
 
@@ -375,10 +386,10 @@ class DatasetCollectionManager:
         trans: ProvidesHistoryContext,
         collection_type_description,
         element_identifiers,
-        hide_source_items=False,
-        copy_elements=False,
+        hide_source_items: bool = False,
+        copy_elements: bool = False,
         history=None,
-    ):
+    ) -> Dict[str, HDCAElementObjectType]:
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
             self.__recursively_create_collections_for_identifiers(
@@ -535,7 +546,11 @@ class DatasetCollectionManager:
         collections = list(filter(query.direct_match, collections))
         return collections
 
-    def __persist(self, dataset_collection_instance, flush=True):
+    def __persist(
+        self,
+        dataset_collection_instance: "DatasetCollectionInstance",
+        flush: bool = True,
+    ) -> "DatasetCollectionInstance":
         session = self.model.session
         session.add(dataset_collection_instance)
         if flush:
@@ -543,7 +558,7 @@ class DatasetCollectionManager:
         return dataset_collection_instance
 
     def __recursively_create_collections_for_identifiers(
-        self, trans, element_identifiers, hide_source_items, copy_elements, history=None
+        self, trans, element_identifiers, hide_source_items: bool, copy_elements: bool, history=None
     ):
         for element_identifier in element_identifiers:
             try:
@@ -569,14 +584,14 @@ class DatasetCollectionManager:
         return element_identifiers
 
     def __recursively_create_collections_for_elements(
-        self, trans, elements, hide_source_items, copy_elements, history=None
-    ):
+        self, trans, elements, hide_source_items: bool, copy_elements: bool, history=None
+    ) -> None:
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
 
         new_elements = {}
         for key, element in elements.items():
-            if isinstance(element, model.DatasetCollection):
+            if isinstance(element, DatasetCollection):
                 continue
 
             if element.get("src") != "new_collection":
@@ -597,8 +612,10 @@ class DatasetCollectionManager:
             new_elements[key] = collection
         elements.update(new_elements)
 
-    def __load_elements(self, trans, element_identifiers, hide_source_items=False, copy_elements=False, history=None):
-        elements = {}
+    def __load_elements(
+        self, trans, element_identifiers, hide_source_items: bool = False, copy_elements: bool = False, history=None
+    ) -> Dict[str, HDCAElementObjectType]:
+        elements: Dict[str, HDCAElementObjectType] = {}
         for element_identifier in element_identifiers:
             elements[element_identifier["name"]] = self.__load_element(
                 trans,
@@ -609,7 +626,9 @@ class DatasetCollectionManager:
             )
         return elements
 
-    def __load_element(self, trans, element_identifier, hide_source_items, copy_elements, history=None):
+    def __load_element(
+        self, trans, element_identifier, hide_source_items: bool, copy_elements: bool, history=None
+    ) -> HDCAElementObjectType:
         # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
         #    # consistent with other API methods though.
@@ -642,9 +661,7 @@ class DatasetCollectionManager:
         if src_type == "hda":
             hda = self.hda_manager.get_accessible(element_id, trans.user)
             if copy_elements:
-                element: model.HistoryDatasetAssociation = self.hda_manager.copy(
-                    hda, history=history or trans.history, hide_copy=True, flush=False
-                )
+                element = self.hda_manager.copy(hda, history=history or trans.history, hide_copy=True, flush=False)
             else:
                 element = hda
             if hide_source_items and self.hda_manager.get_owned(
@@ -685,7 +702,7 @@ class DatasetCollectionManager:
 
     def get_dataset_collection_instance(
         self, trans: ProvidesHistoryContext, instance_type: DatasetCollectionInstanceType, id, **kwds: Any
-    ) -> Union[model.HistoryDatasetCollectionAssociation, model.LibraryDatasetCollectionAssociation]:
+    ) -> "DatasetCollectionInstance":
         """ """
         if instance_type == "history":
             return self.__get_history_collection_instance(trans, id, **kwds)
@@ -695,7 +712,7 @@ class DatasetCollectionManager:
 
     def get_dataset_collection(self, trans, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
-        collection = trans.sa_session.get(model.DatasetCollection, collection_id)
+        collection = trans.sa_session.get(DatasetCollection, collection_id)
         return collection
 
     def apply_rules(self, hdca, rule_set, handle_dataset):

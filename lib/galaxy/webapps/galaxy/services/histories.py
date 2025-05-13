@@ -370,7 +370,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         short_term_storage_target = model_store_storage_target(
             self.short_term_storage_allocator,
-            history.name,
+            history.name or "Unnamed history",
             payload.model_store_format,
         )
         export_association = self.history_export_manager.create_export_association(history.id)

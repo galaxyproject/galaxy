@@ -1,8 +1,16 @@
+from typing import (
+    Iterable,
+    TYPE_CHECKING,
+)
+
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
 )
 from . import BaseDatasetCollectionType
+
+if TYPE_CHECKING:
+    from . import DatasetInstanceMapping
 
 FORWARD_IDENTIFIER = "forward"
 REVERSE_IDENTIFIER = "reverse"
@@ -15,7 +23,9 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
 
     collection_type = "paired"
 
-    def generate_elements(self, dataset_instances, **kwds):
+    def generate_elements(
+        self, dataset_instances: "DatasetInstanceMapping", **kwds
+    ) -> Iterable[DatasetCollectionElement]:
         if forward_dataset := dataset_instances.get(FORWARD_IDENTIFIER):
             left_association = DatasetCollectionElement(
                 element=forward_dataset,

@@ -63,7 +63,7 @@ def set_collection_attributes(dataset_element, *payload):
 # TODO: to DatasetCollectionInstanceManager
 class HDCAManager(
     base.ModelManager[model.HistoryDatasetCollectionAssociation],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[model.HistoryDatasetCollectionAssociation],
     secured.OwnableManagerMixin[model.HistoryDatasetCollectionAssociation],
     deletable.PurgableManagerMixin,
     annotatable.AnnotatableManagerMixin,
