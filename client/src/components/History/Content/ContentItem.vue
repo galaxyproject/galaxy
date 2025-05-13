@@ -94,6 +94,11 @@ const jobState = computed(() => {
     return new JobStateSummary(props.item);
 });
 
+const itemIsRunningInteractiveTool = computed(() => {
+    // If our datset id is in the entrypOintStore it's a running it
+    return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
+});
+
 const contentId = computed(() => {
     return `dataset-${props.item.id}`;
 });
@@ -418,6 +423,10 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :is-running-interactive-tool="itemIsRunningInteractiveTool"
+                        :interactive-tool-id="
+                            itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''
+                        "
                         @delete="onDelete"
                         @display="onDisplay"
                         @showCollectionInfo="onShowCollectionInfo"

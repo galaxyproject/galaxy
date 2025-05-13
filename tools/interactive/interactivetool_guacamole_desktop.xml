@@ -1,4 +1,5 @@
 <tool id="interactive_tool_guacamole_desktop" tool_type="interactive" name="Ubuntu XFCE Desktop" version="0.1">
+    <icon src="ubuntu.png" />
     <requirements>
         <container type="docker">quay.io/bgruening/guacamole-desktop</container>
     </requirements>
