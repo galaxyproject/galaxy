@@ -29,7 +29,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
                 sort_by: sort_by as SortKeyLiteral,
                 sort_desc,
                 show_own: false,
-                show_published: true,
+                show_published: false,
                 show_shared: true,
             },
         },

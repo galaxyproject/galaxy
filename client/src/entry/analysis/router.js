@@ -617,7 +617,6 @@ export function getRouter(Galaxy) {
                         component: VisualizationCreate,
                         name: "VisualizationsCreate",
                         props: true,
-                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations/display",
@@ -653,7 +652,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/visualizations/list_published"),
                     },
                     {
                         path: "visualizations/list_published",
@@ -661,6 +660,14 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "published",
                         },
+                    },
+                    {
+                        path: "visualizations/list_shared",
+                        component: GridVisualization,
+                        props: {
+                            activeList: "shared",
+                        },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/create",
