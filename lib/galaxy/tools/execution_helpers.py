@@ -84,7 +84,7 @@ def on_text_for_names(hids: Optional[Collection[int]], prefix: str) -> str:
 
 
 def on_text_for_dataset_and_collections(
-    dataset_hids: Optional[Collection[str]] = None, collection_hids: Optional[Collection[str]] = None
+    dataset_hids: Optional[Collection[int]] = None, collection_hids: Optional[Collection[int]] = None
 ) -> str:
     on_text_datasets = on_text_for_names(dataset_hids, "data")
     on_text_collection = on_text_for_names(collection_hids, "list")
