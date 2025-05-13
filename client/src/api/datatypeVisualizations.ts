@@ -9,7 +9,6 @@ import { rethrowSimple } from "@/utils/simple-error";
 export interface DatatypeVisualization {
     datatype: string; // Datatype extension (e.g., "h5", "tabular")
     visualization: string; // Visualization plugin name
-    defaultParams?: Record<string, string>; // Optional default parameters for the visualization
 }
 
 /**

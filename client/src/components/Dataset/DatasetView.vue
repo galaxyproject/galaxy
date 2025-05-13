@@ -54,7 +54,6 @@ const TAB_VALUES = Object.values(TABS) as TabName[];
 
 const activeTab = ref<TabName>(TABS.PREVIEW);
 const preferredVisualization = ref<string | null>(null);
-const preferredVisualizationParams = ref<Record<string, string> | null>(null);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
@@ -99,14 +98,11 @@ async function checkPreferredVisualization() {
         const mapping = await datatypeVisualizationsStore.getPreferredVisualizationForDatatype(dataset.value.file_ext);
         if (mapping) {
             preferredVisualization.value = mapping.visualization;
-            preferredVisualizationParams.value = mapping.defaultParams || null;
         } else {
             preferredVisualization.value = null;
-            preferredVisualizationParams.value = null;
         }
     } catch (error) {
         preferredVisualization.value = null;
-        preferredVisualizationParams.value = null;
     }
 }
 
@@ -242,7 +238,7 @@ onMounted(() => {
                             <VisualizationFrame
                                 :dataset-id="datasetId"
                                 :visualization="preferredVisualization"
-                                :visualization-params="preferredVisualizationParams" />
+                                @loaded="iframeLoading = false" />
                         </template>
                         <!-- Default iframe preview otherwise -->
                         <iframe
