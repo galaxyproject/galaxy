@@ -47,7 +47,7 @@ Ensure the input dataset has the `.chira.sqlite` extension and includes all nece
 
 ---
 
-For more information on the ChiRA pipeline or to generate compatible files, visit the official repository:
+For more information on the ChiRA pipeline take a look at:
 [https://doi.org/10.1093/gigascience/giaa158](https://doi.org/10.1093/gigascience/giaa158)
     ]]></help>
 </visualization>
