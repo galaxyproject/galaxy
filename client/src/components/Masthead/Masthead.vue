@@ -50,7 +50,7 @@ async function performLogin() {
 }
 
 function performRegistration() {
-    if (!config.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
+    if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
          const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
          const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
          window.location = oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
