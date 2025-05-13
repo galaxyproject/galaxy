@@ -47,7 +47,7 @@ const hasExactlyOneOIDCRegistration = computed(() => {
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    if (config.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
+    if (config.value.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
         const redirectUri = await redirectToSingleProvider(oIDCIdps);
         window.location = redirectUri;
     } else {
@@ -56,7 +56,7 @@ async function performLogin() {
 }
 
 function performRegistration() {
-    if (!config.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
+    if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
         const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
         const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
         window.location =
