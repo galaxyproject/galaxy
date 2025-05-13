@@ -96,7 +96,7 @@ const jobState = computed(() => {
 
 const itemIsRunningInteractiveTool = computed(() => {
     // If our datset id is in the entrypOintStore it's a running it
-    return entryPointStore.entryPointsForHda(props.item.id).length > 0;
+    return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
 });
 
 const contentId = computed(() => {
