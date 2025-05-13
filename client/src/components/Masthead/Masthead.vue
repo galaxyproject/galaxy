@@ -1,13 +1,14 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import {
+    getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
 } from "components/User/ExternalIdentities/ExternalIDHelper";
 import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
@@ -21,7 +22,28 @@ import QuotaMeter from "./QuotaMeter";
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
+
 const { config, isConfigLoaded } = useConfig();
+
+const hasOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration) {
+        return Object.keys(oIDCIdpsWithRegistration).length > 0;
+    } else {
+        return false;
+    }
+});
+
+const hasExactlyOneOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration) {
+        return Object.keys(oIDCIdpsWithRegistration).length === 1;
+    } else {
+        return false;
+    }
+});
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -30,6 +52,17 @@ async function performLogin() {
         window.location = redirectUri;
     } else {
         openUrl("/login/start");
+    }
+}
+
+function performRegistration() {
+    if (!config.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
+        const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+        const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+        window.location =
+            oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    } else {
+        openUrl("/register/start");
     }
 }
 
@@ -135,11 +168,11 @@ onMounted(() => {
             <QuotaMeter />
             <MastheadItem v-if="isAnonymous" id="login" class="loggedout-only" title="Login" @click="performLogin()" />
             <MastheadItem
-                v-if="isAnonymous && config.allow_local_account_creation"
+                v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
                 id="register"
                 class="loggedout-only"
                 title="Register"
-                @click="openUrl('/register/start')" />
+                @click="performRegistration()" />
             <MastheadDropdown
                 v-if="currentUser && !isAnonymous && !config.single_user"
                 id="user"

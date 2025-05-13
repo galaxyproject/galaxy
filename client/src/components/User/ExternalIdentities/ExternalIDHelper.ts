@@ -14,6 +14,16 @@ export type OIDCConfig = Record<
     }
 >;
 
+export type OIDCConfigWithRegistration = Record<
+    string,
+    {
+        icon?: string;
+        label?: string;
+        custom_button_text?: string;
+        end_user_registration_endpoint: string;
+    }
+>;
+
 /** Return the per-IDP config, minus anything the caller wants to hide. */
 export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = []): OIDCConfig {
     const blacklist = new Set(["cilogon", "custos", ...exclude]);
@@ -21,6 +31,19 @@ export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = 
     Object.entries(oidcConfig).forEach(([idp, cfg]) => {
         if (!blacklist.has(idp)) {
             filtered[idp] = cfg;
+        }
+    });
+    return filtered;
+}
+
+export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfigWithRegistration {
+    const filtered: OIDCConfigWithRegistration = {};
+    Object.entries(oidcConfig).forEach(([idp, cfg]) => {
+        if (cfg.end_user_registration_endpoint && typeof cfg.end_user_registration_endpoint === "string") {
+            filtered[idp] = {
+                ...cfg,
+                end_user_registration_endpoint: cfg.end_user_registration_endpoint,
+            };
         }
     });
     return filtered;
