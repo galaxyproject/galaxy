@@ -3,7 +3,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
@@ -13,11 +13,22 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
+import {OIDCConfig, isOnlyOneOIDCProviderConfigured, redirectToSingleProvider} from "components/User/ExternalIdentities/ExternalIDHelper"
 
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
+
+async function performLogin() {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    if (!config.allow_local_account_creation && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
+        const redirect_url = await redirectToSingleProvider(oIDCIdps);
+        window.location=redirect_url;
+    } else {
+        openUrl('/login/start');
+    }
+}
 
 const props = defineProps({
     brand: {
@@ -124,7 +135,7 @@ onMounted(() => {
                 id="login"
                 class="loggedout-only"
                 title="Login"
-                @click="openUrl('/login/start')" />
+                @click="performLogin()" />
             <MastheadItem
                 v-if="isAnonymous && config.allow_local_account_creation"
                 id="register"

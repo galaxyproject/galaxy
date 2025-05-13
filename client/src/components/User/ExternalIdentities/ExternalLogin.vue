@@ -79,7 +79,7 @@ async function submitOIDCLogin(idp: string) {
         const urlParams = new URLSearchParams(window.location.search);
         const redirectParam = urlParams.get("redirect");
         console.log(idp);
-        const redirect_uri = await submitOIDCLogon(idp,redirectParam);
+        const redirect_uri = submitOIDCLogon(idp,redirectParam);
         console.log(redirect_uri);
         if (redirect_uri) {
             window.location = redirect_uri;
