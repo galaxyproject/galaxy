@@ -29,7 +29,7 @@ This visualization enables researchers to interactively examine structural varia
 
 ## How to Use
 
-1. **Input Dataset**: Select a dataset in `chira.sqlite` format. This should be generated using the [ChiRA tool](https://github.com/gglusman/ChiRA) from RNA sequencing data.
+1. **Input Dataset**: Select a dataset in `chira.sqlite` format. This should be generated using the ChiRA tool from RNA sequencing data.
 2. **Visualization**: Once the dataset is loaded, you can:
    - Navigate through detected chimeric junctions.
    - Inspect fusion evidence, read alignments, and relevant gene annotations.
