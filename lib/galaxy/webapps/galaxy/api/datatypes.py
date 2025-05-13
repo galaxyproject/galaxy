@@ -238,17 +238,6 @@ class FastAPIDatatypes:
         return view_edam_data(self.datatypes_registry, True)
 
     @router.get(
-        "/api/datatypes/visualizations",
-        public=True,
-        summary="Returns a list of all datatype visualization mappings",
-        response_description="List of all datatype visualization mappings",
-        response_model=DatatypeVisualizationMappingsList,
-    )
-    async def visualizations(self) -> DatatypeVisualizationMappingsList:
-        """Gets a list of all datatype visualization mappings."""
-        return view_visualization_mappings(self.datatypes_registry)
-
-    @router.get(
         "/api/datatypes/{datatype}/visualizations",
         public=True,
         summary="Returns the visualization mapping for a specific datatype",
