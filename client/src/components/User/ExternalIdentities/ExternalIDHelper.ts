@@ -27,6 +27,17 @@ export function getFilteredOIDCIdps(
     return filtered;
 }
 
+export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfig {
+        const filtered: OIDCConfig = {};
+        Object.entries(oidcConfig).forEach(([idp, cfg]) => {
+            if (cfg.end_user_registration_endpoint != undefined &&
+                cfg.end_user_registration_endpoint !== null) {
+                    filtered[idp] = cfg;
+                    }
+        });
+    return filtered;
+    }
+
 /** Do we need to show the institution picker at all? */
 export const getNeedShowCilogonInstitutionList = (cfg: OIDCConfig): boolean => {
         return Boolean(cfg.cilogon || cfg.custos);

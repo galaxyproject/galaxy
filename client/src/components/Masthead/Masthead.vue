@@ -13,12 +13,31 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
-import {OIDCConfig, isOnlyOneOIDCProviderConfigured, redirectToSingleProvider} from "components/User/ExternalIdentities/ExternalIDHelper"
+import {OIDCConfig, isOnlyOneOIDCProviderConfigured, redirectToSingleProvider, getOIDCIdpsWithRegistration} from "components/User/ExternalIdentities/ExternalIDHelper"
 
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
+
 const { config, isConfigLoaded } = useConfig();
+
+const hasOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration)
+        return Object.keys(oIDCIdpsWithRegistration).length > 0;
+    else
+        return false;
+});
+
+const hasExactlyOneOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration)
+        return Object.keys(oIDCIdpsWithRegistration).length === 1;
+    else
+        return false;
+});
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -28,6 +47,15 @@ async function performLogin() {
     } else {
         openUrl('/login/start');
     }
+}
+
+function performRegistration() {
+    if (!config.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
+         const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+         const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+         window.location = oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    } else
+        openUrl('/register/start')
 }
 
 const props = defineProps({
@@ -137,11 +165,11 @@ onMounted(() => {
                 title="Login"
                 @click="performLogin()" />
             <MastheadItem
-                v-if="isAnonymous && config.allow_local_account_creation"
+                v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
                 id="register"
                 class="loggedout-only"
                 title="Register"
-                @click="openUrl('/register/start')" />
+                @click="performRegistration()" />
             <MastheadDropdown
                 v-if="currentUser && !isAnonymous && !config.single_user"
                 id="user"
