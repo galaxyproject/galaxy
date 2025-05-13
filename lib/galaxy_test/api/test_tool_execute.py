@@ -126,6 +126,16 @@ def test_identifier_multiple_reduce_in_repeat(
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
+@requires_tool_id("repeat_min")
+def test_repeat_min(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_pair()
+    execute = required_tool.execute.with_inputs({})
+    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("")
+
+
+
 @requires_tool_id("output_action_change_format")
 def test_map_over_with_output_format_actions(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
