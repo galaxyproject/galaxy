@@ -9301,13 +9301,6 @@ export interface components {
              */
             datatype: string;
             /**
-             * Default Parameters
-             * @description Optional parameters to pass to the visualization plugin
-             */
-            default_params?: {
-                [key: string]: string;
-            } | null;
-            /**
              * Visualization
              * @description The visualization plugin to use
              */

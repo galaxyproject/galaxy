@@ -158,11 +158,6 @@ class DatatypeVisualizationMapping(BaseModel):
         description="The visualization plugin to use",
         examples=["igv", "trackster", "vitessce"],
     )
-    default_params: Optional[Dict[str, str]] = Field(
-        default=None,
-        title="Default Parameters",
-        description="Optional parameters to pass to the visualization plugin",
-    )
 
 
 class DatatypeVisualizationMappingsList(RootModel):

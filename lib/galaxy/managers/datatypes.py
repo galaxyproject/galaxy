@@ -149,7 +149,6 @@ def view_visualization_mappings(
             {
                 "datatype": datatype,
                 "visualization": mapping_info["visualization"],
-                "default_params": mapping_info.get("default_params"),
             }
         )
     elif not datatype:
@@ -158,7 +157,6 @@ def view_visualization_mappings(
                 {
                     "datatype": dt,
                     "visualization": mapping_info["visualization"],
-                    "default_params": mapping_info.get("default_params"),
                 }
             )
 

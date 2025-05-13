@@ -141,7 +141,6 @@ class FastAPIDatatypes:
         if preferred_viz:
             result["preferred_visualization"] = {
                 "visualization": preferred_viz["visualization"],
-                "default_params": preferred_viz.get("default_params"),
             }
 
         return result

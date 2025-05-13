@@ -319,7 +319,6 @@ class Registry:
                         # Check for preferred visualization definitions
                         for visualization_elem in elem.findall("visualization"):
                             plugin = visualization_elem.get("plugin", None)
-                            default_params_str = visualization_elem.get("default_params", None)
 
                             # Skip incomplete visualization definitions
                             if not plugin:
@@ -328,23 +327,9 @@ class Registry:
                                 )
                                 continue
 
-                            # Parse default parameters if provided
-                            default_params = None
-                            if default_params_str:
-                                try:
-                                    default_params = galaxy.util.safe_loads(default_params_str)
-                                except Exception:
-                                    self.log.exception(
-                                        "Error parsing default_params for visualization definition: %s -> %s",
-                                        extension,
-                                        plugin,
-                                    )
-                                    continue
-
                             # Store the mapping
                             self.visualization_mappings[extension] = {
                                 "visualization": plugin,
-                                "default_params": default_params,
                             }
 
                             self.log.debug("Loaded preferred visualization definition: %s -> %s", extension, plugin)
