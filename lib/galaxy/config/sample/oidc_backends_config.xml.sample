@@ -126,6 +126,8 @@ Please mind `http` and `https`.
         <!-- <allowed_idp>https://github.com/login/oauth/authorize</allowed_idp> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
         <!-- <enable_idp_logout>false</enable_idp_logout> -->
+        <!-- (Optional) An end user registration point for the OIDC connector -->
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
     </provider>
 
     <provider name="Keycloak">
@@ -155,7 +157,8 @@ Please mind `http` and `https`.
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- Please note that offline_access scope can be required to obtain refresh tokens from your provider-->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
-
+        <!-- (Optional) An end user registration point for the OIDC connector -->
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
@@ -224,6 +227,9 @@ Please mind `http` and `https`.
         You should subsequently be able to get the client ID and the client secret from the Okta website.
          -->
         <api_url> ... </api_url>
+        <!-- (Optional) An end user registration point for the OIDC connector -->
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
+
     </provider>
 
     <provider name="azure">
@@ -257,6 +263,8 @@ Please mind `http` and `https`.
           will just read the default value of your IdP name. For example: "Sign in with oidc" or "Sign in with Azure".
           However, if for example you enter the value "your university account" here, the button will display "Sign in with your university account".
          -->
+        <!-- (Optional) An end user registration point for the OIDC connector -->
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
     </provider>
 
     <!-- Documentation: https://docs.egi.eu/providers/check-in/sp -->

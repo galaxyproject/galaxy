@@ -163,6 +163,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="end_user_registration_endpoint" minOccurs="0" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        If the OIDC provider supports end user registration this endpoint will be used for registration.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>

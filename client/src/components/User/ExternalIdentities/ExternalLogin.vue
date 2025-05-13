@@ -24,6 +24,7 @@ type OIDCConfig = Record<
         icon?: string;
         label?: string;
         custom_button_text?: string;
+        end_user_registration_endpoint?: string;
     }
 >;
 
