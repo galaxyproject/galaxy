@@ -24,7 +24,6 @@ from galaxy.managers.datatypes import (
     DatatypesCombinedMap,
     DatatypesEDAMDetailsDict,
     DatatypesMap,
-    DatatypeVisualizationMapping,
     DatatypeVisualizationMappingsList,
     view_converters,
     view_edam_data,
