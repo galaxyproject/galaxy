@@ -11,5 +11,8 @@
     <params>
         <param required="true">dataset_id</param>
     </params>
+    <requirements>
+        <requirement type="npm" version="0.0.0" package="@galaxyproject/chiraviz"/>
+    </requirements>
     <entry_point entry_point_type="script" src="dist/script.js" css="dist/main.css" />
 </visualization>
