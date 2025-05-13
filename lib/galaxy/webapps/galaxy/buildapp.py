@@ -253,6 +253,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/visualizations/edit")
     webapp.add_client_route("/visualizations/sharing")
     webapp.add_client_route("/visualizations/list_published")
+    webapp.add_client_route("/visualizations/list_shared")
     webapp.add_client_route("/visualizations/list")
     webapp.add_client_route("/pages/list")
     webapp.add_client_route("/pages/list_published")

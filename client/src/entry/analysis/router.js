@@ -662,6 +662,14 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
+                        path: "visualizations/list_shared",
+                        component: GridVisualization,
+                        props: {
+                            activeList: "shared",
+                        },
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "workflows/create",
                         component: WorkflowCreate,
                         redirect: redirectAnon(),
