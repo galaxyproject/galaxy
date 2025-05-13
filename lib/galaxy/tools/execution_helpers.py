@@ -71,27 +71,23 @@ def on_text_for_names(hids: Optional[Collection[int]], prefix: str) -> str:
             groups.append(f"{group[0]}-{group[-1]}")
 
     # Build name for output datasets based on tool name and input names
-    if len(unique_hids) == 1:
-        on_text = prefix
-    else:
-        on_text = prefix + "s"
-
+    on_text = ""
     if len(groups) == 1:
-        on_text = f"{on_text} {groups[0]}"
+        on_text = f"{prefix} {groups[0]}"
     elif len(groups) == 2:
-        on_text = f"{on_text} {groups[0]} and {groups[1]}"
+        on_text = f"{prefix} {groups[0]} and {groups[1]}"
     elif len(groups) == 3:
-        on_text = f"{on_text} {groups[0]}, {groups[1]}, and {groups[2]}"
+        on_text = f"{prefix} {groups[0]}, {groups[1]}, and {groups[2]}"
     else:
-        on_text = f"{on_text} {groups[0]}, {groups[1]}, and others"
+        on_text = f"{prefix} {groups[0]}, {groups[1]}, and others"
     return on_text
 
 
 def on_text_for_dataset_and_collections(
     dataset_hids: Optional[Collection[str]] = None, collection_hids: Optional[Collection[str]] = None
 ) -> str:
-    on_text_datasets = on_text_for_names(dataset_hids, "dataset")
-    on_text_collection = on_text_for_names(collection_hids, "collection")
+    on_text_datasets = on_text_for_names(dataset_hids, "data")
+    on_text_collection = on_text_for_names(collection_hids, "list")
     on_text = []
     if on_text_datasets:
         on_text.append(on_text_datasets)
