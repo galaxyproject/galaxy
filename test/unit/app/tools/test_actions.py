@@ -14,7 +14,10 @@ from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
 )
-from galaxy.tools.execution_helpers import on_text_for_names
+from galaxy.tools.execution_helpers import (
+    on_text_for_dataset_and_collections,
+    on_text_for_names,
+)
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
 
@@ -50,16 +53,31 @@ TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
 
 
 def test_on_text_for_names():
-    def assert_on_text_is(expected, *names):
-        on_text = on_text_for_names(names, "dataset")
+    def assert_on_text_is(expected, *hids):
+        on_text = on_text_for_names(hids, "dataset")
         assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
-    assert_on_text_is("dataset 1", "1")
-    assert_on_text_is("datasets 1 and 2", "1", "2")
-    assert_on_text_is("datasets 1, 2, and 3", "1", "2", "3")
-    assert_on_text_is("datasets 1, 2, and others", "1", "2", "3", "4")
+    assert_on_text_is("dataset 1", 1)
+    assert_on_text_is("datasets 1 and 2", 1, 2)
+    assert_on_text_is("datasets 1-3", 1, 2, 3)
+    assert_on_text_is("datasets 1-4", 1, 2, 3, 4)
+    assert_on_text_is("datasets 1, 3, and 4", 1, 3, 4)
+    assert_on_text_is("datasets 1-3 and 5-7", 1, 2, 3, 5, 6, 7)
+    assert_on_text_is("datasets 1-3, 5-7, and 9-11", 1, 2, 3, 5, 6, 7, 9, 10, 11)
 
-    assert_on_text_is("datasets 1 and 2", "1", "1", "2")
+    assert_on_text_is("datasets 1-3, 5, and 9", 1, 2, 3, 5, 9)
+
+    assert_on_text_is("datasets 1, 2, and others", 1, 2, 4, 5)
+    assert_on_text_is("datasets 1, 2, and 4-6", 1, 2, 4, 5, 6)
+
+    assert_on_text_is("datasets 1 and 2", 1, 1, 2)
+
+
+def test_on_text_for_dataset_and_collections():
+    def assert_on_text_is(expected, dataset_hids, collection_hids):
+        on_text = on_text_for_dataset_and_collections(dataset_hids, collection_hids)
+        assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
+    assert_on_text_is("dataset 1 and collections 4 and 5", [1], [4, 5])
 
 
 class TestDefaultToolAction(TestCase, tools_support.UsesTools):
@@ -97,7 +115,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        assert output["out1"].name == "Test Tool on datasets 2 and 1"
+        assert output["out1"].name == "Test Tool on datasets 1 and 2"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)

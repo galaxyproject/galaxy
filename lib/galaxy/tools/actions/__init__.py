@@ -910,14 +910,14 @@ class DefaultToolAction(ToolAction):
         for collections in inp_dataset_collections.values():
             for dataset_collection, _ in collections:
                 if isinstance(dataset_collection, HistoryDatasetCollectionAssociation):
-                    collection_hids.append(str(dataset_collection.hid))
+                    collection_hids.append(dataset_collection.hid)
 
-        for input_name in reversed(inp_data):
+        for input_name in inp_data:
             data = inp_data[input_name]
             if input_name in inp_dataset_collections:
                 continue
             if getattr(data, "hid", None):
-                input_hids.append(f"{data.hid}")
+                input_hids.append(data.hid)
         return on_text_for_dataset_and_collections(dataset_hids=input_hids, collection_hids=collection_hids)
 
     def _new_job_for_session(
