@@ -453,8 +453,6 @@ class Registry:
             if use_build_sites:
                 self._load_build_sites(root)
 
-            # Load visualization mappings
-            self._load_visualization_mappings(root)
         self.set_default_values()
 
         def append_to_sniff_order() -> None:
