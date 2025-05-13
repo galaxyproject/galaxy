@@ -3,6 +3,7 @@ import axios, { type AxiosError } from "axios";
 import { BAlert, BButton, BButtonGroup, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
+import {OIDCConfig, getFilteredOIDCIdps, getNeedShowCilogonInstitutionList, submitOIDCLogon} from "components/User/ExternalIdentities/ExternalIDHelper"
 
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
@@ -18,15 +19,6 @@ interface Idp {
     OrganizationName: string;
     RandS: boolean;
 }
-type OIDCConfig = Record<
-    string,
-    {
-        icon?: string;
-        label?: string;
-        custom_button_text?: string;
-        end_user_registration_endpoint?: string;
-    }
->;
 
 interface Props {
     loginPage?: boolean;
@@ -55,19 +47,10 @@ const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
-const filteredOIDCIdps = computed(() => {
-    const exclude = ["cilogon", "custos"].concat(props.excludeIdps);
-    const filtered = Object.assign({}, oIDCIdps.value);
-
-    exclude.forEach((idp) => {
-        delete filtered[idp];
-    });
-
-    return filtered;
-});
+const filteredOIDCIdps = computed(() => {return getFilteredOIDCIdps(oIDCIdps.value,props.excludeIdps)});
 
 const cilogonListShow = computed(() => {
-    return oIDCIdps.value.cilogon || oIDCIdps.value.custos;
+    return getNeedShowCilogonInstitutionList(oIDCIdps.value);
 });
 
 const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
@@ -93,17 +76,13 @@ async function submitOIDCLogin(idp: string) {
     loading.value = true;
 
     try {
-        const loginUrl = withPrefix(`/authnz/${idp}/login`);
         const urlParams = new URLSearchParams(window.location.search);
         const redirectParam = urlParams.get("redirect");
-
-        const formData = new FormData();
-        formData.append("next", redirectParam || "");
-
-        const { data } = await axios.post(loginUrl, formData, { withCredentials: true });
-
-        if (data.redirect_uri) {
-            window.location = data.redirect_uri;
+        console.log(idp);
+        const redirect_uri = await submitOIDCLogon(idp,redirectParam);
+        console.log(redirect_uri);
+        if (redirect_uri) {
+            window.location = redirect_uri;
         }
     } catch (e) {
         messageVariant.value = "danger";
@@ -127,12 +106,12 @@ async function submitCILogon(idp: string | null) {
     loading.value = true;
 
     try {
-        const { data } = await axios.post(withPrefix(`/authnz/${idp}/login/?idphint=${selected.value.EntityID}`));
+        const redirect_uri = submitCILogon(idp,true,selected.value.EntityID);
 
         localStorage.setItem("galaxy-provider", idp);
 
-        if (data.redirect_uri) {
-            window.location = data.redirect_uri;
+        if (redirect_uri) {
+            window.location = redirect_uri;
         }
     } catch (e) {
         messageVariant.value = "danger";
@@ -189,7 +168,7 @@ function getIdpPreference() {
 
 <template>
     <div class="h-100">
-        <BAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
+        <BAlert v-if="!!messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
         </BAlert>
 
