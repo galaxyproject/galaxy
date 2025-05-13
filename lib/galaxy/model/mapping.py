@@ -7,7 +7,6 @@ from typing import (
 )
 
 from galaxy import model
-from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import (
     mapper_registry,
     setup_global_object_store_for_models,
@@ -18,6 +17,7 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 
 if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
     from galaxy.objectstore import BaseObjectStore
 
 log = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ def _build_model_mapping(engine, map_install_models, thread_local_log) -> Galaxy
 
 
 def init_models_from_config(
-    config: GalaxyAppConfiguration,
+    config: "GalaxyAppConfiguration",
     map_install_models: bool = False,
     object_store: Optional["BaseObjectStore"] = None,
     trace_logger=None,
