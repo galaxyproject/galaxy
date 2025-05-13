@@ -1,9 +1,9 @@
-<tool id="__FILTER_FAILED_DATASETS__"
-      name="Filter failed datasets"
-      version="1.0.0"
-      tool_type="filter_failed_datasets_collection">
+<tool id="__KEEP_SUCCESS_DATASETS__"
+      name="Keep success"
+      version="1.1.0"
+      tool_type="keep_success_datasets_collection">
     <description></description>
-    <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
+    <type class="KeepSuccessDatasetsTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -11,17 +11,16 @@
     </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
-        <param type="data" name="replacement" optional="true" label="Replace failed elements with this dataset" help="If provided, failed elements will be replaced with this dataset"/>
+        <param type="data" name="replacement" optional="true" label="Replace unsuccessful elements with this dataset" help="If provided, unsuccessful elements will be replaced with this dataset"/>
     </inputs>
     <outputs>
-        <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (only successed datasets)" >
         </collection>
     </outputs>
     <tests>
         <!-- Test framework has no way of creating a collection with
-             failed elements, so best we can do is verify identity on
-             an okay collection. API tests verify this tool works
-             though.
+             unsuccess elements, so best we can do is verify identity on
+             an okay collection.
         -->
         <test>
             <param name="input">
@@ -44,17 +43,17 @@
 Synopsis
 ========
 
-Removes datasets in error (red) from a collection.
+Keep datasets in success (green) from a collection.
 
 ===========
 Description
 ===========
 
-This tool takes a dataset collection and filters out (removes) datasets in the failed (red) state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
+This tool takes a dataset collection and filters in (keep) datasets in the success (green) state. This is useful for continuing a multi-sample analysis when one of more of the samples fails or is in paused state.
 
-.. image:: ${static_path}/images/tools/collection_ops/filter_error.svg
+.. image:: ${static_path}/images/tools/collection_ops/keep_success.svg
   :width: 500
-  :alt: Filter failed datasets
+  :alt: Keep success datasets
 
 -----
 
