@@ -3,9 +3,7 @@ import { computed } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 
-const emit = defineEmits<{
-    loaded: [];
-}>();
+const emit = defineEmits(["loaded"]);
 
 export interface Props {
     datasetId?: string;
