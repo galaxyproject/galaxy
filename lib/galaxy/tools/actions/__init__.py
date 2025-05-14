@@ -910,6 +910,7 @@ class DefaultToolAction(ToolAction):
         for collections in inp_dataset_collections.values():
             for dataset_collection, _ in collections:
                 if isinstance(dataset_collection, HistoryDatasetCollectionAssociation):
+                    assert dataset_collection.hid
                     collection_hids.append(dataset_collection.hid)
 
         for input_name in inp_data:
