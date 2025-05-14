@@ -1988,13 +1988,32 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_edit(self, hid):
         item = self.history_panel_item_component(hid=hid)
-        item.edit_button.wait_for_and_click()
+        # display dataset, then click edit tab
+        item.display_button.wait_for_and_click()
+
+        # Wait for the DatasetView component to load
+        self.wait_for_selector_visible(".dataset-view")
+
+        # Find and click the Edit tab - using a more reliable selector
+        # BVue generates '.nav-item a' elements with a title attribute matching the tab title
+        edit_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Edit']")
+        edit_tab_button.click()
+
+        # Wait for the edit attributes panel to be visible
         self.components.edit_dataset_attributes._.wait_for_visible()
 
     def history_panel_item_view_dataset_details(self, hid):
         item = self.history_panel_item_component(hid=hid)
         item.dataset_operations.wait_for_visible()
         item.info_button.wait_for_and_click()
+
+        # Wait for the DatasetView component to load
+        self.wait_for_selector_visible(".dataset-view")
+
+        # Find and click the Details tab - using a more reliable selector
+        details_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Details']")
+        details_tab_button.click()
+
         self.components.dataset_details._.wait_for_visible()
 
     def history_panel_item_click_visualization_menu(self, hid):

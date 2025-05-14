@@ -226,7 +226,7 @@ onMounted(() => {
                 class="h-100 d-flex flex-column"
                 :value="TAB_VALUES.indexOf(activeTab)"
                 @input="(tabIndex) => onTabChange(TAB_VALUES[tabIndex])">
-                <BTab title="Preview" class="iframe-card">
+                <BTab title="Preview" class="iframe-card" data-test-id="dataset-preview-tab">
                     <div class="preview-container position-relative h-100">
                         <!-- Loading indicator for iframe -->
                         <div v-if="iframeLoading" class="iframe-loading">
@@ -250,16 +250,16 @@ onMounted(() => {
                             @load="iframeLoading = false"></iframe>
                     </div>
                 </BTab>
-                <BTab title="Visualize">
+                <BTab title="Visualize" data-test-id="dataset-visualize-tab">
                     <VisualizationsList :dataset-id="datasetId" />
                 </BTab>
-                <BTab title="Details">
+                <BTab title="Details" data-test-id="dataset-details-tab">
                     <DatasetDetails :dataset-id="datasetId" />
                 </BTab>
-                <BTab title="Edit">
+                <BTab title="Edit" data-test-id="dataset-edit-tab">
                     <DatasetAttributes :dataset-id="datasetId" />
                 </BTab>
-                <BTab v-if="showError" title="Error Report">
+                <BTab v-if="showError" title="Error Report" data-test-id="dataset-error-tab">
                     <DatasetError :dataset-id="datasetId" />
                 </BTab>
             </BTabs>
