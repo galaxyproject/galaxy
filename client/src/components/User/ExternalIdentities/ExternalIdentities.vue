@@ -86,6 +86,7 @@
 
         <div v-if="enable_oidc" class="external-subheading">
             <h2 class="h-md">Connect Other External Identities</h2>
+            <hr class="my-4" />
             <ExternalLogin />
         </div>
     </section>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { BAlert, BButton, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -9,6 +9,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Idp {
@@ -29,11 +30,13 @@ type OIDCConfig = Record<
 interface Props {
     loginPage?: boolean;
     excludeIdps?: string[];
+    columnDisplay?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loginPage: false,
     excludeIdps: () => [],
+    columnDisplay: true,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -44,7 +47,7 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
-const cilogonOrCustos = ref<string | null>(null);
+const cilogonOrCustos = ref<"cilogon" | "custos" | null>(null);
 const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
@@ -76,8 +79,10 @@ onMounted(async () => {
     }
 });
 
-function toggleCILogon(idp: string) {
-    toggleCilogon.value = !toggleCilogon.value;
+function toggleCILogon(idp: "cilogon" | "custos") {
+    if (cilogonOrCustos.value === idp || cilogonOrCustos.value === null) {
+        toggleCilogon.value = !toggleCilogon.value;
+    }
     cilogonOrCustos.value = toggleCilogon.value ? idp : null;
 }
 
@@ -180,15 +185,13 @@ function getIdpPreference() {
 </script>
 
 <template>
-    <div>
-        <BAlert :show="messageText" :variant="messageVariant">
+    <div class="h-100">
+        <BAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
         </BAlert>
 
-        <BForm id="externalLogin">
+        <BForm id="externalLogin" :class="{ 'd-flex h-100': !props.columnDisplay }">
             <!-- OIDC login-->
-            <hr class="my-4" />
-
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="props.loginPage">
                     <!--Only Display if CILogon/Custos is configured-->
@@ -228,13 +231,23 @@ function getIdpPreference() {
                 </div>
 
                 <div v-else>
-                    <BButton v-if="cILogonEnabled" @click="toggleCILogon('cilogon')">
-                        Sign in with Institutional Credentials*
-                    </BButton>
+                    <BButtonGroup class="w-100">
+                        <BButton
+                            v-if="cILogonEnabled"
+                            :pressed="cilogonOrCustos === 'cilogon'"
+                            @click="toggleCILogon('cilogon')">
+                            Sign in with Institutional Credentials*
+                        </BButton>
 
-                    <BButton v-if="custosEnabled" @click="toggleCILogon('custos')">Sign in with Custos*</BButton>
+                        <BButton
+                            v-if="custosEnabled"
+                            :pressed="cilogonOrCustos === 'custos'"
+                            @click="toggleCILogon('custos')">
+                            Sign in with Custos*
+                        </BButton>
+                    </BButtonGroup>
 
-                    <BFormGroup v-if="toggleCilogon">
+                    <BFormGroup v-if="toggleCilogon" class="mt-1">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -247,9 +260,10 @@ function getIdpPreference() {
 
                         <BButton
                             v-if="toggleCilogon"
+                            class="mt-1"
                             :disabled="loading || selected === null"
                             @click="submitCILogon(cilogonOrCustos)">
-                            Login*
+                            Login via {{ cilogonOrCustos === "cilogon" ? "CILogon" : "Custos" }} *
                         </BButton>
                     </BFormGroup>
                 </div>
@@ -264,31 +278,50 @@ function getIdpPreference() {
                 </p>
             </div>
 
-            <span v-if="isConfigLoaded">
-                <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp" class="m-1">
-                    <span v-if="iDPInfo['icon']">
-                        <BButton variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <img :src="iDPInfo['icon']" height="45" :alt="idp" />
-                        </BButton>
-                    </span>
-                    <span v-else-if="iDPInfo['custom_button_text']">
-                        <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <i :class="oIDCIdps[idp]" />
-                            Sign in with {{ iDPInfo["custom_button_text"] }}
-                        </BButton>
-                    </span>
-                    <span v-else>
-                        <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                            <i :class="oIDCIdps[idp]" />
-                            Sign in with
-                            <span v-if="iDPInfo['label']">
-                                {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
-                            </span>
-                            <span v-else>
-                                {{ capitalizeFirstLetter(idp) }}
-                            </span>
-                        </BButton>
-                    </span>
+            <template v-if="cilogonListShow && Object.keys(filteredOIDCIdps).length > 0">
+                <VerticalSeparator v-if="!props.columnDisplay">
+                    <span v-localize>or</span>
+                </VerticalSeparator>
+
+                <hr v-else class="w-100" />
+            </template>
+
+            <span
+                v-if="isConfigLoaded"
+                :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
+                <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
+                    <BButton
+                        v-if="iDPInfo['icon']"
+                        variant="link"
+                        class="d-block oidc-button p-0 text-decoration-none"
+                        :disabled="loading"
+                        @click="submitOIDCLogin(idp)">
+                        <img :src="iDPInfo['icon']" height="35" :alt="`Sign in with ${capitalizeFirstLetter(idp)}`" />
+                    </BButton>
+                    <BButton
+                        v-else-if="iDPInfo['custom_button_text']"
+                        variant="outline-primary"
+                        class="d-block oidc-button"
+                        :disabled="loading"
+                        @click="submitOIDCLogin(idp)">
+                        <i :class="oIDCIdps[idp]" />
+                        Sign in with {{ iDPInfo["custom_button_text"] }}
+                    </BButton>
+                    <BButton
+                        v-else
+                        variant="outline-primary"
+                        class="d-block oidc-button"
+                        :disabled="loading"
+                        @click="submitOIDCLogin(idp)">
+                        <i :class="oIDCIdps[idp]" />
+                        Sign in with
+                        <span v-if="iDPInfo['label']">
+                            {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
+                        </span>
+                        <span v-else>
+                            {{ capitalizeFirstLetter(idp) }}
+                        </span>
+                    </BButton>
                 </div>
             </span>
         </BForm>
@@ -298,5 +331,25 @@ function getIdpPreference() {
 <style scoped>
 .card-body {
     overflow: visible;
+}
+/* Enforce idps to appear in a column */
+.oidc-idps-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: 100%;
+    justify-items: center;
+    .oidc-button {
+        width: 100%;
+    }
+}
+/* Flexible grid for idps */
+.oidc-idps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    justify-items: center;
 }
 </style>
