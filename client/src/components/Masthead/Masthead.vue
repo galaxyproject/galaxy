@@ -41,7 +41,7 @@ const hasExactlyOneOIDCRegistration = computed(() => {
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    if (config.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
+    if (config.value.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
         const redirect_url = await redirectToSingleProvider(oIDCIdps);
         window.location=redirect_url;
     } else {
