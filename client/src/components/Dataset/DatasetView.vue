@@ -226,7 +226,12 @@ onMounted(() => {
                 lazy
                 class="h-100 d-flex flex-column"
                 :value="TAB_VALUES.indexOf(activeTab)"
-                @input="(tabIndex) => onTabChange(TAB_VALUES[tabIndex])">
+                @input="
+                    (tabIndex) => {
+                        const newTab = TAB_VALUES[tabIndex];
+                        if (newTab) onTabChange(newTab);
+                    }
+                ">
                 <BTab title="Preview" class="iframe-card" data-test-id="dataset-preview-tab">
                     <div class="preview-container position-relative h-100">
                         <!-- Loading indicator for iframe -->
