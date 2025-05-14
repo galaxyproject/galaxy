@@ -40,8 +40,8 @@ const props = defineProps({
 
 const TABS = {
     PREVIEW: "preview",
-    DETAILS: "details",
     VISUALIZE: "visualize",
+    DETAILS: "details",
     EDIT: "edit",
     ERROR: "error",
 } as const;
@@ -198,11 +198,11 @@ watch(
                             @load="iframeLoading = false"></iframe>
                     </div>
                 </BTab>
-                <BTab title="Details">
-                    <DatasetDetails :dataset-id="datasetId" />
-                </BTab>
                 <BTab title="Visualize">
                     <VisualizationsList :dataset-id="datasetId" />
+                </BTab>
+                <BTab title="Details">
+                    <DatasetDetails :dataset-id="datasetId" />
                 </BTab>
                 <BTab title="Edit">
                     <DatasetAttributes :dataset-id="datasetId" />
