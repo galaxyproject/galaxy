@@ -28,7 +28,6 @@ const emit = defineEmits<{
     (e: "delete", recursive?: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
-    (e: "rerun"): void;
 }>();
 
 const entryPointStore = useEntryPointStore();
@@ -38,8 +37,6 @@ const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
 
 const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
-
-const rerunUrl = computed(() => prependPath(props.itemUrls.rerun));
 
 const viewUrl = computed(() => prependPath(props.itemUrls.view));
 
@@ -94,11 +91,6 @@ function onDisplay($event: MouseEvent) {
         emit("display");
     }
 }
-
-function onRerun() {
-    // Emit the rerun event to be handled by parent component
-    emit("rerun");
-}
 </script>
 
 <template>
@@ -128,16 +120,6 @@ function onRerun() {
             :href="viewUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
-        </BButton>
-        <BButton
-            v-if="writable && isDataset && !displayDisabled"
-            class="rerun-btn px-1"
-            title="Run Job Again"
-            size="sm"
-            variant="link"
-            :href="rerunUrl"
-            @click.prevent.stop="onRerun">
-            <icon icon="redo" />
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"
