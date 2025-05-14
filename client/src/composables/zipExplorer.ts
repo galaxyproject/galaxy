@@ -14,7 +14,6 @@ import {
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
-import { useIndexedDBFileStorage } from "@/composables/localFileStore";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
@@ -132,6 +131,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
+        const toUploadToHistory: { file: ImportableFile; entry: ZipFileEntry }[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
 
@@ -154,15 +154,62 @@ export function useZipExplorer() {
                     rethrowSimple(e);
                 }
             } else {
-                await extractFileToDB(entry);
+                toUploadToHistory.push({ file, entry });
             }
         }
 
-        await uploadExtractedFiles(historyId, filesToImport);
+        if (!historyId) {
+            throw new Error("There is no history available to upload the selected files.");
+        }
+
+        const elements = toUploadToHistory.map(({ file }) => {
+            return {
+                name: file.name,
+                deferred: false,
+                src: "files",
+                ext: "auto",
+            };
+        });
+
+        const target = {
+            destination: { type: "hdas" },
+            elements: elements,
+        };
+
+        const formData = new FormData();
+        formData.append("history_id", historyId);
+        formData.append("targets", JSON.stringify([target]));
+
+        for (const { file, entry } of toUploadToHistory) {
+            const stream = entry.dataStream();
+            const blob = await streamToBlob(stream);
+
+            formData.append("files", blob, file.name);
+        }
+
+        try {
+            await axios.post(getFullAppUrl("api/tools/fetch"), formData);
+        } catch (e) {
+            rethrowSimple(e);
+        }
     }
 
     function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
         return `zip://extract?source=${zipUrl}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
+    }
+
+    async function streamToBlob(stream: ReadableStream<Uint8Array>): Promise<Blob> {
+        const reader = stream.getReader();
+        const chunks: Uint8Array[] = [];
+        let done = false;
+        while (!done) {
+            const { value, done: streamDone } = await reader.read();
+            if (value) {
+                chunks.push(value);
+            }
+            done = streamDone;
+        }
+        return new Blob(chunks);
     }
 
     function isWorkflowFile(item: ImportableFile): boolean {
@@ -172,7 +219,6 @@ export function useZipExplorer() {
     function reset() {
         zipExplorer.value = undefined;
         zipExplorerError.value = undefined;
-        clearDatabaseStore();
     }
 
     function getOriginalUrl(maybeProxyUrl: string) {
@@ -183,65 +229,6 @@ export function useZipExplorer() {
         const url = new URL(maybeProxyUrl);
         const originalUrl = decodeURIComponent(url.searchParams.get("url") ?? "");
         return originalUrl;
-    }
-
-    const { storeFile, getAllStoredFiles, clearDatabaseStore } = useIndexedDBFileStorage({
-        name: "zip-extract-db",
-        store: "files",
-        version: 1,
-    });
-
-    async function extractFileToDB(entry: ZipFileEntry) {
-        const fileData = await entry.data();
-        const fileBlob = new Blob([fileData]);
-        await storeFile(entry.path, fileBlob);
-    }
-
-    async function uploadExtractedFiles(historyId: string | null, filesToImport: ImportableFile[]) {
-        const databaseFiles = await getAllStoredFiles();
-        if (databaseFiles.length === 0) {
-            return; // No files to upload
-        }
-
-        if (!historyId) {
-            throw new Error("There is no history available to upload the selected files.");
-        }
-
-        const files: Blob[] = [];
-        const elements = [];
-
-        for (const fileEntry of databaseFiles) {
-            const file = filesToImport.find((file) => file.path === fileEntry.name);
-            if (!file) {
-                continue; // File not selected for import
-            }
-            files.push(fileEntry.fileData);
-            elements.push({
-                name: file.name,
-                deferred: false,
-                src: "files",
-                ext: "auto",
-            });
-        }
-
-        const target = {
-            destination: { type: "hdas" },
-            elements: elements,
-        };
-        const formData = new FormData();
-        formData.append("history_id", historyId);
-        formData.append("targets", JSON.stringify([target]));
-        for (const file of files) {
-            formData.append("files", file);
-        }
-
-        try {
-            await axios.post(getFullAppUrl("api/tools/fetch"), formData);
-        } catch (e) {
-            rethrowSimple(e);
-        }
-
-        await clearDatabaseStore();
     }
 
     function isZipOpen(zipSource: ArchiveSource): boolean {
