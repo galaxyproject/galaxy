@@ -2622,24 +2622,17 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         return upload_response.json()
 
     def import_tool(self, tool) -> Dict[str, Any]:
-        """Import a workflow via POST /api/workflows or
-        comparable interface into Galaxy.
+        """Import a new dynamically defined tool
+
+        Required to implement ImporterGalaxyInterface.
         """
-        upload_response = self._import_tool_response(tool)
-        assert upload_response.status_code == 200, upload_response.text
-        return upload_response.json()
+        return self.dataset_populator.create_tool(tool)
 
     def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
         payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}
         response = self._post("workflows/build_module", data=payload, json=True)
         assert response.status_code == 200, response
         return response.json()
-
-    def _import_tool_response(self, tool) -> Response:
-        using_requirement("admin")
-        data = {"representation": tool}
-        upload_response = self._post("dynamic_tools", data=data, admin=True, json=True)
-        return upload_response
 
     def scaling_workflow_yaml(self, **kwd):
         workflow_dict = self._scale_workflow_dict(**kwd)
