@@ -67,11 +67,9 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
 
     if (emit) {
         watch(collectionName, (newValue) => {
-            console.log("name upated...");
             emit("name", newValue);
         });
         watch(validInput, (newValue) => {
-            console.log("emitting...");
             emit("input-valid", newValue);
         });
     }
