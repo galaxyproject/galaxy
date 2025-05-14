@@ -77,12 +77,9 @@ class TestHistoryPanel(SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(hid)
         self.history_panel_item_edit(hid=hid)
         edit_dataset_attributes = self.components.edit_dataset_attributes
-
-        # We need to click the Datatypes tab in the new component
-        datatypes_tab = self.wait_for_selector_clickable(".dataset-edit-datatype-tab")
-        datatypes_tab.click()
-
+        datatypes_tab = edit_dataset_attributes.datatypes_tab
         datatype_component = edit_dataset_attributes.datatype_dropdown
+        datatypes_tab.wait_for_and_click()
         assert datatype_component.wait_for_text() == provided_datatype
 
         # click auto detect datatype button
@@ -95,9 +92,6 @@ class TestHistoryPanel(SeleniumTestCase):
         self.home()
         self.history_panel_wait_for_hid_ok(hid)
         self.history_panel_item_edit(hid=hid)
-
-        # We need to click the Datatypes tab again in the reopened component
-        datatypes_tab = self.wait_for_selector_clickable(".dataset-edit-datatype-tab")
-        datatypes_tab.click()
+        datatypes_tab.wait_for_and_click()
 
         assert datatype_component.wait_for_text() == expected_datatype
