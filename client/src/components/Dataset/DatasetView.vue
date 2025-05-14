@@ -67,7 +67,7 @@ const displayUrl = computed(() => {
     }
 
     // Use preferred visualization
-    return null;
+    return undefined;
 });
 
 const showError = computed(
