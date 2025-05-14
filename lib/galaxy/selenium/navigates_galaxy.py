@@ -1858,7 +1858,7 @@ class NavigatesGalaxy(HasDriver):
         self.use_bootstrap_dropdown(option="export to file", menu="history options")
 
     def click_history_option_sharing(self):
-        self.use_bootstrap_dropdown(option="share or publish", menu="history options")
+        self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
 
     def click_history_option(self, option_label_or_component):
         # Open menu

@@ -19,9 +19,7 @@ const expectedOptions = [
     "Archive History",
     "Extract Workflow",
     "Show Invocations",
-    "Share or Publish",
-    "Set Permissions",
-    "Make Private",
+    "Share & Manage Access",
 ];
 
 // options enabled for logged-out users

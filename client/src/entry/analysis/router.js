@@ -81,6 +81,7 @@ import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserF
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
@@ -294,11 +295,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/sharing",
-                        component: Sharing,
+                        component: HistoryAccessibility,
                         props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Histories",
-                            modelClass: "History",
+                            historyId: route.query.id,
                         }),
                     },
                     {
