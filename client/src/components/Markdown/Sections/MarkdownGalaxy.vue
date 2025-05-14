@@ -33,6 +33,8 @@ import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
+import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
 
 const { config, isConfigLoaded } = useConfig();
 const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
@@ -213,16 +215,8 @@ watch(
                 :href="config.terms_url"
                 :loading="!isConfigLoaded" />
             <InvocationTime v-else-if="name == 'invocation_time'" :invocation-id="args.invocation_id" />
-            <div v-else-if="name === 'invocation_inputs'">
-                <div v-for="(input, index) in args.invocation.inputs" :key="index">
-                    <h4>Input {{ parseInt(index) + 1 }}: {{ input.label }}</h4>
-                </div>
-            </div>
-            <div v-else-if="name === 'invocation_outputs'">
-                <div v-for="(outputKey, index) in Object.keys(args.invocation.outputs)" :key="index">
-                    <h4>Output {{ index + 1 }}: {{ outputKey }}</h4>
-                </div>
-            </div>
+            <WorkflowInvocationInputs v-else-if="name == 'invocation_inputs'" :invocation="args.invocation" />
+            <WorkflowInvocationOutputs v-else-if="name === 'invocation_outputs'" :invocation="args.invocation" />
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
