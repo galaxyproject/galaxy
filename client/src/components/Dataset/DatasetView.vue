@@ -10,6 +10,7 @@ import { STATES } from "@/components/History/Content/model/states";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
+import { withPrefix } from "@/utils/redirect";
 
 import Heading from "../Common/Heading.vue";
 import DatasetError from "../DatasetInformation/DatasetError.vue";
@@ -62,7 +63,7 @@ const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId))
 const displayUrl = computed(() => {
     // Standard preview display URL
     if (!preferredVisualization.value) {
-        return `/datasets/${props.datasetId}/display/?preview=true`;
+        return withPrefix(`/datasets/${props.datasetId}/display/?preview=true`);
     }
 
     // Use preferred visualization
@@ -250,16 +251,16 @@ onMounted(() => {
                             @load="iframeLoading = false"></iframe>
                     </div>
                 </BTab>
-                <BTab title="Visualize" data-test-id="dataset-visualize-tab">
+                <BTab title="Visualize" :title-link-attributes="{ title: 'Visualize' }">
                     <VisualizationsList :dataset-id="datasetId" />
                 </BTab>
-                <BTab title="Details" data-test-id="dataset-details-tab">
+                <BTab title="Details" :title-link-attributes="{ title: 'Details' }">
                     <DatasetDetails :dataset-id="datasetId" />
                 </BTab>
-                <BTab title="Edit" data-test-id="dataset-edit-tab">
+                <BTab title="Edit" :title-link-attributes="{ title: 'Edit' }">
                     <DatasetAttributes :dataset-id="datasetId" />
                 </BTab>
-                <BTab v-if="showError" title="Error Report" data-test-id="dataset-error-tab">
+                <BTab v-if="showError" title="Error Report" :title-link-attributes="{ title: 'Error' }">
                     <DatasetError :dataset-id="datasetId" />
                 </BTab>
             </BTabs>
