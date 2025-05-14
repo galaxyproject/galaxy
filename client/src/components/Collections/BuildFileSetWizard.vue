@@ -7,6 +7,7 @@ import { attemptCreate, type CollectionCreatorComponent } from "@/components/Col
 import { rawToTable } from "@/components/Collections/tables";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
+import localize from "@/utils/localization";
 
 import { type RemoteFile, type RulesCreatingWhat, type RulesSourceFrom } from "./wizard/types";
 import { useFileSetSources } from "./wizard/useFileSetSources";
@@ -34,6 +35,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const title = localize("Rule Based Data Import");
 const ruleState = ref(false);
 const creatingWhat = ref<RulesCreatingWhat>("datasets");
 const creatingWhatTitle = computed(() => {
@@ -181,7 +183,7 @@ function onRuleCreate() {
 </script>
 
 <template>
-    <GenericWizard :use="wizard" :submit-button-label="importButtonLabel" @submit="submit">
+    <GenericWizard :use="wizard" :submit-button-label="importButtonLabel" :title="title" @submit="submit">
         <div v-if="wizard.isCurrent('select-what')">
             <CreatingWhat :creating-what="creatingWhat" @onChange="setCreatingWhat" />
         </div>
