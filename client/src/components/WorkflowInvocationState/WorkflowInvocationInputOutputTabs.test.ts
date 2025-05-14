@@ -12,7 +12,7 @@ import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTa
 const { server, http } = useServerMock();
 
 const selectors = {
-    parametersTable: "[data-description='input parameters table']",
+    parametersTable: "[data-description='input table']",
     terminalInvocationOutput: "[data-description='terminal invocation output']",
     terminalInvocationOutputItem: "[data-description='terminal invocation output item']",
     nonTerminalInvocationOutput: "[data-description='non-terminal invocation output']",
@@ -111,7 +111,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         const wrapper = await mountWorkflowInvocationInputOutputTabs(invocationData as WorkflowInvocationElementView);
 
         /** The actual parameters are in the input_step_parameters field of the invocation data */
-        const testParameters = Object.values(invocationData.input_step_parameters);
+        const testParameters = Object.values({ ...invocationData.input_step_parameters, ...invocationData.inputs });
 
         // Test that the parameters table is displayed
         const parametersTable = wrapper.find(selectors.parametersTable);
@@ -126,7 +126,9 @@ describe("WorkflowInvocationInputOutputTabs", () => {
             const testParameter = testParameters[i];
             const tableRow = tableParamValues.at(i);
             expect(tableRow.find("td").text()).toEqual(testParameter?.label);
-            expect(tableRow.findAll("td").at(1).text()).toEqual(testParameter?.parameter_value.toString());
+            if (testParameter && "parameter_value" in testParameter) {
+                expect(tableRow.findAll("td").at(1).text()).toEqual(testParameter.parameter_value.toString());
+            }
         }
 
         /** The actual inputs of the workflow invocation */

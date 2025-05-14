@@ -2,14 +2,14 @@
 import { BAlert, BTab } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { InvocationInput, WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
 import Heading from "../Common/Heading.vue";
 import LoadingSpan from "../LoadingSpan.vue";
-import ParameterStep from "./ParameterStep.vue";
+import WorkflowInvocationInputs from "./WorkflowInvocationInputs.vue";
 import GenericHistoryItem from "components/History/Content/GenericItem.vue";
 
 const OUTPUTS_NOT_AVAILABLE_YET_MSG =
@@ -61,40 +61,12 @@ const outputs = computed(() => {
 });
 
 const parameters = computed(() => Object.values(props.invocation.input_step_parameters));
-
-function dataInputStepLabel(key: string, input: InvocationInput) {
-    const index: number = parseInt(key);
-    const invocationStep = props.invocation.steps[index];
-    let label = invocationStep && invocationStep.workflow_step_label;
-    if (!label) {
-        if (input.src === "hda") {
-            label = "Input dataset";
-        } else if (input.src === "hdca") {
-            label = "Input dataset collection";
-        }
-    }
-    return label;
-}
 </script>
 <template>
     <span>
         <BTab title="Inputs">
-            <div v-if="parameters.length">
-                <Heading size="text" bold separator>Parameter Values</Heading>
-                <div class="mx-1">
-                    <ParameterStep data-description="input parameters table" :parameters="parameters" styled-table />
-                </div>
-            </div>
-            <div v-if="inputData.length">
-                <div
-                    v-for="([key, input], index) in inputData"
-                    :key="index"
-                    :data-label="dataInputStepLabel(key, input)">
-                    <Heading size="text" bold separator>
-                        {{ dataInputStepLabel(key, input) }}
-                    </Heading>
-                    <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
-                </div>
+            <div v-if="parameters.length || inputData.length">
+                <WorkflowInvocationInputs :invocation="props.invocation" />
             </div>
             <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
         </BTab>
