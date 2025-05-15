@@ -13,6 +13,8 @@ from galaxy.datatypes._schema import (
     DatatypesCombinedMap,
     DatatypesEDAMDetailsDict,
     DatatypesMap,
+    DatatypeVisualizationMapping,
+    DatatypeVisualizationMappingsList,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
@@ -122,15 +124,59 @@ def view_edam_data(
         return datatypes_registry.edam_data
 
 
+def view_visualization_mappings(
+    datatypes_registry: Registry, datatype: Optional[str] = None
+) -> DatatypeVisualizationMappingsList:
+    """
+    Get datatype visualization mappings from the registry.
+
+    Args:
+        datatypes_registry: The datatypes registry
+        datatype: If provided, return only the mapping for this datatype extension
+
+    Returns:
+        A list of datatype visualization mappings
+    """
+    mappings = []
+
+    # Get all mappings
+    all_mappings = datatypes_registry.get_all_visualization_mappings()
+
+    # Filter for a specific datatype if requested
+    if datatype and datatype in all_mappings:
+        mapping_info = all_mappings[datatype]
+        mappings.append(
+            {
+                "datatype": datatype,
+                "visualization": mapping_info["visualization"],
+            }
+        )
+    elif not datatype:
+        for dt, mapping_info in all_mappings.items():
+            mappings.append(
+                {
+                    "datatype": dt,
+                    "visualization": mapping_info["visualization"],
+                }
+            )
+
+    return parse_obj_as(DatatypeVisualizationMappingsList, mappings)
+
+
 __all__ = (
     "DatatypeConverterList",
     "DatatypeDetails",
     "DatatypesCombinedMap",
     "DatatypesEDAMDetailsDict",
     "DatatypesMap",
+    "DatatypeVisualizationMapping",
+    "DatatypeVisualizationMappingsList",
     "view_index",
     "view_mapping",
     "view_types_and_mapping",
     "view_sniffers",
     "view_converters",
+    "view_edam_formats",
+    "view_edam_data",
+    "view_visualization_mappings",
 )

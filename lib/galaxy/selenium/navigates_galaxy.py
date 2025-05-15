@@ -1987,15 +1987,38 @@ class NavigatesGalaxy(HasDriver):
         self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
 
     def history_panel_item_edit(self, hid):
-        item = self.history_panel_item_component(hid=hid)
-        item.edit_button.wait_for_and_click()
+        self.display_dataset(hid)
+
+        # Find and click the Edit tab - using a more reliable selector
+        # BVue generates '.nav-item a' elements with a title attribute matching the tab title
+        edit_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Edit']")
+        edit_tab_button.click()
+
+        # Wait for the edit attributes panel to be visible
         self.components.edit_dataset_attributes._.wait_for_visible()
 
-    def history_panel_item_view_dataset_details(self, hid):
+    def display_dataset(self, hid):
         item = self.history_panel_item_component(hid=hid)
-        item.dataset_operations.wait_for_visible()
-        item.info_button.wait_for_and_click()
+        item.display_button.wait_for_and_click()
+        # Wait for the DatasetView component to load
+        self.wait_for_selector_visible(".dataset-view")
+
+    def show_dataset_details(self, hid):
+        self.display_dataset(hid)
+        # Find and click the Details tab
+        details_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Details']")
+        details_tab_button.click()
         self.components.dataset_details._.wait_for_visible()
+
+    def show_dataset_visualizations(self, hid):
+        self.display_dataset(hid)
+        # Find and click the Visualize tab
+        visualize_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Visualize']")
+        visualize_tab_button.click()
+
+    def history_panel_item_view_dataset_details(self, hid):
+        self.display_dataset(hid)
+        self.show_dataset_details(hid)
 
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = f"{self.history_panel_item_selector(hid)} .visualizations-dropdown"
@@ -2054,7 +2077,7 @@ class NavigatesGalaxy(HasDriver):
         button_component.wait_for_and_click()
 
     def hda_click_details(self, hid: int):
-        self.hda_click_primary_action_button(hid, "info")
+        self.history_panel_item_view_dataset_details(hid)
 
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)

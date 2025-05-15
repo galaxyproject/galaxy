@@ -3,6 +3,8 @@ import { computed } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 
+const emit = defineEmits(["loaded"]);
+
 export interface Props {
     datasetId?: string;
     visualization: string;
@@ -26,6 +28,7 @@ const srcWithRoot = computed(() => {
             url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
         }
     }
+
     return withPrefix(url);
 });
 </script>
@@ -38,5 +41,6 @@ const srcWithRoot = computed(() => {
         frameborder="0"
         title="galaxy visualization frame"
         width="100%"
-        height="100%" />
+        height="100%"
+        @load="emit('loaded')" />
 </template>

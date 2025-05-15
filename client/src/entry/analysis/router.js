@@ -3,7 +3,7 @@ import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import DatasetList from "components/Dataset/DatasetList";
-import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
+import DatasetView from "components/Dataset/DatasetView";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
@@ -231,19 +231,8 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "datasets/:datasetId/edit",
-                        component: DatasetAttributes,
-                        props: true,
-                    },
-                    {
                         path: "datasets/list",
                         component: DatasetList,
-                    },
-                    {
-                        path: "datasets/:datasetId/details",
-                        name: "DatasetDetails",
-                        component: DatasetDetails,
-                        props: true,
                     },
                     {
                         path: "datasets/:datasetId/preview",
@@ -268,6 +257,16 @@ export function getRouter(Galaxy) {
                         path: "datasets/:datasetId/error",
                         component: DatasetError,
                         props: true,
+                    },
+                    {
+                        // Consolidated route for dataset view with optional tab
+                        // Handles /datasets/{id}, /datasets/{id}/details, /datasets/{id}/visualize, etc.
+                        path: "datasets/:datasetId/:tab?",
+                        component: DatasetView,
+                        props: (route) => ({
+                            datasetId: route.params.datasetId,
+                            tab: route.params.tab,
+                        }),
                     },
                     {
                         path: "datatypes",

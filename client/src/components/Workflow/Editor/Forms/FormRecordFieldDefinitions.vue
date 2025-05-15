@@ -80,7 +80,7 @@ const emit = defineEmits(["onChange"]);
         </div>
         <FormCard
             v-for="(fieldDefinition, index) in value"
-            v-bind:key="index"
+            :key="index"
             data-description="field definition block"
             class="card"
             :title="titleForFieldDefinition(index)">

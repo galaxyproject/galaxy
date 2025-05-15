@@ -875,6 +875,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datatypes/{datatype}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get details for a specific datatype
+         * @description Gets detailed information about a specific datatype.
+         *
+         *     Includes information about:
+         *     - Basic properties (description, mime type, etc.)
+         *     - Available converters
+         *     - EDAM mappings
+         *     - Preferred visualization
+         */
+        get: operations["show_api_datatypes__datatype__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datatypes/{datatype}/visualizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the visualization mapping for a specific datatype
+         * @description Gets the visualization mapping for a specific datatype.
+         *
+         *     Mappings are defined in the datatypes_conf.xml configuration file.
+         */
+        get: operations["visualization_for_datatype_api_datatypes__datatype__visualizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/display_applications": {
         parameters: {
             query?: never;
@@ -9225,6 +9273,24 @@ export interface components {
              */
             prefix_IRI: string;
         };
+        /** DatatypeVisualizationMapping */
+        DatatypeVisualizationMapping: {
+            /**
+             * Datatype
+             * @description The datatype extension this visualization applies to
+             */
+            datatype: string;
+            /**
+             * Visualization
+             * @description The visualization plugin to use
+             */
+            visualization: string;
+        };
+        /**
+         * DatatypeVisualizationMappingsList
+         * @default []
+         */
+        DatatypeVisualizationMappingsList: components["schemas"]["DatatypeVisualizationMapping"][];
         /** DatatypesCombinedMap */
         DatatypesCombinedMap: {
             /**
@@ -23682,6 +23748,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_datatypes__datatype__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Datatype extension to get information for */
+                datatype: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detailed information about a datatype */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    visualization_for_datatype_api_datatypes__datatype__visualizations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Datatype extension to get visualization mapping for */
+                datatype: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visualization mapping for the specified datatype */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatatypeVisualizationMappingsList"];
                 };
             };
             /** @description Request Error */

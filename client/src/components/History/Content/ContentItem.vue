@@ -176,7 +176,7 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
-    let display = `/datasets/${id}/preview`;
+    let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
     }
@@ -298,6 +298,10 @@ function onDragEnd() {
 
 function onEdit() {
     router.push(itemUrls.value.edit!);
+}
+
+function onView() {
+    router.push(itemUrls.value.view!);
 }
 
 function onShowCollectionInfo() {
@@ -429,6 +433,7 @@ function unexpandedClick(event: Event) {
                         "
                         @delete="onDelete"
                         @display="onDisplay"
+                        @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
                         @undelete="onUndelete"

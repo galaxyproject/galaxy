@@ -46,7 +46,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.history_panel_ensure_showing_item_details(1)
         item = self.history_panel_item_component(hid=1)
         item.datatype.wait_for_visible()
-        assert item.datatype.wait_for_text() == dataNew
+        self._wait_on(lambda _: item.datatype.wait_for_text() == dataNew)
 
     def _create_simple_list_collection(self, filename, ext):
         self.perform_upload(self.get_filename(filename), ext=ext)

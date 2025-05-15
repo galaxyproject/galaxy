@@ -154,6 +154,13 @@ object_store_details:
     usage_percent: '.quota-percent-text'
     usage_progress: '.quota-usage-bar .progress'
 
+dataset_view:
+  selectors:
+    _: .dataset-view
+    edit_tab: "a.nav-link[title='Edit']"
+    details_tab: "a.nav-link[title='Details']"
+    visualize_tab: "a.nav-link[title='Visualize']"
+
 history_panel:
   menu:
     labels:
@@ -189,10 +196,7 @@ history_panel:
       delete_button: '${_} .delete-btn'
       display_button: '${_} .display-btn'
       download_button: '${_} .download-btn'
-      edit_button: '${_} .edit-btn'
-      info_button: '${_} .params-btn'
       rerun_button: '${_} .rerun-btn'
-      visualize_button: '${_} .visualize-btn'
 
   # history content item
   content_item:
@@ -214,10 +218,8 @@ history_panel:
 
       # Title buttons...
       display_button: '${_} .display-btn'
-      edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
       rerun_button: '${_} .rerun-btn'
-      visualize_button: '${_} .visualize-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...
@@ -347,14 +349,13 @@ storage_dashboard:
 
 edit_dataset_attributes:
   selectors:
-    database_build_dropdown: '[data-label="Database/Build"]'
-
     _: '[aria-labelledby="dataset-attributes-heading"]'
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
     datatype_dropdown: ' #datatype .multiselect'
+    dbkey_dropdown: '#dbkey .multiselect'
     save_button: '#dataset-attributes-default-save'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
@@ -449,7 +450,7 @@ collection_builders:
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
-    
+
   modals:
     selectors:
       create: "button.create-collection"

@@ -34,19 +34,12 @@ const entryPointStore = useEntryPointStore();
 const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
-const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
-
-const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
-
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
-
 const editDisabled = computed(() =>
     ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
 );
-
-const displayUrl = computed(() => prependPath(props.itemUrls.display));
-
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
+const viewUrl = computed(() => prependPath(props.itemUrls.view));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -94,7 +87,7 @@ function onDisplay($event: MouseEvent) {
     // Wrap display handler to allow ctrl/meta click to open in new tab
     // instead of triggering display.
     if ($event.ctrlKey || $event.metaKey) {
-        window.open(displayUrl.value, "_blank");
+        window.open(viewUrl.value, "_blank");
     } else {
         emit("display");
     }
@@ -119,13 +112,12 @@ function onDisplay($event: MouseEvent) {
         <BButton
             v-if="isDataset"
             v-b-tooltip.hover
-            :disabled="displayDisabled"
-            :title="displayButtonTitle"
+            title="Display"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
-            :href="displayUrl"
+            :href="viewUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
         </BButton>

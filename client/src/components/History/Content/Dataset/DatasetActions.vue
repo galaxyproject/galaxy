@@ -37,29 +37,16 @@ const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
 const showError = computed(() => {
-    return props.item.state == "error" || props.item.state == "failed_metadata";
-});
-const showInfo = computed(() => {
-    return props.item.accessible;
+    return props.item.state === "error" || props.item.state === "failed_metadata";
 });
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
-const showVisualizations = computed(() => {
-    // TODO: Check hasViz, if visualizations are activated in the config
-    return !props.item.purged && ["ok", "failed_metadata", "error", "deferred"].includes(props.item.state);
-});
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
 });
-const showDetailsUrl = computed(() => {
-    return prependPath(props.itemUrls.showDetails!);
-});
 const rerunUrl = computed(() => {
     return prependPath(props.itemUrls.rerun!);
-});
-const visualizeUrl = computed(() => {
-    return prependPath(props.itemUrls.visualize!);
 });
 const downloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
@@ -74,24 +61,16 @@ function onDownload(resource: string) {
     window.location.href = resource;
 }
 
-function onError() {
-    router.push(props.itemUrls.reportError!);
+function onHighlight() {
+    emit("toggleHighlights");
 }
 
-function onInfo() {
-    router.push(props.itemUrls.showDetails!);
+function onError() {
+    window.location.href = reportErrorUrl.value;
 }
 
 function onRerun() {
     router.push(`/root?job_id=${props.item.creating_job}`);
-}
-
-function onVisualize() {
-    router.push(props.itemUrls.visualize!);
-}
-
-function onHighlight() {
-    emit("toggleHighlights");
 }
 </script>
 
@@ -125,15 +104,14 @@ function onHighlight() {
                 </BButton>
 
                 <BButton
-                    v-if="showInfo"
+                    v-if="showHighlight"
                     v-b-tooltip.hover
-                    class="params-btn px-1"
-                    title="Dataset Details"
+                    class="highlight-btn px-1"
+                    title="Show Related Items"
                     size="sm"
                     variant="link"
-                    :href="showDetailsUrl"
-                    @click.prevent.stop="onInfo">
-                    <FontAwesomeIcon :icon="faInfoCircle" />
+                    @click.stop="onHighlight">
+                    <FontAwesomeIcon :icon="faSitemap" />
                 </BButton>
 
                 <BButton
@@ -146,29 +124,6 @@ function onHighlight() {
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
                     <FontAwesomeIcon :icon="faRedo" />
-                </BButton>
-
-                <BButton
-                    v-if="showVisualizations"
-                    v-b-tooltip.hover
-                    class="visualize-btn px-1"
-                    title="Visualize"
-                    size="sm"
-                    variant="link"
-                    :href="visualizeUrl"
-                    @click.prevent.stop="onVisualize">
-                    <FontAwesomeIcon :icon="faChartBar" />
-                </BButton>
-
-                <BButton
-                    v-if="showHighlight"
-                    v-b-tooltip.hover
-                    class="highlight-btn px-1"
-                    title="Show Related Items"
-                    size="sm"
-                    variant="link"
-                    @click.stop="onHighlight">
-                    <FontAwesomeIcon :icon="faSitemap" />
                 </BButton>
             </div>
         </div>
