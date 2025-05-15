@@ -72,7 +72,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
-        const toUploadToHistory: { file: ImportableFile; entry: ZipFileEntry }[] = [];
+        const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
             if (!entry) {
@@ -134,7 +134,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
-        const toUploadToHistory: { file: ImportableFile; entry: ZipFileEntry }[] = [];
+        const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
 
@@ -387,6 +387,11 @@ const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
 const ROCRATE_METADATA_FILES = new Set([ROCRATE_METADATA_FILE, "ro-crate-preview.html"]);
 
 const COMMON_KNOWN_FILES_TO_SKIP = new Set([...GALAXY_EXPORT_METADATA_FILES, ...ROCRATE_METADATA_FILES]);
+
+interface UploadPair {
+    file: ImportableFile;
+    entry: ZipFileEntry;
+}
 
 export interface ImportableFile extends ZipEntryMetadata {
     type: "workflow" | "file";
