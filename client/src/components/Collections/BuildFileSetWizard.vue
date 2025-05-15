@@ -9,7 +9,13 @@ import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
 import localize from "@/utils/localization";
 
-import type { RemoteFile, RulesCreatingWhat, RulesSourceFrom } from "./wizard/types";
+import type { 
+    RuleBuilderOptions,
+    RuleElementsType,
+    RulesCreatingWhat,
+    RuleSelectionType,
+    RulesSourceFrom
+} from "./wizard/types";
 import { useFileSetSources } from "./wizard/useFileSetSources";
 
 import CreatingWhat from "./wizard/CreatingWhat.vue";
@@ -101,24 +107,10 @@ const importButtonLabel = computed(() => {
 });
 
 const emit = defineEmits(["dismiss", "created"]);
-type SelectionType = "raw" | "remote_files";
-type ElementsType = RemoteFile[] | string[][];
-
-// it would be nice to have a real type from the rule builder but
-// it is older code. This is really outlining what this component can
-// produce and not what the rule builder can consume which is a wide
-// superset of this.
-interface Entry {
-    dataType: RulesCreatingWhat;
-    ftpUploadSite?: string;
-    elements?: ElementsType | undefined;
-    content?: string;
-    selectionType: SelectionType;
-}
 
 const ruleBuilderModalEntryProps = computed(() => {
-    let elements: ElementsType | undefined = undefined;
-    let selectionType: SelectionType = "raw";
+    let elements: RuleElementsType | undefined = undefined;
+    let selectionType: RuleSelectionType = "raw";
     if (sourceFrom.value == "remote_files") {
         elements = uris.value;
         selectionType = "remote_files";
@@ -127,7 +119,7 @@ const ruleBuilderModalEntryProps = computed(() => {
     } else if (sourceFrom.value == "dataset_as_table") {
         elements = tabularDatasetContents.value;
     }
-    const entry: Entry = {
+    const entry: RuleBuilderOptions = {
         dataType: creatingWhat.value,
         ftpUploadSite: props.ftpUploadSite,
         selectionType: selectionType,
