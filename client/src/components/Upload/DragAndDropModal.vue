@@ -1,3 +1,8 @@
+<!-- Global generic file upload modal.
+
+    This modal will be suppressed if page has any DOM elements decorated
+    with data-galaxy-file-drop-target - see fileDrop composable for more information.
+-->
 <script setup>
 import { setIframeEvents } from "components/Upload/utils";
 import { useFileDrop } from "composables/fileDrop";
