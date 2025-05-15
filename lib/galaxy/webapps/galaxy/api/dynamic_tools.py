@@ -8,7 +8,11 @@ from typing import (
 
 from pydantic import BaseModel
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    MessageException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -135,7 +139,12 @@ class DynamicToolApi:
 
     @router.post("/api/dynamic_tools", require_admin=True)
     def create(self, payload: DynamicToolPayload, trans: ProvidesUserContext = DependsOnTrans):
-        dynamic_tool = self.dynamic_tools_manager.create_tool(trans, payload, allow_load=payload.allow_load)
+        try:
+            dynamic_tool = self.dynamic_tools_manager.create_tool(trans, payload, allow_load=payload.allow_load)
+        except MessageException:
+            raise
+        except Exception as e:
+            raise RequestParameterInvalidException(str(e))
         return dynamic_tool.to_dict()
 
     @router.delete("/api/dynamic_tools/{dynamic_tool_id}", require_admin=True)

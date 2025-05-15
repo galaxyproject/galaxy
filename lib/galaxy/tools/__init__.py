@@ -80,7 +80,6 @@ from galaxy.tool_util.ontologies.ontology_data import (
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
     get_tool_source,
-    get_tool_source_from_representation,
     RequiredFiles,
     ToolOutputCollectionPart,
 )
@@ -231,7 +230,10 @@ if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
-    from galaxy.model import LibraryFolder
+    from galaxy.model import (
+        DynamicTool,
+        LibraryFolder,
+    )
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
     from galaxy.tool_util.parser.output_objects import (
@@ -631,41 +633,38 @@ class ToolBox(AbstractToolBox):
         except exceptions.InsufficientPermissionsException:
             return None
 
-    def dynamic_tool_to_tool(self, dynamic_tool: Optional[model.DynamicTool]) -> Optional["Tool"]:
-        if dynamic_tool and dynamic_tool.active and dynamic_tool.value:
-            tool_source = YamlToolSource(dynamic_tool.value)
-            tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
-            tool.dynamic_tool = dynamic_tool
-            return tool
-        return None
+    def dynamic_tool_to_tool(self, dynamic_tool: Optional["DynamicTool"]) -> Optional["Tool"]:
+        if not dynamic_tool or not dynamic_tool.active or (tool_representation := dynamic_tool.value) is None:
+            return None
+        if "name" not in tool_representation:
+            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
+        tool_format = dynamic_tool.tool_format
+        if tool_format in ("GalaxyTool", "GalaxyUserTool"):
+            tool_source = YamlToolSource(tool_representation)
+        else:
+            raise Exception(f"Unknown tool representation format [{tool_format}].")
+        tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
+        tool.dynamic_tool = dynamic_tool
+        return tool
 
     def tool_for_job(
         self, job: model.Job, exact=True, check_access=True, user: Optional[model.User] = None
     ) -> Optional["Tool"]:
-        if job.dynamic_tool:
+        if (dynamic_tool := job.dynamic_tool) is not None:
             if check_access:
                 if not user:
                     return None
-                if not job.dynamic_tool.public:
+                if not dynamic_tool.public:
                     self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
-            return self.dynamic_tool_to_tool(job.dynamic_tool)
+            return self.dynamic_tool_to_tool(dynamic_tool)
         else:
             return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
 
-    def create_dynamic_tool(self, dynamic_tool, **kwds):
-        tool_format = dynamic_tool.tool_format
-        tool_representation = dynamic_tool.value
-        if "name" not in tool_representation:
-            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
-        tool_source = get_tool_source_from_representation(
-            tool_format=tool_format,
-            tool_representation=tool_representation,
-        )
-        kwds["dynamic"] = True
-        tool = self._create_tool_from_source(tool_source, **kwds)
-        tool.dynamic_tool = dynamic_tool
-        tool.uuid = dynamic_tool.uuid
+    def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
+        tool = self.dynamic_tool_to_tool(dynamic_tool)
+        assert tool
         if not tool.id:
+            assert dynamic_tool.tool_id
             tool.id = dynamic_tool.tool_id
         if not tool.name:
             tool.name = tool.id
@@ -1050,7 +1049,7 @@ class Tool(UsesDictVisibleKeys):
         self.require_login = False
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
-        self.dynamic_tool: Optional[model.DynamicTool] = None
+        self.dynamic_tool: Optional[DynamicTool] = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
