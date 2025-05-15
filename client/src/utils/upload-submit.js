@@ -34,11 +34,13 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         return sendPayload(data, cnf);
     }
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
-    const upload = new tus.Upload(uploadable, {
+    const uploadInput = uploadable.isStream ? uploadable.stream.getReader() : uploadable;
+    const upload = new tus.Upload(uploadInput, {
         endpoint: tusEndpoint,
         retryDelays: [0, 3000, 10000],
         fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
+        uploadSize: uploadable.size,
         storeFingerprintForResuming: false,
         onError: function (err) {
             const status = err.originalResponse?.getStatus();
