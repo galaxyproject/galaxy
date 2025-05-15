@@ -651,13 +651,13 @@ class ToolBox(AbstractToolBox):
     def tool_for_job(
         self, job: model.Job, exact=True, check_access=True, user: Optional[model.User] = None
     ) -> Optional["Tool"]:
-        if job.dynamic_tool:
+        if (dynamic_tool := job.dynamic_tool) is not None and dynamic_tool.tool_format == "GalaxyUserTool":
             if check_access:
                 if not user:
                     return None
-                if not job.dynamic_tool.public:
+                if not dynamic_tool.public:
                     self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
-            return self.dynamic_tool_to_tool(job.dynamic_tool)
+            return self.dynamic_tool_to_tool(dynamic_tool)
         else:
             return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
 
