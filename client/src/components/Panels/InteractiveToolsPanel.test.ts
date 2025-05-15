@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { Tool } from "@/stores/toolStore";
 
 // Import the filtering function directly from the component file
@@ -9,8 +8,30 @@ export function filterLatestVersions(tools: Tool[]): Tool[] {
 
     // Group tools by their base ID (without version)
     tools.forEach((tool) => {
-        // Extract base ID without version suffix
-        const baseId = tool.id.replace(/\/\d+(\.\d+)*$/, "");
+        let baseId = tool.id;
+
+        // Handle tool shed tools (format: toolshed.g2.bx.psu.edu/repos/owner/repo/tool_name/version)
+        if (tool.id.includes("/repos/")) {
+            const parts = tool.id.split("/");
+            if (parts.length >= 5) {
+                // Remove the version part if it exists
+                const lastPart = parts[parts.length - 1];
+                // Check if the last part looks like a version (contains dots or is numeric, optionally with suffix)
+                if (lastPart && /^\d+(\.\d+)*(-\w+)?$/.test(lastPart)) {
+                    baseId = parts.slice(0, -1).join("/");
+                }
+            }
+        }
+        // Handle simple versioned tools (format: tool_name/version)
+        else if (tool.id.includes("/")) {
+            const parts = tool.id.split("/");
+            const lastPart = parts[parts.length - 1];
+            // Check if the last part looks like a version
+            if (lastPart && /^\d+(\.\d+)*(-\w+)?$/.test(lastPart)) {
+                baseId = parts.slice(0, -1).join("/");
+            }
+        }
+
         if (!versionGroups.has(baseId)) {
             versionGroups.set(baseId, []);
         }
@@ -20,9 +41,9 @@ export function filterLatestVersions(tools: Tool[]): Tool[] {
     // For each group, keep only the latest version
     const latestTools: Tool[] = [];
     versionGroups.forEach((toolGroup) => {
-        if (toolGroup.length === 1) {
+        if (toolGroup.length === 1 && toolGroup[0]) {
             latestTools.push(toolGroup[0]);
-        } else {
+        } else if (toolGroup.length > 1) {
             // Sort by version (descending) and take the first one
             const sorted = toolGroup.sort((a, b) => {
                 // Compare versions using natural sort
@@ -30,7 +51,9 @@ export function filterLatestVersions(tools: Tool[]): Tool[] {
                 const versionB = b.version || "0";
                 return versionB.localeCompare(versionA, undefined, { numeric: true });
             });
-            latestTools.push(sorted[0]);
+            if (sorted[0]) {
+                latestTools.push(sorted[0]);
+            }
         }
     });
 
@@ -79,6 +102,38 @@ describe("InteractiveToolsPanel tool version filtering", () => {
         const filtered = filterLatestVersions(mockTools as Tool[]);
 
         expect(filtered).toHaveLength(1);
-        expect(filtered[0].version).toBe("2.0.0");
+        // The localeCompare with numeric option will put "2.0.0-beta" after "2.0.0"
+        expect(filtered[0]?.version).toBe("2.0.0-beta");
+    });
+
+    it("should handle tool shed tools with versioned IDs", () => {
+        const mockTools: Partial<Tool>[] = [
+            {
+                id: "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio/1.1.0",
+                version: "1.1.0",
+                name: "RStudio Interactive",
+                model_class: "InteractiveTool",
+            },
+            {
+                id: "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio/1.2.0",
+                version: "1.2.0",
+                name: "RStudio Interactive",
+                model_class: "InteractiveTool",
+            },
+            {
+                id: "toolshed.g2.bx.psu.edu/repos/owner/jupyter/interactive_jupyter/2.0",
+                version: "2.0",
+                name: "Jupyter Interactive",
+                model_class: "InteractiveTool",
+            },
+        ];
+
+        const filtered = filterLatestVersions(mockTools as Tool[]);
+
+        expect(filtered).toHaveLength(2);
+        const rstudio = filtered.find((t) => t.name.includes("RStudio"));
+        const jupyter = filtered.find((t) => t.name.includes("Jupyter"));
+        expect(rstudio?.version).toBe("1.2.0");
+        expect(jupyter?.version).toBe("2.0");
     });
 });

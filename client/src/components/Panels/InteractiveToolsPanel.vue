@@ -41,8 +41,8 @@ function filterLatestVersions(tools: Tool[]): Tool[] {
             if (parts.length >= 5) {
                 // Remove the version part if it exists
                 const lastPart = parts[parts.length - 1];
-                // Check if the last part looks like a version (contains dots or is numeric)
-                if (/^\d+(\.\d+)*$/.test(lastPart)) {
+                // Check if the last part looks like a version (contains dots or is numeric, optionally with suffix)
+                if (/^\d+(\.\d+)*(-\w+)?$/.test(lastPart)) {
                     baseId = parts.slice(0, -1).join("/");
                 }
             }
@@ -52,7 +52,7 @@ function filterLatestVersions(tools: Tool[]): Tool[] {
             const parts = tool.id.split("/");
             const lastPart = parts[parts.length - 1];
             // Check if the last part looks like a version
-            if (/^\d+(\.\d+)*$/.test(lastPart)) {
+            if (/^\d+(\.\d+)*(-\w+)?$/.test(lastPart)) {
                 baseId = parts.slice(0, -1).join("/");
             }
         }
