@@ -3031,7 +3031,7 @@ export interface paths {
          *
          *     This API method is intended only for consumption by job runners, not end users.
          */
-        head: operations["index_api_jobs__job_id__files_get"];
+        head: operations["index_api_jobs__job_id__files_head"];
         patch?: never;
         trace?: never;
     };
@@ -31334,7 +31334,7 @@ export interface operations {
             };
         };
     };
-    index_api_jobs__job_id__files_get: {
+    index_api_jobs__job_id__files_head: {
         parameters: {
             query: {
                 /** @description Path to file. */
