@@ -82,6 +82,9 @@ html,
     --font-size-large: 1rem;
 
     // masthead specific
+    --masthead-height: #{$masthead-height};
+    --masthead-logo-height: calc(var(--masthead-height) * 0.6);
+
     --masthead-color: #{$masthead-color};
     --masthead-text-color: #{$masthead-text-color};
     --masthead-text-hover: #{$masthead-text-hover};
