@@ -154,6 +154,13 @@ object_store_details:
     usage_percent: '.quota-percent-text'
     usage_progress: '.quota-usage-bar .progress'
 
+dataset_view:
+  selectors:
+    _: .dataset-view
+    edit_tab: "a.nav-link[title='Edit']"
+    details_tab: "a.nav-link[title='Details']"
+    visualize_tab: "a.nav-link[title='Visualize']"
+
 history_panel:
   menu:
     labels:
