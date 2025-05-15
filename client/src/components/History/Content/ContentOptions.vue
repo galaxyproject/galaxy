@@ -34,9 +34,6 @@ const entryPointStore = useEntryPointStore();
 const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
-const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
-
-const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
 const editDisabled = computed(() =>
     ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
@@ -115,8 +112,7 @@ function onDisplay($event: MouseEvent) {
         <BButton
             v-if="isDataset"
             v-b-tooltip.hover
-            :disabled="displayDisabled"
-            :title="displayButtonTitle"
+            title="Display"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
