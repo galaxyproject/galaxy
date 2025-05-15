@@ -19,9 +19,8 @@ class TestVisualizations(SeleniumTestCase):
     def test_charts_image_annotate(self):
         hid = 1
         self.perform_upload(self.get_filename("454Score.png"))
-        self.wait_for_history()
-        dataset_component = self.history_panel_click_item_title(hid, wait=True)
-        dataset_component.visualize_button.wait_for_and_click()
+        self.history_panel_wait_for_hid_state(hid, state="ok")
+        self.show_dataset_visualizations(hid)
 
         self.components.visualization.matched_plugin(id="annotate_image").wait_for_visible()
         self.screenshot("visualization_plugins_png")

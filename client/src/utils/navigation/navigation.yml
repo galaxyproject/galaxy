@@ -347,14 +347,13 @@ storage_dashboard:
 
 edit_dataset_attributes:
   selectors:
-    database_build_dropdown: '[data-label="Database/Build"]'
-
     _: '[aria-labelledby="dataset-attributes-heading"]'
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
     datatype_dropdown: ' #datatype .multiselect'
+    dbkey_dropdown: '#dbkey .multiselect'
     save_button: '#dataset-attributes-default-save'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
@@ -449,7 +448,7 @@ collection_builders:
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
-    
+
   modals:
     selectors:
       create: "button.create-collection"
