@@ -1,5 +1,4 @@
-"""Provide a consistent interface into and utilities for importlib file resources.
-"""
+"""Provide a consistent interface into and utilities for importlib file resources."""
 
 import sys
 

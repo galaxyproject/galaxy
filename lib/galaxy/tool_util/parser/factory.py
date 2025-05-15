@@ -112,7 +112,7 @@ def get_tool_source(
 def get_tool_source_from_representation(tool_format: Optional[str], tool_representation: Dict[str, Any]):
     # TODO: make sure whatever is consuming this method uses ordered load.
     log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
-    if tool_format == "GalaxyTool":
+    if tool_format in ("GalaxyTool", "GalaxyUserTool"):
         if "version" not in tool_representation:
             tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
         return YamlToolSource(tool_representation)

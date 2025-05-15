@@ -16,8 +16,13 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
+from uuid import UUID
 
 from markupsafe import escape
+from typing_extensions import (
+    Literal,
+    overload,
+)
 
 from galaxy.exceptions import (
     ConfigurationError,
@@ -60,7 +65,11 @@ from .views.interface import (
 from .views.static import StaticToolPanelView
 
 if TYPE_CHECKING:
-    from galaxy.model import DynamicTool
+    from galaxy.model import (
+        DynamicTool,
+        User,
+    )
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -138,6 +147,10 @@ class NullToolTagManager(AbstractToolTagManager):
 
 
 class ToolLoadError(Exception):
+    pass
+
+
+class ToolLoadConfigurationConflict(Exception):
     pass
 
 
@@ -689,8 +702,42 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             elif elem.tag == "label":
                 self._integrated_tool_panel.stub_label(key)
 
-    def get_tool(self, tool_id, tool_version=None, get_all_versions=False, exact=False, tool_uuid=None):
+    @overload
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Literal[False] = False,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ) -> Optional["Tool"]: ...
+
+    @overload
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Literal[True] = True,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ) -> List["Tool"]: ...
+
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Optional[bool] = False,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
+        if tool_uuid and user:
+            unprivileged_tool = self.get_unprivileged_tool_or_none(user, tool_uuid=tool_uuid)
+            if unprivileged_tool:
+                return unprivileged_tool
         if tool_version:
             tool_version = str(tool_version)
 
@@ -773,8 +820,23 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     return self._tools_by_id[tool_id]
         return None
 
-    def has_tool(self, tool_id: str, tool_version: Optional[str] = None, exact: bool = False):
-        return self.get_tool(tool_id, tool_version=tool_version, exact=exact) is not None
+    def has_tool(
+        self,
+        tool_id: Optional[str],
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        exact: bool = False,
+        user: Optional["User"] = None,
+    ):
+        return (
+            self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
+        )
+
+    def get_unprivileged_tool(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
+
+    def get_unprivileged_tool_or_none(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""
@@ -1081,6 +1143,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     self._load_tool_panel_views()
                     self._save_integrated_tool_panel()
                 return tool.id
+            except ToolLoadConfigurationConflict as e:
+                log.warning(f"Configuration does not permit loading tool {tool_file} - {e}")
             except ToolLoadError as e:
                 # no need for full stack trace - ToolLoadError corresponds to a known load
                 # error with defined cause that is included in the message

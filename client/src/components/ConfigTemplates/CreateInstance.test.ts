@@ -7,7 +7,7 @@ const localVue = getLocalVue(true);
 
 describe("CreateInstance", () => {
     it("should render a loading message during loading", async () => {
-        const wrapper = shallowMount(CreateInstance, {
+        const wrapper = shallowMount(CreateInstance as object, {
             propsData: {
                 loading: true,
                 loadingMessage: "component loading...",
@@ -19,7 +19,7 @@ describe("CreateInstance", () => {
     });
 
     it("should hide a loading message after loading", async () => {
-        const wrapper = shallowMount(CreateInstance, {
+        const wrapper = shallowMount(CreateInstance as object, {
             propsData: {
                 loading: false,
                 loadingMessage: "component loading...",

@@ -14,6 +14,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -85,6 +86,9 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+
 log = logging.getLogger(__name__)
 
 INDEX_SEARCH_FILTERS = {
@@ -95,7 +99,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
+class HistoryManager(sharable.SharableModelManager[model.History], deletable.PurgableManagerMixin, SortableManager):
     model_class = model.History
     foreign_key_name = "history"
     user_share_model = model.HistoryUserShareAssociation
@@ -120,7 +124,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def index_query(
         self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[List[model.History], int]:
+    ) -> Tuple["ScalarResult[model.History]", Union[int, None]]:
         show_deleted = False
         show_own = payload.show_own
         show_published = payload.show_published
@@ -234,7 +238,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
+        return trans.sa_session.scalars(stmt), total_matches
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases

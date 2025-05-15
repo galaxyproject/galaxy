@@ -20,6 +20,7 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import VerticalSeparator from "../Common/VerticalSeparator.vue";
 import NewUserConfirmation from "@/components/Login/NewUserConfirmation.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -65,6 +66,11 @@ const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "
 
 const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExternalProvider.value] : undefined));
 
+/** This decides if all login options should be displayed in column style
+ * (one below the other) or horizontally.
+ */
+const loginColumnDisplay = computed(() => Boolean(props.showWelcomeWithLogin && props.welcomeUrl));
+
 function toggleLogin() {
     emit("toggle-login");
 }
@@ -81,7 +87,7 @@ async function submitLogin() {
     if (localStorage.getItem("redirect_url")) {
         redirect = localStorage.getItem("redirect_url");
     } else {
-        redirect = props.redirect;
+        redirect = props.redirect ?? null;
     }
 
     try {
@@ -145,10 +151,10 @@ function returnToLogin() {
 </script>
 
 <template>
-    <div class="container">
-        <div class="row justify-content-md-center">
+    <div class="login-form">
+        <div class="d-flex justify-content-md-center">
             <template v-if="!confirmURL">
-                <div class="col col-lg-6">
+                <div>
                     <BAlert :show="!!messageText" :variant="messageVariant">
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <span v-html="messageText" />
@@ -161,12 +167,12 @@ function returnToLogin() {
                     </BAlert>
 
                     <BForm id="login" @submit.prevent="submitLogin()">
-                        <BCard no-body>
+                        <BCard no-body style="width: fit-content">
                             <BCardHeader v-if="!connectExternalProvider">
                                 <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
 
-                            <BCardBody>
+                            <BCardBody :class="{ 'd-flex w-100': !loginColumnDisplay }">
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
@@ -198,7 +204,7 @@ function returnToLogin() {
                                             type="password"
                                             autocomplete="current-password" />
 
-                                        <BFormText v-if="showResetLink">
+                                        <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
                                             <a
@@ -211,14 +217,31 @@ function returnToLogin() {
                                         </BFormText>
                                     </BFormGroup>
 
-                                    <BButton v-localize name="login" type="submit" :disabled="loading">
+                                    <BButton
+                                        v-localize
+                                        name="login"
+                                        type="submit"
+                                        :disabled="loading"
+                                        class="w-100 mt-1">
                                         {{ localize("Login") }}
                                     </BButton>
                                 </div>
-                                <div v-if="enableOidc">
-                                    <!-- OIDC login-->
-                                    <ExternalLogin login-page :exclude-idps="excludeIdps" />
-                                </div>
+
+                                <template v-if="enableOidc">
+                                    <VerticalSeparator v-if="!loginColumnDisplay">
+                                        <span v-localize>or</span>
+                                    </VerticalSeparator>
+
+                                    <hr v-else class="w-100" />
+
+                                    <div class="m-1 w-100">
+                                        <!-- OIDC login-->
+                                        <ExternalLogin
+                                            login-page
+                                            :exclude-idps="excludeIdps"
+                                            :column-display="loginColumnDisplay" />
+                                    </div>
+                                </template>
                             </BCardBody>
 
                             <BCardFooter>
@@ -257,7 +280,7 @@ function returnToLogin() {
                     @setRedirect="setRedirect" />
             </template>
 
-            <div v-if="showWelcomeWithLogin && props.welcomeUrl" class="col">
+            <div v-if="showWelcomeWithLogin && props.welcomeUrl" class="w-100">
                 <BEmbed type="iframe" :src="withPrefix(props.welcomeUrl)" aspect="1by1" />
             </div>
         </div>
@@ -267,5 +290,8 @@ function returnToLogin() {
 <style scoped lang="scss">
 .card-body {
     overflow: visible;
+}
+.login-form {
+    margin: 0rem 10rem;
 }
 </style>

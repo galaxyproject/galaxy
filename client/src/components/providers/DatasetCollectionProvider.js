@@ -4,4 +4,7 @@ import { fetchCollectionDetails } from "@/api/datasetCollections";
 
 // There isn't really a good way to know when to stop polling for HDCA updates,
 // but we know the populated_state should at least be ok.
-export default SingleQueryProvider(fetchCollectionDetails, (result) => result.populated_state === "ok");
+export default SingleQueryProvider(
+    (params) => fetchCollectionDetails({ hdca_id: params.id }),
+    (result) => result.populated_state === "ok"
+);

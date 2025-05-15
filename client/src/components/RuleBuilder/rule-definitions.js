@@ -26,7 +26,7 @@ const removeColumns = function (columns, targetColumns) {
     return newColumns;
 };
 
-const applyRegex = function (regex, target, data, replacement, groupCount) {
+const applyRegex = function (regex, target, data, replacement, groupCount, allowUnmatched = false) {
     let regExp;
     try {
         regExp = pyre(String(regex));
@@ -38,22 +38,40 @@ const applyRegex = function (regex, target, data, replacement, groupCount) {
         const source = row[target];
         const match = regExp.exec(source);
         if (!match) {
-            failedCount++;
-            return null;
-        }
-        if (!replacement) {
-            groupCount = groupCount && parseInt(groupCount, 10);
-            if (groupCount) {
-                if (match.length != groupCount + 1) {
-                    failedCount++;
-                    return null;
+            if (allowUnmatched) {
+                if (!replacement) {
+                    groupCount = groupCount && parseInt(groupCount, 10);
+                    let emptyColumns = [];
+                    if (groupCount) {
+                        for (let i = 0; i < groupCount; i++) {
+                            emptyColumns = emptyColumns.concat([""]);
+                        }
+                        return row.concat(emptyColumns);
+                    } else {
+                        return row.concat([""]);
+                    }
+                } else {
+                    return row.concat([""]);
                 }
-                return row.concat(match.splice(1, match.length));
             } else {
-                return row.concat([match[0]]);
+                failedCount++;
+                return null;
             }
         } else {
-            return row.concat([regExp.pyreReplace(match[0], replacement)]);
+            if (!replacement) {
+                groupCount = groupCount && parseInt(groupCount, 10);
+                if (groupCount) {
+                    if (match.length != groupCount + 1) {
+                        failedCount++;
+                        return null;
+                    }
+                    return row.concat(match.splice(1, match.length));
+                } else {
+                    return row.concat([match[0]]);
+                }
+            } else {
+                return row.concat([regExp.pyreReplace(match[0], replacement)]);
+            }
         }
     }
     data = data.map(newRow);
@@ -175,6 +193,14 @@ const RULES = {
                     newRow.push(sources[index]["identifiers"][identifierIndex]);
                     return newRow;
                 };
+            } else if (ruleValue.indexOf("index") == 0) {
+                const indexIndex = parseInt(ruleValue.substring("index".length), 10);
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    const indexValue = String(sources[index]["indices"][indexIndex]);
+                    newRow.push(indexValue);
+                    return newRow;
+                };
             } else if (ruleValue == "tags") {
                 newRow = (row, index) => {
                     const newRow = row.slice();
@@ -249,11 +275,13 @@ const RULES = {
                 component.addColumnRegexExpression = "";
                 component.addColumnRegexReplacement = null;
                 component.addColumnRegexGroupCount = null;
+                component.addColumnRegexAllowUnmatched = false;
             } else {
                 component.addColumnRegexTarget = rule.target_column;
                 component.addColumnRegexExpression = rule.expression;
                 component.addColumnRegexReplacement = rule.replacement;
                 component.addColumnRegexGroupCount = parseInt(rule.group_count);
+                component.addColumnRegexAllowUnmatched = rule.allow_unmatched ?? false;
             }
             let addColumnRegexType = "global";
             if (component.addColumnRegexGroupCount) {
@@ -266,6 +294,7 @@ const RULES = {
         save: (component, rule) => {
             rule.target_column = component.addColumnRegexTarget;
             rule.expression = component.addColumnRegexExpression;
+            rule.allow_unmatched = component.addColumnRegexAllowUnmatched;
             if (component.addColumnRegexType == "replacement" && component.addColumnRegexReplacement) {
                 rule.replacement = component.addColumnRegexReplacement;
                 rule.group_count = null;
@@ -279,7 +308,14 @@ const RULES = {
         },
         apply: (rule, data, sources, columns) => {
             const target = rule.target_column;
-            const rval = applyRegex(rule.expression, target, data, rule.replacement, rule.group_count);
+            const rval = applyRegex(
+                rule.expression,
+                target,
+                data,
+                rule.replacement,
+                rule.group_count,
+                rule.allow_unmatched
+            );
             if (rule.group_count) {
                 for (let i = 0; i < rule.group_count; i++) {
                     columns.push(NEW_COLUMN);

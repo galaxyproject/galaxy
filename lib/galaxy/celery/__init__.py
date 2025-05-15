@@ -246,6 +246,9 @@ def setup_periodic_tasks(config, celery_app):
     if config.object_store_cache_monitor_driver in ["auto", "celery"]:
         schedule_task("clean_object_store_caches", config.object_store_cache_monitor_interval)
 
+    if config.enable_failed_jobs_working_directory_cleanup:
+        schedule_task("cleanup_jwds", config.failed_jobs_working_directory_cleanup_interval)
+
     if beat_schedule:
         celery_app.conf.beat_schedule = beat_schedule
 

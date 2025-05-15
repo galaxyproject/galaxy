@@ -19,7 +19,7 @@ from tool_shed_client.schema import (
 
 def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
     users: List[ApiUser] = []
-    for user in get_users_by_deleted(app.model.context, app.model.User, deleted):
+    for user in get_users_by_deleted(app.model.context, User, deleted):
         users.append(get_api_user(app, user))
     return users
 

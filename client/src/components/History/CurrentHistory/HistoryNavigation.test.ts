@@ -14,21 +14,19 @@ const expectedOptions = [
     "Resume Paused Jobs",
     "Copy this History",
     "Delete this History",
-    "Export Tool Citations",
+    "Export Tool References",
     "Export History to File",
     "Archive History",
     "Extract Workflow",
     "Show Invocations",
-    "Share or Publish",
-    "Set Permissions",
-    "Make Private",
+    "Share & Manage Access",
 ];
 
 // options enabled for logged-out users
 const anonymousOptions = [
     "Resume Paused Jobs",
     "Delete this History",
-    "Export Tool Citations",
+    "Export Tool References",
     "Export History to File",
 ];
 

@@ -39,6 +39,7 @@ def api_payload_to_create_params(payload):
         name=payload.get("name", None),
         hide_source_items=string_as_bool(payload.get("hide_source_items", False)),
         copy_elements=string_as_bool(payload.get("copy_elements", False)),
+        fields=payload.get("fields", None),
     )
     return params
 

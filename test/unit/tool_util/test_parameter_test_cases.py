@@ -10,7 +10,7 @@ from typing import (
 
 import pytest
 
-from galaxy.tool_util.models import parse_tool
+from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parameters import (
     DataCollectionRequest,
     DataRequestHda,
@@ -25,13 +25,15 @@ from galaxy.tool_util.parameters.case import (
 )
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.interface import (
-    JsonTestCollectionDefDict,
-    JsonTestDatasetDefDict,
     ToolSource,
     ToolSourceTest,
 )
 from galaxy.tool_util.unittest_utils import functional_test_tool_directory
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
+from galaxy.tool_util_models.tool_source import (
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
+)
 from .util import dict_verify_each
 
 # legacy tools allows specifying parameter and repeat parameters without
@@ -61,11 +63,17 @@ TOOLS_THAT_USE_SELECT_BY_VALUE = [
     "multi_select.xml",
 ]
 
+# Figure out the problem and resolve.
+TOOLS_THAT_ARE_OUTSTANDING_ISSUES = [
+    "gx_conditional_boolean_optional.xml",
+    "gx_conditional_boolean_discriminate_on_string_value.xml",
+]
 
 TEST_TOOL_THAT_DO_NOT_VALIDATE = (
     TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS
     + TOOLS_THAT_USE_TRUE_FALSE_VALUE_BOOLEAN_SPECIFICATION
     + TOOLS_THAT_USE_SELECT_BY_VALUE
+    + TOOLS_THAT_ARE_OUTSTANDING_ISSUES
     + [
         # will never handle upload_dataset
         "upload.xml",
@@ -128,20 +136,22 @@ def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: 
 
 def test_validate_framework_test_tools():
     test_tool_directory = functional_test_tool_directory()
-    for tool_name in os.listdir(test_tool_directory):
-        if tool_name in TEST_TOOL_THAT_DO_NOT_VALIDATE:
-            continue
-        if tool_name.endswith("_conf.xml"):
-            # tool conf (toolbox) files or sample datatypes
-            continue
-        tool_path = os.path.join(test_tool_directory, tool_name)
-        if not tool_path.endswith(".xml") or os.path.isdir(tool_path):
-            continue
+    parameter_tool_directory = os.path.join(test_tool_directory, "parameters")
+    for test_directory in [test_tool_directory, parameter_tool_directory]:
+        for tool_name in os.listdir(test_directory):
+            if tool_name in TEST_TOOL_THAT_DO_NOT_VALIDATE:
+                continue
+            if tool_name.endswith("_conf.xml") or tool_name == "macros.xml":
+                # tool conf (toolbox) files or sample datatypes
+                continue
+            tool_path = os.path.join(test_directory, tool_name)
+            if not tool_path.endswith(".xml") or os.path.isdir(tool_path):
+                continue
 
-        try:
-            _validate_path(tool_path)
-        except Exception as e:
-            raise Exception(f"Failed to validate {tool_path}: {str(e)}")
+            try:
+                _validate_path(tool_path)
+            except Exception as e:
+                raise Exception(f"Failed to validate {tool_path}: {str(e)}")
 
 
 def test_test_case_state_conversion():

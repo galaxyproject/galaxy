@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""
-"""
+""" """
 from galaxy import model
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager

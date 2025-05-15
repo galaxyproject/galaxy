@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import datetime
 import inspect
@@ -40,6 +39,7 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
+from galaxy.model import History
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -62,6 +62,13 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
+
+try:
+    import galaxy.web_client
+
+    default_static_dir = os.path.dirname(galaxy.web_client.__file__)
+except ImportError:
+    default_static_dir = "static/"
 
 log = logging.getLogger(__name__)
 
@@ -195,6 +202,7 @@ class WebApplication(base.WebApplication):
             )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
+        log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
         if isinstance(e, TypeError):
             method_signature = inspect.signature(method)
             required_parameters = {
@@ -907,7 +915,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return history
 
     def set_history(self, history):
-        if history and not history.deleted:
+        if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
         self.sa_session.commit()
@@ -921,6 +929,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
+        assert self.galaxy_session
 
         # Just return the current history if one exists and is not deleted.
         history = self.galaxy_session.current_history
@@ -932,9 +941,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # current session and return it.
         user = self.galaxy_session.user
         if user:
-            stmt = select(self.app.model.History).filter_by(
-                user=user, name=self.app.model.History.default_name, deleted=False
-            )
+            stmt = select(History).filter_by(user=user, name=History.default_name, deleted=False)
             unnamed_histories = self.sa_session.scalars(stmt)
             for history in unnamed_histories:
                 if history.empty:
@@ -958,12 +965,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not user:
             return None
         try:
-            stmt = (
-                select(self.app.model.History)
-                .filter_by(user=user, deleted=False)
-                .order_by(self.app.model.History.update_time.desc())
-                .limit(1)
-            )
+            stmt = select(History).filter_by(user=user, deleted=False).order_by(History.update_time.desc()).limit(1)
             recent_history = self.sa_session.scalars(stmt).first()
         except NoResultFound:
             return None
@@ -976,7 +978,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         its associated user (if set).
         """
         # Create new history
-        history = self.app.model.History()
+        history = History()
         if name:
             history.name = name
         # Associate with session
@@ -1158,7 +1160,7 @@ def build_url_map(app, global_conf, **local_conf):
         return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
-    static_dir = get_static_from_config("static_dir", "static/")
+    static_dir = get_static_from_config("static_dir", default_static_dir)
     static_dir_bare = static_dir.directory.rstrip("/")
     urlmap["/static"] = static_dir
     urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
@@ -1167,8 +1169,8 @@ def build_url_map(app, global_conf, **local_conf):
     urlmap["/static/welcome.html"] = get_static_from_config(
         "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
     )
-    urlmap["/favicon.ico"] = get_static_from_config(
-        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
+    urlmap["/static/favicon.svg"] = get_static_from_config(
+        "static_favicon_dir", f"{static_dir_bare}/favicon.svg", sample=default_url_path("static/favicon.svg")
     )
     urlmap["/robots.txt"] = get_static_from_config(
         "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")

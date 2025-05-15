@@ -438,7 +438,7 @@ def make_user_and_role(session, make_user, make_role, make_user_role_association
 
     def f(**kwd):
         user = make_user(**kwd)
-        private_role = make_role(type=m.Role.types.PRIVATE)
+        private_role = make_role(type=m.Role.types.PRIVATE, name=m.Role.default_name(m.Role.types.PRIVATE))
         make_user_role_association(user, private_role)
         return user, private_role
 

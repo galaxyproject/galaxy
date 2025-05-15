@@ -11,6 +11,8 @@ from tool_shed.test.base.populators import (
     repo_tars,
 )
 from tool_shed_client.schema import (
+    RepositoryIndexRequest,
+    RepositoryPaginatedIndexRequest,
     RepositoryRevisionMetadata,
     UpdateRepositoryRequest,
 )
@@ -125,6 +127,60 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository
         assert repository.owner == repo.owner
         assert repository.name == repo.name
+
+    @skip_if_api_v1
+    def test_index_pagination(self):
+        populator = self.populator
+        category1 = populator.new_category(prefix="paginatecat1")
+        category2 = populator.new_category(prefix="paginatecat2")
+        populator.setup_column_maker_repo(prefix="repoforindexpagination1", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination2", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination3", category_id=category2.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination4", category_id=category2.id)
+        populator.setup_column_maker_repo(prefix="repoforindexpagination5", category_id=category2.id)
+        request = RepositoryPaginatedIndexRequest(
+            page=1,
+            page_size=2,
+            category_id=category1.id,
+        )
+        response = populator.repository_index_paginated(request)
+        assert len(response.hits) == 2
+        assert response.total_results == 2
+        assert response.page == 1
+        assert response.page_size == 2
+
+        request.category_id = category2.id
+        response = populator.repository_index_paginated(request)
+        assert response.total_results == 3
+        assert response.page == 1
+        assert response.page_size == 2
+
+        request.filter = "repoforindexpagination4"
+        response = populator.repository_index_paginated(request)
+        assert response.total_results == 1
+
+    @skip_if_api_v1
+    def test_index_sorting(self):
+        populator = self.populator
+        category1 = populator.new_category(prefix="paginatecat1")
+        populator.setup_column_maker_repo(prefix="repoforsort_z", category_id=category1.id)
+        populator.setup_column_maker_repo(prefix="repoforsort_a", category_id=category1.id)
+
+        response = populator.repository_index(RepositoryIndexRequest())
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_a" in order_of_these[0]
+        assert "_z" in order_of_these[1]
+
+        response = populator.repository_index(RepositoryIndexRequest(sort_desc=True))
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_z" in order_of_these[0]
+        assert "_a" in order_of_these[1]
+
+        # test recently created query
+        response = populator.repository_index(RepositoryIndexRequest(sort_desc=True, sort_by="create_time"))
+        order_of_these = [r.name for r in response.root if r.name.startswith("repoforsort")]
+        assert "_a" in order_of_these[0]
+        assert "_z" in order_of_these[1]
 
     @skip_if_api_v1
     def test_allow_push(self):
@@ -277,16 +333,25 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.assert_has_n_installable_revisions(repository, 3)
 
     @skip_if_api_v2
-    def test_reset_all(self):
+    def test_reset_all_v1(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
         populator.assert_has_n_installable_revisions(repository, 3)
-        # reseting one at a time or resetting everything via the web controllers works...
-        # reseting all at once via the API does not work - it breaks the repository
+        # resetting one at a time or resetting everything via the web controllers works...
+        # resetting all at once via the API does not work - it breaks the repository
         response = self.api_interactor.post(
             "repositories/reset_metadata_on_repositories",
             data={"payload": "can not be empty because bug in controller"},
         )
+        api_asserts.assert_status_code_is_ok(response)
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    @skip_if_api_v1
+    def test_reset_all_v2(self):
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
+        populator.assert_has_n_installable_revisions(repository, 3)
+        response = self.api_interactor.post("repositories/reset_metadata_on_repositories", json={})
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 

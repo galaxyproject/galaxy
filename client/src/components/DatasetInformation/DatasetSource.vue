@@ -4,7 +4,7 @@ import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type DatasetTransform } from "@/api";
+import { type DatasetSource } from "@/api";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 
@@ -13,10 +13,7 @@ import DatasetSourceTransform from "@/components/DatasetInformation/DatasetSourc
 library.add(faCopy, faExternalLinkAlt);
 
 interface Props {
-    source: {
-        source_uri: string;
-        transform: DatasetTransform[];
-    };
+    source: DatasetSource;
 }
 
 const props = defineProps<Props>();
@@ -49,6 +46,6 @@ function copyLink() {
 
         <br />
 
-        <DatasetSourceTransform :transform="source.transform" />
+        <DatasetSourceTransform v-if="source.transform" :transform="source.transform" />
     </li>
 </template>

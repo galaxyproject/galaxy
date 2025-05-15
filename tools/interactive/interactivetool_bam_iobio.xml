@@ -1,4 +1,5 @@
 <tool id="interactive_tool_bam_iobio" tool_type="interactive" name="bam.iobio visualisation" version="0.4.0">
+    <icon src="bam.iobio.png" />
     <requirements>
         <container type="docker">quay.io/iobio/bam.iobio.io:0.4.0</container>
     </requirements>

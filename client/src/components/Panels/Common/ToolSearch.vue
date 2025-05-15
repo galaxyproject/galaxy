@@ -80,7 +80,9 @@ const localFilterText = computed({
         return props.query !== null ? props.query : "";
     },
     set: (newVal: any) => {
-        checkQuery(newVal);
+        if (newVal.trim() || props.query.trim()) {
+            checkQuery(newVal);
+        }
     },
 });
 
@@ -276,7 +278,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div v-if="searchWorker || !props.userWorker">
+    <div v-if="searchWorker || !props.useWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"

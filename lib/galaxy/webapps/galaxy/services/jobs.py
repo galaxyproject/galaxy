@@ -4,6 +4,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
+    Union,
 )
 
 from galaxy import (
@@ -24,6 +26,12 @@ from galaxy.schema.jobs import JobAssociation
 from galaxy.schema.schema import JobIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        HistoryDatasetAssociation,
+        LibraryDatasetDatasetAssociation,
+    )
 
 
 class JobIndexViewEnum(str, Enum):
@@ -94,6 +102,7 @@ class JobsService(ServiceBase):
                 job_dict["decoded_job_id"] = job.id
             if user_details:
                 job_dict["user_email"] = job.get_user_email()
+                job_dict["user_id"] = job.user_id
             out.append(job_dict)
 
         return out
@@ -125,7 +134,9 @@ class JobsService(ServiceBase):
         elif dataset_id is not None:
             # Following checks dataset accessible
             if hda_ldda == "hda":
-                dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+                dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = (
+                    self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+                )
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
             if not dataset_instance.creating_job:

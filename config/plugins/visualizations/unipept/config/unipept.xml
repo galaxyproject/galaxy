@@ -1,17 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Unipept Taxonomy Viewer">
-    <description>Interactive Unipept Tree viewer.</description>
+<visualization name="Unipept Taxonomy Viewer" embeddable="true">
+    <description>Interactive Tree, Sunburst and Map Diagrams</description>
     <data_sources>
         <data_source>
            <model_class>HistoryDatasetAssociation</model_class>
-           <test test_attr="ext" result_type="datatype">d3_hierarchy</test>
-           <to_param param_attr="id">dataset_id</to_param>
+           <test test_attr="ext">d3_hierarchy</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
-    <template>unipept.mako</template>
-    <render_target>_blank</render_target>
+    <requirements>
+        <requirement type="npm" version="0.0.1" package="@galaxyproject/unipept"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.d3_hierarchy" ftype="d3_hierarchy" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# What is the UniPept Taxonomy Viewer?
+
+This visualization allows you to explore hierarchical taxonomic datasets interactively through three dynamic views: **Treeview**, **Sunburst**, and **Treemap**.
+
+After selecting a dataset, you can switch between the different visualization types using the buttons at the top.
+Each visualization offers a unique way to inspect and understand the structure and distribution of taxonomic data.
+
+This viewer is powered by the [Unipept Visualizations library](https://unipept.ugent.be/), an open-source toolkit for taxonomy-based visual analytics.
+
+## Treeview
+
+- Interactive, collapsible tree showing taxonomic hierarchy
+- Scroll to zoom, drag to pan
+- Click nodes to expand/collapse, right-click to set a node as new root
+
+## Sunburst
+
+- Radial, space-efficient view of taxonomic distribution
+- Click slices to zoom into specific lineages
+- Click center to zoom out
+
+## Treemap
+
+- Area-based view representing the relative abundance of taxa
+- Click squares to zoom into taxonomic subgroups
+- Right-click to zoom out
+
+## Supported Datasets
+
+The UniPept Taxonomy Viewer expects datasets containing a taxonomic hierarchy structure, typically produced in **d3_hierarchy** format.
+
+## Usage Instructions
+
+1. Select a supported dataset.
+2. Wait for the viewer to load the taxonomy data.
+3. Click on **Treeview**, **Sunburst**, or **Treemap** to explore the data in different forms.
+4. Interact with nodes and areas for zooming, panning, and focusing on specific taxonomic groups.
+
+For more information about the UniPept project and tools, visit: [https://unipept.ugent.be/](https://unipept.ugent.be/)
+]]></help>
 </visualization>

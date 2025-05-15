@@ -17,7 +17,6 @@ from webob.exc import (
 
 from galaxy import (
     exceptions,
-    model,
     security,
     util,
     web,
@@ -39,11 +38,14 @@ from galaxy.managers.sharable import (
     SlugBuilder,
 )
 from galaxy.model import (
+    Dataset,
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    LibraryDatasetPermissions,
+    StoredWorkflow,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
@@ -246,7 +248,6 @@ class JSAppLauncher(BaseUIController):
         "email",
         "username",
         "is_admin",
-        "tags_used",
         "total_disk_usage",
         "nice_total_disk_usage",
         "quota_percent",
@@ -590,7 +591,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
             if action not in library_dataset_actions:
                 for role in dataset_permissions_roles:
-                    ldps = trans.model.LibraryDatasetPermissions(action, library_dataset, role)
+                    ldps = LibraryDatasetPermissions(action, library_dataset, role)
                     ldps = [ldps] if not isinstance(ldps, list) else ldps
                     for ldp in ldps:
                         trans.sa_session.add(ldp)
@@ -610,86 +611,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
 
     slug_builder = SlugBuilder()
-
-    def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
-        session = trans.sa_session
-
-        # Create/get visualization.
-        if not id:
-            # Create new visualization.
-            vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
-        else:
-            decoded_id = trans.security.decode_id(id)
-            vis = session.get(model.Visualization, decoded_id)
-            # TODO: security check?
-
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = trans.model.VisualizationRevision()
-        vis_rev.visualization = vis
-        # do NOT alter the dbkey
-        vis_rev.dbkey = vis.dbkey
-        # do alter the title and config
-        vis_rev.title = title
-
-        # -- Validate config. --
-
-        if vis.type == "trackster":
-
-            def unpack_track(track_dict):
-                """Unpack a track from its json."""
-                dataset_dict = track_dict["dataset"]
-                return {
-                    "dataset_id": trans.security.decode_id(dataset_dict["id"]),
-                    "hda_ldda": dataset_dict.get("hda_ldda", "hda"),
-                    "track_type": track_dict["track_type"],
-                    "prefs": track_dict["prefs"],
-                    "mode": track_dict["mode"],
-                    "filters": track_dict["filters"],
-                    "tool_state": track_dict["tool_state"],
-                }
-
-            def unpack_collection(collection_json):
-                """Unpack a collection from its json."""
-                unpacked_drawables = []
-                drawables = collection_json["drawables"]
-                for drawable_json in drawables:
-                    if "track_type" in drawable_json:
-                        drawable = unpack_track(drawable_json)
-                    else:
-                        drawable = unpack_collection(drawable_json)
-                    unpacked_drawables.append(drawable)
-                return {
-                    "obj_type": collection_json["obj_type"],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get("prefs", []),
-                    "filters": collection_json.get("filters", None),
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks(bookmarks_json):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection(config["view"])
-            bookmarks = unpack_bookmarks(config["bookmarks"])
-            vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
-            # Viewport from payload
-            viewport = config.get("viewport")
-            if viewport:
-                chrom = viewport["chrom"]
-                start = viewport["start"]
-                end = viewport["end"]
-                overview = viewport["overview"]
-                vis_rev.config["viewport"] = {"chrom": chrom, "start": start, "end": end, "overview": overview}
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
-        vis.latest_revision = vis_rev
-        session.add(vis_rev)
-        session.commit()
-        encoded_id = trans.security.encode_id(vis.id)
-        return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
 
     def get_tool_def(self, trans, hda):
         """Returns definition of an interactive tool for an HDA."""
@@ -738,10 +659,14 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                dataset_id = track_dict["dataset_id"]
+                unencoded_id = track_dict.get("dataset_id")
+                if unencoded_id:
+                    encoded_id = trans.security.encode_id(unencoded_id)
+                else:
+                    encoded_id = track_dict["dataset"]["id"]
                 hda_ldda = track_dict.get("hda_ldda", "hda")
-                dataset_id = trans.security.encode_id(dataset_id)
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
+
+                dataset = self.get_hda_or_ldda(trans, hda_ldda, encoded_id)
                 try:
                     prefs = track_dict["prefs"]
                 except KeyError:
@@ -874,7 +799,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                 error("You are not allowed to access this dataset")
 
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+            if check_state and data.state == Dataset.states.UPLOAD:
                 return trans.show_error_message(
                     "Please wait until this dataset finishes uploading " + "before attempting to view it."
                 )
@@ -958,7 +883,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
@@ -969,10 +894,10 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored: model.StoredWorkflow):
+    def _import_shared_workflow(self, trans, stored: StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
-        imported_stored = model.StoredWorkflow()
+        imported_stored = StoredWorkflow()
         imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
@@ -1162,38 +1087,6 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
         return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
-
-    def get_user_tags_used(self, trans, user=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-
-        user defaults to trans.user.
-        Returns an empty list if no user is given and trans.user is anonymous.
-        """
-        # TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
-        user = user or trans.user
-        if not user:
-            return []
-
-        # get all the taggable model TagAssociations
-        tag_models = [v.tag_assoc_class for v in trans.tag_handler.item_tag_assoc_info.values()]
-        # create a union of subqueries for each for this user - getting only the tname and user_value
-        all_tags_query = None
-        for tag_model in tag_models:
-            subq = trans.sa_session.query(tag_model.user_tname, tag_model.user_value).filter(
-                tag_model.user == trans.user
-            )
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
-
-        # if nothing init'd the query, bail
-        if all_tags_query is None:
-            return []
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tags = all_tags_query.distinct().all()
-        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
 
 
 class UsesExtendedMetadataMixin(SharableItemSecurityMixin):

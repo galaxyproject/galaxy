@@ -24,6 +24,7 @@ import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
@@ -340,17 +341,18 @@ watch(operationMessage, () => {
                     <span v-localize>{{ gridConfig.title }}</span>
                 </Heading>
                 <div class="d-flex justify-content-between">
-                    <BButton
+                    <GButton
                         v-for="(action, actionIndex) in gridConfig.actions"
                         :key="actionIndex"
                         class="m-1"
-                        size="sm"
-                        variant="outline-primary"
+                        size="small"
+                        color="blue"
+                        outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
                         <Icon :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
             <FilterMenu
@@ -469,16 +471,15 @@ watch(operationMessage, () => {
                                     v-else-if="fieldEntry.type == 'link'"
                                     :text="fieldText(fieldEntry, rowData)"
                                     @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
-                                <BButton
+                                <GButton
                                     v-else-if="fieldEntry.type == 'button'"
-                                    class="d-flex flex-inline flex-gapx-1 align-items-center"
-                                    variant="primary"
+                                    color="blue"
                                     @click="fieldEntry.handler && fieldEntry.handler(rowData)">
                                     <FontAwesomeIcon v-if="fieldEntry.icon" :icon="fieldEntry.icon" />
                                     <span v-if="fieldText(fieldEntry, rowData)" v-localize>{{
                                         fieldText(fieldEntry, rowData)
                                     }}</span>
-                                </BButton>
+                                </GButton>
                                 <SwitchToHistoryLink
                                     v-else-if="fieldEntry.type == 'history'"
                                     :history-id="rowData[fieldEntry.key]" />
@@ -521,19 +522,19 @@ watch(operationMessage, () => {
             <div v-if="isAvailable" class="d-flex justify-content-between pt-3">
                 <div class="d-flex">
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
-                        <BButton
+                        <GButton
                             v-if="
                                 selected.size > 0 &&
                                 (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
                             "
                             class="mr-2"
-                            size="sm"
-                            variant="primary"
+                            size="small"
+                            color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
                             <Icon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
-                        </BButton>
+                        </GButton>
                     </div>
                 </div>
                 <BPagination

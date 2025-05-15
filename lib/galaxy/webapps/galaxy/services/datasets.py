@@ -47,6 +47,10 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.markdown_util import (
+    ready_galaxy_markdown_for_export,
+    resolve_job_markdown,
+)
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -69,6 +73,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     EncodedDatasetSourceId,
     Model,
+    ToolReportForDataset,
     UpdateDatasetPermissionsPayload,
 )
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
@@ -153,6 +158,9 @@ class DatasetStorageDetails(Model):
     )
     relocatable: bool = Field(
         description="Indicator of whether the objectstore for this dataset can be switched by this user."
+    )
+    private: bool = Field(
+        description="Indicator of whether the objectstore is marked as private.",
     )
 
 
@@ -438,6 +446,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
         badges = object_store.get_concrete_store_badges(dataset)
+        private = object_store.is_private(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -469,6 +478,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             quota=quota,
             badges=badges,
             relocatable=relocatable,
+            private=private,
         )
 
     def show_inheritance_chain(
@@ -504,6 +514,18 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         result = compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
+
+    def report(self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField) -> ToolReportForDataset:
+        dataset_instance = self.hda_manager.get_accessible(dataset_id, trans.user)
+        self.hda_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        file_path = trans.app.object_store.get_filename(dataset_instance.dataset)
+        raw_content = open(file_path).read(1024 * 10)
+        internal_markdown = resolve_job_markdown(trans, dataset_instance.creating_job, raw_content)
+        content, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
+        return ToolReportForDataset(
+            content=content,
+            **extra_attributes,
+        )
 
     def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
         if object_id.startswith("hda-"):
@@ -655,15 +677,19 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return rval, headers
 
     def get_content_as_text(
-        self,
-        trans: ProvidesHistoryContext,
-        dataset_id: DecodedDatabaseIdField,
+        self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField, filename: Optional[str]
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
         user = trans.user
         hda = self.hda_manager.get_accessible(dataset_id, user)
         hda = self.hda_manager.error_if_uploading(hda)
-        truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
+        if filename and filename != "index":
+            object_store = trans.app.object_store
+            dir_name = hda.dataset.extra_files_path_name
+            file_path = object_store.get_filename(hda.dataset, extra_dir=dir_name, alt_name=filename)
+            truncated, dataset_data = self.hda_manager.text_data_truncated(file_path, preview=True)
+        else:
+            truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
         item_url = web.url_for(
             controller="dataset",
             action="display_by_username_and_slug",

@@ -1,0 +1,35 @@
+- id: elabftw
+  version: 0
+  name: eLabFTW
+  description: |
+    eLabFTW is a free and open source electronic lab notebook from Deltablot. It can keep track of experiments,
+    equipment, and materials from a research lab. Each lab can either host their own installation or go for Deltablot's
+    hosted solution. This template configuration allows you to connect to an eLabFTW instance of your choice.
+  variables:
+    endpoint:
+      label: eLabFTW instance endpoint (e.g. https://demo.elabftw.net)
+      type: string
+      help: |
+        The endpoint of the eLabFTW server you are connecting to. This should be the full URL including the protocol
+        (http or https) and the domain name.
+    writable:
+      label: Allow Galaxy to export data to eLabFTW?
+      type: boolean
+      default: true
+      help: |
+        Allow Galaxy to write data to this eLabFTW instance. Set it to "Yes" if you want to export data from Galaxy to
+        eLabFTW, set it to "No" if you only need to import data from eLabFTW to Galaxy. Keep in mind that your API key
+        must have matching permissions.
+  secrets:
+    api_key:
+      label: API Key
+      help: |
+        The API key to use to connect to the eLabFTW server. Navigate to the _Settings_ page on your eLabFTW server and
+        go to the _API Keys_ tab to generate a new key. Choose "Read/Write" permissions to enable both importing and
+        exporting data. "Read Only" API keys still work for importing data to Galaxy, but they will cause Galaxy to
+        error out when exporting data to eLabFTW.
+  configuration:
+    type: elabftw
+    endpoint: "{{ variables.endpoint }}"
+    api_key: "{{ secrets.api_key }}"
+    writable: "{{ variables.writable }}"

@@ -2,7 +2,12 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocation } from "@/api/invocations";
+import {
+    type InvocationJobsSummary,
+    type InvocationStep,
+    type WorkflowInvocation,
+    type WorkflowInvocationRequest,
+} from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -42,6 +47,20 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
+    async function fetchInvocationRequest(params: FetchParams): Promise<WorkflowInvocationRequest> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/request", {
+            params: {
+                path: {
+                    invocation_id: params.id,
+                },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
     async function cancelWorkflowScheduling(invocationId: string) {
         const { data, error } = await GalaxyApi().DELETE("/api/invocations/{invocation_id}", {
             params: {
@@ -56,8 +75,10 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     }
 
     const {
+        fetchItemById: fetchInvocationById,
         getItemById: getInvocationById,
-        fetchItemById: fetchInvocationForId,
+        getItemLoadError: getInvocationLoadError,
+        isLoadingItem: isLoadingInvocation,
         storedItems: storedInvocations,
     } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
 
@@ -67,14 +88,19 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationStepById, fetchItemById: fetchInvocationStepById } =
         useKeyedCache<InvocationStep>(fetchInvocationStep);
 
+    const { getItemById: getInvocationRequestById } = useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
+
     return {
-        getInvocationById,
-        fetchInvocationForId,
-        getInvocationJobsSummaryById,
-        fetchInvocationJobsSummaryForId,
-        getInvocationStepById,
-        fetchInvocationStepById,
         cancelWorkflowScheduling,
+        fetchInvocationById,
+        fetchInvocationJobsSummaryForId,
+        fetchInvocationStepById,
+        getInvocationById,
+        getInvocationJobsSummaryById,
+        getInvocationLoadError,
+        getInvocationStepById,
+        getInvocationRequestById,
         graphStepsByStoreId,
+        isLoadingInvocation,
     };
 });

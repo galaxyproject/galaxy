@@ -317,6 +317,7 @@ class ModelStoreManager:
 
     def _build_user_context(self, user_id: int):
         user = self._user_manager.by_id(user_id)
+        assert user is not None
         user_context = ModelStoreUserContext(self._app, user)
         return user_context
 

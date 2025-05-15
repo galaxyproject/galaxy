@@ -192,20 +192,28 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     }
 }
 
-/**
- * Closes popup when focus leaves this element
- * Because this component uses a Teleport, uses a custom `data-parent-id` attribute
- * to determine if the element is a child of this component
- */
-function onBlur(e: FocusEvent) {
-    const newTarget = e.relatedTarget;
+const mouseDownInside = ref(false);
 
-    // close without refocusing open button
-    if (!(newTarget instanceof HTMLElement)) {
-        close(false);
-    } else if (newTarget.getAttribute("data-parent-id") !== props.id) {
-        close(false);
-    }
+function onMouseDownInside() {
+    mouseDownInside.value = true;
+}
+/**
+ * Closes the popup when focus leaves this component.
+ * Since this component uses a Teleport, it relies on a custom `data-parent-id` attribute
+ * to determine if the element is a child of this component.
+ */
+function onFocusOut(e: FocusEvent) {
+    const newTarget = e.relatedTarget as HTMLElement | null;
+
+    // Delay until after click completes
+    requestAnimationFrame(() => {
+        if (!mouseDownInside.value) {
+            if (!newTarget || newTarget.getAttribute("data-parent-id") !== props.id) {
+                close(false);
+            }
+        }
+        mouseDownInside.value = false;
+    });
 }
 
 /** emulates tab behavior, because options list is teleported to the app layer */
@@ -265,8 +273,8 @@ whenever(isOpen, async () => {
 </script>
 
 <template>
-    <div ref="root" class="headless-multiselect">
-        <fieldset v-if="isOpen" @blur.capture="onBlur">
+    <div ref="root" class="headless-multiselect" @mousedown="onMouseDownInside" @focusout="onFocusOut">
+        <fieldset v-if="isOpen" @focusout="onFocusOut">
             <input
                 :id="`${props.id}-input`"
                 ref="inputField"
@@ -313,7 +321,7 @@ whenever(isOpen, async () => {
                 }"
                 :data-parent-id="id"
                 @keydown.up.down.prevent
-                @blur.capture="onBlur">
+                @focusout="onFocusOut">
                 <button
                     v-for="(option, i) in trimmedOptions"
                     :id="`${props.id}-option-${i}`"

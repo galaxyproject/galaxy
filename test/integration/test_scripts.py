@@ -1,5 +1,4 @@
-"""Integration tests for various scripts in scripts/.
-"""
+"""Integration tests for various scripts in scripts/."""
 
 import json
 import os

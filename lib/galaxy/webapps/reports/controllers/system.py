@@ -172,17 +172,17 @@ class System(BaseUIController):
         message = ""
         dataset = trans.sa_session.get(model.Dataset, trans.security.decode_id(kwd.get("id", "")))
         # Get all associated hdas and lddas that use the same disk file.
-        stmt = select(trans.model.HistoryDatasetAssociation).filter(
+        stmt = select(model.HistoryDatasetAssociation).filter(
             and_(
-                trans.model.HistoryDatasetAssociation.deleted == false(),
-                trans.model.HistoryDatasetAssociation.dataset_id == dataset.id,
+                model.HistoryDatasetAssociation.deleted == false(),
+                model.HistoryDatasetAssociation.dataset_id == dataset.id,
             )
         )
         associated_hdas = trans.sa_session.scalars(stmt).all()
-        stmt = select(trans.model.LibraryDatasetDatasetAssociation).filter(
+        stmt = select(model.LibraryDatasetDatasetAssociation).filter(
             and_(
-                trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
-                trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
+                model.LibraryDatasetDatasetAssociation.deleted == false(),
+                model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
             )
         )
         associated_lddas = trans.sa_session.scalars(stmt).all()

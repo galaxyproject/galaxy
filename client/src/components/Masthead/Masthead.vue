@@ -58,6 +58,14 @@ function openUrl(url, target = null) {
     }
 }
 
+function extensionTabClick(tab) {
+    if (tab.url) {
+        openUrl(tab.url, tab.target);
+    } else if (typeof tab.onclick === "function") {
+        tab.onclick();
+    }
+}
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
     props.windowTab.onclick();
@@ -103,7 +111,7 @@ onMounted(() => {
                 :url="tab.url"
                 :tooltip="tab.tooltip"
                 :target="tab.target"
-                @click="tab.onclick ? tab.onclick : undefined" />
+                @click="extensionTabClick(tab)" />
             <MastheadItem
                 id="help"
                 icon="fa-question"
@@ -143,6 +151,21 @@ onMounted(() => {
                     },
                 ]"
                 @click="userLogout" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && config.single_user"
+                id="user"
+                class="loggedin-only"
+                icon="fa-user"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: 'fa-gear',
+                        handler: () => openUrl('/user'),
+                    },
+                ]"
+                @click="user" />
         </BNavbarNav>
         <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
     </BNavbar>

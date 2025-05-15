@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArchive,
     faBars,
@@ -10,13 +9,12 @@ import {
     faFileArchive,
     faFileExport,
     faList,
-    faLock,
     faPlay,
     faPlus,
-    faShareAlt,
+    faSpinner,
     faStream,
     faTrash,
-    faUserLock,
+    faUsersCog,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
@@ -46,25 +44,6 @@ import { rethrowSimple } from "@/utils/simple-error";
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
-library.add(
-    faArchive,
-    faBars,
-    faBurn,
-    faColumns,
-    faCopy,
-    faExchangeAlt,
-    faFileArchive,
-    faFileExport,
-    faLock,
-    faPlay,
-    faPlus,
-    faShareAlt,
-    faList,
-    faStream,
-    faTrash,
-    faUserLock
-);
-
 interface Props {
     histories: HistorySummary[];
     history: HistorySummary;
@@ -80,7 +59,6 @@ const props = withDefaults(defineProps<Props>(), {
 // modal refs
 const showSwitchModal = ref(false);
 const showDeleteModal = ref(false);
-const showPrivacyModal = ref(false);
 const showCopyModal = ref(false);
 
 const purgeHistory = ref(false);
@@ -91,7 +69,7 @@ const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
-const { totalHistoryCount } = storeToRefs(historyStore);
+const { totalHistoryCount, changingCurrentHistory } = storeToRefs(historyStore);
 
 const canEditHistory = computed(() => {
     return canMutateHistory(props.history);
@@ -167,10 +145,13 @@ async function resumePausedJobs() {
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    :disabled="isAnonymous"
+                    :disabled="isAnonymous || changingCurrentHistory"
                     :title="userTitle('Switch to history')"
                     @click="showSwitchModal = !showSwitchModal">
-                    <FontAwesomeIcon fixed-width :icon="faExchangeAlt" />
+                    <FontAwesomeIcon
+                        fixed-width
+                        :icon="changingCurrentHistory ? faSpinner : faExchangeAlt"
+                        :spin="changingCurrentHistory" />
                 </BButton>
 
                 <BDropdown
@@ -246,10 +227,10 @@ async function resumePausedJobs() {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :title="localize('Export Citations for all Tools used in this History')"
+                        :title="localize('Export references for all Tools used in this History')"
                         @click="$router.push(`/histories/citations?id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faStream" class="mr-1" />
-                        <span v-localize>Export Tool Citations</span>
+                        <span v-localize>Export Tool References</span>
                     </BDropdownItem>
 
                     <BDropdownItem
@@ -290,27 +271,11 @@ async function resumePausedJobs() {
 
                     <BDropdownItem
                         :disabled="isAnonymous || !canEditHistory"
-                        :title="userTitle('Share or Publish this History')"
-                        data-description="share or publish"
+                        data-description="share and manage access"
+                        :title="userTitle('Share, Publish, or Set Permissions for this History')"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
-                        <FontAwesomeIcon fixed-width :icon="faShareAlt" class="mr-1" />
-                        <span v-localize>Share or Publish</span>
-                    </BDropdownItem>
-
-                    <BDropdownItem
-                        :disabled="isAnonymous || !canEditHistory"
-                        :title="userTitle('Set who can View or Edit this History')"
-                        @click="$router.push(`/histories/permissions?id=${history.id}`)">
-                        <FontAwesomeIcon fixed-width :icon="faUserLock" class="mr-1" />
-                        <span v-localize>Set Permissions</span>
-                    </BDropdownItem>
-
-                    <BDropdownItem
-                        :disabled="isAnonymous || !canEditHistory"
-                        :title="userTitle('Make this History Private')"
-                        @click="showPrivacyModal = !showPrivacyModal">
-                        <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
-                        <span v-localize>Make Private</span>
+                        <FontAwesomeIcon fixed-width :icon="faUsersCog" class="mr-1" />
+                        <span v-localize>Share & Manage Access</span>
                     </BDropdownItem>
                 </BDropdown>
             </BButtonGroup>
@@ -318,7 +283,6 @@ async function resumePausedJobs() {
 
         <SelectorModal
             v-if="!props.minimal"
-            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
             :additional-options="['center', 'multi']"
@@ -326,24 +290,6 @@ async function resumePausedJobs() {
             @selectHistory="historyStore.setCurrentHistory($event.id)" />
 
         <CopyModal :history="history" :show-modal.sync="showCopyModal" />
-
-        <BModal
-            v-model="showPrivacyModal"
-            title="Make History Private"
-            title-tag="h2"
-            @ok="historyStore.secureHistory(history)">
-            <h4>
-                History:
-                <b>
-                    <i>{{ history.name }}</i>
-                </b>
-            </h4>
-            <p v-localize>
-                This will make all the data in this history private (excluding library datasets), and will set
-                permissions such that all new data is created as private. Any datasets within that are currently shared
-                will need to be re-shared or published. Are you sure you want to do this?
-            </p>
-        </BModal>
 
         <BModal
             v-model="showDeleteModal"

@@ -8,18 +8,18 @@ import requests
 import yaml
 from gxformat2.yaml import ordered_load
 
-from galaxy.tool_util.models import (
-    OutputChecks,
-    OutputsDict,
-    TestDicts,
-    TestJobDict,
-)
 from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import verify_file_contents_against_dict
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     get_metadata_to_test,
     verify_collection,
+)
+from galaxy.tool_util_models import (
+    OutputChecks,
+    OutputsDict,
+    TestDicts,
+    TestJobDict,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase
@@ -92,8 +92,8 @@ class TestWorkflow(ApiTestCase):
         )
         item_label = f"Output named {output_name}"
 
-        def get_filename(name):
-            return tempfile.NamedTemporaryFile(prefix=f"gx_workflow_framework_test_file_{output_name}", delete=False)
+        def get_filename(name: str) -> str:
+            return self.test_data_resolver.get_filename(name)
 
         def verify_dataset(dataset: dict, test_properties: OutputChecks):
             output_content = self.dataset_populator.get_history_dataset_content(

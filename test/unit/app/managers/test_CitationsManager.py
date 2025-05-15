@@ -1,10 +1,13 @@
 import os.path
 import tempfile
 
+import responses
+
 from galaxy.managers.citations import DoiCache
 from galaxy.util.bunch import Bunch
 
 
+@responses.activate
 def test_DoiCache():
     with tempfile.TemporaryDirectory() as tmp_database_dir:
         config = Bunch(
@@ -16,5 +19,7 @@ def test_DoiCache():
             citation_cache_schema_name=None,
         )
         doi_cache = DoiCache(config)
-        assert "Jörg" in doi_cache.get_bibtex("10.1093/bioinformatics/bts252")
-        assert "Özkurt" in doi_cache.get_bibtex("10.1101/2021.12.24.474111")
+        dois = (("10.1093/bioinformatics/bts252", "Jörg"), ("10.1101/2021.12.24.474111", "Özkurt"))
+        for doi, author in dois:
+            responses.add(method="GET", url=f"https://doi.org/{doi}", body=author)
+            assert author in doi_cache.get_bibtex(doi)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="PV Protein Viewer">
+<visualization name="PV Protein Viewer" hidden="true">
     <description>PV is a pdb/protein viewer hosted at https://biasmv.github.io/pv/.</description>
     <data_sources>
         <data_source>

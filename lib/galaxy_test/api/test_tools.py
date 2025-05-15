@@ -43,9 +43,7 @@ MINIMAL_TOOL = {
     "version": "1.0.0",
     "command": "echo 'Hello World' > $output1",
     "inputs": [],
-    "outputs": dict(
-        output1=dict(format="txt"),
-    ),
+    "outputs": {"output1": {"format": "txt", "type": "data"}},
 }
 MINIMAL_TOOL_NO_ID = {
     "name": "Minimal Tool",
@@ -53,9 +51,30 @@ MINIMAL_TOOL_NO_ID = {
     "version": "1.0.0",
     "command": "echo 'Hello World 2' > $output1",
     "inputs": [],
-    "outputs": dict(
-        output1=dict(format="txt"),
-    ),
+    "outputs": {"output1": {"format": "txt", "type": "data"}},
+}
+
+TOOL_WITH_SHELL_COMMAND = {
+    "id": "basecommand",
+    "name": "Base command tool",
+    "class": "GalaxyUserTool",
+    "container": "busybox",
+    "version": "1.0.0",
+    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+            "format": "txt",
+        }
+    ],
+    "outputs": [
+        {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    ],
 }
 
 
@@ -257,7 +276,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "xrefs" in get_json
         assert len(get_json["xrefs"]) == 1
         xref = get_json["xrefs"][0]
-        assert xref["reftype"] == "bio.tools"
+        assert xref["type"] == "bio.tools"
         assert xref["value"] == "bwa"
 
     @skip_without_tool("test_data_source")
@@ -843,6 +862,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
             example["check"](output_hdca, self.dataset_populator)
 
+    def test_apply_rules_flatten_paired_unpaired(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+
     def test_apply_rules_1(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_1)
 
@@ -860,6 +882,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_apply_rules_6(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
+
+    def test_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
 
     @skip_without_tool("galaxy_json_sleep")
     def test_dataset_hidden_after_job_finish(self):
@@ -1041,6 +1066,193 @@ class TestToolsApi(ApiTestCase, TestsTools):
             cached_job = run_again(f"{uuid4()}@test.com")
             assert cached_job["user_id"] != original_job["user_id"]
             assert cached_job["copied_from_job_id"] == original_output["jobs"][0]["id"]
+
+    @skip_without_tool("cat1")
+    @requires_new_history
+    def test_run_cat1_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job_renamed_input) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            inputs = self._get_cat1_inputs(history_id)
+            outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            # Rename inputs. Job should still be cached since cat1 doesn't look at name attribute
+            self.dataset_populator.rename_dataset(inputs["input1"]["id"])
+            outputs_two = self._run_cat1(
+                history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("collection_creates_list")
+    @requires_new_history
+    def test_run_collection_creates_list_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_list_use_cached_job
+        ) as history_id:
+            # Run tool that consumes and produces hdca
+            create_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["123", "456"], wait=True
+            ).json()
+            hdca = create_response["output_collections"][0]
+            outputs_one = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            outputs_two = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("collection_creates_list")
+    @requires_new_history
+    def test_run_collection_creates_list_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_list_use_cached_job
+        ) as history_id:
+            # Run tool that consumes and produces hdca
+            create_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["123", "456"], wait=True
+            ).json()
+            hdca = create_response["output_collections"][0]
+            outputs_one = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            self.dataset_populator.rename_collection(hdca["id"])
+            outputs_two = self._run(
+                "collection_creates_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("identifier_single")
+    @requires_new_history
+    def test_run_identifier_single_map_over_nested_collection_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_single_use_cached_job_renamed_input
+        ) as history_id:
+            # Run tool that acccesses input.name (via input.element_identifier).
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            inputs = {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}}
+            outputs_one = self._run("identifier_single", history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run(
+                "identifier_single", history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("identifier_single")
+    @requires_new_history
+    def test_run_identifier_single_use_cached_job_renamed_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_single_use_cached_job_renamed_input
+        ) as history_id:
+            # Run tool that acccesses input.name (via input.element_identifier).
+            inputs = self._get_cat1_inputs(history_id)
+            self._run("identifier_single", history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            # Rename inputs. Job should not be cached since tool looks at name attribute
+            self.dataset_populator.rename_dataset(inputs["input1"]["id"])
+            outputs_two = self._run(
+                "identifier_single", history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] is None
+
+    @skip_without_tool("collection_creates_dynamic_list_of_pairs")
+    @requires_new_history
+    def test_run_collection_creates_dynamic_list_of_pairs_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_collection_creates_dynamic_list_of_pairs_use_cached_job
+        ) as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id, content="123")
+            outputs_one = self._run(
+                "collection_creates_dynamic_list_of_pairs",
+                history_id,
+                inputs={"file": {"src": "hda", "id": dataset["id"]}, "foo": "abc"},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=False,
+            )
+            self.dataset_populator.rename_dataset(dataset["id"])
+            outputs_two = self._run(
+                "collection_creates_dynamic_list_of_pairs",
+                history_id,
+                inputs={"file": {"src": "hda", "id": dataset["id"]}, "foo": "abc"},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+            contents = self.dataset_populator.get_history_contents(history_id)
+            # Make sure we add the correct number of output to the history
+            # 1 input dataset
+            # 2 output collections
+            # with 6 HDAs each
+            assert len(contents) == 15
+            hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=outputs_two["output_collections"][0]["id"]
+            )
+            assert hdca_details["collection_type"] == "list:paired"
+            assert hdca_details["element_count"] == 3
+            assert hdca_details["populated"]
+            assert hdca_details["populated_state"] == "ok"
+            assert hdca_details["elements_datatypes"] == ["fastqsanger"]
+
+    @skip_without_tool("multi_output_assign_primary_ext_dbkey")
+    @requires_new_history
+    def test_run_multi_output_assign_primary_ext_dbkey_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_multi_output_assign_primary_ext_dbkey_use_cached_job
+        ) as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id, content="123")
+            outputs_one = self._run(
+                "multi_output_assign_primary_ext_dbkey",
+                history_id,
+                inputs={"input": {"src": "hda", "id": dataset["id"]}, "num_param": 1},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=False,
+            )
+            self.dataset_populator.rename_dataset(dataset["id"])
+            outputs_two = self._run(
+                "multi_output_assign_primary_ext_dbkey",
+                history_id,
+                inputs={"input": {"src": "hda", "id": dataset["id"]}, "num_param": 1},
+                assert_ok=True,
+                wait_for_job=True,
+                use_cached_job=True,
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+            contents = self.dataset_populator.get_history_contents(history_id)
+            # Make sure we add the correct number of output to the history
+            # 1 input dataset
+            # 2 output datasets each
+            assert len(contents) == 5
 
     @skip_without_tool("cat1")
     def test_run_cat1_listified_param(self):
@@ -1348,7 +1560,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_nonadmin_users_cannot_create_tools(self):
         payload = dict(
-            representation=json.dumps(MINIMAL_TOOL),
+            representation=MINIMAL_TOOL,
         )
         create_response = self._post("dynamic_tools", data=payload, admin=False)
         self._assert_status_code_is(create_response, 403)
@@ -1388,11 +1600,67 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        self._run(history_id=history_id, tool_uuid=tool_response["uuid"])
+        self._run(history_id=history_id, tool_uuid=tool_response["uuid"], assert_ok=True)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "Hello World 2\n"
+
+    # This works except I don't want to add it to the schema right now,
+    # since I think the shell_command is what we'll go with (at least initially)
+    # def test_dynamic_tool_base_command(self):
+    #     TOOL_WITH_BASE_COMMAND = {
+    #         "name": "Base command tool",
+    #         "class": "GalaxyTool",
+    #         "version": "1.0.0",
+    #         "base_command": "cat",
+    #         "arguments": ["$(inputs.input.path)", ">", "output.fastq"],
+    #         "inputs": [
+    #             {
+    #                 "type": "data",
+    #                 "name": "input",
+    #             }
+    #         ],
+    #         "outputs": {
+    #             "output": {
+    #                 "type": "data",
+    #                 "from_work_dir": "output.fastq",
+    #                 "name": "output",
+    #             }
+    #         },
+    #     }
+    #     tool_response = self.dataset_populator.create_tool(TOOL_WITH_BASE_COMMAND)
+    #     self._assert_has_keys(tool_response, "uuid")
+
+    #     # Run tool.
+    #     history_id = self.dataset_populator.new_history()
+    #     dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+    #     self._run(
+    #         history_id=history_id,
+    #         tool_uuid=tool_response["uuid"],
+    #         inputs={"input": {"src": "hda", "id": dataset["id"]}},
+    #     )
+
+    #     self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+    #     output_content = self.dataset_populator.get_history_dataset_content(history_id)
+    #     assert output_content == "abc\n"
+
+    def test_dynamic_tool_shell_command(self):
+        tool_response = self.dataset_populator.create_tool(TOOL_WITH_SHELL_COMMAND)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+        self._run(
+            history_id=history_id,
+            tool_uuid=tool_response["uuid"],
+            inputs={"input": {"src": "hda", "id": dataset["id"]}},
+        )
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "abc\n"
 
     def test_show_dynamic_tools(self):
         # Create tool.
@@ -2670,6 +2938,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat_list")
     def test_run_deferred_nested_list_input(self, history_id: str):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer",
@@ -2677,7 +2947,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2685,7 +2955,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2728,6 +2998,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_paired_structured_like")
     def test_deferred_map_over_nested_collections(self, history_id):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
+        url_2 = self.dataset_populator.base64_url_for_test_file("1.bed")
         elements = [
             {
                 "name": "outer1",
@@ -2735,7 +3007,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "url": url_1,
                         "info": "my cool bed 4",
                         "deferred": True,
                         "ext": "bed",
@@ -2743,28 +3015,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     {
                         "src": "url",
                         "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
-                        "info": "my cool bed 1",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                ],
-            },
-            {
-                "name": "outer2",
-                "elements": [
-                    {
-                        "src": "url",
-                        "name": "forward",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-                        "info": "my cool bed 4",
-                        "deferred": True,
-                        "ext": "bed",
-                    },
-                    {
-                        "src": "url",
-                        "name": "reverse",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "url": url_2,
                         "info": "my cool bed 1",
                         "deferred": True,
                         "ext": "bed",
@@ -2794,13 +3045,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        assert len(jobs) == 2
+        assert len(jobs) == 1
         self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
         assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
-        assert len(outer_elements) == 2
+        assert len(outer_elements) == 1
         element0 = outer_elements[0]
         pair1 = element0["object"]
         hda = pair1["elements"][0]["object"]

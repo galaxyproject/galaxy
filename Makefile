@@ -18,7 +18,7 @@ GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR?=0
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
 NODE_OPTIONS ?= --max-old-space-size=3072
-NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)	
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
@@ -26,6 +26,14 @@ CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 NO_YARN_MSG="Could not find yarn, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install yarn manually please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+SPACE := $() $()
+NEVER_PYUPGRADE_PATHS := .venv/ .tox/ lib/galaxy/schema/bco/ \
+	lib/galaxy/schema/drs/ lib/tool_shed_client/schema/trs \
+	scripts/check_python.py tools/ test/functional/tools/cwl_tools/
+PY37_PYUPGRADE_PATHS := lib/galaxy/exceptions/ lib/galaxy/job_metrics/ \
+	lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ \
+	test/unit/job_metrics/ test/unit/objectstore/ test/unit/tool_util/ \
+	test/unit/util/
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -54,10 +62,10 @@ format:  ## Format Python code base
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
-pyupgrade:  ## Convert older code patterns to Python3.7/3.8 idiomatic ones
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
-	ack --type=python -f lib/galaxy/exceptions/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
+pyupgrade:  ## Convert older code patterns to Python 3.7/3.9 idiomatic ones
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs pyupgrade --py39-plus
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs auto-walrus
+	ack --type=python -f $(PY37_PYUPGRADE_PATHS) | xargs pyupgrade --py37-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
@@ -198,7 +206,7 @@ remove-api-schema:
 	rm _schema.yaml
 	rm _shed_schema.yaml
 
-update-client-api-schema: client-node-deps build-api-schema
+update-client-api-schema: client-node-deps build-api-schema ## Update client API schema
 	$(IN_VENV) cd client && npx openapi-typescript ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
 	$(IN_VENV) cd client && npx openapi-typescript ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema

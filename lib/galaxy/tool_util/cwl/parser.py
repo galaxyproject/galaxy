@@ -1,4 +1,4 @@
-""" This module provides proxy objects around objects from the common
+"""This module provides proxy objects around objects from the common
 workflow language reference implementation library cwltool. These proxies
 adapt cwltool to Galaxy features and abstract the library away from the rest
 of the framework.

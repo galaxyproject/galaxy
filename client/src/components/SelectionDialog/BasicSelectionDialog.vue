@@ -8,7 +8,7 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface Props {
     detailsKey?: string;
-    getData: () => Promise<object[]>;
+    getData: () => Promise<Array<object> | undefined>;
     isEncoded?: boolean;
     labelKey?: string;
     leafIcon?: string;
@@ -53,18 +53,20 @@ async function load() {
         // TODO: Consider supporting pagination here
         // this could potentially load quite a lot of items
         const incoming = await props.getData();
-        items.value = incoming.map((item: any) => {
-            const timeStamp = item[props.timeKey];
-            showTime.value = !!timeStamp;
-            return {
-                id: item.id,
-                label: item[props.labelKey] || null,
-                details: item[props.detailsKey] || null,
-                time: timeStamp || null,
-                isLeaf: true,
-                url: "",
-            };
-        });
+        if (incoming) {
+            items.value = incoming.map((item: any) => {
+                const timeStamp = item[props.timeKey];
+                showTime.value = !!timeStamp;
+                return {
+                    id: item.id,
+                    label: item[props.labelKey] || null,
+                    details: item[props.detailsKey] || null,
+                    time: timeStamp || null,
+                    isLeaf: true,
+                    url: "",
+                };
+            });
+        }
         optionsShow.value = true;
     } catch (err) {
         errorMessage.value = errorMessageAsString(err);

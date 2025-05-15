@@ -27,8 +27,12 @@ const emit = defineEmits<{
     (e: "change", objectStoreId?: string): void;
 }>();
 
-function onSelect(objectStoreId?: string) {
-    emit("change", objectStoreId);
+function onSelect(objectStoreId?: string | null) {
+    if (objectStoreId == null) {
+        emit("change", undefined);
+    } else {
+        emit("change", objectStoreId);
+    }
     showModal.value = false;
 }
 

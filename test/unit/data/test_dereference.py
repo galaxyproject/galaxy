@@ -54,4 +54,4 @@ def test_dereference_to_posix():
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "foobar.txt"
     assert hda.dataset.sources[0].source_uri == TEST_BASE64_URI
-    assert hda.dataset.sources[0].transform[0]["action"] == "space_to_tab"
+    assert hda.dataset.sources[0].transform[0]["action"] == "spaces_to_tabs"

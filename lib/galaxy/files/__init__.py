@@ -164,6 +164,7 @@ class ConfiguredFileSources:
             _ensure_loaded("http")
             _ensure_loaded("base64")
             _ensure_loaded("drs")
+            _ensure_loaded("remoteZip")
 
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")
@@ -396,7 +397,11 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
-        return {ura.role.name for ura in user.roles} if user else set()
+        role_names = set()
+        if user:
+            role_names = {ura.role.name for ura in user.roles}
+            role_names.add(user.email)  # User's private role may have a generic name, so add user's email explicitly.
+        return role_names
 
     @property
     def group_names(self) -> Set[str]:

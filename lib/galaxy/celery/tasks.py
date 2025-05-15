@@ -112,10 +112,11 @@ def purge_datasets(
 def materialize(
     hda_manager: HDAManager,
     request: MaterializeDatasetInstanceTaskRequest,
+    sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
     """Materialize datasets using HDAManager."""
-    hda_manager.materialize(request)
+    hda_manager.materialize(request, sa_session())
 
 
 @galaxy_task(action="set metadata for job")
@@ -508,7 +509,7 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
 
 
 @galaxy_task(action="clean up job working directories")
-def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, days: int = 5):
+def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, config: GalaxyAppConfiguration):
     """Cleanup job working directories for failed jobs that are older than X days"""
 
     def get_failed_jobs():
@@ -530,6 +531,7 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
             log.error(f"Error deleting job working directory: {path} : {e.strerror}")
 
     failed_jobs = get_failed_jobs()
+    days = config.failed_jobs_working_directory_cleanup_days
 
     if not failed_jobs:
         log.info("No failed jobs found within the last %s days", days)

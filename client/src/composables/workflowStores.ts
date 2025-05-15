@@ -7,6 +7,8 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
+import { useTimeoutStoreDispose } from "./timeoutStoreDispose";
+
 /**
  * Creates stores scoped to a specific workflowId, and manages their lifetime.
  * In child components, use `useWorkflowStores` instead.
@@ -30,13 +32,20 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
     const undoRedoStore = useUndoRedoStore(workflowId.value);
 
+    const disposeConnectionStore = useTimeoutStoreDispose(connectionStore);
+    const disposeStateStore = useTimeoutStoreDispose(stateStore);
+    const disposeStepStore = useTimeoutStoreDispose(stepStore);
+    const disposeCommentStore = useTimeoutStoreDispose(commentStore);
+    const disposeToolbarStore = useTimeoutStoreDispose(toolbarStore);
+    const disposeUndoRedoStore = useTimeoutStoreDispose(undoRedoStore);
+
     onScopeDispose(() => {
-        connectionStore.$dispose();
-        stateStore.$dispose();
-        stepStore.$dispose();
-        commentStore.$dispose();
-        toolbarStore.$dispose();
-        undoRedoStore.$dispose();
+        disposeConnectionStore();
+        disposeStateStore();
+        disposeStepStore();
+        disposeCommentStore();
+        disposeToolbarStore();
+        disposeUndoRedoStore();
     });
 
     return {

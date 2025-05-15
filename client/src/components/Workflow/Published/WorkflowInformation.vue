@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { useUserStore } from "@/stores/userStore";
-import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -18,7 +18,7 @@ import UtcDate from "@/components/UtcDate.vue";
 library.add(faBuilding, faUser);
 
 interface Props {
-    workflowInfo: WorkflowSummary;
+    workflowInfo: StoredWorkflowDetailed;
     embedded?: boolean;
 }
 
@@ -50,6 +50,14 @@ const owner = computed(() => {
     }
     return props.workflowInfo.owner;
 });
+
+function hasDoi() {
+    if (props.workflowInfo.doi && props.workflowInfo.doi.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 </script>
 
 <template>
@@ -103,6 +111,11 @@ const owner = computed(() => {
             <Heading h3 size="md" class="mb-0">Tags</Heading>
 
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
+        </div>
+
+        <div v-if="hasDoi()" class="workflow-info-box">
+            <Heading h3 size="md" class="mb-0">DOI</Heading>
+            <span v-for="doi in workflowInfo?.doi" :key="doi"> {{ doi }}<br /> </span>
         </div>
 
         <div class="workflow-info-box">

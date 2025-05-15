@@ -199,7 +199,7 @@ const gridConfig: GridConfig = {
     getData: getData,
     plural: "Roles",
     sortBy: "name",
-    sortDesc: true,
+    sortDesc: false,
     sortKeys: ["description", "name", "update_time"],
     title: "Roles",
 };

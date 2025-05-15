@@ -1,4 +1,4 @@
-""" Tests for tool parameters, more tests exist in test_data_parameters.py and
+"""Tests for tool parameters, more tests exist in test_data_parameters.py and
 test_select_parameters.py.
 """
 

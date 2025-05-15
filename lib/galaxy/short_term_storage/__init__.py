@@ -1,4 +1,4 @@
-""" Short Term Storage service for Galaxy.
+"""Short Term Storage service for Galaxy.
 
 This service is used to store files for a short period of time (e.g. a few minutes, hours or days)
 and then serve them to the client. This is useful for large files that take a long time to

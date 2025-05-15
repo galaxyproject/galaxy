@@ -15,7 +15,9 @@
   <tests>
     <test>
       <!-- TODO mock test? $output1 should be the html primary file? -->
-      <param name="input1" ftype="neostore.zip" value="neostore.zip"/>
+      <param name="input1" value="" ftype="neostore.zip">
+        <composite_data value="neostore.zip" />
+      </param>
       <output name="output1" ftype="neostore">
         <assert_contents>
           <has_n_lines n="2"/>

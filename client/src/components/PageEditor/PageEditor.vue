@@ -1,74 +1,74 @@
 <template>
-    <div id="columns" class="d-flex">
-        <ActivityBar />
-        <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-        <PageEditorMarkdown
-            v-else
-            :title="title"
-            :page-id="pageId"
-            :public-url="publicUrl"
-            :content="content"
-            :content-data="contentData" />
-    </div>
+    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
+    <PageEditorMarkdown
+        v-else
+        :title="title"
+        :page-id="pageId"
+        :public-url="publicUrl"
+        :content="content"
+        :content-data="contentData" />
 </template>
 
-<script>
-import axios from "axios";
-import LoadingSpan from "components/LoadingSpan";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+<script setup lang="ts">
+import { ref } from "vue";
 
-import PageEditorMarkdown from "./PageEditorMarkdown";
+import { GalaxyApi } from "@/api";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
-import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import PageEditorMarkdown from "./PageEditorMarkdown.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-export default {
-    components: {
-        PageEditorMarkdown,
-        LoadingSpan,
-        ActivityBar,
-    },
-    props: {
-        pageId: {
-            required: true,
-            type: String,
+interface PageData {
+    title: string;
+    content: string;
+    content_format: string;
+    username: string;
+    slug: string;
+}
+
+const props = defineProps<{
+    pageId: string;
+}>();
+
+const title = ref("");
+const content = ref<string>("");
+const contentFormat = ref<string>("");
+const contentData = ref<PageData>();
+const publicUrl = ref<string>("");
+const loading = ref(true);
+
+const getPage = async (id: string): Promise<PageData | undefined> => {
+    const { data, error } = await GalaxyApi().GET("/api/pages/{id}", {
+        params: {
+            path: {
+                id,
+            },
         },
-    },
-    data() {
-        return {
-            title: null,
-            contentFormat: null,
-            contentData: null,
-            content: null,
-            publicUrl: null,
-            loading: true,
-        };
-    },
-    created() {
-        this.getPage(this.pageId)
-            .then((data) => {
-                this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
-                this.content = data.content;
-                this.contentFormat = data.content_format;
-                this.contentData = data;
-                this.title = data.title;
-                this.loading = false;
-            })
-            .catch((error) => {
-                Toast.error(`Failed to load page: ${error}`);
-            });
-    },
-    methods: {
-        /** Page data request helper **/
-        async getPage(id) {
-            try {
-                const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
-                return data;
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        },
-    },
+    });
+    if (error) {
+        rethrowSimple(error.err_msg);
+    } else {
+        return data as PageData;
+    }
 };
+
+const loadPage = async () => {
+    try {
+        const data = await getPage(props.pageId);
+        if (data) {
+            publicUrl.value = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
+            content.value = data.content;
+            contentFormat.value = data.content_format;
+            contentData.value = data || {};
+            title.value = data.title;
+            loading.value = false;
+        }
+    } catch (error: any) {
+        Toast.error(`Failed to load page: ${error}`);
+    }
+};
+
+loadPage();
 </script>

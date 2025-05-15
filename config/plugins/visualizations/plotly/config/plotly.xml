@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Bar, Line and Scatter (plotly.js)">
-    <description>Basic Diagrams from Plotly Graphing Library.</description>
+<visualization name="Bar, Line and Scatter" embeddable="true">
+    <description>Basic Diagrams from http://plotly.com</description>
+    <tags>
+        <tag>Plotly</tag>
+        <tag>Chart</tag>
+        <tag>Diagram</tag>
+    </tags>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">tabular</test>
+            <test test_attr="ext">csv</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.0" package="@galaxyproject/plotly"/>
+        <requirement type="npm" version="0.0.16" package="@galaxyproject/plotly"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
@@ -96,4 +100,29 @@
             <is_number>true</is_number>
         </input>
     </tracks>
+    <help format="markdown"><![CDATA[
+# What is the Bar, Line and Scatter Viewer?
+
+This visualization allows you to create simple and interactive bar charts, line plots, and scatter plots using the [Plotly](https://plotly.com/) library.
+
+After selecting a dataset, you can pick the plot type, choose x- and y-axis values, customize colors, and configure options like stacking bars or filling areas under lines.
+
+## Key Features
+
+- **Chart Types**: Quickly switch between bar charts, line plots, and scatter plots.
+- **Stacking**: Stack bars or lines to better visualize cumulative values.
+- **Color Customization**: Pick custom colors for each data series.
+- **Axis Labels**: Define labels for both x-axis and y-axis easily.
+- **Interactive**: Zoom, pan, and hover over points to see detailed information.
+
+This tool is ideal for quick summaries, trend visualization, and comparative data analysis.
+
+To learn more about Plotly, visit:
+[https://plotly.com/](https://plotly.com/)
+    ]]></help>
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.tabular" />
+        </test>
+    </tests>
 </visualization>

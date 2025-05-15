@@ -3,8 +3,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import type { CollectionEntry, DCESummary, HistorySummary, SubCollection } from "@/api";
-import { canMutateHistory, isCollectionElement, isHDCA } from "@/api";
+import {
+    canMutateHistory,
+    type CollectionEntry,
+    type DCESummary,
+    type HDCASummary,
+    type HistorySummary,
+    isCollectionElement,
+    isHDCA,
+    type SubCollection,
+} from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
@@ -23,6 +31,7 @@ interface Props {
     selectedCollections: CollectionEntry[];
     showControls?: boolean;
     filterable?: boolean;
+    multiView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,9 +53,8 @@ const dsc = computed(() => {
     if (currentCollection === undefined) {
         throw new Error("No collection selected");
     }
-    return currentCollection;
+    return currentCollection as HDCASummary;
 });
-
 watch(
     () => [dsc.value, offset.value],
     () => {
@@ -57,7 +65,7 @@ watch(
 
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
-const error = computed(() => collectionElementsStore.hasLoadingCollectionElementsError(dsc.value));
+const error = computed(() => collectionElementsStore.getLoadingCollectionElementsError(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
     "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined
@@ -71,7 +79,6 @@ const rootCollection = computed(() => {
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
-
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -128,7 +135,7 @@ watch(
         {{ errorMessageAsString(error) }}
     </Alert>
     <ExpandedItems v-else v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
-        <section class="dataset-collection-panel w-100 d-flex flex-column">
+        <section class="dataset-collection-panel w-100 d-flex flex-column" :class="{ 'compact-panel': multiView }">
             <section>
                 <CollectionNavigation
                     :history-name="history.name"
@@ -177,3 +184,9 @@ watch(
         </section>
     </ExpandedItems>
 </template>
+
+<style scoped>
+.compact-panel {
+    max-width: 15rem;
+}
+</style>

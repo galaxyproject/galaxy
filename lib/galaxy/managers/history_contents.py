@@ -168,8 +168,8 @@ class HistoryContentsManager(base.SortableManager):
         statement: Select = (
             select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.session().execute(statement).fetchall()
-        return dict(counts)
+        counts = self.app.model.session.execute(statement).fetchall()
+        return dict(counts)  # type:ignore[arg-type]
 
     def active_counts(self, history):
         """
@@ -416,7 +416,7 @@ class HistoryContentsManager(base.SortableManager):
             .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
-            .options(joinedload(component_class.tags))  # type: ignore[attr-defined]
+            .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         result = self._session().scalars(stmt).unique()

@@ -10,7 +10,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { type HistorySummaryExtended, type RegisteredUser, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
@@ -19,6 +19,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 
@@ -131,6 +132,13 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
     historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
 
+const registeredUser = computed<RegisteredUser>(() => {
+    if (isAnonymous.value) {
+        throw new Error("Invalid anonymous user object encountered");
+    }
+    return currentUser.value as RegisteredUser;
+});
+
 onMounted(() => {
     updateTime();
     // update every second
@@ -140,18 +148,19 @@ onMounted(() => {
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <BButton
-            v-b-tooltip.hover
+        <GButton
+            tooltip
             title="History Size"
-            variant="link"
-            size="sm"
-            class="rounded-0 text-decoration-none history-storage-overview-button"
+            transparent
+            size="small"
+            color="blue"
+            class="rounded-0 history-storage-overview-button"
             :disabled="!canManageStorage"
             data-description="storage dashboard button"
             @click="onDashboard">
             <FontAwesomeIcon :icon="faDatabase" />
             <span>{{ niceHistorySize }}</span>
-        </BButton>
+        </GButton>
 
         <BButtonGroup v-if="currentUser">
             <BButton
@@ -168,8 +177,8 @@ onMounted(() => {
             <PreferredStorePopover
                 v-if="config && config.object_store_allows_id_selection && !isAnonymous"
                 :history-id="history.id"
-                :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                :user="currentUser">
+                :history-preferred-object-store-id="historyPreferredObjectStoreId ?? undefined"
+                :user="registeredUser">
             </PreferredStorePopover>
 
             <BButtonGroup>
@@ -233,7 +242,8 @@ onMounted(() => {
                 size="sm"
                 hide-footer>
                 <SelectPreferredStore
-                    :user-preferred-object-store-id="currentUser.preferred_object_store_id"
+                    v-if="!isAnonymous"
+                    :user-preferred-object-store-id="registeredUser.preferred_object_store_id ?? undefined"
                     :history="history"
                     @updated="onUpdatePreferredObjectStoreId" />
             </BModal>

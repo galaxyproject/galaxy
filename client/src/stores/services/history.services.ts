@@ -127,7 +127,12 @@ export async function secureHistoryOnServer(history: AnyHistory) {
     if (response.status !== 200) {
         throw new Error(response.statusText);
     }
-    return await getHistoryByIdFromServer(id);
+    const securedHistory = await getHistoryByIdFromServer(id);
+    return {
+        securedHistory,
+        message: response.data.message as string,
+        sharingStatusChanged: response.data.sharing_status_changed as boolean,
+    };
 }
 
 /**

@@ -10,6 +10,7 @@ from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (
     create_index,
     drop_index,
+    index_exists,
 )
 
 # revision identifiers, used by Alembic.
@@ -32,7 +33,8 @@ workflow_comment_parent_comment_index_name = build_index_name(
 
 def upgrade():
     create_index(workflow_step_parent_comment_index_name, workflow_step_table_name, [parent_comment_id_column_name])
-    create_index(workflow_comment_workflow_id_index_name, workflow_comment_table_name, [workflow_id_column_name])
+    if not index_exists(workflow_comment_workflow_id_index_name, workflow_comment_table_name, False):
+        create_index(workflow_comment_workflow_id_index_name, workflow_comment_table_name, [workflow_id_column_name])
     create_index(
         workflow_comment_parent_comment_index_name, workflow_comment_table_name, [parent_comment_id_column_name]
     )

@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from math import isinf
 from typing import (
-    cast,
     Optional,
     Sequence,
     Type,
@@ -12,13 +11,13 @@ from typing import (
 )
 
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.output_models import (
-    from_tool_source,
+from galaxy.tool_util.parser.output_objects import from_tool_source
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.tool_outputs import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputDataset,
 )
-from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest import TestCase
 
@@ -347,7 +346,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -417,7 +416,7 @@ class TestXmlLoader(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
+        assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_exit_code(self):
         tool_source = self._get_tool_source(
@@ -533,7 +532,9 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, *_ = (
+            self._tool_source.parse_requirements_and_containers()
+        )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
         assert containers[0].to_dict() == {
@@ -623,7 +624,7 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
+        assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
@@ -971,4 +972,4 @@ T = TypeVar("T")
 
 def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
     assert isinstance(obj, clazz)
-    return cast(T, obj)
+    return obj

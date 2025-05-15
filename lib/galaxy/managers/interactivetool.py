@@ -12,7 +12,6 @@ from sqlalchemy import (
     insert,
     Integer,
     MetaData,
-    or_,
     select,
     String,
     Table,
@@ -200,18 +199,15 @@ class InteractiveToolManager:
         if trans.user is None and trans.get_galaxy_session() is None:
             return []
 
-        def build_subquery():
-            if trans.user:
-                stmt = select(Job.id).where(Job.user == trans.user)
-            else:
-                stmt = select(Job.id).where(Job.session_id == trans.get_galaxy_session().id)
-            filters = []
-            for state in Job.non_ready_states:
-                filters.append(Job.state == state)
-            stmt = stmt.where(or_(*filters))
-            return stmt.subquery()
-
-        stmt = select(InteractiveToolEntryPoint).where(InteractiveToolEntryPoint.job_id.in_(build_subquery()))
+        stmt = (
+            select(InteractiveToolEntryPoint)
+            .join(Job, InteractiveToolEntryPoint.job_id == Job.id)
+            .where(Job.state.in_(Job.non_ready_states))
+        )
+        if trans.user:
+            stmt = stmt.where(Job.user == trans.user)
+        else:
+            stmt = stmt.where(Job.session_id == trans.get_galaxy_session().id)
         return trans.sa_session.scalars(stmt)
 
     def can_access_job(self, trans, job):

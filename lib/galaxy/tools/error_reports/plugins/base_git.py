@@ -1,5 +1,4 @@
-"""This module defines the common functions for error reporting for Galaxy jobs towards Git applications (e.g. Github/GitLab).
-"""
+"""This module defines the common functions for error reporting for Galaxy jobs towards Git applications (e.g. Github/GitLab)."""
 
 import logging
 from abc import (

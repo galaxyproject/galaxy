@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,6 +12,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faArchive, faBurn);
@@ -52,7 +52,7 @@ const linkTitle = computed(() => {
     if (historyStore.currentHistoryId === props.historyId) {
         return "This is your current history";
     } else {
-        return `<b>${actionText.value}</b><br>${history.value?.name}`;
+        return `${actionText.value} "${history.value?.name}"`;
     }
 });
 
@@ -87,15 +87,14 @@ function viewHistoryInNewTab(history: HistorySummary) {
     <div>
         <LoadingSpan v-if="!history" />
         <div v-else class="history-link" data-description="switch to history link">
-            <BLink
-                v-b-tooltip.hover.top.noninteractive.html
+            <GLink
+                tooltip
+                thin
                 data-description="switch to history link"
-                class="truncate"
-                href="#"
                 :title="linkTitle"
                 @click.stop="onClick($event, history)">
                 {{ history.name }}
-            </BLink>
+            </GLink>
 
             <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
             <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />

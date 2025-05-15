@@ -5,7 +5,7 @@ import { useMemoize, watchImmediate } from "@vueuse/core";
 import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { loadWorkflows, type Workflow } from "@/components/Workflow/workflows.services";
+import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useToast } from "@/composables/toast";
 
@@ -35,7 +35,7 @@ const allLoaded = computed(() => totalWorkflowsCount.value <= workflows.value.le
 
 const filterText = ref("");
 
-const workflows = ref<Workflow[]>([]);
+const workflows = ref<WorkflowSummary[]>([]);
 
 const showFavorites = computed({
     get() {

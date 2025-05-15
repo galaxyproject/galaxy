@@ -42,13 +42,13 @@ from ..container_classes import (
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
     mull_targets,
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    DEFAULT_CHANNELS,
     default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,

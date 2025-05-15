@@ -1,4 +1,4 @@
-""" This module contains functionality to aid in extracting workflows from
+"""This module contains functionality to aid in extracting workflows from
 histories.
 """
 
@@ -279,7 +279,7 @@ class WorkflowSummary:
         # just grab the implicitly mapped jobs and handle in second pass. Second pass is
         # needed because cannot allow selection of individual datasets from an implicit
         # mapping during extraction - you get the collection or nothing.
-        for content in self.history.active_contents:
+        for content in self.history.visible_contents:
             self.__summarize_content(content)
 
     def __summarize_content(self, content):

@@ -1612,8 +1612,6 @@ def get_destination_list_from_job_config(job_config_location) -> set:
     :return: A list of all of the destination IDs declared in the job
              configuration file.
     """
-    global destination_list
-
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
 

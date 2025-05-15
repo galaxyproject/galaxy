@@ -80,6 +80,7 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     object_store = get_object_store(WORKING_DIRECTORY)
     import_store = store.imported_store_for_metadata(IMPORT_STORE_DIRECTORY)
+    assert isinstance(import_store.sa_session, SessionlessContext)
     # TODO: clean up random places from which we read files in the working directory
     job_io = JobIO.from_json(os.path.join(IMPORT_STORE_DIRECTORY, "job_io.json"), sa_session=import_store.sa_session)
     tool_app_config = ToolAppConfig(

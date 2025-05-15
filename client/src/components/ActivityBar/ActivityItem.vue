@@ -6,9 +6,11 @@ import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type ActivityVariant, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { ActivityVariant } from "@/stores/activityStoreTypes";
 import localize from "@/utils/localization";
 
+import GButton from "../BaseComponents/GButton.vue";
 import TextShort from "@/components/Common/TextShort.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
@@ -68,9 +70,9 @@ const meta = computed(() => store.metaForId(props.id));
     <Popper :placement="tooltipPlacement">
         <template v-slot:reference>
             <b-nav-item
-                :id="`activity-${id}`"
                 class="activity-item my-1 p-2"
                 :class="{ 'nav-item-active': isActive }"
+                :link-attrs="{ id: `activity-${id}` }"
                 :link-classes="`variant-${props.variant}`"
                 :aria-label="localize(title)"
                 :disabled="meta?.disabled"
@@ -100,9 +102,9 @@ const meta = computed(() => store.metaForId(props.id));
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
                 <router-link v-for="(option, index) in options" :key="index" :to="option.value">
-                    <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
+                    <GButton size="small" outline color="blue" class="w-100 my-1 text-break text-light">
                         {{ option.name }}
-                    </b-button>
+                    </GButton>
                 </router-link>
             </div>
         </div>

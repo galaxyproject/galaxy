@@ -7,10 +7,10 @@ import Backbone from "backbone";
 jQuery.ajaxSettings.traditional = true;
 
 // dependencies
-import Utils from "utils/utils";
 import GridModel from "legacy/grid/grid-model";
 import Templates from "legacy/grid/grid-template";
 import PopupMenu from "./popup-menu";
+import { setWindowTitle } from "./utils";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 
 var $ = jQuery;
@@ -95,7 +95,7 @@ export default Backbone.View.extend({
         var options = this.grid.attributes;
 
         if (this.allow_title_display && options.title) {
-            Utils.setWindowTitle(options.title);
+            setWindowTitle(options.title);
         }
         // handle refresh requests
         this.handle_refresh(options.refresh_frames);

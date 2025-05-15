@@ -110,7 +110,10 @@ from galaxy.util import (
     safe_makedirs,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.compression_utils import CompressedFile
+from galaxy.util.compression_utils import (
+    CompressedFile,
+    make_fast_zipfile,
+)
 from galaxy.util.path import StrPath
 from ._bco_convert_utils import (
     bco_workflow_version,
@@ -233,7 +236,7 @@ class SessionlessContext:
     def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: model.RepresentById) -> Bunch:
+    def query(self, model_class: Type[model.RepresentById]) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -243,7 +246,7 @@ class SessionlessContext:
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
-    def get(self, model_class: model.RepresentById, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+    def get(self, model_class: Type[model.RepresentById], primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
         return self.query(model_class).get(primary_key)
 
 
@@ -265,6 +268,7 @@ def replace_metadata_file(
 class ModelImportStore(metaclass=abc.ABCMeta):
     app: Optional[StoreAppProtocol]
     archive_dir: str
+    sa_session: Union[scoped_session, SessionlessContext]
 
     def __init__(
         self,
@@ -494,7 +498,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 model_class = getattr(model, dataset_attrs["model_class"])
-                dataset_instance: model.DatasetInstance = self.sa_session.get(model_class, dataset_attrs["id"])
+                dataset_instance = self.sa_session.get(model_class, dataset_attrs["id"])
+                assert isinstance(dataset_instance, model.DatasetInstance)
                 attributes = [
                     "name",
                     "extension",
@@ -700,7 +705,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         elif history:
                             user = history.user
                             regenerate_kwds["user"] = user
-                            if user is None:
+                            if user is None and history.galaxy_sessions[0]:
                                 regenerate_kwds["session_id"] = history.galaxy_sessions[0].galaxy_session.id
                             else:
                                 regenerate_kwds["session_id"] = None
@@ -876,6 +881,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc = import_collection(collection_attrs["collection"])
                 if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
                     hdca = self.sa_session.get(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
+                    assert hdca is not None
                     # TODO: edit attributes...
                 else:
                     hdca = model.HistoryDatasetCollectionAssociation(
@@ -2209,7 +2215,8 @@ class DirectoryModelExportStore(ModelExportStore):
         )
         datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
-            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
+            # Add a new "annotation" attribute so that the user annotation for the dataset can be serialized without needing the user
+            dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)  # type: ignore[attr-defined]
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
             if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True
@@ -2253,11 +2260,13 @@ class DirectoryModelExportStore(ModelExportStore):
     ) -> None:
         self.included_invocations.append(workflow_invocation)
         for input_dataset in workflow_invocation.input_datasets:
-            self.add_dataset(input_dataset.dataset)
+            if input_dataset.dataset:
+                self.add_dataset(input_dataset.dataset)
         for output_dataset in workflow_invocation.output_datasets:
             self.add_dataset(output_dataset.dataset)
         for input_dataset_collection in workflow_invocation.input_dataset_collections:
-            self.export_collection(input_dataset_collection.dataset_collection)
+            if input_dataset_collection.dataset_collection:
+                self.export_collection(input_dataset_collection.dataset_collection)
         for output_dataset_collection in workflow_invocation.output_dataset_collections:
             self.export_collection(output_dataset_collection.dataset_collection)
         for workflow_invocation_step in workflow_invocation.steps:
@@ -2520,6 +2529,14 @@ class WriteCrates:
             return invocation_crate_builder.build_crate()
 
         ro_crate = ROCrate()
+        # TODO: allow user to set the name, or get the name of the history
+        ro_crate.name = "Galaxy dataset export"
+        ro_crate.description = (
+            "This is a Galaxy dataset export "
+            f"including {len(self.included_datasets)} datasets. "
+            "This RO-Crate was automatically generated by Galaxy."
+        )
+        ro_crate.license = ""
         markdown_path = os.path.join(self.export_directory, "README.md")
         with open(markdown_path, "w") as f:
             f.write(self._generate_markdown_readme())
@@ -2877,7 +2894,7 @@ class ROCrateArchiveModelExportStore(FileSourceModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        archive = shutil.make_archive(out_file, "fastzip", self.export_directory)
+        archive = make_fast_zipfile(base_name=out_file, base_dir=self.export_directory, root_dir=self.export_directory)
         shutil.move(archive, self.out_file)
 
 

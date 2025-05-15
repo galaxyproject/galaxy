@@ -1,4 +1,4 @@
-""" API for asynchronous job running mechanisms can use to fetch or put files
+"""API for asynchronous job running mechanisms can use to fetch or put files
 related to running and queued jobs.
 """
 

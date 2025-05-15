@@ -119,11 +119,9 @@ async function copy(close: () => void) {
                 </BFormGroup>
 
                 <BFormGroup label="Choose which datasets from the original history to include.">
-                    <BFormRadio v-model="copyAll" :value="false">
-                        Copy only the active, non-deleted datasets.
-                    </BFormRadio>
+                    <BFormRadio v-model="copyAll"> Copy only the active, non-deleted datasets. </BFormRadio>
 
-                    <BFormRadio v-model="copyAll" :value="true"> Copy all datasets including deleted ones. </BFormRadio>
+                    <BFormRadio v-model="copyAll"> Copy all datasets including deleted ones. </BFormRadio>
                 </BFormGroup>
             </BForm>
         </transition>

@@ -5,6 +5,7 @@ import { BNav, BNavItem } from "bootstrap-vue";
 
 import visualizationsGridConfig from "@/components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "@/components/Grid/configs/visualizationsPublished";
+import visualizationsSharedGridConfig from "@/components/Grid/configs/visualizationsShared";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -16,7 +17,7 @@ const userStore = useUserStore();
 library.add(faPlus);
 
 interface Props {
-    activeList?: "my" | "published";
+    activeList?: "my" | "shared" | "published";
 }
 
 withDefaults(defineProps<Props>(), {
@@ -41,11 +42,23 @@ withDefaults(defineProps<Props>(), {
                     target="visualizations-my-tab"
                     title="Manage your Visualizations" />
             </BNavItem>
+            <BNavItem
+                id="visualizations-shared-tab"
+                :active="activeList === 'shared'"
+                :disabled="userStore.isAnonymous"
+                to="/visualizations/list_shared">
+                Shared with Me
+                <LoginRequired
+                    v-if="userStore.isAnonymous"
+                    target="visualizations-shared-tab"
+                    title="Manage your Visualizations" />
+            </BNavItem>
             <BNavItem :active="activeList === 'published'" to="/visualizations/list_published">
                 Public Visualizations
             </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="visualizationsGridConfig" embedded />
+        <GridList v-else-if="activeList === 'shared'" :grid-config="visualizationsSharedGridConfig" embedded />
         <GridList v-else :grid-config="visualizationsPublishedGridConfig" embedded />
     </div>
 </template>

@@ -1,4 +1,5 @@
 <tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyterLab Notebook" version="1.0.1" profile="23.0">
+    <icon src="jupyter_logo.png" />
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:24.07</container>
     </requirements>

@@ -155,7 +155,7 @@ class ShareableService:
             send_to_user = None
             if isinstance(email_or_id, int):
                 send_to_user = self.manager.user_manager.by_id(email_or_id)
-                if send_to_user.deleted:
+                if send_to_user and send_to_user.deleted:
                     send_to_user = None
             else:
                 email_address = email_or_id.strip()

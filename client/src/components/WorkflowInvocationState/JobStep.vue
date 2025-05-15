@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import Vue, { computed, ref, watch } from "vue";
+import { computed } from "vue";
 
-import { GalaxyApi } from "@/api";
-import { type JobBaseModel, type JobDetails } from "@/api/jobs";
+import { type JobBaseModel } from "@/api/jobs";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
-import { rethrowSimple } from "@/utils/simple-error";
 
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
-import LoadingSpan from "../LoadingSpan.vue";
 
 interface Props {
     jobs: JobBaseModel[];
@@ -19,42 +16,14 @@ const props = withDefaults(defineProps<Props>(), {
     jobs: () => [],
 });
 
-const loading = ref(true);
-const initialLoading = ref(true);
-const jobsDetails = ref<{ [key: string]: JobDetails }>({});
+const firstJob = computed(() => props.jobs[0]);
+const jobCount = computed(() => props.jobs.length);
 
-watch(
-    () => props.jobs,
-    async (propJobs: JobBaseModel[]) => {
-        loading.value = true;
-        for (const job of propJobs) {
-            const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-                params: {
-                    path: { job_id: job.id },
-                    query: { full: true },
-                },
-            });
-            Vue.set(jobsDetails.value, job.id, data);
-            if (error) {
-                rethrowSimple(error);
-            }
-        }
-        if (initialLoading.value) {
-            initialLoading.value = false;
-        }
-        loading.value = false;
-    },
-    { immediate: true }
-);
-
-const firstJob = computed(() => Object.values(jobsDetails.value)[0]);
-const jobCount = computed(() => Object.keys(jobsDetails.value).length);
-
-function getIcon(job: JobDetails) {
+function getIcon(job: JobBaseModel) {
     return iconClasses[job.state];
 }
 
-function getTabClass(job: JobDetails) {
+function getTabClass(job: JobBaseModel) {
     return {
         ...getHeaderClass(job.state),
         "d-flex": true,
@@ -64,16 +33,13 @@ function getTabClass(job: JobDetails) {
 </script>
 
 <template>
-    <BAlert v-if="initialLoading" variant="info" show>
-        <LoadingSpan message="Loading Jobs" />
-    </BAlert>
-    <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <BAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </BAlert>
     <div v-else-if="jobCount === 1 && firstJob">
-        <JobDetailsDisplayed :job="firstJob" />
+        <JobDetailsDisplayed :job-id="firstJob.id" />
     </div>
-    <BTabs v-else vertical pills card nav-class="p-0" active-tab-class="p-0">
+    <BTabs v-else lazy vertical pills card nav-class="p-0" active-tab-class="p-0">
         <BTab
-            v-for="job in jobsDetails"
+            v-for="job in jobs"
             :key="job.id"
             data-description="workflow invocation job"
             :title-item-class="getTabClass(job)"
@@ -87,7 +53,7 @@ function getTabClass(job: JobDetails) {
                     :spin="getIcon(job)?.spin" />
             </template>
             <div>
-                <JobDetailsDisplayed :job="job" />
+                <JobDetailsDisplayed :job-id="job.id" />
             </div>
         </BTab>
     </BTabs>

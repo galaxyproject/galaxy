@@ -36,3 +36,41 @@ To safely delete unused histories and their associated records, please use the `
       -h, --help         show this help message and exit
       --batch BATCH      batch size
       --created CREATED  most recent created date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11')
+
+Deleting old galaxy_session records
+-----------------------------------
+
+Each time Galaxy is accessed, a galaxy_session record is created, even when the user is annonymous. Over time, Galaxy accumulates such records. Deleting such records will declutter the database and free up space. 
+
+To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determinded by the value of its ``update_time`` field). 
+
+.. code-block:: console
+
+    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_galaxy_sessions.py
+    usage: delete_galaxy_sessions.py [-h] [--updated UPDATED]
+    
+    Remove old galaxy_session records from database.
+    
+    options:
+      -h, --help         show this help message and exit
+      --updated UPDATED  most recent `updated` date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11'
+
+Deleting old job metrics
+-------------------------
+
+Galaxy stores job metrics in two tables: `job_metrics_text` and `job_metrics_numeric`.  To free up space and delete old job metrics records, please use the galaxy-delete-job-metrics script.
+
+Warning: these tables store useful data; you should only use this script if you need to reclaim space. 
+
+To view disk usage by table you can use gxadmin, a command line utility for Galaxy admins: `gxadmin query pg-table-size` (Ref: https://github.com/galaxyproject/gxadmin).
+
+.. code-block:: console
+
+    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_job_metrics.py
+    usage: delete_job_metrics.py [-h] --updated UPDATED
+    
+    Remove old job metrics records from database.
+    
+    options:
+      -h, --help         show this help message and exit
+      --updated UPDATED  most recent `updated` date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11')

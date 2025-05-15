@@ -5,6 +5,7 @@ import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { type components } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
@@ -15,8 +16,26 @@ const DATASET_ID = "dataset_id";
 
 const { server, http } = useServerMock();
 
+type RegexJobMessage = components["schemas"]["RegexJobMessage"];
+
 async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
+    const error1: RegexJobMessage = {
+        desc: "message_1",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
+    const error2: RegexJobMessage = {
+        desc: "message_2",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
 
     server.use(
         http.get("/api/datasets/{dataset_id}", ({ response }) => {
@@ -35,7 +54,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 tool_id: "tool_id",
                 tool_stderr: "tool_stderr",
                 job_stderr: "job_stderr",
-                job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
+                job_messages: [error1, error2],
                 user_email,
                 create_time: "2021-01-01T00:00:00",
                 update_time: "2021-01-01T00:00:00",

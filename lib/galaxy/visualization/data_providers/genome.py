@@ -4,6 +4,7 @@ Data providers for genome visualizations.
 
 import abc
 import itertools
+import logging
 import math
 import os
 import random
@@ -43,6 +44,8 @@ from galaxy.exceptions import MessageException
 from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
+
+log = logging.getLogger(__name__)
 
 IntWebParam = Union[str, int]
 
@@ -234,7 +237,12 @@ class GenomeDataProvider(BaseDataProvider):
         start, end = int(start), int(end)
         with self.open_data_file() as data_file:
             iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
-            data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
+            try:
+                data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
+            except ValueError as e:
+                err_msg = f"Could not return data, error was '{e}'"
+                log.warning(err_msg, exc_info=True)
+                raise MessageException(err_msg)
         return data
 
     def get_genome_data(self, chroms_info, **kwargs):

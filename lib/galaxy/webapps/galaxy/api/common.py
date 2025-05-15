@@ -20,12 +20,20 @@ from galaxy.schema import (
     SerializationParams,
     ValueFilterQueryParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.schema import (
     UpdateDatasetPermissionsPayload,
     UpdateDatasetPermissionsPayloadAliases,
 )
 from galaxy.util import listify
+
+FolderIdPathParam = Annotated[
+    LibraryFolderDatabaseIdField,
+    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
+]
 
 HistoryIDPathParam = Annotated[
     DecodedDatabaseIdField,
@@ -87,6 +95,10 @@ UpdateDatasetPermissionsBody = Annotated[
 LibraryIdPathParam = Annotated[
     DecodedDatabaseIdField,
     Path(..., title="Library ID", description="The ID of the Library."),
+]
+
+LibraryDatasetIdPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="Library dataset ID", description="The encoded ID of the library dataset.")
 ]
 
 NotificationIdPathParam = Annotated[

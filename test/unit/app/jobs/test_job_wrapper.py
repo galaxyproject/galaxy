@@ -5,6 +5,7 @@ from typing import (
     cast,
     Dict,
     Type,
+    TYPE_CHECKING,
 )
 
 from galaxy.app_unittest_utils.tools_support import (
@@ -25,6 +26,9 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -51,7 +55,7 @@ class AbstractTestCases:
             job.user = User()
             job.object_store_id = "foo"
             self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
-            self.app.model.session = MockContext(self.model_objects)
+            self.app.model.session = cast("scoped_session", MockContext(self.model_objects))
 
             self.app._toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
             self.working_directory = os.path.join(self.test_directory, "working")
@@ -112,6 +116,7 @@ class MockEvaluator:
         self.job = job
         self.local_working_directory = local_working_directory
         self.param_dict = {}
+        self.use_cached_job = False
 
     def set_compute_environment(self, *args, **kwds):
         pass
@@ -162,6 +167,10 @@ class MockToolbox:
 
     def get_tool(self, tool_id, tool_version, exact=False):
         tool = self.get(tool_id)
+        return tool
+
+    def tool_for_job(self, job, exact):
+        tool = self.get(job.tool_id)
         return tool
 
 

@@ -1,7 +1,6 @@
 """Static Galaxy file sources - ftp and libraries."""
 
 from typing import (
-    cast,
     Optional,
 )
 
@@ -29,7 +28,7 @@ class UserFtpFilesSource(PosixFilesSource):
         posix_kwds.update(kwd)
         if "delete_on_realize" not in posix_kwds:
             file_sources_config = kwd["file_sources_config"]
-            posix_kwds["delete_on_realize"] = cast(bool, file_sources_config.ftp_upload_purge)
+            posix_kwds["delete_on_realize"] = file_sources_config.ftp_upload_purge
         super().__init__(**posix_kwds)
 
     def get_prefix(self) -> Optional[str]:

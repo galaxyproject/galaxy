@@ -2,11 +2,16 @@
 from __future__ import print_function
 
 import sys
+from typing import (
+    List,
+    Optional,
+    Tuple,
+)
 
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 
-def get_bed_line(chrom, name, strand, blocks):
+def get_bed_line(chrom, name, strand, blocks: List[Tuple[int, int]]):
     """Returns a BED line for given data."""
 
     if len(blocks) == 1:
@@ -66,9 +71,9 @@ def __main__():
     first_skipped_line = 0
     i = 0
     cur_transcript_chrome = None
-    cur_transcript_id = None
+    cur_transcript_id: Optional[str] = None
     cur_transcript_strand = None
-    cur_transcripts_blocks = []  # (start, end) for each block.
+    cur_transcripts_blocks: List[Tuple[int, int]] = []  # (start, end) for each block.
     with open(output_name, "w") as out, open(input_name) as in_fh:
         for i, line in enumerate(in_fh):
             line = line.rstrip("\r\n")
@@ -77,7 +82,7 @@ def __main__():
                     # GFF format: chrom source, name, chromStart, chromEnd, score, strand, attributes
                     elems = line.split("\t")
                     start = str(int(elems[3]) - 1)
-                    coords = [int(start), int(elems[4])]
+                    coords = (int(start), int(elems[4]))
                     strand = elems[6]
                     if strand not in ["+", "-"]:
                         strand = "+"
@@ -92,7 +97,7 @@ def __main__():
                         # Write previous transcript.
                         if cur_transcript_id:
                             # Write BED entry.
-                            out.write(  # type: ignore[unreachable]
+                            out.write(
                                 get_bed_line(
                                     cur_transcript_chrome,
                                     cur_transcript_id,
@@ -120,7 +125,7 @@ def __main__():
                     # Write previous transcript.
                     if cur_transcript_id:
                         # Write BED entry.
-                        out.write(  # type: ignore[unreachable]
+                        out.write(
                             get_bed_line(
                                 cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks
                             )

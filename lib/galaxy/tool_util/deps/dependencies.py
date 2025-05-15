@@ -12,7 +12,7 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirements,
 )
 from galaxy.util import bunch
-from .mulled.mulled_build import DEFAULT_CHANNELS
+from .mulled.util import DEFAULT_CHANNELS
 
 
 class AppInfo:

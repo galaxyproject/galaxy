@@ -13,27 +13,15 @@ import {
     faList,
     faPlay,
     faSitemap,
+    faTable,
     faUpload,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { type Activity } from "@/stores/activityStore";
+import { type Activity } from "@/stores/activityStoreTypes";
 import { type EventData } from "@/stores/eventStore";
 
 export const defaultActivities = [
-    {
-        anonymous: false,
-        description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
-        icon: faLaptop,
-        id: "interactivetools",
-        mutable: false,
-        optional: false,
-        panel: false,
-        title: "Interactive Tools",
-        tooltip: "Show active interactive tools",
-        to: "/interactivetool_entry_points/list",
-        visible: true,
-    },
     {
         anonymous: true,
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
@@ -84,6 +72,19 @@ export const defaultActivities = [
         title: "Workflow Invocations",
         tooltip: "Show all workflow runs",
         to: null,
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
+        icon: faLaptop,
+        id: "interactivetools",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "Interactive Tools",
+        tooltip: "Show Active and available Interactive tools",
+        to: "/interactivetool_entry_points/list",
         visible: true,
     },
     {
@@ -162,6 +163,32 @@ export const defaultActivities = [
         title: "Libraries",
         tooltip: "Access data libraries",
         to: "/libraries",
+        visible: true,
+    },
+    {
+        anonymous: true,
+        description: "Rule-based advanced import of datasets or collections.",
+        icon: faTable,
+        id: "rules",
+        mutable: false,
+        optional: true,
+        panel: false,
+        title: "Rule-based Data Import",
+        tooltip: "Launch rule-based advanced import of datasets or collections",
+        to: "/rules",
+        visible: false,
+    },
+    {
+        anonymous: false,
+        description: "Displays tools defined by you.",
+        icon: faWrench,
+        id: "user-defined-tools",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "Custom Tools",
+        to: null,
+        tooltip: "Search and run user-defined tools",
         visible: true,
     },
 ] as const;

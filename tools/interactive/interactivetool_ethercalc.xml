@@ -1,4 +1,5 @@
 <tool id="interactive_tool_ethercalc" tool_type="interactive" name="EtherCalc" version="0.1" profile="20.01">
+    <icon src="ethercalc.png" />
     <requirements>
         <container type="docker">shiltemann/ethercalc-galaxy-ie:17.05</container>
     </requirements>

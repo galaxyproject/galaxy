@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Type,
     TypeVar,
 )
@@ -32,8 +33,10 @@ from galaxy.model import (
     Dataset,
     DatasetHash,
     DatasetInstance,
+    DatasetPermissions,
     HistoryDatasetAssociation,
 )
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -46,7 +49,9 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(
+    base.ModelManager[Dataset], secured.AccessibleManagerMixin[Dataset], deletable.PurgableManagerMixin
+):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -323,8 +328,8 @@ U = TypeVar("U", bound=DatasetInstance)
 
 class DatasetAssociationManager(
     base.ModelManager[U],
-    secured.AccessibleManagerMixin,
-    secured.OwnableManagerMixin,
+    secured.AccessibleManagerMixin[U],
+    secured.OwnableManagerMixin[U],
     deletable.PurgableManagerMixin,
 ):
     """
@@ -448,16 +453,24 @@ class DatasetAssociationManager(
             library_dataset = None
             dataset = dataset_assoc.dataset
 
+        private_role_emails = get_private_role_user_emails_dict(self.session())
+
         # Omit duplicated roles by converting to set
         access_roles = set(dataset.get_access_roles(self.app.security_agent))
         manage_roles = set(dataset.get_manage_permissions_roles(self.app.security_agent))
 
-        access_dataset_role_list = [
-            (access_role.name, self.app.security.encode_id(access_role.id)) for access_role in access_roles
-        ]
-        manage_dataset_role_list = [
-            (manage_role.name, self.app.security.encode_id(manage_role.id)) for manage_role in manage_roles
-        ]
+        def make_tuples(roles: Set):
+            tuples = []
+            for role in roles:
+                # use role name for non-private roles, and user.email from private rules
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuple = (displayed_name, self.app.security.encode_id(role.id))
+                tuples.append(role_tuple)
+            return tuples
+
+        access_dataset_role_list = make_tuples(access_roles)
+        manage_dataset_role_list = make_tuples(manage_roles)
+
         rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
         if library_dataset is not None:
             modify_roles = set(
@@ -465,9 +478,7 @@ class DatasetAssociationManager(
                     library_dataset, self.app.security_agent.permitted_actions.LIBRARY_MODIFY
                 )
             )
-            modify_item_role_list = [
-                (modify_role.name, self.app.security.encode_id(modify_role.id)) for modify_role in modify_roles
-            ]
+            modify_item_role_list = make_tuples(modify_roles)
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
@@ -584,7 +595,7 @@ class DatasetAssociationManager(
         elif action == "make_private":
             if not self.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = self.app.security_agent.get_private_user_role(trans.user)
-                dp = self.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     self.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)

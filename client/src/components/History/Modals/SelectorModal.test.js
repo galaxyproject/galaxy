@@ -40,7 +40,6 @@ const CURRENT_HISTORY_INDICATION_TEXT = "(Current)";
 const CURRENT_USER = {
     email: "email",
     id: "user_id",
-    tags_used: [],
     total_disk_usage: 0,
 };
 

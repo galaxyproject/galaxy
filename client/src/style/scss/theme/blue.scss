@@ -90,6 +90,9 @@ $font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base: $font-family-sans-serif;
 $font-size-base: 0.85rem; // default 1rem
 
+// Line control
+$line-height-base: 1.5; // default 1.5
+
 // Header font sizes
 $h1-font-size: $font-size-base * 2; // default 2.5
 $h2-font-size: $font-size-base * 1.75; // default 2

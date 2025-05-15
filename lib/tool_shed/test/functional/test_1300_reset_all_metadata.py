@@ -133,7 +133,6 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
 
     def test_0025_create_repositories_from_0030_series(self):
         """Create repositories emboss_0030, emboss_5_0030, emboss_6_0030, and emboss_datatypes_0030."""
-        global repository_datatypes_count
         category = self.create_category(name=category_0030_name, description="")
         column_maker_repository = self.get_or_create_repository(
             name="column_maker_0030",

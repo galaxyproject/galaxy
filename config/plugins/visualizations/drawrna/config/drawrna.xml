@@ -1,16 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="RNA Structure Viewer">
-    <description>Renders RNA structures hosted at https://github.com/bene200/drawrnajs.</description>
+<visualization name="RNA Structure Viewer" embeddable="true">
+    <description>2D-Structures from Dot-Bracket Notation</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext" result_type="datatype">dbn</test>
-            <to_param param_attr="id">dataset_id</to_param>
+            <test test_attr="ext">dbn</test>
         </data_source>
     </data_sources>
     <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+        <param required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js"/>
+    <requirements>
+        <requirement type="npm" version="0.0.0" package="@galaxyproject/drawrna"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tests>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.dbn" ftype="dbn" />
+        </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/2.dbn" ftype="dbn" />
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# What is DrawRNA?
+
+This visualization renders RNA secondary structures from **dot-bracket notation** using an interactive 2D viewer. Dot-bracket notation is a compact text-based format where each base is represented by a character (usually `.`, `(`, and `)`), indicating base pairs and unpaired regions.
+
+When you select a compatible dataset (with `dbn` format), the RNA molecule's loops, stems, and unpaired regions will be drawn as a 2D diagram, making it easier to study the structure.
+
+## Key Features
+
+- **Interactive Layout**: Pan and zoom to explore large or complex RNA structures.
+- **Clear Base Pairing Display**: Highlights helices, loops, bulges, and junctions.
+- **Fast Rendering**: Designed for quick loading, even for longer RNA sequences.
+- **Simple Input**: Requires only a three-line text format: a name, sequence, and dot-bracket structure.
+
+Example input format:
+```
+>RNA1
+ACGUCAAUCGGCUAGUGCGUCAUGGAGUCAUGCAGUCUAACGACUGACUACGAUGUAC
+(((((..(((((.....)))))..((((((.....))))))..(((..)))..)))))
+```
+
+## About DrawRNA.js
+
+This visualization uses [DrawRNA.js](https://github.com/benediktrauscher/drawrnajs), an open-source JavaScript library for drawing RNA secondary structures based on NAVIEW layout principles.
+
+Learn more about DrawRNA.js here:
+[https://github.com/benediktrauscher/drawrnajs](https://github.com/benediktrauscher/drawrnajs)
+]]></help>
 </visualization>

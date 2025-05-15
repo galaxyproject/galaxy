@@ -29,11 +29,13 @@ from tool_shed_client.schema import (
     GetOrderedInstallableRevisionsRequest,
     InstallInfo,
     OrderedInstallableRevisions,
+    PaginatedRepositoryIndexResults,
     RepositoriesByCategory,
     Repository,
     RepositoryIndexRequest,
     RepositoryIndexResponse,
     RepositoryMetadata,
+    RepositoryPaginatedIndexRequest,
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
@@ -323,6 +325,15 @@ class ToolShedPopulator:
         repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(root=repository_response.json())
+
+    def repository_index_paginated(
+        self, request: Optional[RepositoryPaginatedIndexRequest]
+    ) -> PaginatedRepositoryIndexResults:
+        repository_response = self._api_interactor.get(
+            "repositories", params=(request.model_dump() if request else {"page": 1})
+        )
+        api_asserts.assert_status_code_is_ok(repository_response)
+        return PaginatedRepositoryIndexResults(**repository_response.json())
 
     def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
         repository_id = self._repository_id(repository)

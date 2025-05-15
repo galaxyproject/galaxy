@@ -1,5 +1,4 @@
-""" Package responsible for parsing tools from files/abstract tool sources.
-"""
+"""Package responsible for parsing tools from files/abstract tool sources."""
 
 from .factory import (
     get_input_source,
@@ -9,7 +8,6 @@ from .factory import (
 from .interface import (
     RequiredFiles,
     ToolSource,
-    XrefDict,
 )
 from .output_objects import ToolOutputCollectionPart
 
@@ -20,5 +18,4 @@ __all__ = (
     "RequiredFiles",
     "ToolOutputCollectionPart",
     "ToolSource",
-    "XrefDict",
 )

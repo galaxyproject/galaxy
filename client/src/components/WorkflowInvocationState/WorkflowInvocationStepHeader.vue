@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import type { InvocationStep } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -23,6 +24,14 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const stepLabel = computed(() => {
+    const rawStepLabel = props.invocationStep?.workflow_step_label;
+    if (rawStepLabel == null) {
+        return undefined;
+    }
+    return rawStepLabel;
+});
 </script>
 
 <template>
@@ -39,7 +48,7 @@ const props = defineProps<Props>();
                 <u class="step-title">
                     <WorkflowStepTitle
                         :step-index="props.workflowStep.id"
-                        :step-label="props.invocationStep?.workflow_step_label"
+                        :step-label="stepLabel"
                         :step-type="props.workflowStep.type"
                         :step-tool-id="props.workflowStep.tool_id"
                         :step-subworkflow-id="props.workflowStep.workflow_id" />

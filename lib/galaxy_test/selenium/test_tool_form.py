@@ -139,8 +139,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         assert_input_order(["Text B", "Text C", "Text A"])
         self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
         assert_input_order(["Text C", "Text B", "Text A"])
-        self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
-        assert_input_order(["Text C", "Text B", "Text A"])
+        # no longer clickable, don't need to check the no-op here anymore.
+        # self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        # assert_input_order(["Text C", "Text B", "Text A"])
 
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(1)
@@ -385,6 +386,16 @@ class TestLoggedInToolForm(SeleniumTestCase):
     def test_run_apply_rules_4(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
         self.screenshot("tool_apply_rules_example_4_final")
+
+    @selenium_test
+    def test_run_apply_rules_paired_unpaired_flatten(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    def test_run_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
+        self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
 
     @selenium_test
     @managed_history

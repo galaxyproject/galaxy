@@ -1,4 +1,4 @@
-export type WatchResourceHandler = () => Promise<void>;
+export type WatchResourceHandler<T = unknown> = (app?: T) => Promise<void>;
 
 export interface WatchOptions {
     /**
@@ -29,7 +29,10 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
  * @param watchHandler The handler function that watches the resource by querying the server.
  * @param options Options to customize the polling interval.
  */
-export function useResourceWatcher(watchHandler: WatchResourceHandler, options: WatchOptions = DEFAULT_WATCH_OPTIONS) {
+export function useResourceWatcher<T = unknown>(
+    watchHandler: WatchResourceHandler,
+    options: WatchOptions = DEFAULT_WATCH_OPTIONS
+) {
     const { shortPollingInterval, longPollingInterval, enableBackgroundPolling } = {
         ...DEFAULT_WATCH_OPTIONS,
         ...options,
@@ -41,9 +44,9 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
     /**
      * Starts watching the resource by polling the server continuously.
      */
-    function startWatchingResource() {
+    function startWatchingResource(app?: T) {
         stopWatcher();
-        tryWatchResource();
+        tryWatchResource(app);
     }
 
     /**
@@ -60,15 +63,15 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
         }
     }
 
-    async function tryWatchResource() {
+    async function tryWatchResource(app?: T) {
         try {
-            await watchHandler();
+            await watchHandler(app);
         } catch (error) {
             console.warn(error);
         } finally {
             if (currentPollingInterval) {
                 watchTimeout = setTimeout(() => {
-                    tryWatchResource();
+                    tryWatchResource(app);
                 }, currentPollingInterval);
             }
         }

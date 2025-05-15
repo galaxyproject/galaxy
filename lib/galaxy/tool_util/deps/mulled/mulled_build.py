@@ -33,7 +33,6 @@ from galaxy.tool_util.deps.conda_util import (
     CondaContext,
     CondaTarget,
 )
-from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
     commands,
     download_to_file,
@@ -45,8 +44,10 @@ from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
+    CONDA_IMAGE,
+    CondaInDockerContext,
     create_repository,
-    default_mulled_conda_channels_from_env,
+    DEFAULT_CHANNELS,
     get_files_from_conda_package,
     PrintProgress,
     quay_repository,
@@ -62,14 +63,12 @@ DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
 )
-DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
-CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -223,6 +222,7 @@ def mull_targets(
     base_image=None,
     determine_base_image=True,
     invfile=INVFILE,
+    strict_channel_priority=True,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -314,15 +314,14 @@ def mull_targets(
         if conda_version is not None:
             specs.append(f"conda={conda_version}")
         if mamba_version is not None:
-            specs.append(f"mamba={mamba_version}")
             if mamba_version == "" and not specs:
                 # If nothing but mamba without a specific version is requested,
                 # then only run conda install if mamba is not already installed.
                 mamba_test = "[ '[]' = \"$( conda list --json --full-name mamba )\" ]"
+            specs.append(f"mamba={mamba_version}")
         conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
         involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
 
-    involucro_args.append(command)
     if test_files:
         test_bind = []
         for test_file in test_files:
@@ -333,12 +332,19 @@ def mull_targets(
                 if os.path.exists(test_file.split(":")[0]):
                     test_bind.append(test_file)
         if test_bind:
-            involucro_args.insert(6, "-set")
-            involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
-    cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {shlex_join(cmd)}")
+            involucro_args.append("-set")
+            involucro_args.append(f"TEST_BINDS={','.join(test_bind)}")
+
+    if strict_channel_priority:
+        involucro_args.extend(["-set", "STRICT_CHANNEL_PRIORITY=1"])
+
+    involucro_args.append(command)
+
     if dry_run:
+        cmd = involucro_context.build_command(involucro_args)
+        print(f"Executing: {shlex_join(cmd)}")
         return 0
+
     ensure_installed(involucro_context, True)
     if singularity:
         if not os.path.exists(singularity_image_dir):
@@ -349,6 +355,9 @@ def mull_targets(
                 "base_image": dest_base_image or DEFAULT_BASE_IMAGE,
             }
             sin_def.write(fill_template)
+
+    cmd = involucro_context.build_command(involucro_args)
+
     with PrintProgress():
         ret = involucro_context.exec_command(involucro_args)
     if singularity:
@@ -361,33 +370,6 @@ def mull_targets(
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
-
-
-class CondaInDockerContext(CondaContext):
-    def __init__(
-        self,
-        conda_prefix=None,
-        conda_exec=None,
-        shell_exec=None,
-        debug=False,
-        ensure_channels=DEFAULT_CHANNELS,
-        condarc_override=None,
-    ):
-        if not conda_exec:
-            binds = []
-            for channel in ensure_channels:
-                if channel.startswith("file://"):
-                    bind_path = channel[7:]
-                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
-            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
-        super().__init__(
-            conda_prefix=conda_prefix,
-            conda_exec=conda_exec,
-            shell_exec=shell_exec,
-            debug=debug,
-            ensure_channels=ensure_channels,
-            condarc_override=condarc_override,
-        )
 
 
 class InvolucroContext(installable.InstallableContext):
@@ -404,10 +386,10 @@ class InvolucroContext(installable.InstallableContext):
         self.shell_exec = shell_exec or commands.shell
         self.verbose = verbose
 
-    def build_command(self, involucro_args):
+    def build_command(self, involucro_args: List[str]) -> List[str]:
         return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
 
-    def exec_command(self, involucro_args):
+    def exec_command(self, involucro_args: List[str]) -> int:
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         created_build_dir = False
@@ -485,6 +467,13 @@ def add_build_arguments(parser):
         dest="channels",
         default=",".join(DEFAULT_CHANNELS),
         help="Comma separated list of target conda channels.",
+    )
+    parser.add_argument(
+        "--disable_strict_channel_priority",
+        dest="strict_channel_priority",
+        default=True,
+        action="store_false",
+        help="Disable strict channel priority. Will decrease speed of the resolver and should only be used in exceptional cases.",
     )
     parser.add_argument(
         "--conda-version",
@@ -585,6 +574,9 @@ def args_to_mull_targets_kwds(args):
         kwds["singularity_image_dir"] = args.singularity_image_dir
     if hasattr(args, "invfile"):
         kwds["invfile"] = args.invfile
+    if hasattr(args, "verbose"):
+        kwds["verbose"] = args.verbose
+    kwds["strict_channel_priority"] = args.strict_channel_priority
 
     kwds["involucro_context"] = context_from_args(args)
 

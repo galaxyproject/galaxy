@@ -9,10 +9,8 @@ from typing import (
 )
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
-from galaxy.tool_util.parser import (
-    ToolSource,
-    XrefDict,
-)
+from galaxy.tool_util.parser import ToolSource
+from galaxy.tool_util_models.tool_source import XrefDict
 from galaxy.util.resources import resource_string
 
 
@@ -55,7 +53,7 @@ class OntologyData(NamedTuple):
 
 def biotools_reference(xrefs):
     for xref in xrefs:
-        if xref["reftype"] == "bio.tools":
+        if xref["type"] == "bio.tools":
             return xref["value"]
     return None
 
@@ -71,11 +69,11 @@ def expand_ontology_data(
     tool_source: ToolSource, all_ids: List[str], biotools_metadata_source: Optional[BiotoolsMetadataSource]
 ) -> OntologyData:
     xrefs = tool_source.parse_xrefs()
-    has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
+    has_biotools_reference = any(x["type"] == "bio.tools" for x in xrefs)
     if not has_biotools_reference:
         for legacy_biotools_ref in legacy_biotools_external_reference(all_ids):
             if legacy_biotools_ref is not None:
-                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
+                xrefs.append({"value": legacy_biotools_ref, "type": "bio.tools"})
 
     edam_operations = tool_source.parse_edam_operations()
     edam_topics = tool_source.parse_edam_topics()

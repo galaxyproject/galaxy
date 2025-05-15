@@ -2,13 +2,13 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HDCADetailed } from "@/api";
+import { type HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
 const router = useRouter();
 
 const props = defineProps<{
-    dsc: HDCADetailed;
+    dsc: HDCASummary; // typescript recognizes HDCADetailed IS_A HDCASummary
 }>();
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
