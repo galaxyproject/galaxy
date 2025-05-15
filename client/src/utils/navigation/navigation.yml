@@ -196,10 +196,7 @@ history_panel:
       delete_button: '${_} .delete-btn'
       display_button: '${_} .display-btn'
       download_button: '${_} .download-btn'
-      edit_button: '${_} .edit-btn'
-      info_button: '${_} .params-btn'
       rerun_button: '${_} .rerun-btn'
-      visualize_button: '${_} .visualize-btn'
 
   # history content item
   content_item:
@@ -221,10 +218,8 @@ history_panel:
 
       # Title buttons...
       display_button: '${_} .display-btn'
-      edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
       rerun_button: '${_} .rerun-btn'
-      visualize_button: '${_} .visualize-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...

@@ -35,12 +35,12 @@ steps:
     - component: history_panel
       intro: "This is your history. It contains our matrix being uploaded."
 
-    - component: history_panel.item(hid=1,state=ok).title
-      intro: "Clicking on a dataset expands its options."
+    - element: "#current-history-panel div.content-item .display-btn"
+      intro: "Displaying the dataset will show the dataset preview as well as additional options."
       postclick: true
 
-    - component: history_panel.item(hid=1,state=ok).visualize_button
-      intro: "Clicking the diagram-icon will visualize your dataset."
+    - component: dataset_view.visualize_tab
+      intro: "Clicking the Visualize tab will list all compatible visualizations for your dataset."
       postclick: true
 
     - component: visualization.matched_plugin(id=plotly_surface)
