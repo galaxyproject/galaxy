@@ -14,7 +14,10 @@ import {
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
+import { defaultModel, type FileStream, type UploadItem } from "@/components/Upload/model";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { uploadPayload } from "@/utils/upload-payload";
+import { uploadSubmit } from "@/utils/upload-submit";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
@@ -145,6 +148,8 @@ export function useZipExplorer() {
 
             if (isWorkflowFile(file)) {
                 try {
+                    // Loading the entire file into memory here should be fine since
+                    // workflows are usually relatively small.
                     const fileData = await entry.data();
                     const formData = new FormData();
                     formData.append("archive_file", new Blob([fileData]), file.name);
@@ -162,33 +167,27 @@ export function useZipExplorer() {
             throw new Error("There is no history available to upload the selected files.");
         }
 
-        const elements = toUploadToHistory.map(({ file }) => {
-            return {
-                name: file.name,
-                deferred: false,
-                src: "files",
-                ext: "auto",
-            };
-        });
-
-        const target = {
-            destination: { type: "hdas" },
-            elements: elements,
-        };
-
-        const formData = new FormData();
-        formData.append("history_id", historyId);
-        formData.append("targets", JSON.stringify([target]));
-
+        const uploadItems: UploadItem[] = [];
         for (const { file, entry } of toUploadToHistory) {
-            const stream = entry.dataStream();
-            const blob = await streamToBlob(stream);
-
-            formData.append("files", blob, file.name);
+            const fileStream: FileStream = {
+                name: file.name,
+                size: entry.fileSize,
+                stream: entry.dataStream(),
+                lastModified: entry.dateTime.getTime(),
+                isStream: true,
+            };
+            const uploadItem = {
+                ...defaultModel,
+                fileName: file.name,
+                fileSize: entry.fileSize,
+                fileData: fileStream,
+                fileMode: "local",
+            };
+            uploadItems.push(uploadItem);
         }
-
         try {
-            await axios.post(getFullAppUrl("api/tools/fetch"), formData);
+            const data = uploadPayload(uploadItems, historyId);
+            uploadSubmit({ data });
         } catch (e) {
             rethrowSimple(e);
         }
@@ -196,20 +195,6 @@ export function useZipExplorer() {
 
     function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
         return `zip://extract?source=${zipUrl}&header_offset=${entry.headerOffset}&compress_size=${entry.compressSize}&compression_method=${entry.compressionMethod}`;
-    }
-
-    async function streamToBlob(stream: ReadableStream<Uint8Array>): Promise<Blob> {
-        const reader = stream.getReader();
-        const chunks: Uint8Array[] = [];
-        let done = false;
-        while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            if (value) {
-                chunks.push(value);
-            }
-            done = streamDone;
-        }
-        return new Blob(chunks);
     }
 
     function isWorkflowFile(item: ImportableFile): boolean {
