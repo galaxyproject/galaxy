@@ -27,6 +27,62 @@ const interactiveTools = ref<Tool[]>([]);
 const loading = ref(true);
 const query = ref("");
 
+// Function to filter out older versions of tools based on lineage
+function filterLatestVersions(tools: Tool[]): Tool[] {
+    const versionGroups = new Map<string, Tool[]>();
+
+    // Group tools by their base ID (without version)
+    tools.forEach((tool) => {
+        let baseId = tool.id;
+
+        // Handle tool shed tools (format: toolshed.g2.bx.psu.edu/repos/owner/repo/tool_name/version)
+        if (tool.id.includes("/repos/")) {
+            const parts = tool.id.split("/");
+            if (parts.length >= 5) {
+                // Remove the version part if it exists
+                const lastPart = parts[parts.length - 1];
+                // Check if the last part looks like a version (contains dots or is numeric)
+                if (/^\d+(\.\d+)*$/.test(lastPart)) {
+                    baseId = parts.slice(0, -1).join("/");
+                }
+            }
+        }
+        // Handle simple versioned tools (format: tool_name/version)
+        else if (tool.id.includes("/")) {
+            const parts = tool.id.split("/");
+            const lastPart = parts[parts.length - 1];
+            // Check if the last part looks like a version
+            if (/^\d+(\.\d+)*$/.test(lastPart)) {
+                baseId = parts.slice(0, -1).join("/");
+            }
+        }
+
+        if (!versionGroups.has(baseId)) {
+            versionGroups.set(baseId, []);
+        }
+        versionGroups.get(baseId)!.push(tool);
+    });
+
+    // For each group, keep only the latest version
+    const latestTools: Tool[] = [];
+    versionGroups.forEach((toolGroup) => {
+        if (toolGroup.length === 1) {
+            latestTools.push(toolGroup[0]);
+        } else {
+            // Sort by version (descending) and take the first one
+            const sorted = toolGroup.sort((a, b) => {
+                // Compare versions using natural sort
+                const versionA = a.version || "0";
+                const versionB = b.version || "0";
+                return versionB.localeCompare(versionA, undefined, { numeric: true });
+            });
+            latestTools.push(sorted[0]);
+        }
+    });
+
+    return latestTools;
+}
+
 const filteredTools = computed(() => {
     const queryLower = query.value.toLowerCase();
     return interactiveTools.value.filter(
@@ -39,7 +95,8 @@ const filteredTools = computed(() => {
 
 onMounted(async () => {
     await toolStore.fetchTools();
-    interactiveTools.value = toolStore.getInteractiveTools();
+    const allInteractiveTools = toolStore.getInteractiveTools();
+    interactiveTools.value = filterLatestVersions(allInteractiveTools);
     loading.value = false;
 
     // Make sure we load active interactive tools
