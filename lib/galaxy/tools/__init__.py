@@ -639,8 +639,15 @@ class ToolBox(AbstractToolBox):
             return tool
         return None
 
-    def tool_for_job(self, job: model.Job, exact=True) -> Optional["Tool"]:
+    def tool_for_job(
+        self, job: model.Job, exact=True, check_access=True, user: Optional[model.User] = None
+    ) -> Optional["Tool"]:
         if job.dynamic_tool:
+            if check_access:
+                if not user:
+                    return None
+                if not job.dynamic_tool.public:
+                    self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
             return self.dynamic_tool_to_tool(job.dynamic_tool)
         else:
             return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
@@ -2794,6 +2801,9 @@ class Tool(UsesDictVisibleKeys):
         tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
 
+        if self.dynamic_tool:
+            tool_dict["uuid"] = str(self.dynamic_tool.uuid)
+
         # Fill in ToolShedRepository info
         if hasattr(self, "tool_shed") and self.tool_shed:
             tool_dict["tool_shed_repository"] = {
@@ -3016,12 +3026,16 @@ class Tool(UsesDictVisibleKeys):
 
         visit_input_values(tool_inputs, params, mapping_callback)
 
-    def _compare_tool_version(self, job):
+    def _compare_tool_version(self, job: Job):
         """
         Compares a tool version with the tool version from a job (from ToolRunner).
         """
         tool_id = job.tool_id
         tool_version = job.tool_version
+        if job.dynamic_tool_id:
+            # This is the exact tool that was used to run the job.
+            # We don't need to compare the version.
+            return None
         message = ""
         try:
             select_field, tools, tool = self.app.toolbox.get_tool_components(
@@ -3031,6 +3045,7 @@ class Tool(UsesDictVisibleKeys):
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
                 )
+            assert tool_id
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:
                     if tool_version:
