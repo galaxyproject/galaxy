@@ -35,7 +35,7 @@ export function usePopper(
     const doCloseElement = (event: Event) => {
         const target = event.target as Element;
         if (target && target.closest(".popper-close")) {
-            doClose();
+            visible.value = false;
         }
     };
     const doCloseEscape = (event: Event) => {
