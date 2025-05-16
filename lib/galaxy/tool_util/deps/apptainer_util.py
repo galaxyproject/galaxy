@@ -1,27 +1,19 @@
 import logging
 import os
-import packaging.version
 import platform
 import tempfile
 from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
     List,
     Optional,
-    Tuple,
-    TYPE_CHECKING,
     Union,
 )
+
+import packaging.version
 
 from galaxy.util import (
     commands,
     download_to_file,
-    requests,
 )
-
 from . import installable
 
 APPTAINER_VERSION = "1.4.0"
@@ -82,7 +74,9 @@ class ApptainerContext(installable.InstallableContext):
             return False
 
     def can_install(self) -> bool:
-        if (platform.system() != "Linux" or platform.machine() not in ("x86_64", "aarch64")):
+        if self.apptainer_prefix is None:
+            return False
+        if platform.system() != "Linux" or platform.machine() not in ("x86_64", "aarch64"):
             return False
         glibc_version = _glibc_version()
         if not glibc_version or glibc_version < packaging.version.parse("2.28"):
@@ -90,8 +84,9 @@ class ApptainerContext(installable.InstallableContext):
         return True
 
     @property
-    def parent_path(self) -> str:
-        return os.path.dirname(os.path.abspath(self.apptainer_prefix))
+    def parent_path(self) -> Optional[str]:
+        if self.apptainer_prefix:
+            return os.path.dirname(os.path.abspath(self.apptainer_prefix))
 
 
 def install_apptainer(apptainer_context: ApptainerContext) -> int:

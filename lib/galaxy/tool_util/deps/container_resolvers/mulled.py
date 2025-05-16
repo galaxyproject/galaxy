@@ -349,6 +349,7 @@ def singularity_cached_container_description(
     cache_directory: CacheDirectory,
     hash_func: Literal["v1", "v2"] = "v2",
     shell: str = DEFAULT_CONTAINER_SHELL,
+    cmd: Optional[str] = None,
 ) -> Optional[ContainerDescription]:
     if len(targets) == 0:
         return None
@@ -365,6 +366,7 @@ def singularity_cached_container_description(
             os.path.abspath(os.path.join(cache_directory.path, image.image_identifier)),
             type="singularity",
             shell=shell,
+            cmd=cmd,
         )
     return container
 
@@ -494,11 +496,7 @@ class SingularityCliContainerResolver(CliContainerResolver):
     cli = "singularity"
 
     def __init__(
-        self,
-        app_info: "AppInfo",
-        hash_func: Literal["v1", "v2"] = "v2",
-        auto_init: bool = False,
-        **kwargs
+        self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", auto_init: bool = False, **kwargs
     ) -> None:
         super().__init__(app_info=app_info, **kwargs)
         self.hash_func = hash_func
@@ -511,19 +509,16 @@ class SingularityCliContainerResolver(CliContainerResolver):
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
         safe_makedirs(self.cache_directory.path)
+        apptainer_exec = kwargs.get("exec")
         if self.auto_init:
-            # TODO: you need to store the path for command line assembly
             apptainer_prefix = kwargs.get("prefix")
-            apptainer_exec = kwargs.get("exec")
             if apptainer_prefix is None and apptainer_exec is None:
                 assert self.app_info.apptainer_prefix
                 apptainer_prefix = self.app_info.apptainer_prefix
-            apptainer_context = ApptainerContext(
-                apptainer_prefix=apptainer_prefix, apptainer_exec=apptainer_exec
-            )
-            deps_ensure_installed(
-                apptainer_context, install_apptainer, self.auto_init
-            )
+            apptainer_context = ApptainerContext(apptainer_prefix=apptainer_prefix, apptainer_exec=apptainer_exec)
+            deps_ensure_installed(apptainer_context, install_apptainer, self.auto_init)
+            apptainer_exec = apptainer_context.apptainer_exec
+        self.apptainer_exec = apptainer_exec
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):
@@ -571,7 +566,7 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell
+            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell, cmd=self.apptainer_exec
         )
 
     def __str__(self) -> str:
