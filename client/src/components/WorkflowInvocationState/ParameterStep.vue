@@ -20,6 +20,11 @@ const props = defineProps<{
 function isData(value: unknown): value is InvocationInput | InvocationOutput | InvocationOutputCollection {
     return typeof value === "object" && value !== null && "src" in value;
 }
+function hasValidId(
+    value: InvocationInput | InvocationOutput | InvocationOutputCollection
+): value is typeof value & { id: string } {
+    return value.id !== null && value.id !== undefined && typeof value.id === "string";
+}
 function dataStepLabel(input: InvocationStepTypes): string {
     if ("label" in input && input.label) {
         return input.label;
@@ -41,10 +46,11 @@ function dataStepLabel(input: InvocationStepTypes): string {
         :items="props.parameters">
         <template v-slot:cell(parameter_value)="{ item }">
             <GenericHistoryItem
-                v-if="isData(item)"
+                v-if="isData(item) && hasValidId(item)"
                 :item-id="item.id"
                 :item-src="item.src"
                 :data-label="dataStepLabel(item)" />
+            <div v-else-if="isData(item) && !hasValidId(item)" class="text-muted">Dataset with no ID</div>
             <i v-else-if="item.parameter_value === null || item.parameter_value === undefined" class="text-muted">
                 No value provided
             </i>
