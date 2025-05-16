@@ -16,7 +16,7 @@ export function usePopper(
     const visible = ref(false);
     const listeners: Array<{ target: EventTarget; event: string; handler: EventListener }> = [];
 
-    let closeHandler: ReturnType<typeof setTimeout> | null = null;
+    let closeHandler: ReturnType<typeof setTimeout> | undefined;
 
     const doOpen = () => {
         closeHandler && clearTimeout(closeHandler);
