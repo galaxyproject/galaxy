@@ -5,17 +5,28 @@ export type Trigger = "click" | "hover" | "none";
 
 const defaultTrigger: Trigger = "hover";
 
+const DELAY_CLOSE = 50;
+
 export function usePopper(
     reference: Ref<HTMLElement>,
     popper: Ref<HTMLElement>,
-    options: { placement?: Placement; trigger?: Trigger }
+    options: { interactive?: boolean; placement?: Placement; trigger?: Trigger }
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
     const visible = ref(false);
     const listeners: Array<{ target: EventTarget; event: string; handler: EventListener }> = [];
 
-    const doOpen = () => (visible.value = true);
-    const doClose = () => (visible.value = false);
+    let closeHandler: ReturnType<typeof setTimeout> | null = null;
+
+    const doOpen = () => {
+        closeHandler && clearTimeout(closeHandler);
+        visible.value = true;
+    };
+    const doClose = () => {
+        const delay = options.interactive ? DELAY_CLOSE : 0;
+        closeHandler && clearTimeout(closeHandler);
+        closeHandler = setTimeout(() => (visible.value = false), delay);
+    };
     const doCloseDocument = (e: Event) => {
         if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
             visible.value = false;
