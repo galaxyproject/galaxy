@@ -1189,7 +1189,7 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job):
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"
                             )
-                    rval.append(dict(text=input.label, depth=depth, value=value))
+                    rval.append(dict(text=input.label or input.name, depth=depth, value=value))
                 elif input.visible:
                     if hasattr(input, "label") and input.label:
                         label = input.label
