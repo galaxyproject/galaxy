@@ -10,6 +10,7 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { filterLatestToolVersions } from "@/utils/tool-version";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -39,7 +40,8 @@ const filteredTools = computed(() => {
 
 onMounted(async () => {
     await toolStore.fetchTools();
-    interactiveTools.value = toolStore.getInteractiveTools();
+    const allInteractiveTools = toolStore.getInteractiveTools();
+    interactiveTools.value = filterLatestToolVersions(allInteractiveTools);
     loading.value = false;
 
     // Make sure we load active interactive tools
