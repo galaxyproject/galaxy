@@ -23,6 +23,7 @@ from typing import (
 from requests import Session
 from typing_extensions import Literal
 
+from galaxy.tool_util.deps.installable import ensure_installed as deps_ensure_installed
 from galaxy.util import (
     safe_makedirs,
     string_as_bool,
@@ -33,6 +34,10 @@ from galaxy.util.commands import shell
 from . import (
     ContainerResolver,
     ResolutionCache,
+)
+from ..apptainer_util import (
+    ApptainerContext,
+    install_apptainer,
 )
 from ..conda_util import CondaTarget
 from ..container_classes import (
@@ -488,10 +493,17 @@ class SingularityCliContainerResolver(CliContainerResolver):
     container_type = "singularity"
     cli = "singularity"
 
-    def __init__(self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs) -> None:
+    def __init__(
+        self,
+        app_info: "AppInfo",
+        hash_func: Literal["v1", "v2"] = "v2",
+        auto_init: bool = False,
+        **kwargs
+    ) -> None:
         super().__init__(app_info=app_info, **kwargs)
         self.hash_func = hash_func
         self.cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
+        self.auto_init = string_as_bool(auto_init)
         cacher_class = get_cache_directory_cacher(self.cache_directory_cacher_type)
         cache_directory_path = kwargs.get("cache_directory")
         if not cache_directory_path:
@@ -499,6 +511,19 @@ class SingularityCliContainerResolver(CliContainerResolver):
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
         safe_makedirs(self.cache_directory.path)
+        if self.auto_init:
+            # TODO: you need to store the path for command line assembly
+            apptainer_prefix = kwargs.get("prefix")
+            apptainer_exec = kwargs.get("exec")
+            if apptainer_prefix is None and apptainer_exec is None:
+                assert self.app_info.apptainer_prefix
+                apptainer_prefix = self.app_info.apptainer_prefix
+            apptainer_context = ApptainerContext(
+                apptainer_prefix=apptainer_prefix, apptainer_exec=apptainer_exec
+            )
+            deps_ensure_installed(
+                apptainer_context, install_apptainer, self.auto_init
+            )
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):

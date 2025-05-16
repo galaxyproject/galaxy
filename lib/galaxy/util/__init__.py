@@ -1906,6 +1906,7 @@ def check_github_api_response_rate_limit(response):
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
     """Download a URL to a file in chunks."""
     with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, "wb") as f:
+        r.raise_for_status()
         for chunk in r.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)

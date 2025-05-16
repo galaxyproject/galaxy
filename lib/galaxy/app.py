@@ -369,6 +369,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
             mulled_channels=self.config.mulled_channels,
+            apptainer_prefix=self.config.apptainer_prefix,
         )
         mulled_resolution_cache = None
         if self.config.mulled_resolution_cache_type:
