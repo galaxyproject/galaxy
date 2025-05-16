@@ -758,7 +758,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         """
         dataset = item
         if dataset.creating_job:
-            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            tool = self.app.toolbox.tool_for_job(
+                dataset.creating_job, exact=False, check_access=True, user=context.get("user")
+            )
             if tool and tool.is_workflow_compatible:
                 return True
         return False

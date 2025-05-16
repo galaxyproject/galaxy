@@ -169,7 +169,7 @@ class MockToolbox:
         tool = self.get(tool_id)
         return tool
 
-    def tool_for_job(self, job, exact):
+    def tool_for_job(self, job, exact, check_access=True, user=None):
         tool = self.get(job.tool_id)
         return tool
 
