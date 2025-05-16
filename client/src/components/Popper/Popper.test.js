@@ -103,6 +103,7 @@ describe("PopperComponent.vue", () => {
         await reference.trigger("mouseover");
         expect(popperElement.isVisible()).toBe(true);
         await reference.trigger("mouseout");
+        await new Promise(r => setTimeout(r, 100));
         expect(popperElement.isVisible()).toBe(false);
     });
 
