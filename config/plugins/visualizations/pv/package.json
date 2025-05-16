@@ -6,7 +6,7 @@
         "galaxy",
         "visualization"
     ],
-    "license": "AFL-3.0",
+    "license": "MIT",
     "dependencies": {
         "bio-pv": "^1.8.1"
     },
