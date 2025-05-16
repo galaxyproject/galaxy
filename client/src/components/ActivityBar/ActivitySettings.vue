@@ -2,11 +2,13 @@
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -21,7 +23,14 @@ const emit = defineEmits<{
 
 const activityStore = useActivityStore(props.activityBarId);
 
-const optionalActivities = computed(() => activityStore.activities.filter((a) => a.optional));
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
+const optionalActivities = computed(() => {
+    return activityStore.activities.filter(
+        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value
+    );
+});
 
 const filteredActivities = computed(() => {
     if (props.query?.length > 0) {
