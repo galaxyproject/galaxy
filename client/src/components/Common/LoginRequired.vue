@@ -2,7 +2,6 @@
 import { onMounted, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
-import { withPrefix } from "@/utils/redirect";
 
 import Popper from "@/components/Popper/Popper.vue";
 
@@ -27,6 +26,8 @@ onMounted(() => {
         :interactive="true"
         :reference-el="referenceEl">
         <div class="py-1 px-2 bg-primary rounded-top text-white">{{ title }}</div>
-        <div class="p-2">Please <a :href="withPrefix('/login')">log in or register</a> to use this feature.</div>
+        <div class="p-2">
+            Please <router-link to="/login/start">log in or register</router-link> to use this feature.
+        </div>
     </Popper>
 </template>
