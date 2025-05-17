@@ -76,7 +76,7 @@ function togglePreferences() {
 <template>
     <div aria-labelledby="notifications-list" class="notifications-list-container">
         <div class="notifications-list-header">
-            <Heading id="notifications-title" h1 separator inline size="xl" class="flex-grow-1 mb-2">
+            <Heading id="notifications-title" h1 separator inline size="lg" class="flex-grow-1 mb-2">
                 Notifications
             </Heading>
 

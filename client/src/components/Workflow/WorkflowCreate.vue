@@ -43,7 +43,7 @@ async function onCreate() {
 
 <template>
     <div>
-        <Heading v-if="!showHeading" h1 separator size="xl">Create workflow</Heading>
+        <Heading v-if="!showHeading" h1 separator size="lg">Create workflow</Heading>
 
         <label for="workflow-name-input" class="font-weight-bold"> Workflow name </label>
         <BFormInput

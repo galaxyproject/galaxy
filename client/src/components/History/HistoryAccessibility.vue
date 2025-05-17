@@ -38,7 +38,7 @@ function openSharingTab() {
 
 <template>
     <div aria-labelledby="history-sharing-heading">
-        <Heading id="history-sharing-heading" h1 separator inline truncate size="xl">
+        <Heading id="history-sharing-heading" h1 separator inline truncate size="lg">
             {{ localize("Manage History") }}
             "{{ historyStore.getHistoryNameById(props.historyId) }}"
         </Heading>

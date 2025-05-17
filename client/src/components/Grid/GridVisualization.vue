@@ -28,7 +28,7 @@ withDefaults(defineProps<Props>(), {
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Visualizations</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Visualizations</Heading>
         </div>
         <BNav pills justified class="mb-2">
             <BNavItem
