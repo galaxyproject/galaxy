@@ -5,7 +5,7 @@
         "galaxy",
         "visualization"
     ],
-    "license": "AFL-3.0",
+    "license": "MIT",
     "dependencies": {
         "@galaxyproject/charts": "^0.1.0",
         "babel-preset-env": "^1.6.1",

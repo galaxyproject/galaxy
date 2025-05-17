@@ -6,7 +6,7 @@
         "galaxy",
         "visualization"
     ],
-    "license": "AFL-3.0",
+    "license": "MIT",
     "dependencies": {
         "jquery": "^3.3.1",
         "jquery-contextmenu": "^2.7.1",

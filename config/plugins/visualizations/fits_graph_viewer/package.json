@@ -6,7 +6,7 @@
         "visualization"
     ],
     "main": "index.js",
-    "license": "AFL-3.0",
+    "license": "MIT",
     "dependencies": {
         "astrovisjs": "0.9.92",
         "webpack": "^5.94.0"
