@@ -77,7 +77,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert example.path == os.path.join(expected_plugins_path, "example")
         assert example.base_url == "/".join((plugin_mgr.base_url, example.name))
 
-
     def test_plugin_load(self):
         """"""
         mock_app_dir = galaxy_mock.MockDir(

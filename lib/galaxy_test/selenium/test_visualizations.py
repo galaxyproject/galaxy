@@ -28,6 +28,22 @@ class TestVisualizations(SeleniumTestCase):
             self.screenshot("visualization_plugin_charts_image_annotate")
 
     @selenium_test
+    @skip_without_visualization_plugin("tabulator")
+    def test_charts_tabulator(self):
+        hid = 1
+        self.perform_upload(self.get_filename("1.tabular"))
+        self.history_panel_wait_for_hid_state(hid, state="ok")
+        self.show_dataset_visualizations(hid)
+
+        self.components.visualization.matched_plugin(id="tabulator").wait_for_visible()
+        self.screenshot("visualization_plugins_tabulator")
+        self.components.visualization.matched_plugin(id="tabulator").wait_for_and_click()
+
+        with self.visualization_panel():
+            self.wait_for_selector(".tabulator-table")
+            self.screenshot("visualization_plugin_tabulator_landing")
+
+    @selenium_test
     @skip_without_visualization_plugin("h5web")
     def test_charts_h5web(self):
         hid = 1
