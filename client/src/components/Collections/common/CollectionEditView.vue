@@ -216,7 +216,7 @@ async function saveAttrs() {
 
 <template>
     <div aria-labelledby="collection-edit-view-heading">
-        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="lg">
             {{ localize("Edit Collection Attributes") }}
         </Heading>
 

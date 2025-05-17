@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const filter = ref("");
@@ -83,7 +84,7 @@ onMounted(() => {
 <template>
     <div aria-labelledby="interactive-tools-heading">
         <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
-        <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
+        <Heading id="interactive-tools-heading" h1 separator inline size="lg">Active Interactive Tools</Heading>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input

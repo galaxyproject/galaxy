@@ -115,7 +115,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             h1
             :separator="props.embedded"
             inline
-            size="xl"
+            size="lg"
             class="notifications-preferences-header"
             :class="headerSize">
             Manage notifications preferences

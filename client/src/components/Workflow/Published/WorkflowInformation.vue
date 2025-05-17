@@ -63,7 +63,7 @@ function hasDoi() {
 <template>
     <aside class="workflow-information">
         <hgroup>
-            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+            <Heading h2 size="lg" class="mb-0">About This Workflow</Heading>
             <span class="ml-2">
                 <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
                 {{ workflowInfo.version }}

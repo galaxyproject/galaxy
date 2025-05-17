@@ -76,11 +76,16 @@ function togglePreferences() {
 <template>
     <div aria-labelledby="notifications-list" class="notifications-list-container">
         <div class="notifications-list-header">
-            <Heading id="notifications-title" h1 separator inline size="xl" class="flex-grow-1 mb-2">
+            <Heading id="notifications-title" h1 separator inline size="lg" class="flex-grow-1 mb-2">
                 Notifications
             </Heading>
 
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+            <BButton
+                class="mb-2"
+                size="sm"
+                variant="outline-primary"
+                :pressed="preferencesOpen"
+                @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
             </BButton>
