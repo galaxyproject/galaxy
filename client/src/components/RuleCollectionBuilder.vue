@@ -1058,6 +1058,13 @@ export default {
                     collectionType = "paired";
                 }
             }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                if (collectionType) {
+                    collectionType += ":paired_or_unpaired";
+                } else {
+                    collectionType = "paired_or_unpaired";
+                }
+            }
             return collectionType;
         },
         validName() {
@@ -1557,6 +1564,9 @@ export default {
             if (this.mappingAsDict.paired_identifier) {
                 identifierColumns.push(this.mappingAsDict.paired_identifier.columns[0]);
             }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                identifierColumns.push(this.mappingAsDict.paired_or_unpaired_identifier.columns[0]);
+            }
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
@@ -1611,15 +1621,24 @@ export default {
                         let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
-                            if (collectionTypeAtDepth === "paired") {
+                            if (["paired", "paired_or_unpaired"].indexOf(collectionTypeAtDepth) > -1) {
                                 if (["f", "1", "r1", "forward"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "forward";
                                 } else if (["r", "2", "r2", "reverse"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "reverse";
+                                } else if (
+                                    collectionTypeAtDepth == "paired_or_unpaired" &&
+                                    ["unpaired", "u"].indexOf(identifier.toLowerCase()) > -1
+                                ) {
+                                    // assert collectionTypeAtDepth == paired_or_unpaired
+                                    identifier = "unpaired";
                                 } else {
                                     this.state = "error";
-                                    this.errorMessage =
-                                        "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    const allowedIndicators = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"];
+                                    if (collectionTypeAtDepth == "paired_or_unpaired") {
+                                        allowedIndicators.push("unpaired", "u");
+                                    }
+                                    this.errorMessage = `Unknown indicator (${identifier}) of paired status encountered - only values of (${allowedIndicators}) are allowed.`;
                                     return;
                                 }
                             }
@@ -1656,6 +1675,29 @@ export default {
                             }
                         }
                     }
+                }
+
+                // Recursively descend elements to handle "paired_or_unpaired" collections
+                const updateUnpairedIdentifiers = (elements) => {
+                    for (const value of Object.values(elements)) {
+                        if (typeof value !== "object" || value === null) {
+                            continue;
+                        }
+                        if (value.src === "new_collection" && value.collection_type === "paired_or_unpaired") {
+                            const subElements = value.elements;
+                            if (subElements["forward"] && !subElements["reverse"]) {
+                                subElements["unpaired"] = subElements["forward"];
+                                delete subElements["forward"];
+                            }
+                        }
+                        if (value.elements) {
+                            updateUnpairedIdentifiers(value.elements);
+                        }
+                    }
+                };
+
+                if (collectionType.endsWith("paired_or_unpaired")) {
+                    updateUnpairedIdentifiers(elements);
                 }
 
                 elementsByName[collectionName] = elements;

@@ -814,6 +814,14 @@ const MAPPING_TARGETS = {
         ),
         importType: "collections",
     },
+    paired_or_unpaired_identifier: {
+        label: _l("Optional Paired-end Indicator (Advanced)"),
+        columnHeader: _l("Optional Paired Indicator"),
+        help: _l(
+            "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads. Unmatched '1' for 'forward' elements will be 'unpaired' in the resulting list, alternatively this column can be set to 'u' or 'unpaired' to force the element to be unpaired."
+        ),
+        importType: "collections",
+    },
     collection_name: {
         label: _l("Collection Name"),
         help: _l(

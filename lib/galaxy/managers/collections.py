@@ -748,14 +748,19 @@ class DatasetCollectionManager:
 
                 if i + 1 == len(identifier_columns):
                     # At correct final position in nested structure for this dataset.
-                    if collection_type_at_depth.collection_type == "paired":
+                    if collection_type_at_depth.collection_type in ["paired", "paired_or_unpaired"]:
                         if identifier.lower() in ["f", "1", "r1", "forward"]:
                             identifier = "forward"
                         elif identifier.lower() in ["r", "2", "r2", "reverse"]:
                             identifier = "reverse"
+                        elif identifier.lower() in ["u", "unpaired"]:
+                            identifier = "unpaired"
                         else:
+                            allow_identifiers = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"]
+                            if collection_type_at_depth == "paired_or_unpaired":
+                                allow_identifiers.extend(["unpaired", "u"])
                             raise Exception(
-                                "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed."
+                                f"Unknown indicator of paired status encountered ({identifier}) - only values from ({allow_identifiers}) are allowed."
                             )
 
                     tags = []
@@ -773,7 +778,6 @@ class DatasetCollectionManager:
 
                     effective_dataset = handle_dataset(sources[data_index]["dataset"], tags)
                     elements_at_depth[identifier] = effective_dataset
-                    # log.info("Handling dataset [%s] with sources [%s], need to add tags [%s]" % (effective_dataset, sources, tags))
                 else:
                     collection_type_at_depth = collection_type_at_depth.child_collection_type_description()
                     found = False
@@ -791,6 +795,21 @@ class DatasetCollectionManager:
                         elements_at_depth[identifier] = sub_collection
                         # Subsequent loop fills elements of newly created collection
                         elements_at_depth = sub_collection["elements"]
+
+        # Recursively descend elements to handle "paired_or_unpaired" collections
+        def update_unpaired_identifiers(elements):
+            for value in elements.values():
+                if not isinstance(value, dict):
+                    continue
+                if value.get("src") == "new_collection" and value.get("collection_type") == "paired_or_unpaired":
+                    sub_elements = value["elements"]
+                    if "forward" in sub_elements and "reverse" not in sub_elements:
+                        sub_elements["unpaired"] = sub_elements.pop("forward")
+                if "elements" in value:
+                    update_unpaired_identifiers(value["elements"])
+
+        if collection_type_description.collection_type.endswith("paired_or_unpaired"):
+            update_unpaired_identifiers(elements)
 
         return elements
 
