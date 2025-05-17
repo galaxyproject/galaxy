@@ -80,7 +80,7 @@ function togglePreferences() {
                 Notifications
             </Heading>
 
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+            <BButton class="mb-2" size="sm" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
             </BButton>
