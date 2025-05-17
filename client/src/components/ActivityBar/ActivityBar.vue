@@ -183,10 +183,9 @@ function onDragOver(evt: MouseEvent) {
 function toggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
-    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
-        return;
+    if (!toggle || !to || route.path === to || !isActiveSideBar(toggle)) {
+        activityStore.toggleSideBar(toggle);
     }
-    activityStore.toggleSideBar(toggle);
 }
 
 function onActivityClicked(activity: Activity) {
@@ -248,13 +247,13 @@ defineExpose({
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
-                                :is-active="isActiveRoute(activity.to)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="toggleSidebar('interactivetools')" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
-                                v-else-if="activity.id === 'admin' || activity.panel"
+                                v-else-if="activity.panel"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
