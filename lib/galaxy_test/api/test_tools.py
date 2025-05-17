@@ -876,6 +876,54 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
             example["check"](output_hdca, self.dataset_populator)
 
+    def test_apply_rules_with_error_in_mapping(self):
+        # this would produce a list:paired but the child identifiers are incorrectly spelled
+        example_with_mapping_error = {
+            "rules": {
+                "rules": [
+                    {
+                        "type": "add_column_metadata",
+                        "value": "identifier0",
+                    },
+                    {
+                        "type": "add_column_metadata",
+                        "value": "identifier1",
+                    },
+                ],
+                "mapping": [
+                    {
+                        "type": "list_identifiers",
+                        "columns": [0],
+                    },
+                    {
+                        "type": "paired_identifier",
+                        "columns": [1],
+                    },
+                ],
+            },
+            "test_data": {
+                "type": "list:list",
+                "elements": [
+                    {
+                        "identifier": "sample1",
+                        "elements": [
+                            {"identifier": "floorward", "class": "File", "contents": "TestData123forward"},
+                            {"identifier": "reverb", "class": "File", "contents": "TestData123reverse"},
+                        ],
+                    },
+                ],
+            },
+        }
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs = stage_rules_example(self.galaxy_interactor, history_id, example_with_mapping_error)
+            hdca = inputs["input"]
+            inputs = {"input": {"src": "hdca", "id": hdca["id"]}, "rules": example_with_mapping_error["rules"]}
+
+            self.dataset_populator.wait_for_history(history_id)
+            response = self._run("__APPLY_RULES__", history_id, inputs, assert_ok=False)
+            assert_status_code_is(response, 400)
+            assert "Unknown indicator of paired status encountered (floorward)" in response.json()["err_msg"]
+
     def test_apply_rules_flatten_paired_unpaired(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
 
