@@ -860,6 +860,22 @@ const MAPPING_TARGETS = {
         label: _l("Genome"),
         modes: ["raw", "ftp"],
     },
+    hash_sha1: {
+        label: _l("Hash (SHA1)"),
+        modes: ["raw", "ftp"],
+    },
+    hash_md5: {
+        label: _l("Hash (MD5)"),
+        modes: ["raw", "ftp"],
+    },
+    hash_sha256: {
+        label: _l("Hash (SHA256)"),
+        modes: ["raw", "ftp"],
+    },
+    hash_sha512: {
+        label: _l("Hash (SHA512)"),
+        modes: ["raw", "ftp"],
+    },
     file_type: {
         label: _l("Type"),
         modes: ["raw", "ftp"],
