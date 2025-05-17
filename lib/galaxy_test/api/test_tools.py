@@ -897,6 +897,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_apply_rules_6(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
 
+    def test_apply_rules_create_paired_or_unpaired_list(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
+
     def test_apply_rules_flatten_with_indices(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
 

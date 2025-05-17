@@ -596,6 +596,8 @@ class RuleSet:
             identifier_columns.extend(mapping_as_dict["list_identifiers"]["columns"])
         if "paired_identifier" in mapping_as_dict:
             identifier_columns.append(mapping_as_dict["paired_identifier"]["columns"][0])
+        if "paired_or_unpaired_identifier" in mapping_as_dict:
+            identifier_columns.append(mapping_as_dict["paired_or_unpaired_identifier"]["columns"][0])
 
         return identifier_columns
 
@@ -609,6 +611,11 @@ class RuleSet:
                 collection_type += ":paired"
             else:
                 collection_type = "paired"
+        if "paired_or_unpaired_identifier" in mapping_as_dict:
+            if collection_type:
+                collection_type += ":paired_or_unpaired"
+            else:
+                collection_type = "paired_or_unpaired"
         return collection_type
 
     @property
