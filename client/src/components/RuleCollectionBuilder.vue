@@ -1861,6 +1861,24 @@ export default {
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
             }
+            const hashTypes = [
+                { key: "hash_md5", function: "MD5" },
+                { key: "hash_sha1", function: "SHA1" },
+                { key: "hash_sha256", function: "SHA256" },
+                { key: "hash_sha515", function: "SHA512" },
+            ];
+
+            hashTypes.forEach(({ key, function: hashFunction }) => {
+                if (mappingAsDict[key]) {
+                    const hashColumn = mappingAsDict[key].columns[0];
+                    const hash = data[dataIndex][hashColumn];
+                    if (res.hashes === undefined) {
+                        res["hashes"] = [];
+                    }
+                    res["hashes"].push({ hash_function: hashFunction, hash_value: hash });
+                }
+            });
+
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;
