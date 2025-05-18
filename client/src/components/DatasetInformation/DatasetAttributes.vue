@@ -92,7 +92,7 @@ onMounted(async () => {
 
 <template>
     <div aria-labelledby="dataset-attributes-heading">
-        <Heading id="dataset-attributes-heading" h1 separator inline size="lg">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="md">
             {{ localize("Edit Dataset Attributes") }}
         </Heading>
 
