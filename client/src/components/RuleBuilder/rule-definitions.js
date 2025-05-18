@@ -815,12 +815,13 @@ const MAPPING_TARGETS = {
         importType: "collections",
     },
     paired_or_unpaired_identifier: {
-        label: _l("Optional Paired-end Indicator (Advanced)"),
+        label: _l("Optional Paired-end Indicator"),
         columnHeader: _l("Optional Paired Indicator"),
         help: _l(
             "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads. Unmatched '1' for 'forward' elements will be 'unpaired' in the resulting list, alternatively this column can be set to 'u' or 'unpaired' to force the element to be unpaired."
         ),
         importType: "collections",
+        advanced: true,
     },
     collection_name: {
         label: _l("Collection Name"),
@@ -863,18 +864,22 @@ const MAPPING_TARGETS = {
     hash_sha1: {
         label: _l("Hash (SHA1)"),
         modes: ["raw", "ftp"],
+        advanced: true,
     },
     hash_md5: {
         label: _l("Hash (MD5)"),
         modes: ["raw", "ftp"],
+        advanced: true,
     },
     hash_sha256: {
         label: _l("Hash (SHA256)"),
         modes: ["raw", "ftp"],
+        advanced: true,
     },
     hash_sha512: {
         label: _l("Hash (SHA512)"),
         modes: ["raw", "ftp"],
+        advanced: true,
     },
     file_type: {
         label: _l("Type"),
