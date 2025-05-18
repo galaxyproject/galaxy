@@ -316,6 +316,7 @@
                                         :index="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
@@ -328,6 +329,7 @@
                                         :index="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
