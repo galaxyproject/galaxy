@@ -311,7 +311,19 @@
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a
-                                        v-for="target in unmappedTargets"
+                                        v-for="target in basicUnmappedTargets"
+                                        :key="target"
+                                        :index="target"
+                                        class="dropdown-item"
+                                        href="javascript:void(0)"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)"
+                                        >{{ mappingTargets()[target].label }}</a
+                                    >
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><h6 class="dropdown-header">Advanced</h6></li>
+                                    <a
+                                        v-for="target in advancedUnmappedTargets"
                                         :key="target"
                                         :index="target"
                                         class="dropdown-item"
@@ -956,6 +968,18 @@ export default {
                 }
             }
             return targets;
+        },
+        basicUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return !MAPPING_TARGETS[target].advanced;
+            });
+        },
+        advancedUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return MAPPING_TARGETS[target].advanced;
+            });
         },
         colHeaders() {
             const { data, columns } = this.hotData;
