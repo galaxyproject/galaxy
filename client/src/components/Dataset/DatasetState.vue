@@ -31,7 +31,7 @@ const contentCls = computed(() => {
             <span v-if="contentState.icon" class="mr-1">
                 <FontAwesomeIcon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
             </span>
-            {{ dataset.state || "n/a" }}
+            {{ contentState.text || dataset.state || "n/a" }}
         </span>
     </div>
 </template>
