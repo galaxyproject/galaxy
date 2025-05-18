@@ -70,7 +70,7 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
         </div>
         <BNav pills justified class="mb-2">
             <BNavItem :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`"> Preview</BNavItem>
-            <BNavItem :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`"> Visualize </BNavItem>
+            <BNavItem v-if="!showError" :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`"> Visualize </BNavItem>
             <BNavItem :active="tab === 'details'" :to="`/datasets/${datasetId}/details`"> Details </BNavItem>
             <BNavItem :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`"> Edit </BNavItem>
             <BNavItem v-if="showError" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`"> Error </BNavItem>
