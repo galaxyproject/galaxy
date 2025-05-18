@@ -437,13 +437,13 @@ class TestDatasetCollectionsApi(ApiTestCase):
             element0 = hdca["elements"][0]
             assert element0["element_identifier"] == "samp1"
 
-    @skip_if_github_down
     def test_upload_collection_from_url(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             elements = [
                 {
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                    "url": self.dataset_populator.base64_url_for_string("hello world"),
+                    "name": "hello.txt",
                     "info": "my cool bed",
                 }
             ]
@@ -462,8 +462,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
             hdca = self._assert_one_collection_created_in_history(history_id)
             assert len(hdca["elements"]) == 1, hdca
             element0 = hdca["elements"][0]
-            assert element0["element_identifier"] == "4.bed"
-            assert element0["object"]["file_size"] == 61
+            assert element0["element_identifier"] == "hello.txt"
+            assert element0["object"]["file_size"] == 11
 
     def test_upload_collection_deferred(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
