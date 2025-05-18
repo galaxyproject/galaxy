@@ -2,6 +2,8 @@ import pyre from "pyre-to-regexp";
 import _ from "underscore";
 import _l from "utils/localization";
 
+import MAPPING_TARGETS from "./column-targets.yml";
+
 const NEW_COLUMN = "new";
 
 const multiColumnsToString = function (targetColumns, colHeaders) {
@@ -793,125 +795,6 @@ const RULES = {
             columns = removeColumns(columns, targets0);
             return { data, sources, columns };
         },
-    },
-};
-
-const MAPPING_TARGETS = {
-    list_identifiers: {
-        multiple: true,
-        label: _l("List Identifier(s)"),
-        columnHeader: _l("List Identifier"),
-        help: _l(
-            "This should be a short description of the replicate, sample name, condition, etc... that describes each level of the list structure."
-        ),
-        importType: "collections",
-    },
-    paired_identifier: {
-        label: _l("Paired-end Indicator"),
-        columnHeader: _l("Paired Indicator"),
-        help: _l(
-            "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads."
-        ),
-        importType: "collections",
-    },
-    paired_or_unpaired_identifier: {
-        label: _l("Optional Paired-end Indicator"),
-        columnHeader: _l("Optional Paired Indicator"),
-        help: _l(
-            "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads. Unmatched '1' for 'forward' elements will be 'unpaired' in the resulting list, alternatively this column can be set to 'u' or 'unpaired' to force the element to be unpaired."
-        ),
-        importType: "collections",
-        advanced: true,
-    },
-    collection_name: {
-        label: _l("Collection Name"),
-        help: _l(
-            "If this is set, all rows with the same collection name will be joined into a collection and it is possible to create multiple collections at once."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"],
-        importType: "collections",
-    },
-    name_tag: {
-        label: _l("Name Tag"),
-        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
-        importType: "datasets",
-        modes: ["raw", "ftp"],
-    },
-    tags: {
-        multiple: true,
-        label: _l("General Purpose Tag(s)"),
-        help: _l(
-            "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
-    },
-    group_tags: {
-        multiple: true,
-        label: _l("Group Tag(s)"),
-        help: _l(
-            "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
-    },
-    name: {
-        label: _l("Name"),
-        importType: "datasets",
-    },
-    dbkey: {
-        label: _l("Genome"),
-        modes: ["raw", "ftp"],
-    },
-    hash_sha1: {
-        label: _l("Hash (SHA1)"),
-        modes: ["raw", "ftp"],
-        advanced: true,
-    },
-    hash_md5: {
-        label: _l("Hash (MD5)"),
-        modes: ["raw", "ftp"],
-        advanced: true,
-    },
-    hash_sha256: {
-        label: _l("Hash (SHA256)"),
-        modes: ["raw", "ftp"],
-        advanced: true,
-    },
-    hash_sha512: {
-        label: _l("Hash (SHA512)"),
-        modes: ["raw", "ftp"],
-        advanced: true,
-    },
-    file_type: {
-        label: _l("Type"),
-        modes: ["raw", "ftp"],
-        help: _l("This should be the Galaxy file type corresponding to this file."),
-    },
-    url: {
-        label: _l("URL"),
-        modes: ["raw"],
-        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
-    },
-    url_deferred: {
-        label: _l("Deferred URL"),
-        modes: ["raw"],
-        help: _l(
-            "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
-        ),
-    },
-    info: {
-        label: _l("Info"),
-        help: _l(
-            "Unstructured text associated with the dataset that shows up in the history panel, this is optional and can be whatever you would like."
-        ),
-        modes: ["raw", "ftp"],
-    },
-    ftp_path: {
-        label: _l("FTP Path"),
-        modes: ["raw", "ftp"],
-        help: _l(
-            "This should be the path to the target file to include relative to your FTP directory on the Galaxy server"
-        ),
-        requiresFtp: true,
     },
 };
 
