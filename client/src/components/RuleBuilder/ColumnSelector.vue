@@ -11,7 +11,7 @@
         </label>
     </div>
     <div v-else class="rule-column-selector">
-        <span>{{ label }}</span>
+        <span :title="help">{{ label }}</span>
         <slot></slot>
         <ol>
             <li v-for="(targetEl, index) in target" :key="targetEl" :index="index" class="rule-column-selector-target">
