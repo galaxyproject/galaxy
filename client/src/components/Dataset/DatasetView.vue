@@ -6,6 +6,7 @@ import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
+import DatasetState from "./DatasetState.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
@@ -18,14 +19,12 @@ const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 
 interface Props {
-    username?: string;
     datasetId: string;
     tab?: "details" | "edit" | "error" | "preview" | "visualize";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: "preview",
-    username: undefined,
 });
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
@@ -67,6 +66,7 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">
                 {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
             </Heading>
+            <DatasetState :dataset-id="datasetId" />
         </div>
         <BNav pills justified class="mb-2">
             <BNavItem :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`"> Preview</BNavItem>
