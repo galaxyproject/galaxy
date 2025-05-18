@@ -113,10 +113,9 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
             <BNavItem :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`"> Edit </BNavItem>
             <BNavItem v-if="showError" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`"> Error </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="d-flex justify-content-center align-items-center h-100">
-            <LoadingSpan v-if="iframeLoading" message="Loading preview" />
+        <div v-if="tab === 'preview'" class="h-100">
             <VisualizationFrame
-                v-else-if="preferredVisualization"
+                v-if="preferredVisualization"
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
