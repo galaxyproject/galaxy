@@ -26,12 +26,10 @@ const contentCls = computed(() => {
 </script>
 
 <template>
-    <div class="align-self-center">
-        <span v-if="dataset && contentState" class="rounded p-1" :class="contentCls">
-            <span v-if="contentState.icon" class="mr-1">
-                <FontAwesomeIcon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
-            </span>
-            {{ contentState.text || dataset.state || "n/a" }}
+    <span v-if="dataset && contentState" class="rounded px-2 py-1 ml-2" :class="contentCls">
+        <span v-if="contentState.icon" class="mr-1">
+            <FontAwesomeIcon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
         </span>
-    </div>
+        {{ contentState.text || dataset.state || "n/a" }}
+    </span>
 </template>

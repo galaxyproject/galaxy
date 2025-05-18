@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import DatasetState from "./DatasetState.vue";
@@ -17,6 +18,7 @@ import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
+const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
     datasetId: string;
@@ -29,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
+const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 const preferredVisualization = ref<string>();
 
 const showError = computed(
@@ -60,15 +63,40 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading"></LoadingSpan>
+    <LoadingSpan v-if="isLoading || !dataset"></LoadingSpan>
     <div v-else class="d-flex flex-column h-100">
-        <div class="d-flex">
-            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">
-                {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
-            </Heading>
-            <DatasetState :dataset-id="datasetId" />
-        </div>
-        <BNav pills justified class="mb-2">
+        <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
+            <div class="d-flex">
+                <Heading h1 separator inline size="lg" class="flex-grow-1" :collapse="headerState" @click="toggleHeaderCollapse">
+                    {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
+                </Heading>
+                <DatasetState class="align-self-center" :dataset-id="datasetId" />
+            </div>
+            <transition name="header" v-if="dataset">
+                <div v-show="headerState === 'open'" class="header-details">
+                    <div v-if="dataset.misc_blurb" class="blurb">
+                        <span class="value">{{ dataset.misc_blurb }}</span>
+                    </div>
+                    <span v-if="dataset.file_ext" class="datatype">
+                        <span v-localize class="prompt">format</span>
+                        <span class="value font-weight-bold">{{ dataset.file_ext }}</span>
+                    </span>
+                    <span v-if="dataset.genome_build" class="dbkey">
+                        <span v-localize class="prompt">database</span>
+                            <BLink
+                                class="value font-weight-bold"
+                                data-label="Database/Build"
+                                :to="`/datasets/${datasetId}/edit`">
+                            {{ dataset.genome_build }}
+                        </BLink>
+                    </span>
+                    <div v-if="dataset.misc_info" class="info">
+                        <span class="value">{{ dataset.misc_info }}</span>
+                    </div>
+                </div>
+            </transition>
+        </header>
+        <BNav pills justified class="my-2 p-2 bg-light border-bottom">
             <BNavItem :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`"> Preview</BNavItem>
             <BNavItem v-if="!showError" :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`"> Visualize </BNavItem>
             <BNavItem :active="tab === 'details'" :to="`/datasets/${datasetId}/details`"> Details </BNavItem>
@@ -85,14 +113,33 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
         <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-auto">
             <VisualizationsList :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-auto">
+        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-auto mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-auto">
+        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-auto mt-2">
             <DatasetDetails :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-auto">
+        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-auto mt-2">
             <DatasetError :dataset-id="datasetId" />
         </div>
     </div>
 </template>
+
+<style>
+.header-details {
+    padding-left: 1rem;
+    max-height: 500px;
+    opacity: 1;
+    transition: all 0.25s ease;
+    overflow: hidden;
+}
+
+.header-enter, /* change to header-enter-from with Vue 3 */
+.header-leave-to {
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+}
+</style>
