@@ -21,7 +21,7 @@ defineProps<Props>();
 
 <template>
     <div v-if="dataset">
-        <Heading id="dataset-information-heading" h1 separator inline size="md" v-localize>
+        <Heading id="dataset-information-heading" v-localize h1 separator inline size="md">
             Dataset Information
         </Heading>
         <table id="dataset-details" class="tabletip info_data_table">

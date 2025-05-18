@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 
-const emit = defineEmits(["loaded"]);
+const emit = defineEmits(["load"]);
 
 export interface Props {
     datasetId?: string;
@@ -42,5 +42,5 @@ const srcWithRoot = computed(() => {
         title="galaxy visualization frame"
         width="100%"
         height="100%"
-        @load="emit('loaded')" />
+        @load="emit('load')" />
 </template>

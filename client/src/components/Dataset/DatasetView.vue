@@ -2,13 +2,13 @@
 import { BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
-import { usePersistentToggle } from "@/composables/persistentToggle";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
-import DatasetState from "./DatasetState.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
@@ -29,11 +29,12 @@ const props = withDefaults(defineProps<Props>(), {
     tab: "preview",
 });
 
-const dataset = computed(() => datasetStore.getDataset(props.datasetId));
-const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
-const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
+const iframeLoading = ref(true);
 const preferredVisualization = ref<string>();
 
+const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
+const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
@@ -67,12 +68,19 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     <div v-else class="d-flex flex-column h-100">
         <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
-                <Heading h1 separator inline size="lg" class="flex-grow-1" :collapse="headerState" @click="toggleHeaderCollapse">
+                <Heading
+                    h1
+                    separator
+                    inline
+                    size="lg"
+                    class="flex-grow-1"
+                    :collapse="headerState"
+                    @click="toggleHeaderCollapse">
                     {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
                 </Heading>
                 <DatasetState class="align-self-center" :dataset-id="datasetId" />
             </div>
-            <transition name="header" v-if="dataset">
+            <transition v-if="dataset" name="header">
                 <div v-show="headerState === 'open'" class="header-details">
                     <div v-if="dataset.misc_blurb" class="blurb">
                         <span class="value">{{ dataset.misc_blurb }}</span>
@@ -83,10 +91,10 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                     </span>
                     <span v-if="dataset.genome_build" class="dbkey">
                         <span v-localize class="prompt">database</span>
-                            <BLink
-                                class="value font-weight-bold"
-                                data-label="Database/Build"
-                                :to="`/datasets/${datasetId}/edit`">
+                        <BLink
+                            class="value font-weight-bold"
+                            data-label="Database/Build"
+                            :to="`/datasets/${datasetId}/edit`">
                             {{ dataset.genome_build }}
                         </BLink>
                     </span>
@@ -98,17 +106,25 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
         </header>
         <BNav pills justified class="my-2 p-2 bg-light border-bottom">
             <BNavItem :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`"> Preview</BNavItem>
-            <BNavItem v-if="!showError" :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`"> Visualize </BNavItem>
+            <BNavItem v-if="!showError" :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`">
+                Visualize
+            </BNavItem>
             <BNavItem :active="tab === 'details'" :to="`/datasets/${datasetId}/details`"> Details </BNavItem>
             <BNavItem :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`"> Edit </BNavItem>
             <BNavItem v-if="showError" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`"> Error </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100">
+        <div v-if="tab === 'preview'" class="d-flex justify-content-center align-items-center h-100">
+            <LoadingSpan v-if="iframeLoading" message="Loading preview" />
             <VisualizationFrame
-                v-if="preferredVisualization"
+                v-else-if="preferredVisualization"
                 :dataset-id="datasetId"
-                :visualization="preferredVisualization" />
-            <CenterFrame v-else :src="`/datasets/${datasetId}/display/?preview=True`" :is_preview="true" />
+                :visualization="preferredVisualization"
+                @load="iframeLoading = false" />
+            <CenterFrame
+                v-else
+                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :is_preview="true"
+                @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-auto">
             <VisualizationsList :dataset-id="datasetId" />
