@@ -75,6 +75,8 @@ greenlet==3.2.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64')
 gunicorn==23.0.0
 gxformat2==0.20.0
 h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
 h5grove==2.3.0
 h5py==3.13.0
 humanfriendly==10.0
