@@ -203,11 +203,11 @@ for the list of behavior changes associated with profile versions.
       <xs:attribute name="license" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies any full URI or a
-a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
-wrapper. The tool wrapper version can be indepedent of the underlying tool. This
-license covers the tool XML and associated scripts shipped with the tool.
+            a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
+            wrapper. The tool wrapper version can be independent of the underlying tool. This
+            license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as [schema.org/license](https://schema.org/license) property.
+            This is interpreted as [schema.org/license](https://schema.org/license) property.
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>

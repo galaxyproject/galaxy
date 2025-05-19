@@ -35,7 +35,9 @@ class GenericToolOutputBaseModel(BaseModel, Generic[IncomingNotRequiredBoolT, In
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
     label: Optional[Annotated[str, Field(description="Output label. Will be used as dataset name in history.")]] = None
-    hidden: IncomingNotRequiredBoolT
+    hidden: Annotated[
+        IncomingNotRequiredBoolT, Field(description="If true, the output will not be shown in the history.")
+    ]
 
 
 DiscoverViaT = Literal["tool_provided_metadata", "pattern"]
@@ -73,8 +75,22 @@ class GenericToolOutputDataset(
 ):
     type: Literal["data"]
     format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
-    format_source: Optional[str] = None
-    metadata_source: Optional[str] = None
+    format_source: Optional[
+        Annotated[
+            str,
+            Field(
+                description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
+            ),
+        ]
+    ] = None
+    metadata_source: Optional[
+        Annotated[
+            str,
+            Field(
+                description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
+            ),
+        ]
+    ] = None
     discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
     from_work_dir: Optional[
         Annotated[
