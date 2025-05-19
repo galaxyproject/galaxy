@@ -22,17 +22,19 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
+import ExternalRegistration from "@/components/User/ExternalIdentities/ExternalRegistration.vue";
 
 interface Props {
-    sessionCsrfToken: string;
-    redirect?: string;
-    termsUrl?: string;
+    disableLocalAccounts?: boolean;
     enableOidc?: boolean;
-    showLoginLink?: boolean;
     mailingJoinAddr?: string;
     preferCustosLogin?: boolean;
-    serverMailConfigured?: boolean;
+    redirect?: string;
     registrationWarningMessage?: string;
+    serverMailConfigured?: boolean;
+    sessionCsrfToken: string;
+    showLoginLink?: boolean;
+    termsUrl?: string;
 }
 
 const props = defineProps<Props>();
@@ -191,6 +193,9 @@ async function submit() {
                                 <BButton v-localize name="create" type="submit" :disabled="disableCreate">
                                     Create
                                 </BButton>
+                            </BCardBody>
+                            <BCardBody>
+                                <ExternalRegistration />
                             </BCardBody>
                         </BCollapse>
 

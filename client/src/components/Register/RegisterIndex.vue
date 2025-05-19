@@ -4,14 +4,15 @@ import { useOpenUrl } from "@/composables/openurl";
 import RegisterForm from "@/components/Register/RegisterForm.vue";
 
 interface Props {
-    sessionCsrfToken: string;
-    termsUrl?: string;
+    disableLocalAccounts?: boolean;
     enableOidc?: boolean;
-    showLoginLink?: boolean;
     mailingJoinAddr?: string;
     preferCustosLogin?: boolean;
-    serverMailConfigured?: boolean;
     registrationWarningMessage?: string;
+    serverMailConfigured?: boolean;
+    sessionCsrfToken: string;
+    showLoginLink?: boolean;
+    termsUrl?: string;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -27,13 +28,14 @@ const { openUrl } = useOpenUrl();
 <template>
     <div>
         <RegisterForm
+            :disable-local-accounts="disableLocalAccounts"
             :enable-oidc="enableOidc"
             :mailing-join-addr="mailingJoinAddr"
             :prefer-custos-login="preferCustosLogin"
             :registration-warning-message="registrationWarningMessage"
-            :show-login-link="showLoginLink"
             :server-mail-configured="serverMailConfigured"
             :session-csrf-token="sessionCsrfToken"
+            :show-login-link="showLoginLink"
             :terms-url="termsUrl"
             @toggle-login="openUrl('/login/start')" />
     </div>

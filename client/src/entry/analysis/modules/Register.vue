@@ -18,6 +18,7 @@ const sessionCsrfToken = computed(() => {
         <RegisterIndex
             v-if="isConfigLoaded"
             id="login-index"
+            :disable-local-accounts="config.disable_local_accounts"
             :enable-oidc="config.enable_oidc"
             :mailing-join-addr="config.mailing_join_addr"
             :prefer-custos-login="config.prefer_custos_login"
