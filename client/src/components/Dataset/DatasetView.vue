@@ -64,7 +64,7 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading || !dataset"></LoadingSpan>
+    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
     <div v-else class="d-flex flex-column h-100">
         <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
