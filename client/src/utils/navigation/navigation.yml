@@ -157,9 +157,9 @@ object_store_details:
 dataset_view:
   selectors:
     _: .dataset-view
-    edit_tab: "a.nav-link[title='Edit']"
-    details_tab: "a.nav-link[title='Details']"
-    visualize_tab: "a.nav-link[title='Visualize']"
+    edit_tab: ".nav-item[title='Edit'] > a.nav-link"
+    details_tab: ".nav-item[title='Details'] > a.nav-link"
+    visualize_tab: ".nav-item[title='Visualize'] > a.nav-link"
 
 history_panel:
   menu:

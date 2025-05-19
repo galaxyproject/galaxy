@@ -65,7 +65,7 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
 
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
-    <div v-else class="d-flex flex-column h-100">
+    <div v-else class="dataset-view d-flex flex-column h-100">
         <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
@@ -107,13 +107,23 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
             </transition>
         </header>
         <BNav pills class="my-2 p-2 bg-light border-bottom">
-            <BNavItem :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`"> Preview</BNavItem>
-            <BNavItem v-if="!showError" :active="tab === 'visualize'" :to="`/datasets/${datasetId}/visualize`">
+            <BNavItem title="Preview" :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`">
+                Preview
+            </BNavItem>
+            <BNavItem
+                v-if="!showError"
+                title="Visualize"
+                :active="tab === 'visualize'"
+                :to="`/datasets/${datasetId}/visualize`">
                 Visualize
             </BNavItem>
-            <BNavItem :active="tab === 'details'" :to="`/datasets/${datasetId}/details`"> Details </BNavItem>
-            <BNavItem :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`"> Edit </BNavItem>
-            <BNavItem v-if="showError" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`"> Error </BNavItem>
+            <BNavItem title="Details" :active="tab === 'details'" :to="`/datasets/${datasetId}/details`">
+                Details
+            </BNavItem>
+            <BNavItem title="Edit" :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`">Edit</BNavItem>
+            <BNavItem v-if="showError" title="Error" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`">
+                Error
+            </BNavItem>
         </BNav>
         <div v-if="tab === 'preview'" class="h-100">
             <VisualizationFrame
