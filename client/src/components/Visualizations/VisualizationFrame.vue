@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import { computed, ref } from "vue";
+
 import { withPrefix } from "@/utils/redirect";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const emit = defineEmits(["load"]);
 

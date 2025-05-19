@@ -238,7 +238,6 @@ describe("DatasetView", () => {
     });
 
     describe("Error state handling", () => {
-
         it("shows error tab for datasets with error state", async () => {
             const wrapper = await mountDatasetView("error", { dataset: errorDataset });
 
