@@ -125,16 +125,16 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                 :is_preview="true"
                 @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-auto">
+        <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-hidden overflow-y">
             <VisualizationsList :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-auto mt-2">
+        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-auto mt-2">
+        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
             <DatasetDetails :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-auto mt-2">
+        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
             <DatasetError :dataset-id="datasetId" />
         </div>
     </div>
