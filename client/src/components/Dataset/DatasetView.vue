@@ -77,8 +77,8 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
                     {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
+                    <DatasetState class="align-self-center" :dataset-id="datasetId" />
                 </Heading>
-                <DatasetState class="align-self-center" :dataset-id="datasetId" />
             </div>
             <transition v-if="dataset" name="header">
                 <div v-show="headerState === 'open'" class="header-details">
