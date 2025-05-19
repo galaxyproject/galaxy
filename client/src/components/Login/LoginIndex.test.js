@@ -3,6 +3,12 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./LoginIndex";
 
+const mockPush = jest.fn();
+
+jest.mock("vue-router/composables", () => ({
+    useRouter: () => ({ push: mockPush }),
+}));
+
 const localVue = getLocalVue(true);
 
 describe("LoginIndex", () => {
@@ -28,13 +34,7 @@ describe("LoginIndex", () => {
         const registerToggle = wrapper.find($registerToggle);
         expect(registerToggle.exists()).toBeTruthy();
         await registerToggle.trigger("click");
-        const newCardHeader = wrapper.find(".card-header");
-        expect(newCardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
-        const $loginToggle = "[id=login-toggle]";
-        const loginToggle = wrapper.find($loginToggle);
-        await loginToggle.trigger("click");
-        const oldCardHeader = wrapper.find(".card-header");
-        expect(oldCardHeader.text()).toBe("Welcome to Galaxy, please log in");
-        expect(wrapper.vm.showLoginLink).toBe(true);
+        expect(mockPush).toHaveBeenCalledWith("/register/start");
+        expect(mockPush).toHaveBeenCalledTimes(1);
     });
 });

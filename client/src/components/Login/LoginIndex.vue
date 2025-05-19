@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { useOpenUrl } from "@/composables/openurl";
 
 import LoginForm from "@/components/Login/LoginForm.vue";
-import RegisterForm from "@/components/Login/RegisterForm.vue";
 
 interface Props {
     sessionCsrfToken: string;
@@ -10,48 +9,28 @@ interface Props {
     termsUrl?: string;
     welcomeUrl?: string;
     enableOidc?: boolean;
-    showLoginLink?: boolean;
     showResetLink?: boolean;
-    mailingJoinAddr?: string;
     allowUserCreation: boolean;
-    preferCustosLogin?: boolean;
-    serverMailConfigured?: boolean;
     showWelcomeWithLogin?: boolean;
     registrationWarningMessage?: string;
     disableLocalAccounts?: boolean;
-    show?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    showLoginLink: true,
+withDefaults(defineProps<Props>(), {
     showResetLink: true,
     redirect: undefined,
     termsUrl: undefined,
     welcomeUrl: undefined,
-    mailingJoinAddr: undefined,
     registrationWarningMessage: undefined,
     disableLocalAccounts: false,
-    show: "login",
 });
 
-const showLogin = ref(props.show !== "register");
-
-watch(
-    () => props.show,
-    (newShow) => {
-        showLogin.value = newShow !== "register";
-    },
-);
-
-function toggleLogin() {
-    showLogin.value = !showLogin.value;
-}
+const { openUrl } = useOpenUrl();
 </script>
 
 <template>
     <div>
         <LoginForm
-            v-if="showLogin"
             :allow-user-creation="allowUserCreation"
             :disable-local-accounts="disableLocalAccounts"
             :enable-oidc="enableOidc"
@@ -62,17 +41,6 @@ function toggleLogin() {
             :terms-url="termsUrl"
             :welcome-url="welcomeUrl"
             :show-reset-link="showResetLink"
-            @toggle-login="toggleLogin" />
-        <RegisterForm
-            v-else
-            :enable-oidc="enableOidc"
-            :mailing-join-addr="mailingJoinAddr"
-            :prefer-custos-login="preferCustosLogin"
-            :registration-warning-message="registrationWarningMessage"
-            :show-login-link="showLoginLink"
-            :server-mail-configured="serverMailConfigured"
-            :session-csrf-token="sessionCsrfToken"
-            :terms-url="termsUrl"
-            @toggle-login="toggleLogin" />
+            @toggle-login="openUrl('/register/start')" />
     </div>
 </template>

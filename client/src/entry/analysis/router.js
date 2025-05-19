@@ -50,6 +50,7 @@ import WorkflowImport from "components/Workflow/WorkflowImport";
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
 import Login from "entry/analysis/modules/Login";
+import Register from "entry/analysis/modules/Register";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
@@ -153,14 +154,12 @@ export function getRouter(Galaxy) {
             {
                 path: "/login/start",
                 component: Login,
-                props: { show: "login" },
                 redirect: redirectLoggedIn(),
             },
             /** Registration entry route */
             {
                 path: "/register/start",
-                component: Login,
-                props: { show: "register" },
+                component: Register,
                 redirect: redirectLoggedIn(),
             },
             /** Workflow editor */
