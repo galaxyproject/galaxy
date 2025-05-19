@@ -2,6 +2,8 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
 
 import MountTarget from "./RegisterForm.vue";
 
@@ -14,11 +16,15 @@ describe("RegisterForm", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
 
+        const pinia = createTestingPinia();
+        setActivePinia(pinia);
+
         wrapper = mount(MountTarget as object, {
             propsData: {
                 sessionCsrfToken: "sessionCsrfToken",
             },
             localVue,
+            pinia,
         });
     });
 
