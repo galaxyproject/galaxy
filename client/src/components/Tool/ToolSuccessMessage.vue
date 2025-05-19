@@ -47,7 +47,7 @@ const nOutputsText = computed(() => (outputs.value.length > 1 ? `${outputs.value
             </ExternalLink>
         </p>
         <p v-else-if="jobResponse.jobs[0]" data-description="singular job link">
-            Here is a link to the job: {{ jobResponse.jobs[0]?.id }}
+            Here is a link to the job:
             <RouterLink :to="`/jobs/${jobResponse.jobs[0].id}/view`">
                 {{ jobResponse.jobs[0]?.id }}
             </RouterLink>
