@@ -197,9 +197,6 @@ class VisualizationsRegistry:
         # js only
         if config["entry_point"]["type"] == "script":
             plugin_class = vis_plugins.ScriptVisualizationPlugin
-        # js only using charts environment
-        elif config["entry_point"]["type"] == "chart":
-            plugin_class = vis_plugins.ChartVisualizationPlugin
         # from a static file (html, etc)
         elif config["entry_point"]["type"] == "html":
             plugin_class = vis_plugins.StaticFileVisualizationPlugin

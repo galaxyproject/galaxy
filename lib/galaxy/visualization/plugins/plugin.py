@@ -276,10 +276,6 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
 
-class ChartVisualizationPlugin(ScriptVisualizationPlugin):
-    MAKO_TEMPLATE = "chart_entry_point.mako"
-
-
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a static html file defined in
