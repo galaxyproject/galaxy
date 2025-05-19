@@ -90,7 +90,7 @@
     "markdown-it-regexp": "^0.4.0",
     "monaco-editor": "^0.52.2",
     "monaco-editor-webpack-plugin": "^7.1.0",
-    "monaco-yaml": "^5.2.3",
+    "monaco-yaml": "^5.4.0",
     "object-hash": "^3.0.0",
     "openapi-fetch": "^0.10.6",
     "pinia": "^2.1.7",

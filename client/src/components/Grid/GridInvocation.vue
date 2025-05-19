@@ -101,7 +101,7 @@ function refreshTable() {
 <template>
     <div class="d-flex flex-column">
         <div v-if="forStoredWorkflow || forHistory" class="d-flex">
-            <Heading h1 separator inline truncate size="xl" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
+            <Heading h1 separator inline truncate size="lg" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
         </div>
         <GridList
             v-if="!currentUser?.isAnonymous && currentUser?.id"

@@ -124,13 +124,13 @@ defineExpose({
 
         <div id="center" class="container-root" :class="{ 'm-3': !props.quickView }">
             <div v-if="loading">
-                <Heading h1 separator size="xl">
+                <Heading h1 separator size="lg">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                     Loading Workflow
                 </Heading>
             </div>
             <div v-else-if="hasError">
-                <Heading h1 separator size="xl"> Failed to load published Workflow </Heading>
+                <Heading h1 separator size="lg"> Failed to load published Workflow </Heading>
 
                 <BAlert show variant="danger">
                     {{ errorMessage }}
@@ -138,7 +138,7 @@ defineExpose({
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div v-if="props.showHeading || props.showButtons" class="workflow-header">
-                    <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                    <Heading v-if="props.showHeading" h1 separator inline size="lg" class="flex-grow-1 mb-0">
                         <span v-if="props.showAbout"> Workflow Preview </span>
                         <span v-else> {{ workflowInfo.name }} </span>
                     </Heading>

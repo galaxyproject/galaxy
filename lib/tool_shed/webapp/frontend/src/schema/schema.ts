@@ -799,10 +799,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -845,10 +849,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -932,10 +940,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -971,10 +983,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1072,7 +1088,10 @@ export interface components {
         }
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1099,10 +1118,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1131,10 +1154,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1147,7 +1174,10 @@ export interface components {
         }
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1158,7 +1188,10 @@ export interface components {
         }
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1169,7 +1202,10 @@ export interface components {
         }
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1180,7 +1216,10 @@ export interface components {
         }
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1191,7 +1230,10 @@ export interface components {
         }
         /** CwlUnionParameterModel */
         CwlUnionParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Parameter Type
@@ -1238,10 +1280,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1281,10 +1327,14 @@ export interface components {
             label?: string | null
             /** Multiple */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1308,6 +1358,7 @@ export interface components {
             argument?: string | null
             /**
              * Extensions
+             * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
              *     ]
@@ -1333,13 +1384,18 @@ export interface components {
             min?: number | null
             /**
              * Multiple
+             * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1416,10 +1472,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1481,10 +1541,14 @@ export interface components {
             label?: string | null
             /** Multiple */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1610,10 +1674,14 @@ export interface components {
             max?: number | null
             /** Min */
             min?: number | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1656,10 +1724,14 @@ export interface components {
             label?: string | null
             /** Multiple */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1695,10 +1767,14 @@ export interface components {
             label?: string | null
             /** Multiple */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1742,10 +1818,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -1869,7 +1949,10 @@ export interface components {
             max?: number | null
             /** Min */
             min?: number | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /** Optional */
             optional: boolean
@@ -2033,10 +2116,14 @@ export interface components {
             max?: number | null
             /** Min */
             min?: number | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -2366,10 +2453,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -2403,10 +2494,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -2475,10 +2570,14 @@ export interface components {
              * @default false
              */
             multiple: boolean
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -2662,10 +2761,14 @@ export interface components {
             is_dynamic: boolean
             /** Label */
             label?: string | null
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
@@ -2770,7 +2873,10 @@ export interface components {
         }
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown
             /** Label */
             label?: string | null
@@ -2787,7 +2893,10 @@ export interface components {
         }
         /** ToolOutputCollection */
         ToolOutputCollection: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: boolean
             /** Label */
             label?: string | null
@@ -2839,7 +2948,10 @@ export interface components {
             format_source?: string | null
             /** From Work Dir */
             from_work_dir?: string | null
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: boolean
             /** Label */
             label?: string | null
@@ -2858,7 +2970,10 @@ export interface components {
         }
         /** ToolOutputFloat */
         ToolOutputFloat: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown
             /** Label */
             label?: string | null
@@ -2875,7 +2990,10 @@ export interface components {
         }
         /** ToolOutputInteger */
         ToolOutputInteger: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown
             /** Label */
             label?: string | null
@@ -2892,7 +3010,10 @@ export interface components {
         }
         /** ToolOutputText */
         ToolOutputText: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown
             /** Label */
             label?: string | null

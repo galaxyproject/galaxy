@@ -49,6 +49,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.compression_utils import FileObjType
+from .util.generic_util import display_as_url
 
 log = logging.getLogger(__name__)
 verbose = False
@@ -121,13 +122,7 @@ class GenomeGraphs(Tabular):
                         action="display_at",
                         filename=f"ucsc_{site_name}",
                     )
-                    display_url = "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
-                        base_url,
-                        app.url_for(controller="root"),
-                        dataset.id,
-                        type,
-                    )
-                    display_url = quote_plus(display_url)
+                    display_url = display_as_url(app, base_url, str(dataset.id), type)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
                     sl = [

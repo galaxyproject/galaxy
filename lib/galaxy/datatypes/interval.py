@@ -52,6 +52,7 @@ from . import (
     data,
     dataproviders,
 )
+from .util.generic_util import display_as_url
 
 log = logging.getLogger(__name__)
 
@@ -340,14 +341,7 @@ class Interval(Tabular):
                 action="display_at",
                 filename="ucsc_" + site_name,
             )
-            display_url = quote_plus(
-                "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
-                    base_url,
-                    app.url_for(controller="root"),
-                    dataset.id,
-                    type,
-                )
-            )
+            display_url = display_as_url(app, base_url, str(dataset.id), type)
             redirect_url = quote_plus(f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s")
             link = f"{internal_url}?redirect_url={redirect_url}&display_url={display_url}"
             ret_val.append((site_name, link))
@@ -777,14 +771,7 @@ class _RemoteCallMixin:
         """
         internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
         base_url = app.config.get("display_at_callback", base_url)
-        display_url = quote_plus(
-            "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
-                base_url,
-                app.url_for(controller="root"),
-                dataset.id,
-                type,
-            )
-        )
+        display_url = display_as_url(app, base_url, str(dataset.id), type)
         link = f"{internal_url}?redirect_url={redirect_url}&display_url={display_url}"
         return link
 
@@ -1559,14 +1546,7 @@ class CustomTrack(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
-                    display_url = quote_plus(
-                        "{}{}/display_as?id={}&display_app={}&authz_method=display_at".format(
-                            base_url,
-                            app.url_for(controller="root"),
-                            dataset.id,
-                            type,
-                        )
-                    )
+                    display_url = display_as_url(app, base_url, str(dataset.id), type)
                     redirect_url = quote_plus(
                         f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s"
                     )
