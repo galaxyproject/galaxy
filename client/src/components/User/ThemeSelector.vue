@@ -11,7 +11,7 @@ const { config, isConfigLoaded } = useConfig();
 const show = ref(false);
 const currentValue = computed({
     get: () => {
-        return currentTheme;
+        return currentTheme.value;
     },
     set: (theme) => {
         setCurrentTheme(theme);
