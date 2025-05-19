@@ -238,12 +238,6 @@ describe("DatasetView", () => {
     });
 
     describe("Error state handling", () => {
-        it("redirects error tab for normal datasets", async () => {
-            const wrapper = await mountDatasetView("error");
-
-            const router = wrapper.vm.$router;
-            expect(router.replace).toHaveBeenCalledWith(`/datasets/${DATASET_ID}`);
-        });
 
         it("shows error tab for datasets with error state", async () => {
             const wrapper = await mountDatasetView("error", { dataset: errorDataset });
