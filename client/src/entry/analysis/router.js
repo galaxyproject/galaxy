@@ -53,6 +53,7 @@ import Analysis from "entry/analysis/modules/Analysis";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
 import Login from "entry/analysis/modules/Login";
+import Register from "entry/analysis/modules/Register";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
@@ -146,7 +147,7 @@ export function getRouter(Galaxy) {
             /** Registration entry route */
             {
                 path: "/register/start",
-                component: Login,
+                component: Register,
                 props: {show:  "register" },
                 redirect: redirectLoggedIn(),
             },

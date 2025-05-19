@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MountTarget from "./LoginIndex";
+import MountTarget from "./RegisterIndex";
 
 const mockPush = jest.fn();
 
@@ -12,7 +12,7 @@ jest.mock("vue-router/composables", () => ({
 
 const localVue = getLocalVue(true);
 
-describe("LoginIndex", () => {
+describe("RegisterIndex", () => {
     let wrapper;
 
     beforeEach(() => {
@@ -25,17 +25,13 @@ describe("LoginIndex", () => {
         });
     });
 
-    it("switching between register and login", async () => {
+    it("switching from Register to Login", async () => {
         const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Welcome to Galaxy, please log in");
-        const $registerToggle = "[id=register-toggle]";
-        const missingToggle = wrapper.find($registerToggle);
-        expect(missingToggle.exists()).toBeFalsy();
-        await wrapper.setProps({ allowUserCreation: true });
-        const registerToggle = wrapper.find($registerToggle);
-        expect(registerToggle.exists()).toBeTruthy();
-        await registerToggle.trigger("click");
-        expect(mockPush).toHaveBeenCalledWith("/register/start");
+        expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
+        const $loginToggle = "[id=login-toggle]";
+        const loginToggle = wrapper.find($loginToggle);
+        await loginToggle.trigger("click");
+        expect(mockPush).toHaveBeenCalledWith("/login/start");
         expect(mockPush).toHaveBeenCalledTimes(1);
     });
 });

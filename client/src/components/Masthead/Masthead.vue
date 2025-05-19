@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useOpenUrl } from '@/composables/openurl';
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -17,9 +17,9 @@ import {OIDCConfig, isOnlyOneOIDCProviderConfigured, redirectToSingleProvider, g
 
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
-const router = useRouter();
-
 const { config, isConfigLoaded } = useConfig();
+
+const { openUrl } = useOpenUrl();
 
 const hasOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -83,19 +83,6 @@ const props = defineProps({
 
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
-
-function openUrl(url, target = null) {
-    if (!target) {
-        router.push(url);
-    } else {
-        url = withPrefix(url);
-        if (target == "_blank") {
-            window.open(url);
-        } else {
-            window.location = url;
-        }
-    }
-}
 
 function extensionTabClick(tab) {
     if (tab.url) {

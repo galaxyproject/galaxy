@@ -25,7 +25,7 @@ import adminRolesGridConfig from "components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import GridInvocation from "components/Grid/GridInvocation";
 import GridList from "components/Grid/GridList";
-import RegisterForm from "components/Login/RegisterForm";
+import RegisterForm from "components/Register/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
 import Admin from "entry/analysis/modules/Admin";
 
