@@ -163,7 +163,7 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
 }
 
 .dataset-state-header {
-    font-size: $h4-font-size;
+    font-size: $h5-font-size;
     vertical-align: middle;
 }
 </style>
