@@ -77,7 +77,9 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
                     {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
-                    <DatasetState class="align-self-center" :dataset-id="datasetId" />
+                    <span class="dataset-state-header">
+                        <DatasetState :dataset-id="datasetId" />
+                    </span>
                 </Heading>
             </div>
             <transition v-if="dataset" name="header">
@@ -140,7 +142,9 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
 .header-details {
     padding-left: 1rem;
     max-height: 500px;
@@ -156,5 +160,10 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     padding-top: 0;
     padding-bottom: 0;
     opacity: 0;
+}
+
+.dataset-state-header {
+    font-size: $h4-font-size;
+    vertical-align: middle;
 }
 </style>
