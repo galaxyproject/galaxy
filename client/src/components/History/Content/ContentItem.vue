@@ -268,10 +268,10 @@ function onDisplay() {
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name, force: true });
+            router.push(itemUrls.value.display, { force: true });
         } else if (itemUrls.value.display) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name });
+            router.push(itemUrls.value.display);
         }
     }
 }
