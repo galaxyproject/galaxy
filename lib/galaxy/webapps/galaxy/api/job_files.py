@@ -53,7 +53,7 @@ router = Router(
 def path_query_or_form(
     request: Request,
     path_query: Annotated[Optional[str], Query(alias="path", description="Path to file to create.")] = None,
-    path_form: Annotated[Optional[str], Form(alias="path", description="Path to file to create.")] = None,
+    path: Annotated[Optional[str], Form(alias="path", description="Path to file to create.")] = None,
 ):
     """
     Accept `path` parameter both in query and form format.
@@ -63,7 +63,7 @@ def path_query_or_form(
     `path: str = Depends(path_query_or_form)` so that FastAPI responds with status code 500 when the parameter is not
     provided.
     """
-    return path_query or path_form
+    return path_query or path
 
 
 def job_key_query_or_form(
@@ -77,7 +77,7 @@ def job_key_query_or_form(
             ),
         ),
     ] = None,
-    job_key_form: Annotated[
+    job_key: Annotated[
         Optional[str],
         Form(
             alias="job_key",
@@ -95,7 +95,7 @@ def job_key_query_or_form(
     `job_key: str = Depends(job_key_query_or_form)` so that FastAPI responds with status code 500 when the parameter is
     not provided.
     """
-    return job_key_query or job_key_form
+    return job_key_query or job_key
 
 
 @router.cbv

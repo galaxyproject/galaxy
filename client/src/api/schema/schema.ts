@@ -6785,15 +6785,15 @@ export interface components {
              */
             file?: string;
             /**
-             * Job Key Form
+             * Job Key
              * @description A key used to authenticate this request as acting on behalf or a job runner for the specified job.
              */
-            job_key_form?: string | null;
+            job_key?: string | null;
             /**
-             * Path Form
+             * Path
              * @description Path to file to create.
              */
-            path_form?: string | null;
+            path?: string | null;
             /** Session Id */
             session_id?: string;
         };
