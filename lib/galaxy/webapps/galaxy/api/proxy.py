@@ -3,6 +3,7 @@ API Controller to handle remote zip operations.
 """
 
 import logging
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import (
@@ -35,6 +36,16 @@ URLQueryParam: str = Query(
 )
 
 
+def is_valid_url(url: str) -> bool:
+    if url.count("://") != 1:
+        return False  # Ensure there is exactly one scheme
+    try:
+        parsed = urlparse(url)
+        return all([parsed.scheme in ("http", "https"), parsed.netloc])
+    except ValueError:
+        return False
+
+
 @router.cbv
 class FastAPIProxy:
 
@@ -46,6 +57,9 @@ class FastAPIProxy:
         """
         if trans.anonymous:
             raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
+
+        if not is_valid_url(url):
+            raise RequestParameterInvalidException("Invalid URL format.")
 
         validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
 
