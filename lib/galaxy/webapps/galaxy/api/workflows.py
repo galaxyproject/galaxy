@@ -334,13 +334,15 @@ class WorkflowsAPIController(
                                           by default.
         :type   instance:                 boolean
         """
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        workflow_id = self.decode_id(workflow_id)
+        instance_id = workflow_id if instance else None
+
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
 
         style = kwd.get("style", "export")
         download_format = kwd.get("format")
         version = kwd.get("version")
-        instance = util.string_as_bool(kwd.get("instance", "false"))
-        instance_id = self.decode_id(workflow_id) if instance else None
         history = None
         if history_id := kwd.get("history_id"):
             history = self.history_manager.get_accessible(
