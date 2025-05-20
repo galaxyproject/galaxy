@@ -1251,8 +1251,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if self._path_exists(path):
                 with open(path) as f:
                     themes = yaml.safe_load(f)
-                    for key, val in themes.items():
-                        theme_dict[key] = flatten_theme(val)
+                    # Sort so that themes with `default: true` (hopefully just 1 ...) come first
+                    sorted_themes = dict(sorted(themes.items(), key=lambda item: not item[1].get("default", False)))
+                    for key, val in sorted_themes.items():
+                        if not key == "default":
+                            theme_dict[key] = flatten_theme(val)
 
         self.themes = {}
 

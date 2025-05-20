@@ -12,6 +12,7 @@ blue:
     logo:
       img: "/static/favicon.svg"
       img-secondary: null
+  default: true
 
 lightblue:
   masthead:
