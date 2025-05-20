@@ -18,8 +18,10 @@ from fastapi import (
     Form,
     Path,
     Query,
+    Request,
     UploadFile,
 )
+from fastapi.params import Depends
 from typing_extensions import Annotated
 
 from galaxy import (
@@ -46,6 +48,54 @@ router = Router(
     # are certainly not meant to represent part of Galaxy's stable, user facing API
     tags=["undocumented"]
 )
+
+
+def path_query_or_form(
+    request: Request,
+    path_query: Annotated[Optional[str], Query(alias="path", description="Path to file to create.")] = None,
+    path_form: Annotated[Optional[str], Form(alias="path", description="Path to file to create.")] = None,
+):
+    """
+    Accept `path` parameter both in query and form format.
+
+    This method does not force the client to provide the parameter, it could simply not submit the parameter in either
+    format. To force the client to provide the parameter, coerce the output of the method to a string, i.e.
+    `path: str = Depends(path_query_or_form)` so that FastAPI responds with status code 500 when the parameter is not
+    provided.
+    """
+    return path_query or path_form
+
+
+def job_key_query_or_form(
+    request: Request,
+    job_key_query: Annotated[
+        Optional[str],
+        Query(
+            alias="job_key",
+            description=(
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
+            ),
+        ),
+    ] = None,
+    job_key_form: Annotated[
+        Optional[str],
+        Form(
+            alias="job_key",
+            description=(
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
+            ),
+        ),
+    ] = None,
+):
+    """
+    Accept `job_key` parameter both in query and form format.
+
+    This method does not force the client to provide the parameter, it could simply not submit the parameter in either
+    format. To force the client to provide the parameter, coerce the output of the method to a string, i.e.
+    `job_key: str = Depends(job_key_query_or_form)` so that FastAPI responds with status code 500 when the parameter is
+    not provided.
+    """
+    return job_key_query or job_key_form
 
 
 @router.cbv
@@ -139,15 +189,8 @@ class FastAPIJobFiles:
     def create(
         self,
         job_id: Annotated[str, Path(description="Encoded id string of the job.")],
-        path: Annotated[str, Form(description="Path to file to create.")],
-        job_key: Annotated[
-            str,
-            Form(
-                description=(
-                    "A key used to authenticate this request as acting on behalf or a job runner for the specified job."
-                )
-            ),
-        ],
+        path: Annotated[str, Depends(path_query_or_form)],
+        job_key: Annotated[str, Depends(job_key_query_or_form)],
         file: UploadFile = File(None, description="Contents of the file to create."),
         session_id: str = Form(None),
         nginx_upload_module_file_path: str = Form(
