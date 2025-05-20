@@ -91,7 +91,7 @@ export const STATES: StateMap = {
     /** the tool producing this dataset has errored */
     error: {
         status: "danger",
-        text: "An error occurred with this dataset:",
+        text: "An error occurred with this dataset.",
         icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */

@@ -5,7 +5,6 @@ import CollectionEditView from "components/Collections/common/CollectionEditView
 import DatasetList from "components/Dataset/DatasetList";
 import DatasetView from "components/Dataset/DatasetView";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
-import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import GalaxyWizard from "components/GalaxyWizard";
 import HelpTerm from "components/Help/HelpTerm";
@@ -50,7 +49,6 @@ import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import Analysis from "entry/analysis/modules/Analysis";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
 import Login from "entry/analysis/modules/Login";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
@@ -235,14 +233,6 @@ export function getRouter(Galaxy) {
                         component: DatasetList,
                     },
                     {
-                        path: "datasets/:datasetId/preview",
-                        component: CenterFrame,
-                        props: (route) => ({
-                            src: `/datasets/${route.params.datasetId}/display/?preview=True`,
-                            isPreview: true,
-                        }),
-                    },
-                    {
                         path: "datasets/:datasetId/report",
                         component: ToolReport,
                         props: true,
@@ -251,11 +241,6 @@ export function getRouter(Galaxy) {
                         // legacy route, potentially used by 3rd parties
                         path: "datasets/:datasetId/show_params",
                         component: DatasetDetails,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId/error",
-                        component: DatasetError,
                         props: true,
                     },
                     {

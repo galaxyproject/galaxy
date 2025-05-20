@@ -226,13 +226,6 @@ describe("DatasetView", () => {
             expect(wrapper.props().tab).toBe("edit");
         });
 
-        it("redirects invalid tabs to preview", async () => {
-            const wrapper = await mountDatasetView("invalid_tab");
-
-            const router = wrapper.vm.$router;
-            expect(router.replace).toHaveBeenCalledWith(`/datasets/${DATASET_ID}`);
-        });
-
         it("includes preview tab for dataset viewing", async () => {
             const wrapper = await mountDatasetView("preview");
 
@@ -245,13 +238,6 @@ describe("DatasetView", () => {
     });
 
     describe("Error state handling", () => {
-        it("redirects error tab for normal datasets", async () => {
-            const wrapper = await mountDatasetView("error");
-
-            const router = wrapper.vm.$router;
-            expect(router.replace).toHaveBeenCalledWith(`/datasets/${DATASET_ID}`);
-        });
-
         it("shows error tab for datasets with error state", async () => {
             const wrapper = await mountDatasetView("error", { dataset: errorDataset });
 
