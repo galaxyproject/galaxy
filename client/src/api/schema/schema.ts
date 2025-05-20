@@ -6682,15 +6682,15 @@ export interface components {
              */
             file?: string;
             /**
-             * Job Key
+             * Job Key Form
              * @description A key used to authenticate this request as acting on behalf or a job runner for the specified job.
              */
-            job_key: string;
+            job_key_form?: string | null;
             /**
-             * Path
+             * Path Form
              * @description Path to file to create.
              */
-            path: string;
+            path_form?: string | null;
             /** Session Id */
             session_id?: string;
         };
@@ -31288,7 +31288,12 @@ export interface operations {
     };
     create_api_jobs__job_id__files_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Path to file to create. */
+                path?: string | null;
+                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job. */
+                job_key?: string | null;
+            };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -31299,7 +31304,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_api_jobs__job_id__files_post"];
             };
