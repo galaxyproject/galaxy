@@ -589,14 +589,7 @@ class JobSearch:
         if wildcard_param_dump.get("__when_value__") is False:
             job_states = {Job.states.SKIPPED}
         stmt = stmt.where(Job.state.in_(job_states))
-
-        # exclude jobs with deleted outputs
-        stmt = stmt.where(
-            and_(
-                model.Job.any_output_dataset_collection_instances_deleted == false(),
-                model.Job.any_output_dataset_deleted == false(),
-            )
-        )
+        stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for k, v in wildcard_param_dump.items():
             if v == {"__class__": "RuntimeValue"}:
@@ -632,6 +625,30 @@ class JobSearch:
                 )
 
         return stmt
+
+    def _exclude_jobs_with_deleted_outputs(self, stmt):
+        jtodca = aliased(model.JobToOutputDatasetCollectionAssociation)
+        deleted_output_hdca = aliased(model.HistoryDatasetCollectionAssociation)
+        jtoda = aliased(model.JobToOutputDatasetAssociation)
+        deleted_output_hda = aliased(model.HistoryDatasetAssociation)
+        return (
+            stmt.outerjoin(jtodca, model.Job.id == jtodca.job_id)
+            .outerjoin(
+                deleted_output_hdca,
+                and_(deleted_output_hdca.id == jtodca.dataset_collection_id, deleted_output_hdca.deleted == true()),
+            )
+            .outerjoin(jtoda, model.Job.id == jtoda.job_id)
+            .outerjoin(
+                deleted_output_hda,
+                and_(deleted_output_hda.id == jtoda.dataset_id, deleted_output_hda.deleted == true()),
+            )
+            .where(
+                and_(
+                    jtodca.job_id.is_(None),  # no matching deleted collection was found.
+                    jtoda.job_id.is_(None),  # no matching deleted dataset was found.
+                )
+            )
+        )
 
     def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier, require_name_match=True):
         a = aliased(model.JobToInputDatasetAssociation)
