@@ -1,5 +1,5 @@
-import { type CollectionType } from "@/api/datasetCollections";
-import { type CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionType } from "@/api/datasetCollections";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 
 export const unconstrainedCollectionTypeBuilders: CollectionBuilderType[] = ["list", "list:paired", "paired"];
 

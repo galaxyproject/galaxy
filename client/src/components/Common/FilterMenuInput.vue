@@ -14,7 +14,7 @@ import {
 import { capitalize } from "lodash";
 import { computed, ref, watch } from "vue";
 
-import { type ValidFilter } from "@/utils/filtering";
+import type { ValidFilter } from "@/utils/filtering";
 
 library.add(faQuestion);
 

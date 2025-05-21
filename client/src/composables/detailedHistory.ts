@@ -4,7 +4,7 @@
  */
 import { computed, onMounted } from "vue";
 
-import { type HistorySummaryExtended } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
 /**

@@ -1,6 +1,6 @@
-import { type Ref, type UnwrapRef } from "vue";
+import type { Ref, UnwrapRef } from "vue";
 
-import { type AnyUser } from "@/api";
+import type { AnyUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
 import { useHashedUserId as useHashedUserIdFromStore } from "./hashedUserIdFromUserStore";

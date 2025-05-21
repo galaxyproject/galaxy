@@ -2,11 +2,11 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import {
-    type InvocationJobsSummary,
-    type InvocationStep,
-    type WorkflowInvocation,
-    type WorkflowInvocationRequest,
+import type {
+    InvocationJobsSummary,
+    InvocationStep,
+    WorkflowInvocation,
+    WorkflowInvocationRequest,
 } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import type { GraphStep } from "@/composables/useInvocationGraph";

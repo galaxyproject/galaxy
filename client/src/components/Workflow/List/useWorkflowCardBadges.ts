@@ -4,8 +4,8 @@ import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { type WorkflowSummary } from "@/api/workflows";
-import { type CardBadge } from "@/components/Common/GCard.types";
+import type { WorkflowSummary } from "@/api/workflows";
+import type { CardBadge } from "@/components/Common/GCard.types";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 

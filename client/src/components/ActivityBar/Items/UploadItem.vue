@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 

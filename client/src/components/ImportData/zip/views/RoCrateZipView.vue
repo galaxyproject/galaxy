@@ -5,7 +5,7 @@ import { BBadge } from "bootstrap-vue";
 import { sanitize } from "dompurify";
 import { onMounted, ref } from "vue";
 
-import { type CardBadge } from "@/components/Common/GCard.types";
+import type { CardBadge } from "@/components/Common/GCard.types";
 import type { ROCrateZipExplorer } from "@/composables/zipExplorer";
 import { isGalaxyHistoryExport, isGalaxyZipExport } from "@/composables/zipExplorer";
 

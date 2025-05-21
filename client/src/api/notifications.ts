@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 export type BaseUserNotification = components["schemas"]["UserNotificationResponse"];
 export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"]["preferences"];

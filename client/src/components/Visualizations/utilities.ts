@@ -1,4 +1,4 @@
-import { type Plugin } from "@/api/plugins";
+import type { Plugin } from "@/api/plugins";
 
 export function getTestExtensions(plugin?: Plugin): string[] {
     const results: string[] = [];

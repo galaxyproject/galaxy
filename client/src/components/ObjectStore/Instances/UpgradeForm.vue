@@ -5,7 +5,7 @@ import { useConfigurationTemplateUpgrade } from "@/components/ConfigTemplates/us
 
 import type { ObjectStoreTemplateSummary } from "../Templates/types";
 import { useInstanceRouting } from "./routing";
-import { type UserConcreteObjectStore } from "./types";
+import type { UserConcreteObjectStore } from "./types";
 
 const editTestUrl = "/api/object_store_instances/{uuid}/test";
 const editUrl = "/api/object_store_instances/{uuid}";

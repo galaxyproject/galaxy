@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { ensureDefined } from "@/utils/assertions";

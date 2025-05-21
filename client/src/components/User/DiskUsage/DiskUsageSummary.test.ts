@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-import { type UserQuotaUsageData } from "./Quota/model/QuotaUsage";
+import type { UserQuotaUsageData } from "./Quota/model/QuotaUsage";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 

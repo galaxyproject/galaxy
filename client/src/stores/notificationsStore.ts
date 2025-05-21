@@ -2,11 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import {
-    type NotificationChanges,
-    type UserNotification,
-    type UserNotificationsBatchUpdateRequest,
-} from "@/api/notifications";
+import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { rethrowSimple } from "@/utils/simple-error";
 import { mergeObjectListsById } from "@/utils/utils";

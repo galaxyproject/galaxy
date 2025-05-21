@@ -6,12 +6,12 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HDADetailed } from "@/api";
+import type { HDADetailed } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
 
-import { type ItemUrls } from ".";
+import type { ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 

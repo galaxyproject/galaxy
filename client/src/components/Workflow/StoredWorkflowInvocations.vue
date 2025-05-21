@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import GridInvocation from "../Grid/GridInvocation.vue";

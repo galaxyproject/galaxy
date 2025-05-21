@@ -4,8 +4,8 @@ import { setActivePinia } from "pinia";
 import { suppressErrorForCustomIcons } from "tests/jest/helpers";
 import { nextTick } from "vue";
 
-import { type LazyUndoRedoAction, type UndoRedoAction } from "@/stores/undoRedoStore";
-import { type TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
+import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";

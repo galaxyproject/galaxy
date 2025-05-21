@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import type { WorkflowSummary } from "@/api/workflows";
 import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCardActions";
 import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCardBadges";
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";

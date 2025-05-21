@@ -2,7 +2,7 @@ import { HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { createOpenApiHttp } from "openapi-msw";
 
-import { type GalaxyApiPaths } from "@/api/schema";
+import type { GalaxyApiPaths } from "@/api/schema";
 
 export { HttpResponse };
 

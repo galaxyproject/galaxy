@@ -26,12 +26,7 @@ import {
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import {
-    type OutputTerminalSource,
-    type PostJobAction,
-    type PostJobActions,
-    type Step,
-} from "@/stores/workflowStepStore";
+import type { OutputTerminalSource, PostJobAction, PostJobActions, Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { UpdateStepAction } from "./Actions/stepActions";

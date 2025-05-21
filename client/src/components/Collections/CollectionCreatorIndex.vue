@@ -14,7 +14,7 @@ import { orList } from "@/utils/strings";
 import { stateIsTerminal } from "@/utils/utils";
 
 import type { CollectionBuilderType } from "../History/adapters/buildCollectionModal";
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
+import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";

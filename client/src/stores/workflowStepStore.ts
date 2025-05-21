@@ -1,7 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
-import { type FieldDict } from "@/api";
-import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import type { FieldDict } from "@/api";
+import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 

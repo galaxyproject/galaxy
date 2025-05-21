@@ -27,7 +27,7 @@ import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/com
  * |-- file1
  * |-- file2
  */
-import { type RemoteFilesList } from "./testingData";
+import type { RemoteFilesList } from "./testingData";
 import {
     directory1RecursiveResponse,
     directory1Response,

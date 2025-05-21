@@ -1,11 +1,11 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 
-import {
-    type ExportObjectRequestMetadata,
-    type ExportObjectResultMetadata,
-    type ModelStoreFormat,
-    type ObjectExportTaskResponse,
-    type StoreExportPayload,
+import type {
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
+    ModelStoreFormat,
+    ObjectExportTaskResponse,
+    StoreExportPayload,
 } from "@/api";
 
 export interface ExportParams {

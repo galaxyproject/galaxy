@@ -14,14 +14,14 @@ import { computed, type Ref, ref, set } from "vue";
 import { GalaxyApi } from "@/api";
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useInvocationStore } from "@/stores/invocationStore";
-import { type Step } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type HDCASummary } from "@/api";
+import type { HDCASummary } from "@/api";
 import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";

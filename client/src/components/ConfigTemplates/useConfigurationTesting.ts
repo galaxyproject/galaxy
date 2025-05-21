@@ -1,8 +1,8 @@
 import { computed, type Ref, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type Instance, type PluginStatus, type TemplateSummary } from "@/api/configTemplates";
-import { type buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
+import type { Instance, PluginStatus, TemplateSummary } from "@/api/configTemplates";
+import type { buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import {

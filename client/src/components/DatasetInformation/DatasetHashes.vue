@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type DatasetHash as DatasetHashType } from "@/api";
+import type { DatasetHash as DatasetHashType } from "@/api";
 
 import DatasetHash from "@/components/DatasetInformation/DatasetHash.vue";
 

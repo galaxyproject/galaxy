@@ -7,7 +7,7 @@ import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
-import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
+import type { Tool, ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 

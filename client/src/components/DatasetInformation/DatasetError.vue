@@ -8,7 +8,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi, type HDADetailed, isRegisteredUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { type JobDetails, type JobInputSummary } from "@/api/jobs";
+import type { JobDetails, JobInputSummary } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";

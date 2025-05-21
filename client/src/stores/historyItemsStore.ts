@@ -8,7 +8,7 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import { type HistoryItemSummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";

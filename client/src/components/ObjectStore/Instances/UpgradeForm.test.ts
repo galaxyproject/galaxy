@@ -4,9 +4,9 @@ import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
-import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import { type UserConcreteObjectStore } from "./types";
+import type { UserConcreteObjectStore } from "./types";
 
 import UpgradeForm from "./UpgradeForm.vue";
 

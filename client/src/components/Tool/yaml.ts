@@ -14,9 +14,9 @@ import {
     toSelectionRanges,
     toTextEdit,
 } from "monaco-languageserver-types";
-import { type IDisposable, type IPosition, type MonacoEditor } from "monaco-types";
+import type { IDisposable, IPosition, MonacoEditor } from "monaco-types";
 import { createWorkerManager } from "monaco-worker-manager";
-import { type CompletionItemKind, type FormattingOptions } from "vscode-languageserver-types";
+import type { CompletionItemKind, FormattingOptions } from "vscode-languageserver-types";
 
 export interface JSONSchema {
     id?: string;

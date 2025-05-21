@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
+import type { InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";

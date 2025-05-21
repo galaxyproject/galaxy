@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
