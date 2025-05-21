@@ -334,6 +334,10 @@ class WorkflowsAPIController(
                                           by default.
         :type   instance:                 boolean
         """
+        instance = util.string_as_bool(kwd.get("instance", "false"))
+        workflow_id = self.decode_id(workflow_id)
+        instance_id = workflow_id if instance else None
+
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
 
         style = kwd.get("style", "export")
@@ -345,7 +349,7 @@ class WorkflowsAPIController(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
-            trans, stored_workflow, style=style, version=version, history=history
+            trans, stored_workflow, style=style, version=version, history=history, instance_id=instance_id
         )
         if download_format == "json-download":
             sname = stored_workflow.name
