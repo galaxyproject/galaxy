@@ -5,4 +5,14 @@ printf "%s\n%s\n%s\n" \$GALAXY_SLOTS \$GALAXY_MEMORY_MB_PER_SLOT \$GALAXY_MEMORY
     <outputs>
         <data name="output" format="txt" />
     </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_n_lines n="3" />
+                    <has_line_matching expression="\d+" min="1" max="3" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
 </tool>
