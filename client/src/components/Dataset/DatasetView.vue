@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug, faChartBar, faEye, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem } from "bootstrap-vue";
@@ -18,8 +17,6 @@ import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
-
-library.add(faEye, faChartBar, faInfoCircle, faPen, faBug);
 
 const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
