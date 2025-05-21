@@ -644,8 +644,8 @@ class JobSearch:
             )
             .where(
                 and_(
-                    jtodca.job_id.is_(None),  # no matching deleted collection was found.
-                    jtoda.job_id.is_(None),  # no matching deleted dataset was found.
+                    deleted_output_hdca.id.is_(None),  # no matching deleted collection was found.
+                    deleted_output_hda.id.is_(None),  # no matching deleted dataset was found.
                 )
             )
         )
