@@ -1,5 +1,4 @@
 <script lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
@@ -11,8 +10,6 @@ import { useAnimationFrameResizeObserver } from "@/composables/sensors/animation
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
-
-library.add(faArrowDown);
 
 interface LoaderResult<T> {
     items: T[];

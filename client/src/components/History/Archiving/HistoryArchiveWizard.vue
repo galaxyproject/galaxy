@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
@@ -15,8 +14,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faArchive);
 
 const historyStore = useHistoryStore();
 const { config } = useConfig(true);
@@ -69,7 +66,7 @@ async function onArchiveHistory(exportRecordId?: string) {
 
 <template>
     <div class="history-archive-wizard">
-        <FontAwesomeIcon icon="archive" size="2x" class="text-primary float-left mr-2" />
+        <FontAwesomeIcon :icon="faArchive" size="2x" class="text-primary float-left mr-2" />
         <h1 class="h-lg">
             Archive
             <LoadingSpan v-if="!history" spinner-only />

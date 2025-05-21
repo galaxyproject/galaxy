@@ -72,7 +72,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <FontAwesomeIcon icon="fa-code-branch" />
+                <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -148,7 +148,6 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
@@ -179,8 +178,6 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
-
-library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },

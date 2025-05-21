@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
@@ -13,8 +12,6 @@ import { useInvocationStore } from "@/stores/invocationStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
-
-library.add(faChevronDown, faChevronUp, faSignInAlt);
 
 const props = defineProps<{
     /** The store id for the invocation graph */

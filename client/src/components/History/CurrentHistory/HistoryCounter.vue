@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
@@ -22,8 +21,6 @@ import SelectPreferredStore from "./SelectPreferredStore.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
-
-library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
 const props = withDefaults(
     defineProps<{

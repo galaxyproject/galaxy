@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
@@ -60,8 +59,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-library.add(faFileExport);
 
 const POLLING_DELAY = 3000;
 
@@ -212,7 +209,7 @@ function updateExportParams(newParams: ExportParams) {
 </script>
 <template>
     <span class="history-export-component">
-        <FontAwesomeIcon icon="file-export" size="2x" class="text-primary float-left mr-2" />
+        <FontAwesomeIcon :icon="faFileExport" size="2x" class="text-primary float-left mr-2" />
         <h1 class="h-lg">
             Export
             <b v-if="isFatalError" class="text-danger">Error</b>

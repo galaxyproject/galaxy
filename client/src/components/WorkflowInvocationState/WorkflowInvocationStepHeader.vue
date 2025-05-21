@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -12,8 +11,6 @@ import type { Step } from "@/stores/workflowStepStore";
 import ToolLinkPopover from "../Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "./WorkflowStepIcon.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
-
-library.add(faChevronDown, faChevronUp, faSignInAlt);
 
 interface Props {
     workflowStep: Step;

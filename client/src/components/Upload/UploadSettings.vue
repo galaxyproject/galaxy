@@ -1,12 +1,9 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import UploadOption from "./UploadOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
-
-library.add(faCog);
 
 defineProps({
     deferred: {
@@ -33,7 +30,7 @@ const emit = defineEmits(["input"]);
 <template>
     <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click">
         <template v-slot:reference>
-            <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
+            <FontAwesomeIcon class="cursor-pointer" :icon="faCog" />
         </template>
         <div class="upload-settings-content px-2 py-2 no-highlight">
             <table class="upload-settings-table grid">

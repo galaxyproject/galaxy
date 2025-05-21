@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
@@ -13,8 +12,6 @@ import {
 } from "@/components/History/model/crud";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
-
-library.add(faCog);
 
 interface Props {
     history: HistorySummaryExtended;

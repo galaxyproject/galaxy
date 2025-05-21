@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faHdd, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -29,8 +28,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(["invocation-clicked"]);
-
-library.add(faEye, faArrowDown, faInfoCircle);
 
 const stateClasses: Record<string, string> = {
     ready: "waiting",

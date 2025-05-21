@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -55,8 +54,6 @@ const emit = defineEmits<{
     (e: "update:loading", loading: boolean): void;
     (e: "update:show-modal", showModal: boolean): void;
 }>();
-
-library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare);
 
 const busy = ref(false);
 const showAdvanced = ref(false);

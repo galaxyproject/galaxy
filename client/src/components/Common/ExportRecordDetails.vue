@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
     faClock,
@@ -17,8 +16,6 @@ import type { ExportRecord } from "./models/exportRecordModel";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faCheckCircle, faClock, faExclamationCircle, faExclamationTriangle, faLink);
 
 interface Props {
     record: ExportRecord;

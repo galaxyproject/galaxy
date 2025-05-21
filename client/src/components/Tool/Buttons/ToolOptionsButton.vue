@@ -1,5 +1,4 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faDownload, faExternalLinkAlt, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -11,8 +10,6 @@ import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
-
-library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 
 const { currentUser } = storeToRefs(useUserStore());
 
@@ -87,25 +84,25 @@ function onLink() {
         class="tool-dropdown"
         size="sm">
         <template v-slot:button-content>
-            <FontAwesomeIcon icon="fa-caret-down" />
+            <FontAwesomeIcon :icon="faCaretDown" />
         </template>
 
         <b-dropdown-item @click="onCopyLink">
-            <FontAwesomeIcon icon="fa-link" /><span v-localize>Copy Link</span>
+            <FontAwesomeIcon :icon="faLink" /><span v-localize>Copy Link</span>
         </b-dropdown-item>
 
         <b-dropdown-item @click="onCopyId">
-            <FontAwesomeIcon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
+            <FontAwesomeIcon :icon="faCopy" /><span v-localize>Copy Tool ID</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-if="showDownload" @click="onDownload">
-            <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
+            <FontAwesomeIcon :icon="faDownload" /><span v-localize>Download</span>
         </b-dropdown-item>
 
         <ToolSourceMenuItem :tool-id="id" :tool-uuid="toolUuid" />
 
         <b-dropdown-item v-if="showLink" @click="onLink">
-            <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
+            <FontAwesomeIcon :icon="faExternalLinkAlt" /><span v-localize>See in Tool Shed</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
