@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";

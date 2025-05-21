@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 

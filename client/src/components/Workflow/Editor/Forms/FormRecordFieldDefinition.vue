@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type FieldDict, type FieldType } from "@/api";
+import type { FieldDict, FieldType } from "@/api";
 
 import FormFieldType from "./FormFieldType.vue";
 import FormElement from "@/components/Form/FormElement.vue";

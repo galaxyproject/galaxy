@@ -1,4 +1,4 @@
-import { type components } from "./schema";
+import type { components } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];

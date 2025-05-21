@@ -5,7 +5,7 @@ import { type DataUri, isDataUri, isDataUriCollection } from "@/components/Form/
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
-import { type Step } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { getHeaderClass } from "./useInvocationGraph";

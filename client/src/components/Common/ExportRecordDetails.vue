@@ -12,7 +12,7 @@ import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from ".";
-import { type ExportRecord } from "./models/exportRecordModel";
+import type { ExportRecord } from "./models/exportRecordModel";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";

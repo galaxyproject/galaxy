@@ -151,7 +151,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, type UseScrollReturn, type VueInstance } from "@vueuse/core";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";

@@ -1,4 +1,4 @@
-import { type languages } from "monaco-editor/esm/vs/editor/editor.api";
+import type { languages } from "monaco-editor/esm/vs/editor/editor.api";
 
 // The actual IMonarchLanguageBracket shape doesn't work at runtime ...
 const brackets = [

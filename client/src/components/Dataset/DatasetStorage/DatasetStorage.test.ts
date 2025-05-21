@@ -2,7 +2,7 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
-import { type DatasetStorageDetails } from "@/api";
+import type { DatasetStorageDetails } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import DatasetStorage from "./DatasetStorage.vue";

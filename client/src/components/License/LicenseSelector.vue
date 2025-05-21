@@ -5,7 +5,7 @@ import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import License from "@/components/License/License.vue";

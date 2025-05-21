@@ -6,7 +6,7 @@ import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { type MessageNotificationCreateRequest } from "@/api/notifications";
+import type { MessageNotificationCreateRequest } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";

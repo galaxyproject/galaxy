@@ -9,7 +9,7 @@ import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflo
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
-import { type defaultPosition } from "../composables/useDefaultStepPosition";
+import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 

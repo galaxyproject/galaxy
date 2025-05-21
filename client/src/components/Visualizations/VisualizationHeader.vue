@@ -2,7 +2,7 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { type Plugin } from "@/api/plugins";
+import type { Plugin } from "@/api/plugins";
 import { absPath } from "@/utils/redirect";
 
 defineProps<{

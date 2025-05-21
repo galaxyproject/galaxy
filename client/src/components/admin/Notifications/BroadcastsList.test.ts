@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import { generateNewBroadcast } from "./test.utils";
 

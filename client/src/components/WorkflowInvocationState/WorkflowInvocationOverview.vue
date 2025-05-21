@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { withPrefix } from "@/utils/redirect";
 

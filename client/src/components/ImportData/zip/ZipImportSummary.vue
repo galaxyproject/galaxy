@@ -2,7 +2,7 @@
 import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
-import { type ImportableFile } from "@/composables/zipExplorer";
+import type { ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
 import ZipFileEntrySummaryCard from "./ZipFileEntrySummaryCard.vue";

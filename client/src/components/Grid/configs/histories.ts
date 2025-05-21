@@ -11,15 +11,15 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
+import type { HistorySortByLiteral } from "@/api";
 import { GalaxyApi } from "@/api";
-import { type HistorySortByLiteral } from "@/api";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type BatchOperationArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, BatchOperationArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

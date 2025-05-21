@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
-import { type HistorySummaryExtended } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import {
     deleteAllHiddenContent,
     purgeAllDeletedContent,

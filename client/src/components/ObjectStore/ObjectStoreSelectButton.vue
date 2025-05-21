@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
 
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";

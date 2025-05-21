@@ -6,7 +6,7 @@ import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/fi
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

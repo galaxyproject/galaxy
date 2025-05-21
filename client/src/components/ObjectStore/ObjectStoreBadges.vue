@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type ObjectStoreBadgeType } from "@/api/objectStores.templates";
+import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 
 import ObjectStoreBadge from "@/components/ObjectStore/ObjectStoreBadge.vue";
 

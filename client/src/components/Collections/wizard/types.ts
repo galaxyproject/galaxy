@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 export type RulesCreatingWhat = "datasets" | "collections";
 export type RulesSourceFrom = "remote_files" | "pasted_table" | "dataset_as_table" | "collection";

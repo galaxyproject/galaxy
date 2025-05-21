@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BAlert, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 

@@ -16,7 +16,7 @@ import {
     type SupportedPairedOrPairedBuilderCollectionTypes,
 } from "./common/useCollectionCreator";
 import { showHid } from "./common/useCollectionCreator";
-import { type WhichListBuilder } from "./ListWizard/types";
+import type { WhichListBuilder } from "./ListWizard/types";
 import { autoPairWithCommonFilters } from "./pairing";
 
 import AutoPairing from "./common/AutoPairing.vue";

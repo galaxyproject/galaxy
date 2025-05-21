@@ -3,7 +3,7 @@ import ELK, { type ElkExtendedEdge, type ElkNode } from "elkjs/lib/elk.bundled";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { FreehandWorkflowComment, WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type Step } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type JobBaseModel } from "@/api/jobs";
+import type { JobBaseModel } from "@/api/jobs";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
 
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";

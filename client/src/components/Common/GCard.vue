@@ -9,7 +9,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
-import { type CardAttributes, type CardBadge, type Title, type TitleIcon } from "./GCard.types";
+import type { CardAttributes, CardBadge, Title, TitleIcon } from "./GCard.types";
 
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";

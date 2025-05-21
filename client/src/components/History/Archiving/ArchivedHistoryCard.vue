@@ -2,8 +2,8 @@
 import { faCopy, faDatabase, faExchangeAlt, faEye, faGlobe, faUndo } from "font-awesome-6";
 import { computed } from "vue";
 
-import { type ArchivedHistorySummary } from "@/api/histories.archived";
-import { type CardAttributes } from "@/components/Common/GCard.types";
+import type { ArchivedHistorySummary } from "@/api/histories.archived";
+import type { CardAttributes } from "@/components/Common/GCard.types";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";

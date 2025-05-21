@@ -10,7 +10,7 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
+import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {

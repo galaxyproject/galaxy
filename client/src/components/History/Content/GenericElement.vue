@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type PropType, ref, set } from "vue";
 
-import { type DCESummary, type DCObject } from "@/api";
+import type { DCESummary, DCObject } from "@/api";
 
 import ContentItem from "./ContentItem.vue";
 

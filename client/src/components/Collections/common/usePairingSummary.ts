@@ -2,7 +2,7 @@ import { computed, ref } from "vue";
 
 import { type AutoPairingResult, type HasName, splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./useCollectionCreator";
+import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./useCollectionCreator";
 
 interface PropsWithCollectionType {
     collectionType: SupportedPairedOrPairedBuilderCollectionTypes;

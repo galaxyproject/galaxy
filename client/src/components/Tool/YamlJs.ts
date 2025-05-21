@@ -1,6 +1,6 @@
 import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor";
-import { type IPosition, type MonacoEditor } from "monaco-types";
+import type { IPosition, MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
