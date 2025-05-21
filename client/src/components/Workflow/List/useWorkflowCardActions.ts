@@ -15,10 +15,10 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
+import type { WorkflowSummary } from "@/api/workflows";
 import { undeleteWorkflow } from "@/api/workflows";
-import { type WorkflowSummary } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
-import { type CardAttributes } from "@/components/Common/GCard.types";
+import type { CardAttributes } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,

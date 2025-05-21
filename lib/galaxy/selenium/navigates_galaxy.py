@@ -1602,6 +1602,10 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components._.confirm_button(name="Delete").wait_for_and_click()
 
+    def workflow_bookmark_by_name(self, name):
+        self.workflow_index_search_for(name)
+        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
+
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
@@ -1991,7 +1995,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Find and click the Edit tab - using a more reliable selector
         # BVue generates '.nav-item a' elements with a title attribute matching the tab title
-        edit_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Edit']")
+        edit_tab_button = self.wait_for_selector_clickable(".nav-item[title='Edit'] > a.nav-link")
         edit_tab_button.click()
 
         # Wait for the edit attributes panel to be visible
@@ -2006,14 +2010,14 @@ class NavigatesGalaxy(HasDriver):
     def show_dataset_details(self, hid):
         self.display_dataset(hid)
         # Find and click the Details tab
-        details_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Details']")
+        details_tab_button = self.wait_for_selector_clickable(".nav-item[title='Details'] > a.nav-link")
         details_tab_button.click()
         self.components.dataset_details._.wait_for_visible()
 
     def show_dataset_visualizations(self, hid):
         self.display_dataset(hid)
         # Find and click the Visualize tab
-        visualize_tab_button = self.wait_for_selector_clickable("a.nav-link[title='Visualize']")
+        visualize_tab_button = self.wait_for_selector_clickable(".nav-item[title='Visualize'] > a.nav-link")
         visualize_tab_button.click()
 
     def history_panel_item_view_dataset_details(self, hid):

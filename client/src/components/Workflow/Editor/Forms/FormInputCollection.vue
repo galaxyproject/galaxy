@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type FieldDict } from "@/api";
+import type { FieldDict } from "@/api";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 

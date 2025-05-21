@@ -3,7 +3,7 @@ import { BCard, BCardGroup, BCardTitle } from "bootstrap-vue";
 
 import { borderVariant } from "@/components/Common/Wizard/utils";
 
-import { type RulesCreatingWhat } from "./types";
+import type { RulesCreatingWhat } from "./types";
 
 interface Props {
     creatingWhat: RulesCreatingWhat;

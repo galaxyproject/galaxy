@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 type HistoryContentBulkOperationResult = components["schemas"]["HistoryContentBulkOperationResult"];
 

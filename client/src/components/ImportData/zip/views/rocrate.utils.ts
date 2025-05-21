@@ -1,5 +1,5 @@
 // TODO: consider moving these types and logic to ro-crate-zip-explorer
-import { type ROCrateEntity, type ROCrateImmutableView } from "ro-crate-zip-explorer";
+import type { ROCrateEntity, ROCrateImmutableView } from "ro-crate-zip-explorer";
 
 interface Conforms {
     id: string;

@@ -13,7 +13,7 @@ import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 
-import { type UserNotification } from "@/api/notifications";
+import type { UserNotification } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type IconDefinition } from "font-awesome-6";
+import type { IconDefinition } from "font-awesome-6";
 
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";

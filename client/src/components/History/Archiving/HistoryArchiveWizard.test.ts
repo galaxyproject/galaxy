@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { type HistorySummary } from "@/api";
+import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 

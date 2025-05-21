@@ -1,6 +1,6 @@
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
-import { type IconDefinition } from "font-awesome-6";
+import type { IconDefinition } from "font-awesome-6";
 
 export interface WorkflowInput {
     id?: string; // unique ID. defaults to module ID

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type ColDef, type GetRowIdParams, type IRowDragItem, type NewValueParams } from "ag-grid-community";
+import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
 import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
 import { computed, nextTick, ref } from "vue";

@@ -9,7 +9,7 @@ import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
 import localize from "@/utils/localization";
 
-import { type RemoteFile, type RulesCreatingWhat, type RulesSourceFrom } from "./wizard/types";
+import type { RemoteFile, RulesCreatingWhat, RulesSourceFrom } from "./wizard/types";
 import { useFileSetSources } from "./wizard/useFileSetSources";
 
 import CreatingWhat from "./wizard/CreatingWhat.vue";

@@ -4,7 +4,7 @@ import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type DatasetSource } from "@/api";
+import type { DatasetSource } from "@/api";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 

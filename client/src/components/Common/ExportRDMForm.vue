@@ -2,7 +2,7 @@
 import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
 import GButton from "../BaseComponents/GButton.vue";

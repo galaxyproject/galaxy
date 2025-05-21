@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type DatasetSource as DatasetSourceModel } from "@/api";
+import type { DatasetSource as DatasetSourceModel } from "@/api";
 
 import DatasetSource from "@/components/DatasetInformation/DatasetSource.vue";
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type JobStateSummary } from "./JobStateSummary";
+import type { JobStateSummary } from "./JobStateSummary";
 
 import CollectionProgress from "./CollectionProgress.vue";
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import { type FieldType } from "@/api";
+import type { FieldType } from "@/api";
 
 import FormElement from "@/components/Form/FormElement.vue";
 

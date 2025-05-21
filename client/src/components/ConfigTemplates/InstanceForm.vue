@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type FormEntry } from "./formUtil";
+import type { FormEntry } from "./formUtil";
 
 import ForceActionButton from "./ForceActionButton.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";

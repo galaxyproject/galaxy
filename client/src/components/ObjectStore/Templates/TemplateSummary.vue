@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 
-import { type ObjectStoreTemplateSummary } from "./types";
+import type { ObjectStoreTemplateSummary } from "./types";
 
 import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";

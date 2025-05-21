@@ -1,7 +1,7 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
-import { type DCESummary, type HDCASummary } from "@/api";
+import type { DCESummary, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { type DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
 

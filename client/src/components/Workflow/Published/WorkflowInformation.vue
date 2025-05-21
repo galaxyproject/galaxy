@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
 import { useUserStore } from "@/stores/userStore";
 

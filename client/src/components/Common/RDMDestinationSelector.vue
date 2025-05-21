@@ -3,7 +3,7 @@ import { BAlert, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } fr
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type BrowsableFilesSourcePlugin, type CreatedEntry, type FilterFileSourcesOptions } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin, CreatedEntry, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 

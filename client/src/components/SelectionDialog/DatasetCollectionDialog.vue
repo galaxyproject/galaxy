@@ -2,7 +2,7 @@
 import axios from "axios";
 import { onMounted, ref } from "vue";
 
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 

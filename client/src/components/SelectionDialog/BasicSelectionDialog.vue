@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
 
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";

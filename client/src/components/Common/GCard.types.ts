@@ -1,4 +1,4 @@
-import { type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
 export type CardBadgeType = "pill" | "badge";
 

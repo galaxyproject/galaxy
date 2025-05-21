@@ -14,7 +14,7 @@ import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
-import { type BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";

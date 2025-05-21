@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 
-import { type HDADetailed } from "@/api";
+import type { HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
+import Heading from "../Common/Heading.vue";
 import HelpText from "../Help/HelpText.vue";
 import DatasetHashes from "@/components/DatasetInformation/DatasetHashes.vue";
 import DatasetSources from "@/components/DatasetInformation/DatasetSources.vue";
@@ -20,8 +21,9 @@ defineProps<Props>();
 
 <template>
     <div v-if="dataset">
-        <h2 class="h-md">Dataset Information</h2>
-
+        <Heading id="dataset-information-heading" v-localize h1 separator inline size="md">
+            Dataset Information
+        </Heading>
         <table id="dataset-details" class="tabletip info_data_table">
             <tbody>
                 <tr>

@@ -340,7 +340,7 @@ export async function isRemoteZipFile(url: string): Promise<boolean> {
 }
 
 export function isValidUrl(inputUrl?: string | null): boolean {
-    if (!inputUrl) {
+    if (!inputUrl || isMultiLine(inputUrl)) {
         return false;
     }
     try {
@@ -349,6 +349,11 @@ export function isValidUrl(inputUrl?: string | null): boolean {
     } catch (_) {
         return false;
     }
+}
+
+function isMultiLine(inputString: string): boolean {
+    const hasLineBreaks = inputString.includes("\n") || inputString.includes("\\n");
+    return hasLineBreaks;
 }
 
 export function isRoCrateZip(explorer?: IZipExplorer): explorer is ROCrateZipExplorer {

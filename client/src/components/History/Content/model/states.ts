@@ -1,5 +1,5 @@
 import { isHDCA } from "@/api";
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
@@ -91,7 +91,7 @@ export const STATES: StateMap = {
     /** the tool producing this dataset has errored */
     error: {
         status: "danger",
-        text: "An error occurred with this dataset:",
+        text: "An error occurred with this dataset.",
         icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */

@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
@@ -92,7 +92,7 @@ onMounted(async () => {
 
 <template>
     <div aria-labelledby="dataset-attributes-heading">
-        <Heading id="dataset-attributes-heading" h1 separator inline size="lg">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="md">
             {{ localize("Edit Dataset Attributes") }}
         </Heading>
 

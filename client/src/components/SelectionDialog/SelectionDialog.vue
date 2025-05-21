@@ -9,7 +9,7 @@ import { computed, ref, watch } from "vue";
 import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
 
-import { type FieldEntry, type SelectionItem } from "./selectionTypes";
+import type { FieldEntry, SelectionItem } from "./selectionTypes";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";

@@ -5,7 +5,7 @@ import { onMounted, onUpdated, ref } from "vue";
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
 
-import { type Citation } from ".";
+import type { Citation } from ".";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
 

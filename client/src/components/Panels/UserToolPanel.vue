@@ -7,7 +7,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
-import { type UnprivilegedToolResponse } from "@/api";
+import type { UnprivilegedToolResponse } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import ActivityPanel from "./ActivityPanel.vue";

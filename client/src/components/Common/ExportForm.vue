@@ -2,7 +2,7 @@
 import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type FilterFileSourcesOptions } from "@/api/remoteFiles";
+import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";

@@ -6,7 +6,7 @@
 
 import type { Placement } from "@floating-ui/dom";
 import { computed, ref } from "vue";
-import { type RouterLink } from "vue-router";
+import type { RouterLink } from "vue-router";
 
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";

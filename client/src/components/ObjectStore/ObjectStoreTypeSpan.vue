@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type ObjectStoreTemplateType } from "@/api/objectStores";
+import type { ObjectStoreTemplateType } from "@/api/objectStores";
 
 const MESSAGES = {
     aws_s3: "This is a storage location based on the Amazon Simple Storage Service (S3). Data here is hosted by Amazon.",

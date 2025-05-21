@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
 import { GalaxyApi } from "@/api";
-import { type DatasetExtraFiles } from "@/api/datasets";
+import type { DatasetExtraFiles } from "@/api/datasets";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple } from "@/utils/simple-error";
 
