@@ -232,8 +232,10 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         jobs = self._history_jobs(history_id)
         assert len(jobs) == n
 
-    def _download_workflow(self, workflow_id, style=None, history_id=None):
-        return self.workflow_populator.download_workflow(workflow_id, style=style, history_id=history_id)
+    def _download_workflow(self, workflow_id, style=None, history_id=None, instance=None):
+        return self.workflow_populator.download_workflow(
+            workflow_id, style=style, history_id=history_id, instance=instance
+        )
 
     def _assert_is_runtime_input(self, tool_state_value):
         if not isinstance(tool_state_value, dict):
@@ -798,6 +800,35 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             self._assert_status_code_is(upload_response, 200)
             self._assert_user_has_workflow_with_name(name)
         return upload_response
+
+    def test_workflow_download_instance(self):
+        original_name = "test_workflow_download_instance"
+        workflow_id = self.workflow_populator.simple_workflow(original_name, importable=True)
+
+        with self.dataset_populator.test_history() as history_id:
+            # Fetch the workflow to get its first version's instance id
+            initial_download = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            first_instance_id = initial_download["workflow_id"]
+
+            # Update the workflow by changing the name
+            changed_name = "new name"
+            update_response = self._update_workflow(workflow_id, {"name": changed_name})
+            self._assert_status_code_is(update_response, 200)
+
+            # Get latest version, to get latest instance id and confirm the name has changed
+            latest_download = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            latest_instance_id = latest_download["workflow_id"]
+            assert latest_instance_id != first_instance_id
+            assert latest_download["id"] == workflow_id
+            assert latest_download["name"] == changed_name
+
+            # Fetch the first version of the workflow via the initial instance id
+            initial_instance_download = self._download_workflow(
+                first_instance_id, style="run", history_id=history_id, instance=True
+            )
+            assert initial_instance_download["id"] == workflow_id
+            assert initial_instance_download["workflow_id"] == first_instance_id
+            assert initial_instance_download["name"] == original_name
 
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
