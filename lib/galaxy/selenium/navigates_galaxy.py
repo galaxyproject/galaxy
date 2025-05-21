@@ -1602,6 +1602,10 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components._.confirm_button(name="Delete").wait_for_and_click()
 
+    def workflow_bookmark_by_name(self, name):
+        self.workflow_index_search_for(name)
+        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
+
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
