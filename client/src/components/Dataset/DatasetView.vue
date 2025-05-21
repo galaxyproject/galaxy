@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBug, faChartBar, faEye, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
@@ -15,6 +18,8 @@ import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+
+library.add(faEye, faChartBar, faInfoCircle, faPen, faBug);
 
 const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
@@ -108,21 +113,23 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
         </header>
         <BNav pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem title="Preview" :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`">
-                Preview
+                <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
                 v-if="!showError"
                 title="Visualize"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
-                Visualize
+                <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
             </BNavItem>
             <BNavItem title="Details" :active="tab === 'details'" :to="`/datasets/${datasetId}/details`">
-                Details
+                <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" /> Details
             </BNavItem>
-            <BNavItem title="Edit" :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`">Edit</BNavItem>
+            <BNavItem title="Edit" :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`">
+                <FontAwesomeIcon :icon="faPen" class="mr-1" /> Edit
+            </BNavItem>
             <BNavItem v-if="showError" title="Error" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`">
-                Error
+                <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
         <div v-if="tab === 'preview'" class="h-100">
