@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
 import type { TrsTool, TrsToolVersion } from "./types";
-
-library.add(faUpload);
 
 interface Props {
     trsTool: TrsTool;

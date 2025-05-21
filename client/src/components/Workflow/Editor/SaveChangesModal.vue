@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import localize from "@/utils/localization";
-
-library.add(faSave, faTimes, faTrash);
 
 interface Props {
     /** Show the save changes modal */

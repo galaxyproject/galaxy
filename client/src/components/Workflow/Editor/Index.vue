@@ -152,13 +152,13 @@
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
                             :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
                             @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon icon="fa-arrow-left" />
+                            <FontAwesomeIcon :icon="faArrowLeft" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
                             @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon icon="fa-arrow-right" />
+                            <FontAwesomeIcon :icon="faArrowRight" />
                         </b-button>
                         <b-button
                             id="workflow-save-button"
@@ -216,8 +216,7 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faCog, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -268,8 +267,6 @@ import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
-
-library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
@@ -701,6 +698,8 @@ export default {
             faTimes,
             faCog,
             faSave,
+            faArrowLeft,
+            faArrowRight,
         };
     },
     computed: {

@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faArrowDown,
-    faChevronDown,
-    faChevronUp,
-    faSignInAlt,
-    faSitemap,
-    faTimes,
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
@@ -25,8 +17,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 import WorkflowInvocationStepHeader from "@/components/WorkflowInvocationState/WorkflowInvocationStepHeader.vue";
-
-library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
 
 interface Props {
     /** The invocation to display */

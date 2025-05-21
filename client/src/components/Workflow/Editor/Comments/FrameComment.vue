@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faCompressAlt, faObjectGroup, faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -20,8 +19,6 @@ import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faObjectGroup, faTrashAlt, faPalette, faCompressAlt);
 
 const props = defineProps<{
     comment: FrameWorkflowComment;
@@ -277,7 +274,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 @pan-by="(p) => emit('pan-by', p)" />
 
             <div class="frame-comment-header">
-                <FontAwesomeIcon icon="fas fa-object-group" />
+                <FontAwesomeIcon :icon="faObjectGroup" />
                 <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
                 <span
                     ref="editableElement"
@@ -298,7 +295,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 variant="outline-primary"
                 title="Fit to content"
                 @click="onFitToContent">
-                <FontAwesomeIcon icon="fa-compress-alt" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faCompressAlt" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
@@ -306,10 +303,10 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>
 

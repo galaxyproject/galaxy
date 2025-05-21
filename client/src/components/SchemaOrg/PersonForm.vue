@@ -4,7 +4,7 @@
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-b-tooltip.hover title="Hide Attribute"
-                ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
+                ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
             /></span>
             <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
             <b-form-input
@@ -32,7 +32,6 @@
 </style>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -55,8 +54,6 @@ const ATTRIBUTES_INFO = [
     { key: "jobTitle", label: "Job Title", placeholder: "job title" },
 ];
 const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
-
-library.add(faEyeSlash, faLink);
 
 export default {
     components: {
@@ -92,6 +89,8 @@ export default {
             currentErrors: currentErrors,
             addAttribute: null,
             schemaOrgClass: "Person",
+            faEyeSlash,
+            faLink,
         };
     },
 };

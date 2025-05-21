@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import historiesGridConfig from "@/components/Grid/configs/histories";
@@ -15,8 +15,6 @@ import GridList from "@/components/Grid/GridList.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 const userStore = useUserStore();
-
-library.add(faPlus);
 
 interface Props {
     activeList?: "archived" | "my" | "shared" | "published";
@@ -40,7 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
                     outline
                     to="/histories/import"
                     data-description="grid action import new history">
-                    <Icon :icon="faPlus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     <span v-localize>Import History</span>
                 </GButton>
             </div>

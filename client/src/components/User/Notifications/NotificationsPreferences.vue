@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faExclamationCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
@@ -20,8 +19,6 @@ import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faCheckCircle, faExclamationCircle, faSave);
 
 interface NotificationsPreferencesProps {
     embedded?: boolean;

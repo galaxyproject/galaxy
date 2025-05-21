@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -14,8 +13,6 @@ import ToolsListTable from "./ToolsListTable.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faTimes);
 
 const props = defineProps({
     name: {
@@ -98,7 +95,7 @@ function showAllTools() {
                         </div>
                     </b-popover>
                     <GButton color="blue" size="small" transparent @click.stop="showAllTools">
-                        <FontAwesomeIcon icon="fa-times" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         Clear filters
                     </GButton>
                 </span>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
@@ -7,8 +6,6 @@ import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-v
 import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
-
-library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
 
 interface Props {
     value?: string;

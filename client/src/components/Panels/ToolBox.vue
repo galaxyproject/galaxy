@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -36,8 +35,6 @@ const props = defineProps({
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
     useSearchWorker: { type: Boolean, default: true },
 });
-
-library.add(faEye, faEyeSlash);
 
 const queryFilter: Ref<string | null> = ref(null);
 const queryPending = ref(false);

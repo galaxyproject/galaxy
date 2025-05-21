@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -8,8 +7,6 @@ import { computed } from "vue";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
-
-library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
 
 const props = defineProps<{
     id: string;

@@ -1,4 +1,3 @@
-import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArrowUp,
     faBell,
@@ -55,7 +54,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(
+// Export the icons array for components that need access to all icons
+export const pluginIcons = [
     faArrowUp,
     faBell,
     faBolt,
@@ -107,8 +107,64 @@ library.add(
     faUndo,
     faUserCog,
     faUserLock,
-    faWrench
-);
+    faWrench,
+];
+
+// Export individual icons for direct importing
+export {
+    faArrowUp,
+    faBell,
+    faBolt,
+    faBurn,
+    faCalculator,
+    faChartArea,
+    faChartBar,
+    faCheckSquare,
+    faClock,
+    faCloud,
+    faCodeBranch,
+    faCog,
+    faColumns,
+    faCompress,
+    faCopy,
+    faDownload,
+    faEllipsisH,
+    faEllipsisV,
+    faExchangeAlt,
+    faExclamationTriangle,
+    faExternalLinkAlt,
+    faEye,
+    faFile,
+    faFileArchive,
+    faFileContract,
+    faFileExport,
+    faFilter,
+    faFolder,
+    faHdd,
+    faInfoCircle,
+    faLaptop,
+    faLink,
+    faList,
+    faLock,
+    faMinusSquare,
+    faPause,
+    faPen,
+    faPlay,
+    faPlus,
+    faPlusSquare,
+    faQuestion,
+    faShareAlt,
+    faSitemap,
+    faStream,
+    faTags,
+    faTools,
+    faTrash,
+    faTrashRestore,
+    faUndo,
+    faUserCog,
+    faUserLock,
+    faWrench,
+};
 
 export const iconMixin = {
     components: {

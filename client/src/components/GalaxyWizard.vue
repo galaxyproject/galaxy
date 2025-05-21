@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
@@ -12,7 +11,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "./BaseComponents/GButton.vue";
 import LoadingSpan from "./LoadingSpan.vue";
 
-library.add(faThumbsUp, faThumbsDown);
 interface Props {
     context?: string;
     jobId: string;

@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { HistorySummaryExtended } from "@/api";
 
 import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
-
-library.add(faCheckSquare, faCompress);
 
 interface Props {
     history: HistorySummaryExtended;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -15,8 +15,6 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
 const LABEL_FIELD: FieldEntry = { key: "label", sortable: true };
 const SELECT_ICON_FIELD: FieldEntry = { key: "__select_icon__", label: "", sortable: false };
