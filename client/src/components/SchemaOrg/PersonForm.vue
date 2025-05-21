@@ -6,11 +6,14 @@
             <span v-b-tooltip.hover title="Hide Attribute"
                 ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
             /></span>
+            <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
             <b-form-input
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
-                :type="attribute.type">
+                :type="attribute.type"
+                :state="currentErrors[attribute.key] ? false : null"
+                @click="removeErrorMessage(attribute.key)">
             </b-form-input>
         </div>
         <div role="group" class="form-group">
@@ -60,6 +63,7 @@ export default {
     },
     data() {
         const currentValues = {};
+        const currentErrors = {};
         const show = {};
         for (const attribute of ATTRIBUTES) {
             const showAttribute = attribute in this.person;
@@ -78,6 +82,7 @@ export default {
             attributeInfo: ATTRIBUTES_INFO,
             show: show,
             currentValues: currentValues,
+            currentErrors: currentErrors,
             addAttribute: null,
             schemaOrgClass: "Person",
         };
