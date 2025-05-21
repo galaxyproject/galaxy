@@ -39,7 +39,7 @@ const editDisabled = computed(() =>
     ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
 );
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
-const viewUrl = computed(() => prependPath(props.itemUrls.view));
+const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.itemUrls.display) : undefined));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -87,7 +87,7 @@ function onDisplay($event: MouseEvent) {
     // Wrap display handler to allow ctrl/meta click to open in new tab
     // instead of triggering display.
     if ($event.ctrlKey || $event.metaKey) {
-        window.open(viewUrl.value, "_blank");
+        window.open(displayUrl.value, "_blank");
     } else {
         emit("display");
     }
@@ -117,7 +117,7 @@ function onDisplay($event: MouseEvent) {
             class="display-btn px-1"
             size="sm"
             variant="link"
-            :href="viewUrl"
+            :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
         </BButton>
