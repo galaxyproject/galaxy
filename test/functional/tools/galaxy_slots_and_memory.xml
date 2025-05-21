@@ -1,6 +1,6 @@
 <tool id="galaxy_slots_and_memory" name="Galaxy Slots and Memory" version="1.0.0" profile="22.05">
     <command><![CDATA[
-echo "\$GALAXY_SLOTS\n$GALAXY_MEMORY_MB_PER_SLOT\n$GALAXY_MEMORY_MB" > '$output'
+printf "%s\n%s\n%s\n" \$GALAXY_SLOTS \$GALAXY_MEMORY_MB_PER_SLOT \$GALAXY_MEMORY_MB > '$output'
     ]]></command>
     <outputs>
         <data name="output" format="txt" />
