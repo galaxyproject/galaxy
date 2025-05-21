@@ -2237,7 +2237,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         instance: Optional[bool] = None,
     ) -> dict:
-        params = {}
+        params: Dict[str, Any] = {}
         if style is not None:
             params["style"] = style
         if history_id is not None:
