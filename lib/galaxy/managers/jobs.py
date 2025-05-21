@@ -24,6 +24,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     and_,
+    exists,
     false,
     func,
     null,
@@ -467,7 +468,7 @@ class JobSearch:
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
             # the input is in a repeat, or not (section and conditional)
-            k = {k, k.split("|")[-1]}
+            k = (k, k.split("|")[-1])
             for type_values in input_list:
                 t = type_values["src"]
                 v = type_values["id"]
@@ -488,7 +489,8 @@ class JobSearch:
                     log.error("Unknown input data type %s", t)
                     return None
 
-        stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+        stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids)
+        stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
@@ -557,7 +559,7 @@ class JobSearch:
     def _build_job_query(self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump):
         """Build subquery that selects a job with correct job parameters."""
         stmt = (
-            select(model.Job.id)
+            select(model.Job.id.label("job_id"))
             .join(model.History, model.Job.history_id == model.History.id)
             .where(
                 and_(
@@ -589,7 +591,6 @@ class JobSearch:
         if wildcard_param_dump.get("__when_value__") is False:
             job_states = {Job.states.SKIPPED}
         stmt = stmt.where(Job.state.in_(job_states))
-        stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for k, v in wildcard_param_dump.items():
             if v == {"__class__": "RuntimeValue"}:
@@ -627,28 +628,36 @@ class JobSearch:
         return stmt
 
     def _exclude_jobs_with_deleted_outputs(self, stmt):
-        jtodca = aliased(model.JobToOutputDatasetCollectionAssociation)
-        deleted_output_hdca = aliased(model.HistoryDatasetCollectionAssociation)
-        jtoda = aliased(model.JobToOutputDatasetAssociation)
-        deleted_output_hda = aliased(model.HistoryDatasetAssociation)
-        return (
-            stmt.outerjoin(jtodca, model.Job.id == jtodca.job_id)
-            .outerjoin(
-                deleted_output_hdca,
-                and_(deleted_output_hdca.id == jtodca.dataset_collection_id, deleted_output_hdca.deleted == true()),
-            )
-            .outerjoin(jtoda, model.Job.id == jtoda.job_id)
-            .outerjoin(
-                deleted_output_hda,
-                and_(deleted_output_hda.id == jtoda.dataset_id, deleted_output_hda.deleted == true()),
-            )
-            .where(
-                and_(
-                    deleted_output_hdca.id.is_(None),  # no matching deleted collection was found.
-                    deleted_output_hda.id.is_(None),  # no matching deleted dataset was found.
-                )
+        subquery_alias = stmt.subquery("filtered_jobs_subquery")
+        outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
+        outer_stmt = select(*outer_select_columns).select_from(subquery_alias)
+        job_id_from_subquery = subquery_alias.c.job_id
+        deleted_collection_exists = exists().where(
+            and_(
+                model.JobToOutputDatasetCollectionAssociation.job_id == job_id_from_subquery,
+                model.JobToOutputDatasetCollectionAssociation.dataset_collection_id
+                == model.HistoryDatasetCollectionAssociation.id,
+                model.HistoryDatasetCollectionAssociation.deleted == true(),
             )
         )
+
+        # Subquery for deleted output datasets
+        deleted_dataset_exists = exists().where(
+            and_(
+                model.JobToOutputDatasetAssociation.job_id == job_id_from_subquery,
+                model.JobToOutputDatasetAssociation.dataset_id == model.HistoryDatasetAssociation.id,
+                model.HistoryDatasetAssociation.deleted == true(),
+            )
+        )
+
+        # Exclude jobs where a deleted collection OR a deleted dataset exists
+        outer_stmt = outer_stmt.where(
+            and_(
+                ~deleted_collection_exists,  # NOT EXISTS deleted collection
+                ~deleted_dataset_exists,  # NOT EXISTS deleted dataset
+            )
+        ).order_by(job_id_from_subquery.desc())
+        return outer_stmt
 
     def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier, require_name_match=True):
         a = aliased(model.JobToInputDatasetAssociation)
@@ -656,8 +665,9 @@ class JobSearch:
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        stmt = stmt.add_columns(a.dataset_id)
-        used_ids.append(a.dataset_id)
+        labeled_col = a.dataset_id.label(f"{k[0]}_{v}")
+        stmt = stmt.add_columns(labeled_col)
+        used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         hda_stmt = select(model.HistoryDatasetAssociation.id).where(
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
@@ -712,10 +722,11 @@ class JobSearch:
 
     def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v):
         a = aliased(model.JobToInputLibraryDatasetAssociation)
-        stmt = stmt.add_columns(a.ldda_id)
+        labeled_col = a.ldda_id.label(f"{k[0]}_{v}")
+        stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
-        used_ids.append(a.ldda_id)
+        used_ids.append(labeled_col)
         return stmt
 
     def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
@@ -738,7 +749,8 @@ class JobSearch:
         hda_right = aliased(model.HistoryDatasetAssociation)
 
         # Start joins from job → input HDCA → its collection → DCE
-        stmt = stmt.add_columns(a.dataset_collection_id)
+        labeled_col = a.dataset_collection_id.label(f"{k[0]}_{v}")
+        stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
         stmt = stmt.join(root_collection, root_collection.id == hdca_input.collection_id)
@@ -772,7 +784,7 @@ class JobSearch:
             )
         )
 
-        used_ids.append(a.dataset_collection_id)  # input-side HDCA
+        used_ids.append(labeled_col)  # input-side HDCA
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
@@ -788,7 +800,8 @@ class JobSearch:
         hda_right = aliased(model.HistoryDatasetAssociation)
 
         # Base joins
-        stmt = stmt.add_columns(a.dataset_collection_element_id)
+        labeled_col = a.dataset_collection_element_id.label(f"{k[0]}_{v}")
+        stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         stmt = stmt.join(dce_left[0], dce_left[0].id == a.dataset_collection_element_id)
         stmt = stmt.join(dce_right[0], dce_right[0].id == v)
@@ -809,7 +822,7 @@ class JobSearch:
 
         data_conditions.append(and_(a.name.in_(k), hda_left.dataset_id == hda_right.dataset_id))
 
-        used_ids.append(a.dataset_collection_element_id)
+        used_ids.append(labeled_col)
         return stmt
 
 
