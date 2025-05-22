@@ -7,7 +7,6 @@ import type { UserConcreteObjectStoreModel } from "@/api";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAttributes } from "@/components/Common/GCard.types";
-import { markup } from "@/components/ObjectStore/configurationMarkdown";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -76,8 +75,6 @@ const quotaSourceLabel = computed(() => {
     return "";
 });
 
-const description = markup(props.sourceOption.description ?? "", true) ?? undefined;
-
 const primaryActions = computed<CardAttributes[]>(() => [
     {
         id: "select",
@@ -96,7 +93,8 @@ const primaryActions = computed<CardAttributes[]>(() => [
         :id="uniqueId"
         :data-source-option-card-id="uniqueId"
         :title="props.sourceOption.name ?? ''"
-        :description="description"
+        full-description
+        :description="props.sourceOption.description ?? ''"
         :primary-actions="primaryActions"
         :grid-view="props.gridView"
         :selected="props.selected">
