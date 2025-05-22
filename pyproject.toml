@@ -93,7 +93,7 @@ dependencies = [
     "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
-    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlitedict",
     "sqlparse",
     "starlette",
@@ -146,7 +146,7 @@ dev = [
     "pytest-shard",
     "responses",
     "roc-validator",
-    "rucio-clients>=33.6.0,!=37.0.*,!=37.1.0,!=37.1.0.post1",  # https://github.com/rucio/rucio/pull/7665
+    "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
     "Sphinx>=4.0",  # support docutils 0.17
