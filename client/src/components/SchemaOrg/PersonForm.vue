@@ -13,7 +13,7 @@
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
                 :type="attribute.type"
                 :state="currentErrors[attribute.key] ? false : null"
-                @click="removeErrorMessage(attribute.key)">
+                @focus="removeErrorMessage(attribute.key)">
             </b-form-input>
         </div>
         <div role="group" class="form-group">
