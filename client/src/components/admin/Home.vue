@@ -38,6 +38,12 @@
             </li>
             <li>
                 <strong>
+                    <router-link to="/admin/invocations">Workflow Invocations</router-link>
+                </strong>
+                - Display workflow invocations that are currently being scheduled.
+            </li>
+            <li>
+                <strong>
                     <router-link to="/admin/data_manager">Local Data</router-link>
                 </strong>
                 - Manage the reference (and other) data that is stored within Tool Data Tables. See
@@ -113,6 +119,18 @@
                     <router-link to="/admin/reset_metadata">Manage Metadata</router-link>
                 </strong>
                 - Select on which repositories you want to reset metadata.
+            </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/toolbox_dependencies">Manage Dependencies</router-link>
+                </strong>
+                - View and manage tool dependencies and their installation status.
+            </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/error_stack">View Error Logs</router-link>
+                </strong>
+                - View detailed error logs and stack traces for debugging purposes.
             </li>
         </ul>
     </div>
