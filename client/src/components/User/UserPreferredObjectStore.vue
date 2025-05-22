@@ -75,11 +75,12 @@ async function handleSubmit(preferred: string | null) {
                 scrollable
                 centered
                 :title="title"
-                hide-footer
                 static
                 size="lg"
-                title-tag="h2"
+                title-tag="h3"
                 dialog-class="modal-select-preferred-object-store"
+                ok-only
+                ok-title="Close"
                 @hidden="resetModal">
                 <SelectObjectStore
                     :parent-error="error"
