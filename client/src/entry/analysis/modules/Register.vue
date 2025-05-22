@@ -3,7 +3,6 @@ import { computed } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { useConfig } from "@/composables/config";
-import { useOpenUrl } from "@/composables/openurl";
 
 import RegisterForm from "@/components/Register/RegisterForm.vue";
 
@@ -12,8 +11,6 @@ const { config, isConfigLoaded } = useConfig();
 const sessionCsrfToken = computed(() => {
     return getGalaxyInstance().session_csrf_token;
 });
-
-const { openUrl } = useOpenUrl();
 </script>
 
 <template>
@@ -28,7 +25,6 @@ const { openUrl } = useOpenUrl();
             :registration-warning-message="config.registration_warning_message"
             :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"
-            :terms-url="config.terms_url"
-            @toggle-login="openUrl('/login/start')" />
+            :terms-url="config.terms_url" />
     </div>
 </template>

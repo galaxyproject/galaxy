@@ -7,12 +7,7 @@ import ExternalRegistration from "./ExternalRegistration.vue";
 
 const localVue = createLocalVue();
 
-/* 2.  Mock openUrl so navigation doesn’t fire ----------------------- */
-jest.mock("@/composables/openurl", () => ({
-    useOpenUrl: () => ({ openUrl: jest.fn() }),
-}));
-
-/* 4.  Helper to mount component with a specific OIDC config --------- */
+/* Helper to mount component with a specific OIDC config --------- */
 function mountExtReg(cfg: object) {
     const pinia = createTestingPinia();
 
@@ -31,7 +26,7 @@ function mountExtReg(cfg: object) {
     });
 }
 
-/* 5.  Cases ---------------------------------------------------------- */
+/* Cases ---------------------------------------------------------- */
 const cases = [
     {
         name: "no OIDC providers",
@@ -79,7 +74,7 @@ const cases = [
     },
 ] as const;
 
-/* 6.  Table-driven test --------------------------------------------- */
+/* Table-driven test --------------------------------------------- */
 describe("ExternalRegistration – OIDC rendering", () => {
     it.each(cases)("$name", ({ cfg, wantButtons }) => {
         const wrapper = mountExtReg(cfg);
