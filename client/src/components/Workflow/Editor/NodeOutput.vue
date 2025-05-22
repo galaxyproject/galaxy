@@ -116,8 +116,13 @@ const visibleHint = computed(() => {
         return `Output will be hidden in history. Click to make output visible.`;
     }
 });
+
+const isOutput = computed(() => {
+    return Boolean(workflowOutput.value?.label);
+});
+
 const label = computed(() => {
-    return workflowOutput.value?.label || props.output.name;
+    return workflowOutput.value?.label ?? props.output.name;
 });
 
 const rowClass = computed(() => {
@@ -318,7 +323,7 @@ const outputDetails = computed(() => {
 
 const isDuplicateLabel = computed(() => {
     const duplicateLabels = stepStore.duplicateLabels;
-    return Boolean(label.value && duplicateLabels.has(label.value));
+    return isOutput.value && Boolean(label.value && duplicateLabels.has(label.value));
 });
 
 const labelClass = computed(() => {
