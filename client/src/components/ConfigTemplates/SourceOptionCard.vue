@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSpinner } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { computed } from "vue";
 
@@ -13,6 +12,7 @@ import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/Quot
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type SourceOption = FileSourceTemplateSummary | ObjectStoreTemplateSummary | UserConcreteObjectStoreModel;
@@ -56,14 +56,14 @@ const uniqueId = computed(() => {
 });
 const buttonTitle = computed(() => {
     if (props.selectionMode) {
-        return props.selected ? "Selected" : "Select as Default";
+        return props.selected ? "Current preferred option" : "Select as the preferred one";
     }
 
     return props.submitButtonTooltip ?? "Select";
 });
 const buttonTooltip = computed(() => {
     if (props.selectionMode) {
-        return props.selected ? "This is the preferred option" : "Select this option as the preferred one";
+        return props.selected ? "Current preferred option" : "Select as the preferred one";
     }
 
     return props.submitButtonTooltip ?? "Select this option to create a new instance";
@@ -78,7 +78,7 @@ const quotaSourceLabel = computed(() => {
 
 const description = markup(props.sourceOption.description ?? "", true) ?? undefined;
 
-const primaryActions: CardAttributes[] = [
+const primaryActions = computed<CardAttributes[]>(() => [
     {
         id: "select",
         label: buttonTitle.value,
@@ -86,9 +86,9 @@ const primaryActions: CardAttributes[] = [
         variant: "outline-primary",
         to: props.selectRoute,
         handler: () => emit("select", props.sourceOption),
-        visible: true,
+        visible: !props.selected,
     },
-];
+]);
 </script>
 
 <template>
@@ -119,12 +119,13 @@ const primaryActions: CardAttributes[] = [
             <slot name="badges" />
         </template>
 
-        <template v-if="'quota' in props.sourceOption && props.sourceOption.quota.enabled" v-slot:description>
+        <template v-if="'quota' in props.sourceOption && props.sourceOption.quota.enabled" v-slot:tags>
             <QuotaSourceUsageProvider
                 ref="quotaUsageProvider"
                 v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
+                class="w-100"
                 :quota-source-label="quotaSourceLabel">
-                <BSpinner v-if="isLoadingUsage" />
+                <LoadingSpan v-if="isLoadingUsage" message="Loading usage" />
                 <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
             </QuotaSourceUsageProvider>
         </template>
