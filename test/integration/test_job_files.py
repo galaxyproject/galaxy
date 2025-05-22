@@ -251,6 +251,29 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert open(path).read() == "some initial text data"
 
+    def test_write_with_put_request(self):
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        new_file_path = os.path.join(working_directory, "new_file.txt")
+        put_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.put(
+            put_url,
+            params={"path": new_file_path, "job_key": job_key},
+            data=b"whole contents of the file",
+        )
+        assert response.status_code == 201
+        assert open(new_file_path).read() == "whole contents of the file"
+
+        assert os.path.exists(path)
+        put_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.put(put_url, params=data, data=b"contents of a replacement file")
+        assert response.status_code == 204
+        assert open(path).read() == "contents of a replacement file"
+
     def test_write_protection(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)

@@ -3012,7 +3012,8 @@ export interface paths {
          *     This API method is intended only for consumption by job runners, not end users.
          */
         get: operations["index_api_jobs__job_id__files_get"];
-        put?: never;
+        /** Populate an output file. */
+        put: operations["populate_api_jobs__job_id__files_put"];
         /**
          * Populate an output file.
          * @description Populate an output file (formal dataset, task split part, working directory file (such as those related to
@@ -31260,6 +31261,76 @@ export interface operations {
                 };
             };
             /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    populate_api_jobs__job_id__files_put: {
+        parameters: {
+            query: {
+                /** @description Path to file to create/replace. */
+                path: string;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the specified job. */
+                job_key: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description A new file has been created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An existing file has been replaced. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
             400: {
                 headers: {
                     [name: string]: unknown;
