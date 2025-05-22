@@ -36,7 +36,7 @@ const props = defineProps({
 
 const { confirm } = useConfirmDialog();
 
-const error = ref<string | null>(null);
+const error = ref();
 
 const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
@@ -124,17 +124,15 @@ function selectionChanged(preferredObjectStoreId: string | null, isPrivate: bool
 }
 
 async function modalOk(event: BvModalEvent) {
-    if (currentSelectedStoreId.value !== props.preferredObjectStoreId) {
-        event?.preventDefault();
+    event?.preventDefault();
 
-        try {
-            await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
-            reset();
-        } catch (_e) {
-            // pass
-        }
-    } else {
+    try {
+        await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
+
         reset();
+        emit("close");
+    } catch (_e) {
+        // pass
     }
 }
 
@@ -142,25 +140,30 @@ function reset() {
     currentSelectedStoreId.value = props.preferredObjectStoreId;
     currentSelectedStorePrivate.value = false;
     error.value = null;
-    emit("close");
 }
 </script>
 
 <template>
     <BModal
         :visible="props.showModal"
-        scrollable
         centered
+        scrollable
+        size="lg"
         :title="storageLocationTitle"
-        title-tag="h2"
         title-class="h-sm"
+        title-tag="h3"
+        ok-title="Change Storage Location"
         cancel-variant="outline-primary"
-        @ok="modalOk"
+        :ok-disabled="currentSelectedStoreId === props.preferredObjectStoreId"
+        :no-close-on-backdrop="currentSelectedStoreId !== props.preferredObjectStoreId"
+        :no-close-on-esc="currentSelectedStoreId !== props.preferredObjectStoreId"
         @cancel="reset"
-        @close="reset">
+        @change="emit('close')"
+        @close="reset"
+        @ok="modalOk">
         <SelectObjectStore
             :show-sub-setting="props.showSubSetting"
-            :parent-error="error || undefined"
+            :parent-error="error"
             :for-what="newDatasetsDescription"
             :selected-object-store-id="currentSelectedStoreId"
             :default-option-title="defaultOptionTitle"
