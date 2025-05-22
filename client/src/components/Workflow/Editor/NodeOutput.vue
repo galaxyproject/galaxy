@@ -323,7 +323,7 @@ const isDuplicateLabel = computed(() => {
 
 const labelClass = computed(() => {
     if (isDuplicateLabel.value) {
-        return "alert-info";
+        return "alert-danger";
     }
     return null;
 });
