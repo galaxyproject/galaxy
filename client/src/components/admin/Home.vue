@@ -136,21 +136,19 @@
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
 
+import { useConfig } from "@/composables/config";
 import Heading from "components/Common/Heading.vue";
 
 library.add(faServer, faUser, faWrench);
 
-export default {
-    components: { Heading },
-    props: {
-        isToolshedInstalled: {
-            type: Boolean,
-            default: false,
-        },
-    },
-};
+const { config, isConfigLoaded } = useConfig();
+
+const isToolshedInstalled = computed(() => {
+    return config.value.tool_shed_urls?.length > 0;
+});
 </script>
