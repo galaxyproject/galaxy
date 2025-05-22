@@ -53,13 +53,9 @@ const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
-const filteredOIDCIdps = computed(() => {
-    return getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps);
-});
+const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
 
-const cilogonListShow = computed(() => {
-    return getNeedShowCilogonInstitutionList(oIDCIdps.value);
-});
+const cilogonListShow = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
 const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
 const custosEnabled = computed(() => oIDCIdps.value.custos);
@@ -112,12 +108,12 @@ async function clickCILogin(idp: string | null) {
     loading.value = true;
 
     try {
-        const redirect_uri = await submitCILogon(idp, true, selected.value.EntityID);
+        const redirectUri = await submitCILogon(idp, true, selected.value.EntityID);
 
         localStorage.setItem("galaxy-provider", idp);
 
-        if (redirect_uri) {
-            window.location.href = redirect_uri;
+        if (redirectUri) {
+            window.location.href = redirectUri;
         }
     } catch (e) {
         messageVariant.value = "danger";

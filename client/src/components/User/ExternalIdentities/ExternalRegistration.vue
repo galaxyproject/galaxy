@@ -24,7 +24,6 @@ const { openUrl } = useOpenUrl();
         </BAlert>
 
         <BForm id="externalRRegister">
-            <!-- OIDC registration-->
             <span>
                 <div v-for="(iDPInfo, idp) in props.idpsWithRegistration" :key="idp" class="m-1">
                     <span v-if="iDPInfo['icon']">

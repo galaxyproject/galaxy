@@ -1,11 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { setActivePinia } from "pinia";
 
 import { getGalaxyInstance } from "@/app/singleton";
 
-import Login from "./Register.vue";
+import Register from "./Register.vue";
+import RegisterForm from "@/components/Register/RegisterForm.vue";
 
 const localVue = getLocalVue(true);
 
@@ -40,9 +40,8 @@ const mockRouter = (query: object) => ({
 
 function shallowMountRegister(routerQuery: object = {}) {
     const pinia = createTestingPinia();
-    setActivePinia(pinia);
 
-    return shallowMount(Login as object, {
+    return shallowMount(Register as object, {
         localVue,
         pinia,
         mocks: {
@@ -52,19 +51,19 @@ function shallowMountRegister(routerQuery: object = {}) {
 }
 
 describe("Register", () => {
-    it("Register index attribute matching", async () => {
+    it("Register component prop matching", async () => {
         const wrapper = shallowMountRegister({
             redirect: "redirect_url",
         });
 
-        const attributes = wrapper.find("#login-index").attributes();
+        const props = wrapper.findComponent(RegisterForm).props();
 
-        expect(attributes.sessioncsrftoken).toBe("session_csrf_token");
-        expect(attributes.enableoidc).toBe("true");
-        expect(attributes.mailingjoinaddr).toBe("mailing_join_addr");
-        expect(attributes.prefercustoslogin).toBe("true");
-        expect(attributes.servermailconfigured).toBe("true");
-        expect(attributes.registrationwarningmessage).toBe("registration_warning_message");
-        expect(attributes.termsurl).toBe("terms_url");
+        expect(props.sessionCsrfToken).toBe("session_csrf_token");
+        expect(props.enableOidc).toBe(true);
+        expect(props.mailingJoinAddr).toBe("mailing_join_addr");
+        expect(props.preferCustosLogin).toBe(true);
+        expect(props.serverMailConfigured).toBe(true);
+        expect(props.registrationWarningMessage).toBe("registration_warning_message");
+        expect(props.termsUrl).toBe("terms_url");
     });
 });

@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
-import { setActivePinia } from "pinia";
 import { ref } from "vue";
 
 import ExternalRegistration from "./ExternalRegistration.vue";
@@ -67,7 +66,6 @@ function mountExtReg(cfg: object, disableLocalAccounts = false) {
     Object.assign(oidcConfigStub, cfg);
 
     const pinia = createTestingPinia();
-    setActivePinia(pinia);
 
     return shallowMount(ExternalRegistration as object, {
         localVue,
@@ -141,10 +139,10 @@ const cases = [
 
 /* 6.  Table-driven test --------------------------------------------- */
 describe("ExternalRegistration – OIDC rendering", () => {
-    it.each(cases)("%s", ({ cfg, disableLocal, wantButtons, wantHr }) => {
+    it.each(cases)("$name", ({ cfg, disableLocal, wantButtons, wantHr }) => {
         const wrapper = mountExtReg(cfg, disableLocal);
 
-        expect(wrapper.findAllComponents({ name: "BButton" }).length).toBe(wantButtons);
+        expect(wrapper.findAll("[data-description='registration button']").length).toBe(wantButtons);
         expect(wrapper.findAll("hr").length).toBe(wantHr);
     });
 });

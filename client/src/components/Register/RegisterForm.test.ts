@@ -3,7 +3,6 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { setActivePinia } from "pinia";
 
 import MountTarget from "./RegisterForm.vue";
 
@@ -17,7 +16,6 @@ describe("RegisterForm", () => {
         axiosMock = new MockAdapter(axios);
 
         const pinia = createTestingPinia();
-        setActivePinia(pinia);
 
         wrapper = mount(MountTarget as object, {
             propsData: {
@@ -55,3 +53,41 @@ describe("RegisterForm", () => {
         expect(postedData.password).toBe("test_pwd");
     });
 });
+
+// ------- The test for the removed `RegisterIndex` component -------
+// TODO: Merge/Add this test here in `RegisterForm.test.ts`
+
+// const mockPush = jest.fn();
+
+// jest.mock("vue-router/composables", () => ({
+//     useRoute: jest.fn(() => ({ name: "Home" })),
+//     useRouter: () => ({ push: mockPush }),
+// }));
+
+// describe("RegisterIndex", () => {
+//     let wrapper;
+
+//     beforeEach(() => {
+//         const pinia = createTestingPinia();
+
+//         wrapper = mount(RegisterIndex, {
+//             propsData: {
+//                 allowUserCreation: false,
+//                 sessionCsrfToken: "sessionCsrfToken",
+//             },
+//             localVue,
+//             pinia,
+//         });
+//     });
+
+//     it("switching from Register to Login", async () => {
+//         const cardHeader = wrapper.find(".card-header");
+//         expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
+
+//         const loginToggle = wrapper.find("[id=login-toggle]");
+//         await loginToggle.trigger("click");
+
+//         expect(mockPush).toHaveBeenCalledWith("/login/start");
+//         expect(mockPush).toHaveBeenCalledTimes(1);
+//     });
+// });
