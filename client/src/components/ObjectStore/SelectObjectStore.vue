@@ -11,15 +11,18 @@ import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue"
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 
-interface SelectObjectStoreProps {
-    selectedObjectStoreId?: String | null;
-    defaultOptionTitle: string;
+interface Props {
     defaultOptionDescription: string;
+    defaultOptionTitle: string;
     forWhat: string;
-    parentError?: String | null;
+    parentError?: string;
+    selectedObjectStoreId?: string | null;
 }
 
-const props = defineProps<SelectObjectStoreProps>();
+const props = withDefaults(defineProps<Props>(), {
+    selectedObjectStoreId: null,
+    parentError: undefined,
+});
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 const store = useObjectStoreStore();
@@ -46,7 +49,7 @@ const error = computed(() => {
 
 async function handleSubmit(preferredObjectStore: UserConcreteObjectStoreModel) {
     let id = preferredObjectStore?.object_store_id ?? null;
-    const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
+    const isPrivate = preferredObjectStore ? preferredObjectStore.private : false;
 
     if (id === "__null__") {
         id = null;
@@ -61,7 +64,7 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
     description: props.defaultOptionDescription,
     badges: [],
     private: false,
-    quota: { enabled: true, source: null },
+    quota: { enabled: false },
     active: false,
     hidden: false,
     purged: false,
@@ -79,10 +82,7 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
         <LoadingSpan v-if="loading" message="Loading Galaxy storage information" />
         <div v-else>
             <span v-if="isOnlyPreference" v-localize>
-                Select a preferred Galaxy storage for new datasets. Depending on the job and workflow execution
-                configuration of this Galaxy a different Galaxy storage may be ultimately used. After a dataset is
-                created, click on the info icon in the history panel to view information about where it is stored. If it
-                is not stored in the place you want, contact Galaxy administrator for more information.
+                {{ props.forWhat }}
             </span>
 
             <BAlert v-if="error" variant="danger" class="object-store-selection-error" show>
