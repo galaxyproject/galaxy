@@ -1,9 +1,9 @@
 import "tests/jest/mockHelpPopovers";
 
+import { getLocalVue } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
@@ -103,7 +103,7 @@ describe("UserPreferredObjectStore.vue", () => {
         expect(errorEl.exists()).toBeFalsy();
     });
 
-    it("displayed error is user update fails", async () => {
+    it("displayed error if user update fails", async () => {
         const wrapper = mountComponent();
         const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
 
@@ -112,8 +112,14 @@ describe("UserPreferredObjectStore.vue", () => {
         const galaxyDefaultOption = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
         );
+        const objectStoreOptionOption = wrapper.find(
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_1" })
+                .selector
+        );
 
         expect(galaxyDefaultOption.exists()).toBeTruthy();
+
+        expect(objectStoreOptionOption.exists()).toBeTruthy();
 
         server.use(
             http.put("/api/users/{user_id}", ({ response }) => {
@@ -121,12 +127,12 @@ describe("UserPreferredObjectStore.vue", () => {
             })
         );
 
-        const galaxyDefaultOptionSelectButton = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "__null__" })
+        const objectStoreOptionButton = wrapper.find(
+            ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "object_store_1" })
                 .selector
         );
 
-        await galaxyDefaultOptionSelectButton.trigger("click");
+        await objectStoreOptionButton.trigger("click");
 
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
