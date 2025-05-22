@@ -66,15 +66,13 @@
                 - The primary user management interface, displaying information associated with each user and providing
                 operations for resetting passwords, updating user information, impersonating a user, and more.
             </li>
-            <!-- %if trans.app.config.enable_quotas: -->
-            <li>
+            <li v-if="enableQuotas">
                 <strong>
                     <router-link to="/admin/quotas">Quotas</router-link>
                 </strong>
                 - Manage user space quotas. See
                 <a href="https://galaxyproject.org/admin/disk-quotas" target="_blank">wiki</a> for details.
             </li>
-            <!-- %endif -->
             <li>
                 <strong>
                     <router-link to="/admin/groups">Groups</router-link>
@@ -151,5 +149,9 @@ const { config, isConfigLoaded } = useConfig();
 
 const isToolshedInstalled = computed(() => {
     return config.value.tool_shed_urls?.length > 0;
+});
+
+const enableQuotas = computed(() => {
+    return config.value.enable_quotas;
 });
 </script>
