@@ -1,4 +1,7 @@
 <script setup>
+import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BModal } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -145,25 +148,26 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     size="sm"
                     class="float-right tool-storage"
                     @click="onShowObjectStoreSelect">
-                    <span class="fa fa-hdd" />
+                    <FontAwesomeIcon :icon="faHdd" />
                 </b-button>
                 <ToolTargetPreferredObjectStorePopover
                     v-if="allowObjectStoreSelection"
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                     :user="currentUser" />
-                <b-modal
+                <BModal
                     v-model="showPreferredObjectStoreModal"
                     :title="storageLocationModalTitle"
                     scrollable
                     centered
                     modal-class="tool-preferred-object-store-modal"
                     title-tag="h3"
-                    size="sm"
-                    hide-footer>
+                    size="lg"
+                    ok-only
+                    ok-title="Close">
                     <ToolSelectPreferredObjectStore
                         :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                         @updated="onUpdatePreferredObjectStoreId" />
-                </b-modal>
+                </BModal>
             </b-button-group>
             <slot name="buttons" />
         </template>
