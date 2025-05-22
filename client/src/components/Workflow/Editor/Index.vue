@@ -895,7 +895,7 @@ export default {
             this.$router.push("/workflows/edit");
         },
         async saveOrCreate() {
-            if (this.hasInvalidConnections) {
+            if (this.hasErrors) {
                 const confirmed = await this.confirm(
                     `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
