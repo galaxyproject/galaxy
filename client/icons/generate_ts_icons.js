@@ -3,8 +3,6 @@ const path = require("path");
 
 /**
  * Generate TypeScript exports for Galaxy custom icons
- * This converts the JSON icon definitions to proper IconDefinition objects
- * that can be imported directly, avoiding the need for string arrays
  */
 function generateIconsTypeScript() {
     // Read the generated icons JSON
@@ -23,10 +21,19 @@ function generateIconsTypeScript() {
     // Generate TypeScript content
     let content = `import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-// Auto-generated Galaxy icons as IconDefinition objects
-// This allows direct imports instead of using library registration and string arrays
+// Galaxy custom icons
 // Generated from: ${iconsJsonPath}
-// To regenerate, run: node icons/generate_ts_icons.js
+// To regenerate, run: npm run icons
+
+// Matches FontAwesome's structure
+export interface GalaxyIconDefinition {
+    iconName: string;
+    prefix: string;
+    icon: [number, number, never[], string, string | string[]];
+}
+
+// Accepts both FA and Galaxy icons
+export type IconLike = IconDefinition | GalaxyIconDefinition;
 
 `;
 
@@ -34,7 +41,7 @@ function generateIconsTypeScript() {
         // Convert icon name to camelCase for JavaScript export
         const exportName = icon.iconName;
 
-        content += `export const ${exportName}: IconDefinition = ${JSON.stringify(
+        content += `export const ${exportName}: GalaxyIconDefinition = ${JSON.stringify(
             {
                 iconName: icon.iconName,
                 prefix: icon.prefix,
