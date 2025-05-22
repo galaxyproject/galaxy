@@ -17,7 +17,7 @@ interface Props {
     separator?: boolean;
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: IconDefinition | string[];
+    icon?: IconDefinition;
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
 }
