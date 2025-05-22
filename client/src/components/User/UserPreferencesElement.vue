@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BRow } from "bootstrap-vue";
 
+import type { IconLike } from "@/components/icons/galaxyIcons";
+
 defineProps<{
     id?: string;
-    icon: IconDefinition;
+    icon: IconLike;
     title?: string;
     description?: string;
     to?: string;
