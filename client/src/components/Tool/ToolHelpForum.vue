@@ -4,6 +4,7 @@ import { BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { galaxyLogo } from "@/components/icons/galaxyIcons";
 import { useConfigStore } from "@/stores/configurationStore";
 import { getShortToolId } from "@/utils/tool";
 
@@ -86,7 +87,7 @@ const configStore = useConfigStore();
         <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
 
         <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
-            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
+            <FontAwesomeIcon :icon="galaxyLogo" /> Ask a new question
         </BButton>
     </div>
 </template>

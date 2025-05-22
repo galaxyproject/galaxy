@@ -1,3 +1,4 @@
+import { faFilter, faUnlockAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 
@@ -14,14 +15,14 @@ export const getUserPreferencesModel = (user_id) => {
                     ? _l("Edit your email, addresses and custom parameters or change your public name.")
                     : _l("Edit your custom parameters."),
             url: `/api/users/${user_id}/information/inputs`,
-            icon: "fa-user",
+            icon: faUser,
             redirect: "/user",
         },
         password: {
             title: _l("Change Password"),
             id: "edit-preferences-password",
             description: _l("Allows you to change your login credentials."),
-            icon: "fa-unlock-alt",
+            icon: faUnlockAlt,
             url: `/api/users/${user_id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "/user",
@@ -32,7 +33,7 @@ export const getUserPreferencesModel = (user_id) => {
             id: "edit-preferences-toolbox-filters",
             description: _l("Customize your Toolbox by displaying or omitting sets of Tools."),
             url: `/api/users/${user_id}/toolbox_filters/inputs`,
-            icon: "fa-filter",
+            icon: faFilter,
             submitTitle: "Save Filters",
             redirect: "/user",
             disabled: !config.has_user_tool_filters,
