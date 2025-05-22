@@ -8,9 +8,6 @@ import { useConfig } from "@/composables/config";
 import ChangePassword from "@/components/Login/ChangePassword.vue";
 import LoginIndex from "@/components/Login/LoginIndex.vue";
 
-const props = defineProps<{
-}>();
-
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
@@ -41,7 +38,7 @@ const queryAttributeForceString = function (
             :message-variant="queryAttributeForceString(router.currentRoute.query.status)"
             :token="queryAttributeForceString(router.currentRoute.query.token)" />
         <LoginIndex
-             v-else-if="isConfigLoaded"
+            v-else-if="isConfigLoaded"
             id="login-index"
             :allow-user-creation="config.allow_local_account_creation"
             :disable-local-accounts="config.disable_local_accounts"
@@ -52,7 +49,6 @@ const queryAttributeForceString = function (
             :show-reset-link="config.enable_account_interface"
             :show-welcome-with-login="config.show_welcome_with_login"
             :terms-url="config.terms_url"
-            :welcome-url="config.welcome_url"
-            />
+            :welcome-url="config.welcome_url" />
     </div>
 </template>

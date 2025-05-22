@@ -141,14 +141,12 @@ export function getRouter(Galaxy) {
             {
                 path: "/login/start",
                 component: Login,
-                props: {show:  "login" },
                 redirect: redirectLoggedIn(),
             },
             /** Registration entry route */
             {
                 path: "/register/start",
                 component: Register,
-                props: {show:  "register" },
                 redirect: redirectLoggedIn(),
             },
             /** Workflow editor */

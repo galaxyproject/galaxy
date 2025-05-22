@@ -139,9 +139,9 @@ class AuthnzManager:
                 else:
                     raise etree.ParseError("Unknown provider specified")
                 if "end_user_registration_endpoint" in self.oidc_backends_config[idp]:
-                    self.app.config.oidc[idp]["end_user_registration_endpoint"] = \
-                        self.oidc_backends_config[idp]["end_user_registration_endpoint"]
-
+                    self.app.config.oidc[idp]["end_user_registration_endpoint"] = self.oidc_backends_config[idp][
+                        "end_user_registration_endpoint"
+                    ]
 
             if len(self.oidc_backends_config) == 0:
                 raise etree.ParseError("No valid provider configuration parsed.")

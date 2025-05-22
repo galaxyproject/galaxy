@@ -21,6 +21,8 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { getOIDCIdpsWithRegistration, type OIDCConfig } from "../User/ExternalIdentities/ExternalIDHelper";
+
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 import ExternalRegistration from "@/components/User/ExternalIdentities/ExternalRegistration.vue";
 
@@ -28,12 +30,13 @@ interface Props {
     disableLocalAccounts?: boolean;
     enableOidc?: boolean;
     mailingJoinAddr?: string;
+    oidcIdps?: OIDCConfig;
     preferCustosLogin?: boolean;
     redirect?: string;
     registrationWarningMessage?: string;
     serverMailConfigured?: boolean;
     sessionCsrfToken: string;
-    showLoginLink?: boolean;
+    hideLoginLink?: boolean; // TODO: Configure this properly
     termsUrl?: string;
 }
 
@@ -55,6 +58,8 @@ const labelPublicName = ref(localize("Public name"));
 const labelEmailAddress = ref(localize("Email address"));
 const labelConfirmPassword = ref(localize("Confirm password"));
 const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
+
+const idpsWithRegistration = computed(() => (props.oidcIdps ? getOIDCIdpsWithRegistration(props.oidcIdps) : {}));
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
@@ -193,13 +198,15 @@ async function submit() {
                                 <BButton v-localize name="create" type="submit" :disabled="disableCreate">
                                     Create
                                 </BButton>
-                            </BCardBody>
-                            <BCardBody>
-                                <ExternalRegistration />
+
+                                <div v-if="Object.keys(idpsWithRegistration).length > 0">
+                                    <hr class="my-4" />
+                                    <ExternalRegistration :idps-with-registration="idpsWithRegistration" />
+                                </div>
                             </BCardBody>
                         </BCollapse>
 
-                        <BCardFooter v-if="showLoginLink">
+                        <BCardFooter v-if="!hideLoginLink">
                             <span v-localize>Already have an account?</span>
 
                             <a

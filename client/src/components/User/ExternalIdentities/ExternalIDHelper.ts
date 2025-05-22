@@ -1,7 +1,7 @@
 import axios from "axios";
+
 import { withPrefix } from "@/utils/redirect";
-import { errorMessageAsString } from "@/utils/simple-error";
-import { useConfig } from "@/composables/config";
+import { rethrowSimple } from "@/utils/simple-error";
 
 /** Shape of the OIDC config object coming from Galaxy’s `/api/config`. */
 export type OIDCConfig = Record<
@@ -14,52 +14,62 @@ export type OIDCConfig = Record<
     }
 >;
 
+export type OIDCConfigWithRegistration = Record<
+    string,
+    {
+        icon?: string;
+        label?: string;
+        custom_button_text?: string;
+        end_user_registration_endpoint: string;
+    }
+>;
+
 /** Return the per-IDP config, minus anything the caller wants to hide. */
-export function getFilteredOIDCIdps(
-    oidcConfig: OIDCConfig,
-    exclude: string[] = []
-): OIDCConfig {
+export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = []): OIDCConfig {
     const blacklist = new Set(["cilogon", "custos", ...exclude]);
     const filtered: OIDCConfig = {};
     Object.entries(oidcConfig).forEach(([idp, cfg]) => {
-        if (!blacklist.has(idp)) filtered[idp] = cfg;
+        if (!blacklist.has(idp)) {
+            filtered[idp] = cfg;
+        }
     });
     return filtered;
 }
 
-export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfig {
-        const filtered: OIDCConfig = {};
-        Object.entries(oidcConfig).forEach(([idp, cfg]) => {
-            if (cfg.end_user_registration_endpoint != undefined &&
-                cfg.end_user_registration_endpoint !== null) {
-                    filtered[idp] = cfg;
-                    }
-        });
+export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfigWithRegistration {
+    const filtered: OIDCConfigWithRegistration = {};
+    Object.entries(oidcConfig).forEach(([idp, cfg]) => {
+        if (cfg.end_user_registration_endpoint && typeof cfg.end_user_registration_endpoint === "string") {
+            filtered[idp] = {
+                ...cfg,
+                end_user_registration_endpoint: cfg.end_user_registration_endpoint,
+            };
+        }
+    });
     return filtered;
-    }
+}
 
 /** Do we need to show the institution picker at all? */
 export const getNeedShowCilogonInstitutionList = (cfg: OIDCConfig): boolean => {
-        return Boolean(cfg.cilogon || cfg.custos);
-    }
+    return Boolean(cfg.cilogon || cfg.custos);
+};
 
 /**
  * Generic OIDC login (all providers *except* CILogon/Custos).
  * Returns the redirect URI Galaxy gives back, or throws.
  */
-export async function submitOIDCLogon(
-    idp: string,
-    redirectParam: string | null = null
-): Promise<string | null> {
+export async function submitOIDCLogon(idp: string, redirectParam: string | null = null): Promise<string | null> {
     const formData = new FormData();
     formData.append("next", redirectParam ?? "");
 
-    const { data } = await axios.post<{ redirect_uri?: string }>(
-        withPrefix(`/authnz/${idp}/login`),
-        formData,
-        { withCredentials: true }
-    );
-    return data.redirect_uri ?? null;
+    try {
+        const { data } = await axios.post<{ redirect_uri?: string }>(withPrefix(`/authnz/${idp}/login`), formData, {
+            withCredentials: true,
+        });
+        return data.redirect_uri ?? null;
+    } catch (error) {
+        rethrowSimple(error);
+    }
 }
 
 /**
@@ -68,22 +78,21 @@ export async function submitOIDCLogon(
  * @param useIDPHint If true, append ?idphint=
  * @param idpHint    The entityID to hint with (ignored when useIDPHint = false)
  */
-export async function submitCILogon(
-    idp: string,
-    useIDPHint = false,
-    idpHint?: string
-): Promise<string | null> {
+export async function submitCILogon(idp: string, useIDPHint = false, idpHint?: string): Promise<string | null> {
     let url = withPrefix(`/authnz/${idp}/login/`);
     if (useIDPHint && idpHint) {
         url += `?idphint=${encodeURIComponent(idpHint)}`;
     }
 
-    const { data } = await axios.post<{ redirect_uri?: string }>(url);
-
-    return data.redirect_uri ?? null;
+    try {
+        const { data } = await axios.post<{ redirect_uri?: string }>(url);
+        return data.redirect_uri ?? null;
+    } catch (error) {
+        rethrowSimple(error);
+    }
 }
 
-export function isOnlyOneOIDCProviderConfigured(config: OIDCConfig) : boolean {
+export function isOnlyOneOIDCProviderConfigured(config: OIDCConfig): boolean {
     return Object.keys(config).length === 1;
 }
 
@@ -107,4 +116,3 @@ export async function redirectToSingleProvider(config: OIDCConfig): Promise<stri
         return redirectUri;
     }
 }
-

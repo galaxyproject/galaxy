@@ -4,16 +4,20 @@ import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import { computed, onMounted, ref } from "vue";
-import { useOpenUrl } from '@/composables/openurl';
 
 import { useConfig } from "@/composables/config";
+import { useOpenUrl } from "@/composables/openurl";
 import { useUserStore } from "@/stores/userStore";
 
+import {
+    getOIDCIdpsWithRegistration,
+    isOnlyOneOIDCProviderConfigured,
+    redirectToSingleProvider,
+} from "../User/ExternalIdentities/ExternalIDHelper";
 import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
-import {OIDCConfig, isOnlyOneOIDCProviderConfigured, redirectToSingleProvider, getOIDCIdpsWithRegistration} from "components/User/ExternalIdentities/ExternalIDHelper"
 
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
@@ -24,38 +28,34 @@ const { openUrl } = useOpenUrl();
 const hasOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
     const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration)
-        return Object.keys(oIDCIdpsWithRegistration).length > 0;
-    else
-        return false;
+    return oIDCIdpsWithRegistration && Object.keys(oIDCIdpsWithRegistration).length > 0;
 });
 
 const hasExactlyOneOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
     const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration)
-        return Object.keys(oIDCIdpsWithRegistration).length === 1;
-    else
-        return false;
+    return oIDCIdpsWithRegistration && Object.keys(oIDCIdpsWithRegistration).length === 1;
 });
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
     if (config.value.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
-        const redirect_url = await redirectToSingleProvider(oIDCIdps);
-        window.location=redirect_url;
+        const redirectUri = await redirectToSingleProvider(oIDCIdps);
+        window.location = redirectUri;
     } else {
-        openUrl('/login/start');
+        openUrl("/login/start");
     }
 }
 
 function performRegistration() {
     if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
-         const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-         const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-         window.location = oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
-    } else
-        openUrl('/register/start')
+        const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+        const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+        window.location =
+            oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    } else {
+        openUrl("/register/start");
+    }
 }
 
 const props = defineProps({
@@ -145,12 +145,7 @@ onMounted(() => {
                 tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
             <QuotaMeter />
-            <MastheadItem
-                v-if="isAnonymous"
-                id="login"
-                class="loggedout-only"
-                title="Login"
-                @click="performLogin()" />
+            <MastheadItem v-if="isAnonymous" id="login" class="loggedout-only" title="Login" @click="performLogin()" />
             <MastheadItem
                 v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
                 id="register"

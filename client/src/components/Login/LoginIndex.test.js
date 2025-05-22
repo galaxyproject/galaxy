@@ -6,8 +6,7 @@ import MountTarget from "./LoginIndex";
 const mockPush = jest.fn();
 
 jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({ name: "Home" })),
-    useRouter: () => ({ push: mockPush})
+    useRouter: () => ({ push: mockPush }),
 }));
 
 const localVue = getLocalVue(true);

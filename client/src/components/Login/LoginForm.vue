@@ -242,8 +242,7 @@ function returnToLogin() {
                                             login-page
                                             :exclude-idps="excludeIdps"
                                             :column-display="loginColumnDisplay"
-                                            :disable-local-accounts="disableLocalAccounts"
-                                            />
+                                            :disable-local-accounts="disableLocalAccounts" />
                                     </div>
                                 </template>
                             </BCardBody>

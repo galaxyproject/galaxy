@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref , watch } from "vue";
-import { useOpenUrl } from '@/composables/openurl';
+import { useOpenUrl } from "@/composables/openurl";
 
 import LoginForm from "@/components/Login/LoginForm.vue";
 
@@ -17,7 +16,7 @@ interface Props {
     disableLocalAccounts?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
     showResetLink: true,
     redirect: undefined,
     termsUrl: undefined,

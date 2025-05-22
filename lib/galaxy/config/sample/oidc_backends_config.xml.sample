@@ -127,7 +127,7 @@ Please mind `http` and `https`.
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
         <!-- <enable_idp_logout>false</enable_idp_logout> -->
         <!-- (Optional) An end user registration point for the OIDC connector -->
-        <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint>
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
     </provider>
 
     <provider name="Keycloak">
@@ -158,7 +158,7 @@ Please mind `http` and `https`.
         <!-- Please note that offline_access scope can be required to obtain refresh tokens from your provider-->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
         <!-- (Optional) An end user registration point for the OIDC connector -->
-        <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint>
+        <!-- <end_user_registration_endpoint>https://the-registration-page-to-use-in-oidc-signup</end_user_registration_endpoint> -->
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
