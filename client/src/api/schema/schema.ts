@@ -31259,8 +31259,26 @@ export interface operations {
                     "application/octet-stream": unknown;
                 };
             };
-            /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
+            /** @description Path does not refer to a file, or input dataset(s) for job have been purged. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description File not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Input dataset(s) for job have been purged. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31319,6 +31337,13 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Bad request (including no file provided). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Request Error */
             "4XX": {
                 headers: {
@@ -31368,8 +31393,26 @@ export interface operations {
                     "application/octet-stream": unknown;
                 };
             };
-            /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
+            /** @description Path does not refer to a file, or input dataset(s) for job have been purged. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description File not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Input dataset(s) for job have been purged. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
