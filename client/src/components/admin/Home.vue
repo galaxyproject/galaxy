@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="isConfigLoaded">
         <h1>Administration</h1>
 
         <p>
@@ -137,11 +137,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
+
 import Heading from "components/Common/Heading.vue";
 
 library.add(faServer, faUser, faWrench);
