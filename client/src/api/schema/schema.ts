@@ -7316,6 +7316,8 @@ export interface components {
             device?: string | null;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -20197,6 +20199,8 @@ export interface components {
             hidden: boolean;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
