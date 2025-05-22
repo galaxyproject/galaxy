@@ -235,6 +235,7 @@ import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { textify } from "@/utils/utils";
 
 import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
@@ -515,6 +516,23 @@ export default {
         const { hasChanges } = storeToRefs(stateStore);
         const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
+        const hasDuplicateOutputs = computed(() => stepStore.duplicateLabels.size > 0);
+
+        const hasErrors = computed(() => hasInvalidConnections.value || hasDuplicateOutputs.value);
+
+        const errorText = computed(() => {
+            const texts = [];
+
+            if (hasInvalidConnections.value) {
+                texts.push("invalid connections");
+            }
+
+            if (hasDuplicateOutputs.value) {
+                texts.push("duplicate output labels");
+            }
+
+            return `Workflow has ${textify(texts, "and")}`;
+        });
 
         stepStore.$subscribe((_mutation, _state) => {
             if (!initialLoading.value) {
@@ -561,9 +579,7 @@ export default {
         const getLabels = computed(() => fromSteps(steps.value));
 
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value
-                ? "Workflow has invalid connections, review and remove invalid connections"
-                : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
         );
 
         useActivityLogic(
@@ -616,6 +632,9 @@ export default {
             connectionStore,
             hasChanges,
             hasInvalidConnections,
+            hasDuplicateOutputs,
+            hasErrors,
+            errorText,
             stepStore,
             steps,
             comments,
@@ -878,7 +897,7 @@ export default {
         async saveOrCreate() {
             if (this.hasInvalidConnections) {
                 const confirmed = await this.confirm(
-                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
