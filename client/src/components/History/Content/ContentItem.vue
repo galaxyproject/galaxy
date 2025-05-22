@@ -23,6 +23,7 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import { getContentItemState, type StateMap, STATES } from "./model/states";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
+import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -441,6 +442,7 @@ function unexpandedClick(event: Event) {
                 </span>
             </div>
         </div>
+        <ContentExpirationIndicator :item="item" class="ml-auto align-self-start btn-group p-1" />
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
             <CollectionDescription
