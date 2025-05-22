@@ -156,9 +156,10 @@ function resetForm() {
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
+@import "custom_theme_variables.scss";
 .error {
-    color: red;
+    color: var(--color-red-500);
 }
 .spacer {
     padding: 5px;
