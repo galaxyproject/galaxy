@@ -7,11 +7,6 @@ import ExternalRegistration from "./ExternalRegistration.vue";
 
 const localVue = createLocalVue();
 
-/* Mock openUrl so navigation doesn’t fire ----------------------- */
-jest.mock("@/composables/openurl", () => ({
-    useOpenUrl: () => ({ openUrl: jest.fn() }),
-}));
-
 /* Helper to mount component with a specific OIDC config --------- */
 function mountExtReg(cfg: object) {
     const pinia = createTestingPinia();

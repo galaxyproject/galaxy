@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useOpenUrl } from "@/composables/openurl";
-
 import LoginForm from "@/components/Login/LoginForm.vue";
 
 interface Props {
@@ -24,8 +22,6 @@ withDefaults(defineProps<Props>(), {
     registrationWarningMessage: undefined,
     disableLocalAccounts: false,
 });
-
-const { openUrl } = useOpenUrl();
 </script>
 
 <template>
@@ -40,7 +36,6 @@ const { openUrl } = useOpenUrl();
             :show-welcome-with-login="showWelcomeWithLogin"
             :terms-url="termsUrl"
             :welcome-url="welcomeUrl"
-            :show-reset-link="showResetLink"
-            @toggle-login="openUrl('/register/start')" />
+            :show-reset-link="showResetLink" />
     </div>
 </template>

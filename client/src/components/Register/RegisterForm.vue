@@ -2,7 +2,6 @@
 import axios from "axios";
 import {
     BAlert,
-    BButton,
     BCard,
     BCardBody,
     BCardFooter,
@@ -22,6 +21,9 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GLink from "../BaseComponents/GLink.vue";
+import VerticalSeparator from "../Common/VerticalSeparator.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 import ExternalRegistration from "@/components/User/ExternalIdentities/ExternalRegistration.vue";
 
@@ -40,10 +42,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const emit = defineEmits<{
-    (e: "toggle-login"): void;
-}>();
 
 const email = ref(null);
 const confirm = ref(null);
@@ -64,9 +62,10 @@ const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
 });
 
-function toggleLogin() {
-    emit("toggle-login");
-}
+/** This decides if all register options should be displayed in column style
+ * (one below the other) or horizontally.
+ */
+const registerColumnDisplay = computed(() => Boolean(props.termsUrl));
 
 async function submit() {
     disableCreate.value = true;
@@ -94,9 +93,9 @@ async function submit() {
 </script>
 
 <template>
-    <div class="container">
-        <div class="row justify-content-md-center">
-            <div class="col col-lg-6">
+    <div class="register-form">
+        <div class="d-flex justify-content-md-center">
+            <div>
                 <BAlert :show="!!registrationWarningMessage" variant="info">
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span v-html="registrationWarningMessage" />
@@ -134,94 +133,98 @@ async function submit() {
                             :visible="!custosPreferred"
                             role="tabpanel"
                             accordion="registration_acc">
-                            <BCardBody>
-                                <BFormGroup :label="labelEmailAddress" label-for="register-form-email">
-                                    <BFormInput
-                                        id="register-form-email"
-                                        v-model="email"
-                                        name="email"
-                                        type="text"
-                                        required />
-                                </BFormGroup>
+                            <BCardBody :class="{ 'd-flex w-100': !registerColumnDisplay }">
+                                <div v-if="!disableLocalAccounts">
+                                    <BFormGroup :label="labelEmailAddress" label-for="register-form-email">
+                                        <BFormInput
+                                            id="register-form-email"
+                                            v-model="email"
+                                            name="email"
+                                            type="text"
+                                            required />
+                                    </BFormGroup>
 
-                                <BFormGroup :label="labelPassword" label-for="register-form-password">
-                                    <BFormInput
-                                        id="register-form-password"
-                                        v-model="password"
-                                        name="password"
-                                        type="password"
-                                        autocomplete="new-password"
-                                        required />
-                                </BFormGroup>
+                                    <BFormGroup :label="labelPassword" label-for="register-form-password">
+                                        <BFormInput
+                                            id="register-form-password"
+                                            v-model="password"
+                                            name="password"
+                                            type="password"
+                                            autocomplete="new-password"
+                                            required />
+                                    </BFormGroup>
 
-                                <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
-                                    <BFormInput
-                                        id="register-form-confirm"
-                                        v-model="confirm"
-                                        name="confirm"
-                                        type="password"
-                                        autocomplete="new-password"
-                                        required />
-                                </BFormGroup>
+                                    <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
+                                        <BFormInput
+                                            id="register-form-confirm"
+                                            v-model="confirm"
+                                            name="confirm"
+                                            type="password"
+                                            autocomplete="new-password"
+                                            required />
+                                    </BFormGroup>
 
-                                <BFormGroup :label="labelPublicName" label-for="register-form-username">
-                                    <BFormInput
-                                        id="register-form-username"
-                                        v-model="username"
-                                        name="username"
-                                        type="text"
-                                        required />
+                                    <BFormGroup :label="labelPublicName" label-for="register-form-username">
+                                        <BFormInput
+                                            id="register-form-username"
+                                            v-model="username"
+                                            name="username"
+                                            type="text"
+                                            required />
 
-                                    <BFormText v-localize>
-                                        Your public name is an identifier that will be used to generate addresses for
-                                        information you share publicly. Public names must be at least three characters
-                                        in length and contain only lower-case letters, numbers, dots, underscores, and
-                                        dashes ('.', '_', '-').
-                                    </BFormText>
-                                </BFormGroup>
+                                        <BFormText v-localize>
+                                            Your public name is an identifier that will be used to generate addresses
+                                            for information you share publicly. Public names must be at least three
+                                            characters in length and contain only lower-case letters, numbers, dots,
+                                            underscores, and dashes ('.', '_', '-').
+                                        </BFormText>
+                                    </BFormGroup>
 
-                                <BFormGroup v-if="mailingJoinAddr && serverMailConfigured">
-                                    <BFormCheckbox
-                                        id="register-form-subscribe"
-                                        v-model="subscribe"
-                                        name="subscribe"
-                                        type="checkbox">
-                                        {{ labelSubscribe }}
-                                    </BFormCheckbox>
-                                    <BFormText v-localize>
-                                        This list is used for important Galaxy updates and newsletter access. We keep it
-                                        streamlined, you should expect only 2-3 emails per month.
-                                    </BFormText>
-                                </BFormGroup>
+                                    <BFormGroup v-if="mailingJoinAddr && serverMailConfigured">
+                                        <BFormCheckbox
+                                            id="register-form-subscribe"
+                                            v-model="subscribe"
+                                            name="subscribe"
+                                            type="checkbox">
+                                            {{ labelSubscribe }}
+                                        </BFormCheckbox>
+                                        <BFormText v-localize>
+                                            This list is used for important Galaxy updates and newsletter access. We
+                                            keep it streamlined, you should expect only 2-3 emails per month.
+                                        </BFormText>
+                                    </BFormGroup>
 
-                                <BButton v-localize name="create" type="submit" :disabled="disableCreate">
-                                    Create
-                                </BButton>
-
-                                <div v-if="Object.keys(idpsWithRegistration).length > 0">
-                                    <hr class="my-4" />
-                                    <ExternalRegistration :idps-with-registration="idpsWithRegistration" />
+                                    <GButton v-localize name="create" type="submit" :disabled="disableCreate">
+                                        Create
+                                    </GButton>
                                 </div>
+
+                                <template v-if="Object.keys(idpsWithRegistration).length > 0">
+                                    <VerticalSeparator v-if="!registerColumnDisplay">
+                                        <span v-localize>or</span>
+                                    </VerticalSeparator>
+
+                                    <hr v-else class="w-100" />
+
+                                    <div class="m-1">
+                                        <ExternalRegistration
+                                            :idps-with-registration="idpsWithRegistration"
+                                            :column-display="registerColumnDisplay" />
+                                    </div>
+                                </template>
                             </BCardBody>
                         </BCollapse>
 
                         <BCardFooter v-if="!hideLoginLink">
                             <span v-localize>Already have an account?</span>
 
-                            <a
-                                id="login-toggle"
-                                v-localize
-                                href="javascript:void(0)"
-                                role="button"
-                                @click.prevent="toggleLogin">
-                                Log in here.
-                            </a>
+                            <GLink id="login-toggle" to="/login/start" thin> Log in here. </GLink>
                         </BCardFooter>
                     </BCard>
                 </BForm>
             </div>
 
-            <div v-if="termsUrl" class="col position-relative embed-container">
+            <div v-if="termsUrl" class="w-100 position-relative embed-container">
                 <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
                 <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
             </div>
@@ -229,6 +232,9 @@ async function submit() {
     </div>
 </template>
 <style scoped lang="scss">
+.register-form {
+    margin: 0rem 10rem;
+}
 .embed-container {
     position: relative;
 
