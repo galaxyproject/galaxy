@@ -468,7 +468,6 @@ class JobSearch:
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
             # the input is in a repeat, or not (section and conditional)
-            k = (k, k.split("|")[-1])
             for type_values in input_list:
                 t = type_values["src"]
                 v = type_values["id"]
@@ -671,7 +670,7 @@ class JobSearch:
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        labeled_col = a.dataset_id.label(f"{k[0]}_{v}")
+        labeled_col = a.dataset_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
@@ -685,7 +684,7 @@ class JobSearch:
             stmt = stmt.join(d)
             data_conditions.append(
                 and_(
-                    d.name.in_({f"{_}|__identifier__" for _ in k}),
+                    d.name == f"{k}|__identifier__",
                     d.value == json.dumps(identifier),
                 )
             )
@@ -705,7 +704,7 @@ class JobSearch:
         )
         data_conditions.append(
             and_(
-                a.name.in_(k),
+                a.name == k,
                 c.id == v,  # c is the requested job input HDA
                 # We need to make sure that the job we are looking for has been run with identical inputs.
                 # Here we deal with 3 requirements:
@@ -728,10 +727,10 @@ class JobSearch:
 
     def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v):
         a = aliased(model.JobToInputLibraryDatasetAssociation)
-        labeled_col = a.ldda_id.label(f"{k[0]}_{v}")
+        labeled_col = a.ldda_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
-        data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
+        data_conditions.append(and_(a.name == k, a.ldda_id == v))
         used_ids.append(labeled_col)
         return stmt
 
@@ -755,7 +754,7 @@ class JobSearch:
         hda_right = aliased(model.HistoryDatasetAssociation)
 
         # Start joins from job → input HDCA → its collection → DCE
-        labeled_col = a.dataset_collection_id.label(f"{k[0]}_{v}")
+        labeled_col = a.dataset_collection_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
@@ -785,7 +784,7 @@ class JobSearch:
 
         data_conditions.append(
             and_(
-                a.name.in_(k),
+                a.name == k,
                 hda_left.dataset_id == hda_right.dataset_id,
             )
         )
@@ -806,7 +805,7 @@ class JobSearch:
         hda_right = aliased(model.HistoryDatasetAssociation)
 
         # Base joins
-        labeled_col = a.dataset_collection_element_id.label(f"{k[0]}_{v}")
+        labeled_col = a.dataset_collection_element_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         stmt = stmt.join(dce_left[0], dce_left[0].id == a.dataset_collection_element_id)
@@ -826,7 +825,7 @@ class JobSearch:
         stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
         stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
 
-        data_conditions.append(and_(a.name.in_(k), hda_left.dataset_id == hda_right.dataset_id))
+        data_conditions.append(and_(a.name == k, hda_left.dataset_id == hda_right.dataset_id))
 
         used_ids.append(labeled_col)
         return stmt
