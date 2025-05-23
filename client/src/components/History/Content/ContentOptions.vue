@@ -2,7 +2,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
-import { faStop } from "font-awesome-6";
+import { faExpand } from "@fortawesome/free-solid-svg-icons";
+import { faStop } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -112,14 +113,14 @@ function onDisplay($event: MouseEvent) {
         <BButton
             v-if="isDataset"
             v-b-tooltip.hover
-            title="Display"
+            title="View"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <icon icon="eye" />
+            <FontAwesomeIcon :icon="faExpand" />
         </BButton>
         <BButton
             v-if="writable && isHistoryItem"
