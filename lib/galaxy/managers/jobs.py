@@ -744,16 +744,57 @@ class JobSearch:
         )
         depth = collection_type.count(":") if collection_type else 0
 
-        a = aliased(model.JobToInputDatasetCollectionAssociation)
-        hdca_input = aliased(model.HistoryDatasetCollectionAssociation)
-        root_collection = aliased(model.DatasetCollection)
+        # Aliases for the "left" side (input HDCA path)
+        a = aliased(model.JobToInputDatasetCollectionAssociation, name=f"job_to_input_dataset_collection_1_{k}_{v}")
+        hdca_input = aliased(
+            model.HistoryDatasetCollectionAssociation, name=f"history_dataset_collection_association_1_{k}_{v}"
+        )
+        root_collection = aliased(model.DatasetCollection, name=f"dataset_collection_1_{k}_{v}")
+        dce_left = [
+            aliased(model.DatasetCollectionElement, name=f"dataset_collection_element_left_{k}_{v}_{i}")
+            for i in range(depth + 1)
+        ]
+        hda_left = aliased(model.HistoryDatasetAssociation, name=f"history_dataset_association_1_{k}_{v}")
 
-        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
-        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
-        hda_left = aliased(model.HistoryDatasetAssociation)
-        hda_right = aliased(model.HistoryDatasetAssociation)
+        # Aliases for the "right" side (target HDCA path) in the main query
+        hdca_target = aliased(
+            model.HistoryDatasetCollectionAssociation, name=f"history_dataset_collection_association_2_{k}_{v}"
+        )
+        target_collection = aliased(model.DatasetCollection, name=f"dataset_collection_2_{k}_{v}")
+        dce_right = [
+            aliased(model.DatasetCollectionElement, name=f"dataset_collection_element_right_{k}_{v}_{i}")
+            for i in range(depth + 1)
+        ]
 
-        # Start joins from job → input HDCA → its collection → DCE
+        # This CTE will get all relevant dataset_ids from the target HDCA (id=v) and its nested elements.
+        _hdca_target_cte = aliased(model.HistoryDatasetCollectionAssociation, name=f"_hdca_target_cte_{k}_{v}")
+        _target_collection_cte = aliased(model.DatasetCollection, name=f"_target_collection_cte_{k}_{v}")
+        _dce_cte = [aliased(model.DatasetCollectionElement, name=f"_dce_cte_{i}") for i in range(depth + 1)]
+        _hda_cte = aliased(model.HistoryDatasetAssociation, name=f"_hda_cte_{k}_{v}")
+
+        reference_hda_cte_stmt = (
+            select(_hda_cte.dataset_id)
+            .select_from(_hdca_target_cte)
+            .join(_target_collection_cte, _target_collection_cte.id == _hdca_target_cte.collection_id)
+            .join(_dce_cte[0], _dce_cte[0].dataset_collection_id == _target_collection_cte.id)
+        )
+
+        for i in range(1, depth + 1):
+            reference_hda_cte_stmt = reference_hda_cte_stmt.join(
+                _dce_cte[i], _dce_cte[i].dataset_collection_id == _dce_cte[i - 1].child_collection_id
+            )
+
+        # Join to the leaf HDA for the right side within the CTE
+        _leaf_cte = _dce_cte[-1]
+        reference_hda_cte_stmt = reference_hda_cte_stmt.join(_hda_cte, _hda_cte.id == _leaf_cte.hda_id)
+
+        # Apply the constant filter for the target HDCA ID
+        reference_hda_cte_stmt = reference_hda_cte_stmt.where(_hdca_target_cte.id == v)
+
+        # Define the CTE object
+        reference_hda = reference_hda_cte_stmt.cte(f"reference_hda_{k}_{v}")
+
+        # Start joins from job → input HDCA → its collection → DCE (left side)
         labeled_col = a.dataset_collection_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
@@ -761,14 +802,12 @@ class JobSearch:
         stmt = stmt.join(root_collection, root_collection.id == hdca_input.collection_id)
         stmt = stmt.join(dce_left[0], dce_left[0].dataset_collection_id == root_collection.id)
 
-        # Join to target HDCA (v), then to its collection and its first-level DCE
-        hdca_target = aliased(model.HistoryDatasetCollectionAssociation)
-        target_collection = aliased(model.DatasetCollection)
+        # Join to target HDCA (v) path and its first-level DCE (right side)
         stmt = stmt.join(hdca_target, hdca_target.id == v)
         stmt = stmt.join(target_collection, target_collection.id == hdca_target.collection_id)
         stmt = stmt.join(dce_right[0], dce_right[0].dataset_collection_id == target_collection.id)
 
-        # Parallel walk the structure
+        # Parallel walk the structure, comparing element_identifiers at each level
         for i in range(1, depth + 1):
             stmt = (
                 stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
@@ -776,42 +815,77 @@ class JobSearch:
                 .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
             )
 
-        # Compare leaf-level HDAs
+        # Join to the leaf-level HDA for the left side in the main query
         leaf_left = dce_left[-1]
-        leaf_right = dce_right[-1]
         stmt = stmt.join(hda_left, hda_left.id == leaf_left.hda_id)
-        stmt = stmt.join(hda_right, hda_right.id == leaf_right.hda_id)
 
         data_conditions.append(
             and_(
                 a.name == k,
-                hda_left.dataset_id == hda_right.dataset_id,
+                hda_left.dataset_id.in_(select(reference_hda.c.dataset_id)),  # Use the CTE's dataset_ids
             )
         )
-
-        used_ids.append(labeled_col)  # input-side HDCA
+        used_ids.append(labeled_col)
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
         dce = self.sa_session.get_one(model.DatasetCollectionElement, v)
-        if dce.child_collection:
+        if dce and dce.child_collection:
             depth = dce.child_collection.collection_type.count(":") + 1
         else:
             depth = 0
-        a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-        dce_left = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
-        dce_right = [aliased(model.DatasetCollectionElement) for _ in range(depth + 1)]
-        hda_left = aliased(model.HistoryDatasetAssociation)
-        hda_right = aliased(model.HistoryDatasetAssociation)
 
-        # Base joins
+        # Aliases for the "left" side (job to input DCE path)
+        a = aliased(model.JobToInputDatasetCollectionElementAssociation, name=f"job_to_input_dce_association_{k}_{v}")
+        dce_left = [aliased(model.DatasetCollectionElement, name=f"dce_left_{k}_{v}_{i}") for i in range(depth + 1)]
+        hda_left = aliased(model.HistoryDatasetAssociation, name=f"hda_left_{k}_{v}")
+
+        # Aliases for the "right" side (target DCE path in the main query)
+        dce_right = [aliased(model.DatasetCollectionElement, name=f"dce_right_{k}_{v}_{i}") for i in range(depth + 1)]
+
+        # This CTE will get all relevant dataset_ids from the target DCE (id=v) and its nested elements.
+        _dce_cte_root = aliased(model.DatasetCollectionElement, name=f"_dce_cte_root_{k}_{v}")
+        _dce_cte_walk = [
+            aliased(model.DatasetCollectionElement, name=f"_dce_cte_walk_{k}_{v}_{i}") for i in range(depth)
+        ]  # One less, as _dce_cte_root is level 0
+        _hda_cte = aliased(model.HistoryDatasetAssociation, name="_hda_cte_{k}_{v}")
+
+        # Start the CTE query from the root DCE (id=v)
+        reference_dce_dataset_ids_cte_stmt = select(_hda_cte.dataset_id).select_from(_dce_cte_root)
+
+        # Walk down the collection structure within the CTE
+        # The first join connects the root DCE to its potential child collection.
+        if depth > 0:
+            reference_dce_dataset_ids_cte_stmt = reference_dce_dataset_ids_cte_stmt.join(
+                _dce_cte_walk[0], _dce_cte_walk[0].dataset_collection_id == _dce_cte_root.child_collection_id
+            )
+            for i in range(1, depth):  # Iterate for subsequent nested levels
+                reference_dce_dataset_ids_cte_stmt = reference_dce_dataset_ids_cte_stmt.join(
+                    _dce_cte_walk[i], _dce_cte_walk[i].dataset_collection_id == _dce_cte_walk[i - 1].child_collection_id
+                )
+
+        # Join to the leaf HDA for the right side within the CTE
+        # The leaf DCE is either _dce_cte_root (if depth is 0) or the last _dce_cte_walk alias
+        leaf_cte = _dce_cte_walk[-1] if depth > 0 else _dce_cte_root
+        reference_dce_dataset_ids_cte_stmt = reference_dce_dataset_ids_cte_stmt.join(
+            _hda_cte, _hda_cte.id == leaf_cte.hda_id
+        )
+
+        reference_dce_dataset_ids_cte_stmt = reference_dce_dataset_ids_cte_stmt.where(_dce_cte_root.id == v)
+
+        # Define the CTE object
+        reference_dce_dataset_ids = reference_dce_dataset_ids_cte_stmt.cte(f"reference_dce_dataset_ids_{k}_{v}")
+
+        # Start joins from job → input DCE association → first-level DCE (left side)
         labeled_col = a.dataset_collection_element_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         stmt = stmt.join(dce_left[0], dce_left[0].id == a.dataset_collection_element_id)
+
+        # Join to target DCE (v) directly (right side)
         stmt = stmt.join(dce_right[0], dce_right[0].id == v)
 
-        # Parallel walk the collection structure
+        # Parallel walk the collection structure, comparing element_identifiers at each level
         for i in range(1, depth + 1):
             stmt = (
                 stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
@@ -819,14 +893,16 @@ class JobSearch:
                 .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
             )
 
-        # Compare dataset_ids at the leaf level
+        # Join to the leaf-level HDA for the left side in the main query
         leaf_left = dce_left[-1]
-        leaf_right = dce_right[-1]
         stmt = stmt.join(hda_left, hda_left.id == leaf_left.hda_id)
-        stmt = stmt.join(hda_right, hda_right.id == leaf_right.hda_id)
 
-        data_conditions.append(and_(a.name == k, hda_left.dataset_id == hda_right.dataset_id))
-
+        data_conditions.append(
+            and_(
+                a.name == k,
+                hda_left.dataset_id.in_(select(reference_dce_dataset_ids.c.dataset_id)),  # Use the CTE's dataset_ids
+            )
+        )
         used_ids.append(labeled_col)
         return stmt
 
