@@ -595,6 +595,7 @@
 
 <script>
 import HotTable from "@handsontable/vue";
+import { fetch, fetchJobErrorMessage } from "api/tools";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -1430,7 +1431,7 @@ export default {
             this.waitOnJob(response);
         },
         waitOnJob(response) {
-            const jobId = response.data.jobs[0].id;
+            const jobId = response;
             const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
@@ -1457,14 +1458,8 @@ export default {
         },
         doFullJobCheck(jobId) {
             const handleJobShow = (jobResponse) => {
-                const stderr = jobResponse.data.stderr;
-                if (stderr) {
-                    let errorMessage = "An error was encountered while running your upload job. ";
-                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
-                        errorMessage +=
-                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
-                    }
-                    errorMessage += "Upload job completed with standard error: " + stderr;
+                const errorMessage = fetchJobErrorMessage(jobResponse.data);
+                if (errorMessage) {
                     this.errorMessage = errorMessage;
                 }
             };
@@ -1582,14 +1577,12 @@ export default {
                 }
 
                 if (this.state !== "error") {
-                    axios
-                        .post(`${getAppRoot()}api/tools/fetch`, {
-                            history_id: historyId,
-                            targets: targets,
-                            auto_decompress: true,
-                        })
-                        .then(this.refreshAndWait)
-                        .catch(this.renderFetchError);
+                    const fetchPayload = {
+                        history_id: historyId,
+                        targets: targets,
+                        auto_decompress: true,
+                    };
+                    fetch(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
                 }
             }
         },
