@@ -779,8 +779,8 @@ class JobSearch:
         # Compare leaf-level HDAs
         leaf_left = dce_left[-1]
         leaf_right = dce_right[-1]
-        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
-        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+        stmt = stmt.join(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.join(hda_right, hda_right.id == leaf_right.hda_id)
 
         data_conditions.append(
             and_(
@@ -822,8 +822,8 @@ class JobSearch:
         # Compare dataset_ids at the leaf level
         leaf_left = dce_left[-1]
         leaf_right = dce_right[-1]
-        stmt = stmt.outerjoin(hda_left, hda_left.id == leaf_left.hda_id)
-        stmt = stmt.outerjoin(hda_right, hda_right.id == leaf_right.hda_id)
+        stmt = stmt.join(hda_left, hda_left.id == leaf_left.hda_id)
+        stmt = stmt.join(hda_right, hda_right.id == leaf_right.hda_id)
 
         data_conditions.append(and_(a.name == k, hda_left.dataset_id == hda_right.dataset_id))
 
