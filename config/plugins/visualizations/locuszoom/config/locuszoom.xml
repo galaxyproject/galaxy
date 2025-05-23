@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="locuszoom">
+    <description>LocusZoom Manhattan Plot</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext">bgzip</test>
+        </data_source>
+    </data_sources>
+    <params>
+        <param required="true">dataset_id</param>
+    </params>
+    <settings>
+        <input>
+            <label>Add tabix file for your primary dataset</label>
+            <help>Can be created with tabix</help>
+            <name>tabix</name>
+            <type>data</type>
+            <extension>bgzip</extension>
+        </input>
+        <input>
+            <label>Select a chromosome</label>
+            <name>chromosome</name>
+            <type>integer</type>
+            <min>1</min>
+            <value>1</value>
+        </input>
+        <input>
+            <label>Select start position</label>
+            <name>start</name>
+            <type>integer</type>
+            <min>1</min>
+            <value>1</value>
+        </input>
+        <input>
+            <label>Select end position</label>
+            <name>end</name>
+            <type>integer</type>
+            <min>1</min>
+            <value>999999</value>
+        </input>
+        <input>
+            <label>Are the p-values in -log10?</label>
+            <name>is_neg_log_pvalue</name>
+            <type>boolean</type>
+            <value>false</value>
+        </input>
+        <input>
+            <label>Column for chromosomes</label>
+            <name>chrom_col</name>
+            <type>integer</type>
+            <value>1</value>
+        </input>
+        <input>
+            <label>Column for positions</label>
+            <name>pos_col</name>
+            <type>integer</type>
+            <value>2</value>
+        </input>
+        <input>
+            <label>Column for reference allele</label>
+            <name>ref_col</name>
+            <type>integer</type>
+            <value>6</value>
+        </input>
+        <input>
+            <label>Column for alternative allele</label>
+            <name>alt_col</name>
+            <type>integer</type>
+            <value>7</value>
+        </input>
+        <input>
+            <label>Column for p-values</label>
+            <name>pvalue_col</name>
+            <type>integer</type>
+            <value>13</value>
+        </input>
+        <input>
+            <label>Column for beta</label>
+            <name>beta_col</name>
+            <type>integer</type>
+            <value>9</value>
+        </input>
+        <input>
+            <label>Column for standard error of beta</label>
+            <name>stderr_beta_col</name>
+            <type>integer</type>
+            <value>10</value>
+        </input>
+    </settings>
+    <requirements>
+        <requirement type="npm" version="0.0.3" package="@galaxyproject/locuszoom"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+</visualization>
