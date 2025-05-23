@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchPlugins, type Plugin } from "@/api/plugins";
+import { useUserStore } from "@/stores/userStore";
 
 import { getTestExtensions } from "./utilities";
 
@@ -12,6 +14,8 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import VisualizationHeader from "@/components/Visualizations/VisualizationHeader.vue";
+
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const router = useRouter();
 
@@ -59,10 +63,14 @@ const filteredPlugins = computed(() => {
 
 async function selectVisualization(plugin: Plugin) {
     if (props.datasetId) {
-        router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`, {
-            // @ts-ignore
-            title: plugin.name,
-        });
+        if (plugin.requires_login && isAnonymous) {
+            router.push(`/login/start`);
+        } else {
+            router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`, {
+                // @ts-ignore
+                title: plugin.name,
+            });
+        }
     } else {
         router.push(`/visualizations/create/${plugin.name}`);
     }
