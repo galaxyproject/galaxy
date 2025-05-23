@@ -2029,8 +2029,5 @@ def to_content_disposition(target: str) -> str:
 def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
-    prefix = "https://doi.org/|doi.org/|doi:"
-    doi_prefix = r"10\.\d+"
-    doi_suffix = r"\S+"
-    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
-    return bool(doi_re.match(doi))
+    doi_re = re.compile(r"(10\.(\d)+\/(.+))")
+    return bool(doi_re.search(doi))

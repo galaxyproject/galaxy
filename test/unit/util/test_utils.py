@@ -149,6 +149,13 @@ DOI_VALID_VALUES = [
     "doi:10.1234567890/42",  # longer prefix
     "doi:10.1234/42ab:%&*$//crazy-suffix/%/&/",
     "doi:10.1234/aa",
+    "http://doi.org/10.1234/42",
+    "stillvalid:10.1234/42",
+    "dx.doi.org:10.1234/42",
+    "https://dx.doi.org:10.1234/42",
+    "doi:10.1234/42/a b",
+    "httpss://dx.doi.org:10.1234/42",
+    "doi:10.1234/ 42",
 ]
 
 
@@ -158,14 +165,11 @@ def test_validate_doi_pass(input):
 
 
 DOI_INVALID_VALUES = [
-    "http://doi.org/10.1234/42",
-    "invalid:10.1234/42",
     "doi:11.1234/42",
     "doi:101234/42",
     "doi:10. 1234/42",
     "doi:10.abc/42",
-    "doi:10.1234/ 42",
-    "doi:10.1234/42/a b",
+    "10.1234 /42/a b",
 ]
 
 
