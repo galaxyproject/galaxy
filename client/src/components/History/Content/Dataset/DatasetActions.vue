@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -15,7 +15,7 @@ import type { ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
-library.add(faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
+library.add(faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
 
 interface Props {
     item: HDADetailed;
@@ -36,14 +36,8 @@ const router = useRouter();
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
-const showError = computed(() => {
-    return props.item.state === "error" || props.item.state === "failed_metadata";
-});
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
-});
-const reportErrorUrl = computed(() => {
-    return prependPath(props.itemUrls.reportError!);
 });
 const rerunUrl = computed(() => {
     return prependPath(props.itemUrls.rerun!);
@@ -65,10 +59,6 @@ function onHighlight() {
     emit("toggleHighlights");
 }
 
-function onError() {
-    window.location.href = reportErrorUrl.value;
-}
-
 function onRerun() {
     router.push(`/root?job_id=${props.item.creating_job}`);
 }
@@ -78,18 +68,6 @@ function onRerun() {
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <BButton
-                    v-if="showError"
-                    v-b-tooltip.hover
-                    class="px-1"
-                    title="Error"
-                    size="sm"
-                    variant="link"
-                    :href="reportErrorUrl"
-                    @click.prevent.stop="onError">
-                    <FontAwesomeIcon :icon="faBug" />
-                </BButton>
-
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
 
                 <BButton
