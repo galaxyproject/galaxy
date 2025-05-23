@@ -454,7 +454,7 @@ class JobSearch:
                 return key, value
             return key, value
 
-        stmt = self._build_job_query(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
+        stmt = select(model.Job.id.label("job_id"))
 
         data_conditions: List = []
 
@@ -490,6 +490,7 @@ class JobSearch:
                     return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids)
+        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump)
         stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for job in self.sa_session.execute(stmt):
@@ -556,10 +557,15 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_query(self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump):
+    def _filter_jobs(
+        self, stmt, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
+    ):
         """Build subquery that selects a job with correct job parameters."""
+        subquery_alias = stmt.subquery("job_ids_subquery")
+        outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
+        stmt = select(*outer_select_columns).select_from(subquery_alias)
         stmt = (
-            select(model.Job.id.label("job_id"))
+            stmt.join(model.Job, model.Job.id == subquery_alias.c.job_id)
             .join(model.History, model.Job.history_id == model.History.id)
             .where(
                 and_(
