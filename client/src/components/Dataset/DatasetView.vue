@@ -111,23 +111,36 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
             </transition>
         </header>
         <BNav pills class="my-2 p-2 bg-light border-bottom">
-            <BNavItem title="Preview" :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`">
+            <BNavItem
+                title="View a preview of the dataset contents"
+                :active="tab === 'preview'"
+                :to="`/datasets/${datasetId}/preview`">
                 <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
                 v-if="!showError"
-                title="Visualize"
+                title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
                 <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
             </BNavItem>
-            <BNavItem title="Details" :active="tab === 'details'" :to="`/datasets/${datasetId}/details`">
+            <BNavItem
+                title="View detailed information about this dataset"
+                :active="tab === 'details'"
+                :to="`/datasets/${datasetId}/details`">
                 <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" /> Details
             </BNavItem>
-            <BNavItem title="Edit" :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`">
+            <BNavItem
+                title="Edit dataset attributes and metadata"
+                :active="tab === 'edit'"
+                :to="`/datasets/${datasetId}/edit`">
                 <FontAwesomeIcon :icon="faPen" class="mr-1" /> Edit
             </BNavItem>
-            <BNavItem v-if="showError" title="Error" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`">
+            <BNavItem
+                v-if="showError"
+                title="View error information for this dataset"
+                :active="tab === 'error'"
+                :to="`/datasets/${datasetId}/error`">
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
