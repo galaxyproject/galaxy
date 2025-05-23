@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="locuszoom">
+<visualization name="LocusZoom" embeddable="true">
     <description>LocusZoom Manhattan Plot</description>
     <data_sources>
         <data_source>
