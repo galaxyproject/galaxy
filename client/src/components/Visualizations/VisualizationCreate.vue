@@ -76,7 +76,7 @@ defineExpose({ doQuery });
             <VisualizationExamples :url-data="urlData" />
         </template>
         <div class="my-3">
-            <BAlert v-if="plugin?.requires_login" variant="warning" show v-localize>
+            <BAlert v-if="plugin.requires_login" variant="warning" show v-localize>
                 Please login to use this visualization!
             </BAlert>
             <SelectionField
@@ -97,7 +97,7 @@ defineExpose({ doQuery });
             <div v-html="renderMarkdown(plugin.help)" />
         </div>
         <div class="my-2 pb-2">
-            <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
+            <div v-for="(tag, index) in plugin.tags" :key="index" class="badge badge-info text-capitalize mr-1">
                 {{ tag }}
             </div>
         </div>
