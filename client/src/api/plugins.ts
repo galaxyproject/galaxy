@@ -29,6 +29,7 @@ export interface Plugin {
     html: string;
     logo?: string;
     name: string;
+    requires_login?: boolean;
     target?: string;
     tags?: Array<string>;
     tests?: Array<TestType>;

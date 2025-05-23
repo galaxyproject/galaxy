@@ -126,6 +126,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "target": self.config.get("render_target", "galaxy_main"),
             "embeddable": self.config.get("embeddable"),
             "entry_point": self.config.get("entry_point"),
+            "requires_login": self.config.get("requires_login"),
             "settings": self.config.get("settings"),
             "specs": self.config.get("specs"),
             "tracks": self.config.get("tracks"),

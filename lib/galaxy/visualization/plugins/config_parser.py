@@ -79,6 +79,11 @@ class VisualizationsConfigParser:
         if "embeddable" in xml_tree.attrib:
             returned["embeddable"] = asbool(xml_tree.attrib.get("embeddable"))
 
+        # record the requires_login flag - defaults to False
+        returned["requires_login"] = False
+        if "requires_login" in xml_tree.attrib:
+            returned["requires_login"] = asbool(xml_tree.attrib.get("requires_login"))
+
         # record the visible flag - defaults to False
         returned["hidden"] = False
         if "hidden" in xml_tree.attrib:

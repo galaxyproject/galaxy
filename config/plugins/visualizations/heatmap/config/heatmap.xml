@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Heatmap" embeddable="true">
+<visualization name="Heatmap" embeddable="true" requires_login="true">
     <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
     <tags>
         <tag>Heatmap</tag>
