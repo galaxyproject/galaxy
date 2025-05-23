@@ -2029,5 +2029,5 @@ def to_content_disposition(target: str) -> str:
 def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
-    doi_re = re.compile(r"(10\.(\d)+\/(.+))")
+    doi_re = re.compile(r"(10\.(\d)+\/(\S+))")
     return bool(doi_re.search(doi))
