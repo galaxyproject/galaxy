@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faBug, faChartBar, faEye, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BNav, BNavItem } from "bootstrap-vue";
+import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
+import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -102,9 +103,10 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                             {{ dataset.genome_build }}
                         </BLink>
                     </span>
-                    <div v-if="dataset.misc_info" class="info">
-                        <span class="value">{{ dataset.misc_info }}</span>
-                    </div>
+                    <span v-if="dataset.file_size" class="filesize">
+                        <span v-localize class="prompt">size</span>
+                        <span class="value font-weight-bold" v-html="bytesToString(dataset.file_size, false)" />
+                    </span>
                 </div>
             </transition>
         </header>
@@ -165,6 +167,21 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     opacity: 1;
     transition: all 0.25s ease;
     overflow: hidden;
+
+    .datatype,
+    .dbkey,
+    .filesize {
+        margin-right: 1rem;
+    }
+
+    .prompt {
+        color: $text-muted;
+        margin-right: 0.25rem;
+    }
+
+    .blurb {
+        margin-bottom: 0.25rem;
+    }
 }
 
 .header-enter, /* change to header-enter-from with Vue 3 */
