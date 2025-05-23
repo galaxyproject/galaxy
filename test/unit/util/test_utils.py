@@ -150,7 +150,6 @@ DOI_VALID_VALUES = [
     "stillvalid:10.1234/42",
     "dx.doi.org:10.1234/42",
     "https://dx.doi.org:10.1234/42",
-    "doi:10.1234/42/a b",
     "httpss://dx.doi.org:10.1234/42",
     "doi:10.1234/ 42",
 ]
@@ -167,6 +166,7 @@ DOI_INVALID_VALUES = [
     "doi:10. 1234/42",
     "doi:10.abc/42",
     "10.1234 /42/a b",
+    "doi:10.1234/42/a b",
 ]
 
 
