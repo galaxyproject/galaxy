@@ -53,6 +53,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "vitessce",
     "vizarr",
     "vtk",
+    "locuszoom",
 ]; // todo: derive from XML
 
 const args = process.argv.slice(2);
