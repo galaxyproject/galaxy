@@ -7,6 +7,7 @@ import { type Dataset, fetchPlugin, fetchPluginHistoryItems, type Plugin } from 
 import type { OptionType } from "@/components/SelectionField/types";
 import { useMarkdown } from "@/composables/markdown";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 import { getTestExtensions, getTestUrls } from "./utilities";
 
@@ -19,6 +20,7 @@ import SelectionField from "@/components/SelectionField/SelectionField.vue";
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, increaseHeadingLevelBy: 2 });
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const router = useRouter();
 
@@ -76,8 +78,8 @@ defineExpose({ doQuery });
             <VisualizationExamples :url-data="urlData" />
         </template>
         <div class="my-3">
-            <BAlert v-if="plugin.requires_login" variant="warning" show v-localize>
-                Please login to use this visualization!
+            <BAlert v-if="plugin.requires_login && isAnonymous" v-localize variant="warning" show>
+                Please log in to access this visualization.
             </BAlert>
             <SelectionField
                 v-else
