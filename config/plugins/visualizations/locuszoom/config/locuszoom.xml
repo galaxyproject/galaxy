@@ -5,7 +5,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-            <test test_attr="ext">bgzip</test>
+            <test test_attr="ext">gwas_bgzip</test>
         </data_source>
     </data_sources>
     <params>
@@ -17,7 +17,7 @@
             <help>Can be created with tabix</help>
             <name>tabix</name>
             <type>data</type>
-            <extension>bgzip</extension>
+            <extension>gwas_tabix.gz</extension>
         </input>
         <input>
             <label>Select a chromosome</label>
