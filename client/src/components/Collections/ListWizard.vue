@@ -254,6 +254,8 @@ function onRuleState(newRuleState: boolean) {
                     :history-id="currentHistoryId"
                     :initial-elements="selectedItems || []"
                     :collection-type="collectionTypeForPairedOrUnpairedBuilder"
+                    :forward-filter="currentForwardFilter"
+                    :reverse-filter="currentReverseFilter"
                     mode="wizard"
                     :default-hide-source-items="true"
                     :from-selection="true"
