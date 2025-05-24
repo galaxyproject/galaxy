@@ -735,7 +735,26 @@ class JobSearch:
         return stmt
 
     def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
-        # Determine depth based on collection_type of the HDCA we're matching against
+        # Strategy for efficiently finding equivalent HDCAs:
+        # 1. Determine the structural depth of the target HDCA by its collection_type.
+        # 2. For the target HDCA (identified by 'v'):
+        #    a. Dynamically construct Common Table Expressions (CTEs) to traverse its (potentially nested) structure down to individual datasets.
+        #    b. Generate a "path signature string" for each dataset element, uniquely identifying its path within the collection.
+        #    c. Aggregate these path strings into a canonical, sorted array (the "reference full signature") using array_agg with explicit ordering.
+        # 3. For all candidate HDCAs:
+        #    a. Perform a similar dynamic traversal and path signature string generation.
+        #    b. Aggregate these into sorted "full signature" arrays for each candidate HDCA.
+        # 4. Finally, identify equivalent HDCAs by comparing their full signature array directly against the reference full signature array.
+        #
+        # This approach is performant because:
+        # - It translates the complex problem of structural collection comparison into efficient array equality checks directly within the database.
+        # - It leverages the power of SQL CTEs and set-based operations, allowing the database query optimizer to find an efficient execution plan.
+        # - Joins required to traverse collection structures are built dynamically based on the actual depth, avoiding unnecessary complexity.
+        # - Signatures are computed and compared entirely on the database side, minimizing data transfer to the application.
+        #
+        # Note: CTEs are uniquely named using 'k' and 'v' to allow this logic to be embedded
+        # within larger queries or loops processing multiple target HDCAs. Aliases are used
+        # extensively to manage dynamic joins based on collection depth.
         collection_type = self.sa_session.scalar(
             select(model.DatasetCollection.collection_type)
             .select_from(model.HistoryDatasetCollectionAssociation)
@@ -744,88 +763,131 @@ class JobSearch:
         )
         depth = collection_type.count(":") if collection_type else 0
 
-        # Aliases for the "left" side (input HDCA path)
         a = aliased(model.JobToInputDatasetCollectionAssociation, name=f"job_to_input_dataset_collection_1_{k}_{v}")
         hdca_input = aliased(
             model.HistoryDatasetCollectionAssociation, name=f"history_dataset_collection_association_1_{k}_{v}"
         )
-        root_collection = aliased(model.DatasetCollection, name=f"dataset_collection_1_{k}_{v}")
-        dce_left = [
-            aliased(model.DatasetCollectionElement, name=f"dataset_collection_element_left_{k}_{v}_{i}")
-            for i in range(depth + 1)
+
+        _hdca_target_cte_ref = aliased(model.HistoryDatasetCollectionAssociation, name="_hdca_target_cte_ref")
+        _target_collection_cte_ref = aliased(model.DatasetCollection, name="_target_collection_cte_ref")
+        _dce_cte_ref_list = [
+            aliased(model.DatasetCollectionElement, name=f"_dce_cte_ref_{i}") for i in range(depth + 1)
         ]
-        hda_left = aliased(model.HistoryDatasetAssociation, name=f"history_dataset_association_1_{k}_{v}")
+        _hda_cte_ref = aliased(model.HistoryDatasetAssociation, name="_hda_cte_ref")
 
-        # Aliases for the "right" side (target HDCA path) in the main query
-        hdca_target = aliased(
-            model.HistoryDatasetCollectionAssociation, name=f"history_dataset_collection_association_2_{k}_{v}"
-        )
-        target_collection = aliased(model.DatasetCollection, name=f"dataset_collection_2_{k}_{v}")
-        dce_right = [
-            aliased(model.DatasetCollectionElement, name=f"dataset_collection_element_right_{k}_{v}_{i}")
-            for i in range(depth + 1)
-        ]
-
-        # This CTE will get all relevant dataset_ids from the target HDCA (id=v) and its nested elements.
-        _hdca_target_cte = aliased(model.HistoryDatasetCollectionAssociation, name=f"_hdca_target_cte_{k}_{v}")
-        _target_collection_cte = aliased(model.DatasetCollection, name=f"_target_collection_cte_{k}_{v}")
-        _dce_cte = [aliased(model.DatasetCollectionElement, name=f"_dce_cte_{i}") for i in range(depth + 1)]
-        _hda_cte = aliased(model.HistoryDatasetAssociation, name=f"_hda_cte_{k}_{v}")
-
-        reference_hda_cte_stmt = (
-            select(_hda_cte.dataset_id)
-            .select_from(_hdca_target_cte)
-            .join(_target_collection_cte, _target_collection_cte.id == _hdca_target_cte.collection_id)
-            .join(_dce_cte[0], _dce_cte[0].dataset_collection_id == _target_collection_cte.id)
+        # CTE 1: signature_elements_cte
+        signature_elements_cte = (
+            select(
+                func.concat_ws(
+                    ";",
+                    *[_dce_cte_ref_list[i].element_identifier for i in range(depth + 1)],
+                    _hda_cte_ref.dataset_id.cast(sqlalchemy.Text),
+                ).label("path_signature_string")
+            )
+            .select_from(_hdca_target_cte_ref)
+            .join(_target_collection_cte_ref, _target_collection_cte_ref.id == _hdca_target_cte_ref.collection_id)
+            .join(_dce_cte_ref_list[0], _dce_cte_ref_list[0].dataset_collection_id == _target_collection_cte_ref.id)
         )
 
         for i in range(1, depth + 1):
-            reference_hda_cte_stmt = reference_hda_cte_stmt.join(
-                _dce_cte[i], _dce_cte[i].dataset_collection_id == _dce_cte[i - 1].child_collection_id
+            signature_elements_cte = signature_elements_cte.join(
+                _dce_cte_ref_list[i],
+                _dce_cte_ref_list[i].dataset_collection_id == _dce_cte_ref_list[i - 1].child_collection_id,
             )
 
-        # Join to the leaf HDA for the right side within the CTE
-        _leaf_cte = _dce_cte[-1]
-        reference_hda_cte_stmt = reference_hda_cte_stmt.join(_hda_cte, _hda_cte.id == _leaf_cte.hda_id)
+        _leaf_cte_ref = _dce_cte_ref_list[-1]
+        signature_elements_cte = signature_elements_cte.join(_hda_cte_ref, _hda_cte_ref.id == _leaf_cte_ref.hda_id)
+        signature_elements_cte = signature_elements_cte.where(_hdca_target_cte_ref.id == v).cte(
+            f"signature_elements_{k}_{v}"
+        )
 
-        # Apply the constant filter for the target HDCA ID
-        reference_hda_cte_stmt = reference_hda_cte_stmt.where(_hdca_target_cte.id == v)
+        # CTE 2: reference_full_signature_cte
+        reference_full_signature_cte = (
+            select(
+                func.array_agg(
+                    sqlalchemy.text(
+                        f"{signature_elements_cte.c.path_signature_string.name} ORDER BY {signature_elements_cte.c.path_signature_string.name}"
+                    )
+                ).label("signature_array")
+            )
+            .select_from(signature_elements_cte)
+            .cte(f"reference_full_signature_{k}_{v}")
+        )
 
-        # Define the CTE object
-        reference_hda = reference_hda_cte_stmt.cte(f"reference_hda_{k}_{v}")
+        candidate_hdca = aliased(model.HistoryDatasetCollectionAssociation, name="candidate_hdca")
+        candidate_root_collection = aliased(model.DatasetCollection, name="candidate_root_collection")
+        candidate_dce_list = [
+            aliased(model.DatasetCollectionElement, name=f"candidate_dce_{i}") for i in range(depth + 1)
+        ]
+        candidate_hda = aliased(model.HistoryDatasetAssociation, name="candidate_hda")
 
-        # Start joins from job → input HDCA → its collection → DCE (left side)
+        # CTE 3: candidate_signature_elements_cte
+        candidate_signature_elements_cte = (
+            select(
+                candidate_hdca.id.label("candidate_hdca_id"),
+                func.concat_ws(
+                    ";",
+                    *[candidate_dce_list[i].element_identifier for i in range(depth + 1)],
+                    candidate_hda.dataset_id.cast(sqlalchemy.Text),
+                ).label("path_signature_string"),
+            )
+            .select_from(candidate_hdca)
+            .join(candidate_root_collection, candidate_root_collection.id == candidate_hdca.collection_id)
+            .join(candidate_dce_list[0], candidate_dce_list[0].dataset_collection_id == candidate_root_collection.id)
+        )
+
+        for i in range(1, depth + 1):
+            candidate_signature_elements_cte = candidate_signature_elements_cte.join(
+                candidate_dce_list[i],
+                candidate_dce_list[i].dataset_collection_id == candidate_dce_list[i - 1].child_collection_id,
+            )
+
+        _leaf_candidate_dce = candidate_dce_list[-1]
+        candidate_signature_elements_cte = candidate_signature_elements_cte.join(
+            candidate_hda, candidate_hda.id == _leaf_candidate_dce.hda_id
+        ).cte(f"candidate_signature_elements_{k}_{v}")
+
+        # CTE 4: candidate_full_signatures_cte
+        # Use sqlalchemy.text() to explicitly include ORDER BY inside array_agg
+        candidate_full_signatures_cte = (
+            select(
+                candidate_signature_elements_cte.c.candidate_hdca_id,
+                func.array_agg(
+                    sqlalchemy.text(
+                        f"{candidate_signature_elements_cte.c.path_signature_string.name} ORDER BY {candidate_signature_elements_cte.c.path_signature_string.name}"
+                    )
+                ).label("full_signature_array"),
+            )
+            .select_from(candidate_signature_elements_cte)
+            .group_by(candidate_signature_elements_cte.c.candidate_hdca_id)
+            .cte(f"candidate_full_signatures_{k}_{v}")
+        )
+
+        # CTE 5: equivalent_hdca_ids_cte
+        equivalent_hdca_ids_cte = (
+            select(candidate_full_signatures_cte.c.candidate_hdca_id.label("equivalent_id"))
+            .where(
+                candidate_full_signatures_cte.c.full_signature_array
+                == select(reference_full_signature_cte.c.signature_array).scalar_subquery()
+            )
+            .cte(f"equivalent_hdca_ids_{k}_{v}")
+        )
+
+        # Main query `stmt` construction
         labeled_col = a.dataset_collection_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
-        stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
-        stmt = stmt.join(root_collection, root_collection.id == hdca_input.collection_id)
-        stmt = stmt.join(dce_left[0], dce_left[0].dataset_collection_id == root_collection.id)
 
-        # Join to target HDCA (v) path and its first-level DCE (right side)
-        stmt = stmt.join(hdca_target, hdca_target.id == v)
-        stmt = stmt.join(target_collection, target_collection.id == hdca_target.collection_id)
-        stmt = stmt.join(dce_right[0], dce_right[0].dataset_collection_id == target_collection.id)
-
-        # Parallel walk the structure, comparing element_identifiers at each level
-        for i in range(1, depth + 1):
-            stmt = (
-                stmt.join(dce_left[i], dce_left[i].dataset_collection_id == dce_left[i - 1].child_collection_id)
-                .join(dce_right[i], dce_right[i].dataset_collection_id == dce_right[i - 1].child_collection_id)
-                .filter(dce_left[i].element_identifier == dce_right[i].element_identifier)
-            )
-
-        # Join to the leaf-level HDA for the left side in the main query
-        leaf_left = dce_left[-1]
-        stmt = stmt.join(hda_left, hda_left.id == leaf_left.hda_id)
-
-        data_conditions.append(
+        stmt = stmt.join(
+            hdca_input,
             and_(
-                a.name == k,
-                hda_left.dataset_id.in_(select(reference_hda.c.dataset_id)),  # Use the CTE's dataset_ids
-            )
+                hdca_input.id == a.dataset_collection_id,
+                hdca_input.id.in_(select(equivalent_hdca_ids_cte.c.equivalent_id)),
+            ),
         )
+
         used_ids.append(labeled_col)
+        data_conditions.append(a.name == k)
         return stmt
 
     def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
