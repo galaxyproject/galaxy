@@ -388,6 +388,7 @@ async function producePlugins(callback, forceReinstall = false) {
             if (!fs.existsSync(pkgDir)) {
                 throw new Error(`Package directory not found: ${pkgDir}`);
             }
+            fs.emptyDirSync(pluginDir);
             fs.copySync(pkgDir, pluginDir, { overwrite: true });
             if (!fs.existsSync(xmlPath)) {
                 throw new Error(`Expected XML file not found after install: ${xmlPath}`);
