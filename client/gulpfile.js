@@ -46,7 +46,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "phylocanvas",
     "plotly",
     "plyr",
-    "tabulator",
     "ts_visjs",
     "unipept",
     "venn",
@@ -59,6 +58,10 @@ const PLUGIN_PACKAGES = {
     aceeditor: {
         package: "@galaxyproject/aceeditor",
         version: "0.0.4",
+    },
+    tabulator: {
+        package: "@galaxyproject/tabulator",
+        version: "0.0.9",
     },
 };
 
