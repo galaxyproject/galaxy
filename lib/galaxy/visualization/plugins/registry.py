@@ -160,12 +160,11 @@ class VisualizationsRegistry:
         if not os.path.isdir(plugin_path):
             # super won't work here - different criteria
             return False
-        if "config" not in os.listdir(plugin_path):
-            return False
-        expected_config_filename = f"{os.path.split(plugin_path)[1]}.xml"
-        if not os.path.isfile(os.path.join(plugin_path, "config", expected_config_filename)):
-            return False
-        return True
+        expected_config_filename = f"{os.path.basename(plugin_path)}.xml"
+        return any(
+            os.path.isfile(os.path.join(plugin_path, subdir, expected_config_filename))
+            for subdir in ("config", "static")
+        )
 
     def _load_plugin(self, plugin_path):
         """
@@ -178,16 +177,19 @@ class VisualizationsRegistry:
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split(plugin_path)[1]
-        # TODO: this is the standard/older way to config
-        config_file = os.path.join(plugin_path, "config", (f"{plugin_name}.xml"))
-        if os.path.exists(config_file):
-            config = self.config_parser.parse_file(config_file)
-            if config is not None:
-                # config may be none if the visualization is disabled
-                plugin = self._build_plugin(plugin_name, plugin_path, config)
-                return plugin
-        else:
-            raise ObjectNotFound(f"Visualization XML not found: {config_file}.")
+        config_paths = [
+            os.path.join(plugin_path, "config", f"{plugin_name}.xml"),
+            os.path.join(plugin_path, "static", f"{plugin_name}.xml"),
+        ]
+
+        for config_file in config_paths:
+            if os.path.exists(config_file):
+                config = self.config_parser.parse_file(config_file)
+                if config is not None:
+                    plugin = self._build_plugin(plugin_name, plugin_path, config)
+                    return plugin
+
+        raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory
