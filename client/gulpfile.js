@@ -6,6 +6,7 @@ const child_process = require("child_process");
 const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
 const xml2js = require("xml2js");
+const os = require("os");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
@@ -53,6 +54,13 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "vizarr",
     "vtk",
 ]; // todo: derive from XML
+
+const PLUGIN_PACKAGES = {
+    aceeditor: {
+        package: "@galaxyproject/aceeditor",
+        version: "0.0.4",
+    },
+};
 
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf("--limit");
@@ -348,6 +356,59 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
     }
 }
 
+/**
+ * Produce plugins from fully self-contained npm packages
+ */
+async function producePlugins(callback, forceReinstall = false) {
+    for (const pluginName of Object.keys(PLUGIN_PACKAGES)) {
+        const { package, version } = PLUGIN_PACKAGES[pluginName];
+        const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${pluginName}`);
+        const staticDir = path.join(pluginDir, "static");
+        const xmlPath = path.join(staticDir, `${pluginName}.xml`);
+        const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
+        const currentHash = `${package}@${version}`;
+        let tempDir = null;
+        try {
+            if (!forceReinstall && fs.existsSync(hashFilePath)) {
+                const storedHash = fs.readFileSync(hashFilePath, "utf8").trim();
+                if (storedHash === currentHash) {
+                    console.log(`Package ${currentHash} already installed for ${pluginName}, skipping.`);
+                    continue;
+                }
+            }
+            console.log(`Installing ${currentHash} into ${pluginDir}...`);
+            tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${pluginName}-`));
+            fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ private: true }, null, 2));
+            child_process.execSync(`npm install ${currentHash}`, {
+                cwd: tempDir,
+                stdio: "inherit",
+                shell: true,
+            });
+            const pkgDir = path.join(tempDir, "node_modules", package);
+            if (!fs.existsSync(pkgDir)) {
+                throw new Error(`Package directory not found: ${pkgDir}`);
+            }
+            fs.copySync(pkgDir, pluginDir, { overwrite: true });
+            if (!fs.existsSync(xmlPath)) {
+                throw new Error(`Expected XML file not found after install: ${xmlPath}`);
+            }
+            fs.writeFileSync(hashFilePath, currentHash);
+            console.log(`Installed ${currentHash} into ${pluginDir}`);
+        } catch (err) {
+            console.error(`Failed to install ${package}@${version} for ${pluginName}:`, err);
+        } finally {
+            if (tempDir && fs.existsSync(tempDir)) {
+                try {
+                    fs.removeSync(tempDir);
+                } catch (cleanupErr) {
+                    console.warn(`Warning: Failed to clean temp dir ${tempDir}:`, cleanupErr);
+                }
+            }
+        }
+    }
+    return callback();
+}
+
 function forceBuildPlugins(callback) {
     return buildPlugins(callback, true);
 }
@@ -361,7 +422,7 @@ function cleanPlugins() {
 }
 
 const client = parallel(stageLibs, icons);
-const plugins = series(buildPlugins, installPlugins, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installPlugins, producePlugins, cleanPlugins, stagePlugins);
 const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
@@ -377,3 +438,4 @@ module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
 module.exports.installPlugins = installPlugins;
+module.exports.producePlugins = producePlugins;
