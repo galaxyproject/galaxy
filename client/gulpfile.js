@@ -381,7 +381,7 @@ async function producePlugins(callback, forceReinstall = false) {
             fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ private: true }, null, 2));
             child_process.execSync(`npm install ${currentHash}`, {
                 cwd: tempDir,
-                stdio: "inherit",
+                stdio: "pipe",
                 shell: true,
             });
             const pkgDir = path.join(tempDir, "node_modules", package);
