@@ -1,0 +1,6 @@
+aceeditor:
+    package: "@galaxyproject/aceeditor"
+    version: 0.0.4
+tabulator:
+    package: "@galaxyproject/tabulator"
+    version: 0.0.9

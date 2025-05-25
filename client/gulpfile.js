@@ -7,6 +7,7 @@ const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
 const xml2js = require("xml2js");
 const os = require("os");
+const yaml = require("yaml");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
@@ -54,17 +55,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "vtk",
 ]; // todo: derive from XML
 
-const VISUALIZATION_PLUGINS = {
-    aceeditor: {
-        package: "@galaxyproject/aceeditor",
-        version: "0.0.4",
-    },
-    tabulator: {
-        package: "@galaxyproject/tabulator",
-        version: "0.0.9",
-    },
-};
-
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf("--limit");
 const pluginFilter = limitIndex !== -1 && args[limitIndex + 1] ? args[limitIndex + 1] : "";
@@ -105,6 +95,10 @@ PATHS.pluginBuildModules = [
         path.join(PATHS.pluginBaseDir, `visualizations/${plugin}/package.json`)
     ),
 ];
+
+const visualizationsConfig = "./visualizations.yml";
+const file = fs.readFileSync(visualizationsConfig, "utf8");
+const VISUALIZATION_PLUGINS = yaml.parse(file);
 
 function stageLibs(callback) {
     Object.keys(PATHS.stagedLibraries).forEach((lib) => {
