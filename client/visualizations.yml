@@ -16,6 +16,9 @@ drawrna:
 h5web:
     package: "@galaxyproject/h5web"
     version: 0.5.2
+jupyterlite:
+    package: "@galaxyproject/jupyterlite"
+    version: 0.0.11
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
