@@ -19,6 +19,9 @@ h5web:
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.11
+kepler:
+    package: "@galaxyproject/kepler"
+    version: 0.0.3
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
