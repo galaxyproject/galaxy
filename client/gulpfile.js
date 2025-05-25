@@ -30,7 +30,6 @@ const PLUGIN_BUILD_IDS = [
 const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "heatmap",
-    "kepler",
     "ngl",
     "molstar",
     "msa",
