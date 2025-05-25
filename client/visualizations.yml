@@ -7,6 +7,9 @@ aladin:
 alignment:
     package: "@galaxyproject/alignment"
     version: 0.0.9
+chiraviz:
+    package: "@galaxyproject/chiraviz"
+    version: 0.0.1
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
