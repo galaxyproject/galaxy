@@ -54,7 +54,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "vtk",
 ]; // todo: derive from XML
 
-const PLUGIN_PACKAGES = {
+const VISUALIZATION_PLUGINS = {
     aceeditor: {
         package: "@galaxyproject/aceeditor",
         version: "0.0.4",
@@ -362,9 +362,9 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
 /**
  * Produce plugins from fully self-contained npm packages
  */
-async function producePlugins(callback, forceReinstall = false) {
-    for (const pluginName of Object.keys(PLUGIN_PACKAGES)) {
-        const { package, version } = PLUGIN_PACKAGES[pluginName];
+async function installVisualizations(callback, forceReinstall = false) {
+    for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
+        const { package, version } = VISUALIZATION_PLUGINS[pluginName];
         const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${pluginName}`);
         const staticDir = path.join(pluginDir, "static");
         const xmlPath = path.join(staticDir, `${pluginName}.xml`);
@@ -426,7 +426,7 @@ function cleanPlugins() {
 }
 
 const client = parallel(stageLibs, icons);
-const plugins = series(buildPlugins, installPlugins, producePlugins, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installPlugins, installVisualizations, cleanPlugins, stagePlugins);
 const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
@@ -442,4 +442,4 @@ module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
 module.exports.installPlugins = installPlugins;
-module.exports.producePlugins = producePlugins;
+module.exports.installVisualizations = installVisualizations;
