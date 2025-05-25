@@ -36,7 +36,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "ngl",
     "molstar",
     "msa",
-    "niivue",
     "openlayers",
     "openseadragon",
     "pca",

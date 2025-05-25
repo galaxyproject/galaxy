@@ -13,6 +13,9 @@ chiraviz:
 drawrna:
     package: "@galaxyproject/drawrna"
     version: 0.0.1
+niivue:
+    package: "@galaxyproject/niivue"
+    version: 0.0.17
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
