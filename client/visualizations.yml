@@ -1,6 +1,9 @@
 aceeditor:
     package: "@galaxyproject/aceeditor"
     version: 0.0.4
+aladin:
+    package: "@galaxyproject/aladin"
+    version: 0.0.1
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
