@@ -4,6 +4,9 @@ aceeditor:
 aladin:
     package: "@galaxyproject/aladin"
     version: 0.0.1
+alignment:
+    package: "@galaxyproject/alignment"
+    version: 0.0.9
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9

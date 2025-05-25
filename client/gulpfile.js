@@ -28,7 +28,6 @@ const PLUGIN_BUILD_IDS = [
     "tiffviewer",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
-    "alignment",
     "chiraviz",
     "cytoscape",
     "drawrna",
