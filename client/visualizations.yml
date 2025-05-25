@@ -10,6 +10,9 @@ alignment:
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.1
+drawrna:
+    package: "@galaxyproject/drawrna"
+    version: 0.0.1
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
