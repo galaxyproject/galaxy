@@ -10,8 +10,9 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 interface ExpirableItem {
     id: string;
-    object_store_id: string;
     create_time: string;
+    object_store_id?: string;
+    object_store_ids?: string[];
 }
 
 const props = defineProps<{
@@ -23,19 +24,39 @@ const { selectableObjectStores } = storeToRefs(store);
 
 const itemCreationDate = computed(() => parseISO(`${props.item.create_time}Z`));
 
-const associatedObjectStore = computed(() => {
-    console.debug("Checking for associated object store", props.item.object_store_id, props.item);
-    return selectableObjectStores.value?.find((objectStore) => {
-        return objectStore.object_store_id === props.item.object_store_id;
-    });
+const shortTermObjectStore = computed(() => {
+    console.debug("Checking for short-term object store", props.item.object_store_id, props.item);
+    if (props.item.object_store_id !== undefined) {
+        // Single object store case: check if it has an expiration policy
+        return selectableObjectStores.value?.find((objectStore) => {
+            return (
+                objectStore.object_store_id === props.item.object_store_id &&
+                objectStore.object_expires_after_days !== undefined
+            );
+        });
+    } else if (props.item.object_store_ids !== undefined) {
+        // Multiple object stores case: find the one with the shortest expiration policy
+        return selectableObjectStores.value
+            ?.filter((objectStore) => {
+                return (
+                    objectStore.object_store_id &&
+                    objectStore.object_expires_after_days !== undefined &&
+                    props.item.object_store_ids?.includes(objectStore.object_store_id)
+                );
+            })
+            .reduce((prev, curr) => {
+                return (prev.object_expires_after_days ?? 0) < (curr.object_expires_after_days ?? 0) ? prev : curr;
+            });
+    }
+    return undefined;
 });
 
 const objectStoreName = computed(() => {
-    return associatedObjectStore.value?.name ?? "Unknown";
+    return shortTermObjectStore.value?.name ?? "Unknown";
 });
 
 const timeToExpire = computed<number | null>(() => {
-    const targetObjectStore = associatedObjectStore.value;
+    const targetObjectStore = shortTermObjectStore.value;
     if (!targetObjectStore || !targetObjectStore.object_expires_after_days) {
         return null;
     }
