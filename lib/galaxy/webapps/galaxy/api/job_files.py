@@ -2,6 +2,7 @@
 API for asynchronous job running mechanisms can use to fetch or put files related to running and queued jobs.
 """
 
+import asyncio
 import logging
 import os
 import re
@@ -19,6 +20,7 @@ from fastapi import (
     Path,
     Query,
     Request,
+    Response,
     UploadFile,
 )
 from fastapi.params import Depends
@@ -219,6 +221,63 @@ class FastAPIJobFiles:
             raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
 
         return GalaxyFileResponse(path)
+
+    # The ARC remote job runner (`lib.galaxy.jobs.runners.pulsar.PulsarARCJobRunner`) expects a `PUT` endpoint to stage
+    # out result files back to Galaxy.
+    @router.put(
+        "/api/jobs/{job_id}/files",
+        summary="Populate an output file.",
+        responses={
+            201: {"description": "A new file has been created."},
+            204: {"description": "An existing file has been replaced."},
+            400: {"description": "Bad request."},
+        },
+    )
+    def populate(
+        self,
+        job_id: Annotated[str, Path(description="Encoded id string of the job.")],
+        path: Annotated[str, Query(description="Path to file to create/replace.")],
+        job_key: Annotated[
+            str,
+            Query(
+                description=(
+                    "A key used to authenticate this request as acting on behalf of a job runner for the specified job."
+                ),
+            ),
+        ],
+        trans: SessionRequestContext = DependsOnTrans,
+    ):
+        path = unquote(path)
+
+        job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
+        self.__check_job_can_write_to_path(trans, job, path)
+
+        destination_file_exists = os.path.exists(path)
+
+        # FastAPI can only read the file contents from the request body in an async context. To write the file without
+        # using an async endpoint, the async code that reads the file from the body and writes it to disk will have to
+        # run within the sync endpoint. Since the code that writes the data to disk is blocking
+        # `destination_file.write(chunk)`, it has to run on its own event loop within the thread spawned to answer the
+        # request to the sync endpoint.
+        async def write():
+            with open(path, "wb") as destination_file:
+                async for chunk in trans.request.stream():
+                    destination_file.write(chunk)
+
+        target_dir = os.path.dirname(path)
+        util.safe_makedirs(target_dir)
+        event_loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(event_loop)
+            event_loop.run_until_complete(write())
+        finally:
+            event_loop.close()
+
+        return (
+            Response(status_code=201, headers={"Location": str(trans.request.url)})
+            if not destination_file_exists
+            else Response(status_code=204)
+        )
 
     @router.post(
         "/api/jobs/{job_id}/files",
