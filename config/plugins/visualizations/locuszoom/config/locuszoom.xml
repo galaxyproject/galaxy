@@ -101,4 +101,25 @@
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.gwas_tabix.gz" ftype="gwas_tabix.gz" />
         </test>
     </tests>
+     <help format="markdown"><![CDATA[
+# What is LocusZoom?
+
+LocusZoom is a specialized tool designed to create interactive Manhattan plots for visualizing results from genome-wide association studies (GWAS).
+It helps researchers explore genetic association signals within specific chromosomal regions.
+
+## Key Features
+
+- **Interactive Manhattan Plots**: Visualize GWAS results with zoom and pan capabilities to focus on genomic regions of interest.
+- **Chromosome-Specific Visualization**: Plots are rendered for one chromosome at a time within a user-specified genomic region.
+- **Tabix-Indexed File Support**: Efficiently handles large datasets by working with tabix-indexed files, enabling fast data retrieval.
+
+This tool is essential for detailed examination of association signals in GWAS, facilitating interpretation of complex genomic data.
+
+The input dataset for GWAS results must have size of at least 64ko. Accepted extenstions are gwas_bgzip for this primary dataset and gwas_tabix.gz for the corresponding tabix.
+
+For more information:
+
+Boughton, A. P. et al. LocusZoom.js: interactive and embeddable visualization of genetic association study results. Bioinformatics (2021) doi:10.1093/bioinformatics/btab186.
+
+    ]]></help>
 </visualization>
