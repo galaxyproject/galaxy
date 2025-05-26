@@ -97,5 +97,8 @@
         <test>
             <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.gwas_bgzip" ftype="gwas_bgzip" />
         </test>
+        <test>
+            <param name="dataset_id" value="http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/1.gwas_tabix.gz" ftype="gwas_tabix.gz" />
+        </test>
     </tests>
 </visualization>
