@@ -1,0 +1,30 @@
+aceeditor:
+    package: "@galaxyproject/aceeditor"
+    version: 0.0.4
+aladin:
+    package: "@galaxyproject/aladin"
+    version: 0.0.1
+alignment:
+    package: "@galaxyproject/alignment"
+    version: 0.0.9
+chiraviz:
+    package: "@galaxyproject/chiraviz"
+    version: 0.0.1
+drawrna:
+    package: "@galaxyproject/drawrna"
+    version: 0.0.1
+h5web:
+    package: "@galaxyproject/h5web"
+    version: 0.5.2
+jupyterlite:
+    package: "@galaxyproject/jupyterlite"
+    version: 0.0.11
+kepler:
+    package: "@galaxyproject/kepler"
+    version: 0.0.3
+niivue:
+    package: "@galaxyproject/niivue"
+    version: 0.0.17
+tabulator:
+    package: "@galaxyproject/tabulator"
+    version: 0.0.9

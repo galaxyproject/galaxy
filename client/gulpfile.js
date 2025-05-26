@@ -6,6 +6,8 @@ const child_process = require("child_process");
 const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
 const xml2js = require("xml2js");
+const os = require("os");
+const yaml = require("yaml");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
@@ -26,27 +28,17 @@ const PLUGIN_BUILD_IDS = [
     "tiffviewer",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
-    "aceeditor",
-    "aladin",
-    "alignment",
-    "chiraviz",
     "cytoscape",
-    "drawrna",
-    "h5web",
     "heatmap",
-    "jupyterlite",
-    "kepler",
     "ngl",
     "molstar",
     "msa",
-    "niivue",
     "openlayers",
     "openseadragon",
     "pca",
     "phylocanvas",
     "plotly",
     "plyr",
-    "tabulator",
     "ts_visjs",
     "unipept",
     "venn",
@@ -95,6 +87,10 @@ PATHS.pluginBuildModules = [
         path.join(PATHS.pluginBaseDir, `visualizations/${plugin}/package.json`)
     ),
 ];
+
+const visualizationsConfig = "./visualizations.yml";
+const file = fs.readFileSync(visualizationsConfig, "utf8");
+const VISUALIZATION_PLUGINS = yaml.parse(file);
 
 function stageLibs(callback) {
     Object.keys(PATHS.stagedLibraries).forEach((lib) => {
@@ -349,6 +345,60 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
     }
 }
 
+/**
+ * Produce plugins from fully self-contained npm packages
+ */
+async function installVisualizations(callback, forceReinstall = false) {
+    for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
+        const { package: pluginPackage, version } = VISUALIZATION_PLUGINS[pluginName];
+        const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${pluginName}`);
+        const staticDir = path.join(pluginDir, "static");
+        const xmlPath = path.join(staticDir, `${pluginName}.xml`);
+        const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
+        const currentHash = `${pluginPackage}@${version}`;
+        let tempDir = null;
+        try {
+            if (!forceReinstall && fs.existsSync(hashFilePath)) {
+                const storedHash = fs.readFileSync(hashFilePath, "utf8").trim();
+                if (storedHash === currentHash) {
+                    console.log(`Package ${currentHash} already installed for ${pluginName}, skipping.`);
+                    continue;
+                }
+            }
+            console.log(`Installing ${currentHash} into ${pluginDir}...`);
+            tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${pluginName}-`));
+            fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ private: true }, null, 2));
+            child_process.execSync(`npm install ${currentHash}`, {
+                cwd: tempDir,
+                stdio: "pipe",
+                shell: true,
+            });
+            const pkgDir = path.join(tempDir, "node_modules", pluginPackage);
+            if (!fs.existsSync(pkgDir)) {
+                throw new Error(`Package directory not found: ${pkgDir}`);
+            }
+            fs.emptyDirSync(pluginDir);
+            fs.copySync(pkgDir, pluginDir, { overwrite: true });
+            if (!fs.existsSync(xmlPath)) {
+                throw new Error(`Expected XML file not found after install: ${xmlPath}`);
+            }
+            fs.writeFileSync(hashFilePath, currentHash);
+            console.log(`Installed ${currentHash} into ${pluginDir}`);
+        } catch (err) {
+            console.error(`Failed to install ${pluginPackage}@${version} for ${pluginName}:`, err);
+        } finally {
+            if (tempDir && fs.existsSync(tempDir)) {
+                try {
+                    fs.removeSync(tempDir);
+                } catch (cleanupErr) {
+                    console.warn(`Warning: Failed to clean temp dir ${tempDir}:`, cleanupErr);
+                }
+            }
+        }
+    }
+    return callback();
+}
+
 function forceBuildPlugins(callback) {
     return buildPlugins(callback, true);
 }
@@ -357,13 +407,23 @@ function forceInstallPlugins(callback) {
     return installPlugins(callback, true);
 }
 
+function forceInstallVisualizations(callback) {
+    return installVisualizations(callback, true);
+}
+
 function cleanPlugins() {
     return del(["../static/plugins/visualizations/*"], { force: true });
 }
 
 const client = parallel(stageLibs, icons);
-const plugins = series(buildPlugins, installPlugins, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installPlugins, installVisualizations, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(
+    forceBuildPlugins,
+    forceInstallPlugins,
+    forceInstallVisualizations,
+    cleanPlugins,
+    stagePlugins
+);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
@@ -378,3 +438,4 @@ module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
 module.exports.installPlugins = installPlugins;
+module.exports.installVisualizations = installVisualizations;
