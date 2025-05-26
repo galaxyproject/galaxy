@@ -355,7 +355,7 @@ async function installVisualizations(callback, forceReinstall = false) {
         const staticDir = path.join(pluginDir, "static");
         const xmlPath = path.join(staticDir, `${pluginName}.xml`);
         const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
-        const currentHash = `${package}@${version}`;
+        const currentHash = `${pluginPackage}@${version}`;
         let tempDir = null;
         try {
             if (!forceReinstall && fs.existsSync(hashFilePath)) {
@@ -373,7 +373,7 @@ async function installVisualizations(callback, forceReinstall = false) {
                 stdio: "pipe",
                 shell: true,
             });
-            const pkgDir = path.join(tempDir, "node_modules", package);
+            const pkgDir = path.join(tempDir, "node_modules", pluginPackage);
             if (!fs.existsSync(pkgDir)) {
                 throw new Error(`Package directory not found: ${pkgDir}`);
             }
@@ -385,7 +385,7 @@ async function installVisualizations(callback, forceReinstall = false) {
             fs.writeFileSync(hashFilePath, currentHash);
             console.log(`Installed ${currentHash} into ${pluginDir}`);
         } catch (err) {
-            console.error(`Failed to install ${package}@${version} for ${pluginName}:`, err);
+            console.error(`Failed to install ${pluginPackage}@${version} for ${pluginName}:`, err);
         } finally {
             if (tempDir && fs.existsSync(tempDir)) {
                 try {
