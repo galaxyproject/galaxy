@@ -36,6 +36,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.work.context import SessionRequestContext
 from . import BaseGalaxyAPIController
 
 __all__ = ("FastAPIJobFiles", "JobFilesAPIController", "router")
@@ -128,16 +129,48 @@ class FastAPIJobFiles:
                         "content": {"application/json": None, "application/octet-stream": {"example": None}},
                     },
                     400: {
-                        "description": (
-                            "File not found, path does not refer to a file, or input dataset(s) for job have been purged."
-                        )
+                        "description": "Path does not refer to a file, or input dataset(s) for job have been purged.",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "detail": (
+                                        "Path does not refer to a file, or input dataset(s) for job have been purged."
+                                    )
+                                },
+                            }
+                        },
                     },
+                    404: {
+                        "description": "File not found.",
+                        "content": {
+                            "application/json": {
+                                "example": {"detail": "File not found."},
+                            }
+                        },
+                    },
+                    500: {"description": "Input dataset(s) for job have been purged."},
                 },
             )
         ),
     )
     @router.head(*_args, **_kwargs)  # type: ignore[name-defined]
     # remove `@router.head(...)` when ALL endpoints have been migrated to FastAPI
+    @router.api_route(
+        *_args,  # type: ignore[name-defined]
+        **{key: value for key, value in _kwargs.items() if key != "responses"},  # type: ignore[name-defined]
+        responses={501: {"description": "Not implemented."}},
+        methods=["PROPFIND"],
+        include_in_schema=False,
+    )
+    # remove `@router.api_route(..., methods=["PROPFIND"])` when ALL endpoints have been migrated to FastAPI
+    # The ARC remote job runner (`lib.galaxy.jobs.runners.pulsar.PulsarARCJobRunner`) expects this to return HTTP codes
+    # other than 404 when `PROPFIND` requests are issued. They are not part of the HTTP spec, but they are used in the
+    # WebDAV protocol. The correct answer to such requests is likely 501 (not implemented). FastAPI returns HTTP 405
+    # (method not allowed) for `PROPFIND`, which maybe is not fully correct but tolerable because it is one less quirk
+    # to maintain. However, because of the way legacy WSGI endpoints are injected into the FastAPI app (using
+    # `app.mount("/", wsgi_handler)`), the built-in support for returning HTTP 405 for `PROPFIND` breaks, because such
+    # requests are passed to the `wsgi_handler` sub-application. This means that the endpoint still needs to include
+    # some code to handle this behavior.
     def index(
         self,
         job_id: Annotated[str, Path(description="Encoded id string of the job.")],
@@ -155,7 +188,7 @@ class FastAPIJobFiles:
                 ),
             ),
         ],
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GalaxyFileResponse:
         """
         Get a file required to staging a job (proper datasets, extra inputs, task-split inputs, working directory
@@ -163,6 +196,11 @@ class FastAPIJobFiles:
 
         This API method is intended only for consumption by job runners, not end users.
         """
+        # PROPFIND is not implemented, but the endpoint needs to return a non-404 error code for it
+        # remove me when ALL endpoints have been migrated to FastAPI
+        if trans.request.method == "PROPFIND":
+            raise exceptions.NotImplemented()
+
         path = unquote(path)
 
         job = self.__authorize_job_access(trans, job_id, path=path, job_key=job_key)
@@ -176,6 +214,9 @@ class FastAPIJobFiles:
                 # This looks like a galaxy dataset, check if any job input has been deleted.
                 if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
                     raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+            raise exceptions.ObjectNotFound("File not found.")
+        elif not os.path.isfile(path):
+            raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
 
         return GalaxyFileResponse(path)
 
@@ -184,6 +225,7 @@ class FastAPIJobFiles:
         summary="Populate an output file.",
         responses={
             200: {"description": "An okay message.", "content": {"application/json": {"example": {"message": "ok"}}}},
+            400: {"description": "Bad request (including no file provided)."},
         },
     )
     def create(
