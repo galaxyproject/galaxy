@@ -12005,6 +12005,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -12262,6 +12267,11 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
             /**
              * Peek
              * @description A few lines of contents from the start of the file.
@@ -12529,6 +12539,11 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.

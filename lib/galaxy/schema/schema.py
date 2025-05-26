@@ -749,6 +749,11 @@ class HDASummary(HDACommon):
         description="Whether this dataset has been removed from disk.",
     )
     genome_build: Optional[str] = GenomeBuildField
+    object_store_id: Optional[str] = Field(
+        None,
+        title="Object Store ID",
+        description="The ID of the object store that this dataset is stored in.",
+    )
 
 
 class HDAInaccessible(HDACommon):
