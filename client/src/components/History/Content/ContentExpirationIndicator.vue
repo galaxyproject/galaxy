@@ -11,8 +11,8 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 interface ExpirableItem {
     id: string;
     create_time: string;
-    object_store_id?: string;
-    object_store_ids?: string[];
+    object_store_id?: string | null;
+    object_store_ids?: string[] | null;
 }
 
 const props = defineProps<{
