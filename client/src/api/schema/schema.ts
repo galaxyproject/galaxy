@@ -12688,6 +12688,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Object Store IDs
+             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
+             */
+            object_store_ids?: string[] | null;
+            /**
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
@@ -12842,6 +12847,11 @@ export interface components {
              */
             name: string | null;
             /**
+             * Object Store IDs
+             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
+             */
+            object_store_ids?: string[] | null;
+            /**
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
@@ -12981,6 +12991,11 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Object Store IDs
+             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
+             */
+            object_store_ids?: string[] | null;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.

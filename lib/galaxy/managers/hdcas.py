@@ -301,6 +301,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "update_time",
                 "tags",
                 "contents_url",
+                "object_store_ids",
             ],
         )
         self.add_view(
@@ -338,6 +339,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
             "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
             "collection_id": self.serialize_id,
+            "object_store_ids": self.serialize_object_store_ids,
         }
         self.serializers.update(serializers)
 
@@ -356,3 +358,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
         return list(extensions_set)
+
+    def serialize_object_store_ids(self, item, key, **context):
+        object_store_ids_set = item.dataset_dbkeys_and_extensions_summary[2]
+        return list(object_store_ids_set)

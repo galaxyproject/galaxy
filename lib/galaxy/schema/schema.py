@@ -1238,6 +1238,14 @@ class HDCASummary(HDCACommon, WithModelClass):
     )
     contents_url: ContentsUrlField
     collection_id: DatasetCollectionId
+    object_store_ids: Optional[List[str]] = Field(
+        None,
+        title="Object Store IDs",
+        description=(
+            "A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID, "
+            " but in some cases some elements may be stored in different object stores."
+        ),
+    )
 
 
 class HDCADetailed(HDCASummary):
