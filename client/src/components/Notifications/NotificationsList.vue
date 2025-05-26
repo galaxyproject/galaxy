@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -13,8 +12,6 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
-
-library.add(faCog, faHourglassHalf, faRetweet);
 
 const notificationsStore = useNotificationsStore();
 const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
@@ -122,12 +119,12 @@ function togglePreferences() {
 
                     <div v-if="haveSelected">
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
-                            <FontAwesomeIcon icon="check" />
+                            <FontAwesomeIcon :icon="faCheck" />
                             Mark as read
                         </BButton>
 
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
-                            <FontAwesomeIcon icon="trash" />
+                            <FontAwesomeIcon :icon="faTrash" />
                             Delete
                         </BButton>
                     </div>
@@ -143,7 +140,7 @@ function togglePreferences() {
                             :pressed="showUnread"
                             variant="outline-primary"
                             @click="showUnread = !showUnread">
-                            <FontAwesomeIcon icon="check" />
+                            <FontAwesomeIcon :icon="faCheck" />
                             Unread
                         </BButton>
 
@@ -153,7 +150,7 @@ function togglePreferences() {
                             :pressed="showShared"
                             variant="outline-primary"
                             @click="showShared = !showShared">
-                            <FontAwesomeIcon icon="retweet" />
+                            <FontAwesomeIcon :icon="faRetweet" />
                             Shared
                         </BButton>
                     </BButtonGroup>

@@ -1,14 +1,11 @@
 <script lang="ts">
 /* cannot use a setup block and get params injection in Vue 2.7 I think */
 
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ICellRendererParams } from "ag-grid-community";
 import { BPopover } from "bootstrap-vue";
 import { defineComponent } from "vue";
-
-library.add(faCheck, faExclamationTriangle);
 
 export default defineComponent({
     components: {
@@ -18,6 +15,8 @@ export default defineComponent({
     data() {
         return {
             params: {} as ICellRendererParams,
+            faCheck,
+            faExclamationTriangle,
         };
     },
     computed: {
@@ -48,9 +47,9 @@ export default defineComponent({
         },
         icon() {
             if (this.isDuplicate || this.requiresPairing) {
-                return "fa-exclamation-triangle";
+                return this.faExclamationTriangle;
             } else {
-                return "fa-check";
+                return this.faCheck;
             }
         },
     },

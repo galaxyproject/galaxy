@@ -1,36 +1,21 @@
-<script setup>
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BRow } from "bootstrap-vue";
 
-defineProps({
-    id: {
-        type: String,
-        default: null,
-    },
-    icon: {
-        type: String,
-        default: "fa-gear",
-    },
-    title: {
-        type: String,
-        default: "Title not available.",
-    },
-    description: {
-        type: String,
-        default: "Description not available.",
-    },
-    to: {
-        type: String,
-        default: null,
-    },
-    badge: {
-        type: String,
-        default: null,
-    },
-});
+import type { IconLike } from "@/components/icons/galaxyIcons";
+
+defineProps<{
+    id?: string;
+    icon: IconLike;
+    title?: string;
+    description?: string;
+    to?: string;
+    badge?: string;
+}>();
 </script>
 <template>
     <BRow class="ml-3 mb-1">
-        <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
+        <FontAwesomeIcon fixed-width size="lg" class="pref-icon pt-1" :icon="icon" />
         <div class="pref-content pr-1">
             <b-badge v-if="!!badge" variant="danger">
                 {{ badge }}

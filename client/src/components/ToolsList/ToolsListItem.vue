@@ -1,12 +1,9 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faAngleDown,
     faAngleUp,
-    faCheck,
     faExclamationTriangle,
     faExternalLinkAlt,
-    faTimes,
     faUser,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -16,8 +13,6 @@ import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
-
-library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 
 const props = defineProps({
     id: { type: String, required: true },
@@ -53,8 +48,8 @@ const formattedToolHelp = computed(() => {
         <div class="top-bar bg-secondary px-2 py-1 rounded-right">
             <div class="py-1 d-flex flex-wrap flex-gapx-1">
                 <span>
-                    <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
-                    <FontAwesomeIcon v-else icon="fa-external-link-alt" fixed-width />
+                    <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
+                    <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
 
                     <GLink v-if="props.local" dark @click="() => emit('open')">
                         <b>{{ props.name }}</b>
@@ -75,11 +70,11 @@ const formattedToolHelp = computed(() => {
                     variant="primary"
                     size="sm"
                     @click="() => emit('open')">
-                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
+                    <FontAwesomeIcon :icon="faWrench" fixed-width />
                     Open
                 </b-button>
                 <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
-                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     Open
                 </b-button>
             </div>
@@ -92,17 +87,17 @@ const formattedToolHelp = computed(() => {
                 </span>
 
                 <span v-if="!props.local" class="tag info">
-                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     External
                 </span>
 
                 <span v-if="!props.workflowCompatible" class="tag warn">
-                    <FontAwesomeIcon icon="fa-exclamation-triangle" />
+                    <FontAwesomeIcon :icon="faExclamationTriangle" />
                     Not Workflow compatible
                 </span>
 
                 <span v-if="props.owner" class="tag success">
-                    <FontAwesomeIcon icon="fa-user" />
+                    <FontAwesomeIcon :icon="faUser" />
                     <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
                 </span>
 
@@ -117,11 +112,11 @@ const formattedToolHelp = computed(() => {
 
             <div v-if="props.help" class="mt-2">
                 <GLink v-if="!showHelp" @click="() => (showHelp = true)">
-                    <FontAwesomeIcon icon="fa-angle-down" />
+                    <FontAwesomeIcon :icon="faAngleDown" />
                     Show tool help
                 </GLink>
                 <GLink v-else @click="() => (showHelp = false)">
-                    <FontAwesomeIcon icon="fa-angle-up" />
+                    <FontAwesomeIcon :icon="faAngleUp" />
                     Hide tool help
                 </GLink>
 

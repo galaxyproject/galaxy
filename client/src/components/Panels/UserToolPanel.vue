@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faInfoCircle, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -28,8 +27,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(["unprivileged-tool-clicked", "onInsertTool", "onEditTool", "onCreateTool"]);
-
-library.add(faEye, faArrowDown, faInfoCircle, faPlus);
 
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const { unprivilegedTools, canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
@@ -131,7 +128,7 @@ function newTool() {
                                 {{ tool.representation.version }}
                             </BBadge>
                             <BBadge @click.stop="() => editTool(tool.uuid)">
-                                <FontAwesomeIcon icon="fa-edit" />
+                                <FontAwesomeIcon :icon="faEdit" />
                                 <span v-localize>Edit</span>
                             </BBadge>
                         </div>

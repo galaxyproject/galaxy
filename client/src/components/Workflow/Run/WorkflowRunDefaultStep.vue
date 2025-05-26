@@ -10,9 +10,9 @@
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
                     collapsed-enable-text="Edit"
-                    collapsed-enable-icon="fa fa-edit"
+                    :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
-                    collapsed-disable-icon="fa fa-undo"
+                    :collapsed-disable-icon="faUndo"
                     @onChange="onChange"
                     @onValidation="onValidation" />
             </template>
@@ -21,7 +21,6 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import FormCard from "components/Form/FormCard";
@@ -33,8 +32,6 @@ import { mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 
 import { getTool } from "./services";
-
-library.add(faEdit, faUndo);
 
 export default {
     components: {
@@ -67,6 +64,8 @@ export default {
             modelData: {},
             modelIndex: {},
             modelInputs: this.model.inputs,
+            faEdit,
+            faUndo,
         };
     },
     computed: {

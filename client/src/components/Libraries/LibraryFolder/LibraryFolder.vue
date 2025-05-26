@@ -142,8 +142,8 @@
                 </div>
             </template>
             <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" />
+                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="faFile" />
             </template>
             <template v-slot:cell(type)="row">
                 <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
@@ -161,9 +161,9 @@
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
-                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" :icon="faGlobe" />
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" :icon="faKey" />
                 <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
                     title="Restricted dataset"
@@ -176,14 +176,14 @@
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
                         :title="'save ' + row.item.name"
                         @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
-                        <FontAwesomeIcon :icon="['far', 'save']" />
+                        <FontAwesomeIcon :icon="faSave" />
                         Save
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </button>
                 </div>
@@ -196,7 +196,7 @@
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon icon="pencil-alt" />
+                        <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
                     </b-button>
                     <b-button
@@ -205,7 +205,7 @@
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
                         :to="{ path: `${navigateToPermission(row.item)}` }">
-                        <FontAwesomeIcon icon="users" />
+                        <FontAwesomeIcon :icon="faUsers" />
                         Manage
                     </b-button>
                     <button
@@ -214,7 +214,7 @@
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
                         @click="undelete(row.item, folder_id)">
-                        <FontAwesomeIcon icon="unlock" />
+                        <FontAwesomeIcon :icon="faUnlock" />
                         Undelete
                     </button>
                 </div>
@@ -264,7 +264,6 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
 import { Toast } from "composables/toast";
@@ -275,13 +274,23 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
+import {
+    faBan,
+    faFile,
+    faFolder,
+    faGlobe,
+    faKey,
+    faPencilAlt,
+    faSave,
+    faTimes,
+    faUnlock,
+    faUsers,
+} from "@/components/Libraries/icons";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-
-initFolderTableIcons();
 
 Vue.use(BootstrapVue);
 
@@ -335,6 +344,16 @@ export default {
                 maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
                 total_rows: 0,
                 root: getAppRoot(),
+                faBan,
+                faFile,
+                faFolder,
+                faGlobe,
+                faKey,
+                faPencilAlt,
+                faSave,
+                faTimes,
+                faUnlock,
+                faUsers,
             },
         };
     },

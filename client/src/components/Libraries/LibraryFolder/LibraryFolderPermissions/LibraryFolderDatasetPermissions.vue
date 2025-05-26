@@ -10,7 +10,7 @@
                     variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
-                    <FontAwesomeIcon :icon="['far', 'file']" />
+                    <FontAwesomeIcon :icon="faFile" />
                     &nbsp;Dataset Details
                 </b-button>
                 <PermissionsHeader :name="dataset.name" />
@@ -66,7 +66,7 @@
                 class="toolbtn_save_permissions"
                 variant="secondary"
                 @click="postPermissions">
-                <FontAwesomeIcon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
             </b-button>
         </b-container>
@@ -79,7 +79,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
@@ -90,9 +89,10 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
+import { faFile, faSave } from "@/components/Libraries/icons";
+
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
-initPermissionsIcons();
 
 export default {
     components: {
@@ -121,6 +121,8 @@ export default {
             access_dataset_roles_type: "access_dataset_roles",
             modify_item_roles_type: "modify_item_roles",
             apiRootUrl: `${getAppRoot()}api/libraries/datasets`,
+            faFile,
+            faSave,
         };
     },
     computed: {

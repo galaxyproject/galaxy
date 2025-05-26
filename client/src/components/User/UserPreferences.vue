@@ -32,38 +32,38 @@
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-permissions"
-            icon="fa-users"
+            :icon="faUsers"
             title="Set Dataset Permissions for New Histories"
             description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
             to="/user/permissions" />
         <UserPreferencesElement
             id="edit-preferences-api-key"
-            icon="fa-key"
+            :icon="faKey"
             title="Manage API Key"
             description="Access your current API key or create a new one."
             to="/user/api_key" />
         <UserPreferencesElement
             id="edit-preferences-notifications"
-            icon="fa-bell"
+            :icon="faBell"
             title="Manage Notifications"
             description="Manage your notification settings."
             to="/user/notifications/preferences" />
         <UserPreferencesElement
             v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
-            icon="fa-id-card-o"
+            :icon="faIdCard"
             title="Manage Third-Party Identities"
             description="Connect or disconnect access to your third-party identities."
             to="/user/external_ids" />
         <UserPreferencesElement
             id="edit-preferences-custom-builds"
-            icon="fa-cubes"
+            :icon="faCubes"
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
         <UserPreferencesElement
             v-if="hasThemes"
-            icon="fa-palette"
+            :icon="faPalette"
             title="Pick a Color Theme"
             description="Click here to change the user interface color theme."
             @click="toggleTheme = !toggleTheme">
@@ -74,7 +74,7 @@
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
             id="edit-preferences-make-data-private"
-            icon="fa-lock"
+            :icon="faLock"
             title="Make All Data Private"
             description="Click here to make all data private."
             @click="makeDataPrivate" />
@@ -89,7 +89,7 @@
             v-if="hasObjectStoreTemplates"
             id="manage-object-stores"
             class="manage-object-stores"
-            icon="fa-hdd"
+            :icon="faHdd"
             title="Manage Your Storage Locations"
             description="Add, remove, or update your personally configured storage locations."
             to="/object_store_instances/index" />
@@ -97,7 +97,7 @@
             v-if="hasFileSourceTemplates"
             id="manage-file-sources"
             class="manage-file-sources"
-            icon="fa-file"
+            :icon="faFile"
             title="Manage Your Remote File Sources"
             description="Add, remove, or update your personally configured location to find files from and write files to."
             to="/file_source_instances/index" />
@@ -109,7 +109,7 @@
         <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
-            icon="fa-sign-out"
+            :icon="faSignOut"
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
@@ -133,6 +133,18 @@
 </template>
 
 <script>
+import { faIdCard } from "@fortawesome/free-regular-svg-icons";
+import {
+    faBell,
+    faCubes,
+    faFile,
+    faHdd,
+    faKey,
+    faLock,
+    faPalette,
+    faSignOut,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -190,6 +202,17 @@ export default {
             showLogoutModal: false,
             showDataPrivateModal: false,
             toggleTheme: false,
+            // FontAwesome icons
+            faUsers,
+            faKey,
+            faBell,
+            faIdCard,
+            faCubes,
+            faPalette,
+            faLock,
+            faHdd,
+            faFile,
+            faSignOut,
         };
     },
     computed: {

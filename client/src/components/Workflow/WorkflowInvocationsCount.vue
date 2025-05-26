@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
@@ -7,8 +6,6 @@ import { onMounted, ref } from "vue";
 import { GalaxyApi } from "@/api";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
-
-library.add(faList);
 
 interface Props {
     workflow: any;

@@ -21,7 +21,7 @@
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <FontAwesomeIcon icon="question" />
+                    <FontAwesomeIcon :icon="faQuestion" />
                 </BButton>
                 <BButton
                     v-b-tooltip.hover
@@ -29,7 +29,7 @@
                     title="Clear Filters (esc)"
                     :size="size"
                     @click="onReset">
-                    <FontAwesomeIcon icon="times" />
+                    <FontAwesomeIcon :icon="faTimes" />
                 </BButton>
             </BInputGroupAppend>
         </BInputGroup>
@@ -40,13 +40,10 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
-
-library.add(faTimes, faQuestion);
 
 /**
  * Component for the search/filter button on the top of Galaxy object index grids.
@@ -90,6 +87,8 @@ export default {
         return {
             showHelp: false,
             localFilter: this.value,
+            faQuestion,
+            faTimes,
         };
     },
     watch: {
