@@ -17,7 +17,7 @@ const defaultTestHDCA: HDCASummary = {
     collection_type: "list",
     history_content_type: "dataset_collection",
     element_count: null,
-    create_time: null,
+    create_time: "2023-10-01T00:00:00Z",
     update_time: null,
     deleted: false,
     visible: true,
