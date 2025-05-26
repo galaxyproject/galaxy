@@ -269,6 +269,10 @@ class TransientCollectionAdapterDatasetInstanceElement:
     def is_collection(self):
         return False
 
+    @property
+    def columns(self):
+        return None
+
 
 def recover_adapter(wrapped_object, adapter_model):
     adapter_type = adapter_model.adapter_type

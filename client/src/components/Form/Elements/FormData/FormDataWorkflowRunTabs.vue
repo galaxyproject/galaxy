@@ -8,7 +8,7 @@ import type { CollectionBuilderType } from "@/components/History/adapters/buildC
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { DataOption } from "./types";
+import type { DataOption, ExtendedCollectionType } from "./types";
 import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
@@ -30,6 +30,7 @@ const props = defineProps<{
     collectionType?: CollectionBuilderType;
     stepTitle?: string;
     workflowTab: string;
+    extendedCollectionType: ExtendedCollectionType;
 }>();
 
 const emit = defineEmits<{
@@ -140,6 +141,7 @@ watch(
                 not-modal
                 :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
                 :suggested-name="props.stepTitle"
+                :extended-collection-type="extendedCollectionType"
                 @created-collection="collectionCreated"
                 @on-hide="goToFirstWorkflowTab" />
         </div>

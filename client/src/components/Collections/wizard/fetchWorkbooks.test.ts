@@ -1,5 +1,6 @@
-import { forBuilder } from "./fetchWorkbooks";
-import type { ParsedFetchWorkbook } from "./types";
+import { columnTitleToTargetType, forBuilder } from "./fetchWorkbooks";
+import SPECIFICATIONS from "./rule_target_column_specification.yml";
+import type { ColumnMappingType, ParsedFetchWorkbook } from "./types";
 
 describe("forBuilder", () => {
     it("should return the correct ForBuilderResponse for a valid ParsedFetchWorkbook", () => {
@@ -29,5 +30,25 @@ describe("forBuilder", () => {
             { type: "url", columns: [1] },
             { type: "dbkey", columns: [2] },
         ]);
+    });
+});
+
+interface SpecificationTest {
+    doc?: string;
+    column_header: string;
+    maps_to: ColumnMappingType | null;
+}
+
+describe("column name to rule builder mapping targets", () => {
+    it("should follow the specifications laid out in rule_target_column_specification.yml", () => {
+        SPECIFICATIONS.forEach((spec: SpecificationTest) => {
+            const { column_header, maps_to } = spec;
+            const columnType = columnTitleToTargetType(column_header);
+            if (maps_to === null) {
+                expect(columnType).toBeUndefined();
+            } else {
+                expect(columnType).toBe(maps_to);
+            }
+        });
     });
 });
