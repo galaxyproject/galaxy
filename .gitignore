@@ -76,6 +76,7 @@ config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache
+config/plugins/visualizations
 !config/plugins
 static/welcome.html.*
 static/welcome.html
