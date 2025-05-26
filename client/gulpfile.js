@@ -14,7 +14,7 @@ const yaml = require("yaml");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_IDS = ["annotate_image", "example", "fits_graph_viewer", "hyphyvision", "mvpapp", "tiffviewer"];
+const PLUGIN_BUILD_IDS = ["annotate_image", "fits_graph_viewer", "hyphyvision", "mvpapp", "tiffviewer"];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "heatmap",
