@@ -669,7 +669,7 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time: Optional[datetime] = CreateTimeField
+    create_time: datetime = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrlField
     tags: TagCollection

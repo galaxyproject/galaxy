@@ -11506,9 +11506,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Created from basename
              * @description The basename of the output that produced this dataset.
@@ -11744,9 +11745,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -11863,9 +11865,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
@@ -12120,9 +12123,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12268,9 +12272,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
