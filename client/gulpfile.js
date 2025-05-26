@@ -407,13 +407,17 @@ function forceInstallPlugins(callback) {
     return installPlugins(callback, true);
 }
 
+function forceInstallVisualizations(callback) {
+    return installVisualizations(callback, true);
+}
+
 function cleanPlugins() {
     return del(["../static/plugins/visualizations/*"], { force: true });
 }
 
 const client = parallel(stageLibs, icons);
 const plugins = series(buildPlugins, installPlugins, installVisualizations, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, forceInstallVisualizations, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
