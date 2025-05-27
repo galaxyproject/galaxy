@@ -379,7 +379,9 @@ history_dataset_collection_display(history_dataset_collection_id=1)
         from galaxy.managers.hdcas import HDCASerializer
 
         with mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"):
-            export, extra_data = self._ready_export(example)
+            # Patch out serialize_object_store_ids because the datasets aren't real, just mock objects.
+            with mock.patch.object(HDCASerializer, "serialize_object_store_ids", return_value=[]):
+                export, extra_data = self._ready_export(example)
         assert "history_dataset_collections" in extra_data
         assert len(extra_data.get("history_dataset_collections")) == 1
 
