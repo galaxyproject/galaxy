@@ -652,6 +652,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             dataset_manager = self.dataset_manager_by_type[hda_ldda]
             dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
             dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+            if filename and filename.startswith("/"):
+                # Path needs to relative to extra files path
+                filename = filename.lstrip("/")
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
