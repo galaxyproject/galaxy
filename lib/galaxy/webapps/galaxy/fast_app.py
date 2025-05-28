@@ -117,6 +117,7 @@ api_tags_metadata = [
         "name": "chat",
         "description": "**BETA**: Chat interface for AI agents. This API is experimental and may change without notice.",
     },
+    {"name": "admin_visualizations", "description": "Admin operations for managing visualization packages."},
 ]
 
 
