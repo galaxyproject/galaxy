@@ -9,12 +9,14 @@ import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { type ComponentSize, type ComponentSizeClassList, prefix } from "@/components/BaseComponents/componentVariants";
+import { useUid } from "@/composables/utils/uid";
 import { match } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
+    id?: string;
     /** Controls if the modal is showing. Syncable */
     show?: boolean;
     /** Controls the modals size. If unset, size can be controlled via css `width` and `height` */
@@ -128,13 +130,16 @@ const headingSize = computed(() =>
     })
 );
 
+const uid = useUid("g-modal");
+const currentId = computed(() => props.id ?? uid.value);
+
 defineExpose({ showModal, hideModal });
 </script>
 
 <template>
     <!-- This is a convenience shortcut for mouse-users to close the dialog, so disabling this warning is fine here -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
-    <dialog ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
+    <dialog :id="currentId" ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
         <section>
             <header>
                 <Heading
