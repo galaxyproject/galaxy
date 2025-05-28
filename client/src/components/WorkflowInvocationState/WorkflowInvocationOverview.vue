@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
@@ -23,11 +23,19 @@ const props = defineProps<Props>();
 
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
+const invocationGraph = ref<InstanceType<typeof InvocationGraph> | null>(null);
+
 const uniqueMessages = computed(() => {
     const messages = props.invocation.messages || [];
     const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
     return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
 });
+
+async function showStep(stepId: number) {
+    if (invocationGraph.value) {
+        await invocationGraph.value.activateAndShowStep(stepId);
+    }
+}
 </script>
 
 <template>
@@ -44,7 +52,8 @@ const uniqueMessages = computed(() => {
                 :key="message.reason"
                 class="steps-progress my-1 w-100"
                 :invocation-message="message"
-                :invocation="invocation">
+                :invocation="invocation"
+                @view-step="showStep">
             </InvocationMessage>
         </div>
         <!-- Once the workflow for the invocation has been loaded, display the graph -->
@@ -56,6 +65,7 @@ const uniqueMessages = computed(() => {
         </BAlert>
         <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
+                ref="invocationGraph"
                 class="mt-1"
                 data-description="workflow invocation graph"
                 :invocation="invocation"
