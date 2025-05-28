@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,6 +16,7 @@ import { UploadQueue } from "@/utils/upload-queue.js";
 import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
+import GButton from "../BaseComponents/GButton.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -499,17 +500,22 @@ defineExpose({
                 @click="eventStart">
                 <span v-localize>Start</span>
             </BButton>
-            <BButton
+            <GButton
                 v-if="isCollection"
                 id="btn-build"
-                :size="size"
+                :size="size === 'sm' ? 'small' : 'medium'"
                 :disabled="!enableBuild"
+                :tooltip="!enableBuild && Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Build is not available'"
                 title="Build"
-                :variant="enableBuild ? 'primary' : null"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(true)">
-                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
                 <span v-localize>Build</span>
-            </BButton>
+            </GButton>
             <BButton
                 v-if="emitUploaded"
                 id="btn-emit"
@@ -524,15 +530,6 @@ defineExpose({
                 </slot>
                 ({{ counterSuccess }})
             </BButton>
-            <BBadge
-                v-if="props.isCollection && historyItemsStateInfo?.icon"
-                v-b-tooltip.hover.noninteractive
-                role="button"
-                class="d-flex align-items-center"
-                :variant="historyItemsStateInfo.variant"
-                :title="historyItemsStateInfo.message">
-                <FontAwesomeIcon :icon="historyItemsStateInfo.icon" :spin="historyItemsStateInfo.spin" />
-            </BBadge>
             <BButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
             </BButton>
