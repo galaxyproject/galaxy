@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { faExpand, faStop } from "@fortawesome/free-solid-svg-icons";
+import { faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -113,7 +115,7 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <FontAwesomeIcon :icon="faExpand" />
+            <ScanEye absolute-stroke-width :size="16" />
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"
