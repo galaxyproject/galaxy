@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { InvocationMessage, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import GCard from "../Common/GCard.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
@@ -100,6 +102,11 @@ const dependentInvocationStep = computed(() => {
     }
     return undefined;
 });
+
+// This is used to indicate on the step cards whether the step is currently active in the invocation graph.\
+const storeId = computed(() => `invocation-${props.invocation.id}`);
+const stateStore = useWorkflowStateStore(storeId.value);
+const { activeNodeId } = storeToRefs(stateStore);
 
 const jobId = computed(() => "job_id" in props.invocationMessage && props.invocationMessage.job_id);
 const HdaId = computed(() => "hda_id" in props.invocationMessage && props.invocationMessage.hda_id);
@@ -205,6 +212,7 @@ function openJobInNewTab(jobId: string) {
             <GCard
                 v-if="dependentWorkflowStep"
                 clickable
+                :current="activeNodeId === dependentWorkflowStep.id"
                 grid-view
                 @click="emit('view-step', dependentWorkflowStep.id)">
                 Problem occurred at this step:
@@ -221,7 +229,12 @@ function openJobInNewTab(jobId: string) {
                         " />
                 </strong>
             </GCard>
-            <GCard v-if="workflowStep" clickable grid-view @click="emit('view-step', workflowStep.id)">
+            <GCard
+                v-if="workflowStep"
+                clickable
+                :current="activeNodeId === workflowStep.id"
+                grid-view
+                @click="emit('view-step', workflowStep.id)">
                 {{ stepDescription }}:
                 <strong>
                     <WorkflowStepTitle
