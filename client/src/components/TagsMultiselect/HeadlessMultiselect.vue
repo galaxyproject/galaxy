@@ -16,6 +16,7 @@ import Vue2Teleport from "vue2-teleport";
 
 import { useUid } from "@/composables/utils/uid";
 import { normalizeTag } from "@/stores/userTagsStore";
+import { assertDefined } from "@/utils/assertions";
 
 library.add(faCheck, faChevronUp, faPlus, faTags, faTimes);
 
@@ -266,6 +267,13 @@ watch(
     }
 );
 
+function getPopupLayerId() {
+    assertDefined(root.value);
+    const popupLayerRootElement = root.value.closest("dialog, #app");
+    assertDefined(popupLayerRootElement);
+    return popupLayerRootElement.id;
+}
+
 whenever(isOpen, async () => {
     await nextTick();
     bounds.update();
@@ -273,6 +281,7 @@ whenever(isOpen, async () => {
 </script>
 
 <template>
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions  -->
     <div ref="root" class="headless-multiselect" @mousedown="onMouseDownInside" @focusout="onFocusOut">
         <fieldset v-if="isOpen" @focusout="onFocusOut">
             <input
@@ -307,7 +316,7 @@ whenever(isOpen, async () => {
             <FontAwesomeIcon icon="fa-tags" />
         </button>
 
-        <Vue2Teleport v-if="isOpen" to="#app">
+        <Vue2Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
             <div
                 :id="`${props.id}-options`"
                 aria-expanded="true"
