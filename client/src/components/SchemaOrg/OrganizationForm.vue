@@ -24,12 +24,6 @@
     </b-form>
 </template>
 
-<style lang="scss" scoped>
-.error {
-    color: var(--color-red-500);
-}
-</style>
-
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
@@ -90,3 +84,9 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+.error {
+    color: var(--color-red-500);
+}
+</style>
