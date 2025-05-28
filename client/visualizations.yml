@@ -25,6 +25,9 @@ kepler:
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
+plyr:
+    package: "@galaxyproject/plyr"
+    version: 0.0.4
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9

@@ -25,7 +25,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "pca",
     "phylocanvas",
     "plotly",
-    "plyr",
     "ts_visjs",
     "unipept",
     "venn",
