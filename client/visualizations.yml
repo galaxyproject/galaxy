@@ -22,12 +22,30 @@ jupyterlite:
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
+ngl:
+    package: "@galaxyproject/ngl"
+    version: 0.0.30
+molstar:
+    package: "@galaxyproject/molstar"
+    version: 0.0.2
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
+pca:
+    package: "@galaxyproject/pca"
+    version: 0.0.9
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
+vitessce:
+    package: "@galaxyproject/vitessce"
+    version: 0.0.3
+vizarr:
+    package: "@galaxyproject/vizarr"
+    version: 0.1.8
+vtk:
+    package: "@galaxyproject/vtk"
+    version: 0.0.2

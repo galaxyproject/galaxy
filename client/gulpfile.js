@@ -18,19 +18,13 @@ const PLUGIN_BUILD_IDS = ["annotate_image", "fits_graph_viewer", "hyphyvision", 
 const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "heatmap",
-    "ngl",
-    "molstar",
     "openlayers",
     "openseadragon",
-    "pca",
     "phylocanvas",
     "plotly",
     "ts_visjs",
     "unipept",
     "venn",
-    "vitessce",
-    "vizarr",
-    "vtk",
 ]; // todo: derive from XML
 
 const args = process.argv.slice(2);
