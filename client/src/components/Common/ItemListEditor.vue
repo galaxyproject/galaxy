@@ -118,7 +118,7 @@ function resetForm() {
 <template>
     <div>
         <div v-if="showForm">
-            <b-input v-model="currentItem" :state="currentItemError ? false : null" @click="removeErrorMessage" />
+            <b-input v-model="currentItem" :state="currentItemError ? false : null" @focus="removeErrorMessage" />
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
             <div v-if="props.description" v-html="description"></div>
@@ -156,9 +156,10 @@ function resetForm() {
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
+@import "custom_theme_variables.scss";
 .error {
-    color: red;
+    color: var(--color-red-500);
 }
 .spacer {
     padding: 5px;

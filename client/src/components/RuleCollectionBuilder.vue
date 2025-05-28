@@ -468,6 +468,7 @@
                         v-else
                         id="hot-table"
                         ref="hotTable"
+                        height="400px"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         stretch-h="all"></RuleGrid>
