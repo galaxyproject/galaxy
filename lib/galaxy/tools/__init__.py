@@ -2187,9 +2187,9 @@ class Tool(UsesDictVisibleKeys):
 
         tags = incoming.get("tags", [])
         if isinstance(tags, list) and tags:
-            tag_handler = self.app.tag_handler
+            tag_handler = trans.tag_handler
             for _, hda in execution_tracker.output_datasets:
-                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags))
+                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
         # if at least one is submitted or there are no jobs to execute - return aggregate
