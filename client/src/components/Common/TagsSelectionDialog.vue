@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Props {
+    show?: boolean;
     title?: string;
     initialTags?: string[];
 }
@@ -27,7 +28,7 @@ function onTagsChange(newTags: string[]) {
 </script>
 
 <template>
-    <BModal visible centered size="lg" :title="title" @ok="emit('ok', tags)" @hide="emit('cancel')">
+    <GModal :show="show" size="medium" :title="title" @ok="emit('ok', tags)" @cancel="emit('cancel')">
         <StatelessTags :value="tags" @input="onTagsChange($event)" />
-    </BModal>
+    </GModal>
 </template>
