@@ -2231,13 +2231,19 @@ class BaseWorkflowPopulator(BasePopulator):
         return response
 
     def download_workflow(
-        self, workflow_id: str, style: Optional[str] = None, history_id: Optional[str] = None
+        self,
+        workflow_id: str,
+        style: Optional[str] = None,
+        history_id: Optional[str] = None,
+        instance: Optional[bool] = None,
     ) -> dict:
-        params = {}
+        params: Dict[str, Any] = {}
         if style is not None:
             params["style"] = style
         if history_id is not None:
             params["history_id"] = history_id
+        if instance is not None:
+            params["instance"] = instance
         response = self._get(f"workflows/{workflow_id}/download", data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":

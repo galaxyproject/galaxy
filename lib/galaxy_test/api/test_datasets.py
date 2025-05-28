@@ -347,6 +347,22 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_display_extra_paths(self, history_id: str):
+        test_data_resolver = TestDataResolver()
+        with open(test_data_resolver.get_filename("1.fasta")) as fh:
+            fasta_contents = fh.read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta_contents, ftype="fasta", wait=True)
+        response = self.dataset_populator.run_tool(
+            "create_directory_index", inputs={"reference": {"src": "hda", "id": hda1["id"]}}, history_id=history_id
+        )
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"])
+        directory_dataset = response["outputs"][0]
+        display_response = self._get(
+            f"histories/{history_id}/contents/{directory_dataset['id']}/display?filename=/1.fasta"
+        )
+        display_response.raise_for_status()
+        assert display_response.text == fasta_contents
+
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(
             history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"

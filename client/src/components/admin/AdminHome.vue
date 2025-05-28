@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="isConfigLoaded">
         <h1>Administration</h1>
 
         <p>
@@ -25,12 +25,6 @@
             </li>
             <li>
                 <strong>
-                    <router-link to="/admin/datatype_visualizations">Datatype Visualizations</router-link>
-                </strong>
-                - Configure preferred visualizations for datasets based on their datatype.
-            </li>
-            <li>
-                <strong>
                     <router-link to="/admin/display_applications">Display Applications</router-link>
                 </strong>
                 - See all display applications configured in this Galaxy.
@@ -41,6 +35,12 @@
                 </strong>
                 - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or
                 running). Administrators are able to cleanly stop long-running jobs.
+            </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/invocations">Workflow Invocations</router-link>
+                </strong>
+                - Display workflow invocations that are currently being scheduled.
             </li>
             <li>
                 <strong>
@@ -66,15 +66,13 @@
                 - The primary user management interface, displaying information associated with each user and providing
                 operations for resetting passwords, updating user information, impersonating a user, and more.
             </li>
-            <!-- %if trans.app.config.enable_quotas: -->
-            <li>
+            <li v-if="enableQuotas">
                 <strong>
                     <router-link to="/admin/quotas">Quotas</router-link>
                 </strong>
                 - Manage user space quotas. See
                 <a href="https://galaxyproject.org/admin/disk-quotas" target="_blank">wiki</a> for details.
             </li>
-            <!-- %endif -->
             <li>
                 <strong>
                     <router-link to="/admin/groups">Groups</router-link>
@@ -120,25 +118,40 @@
                 </strong>
                 - Select on which repositories you want to reset metadata.
             </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/toolbox_dependencies">Manage Dependencies</router-link>
+                </strong>
+                - View and manage tool dependencies and their installation status.
+            </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/error_stack">View Error Logs</router-link>
+                </strong>
+                - View detailed error logs and stack traces for debugging purposes.
+            </li>
         </ul>
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { computed } from "vue";
+
+import { useConfig } from "@/composables/config";
 
 import Heading from "components/Common/Heading.vue";
 
 library.add(faServer, faUser, faWrench);
 
-export default {
-    components: { Heading },
-    props: {
-        isToolshedInstalled: {
-            type: Boolean,
-            default: false,
-        },
-    },
-};
+const { config, isConfigLoaded } = useConfig();
+
+const isToolshedInstalled = computed(() => {
+    return config.value.tool_shed_urls?.length > 0;
+});
+
+const enableQuotas = computed(() => {
+    return config.value.enable_quotas;
+});
 </script>
