@@ -481,9 +481,9 @@ class JobSearch:
                 elif t == "ldda":
                     stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
-                    stmt = self._build_stmt_for_hdca(stmt, data_conditions, used_ids, k, v)
+                    stmt = self._build_stmt_for_hdca(stmt, data_conditions, used_ids, k, v, user.id)
                 elif t == "dce":
-                    stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
+                    stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v, user.id)
                 else:
                     log.error("Unknown input data type %s", t)
                     return None
@@ -734,7 +734,7 @@ class JobSearch:
         used_ids.append(labeled_col)
         return stmt
 
-    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, require_name_match=True):
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v, user_id, require_name_match=True):
         # Strategy for efficiently finding equivalent HDCAs:
         # 1. Determine the structural depth of the target HDCA by its collection_type.
         # 2. For the target HDCA (identified by 'v'):
@@ -816,6 +816,7 @@ class JobSearch:
         )
 
         candidate_hdca = aliased(model.HistoryDatasetCollectionAssociation, name="candidate_hdca")
+        candidate_hdca_history = aliased(model.History, name="candidate_hdca_history")
         candidate_root_collection = aliased(model.DatasetCollection, name="candidate_root_collection")
         candidate_dce_list = [
             aliased(model.DatasetCollectionElement, name=f"candidate_dce_{i}") for i in range(depth + 1)
@@ -833,8 +834,10 @@ class JobSearch:
                 ).label("path_signature_string"),
             )
             .select_from(candidate_hdca)
+            .join(candidate_hdca_history, candidate_hdca_history.id == candidate_hdca.history_id)
             .join(candidate_root_collection, candidate_root_collection.id == candidate_hdca.collection_id)
             .join(candidate_dce_list[0], candidate_dce_list[0].dataset_collection_id == candidate_root_collection.id)
+            .where(or_(candidate_hdca_history.user_id == user_id, candidate_hdca_history.published == true()))
         )
 
         for i in range(1, depth + 1):
@@ -894,7 +897,7 @@ class JobSearch:
         data_conditions.append(a.name == k)
         return stmt
 
-    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v, user_id):
         dce_root_target = self.sa_session.get_one(model.DatasetCollectionElement, v)
 
         # Determine if the target DCE points to an HDA or a child collection
@@ -1011,8 +1014,12 @@ class JobSearch:
                 )
 
             _leaf_candidate_dce = candidate_dce_level_list[-1]
-            candidate_dce_signature_elements_select = candidate_dce_signature_elements_select.join(
-                candidate_hda, candidate_hda.id == _leaf_candidate_dce.hda_id
+            candidate_dce_signature_elements_select = (
+                candidate_dce_signature_elements_select.join(
+                    candidate_hda, candidate_hda.id == _leaf_candidate_dce.hda_id
+                )
+                .join(model.History, model.History.id == candidate_hda.history_id)
+                .where(or_(model.History.published == true(), model.History.user_id == user_id))
             )
             candidate_dce_signature_elements_cte = candidate_dce_signature_elements_select.cte(
                 f"cand_dce_sig_els_{k}_{v}"
