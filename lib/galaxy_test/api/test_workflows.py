@@ -7774,6 +7774,38 @@ input:
         put_response = self._update_workflow(workflow_id, workflow_object)
         assert put_response.status_code == 200
 
+    @skip_without_tool("multi_data_optional")
+    def test_invalid_collection_input_rejected(self):
+        valid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: "list"
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(valid_collection_type)})
+        assert r.status_code == 200
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: "listx"
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
+        assert "Invalid collection type:" in r.json()["err_msg"]
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):
         with self.dataset_populator.test_history() as history_id:

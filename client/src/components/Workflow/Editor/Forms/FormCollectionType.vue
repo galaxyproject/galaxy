@@ -16,7 +16,13 @@ const warning = ref<string | null>(null);
 const error = ref<string | null>(null);
 
 function onInput(newCollectionType: string | undefined) {
-    emit("onChange", newCollectionType);
+    if (newCollectionType && !isValidCollectionTypeStr(newCollectionType)) {
+        error.value = "Invalid collection type";
+        // don't emit an invalid collection type
+        return;
+    } else {
+        emit("onChange", newCollectionType);
+    }
 }
 
 const collectionTypeOptions = [
