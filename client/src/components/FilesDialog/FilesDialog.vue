@@ -50,6 +50,8 @@ interface FilesDialogProps {
     selectedItem?: SelectionItem;
     /** Whether the dialog is visible at the start */
     isOpen?: boolean;
+    /** Function to push a new route, used for navigation */
+    routePush?: (route: string) => void;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     requireWritable: false,
     selectedItem: undefined,
     isOpen: true,
+    routePush: () => {},
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -465,14 +468,18 @@ onMounted(() => {
             </BAlert>
         </template>
         <template v-slot:buttons>
-            <!-- TODO: Change this to a `:to` router-link button -->
             <GButton
                 v-if="fileSourceTemplatesStore.hasTemplates"
                 tooltip
                 size="small"
                 title="Create a new remote file source"
                 data-description="create new file source button"
-                href="/file_source_instances/create">
+                @click="
+                    () => {
+                        modalShow = false;
+                        props.routePush('/file_source_instances/create');
+                    }
+                ">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create new
             </GButton>
