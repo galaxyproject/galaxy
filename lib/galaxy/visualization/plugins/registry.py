@@ -161,10 +161,7 @@ class VisualizationsRegistry:
             # super won't work here - different criteria
             return False
         expected_config_filename = f"{os.path.basename(plugin_path)}.xml"
-        return any(
-            os.path.isfile(os.path.join(plugin_path, subdir, expected_config_filename))
-            for subdir in ("config", "static")
-        )
+        return os.path.isfile(os.path.join(plugin_path, "static", expected_config_filename))
 
     def _load_plugin(self, plugin_path):
         """
@@ -177,17 +174,13 @@ class VisualizationsRegistry:
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split(plugin_path)[1]
-        config_paths = [
-            os.path.join(plugin_path, "config", f"{plugin_name}.xml"),
-            os.path.join(plugin_path, "static", f"{plugin_name}.xml"),
-        ]
+        config_file = os.path.join(plugin_path, "static", f"{plugin_name}.xml"),
 
-        for config_file in config_paths:
-            if os.path.exists(config_file):
-                config = self.config_parser.parse_file(config_file)
-                if config is not None:
-                    plugin = self._build_plugin(plugin_name, plugin_path, config)
-                    return plugin
+        if os.path.exists(config_file):
+            config = self.config_parser.parse_file(config_file)
+            if config is not None:
+                plugin = self._build_plugin(plugin_name, plugin_path, config)
+                return plugin
 
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
