@@ -1,22 +1,12 @@
 const path = require("path");
 const fs = require("fs-extra");
-const { series, parallel } = require("gulp");
+const { series } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
 const os = require("os");
 const yaml = require("yaml");
 
-const PATHS = {
-    nodeModules: "./node_modules",
-    stagedLibraries: {
-        backbone: ["backbone.js", "backbone.js"],
-        jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
-        "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        requirejs: ["require.js", "require.js"],
-        underscore: ["underscore.js", "underscore.js"],
-    },
-};
+const PATHS = {};
 
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
