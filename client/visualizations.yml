@@ -37,6 +37,12 @@ ngl:
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
+openlayers:
+    package: "@galaxyproject/openlayers"
+    version: 0.0.6
+openseadragon:
+    package: "@galaxyproject/openseadragon"
+    version: 0.0.2
 pca:
     package: "@galaxyproject/pca"
     version: 0.0.9
