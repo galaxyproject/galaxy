@@ -28,7 +28,7 @@ function onTagsChange(newTags: string[]) {
 </script>
 
 <template>
-    <GModal :show="show" size="medium" :title="title" @ok="emit('ok', tags)" @cancel="emit('cancel')">
+    <GModal :show="show" size="small" :title="title" @ok="emit('ok', tags)" @cancel="emit('cancel')">
         <StatelessTags :value="tags" @input="onTagsChange($event)" />
     </GModal>
 </template>
