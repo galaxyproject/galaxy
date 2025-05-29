@@ -79,7 +79,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.config = config
         base_url = context.get("base_url", "")
         self.base_url = "/".join((base_url, self.name)) if base_url else self.name
-        self.static_path = self._get_static_path(self.path)
+        self.static_path = os.path.join("./static/plugins/visualizations/", name, "static")
         template_cache_dir = context.get("template_cache_dir", None)
         additional_template_paths = context.get("additional_template_paths", [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
@@ -137,13 +137,6 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
             return url_for(controller="visualization", action=self.name)
         return url_for("visualization_plugin", visualization_name=self.name)
-
-    def _get_static_path(self, path):
-        if "/config/" in path:
-            match = path.split("/config/")[-1]
-            return os.path.join("./static", match, "static")
-        else:
-            log.debug(f"Visualization has no static path: {path}.")
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs) -> Dict[str, Any]:
         """

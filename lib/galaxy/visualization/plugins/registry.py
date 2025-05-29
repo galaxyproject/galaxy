@@ -58,7 +58,7 @@ class VisualizationsRegistry:
         self.template_cache_dir = template_cache_dir
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
-        self.directories = config_directories_from_setting(directories_setting, app.config.root)
+        self.directories = [os.path.join(app.config.root, "static/plugins/visualizations")]
         self._load_plugins()
 
     def _load_plugins(self):
