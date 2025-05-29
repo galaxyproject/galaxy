@@ -138,9 +138,9 @@ class DynamicToolApi:
         return dynamic_tool.to_dict()
 
     @router.post("/api/dynamic_tools", require_admin=True)
-    def create(self, payload: DynamicToolPayload, trans: ProvidesUserContext = DependsOnTrans):
+    def create(self, payload: DynamicToolPayload):
         try:
-            dynamic_tool = self.dynamic_tools_manager.create_tool(trans, payload, allow_load=payload.allow_load)
+            dynamic_tool = self.dynamic_tools_manager.create_tool(payload)
         except MessageException:
             raise
         except Exception as e:

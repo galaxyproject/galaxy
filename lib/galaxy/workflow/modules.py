@@ -1900,7 +1900,7 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans, d, **kwds):
+    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
         tool_id = d.get("content_id") or d.get("tool_id")
         tool_version = d.get("tool_version")
         if tool_version:
@@ -1912,7 +1912,7 @@ class ToolModule(WorkflowModule):
                 create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
                 if not trans.user_is_admin:
                     raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
-                dynamic_tool = trans.app.dynamic_tool_manager.create_tool(trans, create_request, allow_load=False)
+                dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
                 tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")

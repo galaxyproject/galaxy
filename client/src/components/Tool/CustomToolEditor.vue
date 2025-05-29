@@ -90,7 +90,6 @@ async function saveTool() {
         hidden: false,
         representation: parse(yamlRepresentation.value),
         src: "representation",
-        allow_load: true,
     };
     const { data, error } = await GalaxyApi().POST("/api/unprivileged_tools", { body: payload });
     if (error) {
