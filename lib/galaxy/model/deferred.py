@@ -32,7 +32,9 @@ from galaxy.model import (
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
+    persist_extra_files,
 )
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import verify_hash
 
 log = logging.getLogger(__name__)
@@ -135,6 +137,13 @@ class DatasetInstanceMaterializer:
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                if dataset_instance.ext == "directory":
+                    CompressedFile(path).extract(materialized_dataset.extra_files_path)
+                    persist_extra_files(
+                        object_store=object_store,
+                        src_extra_files_path=materialized_dataset.extra_files_path,
+                        primary_data=dataset_instance,
+                    )
                 object_store.update_from_file(materialized_dataset, file_name=path)
                 materialized_dataset.set_size()
             except Exception as e:
@@ -147,7 +156,7 @@ class DatasetInstanceMaterializer:
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
-                shutil.move(path, transient_paths.external_filename)
+                shutil.copy(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
                 exception_materializing = e
