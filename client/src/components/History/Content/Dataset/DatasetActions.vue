@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -15,7 +15,7 @@ import type { ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
-library.add(faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
+library.add(faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
 
 interface Props {
     item: HDADetailed;
@@ -36,8 +36,26 @@ const router = useRouter();
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
+const showError = computed(() => {
+    return props.item.state === "error" || props.item.state === "failed_metadata";
+});
+const showInfo = computed(() => {
+    return props.item.state !== "noPermission";
+});
+const showVisualizations = computed(() => {
+    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+});
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
+});
+const reportErrorUrl = computed(() => {
+    return prependPath(props.itemUrls.reportError!);
+});
+const showDetailsUrl = computed(() => {
+    return prependPath(props.itemUrls.showDetails!);
+});
+const visualizeUrl = computed(() => {
+    return prependPath(props.itemUrls.visualize!);
 });
 const rerunUrl = computed(() => {
     return prependPath(props.itemUrls.rerun!);
@@ -59,6 +77,18 @@ function onHighlight() {
     emit("toggleHighlights");
 }
 
+function onError() {
+    window.location.href = reportErrorUrl.value;
+}
+
+function onInfo() {
+    router.push(`/datasets/${props.item.id}/details`);
+}
+
+function onVisualize() {
+    router.push(`/visualizations?dataset_id=${props.item.id}`);
+}
+
 function onRerun() {
     router.push(`/root?job_id=${props.item.creating_job}`);
 }
@@ -68,6 +98,18 @@ function onRerun() {
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
+                <BButton
+                    v-if="showError"
+                    v-b-tooltip.hover
+                    class="px-1"
+                    title="Error"
+                    size="sm"
+                    variant="link"
+                    :href="reportErrorUrl"
+                    @click.prevent.stop="onError">
+                    <FontAwesomeIcon :icon="faBug" />
+                </BButton>
+
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
 
                 <BButton
@@ -79,6 +121,30 @@ function onRerun() {
                     variant="link"
                     @click.stop="onCopyLink">
                     <FontAwesomeIcon :icon="faLink" />
+                </BButton>
+
+                <BButton
+                    v-if="showInfo"
+                    v-b-tooltip.hover
+                    class="info-btn px-1"
+                    title="Dataset Details"
+                    size="sm"
+                    variant="link"
+                    :href="showDetailsUrl"
+                    @click.prevent.stop="onInfo">
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </BButton>
+
+                <BButton
+                    v-if="showVisualizations"
+                    v-b-tooltip.hover
+                    class="visualize-btn px-1"
+                    title="Visualize"
+                    size="sm"
+                    variant="link"
+                    :href="visualizeUrl"
+                    @click.prevent.stop="onVisualize">
+                    <FontAwesomeIcon :icon="faChartBar" />
                 </BButton>
 
                 <BButton

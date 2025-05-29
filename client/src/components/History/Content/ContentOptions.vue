@@ -26,6 +26,7 @@ const props = defineProps({
 const emit = defineEmits<{
     (e: "display"): void;
     (e: "showCollectionInfo"): void;
+    (e: "edit"): void;
     (e: "delete", recursive?: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
@@ -35,6 +36,11 @@ const entryPointStore = useEntryPointStore();
 const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
+const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
+const editDisabled = computed(() =>
+    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
+);
+const editUrl = computed(() => prependPath(props.itemUrls.edit));
 const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.itemUrls.display) : undefined));
 
 const isCollection = computed(() => !props.isDataset);
@@ -116,6 +122,19 @@ function onDisplay($event: MouseEvent) {
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <ScanEye absolute-stroke-width :size="16" />
+        </BButton>
+        <BButton
+            v-if="writable && isHistoryItem"
+            v-b-tooltip.hover
+            :disabled="editDisabled"
+            :title="editButtonTitle"
+            tabindex="0"
+            class="edit-btn px-1"
+            size="sm"
+            variant="link"
+            :href="editUrl"
+            @click.prevent.stop="emit('edit')">
+            <icon icon="pen" />
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"
