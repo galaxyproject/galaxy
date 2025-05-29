@@ -38,8 +38,6 @@ interface FilesDialogProps {
     callback?: (files: SelectionItem | SelectionItem[]) => void;
     /** Options to filter the file sources */
     filterOptions?: FilterFileSourcesOptions;
-    /** Decide wether to keep the underlying modal static or dynamic */
-    modalStatic?: boolean;
     /** Browsing mode to define the selection behavior */
     mode?: FileSourceBrowsingMode;
     /** Whether to allow multiple selections */
@@ -57,7 +55,6 @@ interface FilesDialogProps {
 const props = withDefaults(defineProps<FilesDialogProps>(), {
     callback: () => {},
     filterOptions: undefined,
-    modalStatic: false,
     mode: "file",
     multiple: false,
     requireWritable: false,
@@ -475,7 +472,6 @@ onMounted(() => {
         :items-provider="itemsProvider"
         :total-items="totalItems"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
         :select-all-variant="selectAllIcon"

@@ -8,7 +8,6 @@ import SelectionDialog from "./SelectionDialog.vue";
 const mockOptions = {
     callback: () => {},
     modalShow: true,
-    modalStatic: true,
 };
 
 describe("SelectionDialog.vue", () => {
