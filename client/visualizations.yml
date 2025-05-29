@@ -40,6 +40,9 @@ kepler:
 molstar:
     package: "@galaxyproject/molstar"
     version: 0.0.2
+mvpapp:
+    package: "@galaxyproject/mvpapp"
+    version: 0.0.0
 ngl:
     package: "@galaxyproject/ngl"
     version: 0.0.30
