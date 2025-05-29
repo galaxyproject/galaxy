@@ -221,7 +221,7 @@ function buildPlugins(callback, forceRebuild) {
 async function installVisualizations(callback, forceReinstall = false) {
     for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
         const { package: pluginPackage, version } = VISUALIZATION_PLUGINS[pluginName];
-        const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${pluginName}`);
+        const pluginDir = path.join("../static/plugins/", `visualizations/${pluginName}`);
         const staticDir = path.join(pluginDir, "static");
         const xmlPath = path.join(staticDir, `${pluginName}.xml`);
         const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
