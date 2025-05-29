@@ -283,12 +283,7 @@ function cleanPlugins() {
 
 const client = parallel(stageLibs, icons);
 const plugins = series(buildPlugins, installVisualizations, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(
-    forceBuildPlugins,
-    forceInstallVisualizations,
-    cleanPlugins,
-    stagePlugins
-);
+const pluginsRebuild = series(forceBuildPlugins, forceInstallVisualizations, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
