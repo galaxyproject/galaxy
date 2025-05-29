@@ -302,5 +302,4 @@ module.exports.plugins = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
-module.exports.installPlugins = installPlugins;
 module.exports.installVisualizations = installVisualizations;
