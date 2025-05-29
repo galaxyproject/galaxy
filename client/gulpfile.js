@@ -15,9 +15,7 @@ const yaml = require("yaml");
  * simplicity just add them one at a time until we upgrade older viz's.
  */
 const PLUGIN_BUILD_IDS = ["annotate_image", "fits_graph_viewer", "hyphyvision", "mvpapp", "tiffviewer"];
-const INSTALL_PLUGIN_BUILD_IDS = [
-    "plotly",
-]; // todo: derive from XML
+const INSTALL_PLUGIN_BUILD_IDS = []; // todo: derive from XML
 
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf("--limit");

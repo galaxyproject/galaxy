@@ -49,6 +49,18 @@ pca:
 phylocanvas:
     package: "@galaxyproject/phylocanvas"
     version: 0.0.11
+plotly:
+    package: "@galaxyproject/plotly"
+    version: 0.0.17
+plotly_box:
+    package: "@galaxyproject/plotly_box"
+    version: 0.0.0
+plotly_histogram:
+    package: "@galaxyproject/plotly_histogram"
+    version: 0.0.0
+plotly_surface:
+    package: "@galaxyproject/plotly_surface"
+    version: 0.0.0
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4
