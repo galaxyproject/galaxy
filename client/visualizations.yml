@@ -37,6 +37,9 @@ niivue:
 pca:
     package: "@galaxyproject/pca"
     version: 0.0.9
+phylocanvas:
+    package: "@galaxyproject/phylocanvas"
+    version: 0.0.11
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4

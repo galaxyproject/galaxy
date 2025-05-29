@@ -19,7 +19,6 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "openlayers",
     "openseadragon",
-    "phylocanvas",
     "plotly",
 ]; // todo: derive from XML
 
