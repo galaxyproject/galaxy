@@ -132,7 +132,5 @@ function forceInstallVisualizations(callback) {
 const plugins = series(installVisualizations, stagePlugins);
 const pluginsRebuild = series(forceInstallVisualizations, stagePlugins);
 
-module.exports.plugins = plugins;
+module.exports.default = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
-module.exports.default = parallel(client, plugins);
-module.exports.installVisualizations = installVisualizations;
