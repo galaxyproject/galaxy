@@ -273,7 +273,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         render_vars.update(vars={})
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})
         template_filename = os.path.join(self.MAKO_TEMPLATE)
-        return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        return trans.fill_template(template_filename, **render_vars)
 
 
 class StaticFileVisualizationPlugin(VisualizationPlugin):
