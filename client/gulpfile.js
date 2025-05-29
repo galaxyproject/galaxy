@@ -277,13 +277,9 @@ function forceInstallVisualizations(callback) {
     return installVisualizations(callback, true);
 }
 
-function cleanPlugins() {
-    return del(["../static/plugins/visualizations/*"], { force: true });
-}
-
 const client = parallel(stageLibs, icons);
-const plugins = series(buildPlugins, installVisualizations, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(forceBuildPlugins, forceInstallVisualizations, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installVisualizations, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, forceInstallVisualizations, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
