@@ -1,6 +1,9 @@
 aceeditor:
     package: "@galaxyproject/aceeditor"
     version: 0.0.4
+aequatus:
+    package: "@galaxyproject/aequatus"
+    version: 0.0.0
 aladin:
     package: "@galaxyproject/aladin"
     version: 0.0.1
