@@ -10,6 +10,9 @@ alignment:
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.1
+cytoscape:
+    package: "@galaxyproject/cytoscape"
+    version: 0.0.8
 drawrna:
     package: "@galaxyproject/drawrna"
     version: 0.0.1
