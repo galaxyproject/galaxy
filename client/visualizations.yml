@@ -70,6 +70,9 @@ plyr:
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
+tiffviewer:
+    package: "@galaxyproject/tiffviewer"
+    version: 0.0.0
 ts_visjs:
     package: "@galaxyproject/ts_visjs"
     version: 0.0.6
