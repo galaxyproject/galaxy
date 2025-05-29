@@ -83,19 +83,18 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
             {
                 "plugins": {
                     "vis1": {
-                        "config": {"vis1.xml": config1},
-                        "static": {},
+                        "static": {"vis1.xml": config1},
                         "templates": {},
                     },
-                    "vis2": {"config": {"vis2.xml": config1}},
+                    "vis2": {"static": {"vis2.xml": config1}},
                     "not_a_vis1": {
-                        "config": {"vis1.xml": "blerbler"},
+                        "static": {"vis1.xml": "blerbler"},
                     },
                     # empty
                     "not_a_vis2": {},
                     "not_a_vis3": "blerbler",
                     # bad config
-                    "not_a_vis4": {"config": {"not_a_vis4.xml": "blerbler"}},
+                    "not_a_vis4": {"static": {"not_a_vis4.xml": "blerbler"}},
                     "not_a_vis5": {
                         # no config
                         "static": {},
@@ -160,7 +159,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         mock_app_dir = galaxy_mock.MockDir(
             {
                 "plugins": {
-                    "jstest": {"config": {"jstest.xml": script_entry_config}, "static": {}},
+                    "jstest": {"static": {"jstest.xml": script_entry_config}},
                 }
             }
         )
