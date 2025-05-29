@@ -11,10 +11,7 @@ import weakref
 
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.util import (
-    config_directories_from_setting,
-    parse_xml,
-)
+from galaxy.util import config_directories_from_setting
 from galaxy.visualization.plugins import (
     config_parser,
     plugin as vis_plugins,
