@@ -174,14 +174,12 @@ class VisualizationsRegistry:
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split(plugin_path)[1]
-        config_file = os.path.join(plugin_path, "static", f"{plugin_name}.xml"),
-
+        config_file = os.path.join(plugin_path, "static", f"{plugin_name}.xml")
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
                 plugin = self._build_plugin(plugin_name, plugin_path, config)
                 return plugin
-
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def _build_plugin(self, plugin_name, plugin_path, config):
