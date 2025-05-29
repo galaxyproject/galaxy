@@ -16,18 +16,21 @@ drawrna:
 h5web:
     package: "@galaxyproject/h5web"
     version: 0.5.2
+heatmap:
+    package: "@galaxyproject/heatmap"
+    version: 0.0.15
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.11
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
-ngl:
-    package: "@galaxyproject/ngl"
-    version: 0.0.30
 molstar:
     package: "@galaxyproject/molstar"
     version: 0.0.2
+ngl:
+    package: "@galaxyproject/ngl"
+    version: 0.0.30
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
@@ -40,6 +43,15 @@ plyr:
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.9
+ts_visjs:
+    package: "@galaxyproject/ts_visjs"
+    version: 0.0.6
+unipept:
+    package: "@galaxyproject/unipept"
+    version: 0.0.2
+venn:
+    package: "@galaxyproject/venn"
+    version: 0.0.8
 vitessce:
     package: "@galaxyproject/vitessce"
     version: 0.0.3

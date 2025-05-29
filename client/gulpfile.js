@@ -17,14 +17,10 @@ const yaml = require("yaml");
 const PLUGIN_BUILD_IDS = ["annotate_image", "fits_graph_viewer", "hyphyvision", "mvpapp", "tiffviewer"];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
-    "heatmap",
     "openlayers",
     "openseadragon",
     "phylocanvas",
     "plotly",
-    "ts_visjs",
-    "unipept",
-    "venn",
 ]; // todo: derive from XML
 
 const args = process.argv.slice(2);
