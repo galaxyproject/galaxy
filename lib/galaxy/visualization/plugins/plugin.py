@@ -274,25 +274,3 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})
         template_filename = os.path.join(self.MAKO_TEMPLATE)
         return trans.fill_template(template_filename, **render_vars)
-
-
-class StaticFileVisualizationPlugin(VisualizationPlugin):
-    """
-    A visualization plugin that starts by loading a static html file defined in
-    the visualization's config file.
-    """
-
-    # TODO: these are not embeddable by their nature - update config
-    # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case
-
-    def _render(self, render_vars, trans=None, embedded=None, **kwargs):
-        """
-        Render the static file simply by reading and returning it.
-        """
-        render_vars["embedded"] = self._parse_embedded(embedded)
-        render_vars.update(vars={})
-
-        static_file_path = self.config["entry_point"]["file"]
-        static_file_path = os.path.join(self.path, static_file_path)
-        with open(static_file_path) as outfile:
-            return outfile.read()

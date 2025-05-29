@@ -149,9 +149,6 @@ class VisualizationsRegistry:
         # from mako
         if config["entry_point"]["type"] == "mako":
             plugin_class = vis_plugins.VisualizationPlugin
-        # from a static file (html, etc)
-        elif config["entry_point"]["type"] == "html":
-            plugin_class = vis_plugins.StaticFileVisualizationPlugin
         else:
             # default from js
             plugin_class = vis_plugins.ScriptVisualizationPlugin
