@@ -25,10 +25,24 @@ const emit = defineEmits<{
 function onTagsChange(newTags: string[]) {
     tags.value = newTags;
 }
+
+function onOk() {
+    emit("ok", tags.value);
+    resetTags();
+}
+
+function onCancel() {
+    emit("cancel");
+    resetTags();
+}
+
+function resetTags() {
+    tags.value = props.initialTags;
+}
 </script>
 
 <template>
-    <GModal :show="show" size="small" :title="title" @ok="emit('ok', tags)" @cancel="emit('cancel')">
+    <GModal :show="show" ok-text="Add" :confirm="true" size="small" :title="title" @ok="onOk" @cancel="onCancel">
         <StatelessTags :value="tags" @input="onTagsChange($event)" />
     </GModal>
 </template>
