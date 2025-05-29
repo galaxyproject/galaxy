@@ -10,6 +10,9 @@ aladin:
 alignment:
     package: "@galaxyproject/alignment"
     version: 0.0.9
+annotateimage:
+    package: "@galaxyproject/annotateimage"
+    version: 0.0.0
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.1

@@ -13,7 +13,7 @@ const yaml = require("yaml");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_IDS = ["annotate_image", "hyphyvision", "mvpapp"];
+const PLUGIN_BUILD_IDS = ["hyphyvision", "mvpapp"];
 
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf("--limit");
