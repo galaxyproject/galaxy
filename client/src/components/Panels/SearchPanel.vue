@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
+
+import { type SearchResult, searchWorkflow } from "@/components/Workflow/Editor/modules/search";
+import { useWorkflowStores } from "@/composables/workflowStores";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -7,6 +10,17 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 const currentQuery = ref("");
 
 const searchEmpty = computed(() => currentQuery.value.trim() === "");
+
+const { workflowId } = useWorkflowStores();
+
+const results = ref<SearchResult[]>([]);
+
+watch(
+    () => currentQuery.value,
+    () => {
+        results.value = searchWorkflow(currentQuery.value, workflowId);
+    }
+);
 </script>
 
 <template>
@@ -22,6 +36,17 @@ const searchEmpty = computed(() => currentQuery.value.trim() === "");
                 <li>output</li>
                 <li>comment</li>
             </ul>
+        </div>
+
+        <div v-else class="search-help">
+            <span>Found {{ results.length }}.</span>
+            <span v-if="results.length > 0">Click a result to view it in the workflow.</span>
+        </div>
+
+        <div class="result-list">
+            <button v-for="result in results" :key="result.searchData.id">
+                {{ result.searchData.prettyName }}
+            </button>
         </div>
     </ActivityPanel>
 </template>

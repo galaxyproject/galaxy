@@ -7,6 +7,8 @@ import { assertDefined } from "@/utils/assertions";
 type SearchData =
     | {
           type: "step";
+          id: string;
+          prettyName: string;
           stepType: NewStep["type"];
           bounds: Rectangle;
           toolId?: string;
@@ -16,12 +18,16 @@ type SearchData =
       }
     | {
           type: "input";
+          id: string;
+          prettyName: string;
           bounds: Rectangle;
           label: string;
           inputType: string;
       }
     | {
           type: "output";
+          id: string;
+          prettyName: string;
           bounds: Rectangle;
           name: string;
           label?: string;
@@ -29,6 +35,8 @@ type SearchData =
       }
     | {
           type: "comment";
+          id: string;
+          prettyName: string;
           commentType: "frame" | "markdown" | "text";
           bounds: Rectangle;
           text: string;
@@ -75,6 +83,8 @@ function collectSearchData(workflowId: string) {
 
             return {
                 type: "input",
+                id: domId,
+                prettyName: `Input "${input.label ?? input.name}" for step ${step.id + 1}`,
                 bounds,
                 label: input.label,
                 inputType: input.input_type,
@@ -89,6 +99,8 @@ function collectSearchData(workflowId: string) {
 
             return {
                 type: "output",
+                id: domId,
+                prettyName: `Output "${workflowOutput?.label ?? output.name}" for step ${step.id + 1}`,
                 bounds,
                 name: output.name,
                 label: workflowOutput?.label ?? undefined,
@@ -100,6 +112,8 @@ function collectSearchData(workflowId: string) {
         return [
             {
                 type: "step",
+                id: domId,
+                prettyName: `${step.id + 1}: ${step.label ?? step.name}`,
                 stepType: step.type,
                 bounds,
                 name: step.name,
@@ -122,6 +136,8 @@ function collectSearchData(workflowId: string) {
         return [
             {
                 type: "comment",
+                id: domId,
+                prettyName: `${comment.type} Comment ${comment.id + 1}`,
                 commentType: comment.type,
                 bounds,
                 text: (comment as TextWorkflowComment).data.text ?? (comment as FrameWorkflowComment).data.title,
@@ -149,14 +165,14 @@ function collectSearchDataCached(workflowId: string) {
     return searchDataCacheData;
 }
 
-type SearchResult = {
+export type SearchResult = {
     matchedKeys: string[];
     searchData: SearchData;
     score: number;
 };
 
 const softMatchKeys = ["name", "label", "annotation", "text"];
-const ignoreKeys = ["bounds"];
+const ignoreKeys = ["bounds", "id"];
 
 export function searchWorkflow(query: string, workflowId: string) {
     const data = collectSearchDataCached(workflowId);
@@ -201,7 +217,7 @@ export function searchWorkflow(query: string, workflowId: string) {
         };
     });
 
-    const filteredResults = results.filter((r) => r.score >= queryParts.length);
+    const filteredResults = results.filter((r) => r.score >= queryParts.length && r.score > 0);
     filteredResults.sort((a, b) => b.score - a.score);
 
     return filteredResults;
