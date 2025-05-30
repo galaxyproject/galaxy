@@ -7,6 +7,15 @@
       forward: input_R1.fastq
       reverse: input_R2.fastq
 
+- doc: Compressed _R1 _R2 fastqs split.
+  inputs:
+  - input_R1.fastq.gz
+  - input_R2.fastq.gz
+  paired:
+    input:
+      forward: input_R1.fastq.gz
+      reverse: input_R2.fastq.gz
+
 - doc: Joining common prefixes on _R1 _R2.
   inputs:
   - input541_R1.fastq
@@ -30,6 +39,15 @@
       forward: input.1.fastq
       reverse: input.2.fastq
 
+- doc: Simple .1.fastq.gz/.2.fastq.gz split.
+  inputs:
+  - input.1.fastq.gz
+  - input.2.fastq.gz
+  paired:
+    input:
+      forward: input.1.fastq.gz
+      reverse: input.2.fastq.gz
+
 - doc: Simple _1/_2 split.
   inputs:
   - input_1.fastq
@@ -38,3 +56,21 @@
     input:
       forward: input_1.fastq
       reverse: input_2.fastq
+
+- doc: Simple _1/_2 split on compressed files (.gz)
+  inputs:
+  - input_1.fastq.gz
+  - input_2.fastq.gz
+  paired:
+    input:
+      forward: input_1.fastq.gz
+      reverse: input_2.fastq.gz
+
+- doc: Simple _1/_2 split on compressed files (.bz2)
+  inputs:
+  - input_1.fastq.bz2
+  - input_2.fastq.bz2
+  paired:
+    input:
+      forward: input_1.fastq.bz2
+      reverse: input_2.fastq.bz2
