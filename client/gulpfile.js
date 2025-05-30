@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs-extra");
-const { series } = require("gulp");
+const { parallel, series } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
