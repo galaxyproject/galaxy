@@ -916,21 +916,61 @@ class JobSearch:
             _dce_target_child_collection_ref = aliased(
                 model.DatasetCollection, name=f"_dce_target_child_collection_ref_{k}_{v}"
             )
+            # List of aliases for each potential nested level of DatasetCollectionElements
             _dce_target_level_list = [
                 aliased(model.DatasetCollectionElement, name=f"_dce_target_level_{k}_{v}_{i}") for i in range(depth + 1)
-            ]  # +1 for first element of child_collection
+            ]
             _hda_target_ref = aliased(model.HistoryDatasetAssociation, name=f"_hda_target_ref_{k}_{v}")
 
-            # CTE 1: reference_dce_signature_elements_cte
-            # Path starts with the target DCE's own element_identifier, then recursively traverses its child collection
+            # --- CTE: reference_dce_all_dataset_ids_cte ---
+            # This CTE (Common Table Expression) identifies all distinct dataset IDs
+            # that are part of the *reference* dataset collection (the one we're searching for).
+            # This helps in the initial filtering of candidate collections.
+            reference_all_dataset_ids_select = (
+                select(_hda_target_ref.dataset_id.label("ref_dataset_id_for_overlap"))
+                .select_from(_dce_target_root_ref)
+                .join(
+                    _dce_target_child_collection_ref,
+                    _dce_target_child_collection_ref.id == _dce_target_root_ref.child_collection_id,
+                )
+                .join(
+                    _dce_target_level_list[0],
+                    _dce_target_level_list[0].dataset_collection_id == _dce_target_child_collection_ref.id,
+                )
+            )
+            # Dynamically add joins for each nested level of the collection
+            for i in range(1, depth + 1):
+                reference_all_dataset_ids_select = reference_all_dataset_ids_select.join(
+                    _dce_target_level_list[i],
+                    _dce_target_level_list[i].dataset_collection_id
+                    == _dce_target_level_list[i - 1].child_collection_id,
+                )
+            _leaf_target_dce_ref = _dce_target_level_list[-1]
+            reference_all_dataset_ids_select = (
+                reference_all_dataset_ids_select.join(
+                    _hda_target_ref, _hda_target_ref.id == _leaf_target_dce_ref.hda_id
+                )
+                .where(_dce_target_root_ref.id == v)
+                .distinct()
+            )
+            reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(f"ref_all_ds_ids_{k}_{v}")
+
+            # --- CTE: reference_dce_signature_elements_cte ---
+            # This CTE generates a "path signature string" for each individual element
+            # within the *reference* collection. This signature combines identifiers
+            # from all levels of the collection and the dataset ID, providing a unique
+            # identifier for each dataset's position within the collection structure.
             path_components = [
                 _dce_target_root_ref.element_identifier,
                 *[_dce_target_level_list[i].element_identifier for i in range(depth + 1)],
-                _hda_target_ref.dataset_id.cast(sqlalchemy.Text),
+                _hda_target_ref.dataset_id.cast(sqlalchemy.Text),  # Ensure type for concat_ws
             ]
 
             reference_dce_signature_elements_select = (
-                select(func.concat_ws(";", *path_components).label("path_signature_string"))
+                select(
+                    func.concat_ws(";", *path_components).label("path_signature_string"),
+                    _hda_target_ref.dataset_id.label("raw_dataset_id_for_ordering"),  # Keep original type for ordering
+                )
                 .select_from(_dce_target_root_ref)
                 .join(
                     _dce_target_child_collection_ref,
@@ -957,20 +997,33 @@ class JobSearch:
                 f"ref_dce_sig_els_{k}_{v}"
             )
 
-            # CTE 2: reference_full_signature_cte
+            # --- CTE: reference_full_signature_cte ---
+            # This CTE aggregates the path signatures and dataset IDs of the *reference*
+            # collection into ordered arrays. These arrays form the "full signature"
+            # used for direct comparison with candidate collections.
             reference_full_signature_cte = (
                 select(
                     func.array_agg(
-                        sqlalchemy.text(
-                            f"{reference_dce_signature_elements_cte.c.path_signature_string}  ORDER BY {reference_dce_signature_elements_cte.c.path_signature_string}"
-                        )
-                    ).label("signature_array")
+                        reference_dce_signature_elements_cte.c.path_signature_string,
+                        order_by=reference_dce_signature_elements_cte.c.path_signature_string,
+                    ).label("signature_array"),
+                    func.array_agg(
+                        reference_dce_signature_elements_cte.c.raw_dataset_id_for_ordering.cast(
+                            sqlalchemy.Integer
+                        ),  # Cast to Integer here
+                        order_by=reference_dce_signature_elements_cte.c.path_signature_string,  # Order by full path to ensure consistency
+                    ).label("ordered_dataset_id_array"),
+                    func.count(reference_dce_signature_elements_cte.c.path_signature_string).label(
+                        "element_count"
+                    ),  # Count elements based on path_signature_string
                 )
                 .select_from(reference_dce_signature_elements_cte)
                 .cte(f"ref_dce_full_sig_{k}_{v}")
             )
 
-            # Candidate DCEs for comparison
+            # --- Aliases for Candidate Dataset Collection Structure ---
+            # These aliases are used to represent potential matching dataset collections
+            # in the database, which will be compared against the reference.
             candidate_dce_root = aliased(model.DatasetCollectionElement, name=f"candidate_dce_root_{k}_{v}")
             candidate_dce_child_collection = aliased(
                 model.DatasetCollection, name=f"candidate_dce_child_collection_{k}_{v}"
@@ -980,21 +1033,66 @@ class JobSearch:
                 for i in range(depth + 1)
             ]
             candidate_hda = aliased(model.HistoryDatasetAssociation, name=f"candidate_hda_{k}_{v}")
+            candidate_history = aliased(model.History, name=f"candidate_history_{k}_{v}")
 
-            # CTE 3: candidate_dce_signature_elements_cte
-            candidate_path_components = [
+            # --- CTE: candidate_dce_pre_filter_ids_cte (Initial Candidate Filtering) ---
+            # This CTE performs a first pass to quickly narrow down potential candidate
+            # dataset collections. It checks for:
+            # 1. Existence of a child collection (ensuring it's a collection, not a single HDA).
+            # 2. User permissions (published or owned by the current user).
+            # 3. Overlap in *any* dataset IDs with the reference collection.
+            candidate_dce_pre_filter_ids_select = (
+                select(candidate_dce_root.id.label("candidate_dce_id"))
+                .distinct()
+                .select_from(candidate_dce_root)
+                .where(candidate_dce_root.child_collection_id.isnot(None))
+                .join(
+                    candidate_dce_child_collection,
+                    candidate_dce_child_collection.id == candidate_dce_root.child_collection_id,
+                )
+                .join(
+                    candidate_dce_level_list[0],
+                    candidate_dce_level_list[0].dataset_collection_id == candidate_dce_child_collection.id,
+                )
+            )
+            for i in range(1, depth + 1):
+                candidate_dce_pre_filter_ids_select = candidate_dce_pre_filter_ids_select.join(
+                    candidate_dce_level_list[i],
+                    candidate_dce_level_list[i].dataset_collection_id
+                    == candidate_dce_level_list[i - 1].child_collection_id,
+                )
+            _leaf_candidate_dce_pre = candidate_dce_level_list[-1]
+            candidate_dce_pre_filter_ids_select = (
+                candidate_dce_pre_filter_ids_select.join(
+                    candidate_hda, candidate_hda.id == _leaf_candidate_dce_pre.hda_id
+                )
+                .join(candidate_history, candidate_history.id == candidate_hda.history_id)
+                .where(or_(candidate_history.published == true(), candidate_history.user_id == user_id))
+                .where(candidate_hda.dataset_id.in_(select(reference_all_dataset_ids_cte.c.ref_dataset_id_for_overlap)))
+            )
+            candidate_dce_pre_filter_ids_cte = candidate_dce_pre_filter_ids_select.cte(
+                f"cand_dce_pre_filter_ids_{k}_{v}"
+            )
+
+            # --- CTE: candidate_dce_signature_elements_cte ---
+            # This CTE calculates the path signature string and raw dataset ID for each
+            # element within the *pre-filtered candidate* collections. This is similar
+            # to the reference signature elements CTE but for the candidates.
+            candidate_path_components_fixed = [
                 candidate_dce_root.element_identifier,
                 *[candidate_dce_level_list[i].element_identifier for i in range(depth + 1)],
-                candidate_hda.dataset_id.cast(sqlalchemy.Text),
+                candidate_hda.dataset_id.cast(sqlalchemy.Text),  # Ensure type for concat_ws
             ]
 
             candidate_dce_signature_elements_select = (
                 select(
                     candidate_dce_root.id.label("candidate_dce_id"),
-                    func.concat_ws(";", *candidate_path_components).label("path_signature_string"),
+                    func.concat_ws(";", *candidate_path_components_fixed).label("path_signature_string"),
+                    candidate_hda.dataset_id.label("dataset_id_for_ordered_array"),  # This is now Integer
                 )
                 .select_from(candidate_dce_root)
-                # Filter for candidates that also point to a child collection of the same depth
+                # Apply the initial filter here!
+                .where(candidate_dce_root.id.in_(select(candidate_dce_pre_filter_ids_cte.c.candidate_dce_id)))
                 .where(candidate_dce_root.child_collection_id.isnot(None))
                 .join(
                     candidate_dce_child_collection,
@@ -1018,15 +1116,61 @@ class JobSearch:
                 candidate_dce_signature_elements_select.join(
                     candidate_hda, candidate_hda.id == _leaf_candidate_dce.hda_id
                 )
-                .join(model.History, model.History.id == candidate_hda.history_id)
-                .where(or_(model.History.published == true(), model.History.user_id == user_id))
+                .join(candidate_history, candidate_history.id == candidate_hda.history_id)
+                .where(or_(candidate_history.published == true(), candidate_history.user_id == user_id))
             )
             candidate_dce_signature_elements_cte = candidate_dce_signature_elements_select.cte(
                 f"cand_dce_sig_els_{k}_{v}"
             )
 
-            # CTE 4: candidate_full_signatures_cte
-            candidate_full_signatures_cte = (
+            # --- CTE: candidate_pre_signatures_cte (Candidate Aggregation for Comparison) ---
+            # This CTE aggregates the dataset IDs from the candidate collections into
+            # ordered arrays, similar to `reference_full_signature_cte`. It also
+            # counts the elements to ensure size consistency.
+            candidate_pre_signatures_cte = (
+                select(
+                    candidate_dce_signature_elements_cte.c.candidate_dce_id,
+                    # Corrected array_agg syntax: pass column directly, use order_by keyword
+                    func.array_agg(
+                        candidate_dce_signature_elements_cte.c.dataset_id_for_ordered_array.cast(
+                            sqlalchemy.Integer
+                        ),  # Cast explicitly
+                        order_by=candidate_dce_signature_elements_cte.c.path_signature_string,  # Order by the full path
+                    ).label("candidate_ordered_dataset_ids_array"),
+                    func.count(candidate_dce_signature_elements_cte.c.candidate_dce_id).label(
+                        "candidate_element_count"
+                    ),
+                )
+                .select_from(candidate_dce_signature_elements_cte)
+                .group_by(candidate_dce_signature_elements_cte.c.candidate_dce_id)
+                .cte(f"cand_dce_pre_sig_{k}_{v}")
+            )
+
+            # --- CTE: filtered_cand_dce_by_dataset_ids_cte (Filtering by Element Count and Dataset ID Array) ---
+            # This crucial CTE filters the candidate collections further by comparing:
+            # 1. Their total element count with the reference collection's element count.
+            # 2. Their ordered array of dataset IDs with the reference's ordered array.
+            # This step ensures that candidate collections have the same number of elements
+            # and contain the exact same datasets, in the same logical order (based on path).
+            filtered_cand_dce_by_dataset_ids_cte = (
+                select(candidate_pre_signatures_cte.c.candidate_dce_id)
+                .select_from(candidate_pre_signatures_cte, reference_full_signature_cte)
+                .where(
+                    and_(
+                        candidate_pre_signatures_cte.c.candidate_element_count
+                        == reference_full_signature_cte.c.element_count,
+                        candidate_pre_signatures_cte.c.candidate_ordered_dataset_ids_array
+                        == reference_full_signature_cte.c.ordered_dataset_id_array,
+                    )
+                )
+                .cte(f"filtered_cand_dce_{k}_{v}")
+            )
+
+            # --- CTE: final_candidate_signatures_cte (Final Full Signature Calculation for Matched Candidates) ---
+            # For the candidates that passed the previous filtering, this CTE calculates
+            # their full path signature array. This signature represents the complete
+            # structural and content identity of the collection.
+            final_candidate_signatures_cte = (
                 select(
                     candidate_dce_signature_elements_cte.c.candidate_dce_id,
                     func.array_agg(
@@ -1036,21 +1180,18 @@ class JobSearch:
                     ).label("full_signature_array"),
                 )
                 .select_from(candidate_dce_signature_elements_cte)
-                .group_by(candidate_dce_signature_elements_cte.c.candidate_dce_id)
-                .cte(f"cand_dce_full_sig_{k}_{v}")
-            )
-
-            # CTE 5: equivalent_dce_ids_cte
-            equivalent_dce_ids_cte = (
-                select(candidate_full_signatures_cte.c.candidate_dce_id.label("equivalent_id"))
                 .where(
-                    candidate_full_signatures_cte.c.full_signature_array
-                    == select(reference_full_signature_cte.c.signature_array).scalar_subquery()
+                    candidate_dce_signature_elements_cte.c.candidate_dce_id.in_(
+                        select(filtered_cand_dce_by_dataset_ids_cte.c.candidate_dce_id)
+                    )
                 )
-                .cte(f"eq_dce_ids_{k}_{v}")
+                .group_by(candidate_dce_signature_elements_cte.c.candidate_dce_id)
+                .cte(f"final_cand_dce_full_sig_{k}_{v}")
             )
 
-            # Main query `stmt` construction for DCE collections
+            # --- Main Query Construction for Dataset Collection Elements ---
+            # This section joins the main `stmt` (representing jobs) with the CTEs
+            # to filter jobs whose input DCE matches the reference DCE's full signature.
             a = aliased(
                 model.JobToInputDatasetCollectionElementAssociation, name=f"job_to_input_dce_association_{k}_{v}"
             )
@@ -1064,7 +1205,14 @@ class JobSearch:
                 input_dce,
                 and_(
                     input_dce.id == a.dataset_collection_element_id,
-                    input_dce.id.in_(select(equivalent_dce_ids_cte.c.equivalent_id)),
+                    # The final filter: ensure the input DCE's ID is among those candidates
+                    # whose full signature array *exactly matches* the reference's signature array.
+                    input_dce.id.in_(
+                        select(final_candidate_signatures_cte.c.candidate_dce_id).where(
+                            final_candidate_signatures_cte.c.full_signature_array
+                            == select(reference_full_signature_cte.c.signature_array).scalar_subquery()
+                        )
+                    ),
                 ),
             )
 
@@ -1076,7 +1224,6 @@ class JobSearch:
             # For this simple case, the full signature array comparison for nested collections doesn't apply.
             # We can use a direct comparison of the HDA and element_identifier.
             # This logic needs to align with how this type of DCE was previously matched.
-            # Reverting to the original logic for single-HDA DCEs, but simplified for clarity:
 
             # Aliases for the "left" side (job to input DCE path)
             a = aliased(
