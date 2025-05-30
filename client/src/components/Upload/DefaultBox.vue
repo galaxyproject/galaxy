@@ -262,7 +262,11 @@ function eventRemoteFiles() {
                 })
             );
         },
-        { multiple: true }
+        { multiple: true },
+        (route: string) => {
+            router.push(route);
+            emit("dismiss");
+        }
     );
 }
 
