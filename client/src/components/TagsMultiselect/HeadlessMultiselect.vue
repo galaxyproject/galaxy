@@ -269,7 +269,7 @@ watch(
 function getPopupLayerId() {
     if (root.value) {
         const closestDialog = root.value.closest("dialog");
-        return closestDialog.id ?? "app";
+        return closestDialog?.id ?? "app";
     } else {
         return "app";
     }
