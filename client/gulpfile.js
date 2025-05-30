@@ -3,10 +3,21 @@ const fs = require("fs-extra");
 const { series } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
+const buildIcons = require("./icons/build_icons");
 const os = require("os");
 const yaml = require("yaml");
 
-const PATHS = {};
+const PATHS = {
+    nodeModules: "./node_modules",
+    stagedLibraries: {
+        backbone: ["backbone.js", "backbone.js"],
+        jquery: ["dist/jquery.js", "jquery/jquery.js"],
+        "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
+        "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
+        requirejs: ["require.js", "require.js"],
+        underscore: ["underscore.js", "underscore.js"],
+    },
+};
 
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
@@ -16,6 +27,27 @@ PATHS.pluginBaseDir =
 const visualizationsConfig = "./visualizations.yml";
 const file = fs.readFileSync(visualizationsConfig, "utf8");
 const VISUALIZATION_PLUGINS = yaml.parse(file);
+
+function stageLibs(callback) {
+    Object.keys(PATHS.stagedLibraries).forEach((lib) => {
+        const p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
+        const p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
+        if (fs.existsSync(p1)) {
+            del.sync(p2);
+            fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
+        } else {
+            callback(
+                p1 +
+                    " does not exist, yet it is a required library.  This is an error.  Check that the package in question exists in node_modules."
+            );
+        }
+    });
+    return callback();
+}
+
+async function icons() {
+    await buildIcons("./src/assets/icons.json");
+}
 
 function stagePlugins(callback) {
     // Get visualization directories
@@ -119,8 +151,10 @@ function forceInstallVisualizations(callback) {
     return installVisualizations(callback, true);
 }
 
+const client = parallel(stageLibs, icons);
 const plugins = series(installVisualizations, stagePlugins);
 const pluginsRebuild = series(forceInstallVisualizations, stagePlugins);
 
+module.exports.client = client;
 module.exports.default = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
