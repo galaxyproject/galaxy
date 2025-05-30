@@ -268,10 +268,15 @@ watch(
 );
 
 function getPopupLayerId() {
-    assertDefined(root.value);
-    const popupLayerRootElement = root.value.closest("dialog, #app");
-    assertDefined(popupLayerRootElement);
-    return popupLayerRootElement.id;
+    try {
+        assertDefined(root.value);
+        const popupLayerRootElement = root.value.closest("dialog, #app");
+        assertDefined(popupLayerRootElement);
+        return popupLayerRootElement.id;
+    } catch (e) {
+        // Fallback to the app layer if no dialog is found
+        return "app";
+    }
 }
 
 whenever(isOpen, async () => {
