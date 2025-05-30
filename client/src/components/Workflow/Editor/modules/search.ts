@@ -155,7 +155,7 @@ type SearchResult = {
     score: number;
 };
 
-const softMatchKeys = ["name", "label", "annotation"];
+const softMatchKeys = ["name", "label", "annotation", "text"];
 const ignoreKeys = ["bounds"];
 
 export function searchWorkflow(query: string, workflowId: string) {
@@ -201,7 +201,7 @@ export function searchWorkflow(query: string, workflowId: string) {
         };
     });
 
-    const filteredResults = results.filter((r) => r.score > 0);
+    const filteredResults = results.filter((r) => r.score >= queryParts.length);
     filteredResults.sort((a, b) => b.score - a.score);
 
     return filteredResults;
