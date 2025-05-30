@@ -56,6 +56,14 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     props.initialPosition
 );
 
+watch(
+    () => transform.value,
+    () => {
+        stateStore.position[0] = transform.value.x;
+        stateStore.position[1] = transform.value.y;
+    }
+);
+
 const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
     elementBounding,
     scale,

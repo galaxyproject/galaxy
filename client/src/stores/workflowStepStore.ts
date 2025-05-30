@@ -41,6 +41,7 @@ export interface DataOutput {
     extensions: string[];
     name: string;
     optional: boolean;
+    type?: "data";
 }
 
 export interface CollectionOutput extends Omit<DataOutput, "type"> {
