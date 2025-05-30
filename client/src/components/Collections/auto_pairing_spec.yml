@@ -1,0 +1,40 @@
+- doc: Simple _R1 _R2 fastqs split.
+  inputs:
+  - input_R1.fastq
+  - input_R2.fastq
+  paired:
+    input:
+      forward: input_R1.fastq
+      reverse: input_R2.fastq
+
+- doc: Joining common prefixes on _R1 _R2.
+  inputs:
+  - input541_R1.fastq
+  - input541_R2.fastq
+  - input521_R1.fastq
+  - input521_R2.fastq
+  paired:
+    input541:
+      forward: input541_R1.fastq
+      reverse: input541_R2.fastq
+    input521:
+      forward: input521_R1.fastq
+      reverse: input521_R2.fastq
+
+- doc: Simple .1.fastq/.2.fastq split.
+  inputs:
+  - input.1.fastq
+  - input.2.fastq
+  paired:
+    input:
+      forward: input.1.fastq
+      reverse: input.2.fastq
+
+- doc: Simple _1/_2 split.
+  inputs:
+  - input_1.fastq
+  - input_2.fastq
+  paired:
+    input:
+      forward: input_1.fastq
+      reverse: input_2.fastq
