@@ -171,7 +171,7 @@ export function searchWorkflow(query: string, workflowId: string) {
         let score = 0;
 
         Object.entries(data).forEach(([key, value]) => {
-            if (ignoreKeys.includes(key)) {
+            if (ignoreKeys.includes(key) || !value) {
                 // skip
             } else if (softMatchKeys.includes(key)) {
                 const lowerCaseValue = (value as string).toLowerCase();
