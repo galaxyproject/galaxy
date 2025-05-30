@@ -775,7 +775,36 @@ class JobSearch:
         ]
         _hda_cte_ref = aliased(model.HistoryDatasetAssociation, name="_hda_cte_ref")
 
-        # CTE 1: signature_elements_cte
+        # --- NEW CTE: reference_hdca_all_dataset_ids_cte ---
+        # This CTE identifies all distinct dataset IDs that are part of the *reference*
+        # History Dataset Collection Association (HDCA). This is used for an initial,
+        # fast pre-filtering of candidate HDCAs.
+        reference_all_dataset_ids_select = (
+            select(_hda_cte_ref.dataset_id.label("ref_dataset_id_for_overlap"))
+            .select_from(_hdca_target_cte_ref)
+            .join(_target_collection_cte_ref, _target_collection_cte_ref.id == _hdca_target_cte_ref.collection_id)
+            .join(_dce_cte_ref_list[0], _dce_cte_ref_list[0].dataset_collection_id == _target_collection_cte_ref.id)
+        )
+
+        for i in range(1, depth + 1):
+            reference_all_dataset_ids_select = reference_all_dataset_ids_select.join(
+                _dce_cte_ref_list[i],
+                _dce_cte_ref_list[i].dataset_collection_id == _dce_cte_ref_list[i - 1].child_collection_id,
+            )
+
+        _leaf_cte_ref = _dce_cte_ref_list[-1]
+        reference_all_dataset_ids_select = (
+            reference_all_dataset_ids_select.join(_hda_cte_ref, _hda_cte_ref.id == _leaf_cte_ref.hda_id)
+            .where(_hdca_target_cte_ref.id == v)
+            .distinct()
+        )
+        reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(f"ref_all_ds_ids_{k}_{v}")
+        # --- END NEW CTE ---
+
+        # CTE 1: signature_elements_cte (for the reference HDCA)
+        # This CTE generates a unique "path signature string" for each dataset element
+        # within the reference HDCA. This string identifies the element's position
+        # and content within the nested collection structure.
         signature_elements_select = (
             select(
                 func.concat_ws(
@@ -803,6 +832,8 @@ class JobSearch:
         signature_elements_cte = signature_elements_select.cte(f"signature_elements_{k}_{v}")
 
         # CTE 2: reference_full_signature_cte
+        # This CTE aggregates the path signature strings of the reference HDCA into a
+        # canonical, sorted array. This array represents the complete "signature" of the collection.
         reference_full_signature_cte = (
             select(
                 func.array_agg(
@@ -823,7 +854,42 @@ class JobSearch:
         ]
         candidate_hda = aliased(model.HistoryDatasetAssociation, name="candidate_hda")
 
+        # --- NEW CTE: candidate_hdca_pre_filter_ids_cte (First Pass Candidate Filtering) ---
+        # This CTE performs a quick initial filter on candidate HDCAs.
+        # It checks for:
+        # 1. User permissions (published or owned by the current user).
+        # 2. Whether the candidate HDCA contains any dataset IDs that are also present
+        #    in the reference HDCA (an overlap check). This is a broad filter to
+        #    reduce the number of candidates before more expensive signature generation.
+        candidate_hdca_pre_filter_ids_select = (
+            select(candidate_hdca.id.label("candidate_hdca_id"))
+            .distinct()
+            .select_from(candidate_hdca)
+            .join(candidate_hdca_history, candidate_hdca_history.id == candidate_hdca.history_id)
+            .join(candidate_root_collection, candidate_root_collection.id == candidate_hdca.collection_id)
+            .join(candidate_dce_list[0], candidate_dce_list[0].dataset_collection_id == candidate_root_collection.id)
+        )
+
+        for i in range(1, depth + 1):
+            candidate_hdca_pre_filter_ids_select = candidate_hdca_pre_filter_ids_select.join(
+                candidate_dce_list[i],
+                candidate_dce_list[i].dataset_collection_id == candidate_dce_list[i - 1].child_collection_id,
+            )
+
+        _leaf_candidate_dce_pre = candidate_dce_list[-1]
+        candidate_hdca_pre_filter_ids_select = (
+            candidate_hdca_pre_filter_ids_select.join(candidate_hda, candidate_hda.id == _leaf_candidate_dce_pre.hda_id)
+            .where(or_(candidate_hdca_history.user_id == user_id, candidate_hdca_history.published == true()))
+            .where(candidate_hda.dataset_id.in_(select(reference_all_dataset_ids_cte.c.ref_dataset_id_for_overlap)))
+        )
+        candidate_hdca_pre_filter_ids_cte = candidate_hdca_pre_filter_ids_select.cte(
+            f"cand_hdca_pre_filter_ids_{k}_{v}"
+        )
+        # --- END NEW CTE ---
+
         # CTE 3: candidate_signature_elements_cte
+        # This CTE generates the path signature string for each element of the
+        # *pre-filtered candidate* HDCAs.
         candidate_signature_elements_select = (
             select(
                 candidate_hdca.id.label("candidate_hdca_id"),
@@ -834,6 +900,8 @@ class JobSearch:
                 ).label("path_signature_string"),
             )
             .select_from(candidate_hdca)
+            # Apply the pre-filter here to limit the candidates for full signature generation
+            .where(candidate_hdca.id.in_(select(candidate_hdca_pre_filter_ids_cte.c.candidate_hdca_id)))
             .join(candidate_hdca_history, candidate_hdca_history.id == candidate_hdca.history_id)
             .join(candidate_root_collection, candidate_root_collection.id == candidate_hdca.collection_id)
             .join(candidate_dce_list[0], candidate_dce_list[0].dataset_collection_id == candidate_root_collection.id)
@@ -855,7 +923,8 @@ class JobSearch:
         )
 
         # CTE 4: candidate_full_signatures_cte
-        # Use sqlalchemy.text() to explicitly include ORDER BY inside array_agg
+        # This CTE aggregates the path signature strings for the candidate HDCAs into
+        # ordered arrays, similar to the reference's full signature.
         candidate_full_signatures_cte = (
             select(
                 candidate_signature_elements_cte.c.candidate_hdca_id,
@@ -871,6 +940,8 @@ class JobSearch:
         )
 
         # CTE 5: equivalent_hdca_ids_cte
+        # This final CTE identifies the HDCAs that are truly "equivalent" by
+        # comparing their full signature array to the reference HDCA's full signature array.
         equivalent_hdca_ids_cte = (
             select(candidate_full_signatures_cte.c.candidate_hdca_id.label("equivalent_id"))
             .where(
@@ -881,6 +952,8 @@ class JobSearch:
         )
 
         # Main query `stmt` construction
+        # This section joins the base job statement with the associations and then filters
+        # by the HDCAs identified as equivalent in the CTEs.
         labeled_col = a.dataset_collection_id.label(f"{k}_{v}")
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
@@ -889,6 +962,8 @@ class JobSearch:
             hdca_input,
             and_(
                 hdca_input.id == a.dataset_collection_id,
+                # Filter the main query to only include HDCAs found in the
+                # 'equivalent_hdca_ids_cte'.
                 hdca_input.id.in_(select(equivalent_hdca_ids_cte.c.equivalent_id)),
             ),
         )
