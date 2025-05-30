@@ -426,6 +426,13 @@ function onOk() {
     finalize();
 }
 
+function pushToPropRouter(route: string) {
+    if (props.routePush) {
+        modalShow.value = false;
+        props.routePush(route);
+    }
+}
+
 onMounted(() => {
     load(props.selectedItem);
 });
@@ -474,12 +481,7 @@ onMounted(() => {
                 size="small"
                 title="Create a new remote file source"
                 data-description="create new file source button"
-                @click="
-                    () => {
-                        modalShow = false;
-                        props.routePush('/file_source_instances/create');
-                    }
-                ">
+                @click="pushToPropRouter('/file_source_instances/create')">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create new
             </GButton>
