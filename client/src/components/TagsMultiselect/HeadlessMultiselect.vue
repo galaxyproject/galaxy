@@ -16,7 +16,6 @@ import Vue2Teleport from "vue2-teleport";
 
 import { useUid } from "@/composables/utils/uid";
 import { normalizeTag } from "@/stores/userTagsStore";
-import { assertDefined } from "@/utils/assertions";
 
 library.add(faCheck, faChevronUp, faPlus, faTags, faTimes);
 
@@ -268,13 +267,10 @@ watch(
 );
 
 function getPopupLayerId() {
-    try {
-        assertDefined(root.value);
-        const popupLayerRootElement = root.value.closest("dialog, #app");
-        assertDefined(popupLayerRootElement);
-        return popupLayerRootElement.id;
-    } catch (e) {
-        // Fallback to the app layer if no dialog is found
+    if (root.value) {
+        const closestDialog = root.value.closest("dialog");
+        return closestDialog.id ?? "app";
+    } else {
         return "app";
     }
 }
