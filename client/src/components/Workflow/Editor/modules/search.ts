@@ -202,7 +202,7 @@ export function searchWorkflow(query: string, workflowId: string) {
     });
 
     const filteredResults = results.filter((r) => r.score > 0);
-    filteredResults.sort((a, b) => a.score - b.score);
+    filteredResults.sort((a, b) => b.score - a.score);
 
     return filteredResults;
 }
