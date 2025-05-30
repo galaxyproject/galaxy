@@ -35,6 +35,18 @@ class TapisOAuth2(BaseOAuth2):
         ("refresh_token", "refresh_token"),
     ]
 
+    def get_user_id(self, details, response):
+        """
+        Return a unique ID for the current user.
+        We create a tenant-scoped unique identifier to handle multiple tenants.
+        """
+        username = response.get("username")
+        tenant = self.setting("TENANT_ID", self.DEFAULT_TENANT_ID)
+        # Create a unique identifier that includes both tenant and username
+        # This ensures users from different tenants don't collide
+        user_id = f"{tenant}:{username}"
+        return user_id
+
     def get_user_details(self, response):
         """
         Extract user details from the Tapis API response.
@@ -44,10 +56,11 @@ class TapisOAuth2(BaseOAuth2):
         # For now, with TACC Tapis, we will hardcode the domain to `tacc.utexas.edu` for email addresses.
         TAPIS_DOMAIN_OVERRIDE = "tacc.utexas.edu"
         username = response.get("username")
-        return {
+        user_details = {
             "username": username,
             "email": f"{username}@{TAPIS_DOMAIN_OVERRIDE}",
         }
+        return user_details
 
     def user_data(self, access_token, *args, **kwargs):
         """

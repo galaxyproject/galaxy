@@ -2,6 +2,7 @@ import { faExclamation, faSpinner, type IconDefinition } from "@fortawesome/free
 import { computed, type Ref } from "vue";
 
 import { type HDASummary, type HistoryItemSummary, isHDA } from "@/api";
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import type { UploadItem } from "@/components/Upload/model";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { stateIsTerminal } from "@/utils/utils";
@@ -55,6 +56,7 @@ export function monitorUploadedHistoryItems(
 
     const historyItemsStateInfo = computed<{
         variant: string;
+        color?: ComponentColor;
         message: string;
         icon?: IconDefinition;
         spin?: boolean;
@@ -63,6 +65,7 @@ export function monitorUploadedHistoryItems(
             if (!uploadedHistoryItemsReady.value) {
                 return {
                     variant: "info",
+                    color: "blue",
                     message: `Your upload(s) are not ready to be used yet. ${REFER_TO_HISTORY_MSG}`,
                     icon: faSpinner,
                     spin: true,
@@ -70,12 +73,14 @@ export function monitorUploadedHistoryItems(
             } else if (uploadedHistoryItems.value.length > uploadedHistoryItemsOk.value.length) {
                 return {
                     variant: "warning",
+                    color: "orange",
                     message: `Only ${uploadedHistoryItemsOk.value.length} / ${uploadedHistoryItems.value.length} uploaded items are usable. ${REFER_TO_HISTORY_MSG}`,
                     icon: faExclamation,
                 };
             } else if (creatingPairedType.value && uploadedHistoryItemsOk.value.length % 2 !== 0) {
                 return {
                     variant: "danger",
+                    color: "red",
                     message:
                         "Please upload an even number of datasets to create a dataset pair or a list of dataset pairs.",
                     icon: faExclamation,
@@ -83,6 +88,7 @@ export function monitorUploadedHistoryItems(
             } else if (uploadedHistoryItemsOk.value.length) {
                 return {
                     variant: "success",
+                    color: "blue", // Not "green" because this is for a `GButton`, that is ready
                     message: "Upload(s) ready to be used.",
                 };
             } else {

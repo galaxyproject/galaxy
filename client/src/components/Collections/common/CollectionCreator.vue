@@ -216,7 +216,7 @@ watch(
                     :list-db-keys="listDbKeys"
                     disable-footer
                     emit-uploaded
-                    size="sm"
+                    size="small"
                     @uploaded="addUploadedFiles"
                     @dismiss="currentTab = Tabs.create">
                     <template v-slot:footer>
