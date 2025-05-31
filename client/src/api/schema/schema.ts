@@ -9930,11 +9930,6 @@ export interface components {
              */
             active: boolean | null;
             /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
-            /**
              * Hidden
              * @default false
              */
@@ -9947,8 +9942,6 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /** DynamicUnprivilegedToolCreatePayload */
         DynamicUnprivilegedToolCreatePayload: {
@@ -9957,11 +9950,6 @@ export interface components {
              * @default true
              */
             active: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
             /**
              * Hidden
              * @default false
@@ -9974,8 +9962,6 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /**
          * ElementsFromType
@@ -16944,11 +16930,6 @@ export interface components {
         PathBasedDynamicToolCreatePayload: {
             /** Active */
             active?: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean;
             /** Hidden */
             hidden?: boolean | null;
             /** Path */
@@ -16960,8 +16941,6 @@ export interface components {
             src: "from_path";
             /** Tool Directory */
             tool_directory?: string | null;
-            /** Uuid */
-            uuid?: string | null;
         };
         /** PathDataElement */
         PathDataElement: {

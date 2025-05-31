@@ -1163,6 +1163,7 @@ steps:
   - label: embed1
     run:
       class: GalaxyTool
+      version: "0.1"
       command: echo 'hello world 2' > $output1
       outputs:
         output1:
@@ -8263,6 +8264,7 @@ steps:
   - label: embed1
     run:
       class: GalaxyTool
+      version: "0.1"
       command: echo 'hello world 2' > $output1
       outputs:
         output1:
