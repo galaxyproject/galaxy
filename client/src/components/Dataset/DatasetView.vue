@@ -23,6 +23,9 @@ const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
+// Temporary testing extensions that trigger automatic downloads
+const AUTO_DOWNLOAD_EXTENSIONS = ["tiff", "tif", "pdf", "zip", "tar", "gz"];
+
 interface Props {
     datasetId: string;
     tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
@@ -40,6 +43,9 @@ const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
+);
+const isAutoDownloadType = computed(
+    () => dataset.value && AUTO_DOWNLOAD_EXTENSIONS.includes(dataset.value.file_ext?.toLowerCase() || "")
 );
 
 // Check if the dataset has a preferred visualization by datatype
@@ -157,6 +163,16 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
+            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+                <div class="alert alert-info">
+                    <h4>Download Required</h4>
+                    <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
+                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <a :href="`/datasets/${datasetId}/display`" class="btn btn-primary mt-2" download>
+                        <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
+                    </a>
+                </div>
+            </div>
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
@@ -164,7 +180,18 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                 @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'raw'" class="h-100">
+            <div v-if="isAutoDownloadType" class="auto-download-message p-4">
+                <div class="alert alert-info">
+                    <h4>Download Required</h4>
+                    <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
+                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <a :href="`/datasets/${datasetId}/display`" class="btn btn-primary mt-2" download>
+                        <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
+                    </a>
+                </div>
+            </div>
             <CenterFrame
+                v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
                 :is_preview="true"
                 @load="iframeLoading = false" />
@@ -222,5 +249,17 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
 .dataset-state-header {
     font-size: $h5-font-size;
     vertical-align: middle;
+}
+
+.auto-download-message {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    height: 100%;
+
+    .alert {
+        max-width: 600px;
+        width: 100%;
+    }
 }
 </style>
