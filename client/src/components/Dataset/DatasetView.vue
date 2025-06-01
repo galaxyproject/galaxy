@@ -4,9 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { fetchDatatypeDetails } from "@/api/datatypes";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatatypeStore } from "@/stores/datatypeStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
 import { bytesToString } from "@/utils/utils";
 
@@ -21,6 +21,7 @@ import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.v
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 const datasetStore = useDatasetStore();
+const datatypeStore = useDatatypeStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
@@ -35,7 +36,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const iframeLoading = ref(true);
 const preferredVisualization = ref<string>();
-const datatypeDetails = ref<any>(null);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
@@ -43,19 +43,9 @@ const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId))
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
-const isAutoDownloadType = computed(() => datatypeDetails.value?.display_behavior === "download");
-
-// Fetch datatype details including display behavior
-async function fetchDatatypeInfo() {
-    if (dataset.value && dataset.value.file_ext) {
-        try {
-            datatypeDetails.value = await fetchDatatypeDetails(dataset.value.file_ext);
-        } catch (error) {
-            console.error("Failed to fetch datatype details:", error);
-            datatypeDetails.value = null;
-        }
-    }
-}
+const isAutoDownloadType = computed(
+    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext)
+);
 
 // Check if the dataset has a preferred visualization by datatype
 async function checkPreferredVisualization() {
@@ -77,12 +67,14 @@ async function checkPreferredVisualization() {
     }
 }
 
-// Watch for changes to the dataset to check for preferred visualizations and datatype info
+// Watch for changes to the dataset to check for preferred visualizations and fetch datatype info
 watch(
     () => dataset.value?.file_ext,
-    () => {
+    async () => {
         checkPreferredVisualization();
-        fetchDatatypeInfo();
+        if (dataset.value && dataset.value.file_ext) {
+            await datatypeStore.fetchDatatypeDetails(dataset.value.file_ext);
+        }
     },
     { immediate: true }
 );
