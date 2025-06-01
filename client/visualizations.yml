@@ -1,3 +1,5 @@
+# List visualizations by VISUALIZATION_ID and package details.
+# VISUALIZATION_ID must match the ID declared in the package and reflected in its .xml filename.
 aceeditor:
     package: "@galaxyproject/aceeditor"
     version: 0.0.4
