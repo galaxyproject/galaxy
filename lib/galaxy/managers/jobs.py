@@ -661,8 +661,14 @@ class JobSearch:
                 ~deleted_collection_exists,  # NOT EXISTS deleted collection
                 ~deleted_dataset_exists,  # NOT EXISTS deleted dataset
             )
-        ).order_by(job_id_from_subquery.desc())
-        return outer_stmt
+        )
+        unordered_results_cte = outer_stmt.cte("unordered_results").prefix_with("MATERIALIZED")
+        final_ordered_stmt = (
+            select(*unordered_results_cte.c)
+            .select_from(unordered_results_cte)
+            .order_by(unordered_results_cte.c.job_id.desc())
+        )
+        return final_ordered_stmt
 
     def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier, require_name_match=True):
         a = aliased(model.JobToInputDatasetAssociation)
