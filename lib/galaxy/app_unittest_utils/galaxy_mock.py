@@ -288,10 +288,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.max_discovered_files = 10000
         self.display_builtin_converters = True
         self.enable_notification_system = True
-
-    @property
-    def config_dict(self):
-        return self.dict()
+        self.config_dict = self.dict()
 
     def __getattr__(self, name):
         # Handle the automatic [option]_set options: for tests, assume none are set

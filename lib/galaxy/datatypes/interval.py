@@ -6,7 +6,6 @@ import logging
 import sys
 import tempfile
 from typing import (
-    cast,
     List,
     Optional,
     Tuple,
@@ -282,16 +281,16 @@ class Interval(Tabular):
                     strand = "+"
                     name = f"region_{i}"
                     if n >= 0 and n < len(elems):
-                        name = cast(str, elems[n])
+                        name = elems[n]
                     if t < len(elems):
-                        strand = cast(str, elems[t])
+                        strand = elems[t]
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
                     fh.write("{}\n".format("\t".join(tmp)))
             elif n >= 0:  # name column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     name = f"region_{i}"
                     if n >= 0 and n < len(elems):
-                        name = cast(str, elems[n])
+                        name = elems[n]
                     tmp = [elems[c], elems[s], elems[e], name]
                     fh.write("{}\n".format("\t".join(tmp)))
             else:

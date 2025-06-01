@@ -2156,7 +2156,7 @@ class Tool(UsesDictVisibleKeys):
             # If `self.check_values` is false we don't do any checking or
             # processing on input  This is used to pass raw values
             # through to/from external sites.
-            params = cast(ToolStateJobInstancePopulatedT, expanded_incoming)
+            params = expanded_incoming
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.

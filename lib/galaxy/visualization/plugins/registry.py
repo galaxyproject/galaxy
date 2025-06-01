@@ -240,7 +240,7 @@ class VisualizationsRegistry:
             for data_source in data_sources:
                 model_class = data_source["model_class"]
                 model_class = getattr(galaxy.model, model_class, None)
-                if isinstance(target_object, model_class):
+                if model_class and isinstance(target_object, model_class):
                     tests = data_source["tests"]
                     if tests is None or is_object_applicable(trans, target_object, tests):
                         return visualization.to_dict()

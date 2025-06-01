@@ -6,7 +6,7 @@ botocore-stubs==1.38.19
 cffi==1.17.1 ; platform_python_implementation != 'PyPy'
 cryptography==45.0.2
 lxml-stubs==0.5.1
-mypy==1.15.0
+mypy==1.16.0
 mypy-boto3-s3==1.38.0
 mypy-extensions==1.1.0
 pycparser==2.22 ; platform_python_implementation != 'PyPy'

@@ -391,7 +391,7 @@ class BaseFilesSource(FilesSource):
     def _parse_common_config_opts(self, kwd: FilesSourceProperties):
         self._file_sources_config = kwd.pop("file_sources_config")
         self.id = kwd.pop("id")
-        self.label = kwd.pop("label", None) or self.id
+        self.label = kwd.pop("label", self.id)
         self.doc = kwd.pop("doc", None)
         self.scheme = kwd.pop("scheme", DEFAULT_SCHEME)
         self.writable = kwd.pop("writable", DEFAULT_WRITABLE)

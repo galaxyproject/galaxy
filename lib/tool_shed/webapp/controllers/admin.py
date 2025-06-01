@@ -73,7 +73,8 @@ class AdminController(BaseUIController, Admin):
                 for k in list(kwd.keys()):
                     if k.startswith("f-"):
                         del kwd[k]
-                category_id = kwd.get("id", None)
+                category_id = kwd.get("id")
+                assert category_id
                 category = suc.get_category(trans.app, category_id)
                 kwd["f-Category.name"] = category.name
             elif operation == "receive email alerts":
@@ -244,12 +245,13 @@ class AdminController(BaseUIController, Admin):
         """Handle requests to edit TS category name or description"""
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
-        id = kwd.get("id", None)
+        id = kwd.get("id")
         if not id:
             message = "No category ids received for editing"
             trans.response.send_redirect(
                 web.url_for(controller="admin", action="manage_categories", message=message, status="error")
             )
+        assert id is not None  # redundant, can be dropped when we annotate trans
         category = suc.get_category(trans.app, id)
         original_category_name = str(category.name)
         original_category_description = str(category.description)

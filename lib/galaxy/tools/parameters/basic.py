@@ -2084,7 +2084,7 @@ def src_id_to_item_collection(
     rval = src_id_to_item(sa_session, value, security)
     if isinstance(rval, (LibraryDatasetDatasetAssociation, HistoryDatasetAssociation)):
         raise ValueError("Expected to find collection, but got single dataset wrapper")
-    return cast(ItemFromSrcCollection, rval)
+    return rval
 
 
 class DataToolParameter(BaseDataToolParameter):

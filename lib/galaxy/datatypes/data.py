@@ -252,7 +252,7 @@ class Data(metaclass=DataMeta):
         """Initialize the datatype"""
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = {}
+        self.display_applications: Dict[str, DisplayApplication] = {}
 
     @classmethod
     def is_datatype_change_allowed(cls) -> bool:
@@ -580,7 +580,7 @@ class Data(metaclass=DataMeta):
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
-                self._clean_and_set_mime_type(trans, mime, headers)  # type: ignore[arg-type]
+                self._clean_and_set_mime_type(trans, mime, headers)
                 return self._yield_user_file_content(trans, dataset, file_path, headers), headers
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
@@ -747,7 +747,9 @@ class Data(metaclass=DataMeta):
         assert display_application.id not in self.display_applications, "Attempted to add a display application twice"
         self.display_applications[display_application.id] = display_application
 
-    def get_display_application(self, key: str, default: Optional["DisplayApplication"] = None) -> "DisplayApplication":
+    def get_display_application(
+        self, key: str, default: Optional["DisplayApplication"] = None
+    ) -> Union["DisplayApplication", None]:
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset: DatasetProtocol, trans) -> Dict[str, "DisplayApplication"]:
