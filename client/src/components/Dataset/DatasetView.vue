@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { fetchDatatypeDetails } from "@/api/datatypes";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
@@ -23,9 +24,6 @@ const datasetStore = useDatasetStore();
 const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
-// Temporary testing extensions that trigger automatic downloads
-const AUTO_DOWNLOAD_EXTENSIONS = ["tiff", "tif", "pdf", "zip", "tar", "gz"];
-
 interface Props {
     datasetId: string;
     tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
@@ -37,6 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const iframeLoading = ref(true);
 const preferredVisualization = ref<string>();
+const datatypeDetails = ref<any>(null);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
@@ -44,9 +43,19 @@ const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId))
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
-const isAutoDownloadType = computed(
-    () => dataset.value && AUTO_DOWNLOAD_EXTENSIONS.includes(dataset.value.file_ext?.toLowerCase() || "")
-);
+const isAutoDownloadType = computed(() => datatypeDetails.value?.display_behavior === "download");
+
+// Fetch datatype details including display behavior
+async function fetchDatatypeInfo() {
+    if (dataset.value && dataset.value.file_ext) {
+        try {
+            datatypeDetails.value = await fetchDatatypeDetails(dataset.value.file_ext);
+        } catch (error) {
+            console.error("Failed to fetch datatype details:", error);
+            datatypeDetails.value = null;
+        }
+    }
+}
 
 // Check if the dataset has a preferred visualization by datatype
 async function checkPreferredVisualization() {
@@ -68,8 +77,15 @@ async function checkPreferredVisualization() {
     }
 }
 
-// Watch for changes to the dataset to check for preferred visualizations
-watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: true });
+// Watch for changes to the dataset to check for preferred visualizations and datatype info
+watch(
+    () => dataset.value?.file_ext,
+    () => {
+        checkPreferredVisualization();
+        fetchDatatypeInfo();
+    },
+    { immediate: true }
+);
 </script>
 
 <template>

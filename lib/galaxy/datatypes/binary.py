@@ -414,6 +414,7 @@ class CompressedZipArchive(CompressedArchive):
     """
 
     file_ext = "zip"
+    display_behavior = "download"  # Archive files trigger downloads
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -3198,6 +3199,7 @@ class Xlsx(Binary):
 
     file_ext = "xlsx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
@@ -3210,6 +3212,7 @@ class ExcelXls(Binary):
 
     file_ext = "excel.xls"
     edam_format = "format_3468"
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.mime_type == self.get_mime()
