@@ -674,12 +674,15 @@ class JobSearch:
         stmt = stmt.add_columns(labeled_col)
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
-        hda_stmt = select(model.HistoryDatasetAssociation.id).where(
-            model.HistoryDatasetAssociation.id == e.history_dataset_association_id
-        )
         # b is the HDA used for the job
         stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
         name_condition = []
+        hda_history_join_conditions = [
+            e.history_dataset_association_id == b.id,
+            e.extension == c.extension,
+            e._metadata == c._metadata,
+            e.version == a.dataset_version,
+        ]
         if identifier:
             stmt = stmt.join(d)
             data_conditions.append(
@@ -689,19 +692,10 @@ class JobSearch:
                 )
             )
         elif require_name_match:
-            hda_stmt = hda_stmt.where(e.name == c.name)
+            hda_history_join_conditions.append(e.name == c.name)
             name_condition.append(b.name == c.name)
-        hda_stmt = (
-            hda_stmt.where(
-                e.extension == c.extension,
-            )
-            .where(
-                a.dataset_version == e.version,
-            )
-            .where(
-                e._metadata == c._metadata,
-            )
-        )
+
+        stmt = stmt.outerjoin(e, and_(*hda_history_join_conditions))
         data_conditions.append(
             and_(
                 a.name == k,
@@ -718,7 +712,7 @@ class JobSearch:
                         b.metadata == c.metadata,
                         *name_condition,
                     ),
-                    b.id.in_(hda_stmt),
+                    e.history_dataset_association_id.isnot(None),
                 ),
                 or_(b.deleted == false(), c.deleted == false()),
             )
