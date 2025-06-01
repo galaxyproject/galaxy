@@ -84,7 +84,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="markdown-wrapper">
+    <div class="markdown-wrapper px-2">
         <LoadingSpan v-if="loading" />
         <div v-else class="d-flex flex-column">
             <div class="d-flex flex-column sticky-top bg-white">
@@ -117,7 +117,7 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-            <div class="flex-grow-1 w-75 mx-auto">
+            <div class="flex-grow-1 w-100 mx-auto position-relative">
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
@@ -127,6 +127,7 @@ onMounted(() => {
                 <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component py-2">
                     <SectionWrapper :name="obj.name" :content="obj.content" />
                 </div>
+                <div class="markdown-scroll-overlay" />
             </div>
             <div class="d-flex justify-content-between p-1">
                 <small v-if="updateTime" class="text-break">Last updated on {{ updateTime }}</small>
@@ -135,3 +136,14 @@ onMounted(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.markdown-scroll-overlay {
+    background: transparent;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 0.5rem;
+}
+</style>
