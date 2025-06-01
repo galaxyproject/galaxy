@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faEye, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -25,7 +25,7 @@ const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistent
 
 interface Props {
     datasetId: string;
-    tab?: "details" | "edit" | "error" | "preview" | "visualize";
+    tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -118,6 +118,13 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                 <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
+                v-if="preferredVisualization"
+                title="View raw dataset contents"
+                :active="tab === 'raw'"
+                :to="`/datasets/${datasetId}/raw`">
+                <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
+            </BNavItem>
+            <BNavItem
                 v-if="!showError"
                 title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
@@ -152,6 +159,12 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                 @load="iframeLoading = false" />
             <CenterFrame
                 v-else
+                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :is_preview="true"
+                @load="iframeLoading = false" />
+        </div>
+        <div v-else-if="tab === 'raw'" class="h-100">
+            <CenterFrame
                 :src="`/datasets/${datasetId}/display/?preview=True`"
                 :is_preview="true"
                 @load="iframeLoading = false" />
