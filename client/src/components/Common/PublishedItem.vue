@@ -55,7 +55,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
     <div id="columns" class="d-flex">
         <ActivityBar />
 
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="my-3 px-3 w-100 overflow-auto d-flex flex-column">
             <slot />
         </div>
 
