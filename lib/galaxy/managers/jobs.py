@@ -560,11 +560,11 @@ class JobSearch:
         self, stmt, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
     ):
         """Build subquery that selects a job with correct job parameters."""
-        subquery_alias = stmt.subquery("job_ids_subquery")
-        outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
-        stmt = select(*outer_select_columns).select_from(subquery_alias)
+        job_ids_materialized_cte = stmt.cte("job_ids_cte").prefix_with("MATERIALIZED")
+        outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
+        stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
         stmt = (
-            stmt.join(model.Job, model.Job.id == subquery_alias.c.job_id)
+            stmt.join(model.Job, model.Job.id == job_ids_materialized_cte.c.job_id)
             .join(model.History, model.Job.history_id == model.History.id)
             .where(
                 and_(
