@@ -1,0 +1,284 @@
+
+===========================================================
+25.0 Galaxy Release (June 2025)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the full :doc:`25.0 release notes <25.0_announce>` for more details.
+
+Highlights
+===========================================================
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+
+Visualizations
+===========================================================
+
+.. visualizations
+* Fix phylocanvas visualization build
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19138`_
+* Add Vizarr visualization
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19061`_
+* Move phylocanvas to script entry point
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19193`_
+* Move heatmap visualization to new script endpoint
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19176`_
+* Add plotly.js
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19206`_
+* Switch h5web to script endpoint
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19211`_
+* Update visualizations to latest charts package
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19213`_
+* Update Vizarr package version to 0.1.6
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19228`_
+* Allow embedding vitessce visualizations
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19909`_
+* FITS Graph Viewer - script name tweak
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19902`_
+* Update vitessce version
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20016`_
+* Add kepler.gl visualization
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20005`_
+* Add Niivue viewer
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19995`_
+* Add VTK Visualization Toolkit Plugin
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20028`_
+* Add support for Markdown help text in visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20043`_
+* Add sample datasets for visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20046`_
+* Adds Example Datasets and Help Text for Visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20097`_
+* Add Molstar
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20101`_
+* Add alignment.js for multiple sequence alignment rendering
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20110`_
+* Add logo, description and help for aequatus
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20128`_
+* Migrate Transition Systems Visualization
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20125`_
+* Fix and migrate Drawrna
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20102`_
+* Add updated PCA plot
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20140`_
+* Hide non-functional and replaced visualizations (e.g. Nora, MSA)
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20077`_
+* Restore Visualization insertion options in Reports Editor
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20000`_
+* Add visualization test data
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 20183`_
+* Add plotly 6.0.1 to JupyterLite
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20201`_
+* Browse multiple trees in phylocanvas
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20141`_
+* Add Vitessce Viewer
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19227`_
+* Add JupyterLite
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20174`_
+* Migrate ChiraViz
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20214`_
+* Enable visualizations for anonymous user
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20210`_
+* Remove backbone-based charts modules
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19892`_
+* Improve handling of very large files in Tabulator
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20271`_
+
+Datatypes
+===========================================================
+
+.. datatypes
+* Enhance UTF-8 support for filename handling in downloads
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 19161`_
+* Calculate hash for new non-deferred datasets when finishing a job
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19181`_
+* Fix UP031 errors - Part 4
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19235`_
+* Fix UP031 errors - Part 5
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19282`_
+* Fix UP031 errors - Part 6
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19314`_
+* Type annotation fixes for mypy 1.14.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19372`_
+* Add IGB display support for CRAM files
+  (thanks to `@paige-kulzer <https://github.com/paige-kulzer>`__).
+  `Pull Request 19428`_
+* Format code with black 25.1.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19625`_
+* Fail request explicitly when sqlite provider used on non-sqlite file
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19630`_
+* Add fastk_ktab_tar datatype required for fastk tool
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 19615`_
+* Raise ``MessageException`` when using data provider on incompatible data
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19639`_
+* Drop support for Python 3.8
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19685`_
+* Use model classes from ``galaxy.model`` instead of ``app.model`` object - Part 2
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19726`_
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19694`_
+* Fix anndata metadata setting for data with integer indexes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19774`_
+* Add rDock prm datatype
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19783`_
+* Fix parameter model constructions with leading underscores, fixes converter linting
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19790`_
+* Bump up max_peek_size to 50MB
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19823`_
+* Fix tabular metadata setting on pulsar with remote metadata
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19891`_
+* Populate image metadata without allocating memory for the entire image content
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 19830`_
+* Let pysam use extra threads available in job
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19917`_
+* Extend image metadata
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 18951`_
+* Add vitesscejson datatype
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20027`_
+* Add new line to vtpascii test file
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20051`_
+* Add flac audio format
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20057`_
+* Add specific datatypes for Cytoscape and Kepler.gl
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20117`_
+* Add rd datatype
+  (thanks to `@richard-burhans <https://github.com/richard-burhans>`__).
+  `Pull Request 20060`_
+* Update tabular_csv.py to use less memory in tsv->csv conversion
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 20187`_
+* Add more metadata, esp `infer_from` to datatypes configuration
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20142`_
+* Add docx datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20055`_
+* Add markdown datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20056`_
+* Add bigbed to bed converter and tests
+  (thanks to `@d-callan <https://github.com/d-callan>`__).
+  `Pull Request 19787`_
+* Visualization-First Display functionality
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20190`_
+* Refactor display_as URL generation for UCSC links and fix to remove double slashes in URL
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20239`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Format code with black 25.1.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19625`_
+* Update RStudio IT
+  (thanks to `@afgane <https://github.com/afgane>`__).
+  `Pull Request 19711`_
+* More user feedback in FormRulesEdit (for Apply Rules tool)
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19827`_
+* Handle directories with percents directories with export_remote.xml
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19865`_
+* Add basic support for icons in tools
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19850`_
+* Data-source tool for DICED database (https://diced.lerner.ccf.org/) added
+  (thanks to `@jaidevjoshi83 <https://github.com/jaidevjoshi83>`__).
+  `Pull Request 19689`_
+* RStudio IT updates to work on .org
+  (thanks to `@afgane <https://github.com/afgane>`__).
+  `Pull Request 19924`_
+* Also chown R lib in RStudio BioC tool
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20025`_
+* IT Activity Panel
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19996`_
+* Add missing tool test file
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19763`_
+
+Please see the full :doc:`25.0 release notes <25.0_announce>` for more details.
+
+.. include:: 25.0_prs.rst
+
+----
+
+.. include:: _thanks.rst
