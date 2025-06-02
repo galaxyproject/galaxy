@@ -51,6 +51,7 @@ const levelClasses = {
 interface InvocationMessageProps {
     invocationMessage: InvocationMessage;
     invocation: WorkflowInvocationElementView;
+    storeId: string;
 }
 
 const props = defineProps<InvocationMessageProps>();
@@ -104,9 +105,7 @@ const dependentInvocationStep = computed(() => {
 });
 
 // This is used to indicate on the step cards whether the step is currently active in the invocation graph.\
-const storeId = computed(() => `invocation-${props.invocation.id}`);
-const stateStore = useWorkflowStateStore(storeId.value);
-const { activeNodeId } = storeToRefs(stateStore);
+const { activeNodeId } = storeToRefs(useWorkflowStateStore(props.storeId));
 
 const jobId = computed(() => "job_id" in props.invocationMessage && props.invocationMessage.job_id);
 const HdaId = computed(() => "hda_id" in props.invocationMessage && props.invocationMessage.hda_id);

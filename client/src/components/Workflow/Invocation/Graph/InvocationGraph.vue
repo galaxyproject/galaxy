@@ -168,14 +168,6 @@ function stepClicked(nodeId: number | null) {
         scrollStepToView();
     }
 }
-
-async function activateAndShowStep(nodeId: number) {
-    activeNodeId.value = nodeId;
-    await nextTick();
-    scrollStepToView();
-}
-
-defineExpose({ activateAndShowStep });
 </script>
 
 <template>
