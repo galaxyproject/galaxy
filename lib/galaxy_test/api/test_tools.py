@@ -1097,6 +1097,23 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
 
+    @skip_without_tool("cat_list")
+    @requires_new_history
+    def test_run_cat_list_use_cached_job_repeated_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_cat_list_use_cached_job_repeated_input
+        ) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            input_value = dataset_to_param(self.dataset_populator.new_dataset(history_id=history_id))
+            inputs = {"input1": {"batch": False, "values": [input_value, input_value]}}
+            outputs_one = self._run("cat_list", history_id, inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run(
+                "cat_list", history_id, inputs, assert_ok=True, wait_for_job=True, use_cached_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
     @skip_without_tool("collection_creates_list")
     @requires_new_history
     def test_run_collection_creates_list_use_cached_job(self):
