@@ -571,7 +571,7 @@ class JobSearch:
         self, stmt, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
     ):
         """Build subquery that selects a job with correct job parameters."""
-        job_ids_materialized_cte = stmt.cte("job_ids_cte").prefix_with("MATERIALIZED")
+        job_ids_materialized_cte = stmt.cte("job_ids_cte").prefix_with("MATERIALIZED", dialect="postgresql")
         outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
         stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
         stmt = (
@@ -673,7 +673,7 @@ class JobSearch:
                 ~deleted_dataset_exists,  # NOT EXISTS deleted dataset
             )
         )
-        unordered_results_cte = outer_stmt.cte("unordered_results").prefix_with("MATERIALIZED")
+        unordered_results_cte = outer_stmt.cte("unordered_results").prefix_with("MATERIALIZED", dialect="postgresql")
         final_ordered_stmt = (
             select(*unordered_results_cte.c)
             .select_from(unordered_results_cte)
