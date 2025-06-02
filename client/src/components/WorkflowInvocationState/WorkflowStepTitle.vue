@@ -11,8 +11,8 @@ interface WorkflowInvocationStepTitleProps {
     stepIndex: number;
     stepLabel?: string;
     stepType: string;
-    stepToolId?: string;
-    stepSubworkflowId?: string;
+    stepToolId?: string | null;
+    stepSubworkflowId?: string | null;
 }
 
 const props = defineProps<WorkflowInvocationStepTitleProps>();

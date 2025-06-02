@@ -223,9 +223,9 @@ function openJobInNewTab(jobId: string) {
                             dependentInvocationStep?.workflow_step_label || `Step ${dependentWorkflowStep.id + 1}`
                         "
                         :step-type="dependentWorkflowStep.type"
-                        :step-tool-id="dependentWorkflowStep.tool_id || undefined"
+                        :step-tool-id="dependentWorkflowStep.tool_id"
                         :step-subworkflow-id="
-                            'workflow_id' in dependentWorkflowStep ? dependentWorkflowStep.workflow_id : undefined
+                            'workflow_id' in dependentWorkflowStep ? dependentWorkflowStep.workflow_id : null
                         " />
                 </strong>
             </GCard>
@@ -241,8 +241,8 @@ function openJobInNewTab(jobId: string) {
                         :step-index="workflowStep.id"
                         :step-label="invocationStep?.workflow_step_label || `Step ${workflowStep.id + 1}`"
                         :step-type="workflowStep.type"
-                        :step-tool-id="workflowStep.tool_id || undefined"
-                        :step-subworkflow-id="'workflow_id' in workflowStep ? workflowStep.workflow_id : undefined" />
+                        :step-tool-id="workflowStep.tool_id"
+                        :step-subworkflow-id="'workflow_id' in workflowStep ? workflowStep.workflow_id : null" />
                 </strong>
             </GCard>
             <GCard v-if="HdaId" grid-view>
