@@ -16,6 +16,7 @@ from galaxy.util import (
 )
 from . import installable
 
+DEFAULT_APPTAINER_COMMAND = "apptainer"
 APPTAINER_VERSION = "1.4.0"
 APPTAINER_URL_TEMPLATE = "https://github.com/galaxyproject/apptainer-build-unprivileged/releases/download/v{version}/apptainer-{version}-{el}-{arch}.tar.gz"
 

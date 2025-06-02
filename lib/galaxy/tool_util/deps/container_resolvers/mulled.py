@@ -37,6 +37,7 @@ from . import (
 )
 from ..apptainer_util import (
     ApptainerContext,
+    DEFAULT_APPTAINER_COMMAND,
     install_apptainer,
 )
 from ..conda_util import CondaTarget
@@ -494,14 +495,14 @@ class CliContainerResolver(ContainerResolver):
 class SingularityCliContainerResolver(CliContainerResolver):
     container_type = "singularity"
     cli = "singularity"
+    cmd = None
 
     def __init__(
-        self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", auto_init: bool = False, **kwargs
+        self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs
     ) -> None:
         super().__init__(app_info=app_info, **kwargs)
         self.hash_func = hash_func
         self.cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
-        self.auto_init = string_as_bool(auto_init)
         cacher_class = get_cache_directory_cacher(self.cache_directory_cacher_type)
         cache_directory_path = kwargs.get("cache_directory")
         if not cache_directory_path:
@@ -509,6 +510,18 @@ class SingularityCliContainerResolver(CliContainerResolver):
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
         safe_makedirs(self.cache_directory.path)
+
+
+class ApptainerCliContainerResolver(SingularityCliContainerResolver):
+    container_type = "singularity"
+    cli = "apptainer"
+    cmd = None
+
+    def __init__(
+        self, app_info: "AppInfo", auto_init: bool = False, **kwargs
+    ) -> None:
+        super().__init__(app_info=app_info, **kwargs)
+        self.auto_init = string_as_bool(auto_init)
         apptainer_exec = kwargs.get("exec")
         if self.auto_init:
             apptainer_prefix = kwargs.get("prefix")
@@ -518,7 +531,9 @@ class SingularityCliContainerResolver(CliContainerResolver):
             apptainer_context = ApptainerContext(apptainer_prefix=apptainer_prefix, apptainer_exec=apptainer_exec)
             deps_ensure_installed(apptainer_context, install_apptainer, self.auto_init)
             apptainer_exec = apptainer_context.apptainer_exec
+            self._cli_available = True
         self.apptainer_exec = apptainer_exec
+        self.cmd = apptainer_exec or DEFAULT_APPTAINER_COMMAND
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):
@@ -566,11 +581,19 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell, cmd=self.apptainer_exec
+            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell, cmd=self.cmd,
         )
 
     def __str__(self) -> str:
         return f"CachedMulledSingularityContainerResolver[cache_directory={self.cache_directory.path}]"
+
+
+class CachedMulledApptainerContainerResolver(ApptainerCliContainerResolver, CachedMulledSingularityContainerResolver):
+    resolver_type = "cached_mulled_apptainer"
+    shell = "/bin/bash"
+
+    def __str__(self) -> str:
+        return f"CachedMulledApptainerContainerResolver[cache_directory={self.cache_directory.path},apptainer_exec={self.apptainer_exec}]"
 
 
 class MulledDockerContainerResolver(CliContainerResolver):
@@ -735,6 +758,14 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         return f"MulledSingularityContainerResolver[namespace={self.namespace}]"
 
 
+class MulledApptainerContainerResolver(ApptainerCliContainerResolver, MulledSingularityContainerResolver):
+    resolver_type = "mulled_apptainer"
+    protocol = "docker://"
+
+    def __str__(self) -> str:
+        return f"MulledApptainerContainerResolver[namespace={self.namespace},apptainer_exec={self.apptainer_exec}]"
+
+
 class BuildMulledDockerContainerResolver(CliContainerResolver):
     """Build for Docker mulled images matching tool dependencies."""
 
@@ -837,6 +868,15 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
         return f"BuildSingularityContainerResolver[cache_directory={self.cache_directory.path}]"
 
 
+class BuildMulledApptainerContainerResolver(ApptainerCliContainerResolver, BuildMulledSingularityContainerResolver):
+    resolver_type = "build_mulled_apptainer"
+    shell = "/bin/bash"
+    builds_on_resolution = True
+
+    def __str__(self) -> str:
+        return f"BuildApptainerContainerResolver[cache_directory={self.cache_directory.path},apptainer_exec={self.apptainer_exec}]"
+
+
 def mulled_targets(tool_info: "ToolInfo") -> List[CondaTarget]:
     return requirements_to_mulled_targets(tool_info.requirements)
 
@@ -853,8 +893,11 @@ def image_name(targets: List[CondaTarget], hash_func: Literal["v1", "v2"]) -> st
 __all__ = (
     "CachedMulledDockerContainerResolver",
     "CachedMulledSingularityContainerResolver",
+    "CachedMulledApptainerContainerResolver",
     "MulledDockerContainerResolver",
     "MulledSingularityContainerResolver",
+    "MulledApptainerContainerResolver",
     "BuildMulledDockerContainerResolver",
     "BuildMulledSingularityContainerResolver",
+    "BuildMulledApptainerContainerResolver",
 )
