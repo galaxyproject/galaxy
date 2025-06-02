@@ -387,16 +387,6 @@ class SNPMatrix(Rgenetics):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename: str) -> bool:
-        """need to check the file header hex code"""
-        with open(filename, "b") as infile:
-            head = infile.read(16)
-        head = [hex(x) for x in head]
-        if head != "":
-            return False
-        else:
-            return True
-
 
 class Lped(Rgenetics):
     """
