@@ -9302,6 +9302,11 @@ export interface components {
              */
             description_url: string | null;
             /**
+             * Display behavior
+             * @description How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)
+             */
+            display_behavior?: string | null;
+            /**
              * Display in upload
              * @description If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel
              * @default false
