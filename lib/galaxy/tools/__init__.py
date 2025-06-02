@@ -2224,10 +2224,16 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         )
 
         tags = incoming.get("tags", [])
-        if isinstance(tags, list) and tags:
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise exceptions.RequestParameterInvalidException("Tags must be a list of strings.")
+        if tags:
             tag_handler = trans.tag_handler
             for _, hda in execution_tracker.output_datasets:
-                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
+                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False) 
+
+            for _, hdca in execution_tracker.output_collections:
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+            trans.sa_session.commit() 
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
         # if at least one is submitted or there are no jobs to execute - return aggregate
