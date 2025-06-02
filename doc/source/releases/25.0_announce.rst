@@ -1,6 +1,90 @@
 
-:orphan:
+===========================================================
+25.0 Galaxy Release (June 2025)
+===========================================================
 
+.. include:: _header.rst
+
+Highlights
 ===========================================================
-25.0 Galaxy Release
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+Please see the `25.0 user release notes <25.0_announce_user.html>`__ for a summary of new user features.
+
+Get Galaxy
 ===========================================================
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_25.0 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_25.0 && git pull --ff-only origin release_25.0
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+
+Admin Notes
+===========================================================
+Add content or drop section.
+
+Configuration Changes
+===========================================================
+Add content or drop section.
+
+Deprecation Notices
+===========================================================
+Add content or drop section.
+
+Developer Notes
+===========================================================
+Add content or drop section.
+
+Release Notes
+===========================================================
+
+.. include:: 25.0.rst
+   :start-after: announce_start
+
+Release Team
+===========================================================
+
+Release manager:  `Ahmed Awan <https://github.com/ahmedhamidawan>`__
+
+Release testing:
+
+* `Paulo Cilas Morais Lyra Junior <https://github.com/paulocilasjr>`__
+* `Tyler Collins <https://github.com/tcollins2011>`__
+* `Jayadev Joshi <https://github.com/jaidevjoshi83>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `Fabio Cumbo <https://github.com/cumbof>`__
+* `Boris Depoortere <https://github.com/B0r1sD>`__
+* `Michelle Savage <https://github.com/hujambo-dunia>`__
+* `Daniela Schneider <https://github.com/Sch-Da>`__
+* `Dannon Baker <https://github.com/dannon>`__
+* `Mina Hojat Ansari <https://github.com/Minamehr>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
+
+----
+
+.. include:: _thanks.rst
