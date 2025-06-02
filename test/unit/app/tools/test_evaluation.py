@@ -319,8 +319,8 @@ class MockTool:
         elem = XML('<param name="thresh" type="integer" value="5" />')
         return IntegerToolParameter(cast("Tool", self), elem)
 
-    def params_from_strings(self, params, app, ignore_errors=False):
-        return params_from_strings(self.inputs, params, app, ignore_errors)
+    def params_from_strings(self, params, ignore_errors=False):
+        return params_from_strings(self.inputs, params, self.app, ignore_errors)
 
     @property
     def config_file(self):

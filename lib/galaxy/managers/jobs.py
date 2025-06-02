@@ -1097,7 +1097,7 @@ def summarize_destination_params(trans, job):
     return destination_params
 
 
-def summarize_job_parameters(trans: ProvidesUserContext, job: Job):
+def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> Dict[str, Any]:
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1233,12 +1233,12 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job):
     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
     if tool:
         try:
-            params_objects = job.get_param_values(app, ignore_errors=False)
+            params_objects = tool.get_param_values(job, ignore_errors=False)
         except Exception:
-            params_objects = job.get_param_values(app, ignore_errors=True)
+            params_objects = tool.get_param_values(job, ignore_errors=True)
             # use different param_objects in the following line, since we want to display original values as much as possible
             upgrade_messages = tool.check_and_update_param_values(
-                job.get_param_values(app, ignore_errors=True), trans, update_values=False
+                tool.get_param_values(job, ignore_errors=True), trans, update_values=False
             )
             has_parameter_errors = True
         parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
