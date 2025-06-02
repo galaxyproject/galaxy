@@ -367,10 +367,27 @@ class JobSearch:
     ):
         self.sa_session = sa_session
         self.dialect_name = sa_session.get_bind().dialect.name
+        self.use_materialized_hint = self.supports_materialized_hint()
         self.hda_manager = hda_manager
         self.dataset_collection_manager = dataset_collection_manager
         self.ldda_manager = ldda_manager
         self.decode_id = id_encoding_helper.decode_id
+
+    def supports_materialized_hint(self) -> bool:
+        """
+        Checks if the connected PostgreSQL database version supports the MATERIALIZED hint.
+        (PostgreSQL 12 and higher support it).
+        """
+        # session.bind refers to the Engine or Connection the session is bound to
+        # dialect provides information about the database being used
+        # server_version_info returns a tuple (major, minor, micro, ...)
+        # e.g., (12, 5) for PostgreSQL 12.5, (13, 2) for PostgreSQL 13.2
+        if self.dialect_name == "postgresql":
+            bind = self.sa_session.get_bind()
+            server_version_info = bind.dialect and bind.dialect.server_version_info
+            if server_version_info:
+                return server_version_info[0] >= 12
+        return False
 
     def by_tool_input(
         self,
@@ -674,7 +691,11 @@ class JobSearch:
                 ~deleted_dataset_exists,  # NOT EXISTS deleted dataset
             )
         )
-        unordered_results_cte = outer_stmt.cte("unordered_results").prefix_with("MATERIALIZED", dialect="postgresql")
+        unordered_results_cte = outer_stmt.cte("unordered_results")
+        if self.use_materialized_hint:
+            # This can be considerable faster with large job tables,
+            # but is only available on postgresql >= 12.
+            unordered_results_cte = unordered_results_cte.prefix_with("MATERIALIZED")
         final_ordered_stmt = (
             select(*unordered_results_cte.c)
             .select_from(unordered_results_cte)
