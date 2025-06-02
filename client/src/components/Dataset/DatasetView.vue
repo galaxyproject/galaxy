@@ -7,7 +7,6 @@ import { computed, ref, watch } from "vue";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
-import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
@@ -22,7 +21,6 @@ import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
-const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
@@ -35,7 +33,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const iframeLoading = ref(true);
-const preferredVisualization = ref<string>();
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
@@ -46,32 +43,14 @@ const showError = computed(
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext)
 );
+const preferredVisualization = computed(
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
+);
 
-// Check if the dataset has a preferred visualization by datatype
-async function checkPreferredVisualization() {
-    if (dataset.value && dataset.value.file_ext) {
-        try {
-            const mapping = await datatypeVisualizationsStore.getPreferredVisualizationForDatatype(
-                dataset.value.file_ext
-            );
-            if (mapping) {
-                preferredVisualization.value = mapping.visualization;
-            } else {
-                preferredVisualization.value = undefined;
-            }
-        } catch (error) {
-            preferredVisualization.value = undefined;
-        }
-    } else {
-        preferredVisualization.value = undefined;
-    }
-}
-
-// Watch for changes to the dataset to check for preferred visualizations and fetch datatype info
+// Watch for changes to the dataset to fetch datatype info
 watch(
     () => dataset.value?.file_ext,
     async () => {
-        checkPreferredVisualization();
         if (dataset.value && dataset.value.file_ext) {
             await datatypeStore.fetchDatatypeDetails(dataset.value.file_ext);
         }

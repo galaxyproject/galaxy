@@ -19,6 +19,10 @@ export const useDatatypeStore = defineStore("datatypeStore", {
             const details = state.datatypeDetails[extension];
             return details?.display_behavior === "download";
         },
+        getPreferredVisualization: (state) => (extension) => {
+            const details = state.datatypeDetails[extension];
+            return details?.preferred_visualization?.visualization || null;
+        },
     },
     actions: {
         async fetchUploadDatatypes() {
