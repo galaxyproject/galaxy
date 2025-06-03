@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import { getIconForSearchData } from "@/components/Workflow/Editor/modules/itemIcons";
-import { type SearchResult, searchWorkflow } from "@/components/Workflow/Editor/modules/search";
+import { type SearchData, type SearchResult, searchWorkflow } from "@/components/Workflow/Editor/modules/search";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -24,6 +24,10 @@ watch(
         results.value = searchWorkflow(currentQuery.value, workflowId);
     }
 );
+
+const emit = defineEmits<{
+    (e: "result-clicked", result: SearchData): void;
+}>();
 </script>
 
 <template>
@@ -47,7 +51,12 @@ watch(
         </div>
 
         <div class="result-list">
-            <GButton v-for="result in results" :key="result.searchData.id" outline class="result-button">
+            <GButton
+                v-for="result in results"
+                :key="result.searchData.id"
+                outline
+                class="result-button"
+                @click="emit('result-clicked', result.searchData)">
                 <FontAwesomeIcon fixed-width class="result-icon" :icon="getIconForSearchData(result.searchData)" />
                 {{ result.searchData.prettyName }}
             </GButton>

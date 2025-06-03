@@ -12,7 +12,7 @@ import { assertDefined } from "@/utils/assertions";
 import { useD3Zoom } from "./composables/d3Zoom";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Vector } from "./modules/geometry";
+import type { Rectangle, Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -159,10 +159,16 @@ const canvasStyle = computed(() => {
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
 
+function moveToAndHighlightRegion(bounds: Rectangle) {
+    const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
+    moveTo(centerPosition);
+}
+
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
+    moveToAndHighlightRegion,
 });
 </script>
 

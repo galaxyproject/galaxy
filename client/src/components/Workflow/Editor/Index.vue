@@ -51,7 +51,7 @@
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -587,11 +587,16 @@ export default {
             )
         );
 
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
         return {
             id,
             name,
             parameters,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,

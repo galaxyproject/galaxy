@@ -46,8 +46,13 @@ export type SearchData =
 function getInverseCanvasTransform(workflowId: string) {
     const stores = useWorkflowStores(workflowId);
 
+    const canvasContainer = document.getElementById("canvas-container");
+    assertDefined(canvasContainer);
+    const containerBounds = canvasContainer.getBoundingClientRect();
+
     return new Transform()
         .translate([stores.stateStore.position[0], stores.stateStore.position[1]])
+        .translate([containerBounds.x, containerBounds.y])
         .scale([stores.stateStore.scale, stores.stateStore.scale])
         .inverse();
 }
