@@ -163,7 +163,7 @@ watch(
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is_preview="true"
+                :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'raw'" class="h-100">
@@ -180,7 +180,7 @@ watch(
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is_preview="true"
+                :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-hidden overflow-y">
