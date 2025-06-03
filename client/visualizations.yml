@@ -51,6 +51,9 @@ ngl:
 niivue:
     package: "@galaxyproject/niivue"
     version: 0.0.17
+nora:
+    package: "@galaxyproject/nora"
+    version: 1.2.1
 openlayers:
     package: "@galaxyproject/openlayers"
     version: 0.0.6
