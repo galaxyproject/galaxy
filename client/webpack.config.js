@@ -105,8 +105,8 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     monaco: {
                         test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
-                        name: 'monaco',
-                        chunks: 'all',
+                        name: "monaco",
+                        chunks: "all",
                         enforce: true,
                     },
                 },
