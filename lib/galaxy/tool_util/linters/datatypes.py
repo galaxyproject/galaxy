@@ -84,7 +84,7 @@ class ValidDatatypes(Linter):
                 # Certain elements (e.g. `data`) can only have one format. This
                 # is checked separately by linting against the XSD.
                 if elem.tag == "param":
-                    if any([format in ["auto", "input"] for format in formats]):
+                    if any(format in ["auto", "input"] for format in formats):
                         lint_ctx.error(
                             f"Invalid format in tool or tool test inputs",
                             linter=cls.name(),
