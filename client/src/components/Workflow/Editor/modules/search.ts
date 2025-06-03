@@ -4,7 +4,7 @@ import type { FrameWorkflowComment, TextWorkflowComment } from "@/stores/workflo
 import type { CollectionOutput, DataOutput, NewStep, ParameterOutput } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
-type SearchData =
+export type SearchData =
     | {
           type: "step";
           id: string;

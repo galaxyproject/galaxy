@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
+import { getIconForSearchData } from "@/components/Workflow/Editor/modules/itemIcons";
 import { type SearchResult, searchWorkflow } from "@/components/Workflow/Editor/modules/search";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
@@ -38,20 +41,45 @@ watch(
             </ul>
         </div>
 
-        <div v-else class="search-help">
-            <span>Found {{ results.length }}.</span>
+        <div v-else class="result-text">
+            <span>Found {{ results.length }} result{{ results.length === 1 ? "" : "s" }} in workflow.</span>
             <span v-if="results.length > 0">Click a result to view it in the workflow.</span>
         </div>
 
         <div class="result-list">
-            <button v-for="result in results" :key="result.searchData.id">
+            <GButton v-for="result in results" :key="result.searchData.id" outline class="result-button">
+                <FontAwesomeIcon fixed-width class="result-icon" :icon="getIconForSearchData(result.searchData)" />
                 {{ result.searchData.prettyName }}
-            </button>
+            </GButton>
         </div>
     </ActivityPanel>
 </template>
 
 <style lang="scss" scoped>
+.result-text {
+    margin-top: var(--spacing-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    margin-bottom: var(--spacing-2);
+}
+
+.result-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+
+    .result-button {
+        text-align: start;
+        align-items: start;
+
+        .result-icon {
+            margin-top: var(--spacing-1);
+        }
+    }
+}
+
 .search-help {
     margin-top: var(--spacing-3);
     display: flex;
