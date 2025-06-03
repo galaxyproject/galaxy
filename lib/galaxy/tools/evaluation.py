@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
-    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -33,7 +32,6 @@ from galaxy.model.deferred import (
     materializer_factory,
 )
 from galaxy.model.none_like import NoneDataset
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.security.vault import (
     UserVaultWrapper,

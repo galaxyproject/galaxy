@@ -32,7 +32,6 @@ from galaxy.schema.schema import FlexibleUserIdType
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
-from galaxy.tools import Tool
 
 GetToolCredentialsDefinition = Callable[[User, str, str, str, str], Optional[CredentialsRequirement]]
 
