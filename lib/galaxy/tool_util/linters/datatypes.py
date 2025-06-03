@@ -86,7 +86,7 @@ class ValidDatatypes(Linter):
                 if elem.tag == "param":
                     if any(format in ["auto", "input"] for format in formats):
                         lint_ctx.error(
-                            f"Invalid format in tool or tool test inputs",
+                            "Invalid format in tool or tool test inputs",
                             linter=cls.name(),
                             node=elem,
                         )
