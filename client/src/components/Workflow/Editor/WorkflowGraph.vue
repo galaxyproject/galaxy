@@ -21,6 +21,7 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
@@ -159,8 +160,11 @@ const canvasStyle = computed(() => {
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
 
+const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
+
 function moveToAndHighlightRegion(bounds: Rectangle) {
     const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
+    areaHighlight.value?.show(bounds);
     moveTo(centerPosition);
 }
 
@@ -229,6 +233,7 @@ defineExpose({
                     :readonly="readonly"
                     :root-offset="elementBounding"
                     @pan-by="panBy" />
+                <AreaHighlight ref="areaHighlight" />
             </div>
         </div>
         <WorkflowMinimap
