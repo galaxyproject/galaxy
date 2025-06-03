@@ -104,9 +104,9 @@ const setNameHelp = computed<string>(() => {
     return `Enter a name for the set of credentials for ${serviceName.value}`;
 });
 
-const hasNameConflict = computed<boolean>(() => {
-    return newSetName.value.trim() !== "" && availableSets.value.some((set) => set.name === newSetName.value);
-});
+// const hasNameConflict = computed<boolean>(() => {
+//     return newSetName.value.trim() !== "" && availableSets.value.some((set) => set.name === newSetName.value);
+// });
 
 const serviceName = computed<string>(() => props.credentialDefinition.label || props.credentialDefinition.name);
 
