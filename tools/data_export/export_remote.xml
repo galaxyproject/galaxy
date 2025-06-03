@@ -1,10 +1,8 @@
-<tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
+<tool id="export_remote" name="Export datasets" version="0.1.1" profile="21.05">
     <description>to remote files source</description>
-    <!-- TODO
     <requirements>
-        <requirement type="package" version="21.05">galaxy-files</requirement>
+        <requirement type="package" version="24.2">galaxy-files-full</requirement>
     </requirements>
-    -->
     <command><![CDATA[
 python '$__tool_directory__/export_remote.py'
     --file-sources '$file_sources'

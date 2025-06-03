@@ -258,7 +258,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "send_to_cloud",
     "__DATA_FETCH__",
     "directory_uri",
-    "export_remote",
     # Legacy tools bundled with Galaxy.
     "laj_1",
     "gff2bed1",
@@ -321,6 +320,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": parse_version("1.0.1"),
     "winSplitter": parse_version("1.0.1"),
     "Interval2Maf1": parse_version("1.0.1+galaxy0"),
+    "export_remote": parse_version("0.1.1"),
 }
 
 REQUIRE_FULL_DIRECTORY = {
