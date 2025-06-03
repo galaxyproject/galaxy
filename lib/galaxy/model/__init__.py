@@ -7347,13 +7347,13 @@ class HistoryDatasetCollectionAssociation(
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             stmt = self.collection._build_nested_collection_attributes_stmt(
-                hda_attributes=("_metadata", "extension"), dataset_attributes=("object_store_id",)
+                hda_attributes=("_metadata", "extension"), dataset_attributes=("object_store_id", "create_time")
             )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
-            object_store_ids = set()
+            store_times = {}
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7364,9 +7364,13 @@ class HistoryDatasetCollectionAssociation(
                         dbkeys.add(dbkey_field)
                     if row.extension:
                         extensions.add(row.extension)
-                    if row.object_store_id:
-                        object_store_ids.add(row.object_store_id)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, object_store_ids)
+                    store_id = row.object_store_id
+                    create_time = row.create_time
+                    if store_id is not None and create_time is not None:
+                        store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
+            # Convert to set of (object_store_id, oldest_create_time) pairs
+            store_times_summary = set(store_times.items())
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, store_times_summary)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property

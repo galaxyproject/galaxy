@@ -12054,11 +12054,6 @@ export interface components {
              */
             name?: string | null;
             /**
-             * Object Store IDs
-             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
-             */
-            object_store_ids?: string[] | null;
-            /**
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
@@ -12073,6 +12068,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
              * Type
@@ -12201,11 +12201,6 @@ export interface components {
              */
             name: string | null;
             /**
-             * Object Store IDs
-             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
-             */
-            object_store_ids?: string[] | null;
-            /**
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
@@ -12220,6 +12215,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -12339,11 +12339,6 @@ export interface components {
              */
             name: string | null;
             /**
-             * Object Store IDs
-             * @description A list of object store IDs where the elements of the collection are stored. Most of the time it will be a single ID,  but in some cases some elements may be stored in different object stores.
-             */
-            object_store_ids?: string[] | null;
-            /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
@@ -12353,6 +12348,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -16669,6 +16669,23 @@ export interface components {
              * @default 0
              */
             version: number;
+        };
+        /**
+         * OldestCreateTimeByObjectStoreId
+         * @description Represents the oldest creation time of a set of datasets stored in a specific object store.
+         */
+        OldestCreateTimeByObjectStoreId: {
+            /**
+             * Object Store ID
+             * @description The ID of the object store.
+             */
+            object_store_id: string;
+            /**
+             * Oldest Create Time
+             * Format: date-time
+             * @description The oldest creation time of a set of datasets stored in this object store.
+             */
+            oldest_create_time: string;
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {

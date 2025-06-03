@@ -23,6 +23,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.schema import OldestCreateTimeByObjectStoreId
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -299,7 +300,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "update_time",
                 "tags",
                 "contents_url",
-                "object_store_ids",
+                "store_times_summary",
             ],
         )
         self.add_view(
@@ -336,7 +337,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
             "collection_id": self.serialize_id,
-            "object_store_ids": self.serialize_object_store_ids,
+            "store_times_summary": self.serialize_store_times_summary,
         }
         self.serializers.update(serializers)
 
@@ -356,6 +357,8 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
         return list(extensions_set)
 
-    def serialize_object_store_ids(self, item, key, **context):
-        object_store_ids_set = item.dataset_dbkeys_and_extensions_summary[2]
-        return list(object_store_ids_set)
+    def serialize_store_times_summary(self, item, key, **context):
+        store_times_summary = item.dataset_dbkeys_and_extensions_summary[2]
+        return [
+            OldestCreateTimeByObjectStoreId(object_store_id=t[0], oldest_create_time=t[1]) for t in store_times_summary
+        ]
