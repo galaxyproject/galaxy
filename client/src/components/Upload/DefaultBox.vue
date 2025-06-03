@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -23,7 +22,6 @@ import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 
@@ -379,12 +377,6 @@ defineExpose({
 <template>
     <div class="upload-wrapper">
         <div class="upload-header">
-            <div v-if="props.emitUploaded && historyItemsStateInfo">
-                <BAlert show :variant="historyItemsStateInfo.variant" data-description="upload state alert">
-                    <LoadingSpan v-if="historyItemsStateInfo.spin" :message="historyItemsStateInfo.message" />
-                    <span v-else>{{ historyItemsStateInfo.message }}</span>
-                </BAlert>
-            </div>
             <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
             <div v-else-if="counterAnnounce === 0">
                 <div v-if="!!hasBrowserSupport">&nbsp;</div>
@@ -526,14 +518,20 @@ defineExpose({
                 id="btn-emit"
                 :size="size"
                 :disabled="!enableBuild"
-                title="Use Uploaded Files"
-                :variant="enableBuild ? 'primary' : null"
+                :tooltip="Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Upload Valid Files to Use'"
+                :title="historyItemsStateInfo?.message || 'Use Uploaded Files'"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(false)">
-                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
-                <slot name="emit-btn-txt">
-                    <span v-localize>Use Uploaded</span>
-                </slot>
-                ({{ counterSuccess }})
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
+                <span v-localize>Use Uploaded</span>
+                <span v-if="uploadedHistoryItemsOk.length < counterSuccess">
+                    ({{ uploadedHistoryItemsOk.length }}/{{ counterSuccess }})
+                </span>
+                <span v-else> ({{ counterSuccess }}) </span>
             </GButton>
             <GButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>

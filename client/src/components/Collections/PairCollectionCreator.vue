@@ -150,19 +150,19 @@ function _elementsSetUp() {
         if (!prevElem) {
             continue;
         }
-        const element = workingElements.value.find(
+        const matchingElem = workingElements.value.find(
             (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id
         );
-        const problem = isElementInvalid(prevElem);
-        if (element) {
-            inListElements.value[key as keyof SelectedDatasetPair] = element;
-        } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+        if (matchingElem) {
+            const problem = isElementInvalid(matchingElem);
+            if (problem) {
+                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                Toast.error(invalidMsg, localize("Invalid element"));
+            } else {
+                inListElements.value[key as keyof SelectedDatasetPair] = matchingElem;
+            }
         } else {
             const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            invalidElements.value.push(invalidMsg);
             Toast.error(invalidMsg, localize("Invalid element"));
         }
     }
