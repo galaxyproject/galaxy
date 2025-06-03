@@ -107,6 +107,10 @@ const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
 
+const canCreateNewFileSource = computed(() => {
+    return urlTracker.value.atRoot() && fileSourceTemplatesStore.hasTemplates;
+});
+
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.ensureTemplates();
 
@@ -476,7 +480,7 @@ onMounted(() => {
         </template>
         <template v-slot:buttons>
             <GButton
-                v-if="fileSourceTemplatesStore.hasTemplates"
+                v-if="canCreateNewFileSource"
                 tooltip
                 size="small"
                 title="Create a new remote file source"
