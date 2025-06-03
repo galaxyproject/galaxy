@@ -174,10 +174,16 @@ export type SearchResult = {
     matchedKeys: string[];
     searchData: SearchData;
     score: number;
+    weightedScore: number;
 };
 
 const softMatchKeys = ["name", "label", "annotation", "text"];
 const ignoreKeys = ["bounds", "id"];
+const scoreWeights = {
+    toolId: 10,
+    name: 2,
+    type: 5,
+} as Record<string, number>;
 
 export function searchWorkflow(query: string, workflowId: string) {
     const data = collectSearchDataCached(workflowId);
@@ -190,6 +196,7 @@ export function searchWorkflow(query: string, workflowId: string) {
     const results: SearchResult[] = data.map((data) => {
         const matchedKeys = new Set<string>();
         let score = 0;
+        let weightedScore = 0;
 
         Object.entries(data).forEach(([key, value]) => {
             if (ignoreKeys.includes(key) || !value) {
@@ -201,6 +208,7 @@ export function searchWorkflow(query: string, workflowId: string) {
                     if (lowerCaseValue.includes(part)) {
                         matchedKeys.add(key);
                         score += 1;
+                        weightedScore += scoreWeights[key] ?? lowerCaseValue.split(part).length - 1;
                     }
                 });
             } else {
@@ -210,6 +218,7 @@ export function searchWorkflow(query: string, workflowId: string) {
                     if (lowerCaseValue === part) {
                         matchedKeys.add(key);
                         score += 1;
+                        weightedScore += scoreWeights[key] ?? 1;
                     }
                 });
             }
@@ -218,12 +227,13 @@ export function searchWorkflow(query: string, workflowId: string) {
         return {
             matchedKeys: Array.from(matchedKeys),
             score,
+            weightedScore,
             searchData: data,
         };
     });
 
     const filteredResults = results.filter((r) => r.score >= queryParts.length && r.score > 0);
-    filteredResults.sort((a, b) => b.score - a.score);
+    filteredResults.sort((a, b) => b.weightedScore - a.weightedScore);
 
     return filteredResults;
 }
