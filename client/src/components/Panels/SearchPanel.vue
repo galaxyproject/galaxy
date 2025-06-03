@@ -14,14 +14,18 @@ const currentQuery = ref("");
 
 const searchEmpty = computed(() => currentQuery.value.trim() === "");
 
-const { workflowId } = useWorkflowStores();
+const { workflowId, undoRedoStore } = useWorkflowStores();
 
 const results = ref<SearchResult[]>([]);
 
 watch(
-    () => currentQuery.value,
+    () => [currentQuery.value, undoRedoStore.changeId],
     () => {
-        results.value = searchWorkflow(currentQuery.value, workflowId);
+        if (!searchEmpty.value) {
+            results.value = searchWorkflow(currentQuery.value, workflowId);
+        } else {
+            results.value = [];
+        }
     }
 );
 
