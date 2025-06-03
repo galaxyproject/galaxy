@@ -154,18 +154,24 @@ function collectSearchData(workflowId: string) {
 }
 
 let searchDataCacheId = 0;
+let searchDataCachedWorkflowId: string | null = null;
 let searchDataCacheData: SearchData[] | null = null;
 
 /** caches the results of `collectSearchData` depending on the changeId of the `undoRedoStore` */
 function collectSearchDataCached(workflowId: string) {
     const stores = useWorkflowStores(workflowId);
 
-    if (stores.undoRedoStore.changeId === searchDataCacheId && searchDataCacheData) {
+    if (
+        stores.undoRedoStore.changeId === searchDataCacheId &&
+        searchDataCacheData &&
+        searchDataCachedWorkflowId === workflowId
+    ) {
         return searchDataCacheData;
     }
 
     searchDataCacheData = collectSearchData(workflowId);
     searchDataCacheId = stores.undoRedoStore.changeId;
+    searchDataCachedWorkflowId = workflowId;
 
     return searchDataCacheData;
 }
