@@ -145,7 +145,7 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
         type_id: "dataset_collection",
         url: "",
         type: "collection",
-        object_store_ids: null,
+        store_times_summary: null,
     };
 }
 
