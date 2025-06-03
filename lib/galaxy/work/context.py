@@ -99,6 +99,11 @@ class GalaxyAbstractRequest:
 
     @property
     @abc.abstractmethod
+    def method(self) -> str:
+        """The request's HTTP method."""
+
+    @property
+    @abc.abstractmethod
     def is_secure(self) -> bool:
         """Was this a secure (https) request."""
 

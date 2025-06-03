@@ -266,6 +266,10 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         return self.__environ
 
     @property
+    def method(self):
+        return self.__request.method
+
+    @property
     def headers(self):
         return self.__request.headers
 
