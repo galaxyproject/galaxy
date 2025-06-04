@@ -183,9 +183,10 @@ function onDragOver(evt: MouseEvent) {
 function toggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
-    if (!toggle || !to || route.path === to || !isActiveSideBar(toggle)) {
-        activityStore.toggleSideBar(toggle);
+    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
+        return;
     }
+    activityStore.toggleSideBar(toggle);
 }
 
 function onActivityClicked(activity: Activity) {
