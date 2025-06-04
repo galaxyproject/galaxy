@@ -63,6 +63,20 @@ function copyBibtex() {
     });
     copy(text, "References copied to your clipboard as BibTeX");
 }
+
+function copyAPA() {
+    let text = "";
+    citations.value.forEach((citation) => {
+        const cite = citation.cite;
+        const apa = cite.format("bibliography", {
+            format: "text",
+            template: "apa",
+            lang: "en-US",
+        });
+        text += apa + "\n\n";
+    });
+    copy(text, "References copied to your clipboard as APA");
+}
 </script>
 
 <template>
@@ -82,6 +96,16 @@ function copyBibtex() {
                         BibTeX
                     </BNavItem>
                 </BNav>
+                <BButton
+                    v-if="outputFormat === outputFormats.CITATION"
+                    v-b-tooltip.hover
+                    title="Copy all references as APA"
+                    variant="link"
+                    size="sm"
+                    class="copy-citation-btn"
+                    @click="copyAPA">
+                    <FontAwesomeIcon icon="copy" />
+                </BButton>
                 <BButton
                     v-if="outputFormat === outputFormats.BIBTEX"
                     v-b-tooltip.hover
@@ -142,6 +166,7 @@ function copyBibtex() {
 .formatted-reference {
     margin-bottom: 0.5rem;
 }
+.copy-citation-btn,
 .copy-bibtex-btn {
     margin-left: auto;
     padding: 0.25rem 0.5rem;
