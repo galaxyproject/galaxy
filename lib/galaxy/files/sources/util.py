@@ -21,7 +21,7 @@ from galaxy.util.path import StrPath
 
 def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
     missing_client_func = f"Galaxy client cannot currently fetch URIs {desc}."
-    header = f"Missing client functionaltiy required to fetch DRS URI {drs_uri}."
+    header = f"Missing client functionality required to fetch DRS URI {drs_uri}."
     rest_of_message = """Currently Galaxy client only works with HTTP/HTTPS targets but extensions for
     other types would be gladly welcomed by the Galaxy team. Please
     report use cases not covered by this function to our issue tracker
@@ -132,4 +132,4 @@ def fetch_drs_to_file(
 
     if not downloaded:
         unimplemented_access_types = [m["type"] for m in access_methods]
-        raise _not_implemented(drs_uri, f"that is fetched via unimplemented types ({unimplemented_access_types})")
+        raise _not_implemented(drs_uri, f"that are fetched via unimplemented types ({unimplemented_access_types})")
