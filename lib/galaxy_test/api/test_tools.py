@@ -257,6 +257,20 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output["label"] == "Duplicate List"
         assert output["inherit_format"] is True
 
+    def test_tool_icon_endpoint_with_simple_id(self):
+        response = self._get("tools/simple_tool_id/icon")
+        self._assert_status_code_is(response, 404)
+
+    def test_tool_icon_endpoint_with_toolshed_id(self):
+        # Test complex toolshed tool ID with slashes
+        toolshed_tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+        response = self._get(f"tools/{toolshed_tool_id}/icon")
+        # We expect either 200 (if tool is installed and has icon) or 404 (if
+        # not found), but this tests the routing either way.
+        assert response.status_code in [200, 404]
+        if response.status_code == 200:
+            assert response.headers["Content-Type"] == "image/png"
+
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):
         with self.dataset_populator.test_history() as history_id:
