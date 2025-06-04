@@ -710,7 +710,6 @@ upload_mixin:
     paste_content: '${_} #upload-row-${n} .upload-text-content'
     title: '${_} #upload-row-${n} .upload-title'
     row: '${_} #upload-row-${n}'
-    status: '${_} [data-description="upload state alert"]'
     embedded_start_button: '${_} #btn-start'
     use_button: '${_} #btn-emit'
 
