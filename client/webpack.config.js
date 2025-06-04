@@ -30,6 +30,7 @@ const modulesExcludedFromLibs = [
     "vega-embed",
     "vega-lite",
     "ace-builds",
+    "schema-to-ts",
 ].join("|");
 
 const buildDate = new Date();
@@ -101,6 +102,12 @@ module.exports = (env = {}, argv = {}) => {
                         test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
                         chunks: "all",
                         priority: -10,
+                    },
+                    monaco: {
+                        test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+                        name: "monaco",
+                        chunks: "all",
+                        enforce: true,
                     },
                 },
             },
