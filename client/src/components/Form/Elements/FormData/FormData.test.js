@@ -405,7 +405,7 @@ describe("FormData", () => {
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
         expect(wrapper.emitted().alert[0][0]).toEqual(
-            "paired dataset collection is not a valid input for list type dataset collection parameter."
+            "dataset pair dataset collection is not a valid input for list type dataset collection parameter."
         );
     });
 
