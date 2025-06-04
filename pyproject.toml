@@ -116,20 +116,13 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "isort",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
@@ -149,14 +142,24 @@ dev = [
     "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
     "tuspy",
     "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",
