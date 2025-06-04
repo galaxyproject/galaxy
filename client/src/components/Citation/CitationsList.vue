@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
 import { onMounted, onUpdated, ref } from "vue";
@@ -13,7 +13,7 @@ import type { Citation } from ".";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
 
-library.add(faCopy);
+library.add(faCopy, faDownload);
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -77,6 +77,29 @@ function copyAPA() {
     });
     copy(text, "References copied to your clipboard as APA");
 }
+
+function downloadBibtex() {
+    let text = "";
+    citations.value.forEach((citation) => {
+        const cite = citation.cite;
+        const bibtex = cite.format("bibtex", {
+            format: "text",
+            template: "bibtex",
+            lang: "en-US",
+        });
+        text += bibtex;
+    });
+
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "citations.bib";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 </script>
 
 <template>
@@ -106,16 +129,26 @@ function copyAPA() {
                     @click="copyAPA">
                     <FontAwesomeIcon icon="copy" />
                 </BButton>
-                <BButton
-                    v-if="outputFormat === outputFormats.BIBTEX"
-                    v-b-tooltip.hover
-                    title="Copy all references as BibTeX"
-                    variant="link"
-                    size="sm"
-                    class="copy-bibtex-btn"
-                    @click="copyBibtex">
-                    <FontAwesomeIcon icon="copy" />
-                </BButton>
+                <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
+                    <BButton
+                        v-b-tooltip.hover
+                        title="Copy all references as BibTeX"
+                        variant="link"
+                        size="sm"
+                        class="copy-bibtex-btn"
+                        @click="copyBibtex">
+                        <FontAwesomeIcon icon="copy" />
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover
+                        title="Download references as .bib file"
+                        variant="link"
+                        size="sm"
+                        class="download-bibtex-btn"
+                        @click="downloadBibtex">
+                        <FontAwesomeIcon icon="download" />
+                    </BButton>
+                </div>
             </template>
 
             <div v-if="source === 'histories'" class="infomessage">
@@ -166,9 +199,17 @@ function copyAPA() {
 .formatted-reference {
     margin-bottom: 0.5rem;
 }
-.copy-citation-btn,
-.copy-bibtex-btn {
+.copy-citation-btn {
     margin-left: auto;
+    padding: 0.25rem 0.5rem;
+}
+.bibtex-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.25rem;
+}
+.copy-bibtex-btn,
+.download-bibtex-btn {
     padding: 0.25rem 0.5rem;
 }
 </style>
