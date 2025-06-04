@@ -47,6 +47,11 @@ if TYPE_CHECKING:
     )
 
 
+class DatasetHash(TypedDict):
+    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512", "DROPBOX"]
+    hash_value: str
+
+
 class PluginKind(str, Enum):
     """Enum to distinguish between different kinds or categories of plugins."""
 
@@ -164,7 +169,9 @@ class RemoteDirectory(RemoteEntry, TDirectoryClass):
 
 class RemoteFile(RemoteEntry, TFileClass):
     size: int
-    ctime: str
+    ctime: Optional[str]
+    content_hash: NotRequired[str]
+    content_hash_algorithm: NotRequired[str]
 
 
 AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
@@ -345,6 +352,9 @@ class BaseFilesSource(FilesSource):
 
     def get_scheme(self) -> str:
         return self.scheme or "gxfiles"
+
+    def _get_content_hash(self, path: str) -> Optional[DatasetHash]:
+        return None
 
     def get_writable(self) -> bool:
         return self.writable
