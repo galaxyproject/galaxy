@@ -423,7 +423,7 @@ describe("FormData", () => {
         });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted().alert[0][0]).toEqual(undefined);
+        expect(wrapper.emitted().alert).toBeUndefined();
     });
 
     it("linked and unlinked batch mode handling", async () => {
