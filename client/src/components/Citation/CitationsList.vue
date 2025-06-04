@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
 import { onMounted, onUpdated, ref } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
+import { copy } from "@/utils/clipboard";
 
 import type { Citation } from ".";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
+
+library.add(faCopy);
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -43,6 +49,20 @@ onMounted(async () => {
         console.error(e);
     }
 });
+
+function copyBibtex() {
+    let text = "";
+    citations.value.forEach((citation) => {
+        const cite = citation.cite;
+        const bibtex = cite.format("bibtex", {
+            format: "text",
+            template: "bibtex",
+            lang: "en-US",
+        });
+        text += bibtex;
+    });
+    copy(text, "References copied to your clipboard as BibTeX");
+}
 </script>
 
 <template>
@@ -62,6 +82,16 @@ onMounted(async () => {
                         BibTeX
                     </BNavItem>
                 </BNav>
+                <BButton
+                    v-if="outputFormat === outputFormats.BIBTEX"
+                    v-b-tooltip.hover
+                    title="Copy all references as BibTeX"
+                    variant="link"
+                    size="sm"
+                    class="copy-bibtex-btn"
+                    @click="copyBibtex">
+                    <FontAwesomeIcon icon="copy" />
+                </BButton>
             </template>
 
             <div v-if="source === 'histories'" class="infomessage">
@@ -101,10 +131,19 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
+.citation-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 .citation-card .card-header .nav-tabs {
     margin-bottom: -0.75rem !important;
 }
 .formatted-reference {
     margin-bottom: 0.5rem;
+}
+.copy-bibtex-btn {
+    margin-left: auto;
+    padding: 0.25rem 0.5rem;
 }
 </style>
