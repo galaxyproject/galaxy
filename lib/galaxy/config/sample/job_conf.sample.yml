@@ -597,7 +597,7 @@ execution:
       # using --contain disables this behaviour and only allows explicitly
       # requested volumes to be mounted. This gives fully full-control over
       # the mounting behavior.
-      #singulartity_contains: true
+      #singulartity_contain: true
 
       # Pass extra arguments to the singularity exec command not covered by the
       # above options.
