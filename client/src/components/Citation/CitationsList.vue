@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
@@ -12,8 +11,6 @@ import { copy } from "@/utils/clipboard";
 import type { Citation } from ".";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
-
-library.add(faCopy, faDownload);
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -127,7 +124,7 @@ function downloadBibtex() {
                     size="sm"
                     class="copy-citation-btn"
                     @click="copyAPA">
-                    <FontAwesomeIcon icon="copy" />
+                    <FontAwesomeIcon :icon="faCopy" />
                 </BButton>
                 <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
                     <BButton
@@ -137,7 +134,7 @@ function downloadBibtex() {
                         size="sm"
                         class="copy-bibtex-btn"
                         @click="copyBibtex">
-                        <FontAwesomeIcon icon="copy" />
+                        <FontAwesomeIcon :icon="faCopy" />
                     </BButton>
                     <BButton
                         v-b-tooltip.hover
@@ -146,7 +143,7 @@ function downloadBibtex() {
                         size="sm"
                         class="download-bibtex-btn"
                         @click="downloadBibtex">
-                        <FontAwesomeIcon icon="download" />
+                        <FontAwesomeIcon :icon="faDownload" />
                     </BButton>
                 </div>
             </template>
