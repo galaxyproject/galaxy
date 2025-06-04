@@ -139,7 +139,23 @@ const trackBy = computed(() => {
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => props.options.filter((option: SelectOption) => isSelected(option.value)).map(getSelectOption),
+    get: () => {
+        // Preserve the order of props.value
+        const values = Array.isArray(props.value) ? props.value : [props.value];
+        return values
+            .map((val) => {
+                // Find the matching option in props.options
+                const option = props.options.find(
+                    (opt) =>
+                        isSelected(opt.value) &&
+                        (isDataOptionObject(val)
+                            ? isDataOptionObject(opt.value) && itemUniqueKey(opt.value) === itemUniqueKey(val)
+                            : opt.value === val)
+                );
+                return option ? getSelectOption(option) : undefined;
+            })
+            .filter((v) => v !== undefined);
+    },
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
