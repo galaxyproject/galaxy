@@ -1,5 +1,13 @@
+import json
+import logging
 import time
-from typing import Optional
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
+from urllib.parse import quote
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -17,6 +25,8 @@ from galaxy.util import (
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.path import StrPath
+
+log = logging.getLogger(__name__)
 
 
 def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
@@ -72,6 +82,134 @@ def _get_access_info(obj_url: str, access_method: dict, headers=None) -> tuple[s
     return url, headers_as_dict
 
 
+class CompactIdentifierResolver:
+    _instance: Optional["CompactIdentifierResolver"] = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, cache_ttl: int = 86400):
+        if not hasattr(self, "_cache"):
+            self._cache: Dict[str, Dict] = {}
+            self._cache_ttl = cache_ttl
+
+    @classmethod
+    def _reset_singleton(cls):
+        """Reset the singleton instance - for testing only."""
+        cls._instance = None
+
+    def _is_cached(self, prefix: str) -> bool:
+        if prefix not in self._cache:
+            return False
+        cached_time = self._cache[prefix].get("timestamp", 0)
+        return (time.time() - cached_time) < self._cache_ttl
+
+    def _cache_result(self, prefix: str, url_pattern: str):
+        self._cache[prefix] = {"url_pattern": url_pattern, "timestamp": time.time()}
+
+    def _query_identifiers_org(self, prefix: str) -> Optional[str]:
+        try:
+            namespace_url = (
+                f"https://registry.api.identifiers.org/restApi/namespaces/search/findByPrefix?prefix={prefix}"
+            )
+            response = requests.get(namespace_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+            response.raise_for_status()
+
+            namespace_data = response.json()
+            if not namespace_data or "_links" not in namespace_data:
+                return None
+
+            if "resources" in namespace_data["_links"]:
+                resources_url = namespace_data["_links"]["resources"]["href"]
+            else:
+                return None
+            response = requests.get(resources_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+            response.raise_for_status()
+
+            resources = response.json()
+            if "_embedded" in resources and "resources" in resources["_embedded"]:
+                official_resource = None
+                fallback_resource = None
+
+                for resource in resources["_embedded"]["resources"]:
+                    if "urlPattern" in resource:
+                        if resource.get("official", False):
+                            official_resource = resource
+                            break
+                        elif fallback_resource is None:
+                            fallback_resource = resource
+
+                best_resource = official_resource or fallback_resource
+                if best_resource:
+                    return best_resource["urlPattern"]
+
+        except requests.exceptions.RequestException as e:
+            log.warning(f"Failed to query identifiers.org for prefix {prefix}: {e}")
+        except (KeyError, json.JSONDecodeError) as e:
+            log.warning(f"Invalid response from identifiers.org for prefix {prefix}: {e}")
+
+        return None
+
+    def resolve_prefix(self, prefix: str) -> Optional[str]:
+        if self._is_cached(prefix):
+            return self._cache[prefix]["url_pattern"]
+
+        url_pattern = self._query_identifiers_org(prefix)
+
+        if url_pattern:
+            self._cache_result(prefix, url_pattern)
+            log.info(f"Resolved DRS prefix '{prefix}' to URL pattern: {url_pattern}")
+        else:
+            log.warning(f"Could not resolve DRS prefix '{prefix}' via identifiers.org")
+
+        return url_pattern
+
+
+def parse_compact_identifier(drs_uri: str) -> Tuple[str, str]:
+    if not drs_uri.startswith("drs://"):
+        raise ValueError(f"Not a valid DRS URI: {drs_uri}")
+
+    rest_of_uri = drs_uri[len("drs://") :]
+
+    colon_idx = rest_of_uri.find(":")
+    if colon_idx == -1:
+        raise ValueError(f"Invalid compact identifier format (missing colon): {drs_uri}")
+
+    prefix = rest_of_uri[:colon_idx]
+    accession = rest_of_uri[colon_idx + 1 :]
+
+    if not all(c.islower() or c.isdigit() or c in "._" for c in prefix):
+        raise ValueError(
+            f"Invalid prefix format '{prefix}': must contain only lowercase letters, numbers, dots, and underscores"
+        )
+
+    if not prefix or not accession:
+        raise ValueError(f"Empty prefix or accession in compact identifier: {drs_uri}")
+
+    return prefix, accession
+
+
+def resolve_compact_identifier_to_url(drs_uri: str, resolver: Optional[CompactIdentifierResolver] = None) -> str:
+    prefix, accession = parse_compact_identifier(drs_uri)
+
+    if resolver is None:
+        resolver = CompactIdentifierResolver()
+
+    url_pattern = resolver.resolve_prefix(prefix)
+    if not url_pattern:
+        raise ValueError(f"Could not resolve prefix '{prefix}' via identifiers.org")
+
+    encoded_accession = quote(accession, safe="")
+    resolved_url = url_pattern.replace("{$id}", encoded_accession)
+
+    if not resolved_url.startswith(("http://", "https://")):
+        raise ValueError(f"Resolved URL is not HTTP(S): {resolved_url}")
+
+    return resolved_url
+
+
 def fetch_drs_to_file(
     drs_uri: str,
     target_path: StrPath,
@@ -84,16 +222,23 @@ def fetch_drs_to_file(
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):
         raise ValueError(f"Unknown scheme for drs_uri {drs_uri}")
+
     rest_of_drs_uri = drs_uri[len("drs://") :]
-    if "/" not in rest_of_drs_uri:
-        # DRS URI uses compact identifiers, not yet implemented.
-        # https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.2.0/docs/more-background-on-compact-identifiers.html
-        raise _not_implemented(drs_uri, "that use compact identifiers")
-    netspec, object_id = rest_of_drs_uri.split("/", 1)
-    scheme = "https"
-    if force_http:
-        scheme = "http"
-    get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
+
+    if "/" not in rest_of_drs_uri and ":" in rest_of_drs_uri:
+        try:
+            get_url = resolve_compact_identifier_to_url(drs_uri)
+            log.info(f"Resolved compact identifier DRS URI {drs_uri} to {get_url}")
+        except ValueError as e:
+            raise ValueError(f"Failed to resolve compact identifier DRS URI {drs_uri}: {str(e)}")
+    elif "/" in rest_of_drs_uri:
+        netspec, object_id = rest_of_drs_uri.split("/", 1)
+        scheme = "https"
+        if force_http:
+            scheme = "http"
+        get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
+    else:
+        raise ValueError(f"Invalid DRS URI format: {drs_uri}")
     response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
     response.raise_for_status()
     response_object = response.json()
