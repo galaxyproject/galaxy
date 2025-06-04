@@ -47,11 +47,11 @@ const emit = defineEmits(["onChange"]);
     <FormElement
         id="collection_type"
         :value="currentValue"
-        :attributes="{ data: collectionTypeOptions, display: 'simple' }"
+        :attributes="{ datalist: collectionTypeOptions }"
         :warning="warning ?? undefined"
         :error="error ?? undefined"
         title="Collection type"
         :optional="true"
-        type="select"
+        type="text"
         @input="onInput" />
 </template>
