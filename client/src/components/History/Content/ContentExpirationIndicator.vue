@@ -32,7 +32,8 @@ const expirableObjectStoreTime = computed<ExpirableObjectStoreTime | undefined>(
         // Single object store case: check if it has an expiration policy
         const expirableObjectStore = selectableObjectStores.value?.find(
             (objectStore) =>
-                objectStore.object_store_id === item.object_store_id && (objectStore.object_expires_after_days ?? 0) > 0
+                objectStore.object_store_id === item.object_store_id &&
+                (objectStore.object_expires_after_days ?? 0) > 0,
         );
         if (!expirableObjectStore) {
             return undefined;
@@ -48,7 +49,7 @@ const expirableObjectStoreTime = computed<ExpirableObjectStoreTime | undefined>(
         const expirableStoreTimes: ExpirableObjectStoreTime[] = (item.store_times_summary ?? [])
             .map((storeTime) => {
                 const objectStore = selectableObjectStores.value?.find(
-                    (os) => os.object_store_id === storeTime.object_store_id
+                    (os) => os.object_store_id === storeTime.object_store_id,
                 );
                 if (!objectStore || (objectStore.object_expires_after_days ?? 0) <= 0) {
                     return null;
@@ -127,15 +128,18 @@ const expirationMessage = computed(() => {
 });
 
 const expirationTooltip = computed(() => {
+    const itemType = isHDA(props.item) ? "dataset" : "dataset collection (or any of its datasets)";
     if (!expirationDate.value) {
-        return "This dataset does not have an expiration date.";
+        return `This ${itemType} does not have an expiration date.`;
     }
     if (hasExpired.value) {
-        return `This dataset was stored in ${
+        return `This ${itemType} was stored in ${
             objectStoreName.value
         } and has expired on ${expirationDate.value.toDateString()}.`;
     }
-    return `This dataset is stored in ${objectStoreName.value} and expires on ${expirationDate.value.toDateString()}.`;
+    return `This ${itemType} is stored in ${
+        objectStoreName.value
+    } and expires on ${expirationDate.value.toDateString()}.`;
 });
 
 const variant = computed(() => {
