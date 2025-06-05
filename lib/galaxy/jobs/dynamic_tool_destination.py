@@ -13,7 +13,7 @@ from typing import Set
 import numpy as np
 import yaml
 
-from . import job_config_dict_from_xml_or_yaml
+from galaxy.jobs.config import job_config_dict_from_xml_or_yaml
 
 
 __version__ = "1.1.0"
