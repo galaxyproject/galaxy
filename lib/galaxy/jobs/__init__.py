@@ -181,6 +181,16 @@ def config_exception(e, file):
     return Exception(message)
 
 
+def job_config_dict_from_xml_or_yaml(job_config_file: str):
+    if ".xml" in job_config_file:
+        tree = load(job_config_file)
+        job_config_dict = JobConfiguration.__parse_job_conf_xml(tree)
+    else:
+        with open(job_config_file) as f:
+            job_config_dict = yaml.safe_load(f)
+    return job_config_dict
+
+
 def job_config_xml_to_dict(config, root):
     config_dict = {}
 
@@ -405,12 +415,8 @@ class JobConfiguration(ConfiguresHandlers):
                         )
                 if not job_config_file:
                     raise OSError()
-                if ".xml" in job_config_file:
-                    tree = load(job_config_file)
-                    job_config_dict = self.__parse_job_conf_xml(tree)
-                else:
-                    with open(job_config_file) as f:
-                        job_config_dict = yaml.safe_load(f)
+
+                job_config_dict = job_config_dict_from_xml_or_yaml(job_config_file)
                 log.debug(f"Read job configuration from file: {job_config_file}")
 
             # Load tasks if configured
@@ -618,6 +624,7 @@ class JobConfiguration(ConfiguresHandlers):
             h, m, s = (int(v) for v in self.limits.total_walltime["raw"].split(":"))
             self.limits.total_walltime["delta"] = datetime.timedelta(0, s, 0, 0, m, h)
 
+    @classmethod
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 

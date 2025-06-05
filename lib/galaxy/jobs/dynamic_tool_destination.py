@@ -13,7 +13,8 @@ from typing import Set
 import numpy as np
 import yaml
 
-from galaxy.util import parse_xml
+from . import job_config_dict_from_xml_or_yaml
+
 
 __version__ = "1.1.0"
 
@@ -1604,8 +1605,9 @@ def get_destination_list_from_job_config(job_config_location) -> set:
 
         The location of the job config file relative
         to the galaxy root directory. If NoneType, defaults to
+        galaxy/config/job_conf.yml,
         galaxy/config/job_conf.xml,
-        galaxy/config/job_conf.xml.sample_advanced, or
+        galaxy/config/job_conf.sample.yml",
         galaxy/config/job_conf.xml.sample_basic
         (first one that exists)
 
@@ -1624,8 +1626,9 @@ def get_destination_list_from_job_config(job_config_location) -> set:
     else:  # Pick one of the default ones
         message = "* No job config specified, "
         possible_job_conf_files = [
+            "config/job_conf.yml",
             "config/job_conf.xml",
-            "config/job_conf.xml.sample_advanced",
+            "config/job_conf.sample.yml",
             "config/job_conf.xml.sample_basic",
         ]
         for f in possible_job_conf_files:
@@ -1641,10 +1644,9 @@ def get_destination_list_from_job_config(job_config_location) -> set:
             log.debug(message)
 
     if job_config_location:
-        job_conf = parse_xml(job_config_location, strip_whitespace=False)
-
+        job_conf = job_config_dict_from_xml_or_yaml(job_config_location)
         # Add all destination IDs from the job configuration xml file
-        for destination in job_conf.getroot().iter("destination"):
+        for destination in job_conf["execution"]["environments"]:
             destination_id = destination.get("id")
             if destination_id:
                 destination_list.add(destination_id)
