@@ -8,20 +8,58 @@
 Highlights
 ===========================================================
 
-Feature1
---------
+**Empower Users to Build More Kinds of Collections, More Intelligently**. Galaxy’s collection system has
+been significantly enhanced, making it easier to create and manage collections—including mixed paired
+and unpaired datasets, nested lists, and more—directly from selected datasets. New wizard-style builders
+guide users step-by-step, auto-detecting data structures and offering both instant and advanced setup
+options, while improved rule-based import activities, clearer feedback, and numerous refinements.
 
-Feature description.
+**Add ZIP explorer to import individual files from local or remote ZIP archives**. Galaxy now features a
+ZIP explorer, streamlining the process of importing individual files from both local and remote ZIP
+archives.
 
-Feature2
---------
+**Dataset View Component**. A short description of the feature, including how it
+works, what it does, and why it is useful.
 
-Feature description.
+**Add rerun option for workflows**. Users can now easily rerun any workflow with the exact same inputs
+and parameters as a previous run - with a simple click of the new "Rerun" button in the workflow
+invocation view.
 
-Feature3
---------
+**Enable cloning subworkflows**. A short description of the feature, including
+how it works, what it does, and why it is useful.
 
-Feature description.
+**Workflow Run Form Enhancements**. A short description of the feature,
+including how it works, what it does, and why it is useful.
+
+**Introducing READMEs for Workflows in the Galaxy Interface.** Galaxy 25.0 introduces support for
+associating README/help text with workflows. This provides a way to document workflows directly in the
+Galaxy interface, with support for Markdown formatting, links, and images. The README is a part of the
+workflow object in the database.
+
+**Add workflow selection and bulk actions**. A short description of the feature,
+including how it works, what it does, and why it is useful.
+
+**Add JupyterLite**. A short description of the feature, including how it works,
+what it does, and why it is useful.
+
+**IT Activity Panel**. A short description of the feature, including how it
+works, what it does, and why it is useful.
+
+**Visualization-First Display functionality**. A short description of the
+feature, including how it works, what it does, and why it is useful.
+
+**Introduce reusable GCard component for unified card layout**. A short
+description of the feature, including how it works, what it does, and why it is
+useful.
+
+**Remote File Sources and Storage Locations redesign**. A short description of
+the feature, including how it works, what it does, and why it is useful.
+
+**Add User-Defined Tools**. A short description of the feature, including how it
+works, what it does, and why it is useful.
+
+**Allow to send notifications when Admins cancel jobs**. A short description of
+the feature, including how it works, what it does, and why it is useful.
 
 Please see the `25.0 user release notes <25.0_announce_user.html>`__ for a summary of new user features.
 
