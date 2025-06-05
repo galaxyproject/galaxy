@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
+import { BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
 import { onMounted, onUpdated, ref } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
@@ -35,6 +35,7 @@ const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
 const outputFormat = ref<string>(outputFormats.CITATION);
 const citations = ref<Citation[]>([]);
+const isLoading = ref<boolean>(false);
 
 onUpdated(() => {
     emit("rendered");
@@ -42,9 +43,12 @@ onUpdated(() => {
 
 onMounted(async () => {
     try {
+        isLoading.value = true;
         citations.value = await getCitations(props.source, props.id);
     } catch (e) {
         console.error(e);
+    } finally {
+        isLoading.value = false;
     }
 });
 
@@ -98,85 +102,91 @@ function citationsToBibtexAsText() {
 <template>
     <div>
         <Heading h1 separator inline size="lg">History Tool References</Heading>
-        <BCard v-if="!simple" class="citation-card" header-tag="nav">
-            <template v-slot:header>
-                <BNav card-header tabs>
-                    <BNavItem
-                        :active="outputFormat === outputFormats.CITATION"
-                        @click="outputFormat = outputFormats.CITATION">
-                        References (APA)
-                    </BNavItem>
+        <div v-if="isLoading" class="text-center">
+            <BSpinner />
+            <p class="ml-2">Loading references...</p>
+        </div>
+        <div v-else>
+            <BCard v-if="!simple" class="citation-card" header-tag="nav">
+                <template v-slot:header>
+                    <BNav card-header tabs>
+                        <BNavItem
+                            :active="outputFormat === outputFormats.CITATION"
+                            @click="outputFormat = outputFormats.CITATION">
+                            References (APA)
+                        </BNavItem>
 
-                    <BNavItem
-                        :active="outputFormat === outputFormats.BIBTEX"
-                        @click="outputFormat = outputFormats.BIBTEX">
-                        BibTeX
-                    </BNavItem>
-                </BNav>
-                <BButton
-                    v-if="outputFormat === outputFormats.CITATION"
-                    v-b-tooltip.hover
-                    title="Copy all references as APA"
-                    variant="link"
-                    size="sm"
-                    class="copy-citation-btn"
-                    @click="copyAPA">
-                    <FontAwesomeIcon :icon="faCopy" />
-                </BButton>
-                <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
+                        <BNavItem
+                            :active="outputFormat === outputFormats.BIBTEX"
+                            @click="outputFormat = outputFormats.BIBTEX">
+                            BibTeX
+                        </BNavItem>
+                    </BNav>
                     <BButton
+                        v-if="outputFormat === outputFormats.CITATION"
                         v-b-tooltip.hover
-                        title="Copy all references as BibTeX"
+                        title="Copy all references as APA"
                         variant="link"
                         size="sm"
-                        class="copy-bibtex-btn"
-                        @click="copyBibtex">
+                        class="copy-citation-btn"
+                        @click="copyAPA">
                         <FontAwesomeIcon :icon="faCopy" />
                     </BButton>
-                    <BButton
-                        v-b-tooltip.hover
-                        title="Download references as .bib file"
-                        variant="link"
-                        size="sm"
-                        class="download-bibtex-btn"
-                        @click="downloadBibtex">
-                        <FontAwesomeIcon :icon="faDownload" />
-                    </BButton>
+                    <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
+                        <BButton
+                            v-b-tooltip.hover
+                            title="Copy all references as BibTeX"
+                            variant="link"
+                            size="sm"
+                            class="copy-bibtex-btn"
+                            @click="copyBibtex">
+                            <FontAwesomeIcon :icon="faCopy" />
+                        </BButton>
+                        <BButton
+                            v-b-tooltip.hover
+                            title="Download references as .bib file"
+                            variant="link"
+                            size="sm"
+                            class="download-bibtex-btn"
+                            @click="downloadBibtex">
+                            <FontAwesomeIcon :icon="faDownload" />
+                        </BButton>
+                    </div>
+                </template>
+
+                <div v-if="source === 'histories'" class="infomessage">
+                    <div v-html="config?.citations_export_message_html"></div>
                 </div>
-            </template>
 
-            <div v-if="source === 'histories'" class="infomessage">
-                <div v-html="config?.citations_export_message_html"></div>
-            </div>
-
-            <div class="citations-formatted">
-                <CitationItem
-                    v-for="(citation, index) in citations"
-                    :key="index"
-                    class="formatted-reference"
-                    :citation="citation"
-                    :output-format="outputFormat" />
-            </div>
-        </BCard>
-        <div v-else-if="citations.length">
-            <BButton v-b-toggle="id" variant="primary">References</BButton>
-
-            <BCollapse
-                :id="id.replace(/ /g, '_')"
-                class="mt-2"
-                @show="$emit('show')"
-                @shown="$emit('shown')"
-                @hide="$emit('hide')"
-                @hidden="$emit('hidden')">
-                <BCard>
+                <div class="citations-formatted">
                     <CitationItem
                         v-for="(citation, index) in citations"
                         :key="index"
                         class="formatted-reference"
                         :citation="citation"
                         :output-format="outputFormat" />
-                </BCard>
-            </BCollapse>
+                </div>
+            </BCard>
+            <div v-else-if="citations.length">
+                <BButton v-b-toggle="id" variant="primary">References</BButton>
+
+                <BCollapse
+                    :id="id.replace(/ /g, '_')"
+                    class="mt-2"
+                    @show="$emit('show')"
+                    @shown="$emit('shown')"
+                    @hide="$emit('hide')"
+                    @hidden="$emit('hidden')">
+                    <BCard>
+                        <CitationItem
+                            v-for="(citation, index) in citations"
+                            :key="index"
+                            class="formatted-reference"
+                            :citation="citation"
+                            :output-format="outputFormat" />
+                    </BCard>
+                </BCollapse>
+            </div>
         </div>
     </div>
 </template>
