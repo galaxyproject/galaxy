@@ -5458,6 +5458,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     history_id: Mapped[Optional[int]]
     dataset_id: Mapped[Optional[int]]
+    extension: Mapped[str]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[Optional["HistoryDatasetAssociationTagAssociation"]]
 
