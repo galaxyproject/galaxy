@@ -8,12 +8,15 @@
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
         <p>
-            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
-            completed jobs (in 'error' or 'ok' states).
+            Unfinished jobs (in the 'new', 'queued', 'running', or 'waiting' states) and finished
+            jobs (in 'error' or 'ok' states) are displayed below.
         </p>
         <p>
-            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
-            will be displayed to the user as: "This job was stopped by an administrator:
+            You may choose to stop some of the unfinished jobs and provide the user with a message. Your stop message
+            will be displayed to the user as:
+            </p>
+            <p>
+            "This job was stopped by an administrator:
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
