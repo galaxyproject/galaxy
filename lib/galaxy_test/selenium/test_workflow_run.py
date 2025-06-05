@@ -583,8 +583,6 @@ steps: {}
             workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
 
         workflow_input.embedded_start_button.wait_for_and_click()
-        for i in range(from_hid, from_hid + count):
-            self.history_panel_wait_for_hid_ok(i)
         workflow_input.use_button.wait_for_and_click()
 
     def _create_and_run_workflow_with_unique_name(
