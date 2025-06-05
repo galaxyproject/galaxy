@@ -11,6 +11,7 @@ import { copy } from "@/utils/clipboard";
 import type { Citation } from ".";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -96,6 +97,7 @@ function citationsToBibtexAsText() {
 
 <template>
     <div>
+        <Heading h1 separator inline size="lg">History Tool References</Heading>
         <BCard v-if="!simple" class="citation-card" header-tag="nav">
             <template v-slot:header>
                 <BNav card-header tabs>
