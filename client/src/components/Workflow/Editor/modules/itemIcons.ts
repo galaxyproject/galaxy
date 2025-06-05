@@ -12,7 +12,7 @@ import {
     faWrench,
 } from "font-awesome-6";
 
-import type { SearchData } from "@/components/Workflow/Editor/modules/search";
+import type { SearchData } from "@/stores/workflowSearchStore";
 
 export const iconForType = {
     step: {

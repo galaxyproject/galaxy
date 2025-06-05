@@ -3,8 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import { getIconForSearchData } from "@/components/Workflow/Editor/modules/itemIcons";
-import { type SearchData, type SearchResult, searchWorkflow } from "@/components/Workflow/Editor/modules/search";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type { SearchData, SearchResult } from "@/stores/workflowSearchStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -14,7 +14,7 @@ const currentQuery = ref("");
 
 const searchEmpty = computed(() => currentQuery.value.trim() === "");
 
-const { workflowId, undoRedoStore } = useWorkflowStores();
+const { undoRedoStore, searchStore } = useWorkflowStores();
 
 const results = ref<SearchResult[]>([]);
 
@@ -22,7 +22,7 @@ watch(
     () => [currentQuery.value, undoRedoStore.changeId],
     () => {
         if (!searchEmpty.value) {
-            results.value = searchWorkflow(currentQuery.value, workflowId);
+            results.value = searchStore.searchWorkflow(currentQuery.value);
         } else {
             results.value = [];
         }
