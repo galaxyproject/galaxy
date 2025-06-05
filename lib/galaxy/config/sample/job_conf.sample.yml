@@ -591,10 +591,11 @@ execution:
       # by default to isolate the PID namespace. You can turn this off by setting
       # singularity_pid to `false`.
       #singularity_pid: true
-      Singularity by default inherits the IPC namespace, this can give
-      issues with multiprocessing, hence Galaxy passes the `--ipc` argument
-      by default to isolate the IPC namespace. You can turn this off by setting
-      singularity_ipc to `false`.
+
+      # Singularity by default inherits the IPC namespace, this can give
+      # issues with multiprocessing, hence Galaxy passes the `--ipc` argument
+      # by default to isolate the IPC namespace. You can turn this off by setting
+      # singularity_ipc to `false`.
       #singularity_ipc: true
 
       # Singularity mounts some directories, such as $HOME and $PWD by default.
