@@ -127,15 +127,18 @@ const expirationMessage = computed(() => {
 });
 
 const expirationTooltip = computed(() => {
+    const itemType = isHDA(props.item) ? "dataset" : "dataset collection (or any of its datasets)";
     if (!expirationDate.value) {
-        return "This dataset does not have an expiration date.";
+        return `This ${itemType} does not have an expiration date.`;
     }
     if (hasExpired.value) {
-        return `This dataset was stored in ${
+        return `This ${itemType} was stored in ${
             objectStoreName.value
         } and has expired on ${expirationDate.value.toDateString()}.`;
     }
-    return `This dataset is stored in ${objectStoreName.value} and expires on ${expirationDate.value.toDateString()}.`;
+    return `This ${itemType} is stored in ${
+        objectStoreName.value
+    } and expires on ${expirationDate.value.toDateString()}.`;
 });
 
 const variant = computed(() => {
