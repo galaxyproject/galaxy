@@ -13,7 +13,7 @@ from pykwalify.core import Core
 
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
-from galaxy.jobs import JobConfiguration
+from galaxy.jobs.config import JobConfiguration
 from galaxy.util import galaxy_directory
 from galaxy.util.path import StrPath
 from galaxy.util.resources import (
@@ -127,11 +127,10 @@ class BaseJobConfXmlParserTestCase(TestCase):
 
     def _with_advanced_config(self):
         if self.extension == "xml":
-            trav = ADVANCED_JOB_CONF
+            self._write_config_from(ADVANCED_JOB_CONF)
         else:
-            trav = ADVANCED_JOB_CONF_YAML
-        with as_file(trav) as path:
-            self._write_config_from(path)
+            with as_file(ADVANCED_JOB_CONF_YAML) as path:
+                self._write_config_from(path)
 
 
 class TestSimpleJobConfXmlParser(BaseJobConfXmlParserTestCase):
