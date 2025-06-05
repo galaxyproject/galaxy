@@ -10,20 +10,173 @@ Please see the full :doc:`25.0 release notes <25.0_announce>` for more details.
 Highlights
 ===========================================================
 
-Feature1
+Empower Users to Build More Kinds of Collections, More Intelligently
 --------
 
-Feature description.
+Galaxy’s collection system has been vastly expanded, simplifying creation while supporting new,
+advanced use cases for both users and developers.
 
-Feature2
+- **Support for mixed paired and unpaired collections**. Tools and workflows can now work with
+  lists that contain both paired and unpaired data (`list:paired_or_unpaired`), supporting more
+  flexible scientific analyses and tool development. A new collection operation tool lets you
+  split such collections into homogeneous lists if needed.
+- **Generalized collection creation**. Easily build these new generalized collection types—including
+  nested lists (`list:list`), nested lists of pairs (`list:list:paired`), and more—directly from
+  selected datasets, without requiring rules.
+- **Wizard-style collection builders**. A new wizard component guides users step-by-step,
+  auto-detecting data structures and suggesting the most appropriate collection format. Choose
+  between "Auto Build List" for instant setup or "Advanced Build List" for full manual control,
+  with tailored help and warnings.
+- **New Rule Based Import Activity**. An activity-based wizard for rule-based uploads gives more
+  space, clarity, and flexibility. Notably, you can now drop files directly onto the “Paste Table”
+  form, and work with rules in a more consistent, central location.
+- **Better error handling and feedback**. The new interfaces provide clear feedback and tailored
+  warnings for duplicate identifiers and unpaired datasets, streamlining the user experience.
+- **Refinements and bug fixes**. Includes fixes for extension handling, improved abstractions for
+  collection input adaptation, and refactoring for easier future maintenance.
+
+These changes make collection creation more powerful and accessible, supporting both simple and
+sophisticated data organization scenarios, and laying the groundwork for future enhancements.
+[`#19377 <https://github.com/galaxyproject/galaxy/pull/19377>`__]
+
+Here's an example of one of the new collection builders in action:
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/EFJY-m-ieWQ?si=9PBRgvSiGtP5Fy3F" title="Galaxy 25.0 - New Rule Based Import Activity" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Add ZIP explorer to import individual files from local or remote ZIP archives
 --------
 
-Feature description.
+Galaxy now features a ZIP explorer, streamlining the process of importing individual files from both
+local and remote ZIP archives.
 
-Feature3
+- **ZIP explorer integration**. Browse the contents of ZIP files directly in Galaxy and select only the
+  files you need, minimizing unnecessary uploads.
+- **Support for local and remote archives**. Import from ZIP files on your computer or by providing a
+  remote URL.
+- **Improved user experience**. The intuitive interface simplifies file selection and import, making it
+  easier to work with compressed data.
+
+These enhancements make importing data from ZIP archives more flexible and efficient, further reducing
+barriers to working with large or complex datasets.
+[`#20054 <https://github.com/galaxyproject/galaxy/pull/20054>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/oqEUHoCcEPo?si=NUMkbP_7dc6i_q5f" title="Galaxy 25.0 - New Zip Explorer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Dataset View Component
 --------
 
-Feature description.
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#20154 <https://github.com/galaxyproject/galaxy/pull/20154>`__]
+
+Add rerun option for workflows
+--------
+
+Users can now easily rerun any workflow with the exact same inputs and parameters as a previous run - 
+with a simple click of the new "Rerun" button in the workflow invocation view. This feature streamlines
+reproducibility and troubleshooting by letting you repeat analyses with a single click. The workflow run
+form also detects and notifies of any changes to inputs compared to the original run!
+[`#20032 <https://github.com/galaxyproject/galaxy/pull/20032>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/CaWkstTMXJ0?si=ntvZHNjZ7GuhWmp8" title="Galaxy 25.0 - Rerun Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Enable cloning subworkflows
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19420 <https://github.com/galaxyproject/galaxy/pull/19420>`__]
+
+Workflow Run Form Enhancements
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19294 <https://github.com/galaxyproject/galaxy/pull/19294>`__]
+
+Introducing READMEs for Workflows in the Galaxy Interface
+--------
+
+Galaxy 25.0 introduces support for associating README/help text with workflows. This provides a way to
+document workflows directly in the Galaxy interface, with support for Markdown formatting, links, and
+images.
+
+- **README field for workflows**. Each workflow can now have an associated README string, stored as part
+  of the workflow object but separate from the workflow steps or structure.
+- **Viewable on the run form**. A new "Show Workflow Help" button on the workflow run form reveals
+  associated documentation alongside input parameters — helping users understand how to use a workflow.
+- **Editable from the workflow editor**. Workflow authors can scroll the "Attributes" panel in the
+  editor, click "Show Readme," and add or update the associated documentation.
+
+This feature lowers the barrier to understanding and reusing workflows, especially in collaborative
+environments.
+[`#19591 <https://github.com/galaxyproject/galaxy/pull/19591>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/kJOO41wrnuE?si=Y0UxLwSvQ5gqDpdM" title=Galaxy 25.0 - READMEs for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Add workflow selection and bulk actions
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19336 <https://github.com/galaxyproject/galaxy/pull/19336>`__]
+
+Add JupyterLite
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#20174 <https://github.com/galaxyproject/galaxy/pull/20174>`__]
+
+IT Activity Panel
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19996 <https://github.com/galaxyproject/galaxy/pull/19996>`__]
+
+Visualization-First Display functionality
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`__]
+
+Introduce reusable GCard component for unified card layout
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19785 <https://github.com/galaxyproject/galaxy/pull/19785>`__]
+
+Remote File Sources and Storage Locations redesign
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19521 <https://github.com/galaxyproject/galaxy/pull/19521>`__]
+
+Add User-Defined Tools
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19434 <https://github.com/galaxyproject/galaxy/pull/19434>`__]
+
+Allow to send notifications when Admins cancel jobs
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19547 <https://github.com/galaxyproject/galaxy/pull/19547>`__]
 
 
 Visualizations
