@@ -46,7 +46,6 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceType,
     DeleteHistoryContentPayload,
-    DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
@@ -148,13 +147,11 @@ StopJobQueryParam = Query(
 
 
 CONTENT_DELETE_RESPONSES = {
-    200: {
-        "description": "Request has been executed.",
-        "model": DeleteHistoryContentResult,
-    },
     202: {
         "description": "Request accepted, processing will finish later.",
-        "model": DeleteHistoryContentResult,
+    },
+    204: {
+        "description": "Request has been executed.",
     },
 }
 
@@ -896,7 +893,6 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypePathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -912,7 +908,6 @@ class FastAPIHistoryContents:
             trans,
             id,
             type,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -932,7 +927,6 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -948,7 +942,6 @@ class FastAPIHistoryContents:
             trans,
             id,
             type,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -966,7 +959,6 @@ class FastAPIHistoryContents:
         response: Response,
         dataset_id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -982,7 +974,6 @@ class FastAPIHistoryContents:
             trans,
             dataset_id,
             HistoryContentType.dataset,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -995,7 +986,6 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         type: HistoryContentType,
-        serialization_params: SerializationParams,
         purge: Optional[bool],
         recursive: Optional[bool],
         stop_job: Optional[bool],
@@ -1007,17 +997,14 @@ class FastAPIHistoryContents:
         payload.purge = payload.purge or purge is True
         payload.recursive = payload.recursive or recursive is True
         payload.stop_job = payload.stop_job or stop_job is True
-        rval = self.service.delete(
+        if self.service.delete(
             trans,
             id=id,
-            serialization_params=serialization_params,
             contents_type=type,
             payload=payload,
-        )
-        async_result = rval.pop("async_result", None)
-        if async_result:
-            response.status_code = status.HTTP_202_ACCEPTED
-        return rval
+        ):
+            return Response(status_code=status.HTTP_202_ACCEPTED)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/histories/{history_id}/contents/archive/{filename}.{format}",
