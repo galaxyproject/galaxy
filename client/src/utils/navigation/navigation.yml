@@ -712,6 +712,7 @@ upload_mixin:
     row: '${_} #upload-row-${n}'
     embedded_start_button: '${_} #btn-start'
     use_button: '${_} #btn-emit'
+    use_button_disabled: '${_} #btn-emit.g-disabled'
 
 workflow_run:
   input:

@@ -523,7 +523,6 @@ steps: {}
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input1")
         self._upload_hello_world_for_input(builder, count=2)
-        input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -539,7 +538,6 @@ steps: {}
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input_list")
         self._upload_hello_world_for_input(builder, count=2)
-        input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -583,6 +581,7 @@ steps: {}
             workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
 
         workflow_input.embedded_start_button.wait_for_and_click()
+        workflow_input.use_button_disabled.wait_for_absent()
         workflow_input.use_button.wait_for_and_click()
 
     def _create_and_run_workflow_with_unique_name(
