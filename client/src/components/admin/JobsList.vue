@@ -19,7 +19,7 @@
         </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
+                <b-form-group>
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
