@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
 import { onMounted, onUpdated, ref } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
+import { copy } from "@/utils/clipboard";
 
 import type { Citation } from ".";
 
@@ -43,6 +46,52 @@ onMounted(async () => {
         console.error(e);
     }
 });
+
+function copyBibtex() {
+    const text = citationsToBibtexAsText();
+    copy(text, "References copied to your clipboard as BibTeX");
+}
+
+function copyAPA() {
+    let text = "";
+    citations.value.forEach((citation) => {
+        const cite = citation.cite;
+        const apa = cite.format("bibliography", {
+            format: "text",
+            template: "apa",
+            lang: "en-US",
+        });
+        text += apa + "\n\n";
+    });
+    copy(text, "References copied to your clipboard as APA");
+}
+
+function downloadBibtex() {
+    const text = citationsToBibtexAsText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "citations.bib";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function citationsToBibtexAsText() {
+    let text = "";
+    citations.value.forEach((citation) => {
+        const cite = citation.cite;
+        const bibtex = cite.format("bibtex", {
+            format: "text",
+            template: "bibtex",
+            lang: "en-US",
+        });
+        text += bibtex;
+    });
+    return text;
+}
 </script>
 
 <template>
@@ -62,6 +111,36 @@ onMounted(async () => {
                         BibTeX
                     </BNavItem>
                 </BNav>
+                <BButton
+                    v-if="outputFormat === outputFormats.CITATION"
+                    v-b-tooltip.hover
+                    title="Copy all references as APA"
+                    variant="link"
+                    size="sm"
+                    class="copy-citation-btn"
+                    @click="copyAPA">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </BButton>
+                <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
+                    <BButton
+                        v-b-tooltip.hover
+                        title="Copy all references as BibTeX"
+                        variant="link"
+                        size="sm"
+                        class="copy-bibtex-btn"
+                        @click="copyBibtex">
+                        <FontAwesomeIcon :icon="faCopy" />
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover
+                        title="Download references as .bib file"
+                        variant="link"
+                        size="sm"
+                        class="download-bibtex-btn"
+                        @click="downloadBibtex">
+                        <FontAwesomeIcon :icon="faDownload" />
+                    </BButton>
+                </div>
             </template>
 
             <div v-if="source === 'histories'" class="infomessage">
@@ -101,10 +180,28 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
+.citation-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 .citation-card .card-header .nav-tabs {
     margin-bottom: -0.75rem !important;
 }
 .formatted-reference {
     margin-bottom: 0.5rem;
+}
+.copy-citation-btn {
+    margin-left: auto;
+    padding: 0.25rem 0.5rem;
+}
+.bibtex-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.25rem;
+}
+.copy-bibtex-btn,
+.download-bibtex-btn {
+    padding: 0.25rem 0.5rem;
 }
 </style>
