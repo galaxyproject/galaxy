@@ -2229,11 +2229,11 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         if tags:
             tag_handler = trans.tag_handler
             for _, hda in execution_tracker.output_datasets:
-                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False) 
+                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
 
             for _, hdca in execution_tracker.output_collections:
                 tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
-            trans.sa_session.commit() 
+            trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
         # if at least one is submitted or there are no jobs to execute - return aggregate
