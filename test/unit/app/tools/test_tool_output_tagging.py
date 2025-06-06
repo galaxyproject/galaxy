@@ -1,7 +1,12 @@
 """Test tagging behavior on tool outputs."""
 
 from collections import OrderedDict
-from typing import Any, List, Optional, cast
+from typing import (
+    Any,
+    cast,
+    List,
+    Optional,
+)
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
@@ -9,7 +14,6 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
-
 
 COLLECTION_CONTENTS = """<tool id="collection_tool" name="Collection Tool">
     <command>cat $param2 > $out1</command>
