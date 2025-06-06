@@ -36,7 +36,15 @@ const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
-const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
+
+// Track datatype loading state
+const isDatatypeLoading = ref(false);
+
+// Consolidated loading state
+const isLoading = computed(() => {
+    return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value;
+});
+
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
 );
@@ -47,20 +55,14 @@ const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
 );
 
-// Track datatype loading state
-const isDatatypeLoading = ref(false);
-const datatypeDetailsLoaded = ref(false);
-
 // Watch for changes to the dataset to fetch datatype info
 watch(
     () => dataset.value?.file_ext,
     async () => {
         if (dataset.value && dataset.value.file_ext) {
             isDatatypeLoading.value = true;
-            datatypeDetailsLoaded.value = false;
             await datatypeStore.fetchDatatypeDetails(dataset.value.file_ext);
             isDatatypeLoading.value = false;
-            datatypeDetailsLoaded.value = true;
         }
     },
     { immediate: true }
@@ -68,7 +70,7 @@ watch(
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading || !dataset || isDatatypeLoading" message="Loading dataset details" />
+    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
     <div v-else class="dataset-view d-flex flex-column h-100">
         <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">

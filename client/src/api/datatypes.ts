@@ -1,5 +1,5 @@
-import { GalaxyApi } from "@/api";
 import type { components } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export type CompositeFileInfo = components["schemas"]["CompositeFileInfo"];
