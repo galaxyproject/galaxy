@@ -38,6 +38,10 @@ workflow object in the database.
 **Bulk Actions for Workflows**. Galaxy 25.0 introduces support for selecting multiple workflows to
 perform actions in bulk, streamlining workflow management for users.
 
+**Redesigned File Sources and Storage Location Interfaces**. Galaxy 25.0 introduces a modernized
+interface for accessing Remote File Sources and Storage Locations, making navigation and selection more
+intuitive and user-friendly.
+
 **Enable Cloning Subworkflows in the Workflow Editor**. In the Workflow Editor, subworkflows can now be
 cloned just like regular workflow steps, with a singular click of the "Duplicate" button on a
 subworkflow node.
@@ -54,14 +58,11 @@ many are currently running. This improves visibility and separates ITs from stan
 **Visualization-First Display functionality**. A short description of the
 feature, including how it works, what it does, and why it is useful.
 
-**Remote File Sources and Storage Locations redesign**. A short description of
-the feature, including how it works, what it does, and why it is useful.
-
 **Add User-Defined Tools**. A short description of the feature, including how it
 works, what it does, and why it is useful.
 
-**Allow to send notifications when Admins cancel jobs**. A short description of
-the feature, including how it works, what it does, and why it is useful.
+**Job Cancellation Notifications for Admins**. Admins can now choose to notify users when canceling
+jobs. Users receive grouped notifications with job details, and optional email delivery if enabled.
 
 Please see the `25.0 user release notes <25.0_announce_user.html>`__ for a summary of new user features.
 
