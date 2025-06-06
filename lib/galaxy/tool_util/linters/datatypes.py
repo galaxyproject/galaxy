@@ -6,6 +6,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 # from galaxy import config
 from galaxy.tool_util.lint import Linter
 from galaxy.util import (
@@ -68,6 +70,7 @@ class ValidDatatypes(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
+        profile = tool_source.parse_profile()
         # get Galaxy built-in dataypes
         datatypes = _parse_datatypes(DATATYPES_CONF)
         # add custom tool data types
@@ -84,15 +87,19 @@ class ValidDatatypes(Linter):
                 formats = elem.get(attrib, "").split(",")
                 # Certain elements (e.g. `data`) can only have one format. This
                 # is checked separately by linting against the XSD.
-                if "auto" in formats:
-                    if elem.tag == "param":
+                if elem.tag == "param":
+                    if any(format in ["auto", "input"] for format in formats):
                         lint_ctx.error(
-                            "Format [auto] can not be used for tool or tool test inputs",
+                            "Invalid format (auto or input) in tool or tool test inputs",
                             linter=cls.name(),
                             node=elem,
                         )
-                    continue
+                        continue
                 for format in formats:
+                    if Version(str(profile)) <= Version("16.04") and format == "input":
+                        continue
+                    if format == "auto":
+                        continue
                     if format not in datatypes:
                         lint_ctx.error(
                             f"Unknown datatype [{format}] used in {elem.tag} element",
