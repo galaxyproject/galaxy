@@ -18,23 +18,24 @@ options, while improved rule-based import activities, clearer feedback, and nume
 ZIP explorer, streamlining the process of importing individual files from both local and remote ZIP
 archives.
 
-**Dataset View Component**. A short description of the feature, including how it
-works, what it does, and why it is useful.
+**Dataset View Component**. Galaxy 25.0 introduces a centralized view for datasets, consolidating common
+dataset actions into a single, streamlined interface, all accessible via the eye icon on datasets.
 
 **Add rerun option for workflows**. Users can now easily rerun any workflow with the exact same inputs
 and parameters as a previous run - with a simple click of the new "Rerun" button in the workflow
 invocation view.
 
-**Enable cloning subworkflows**. A short description of the feature, including
-how it works, what it does, and why it is useful.
-
-**Workflow Run Form Enhancements**. A short description of the feature,
-including how it works, what it does, and why it is useful.
+**An Enhanced Workflow Run Form Interface**. Galaxy 25.0 introduces a streamlined workflow run interface
+that allows users to upload inputs, create collections, and configure parameters — all within a single,
+unified form.
 
 **Introducing READMEs for Workflows in the Galaxy Interface.** Galaxy 25.0 introduces support for
 associating README/help text with workflows. This provides a way to document workflows directly in the
 Galaxy interface, with support for Markdown formatting, links, and images. The README is a part of the
 workflow object in the database.
+
+**Enable cloning subworkflows**. A short description of the feature, including
+how it works, what it does, and why it is useful.
 
 **Add workflow selection and bulk actions**. A short description of the feature,
 including how it works, what it does, and why it is useful.
