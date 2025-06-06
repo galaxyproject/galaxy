@@ -168,6 +168,26 @@ projects involving many workflows.
 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/ycT9SJppXCU?si=ZyLFp0qAsfeKxZH7" title="Galaxy 25.0 - Bulk Actions for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
+Redesigned File Sources and Storage Location Interfaces
+--------
+
+Galaxy 25.0 introduces a modernized interface for accessing Remote File Sources and Storage Locations,
+making navigation and selection more intuitive and user-friendly.
+
+- **Card-based layout**. Available options are now displayed in a clear, responsive card view for
+  improved readability and usability.
+- **Breadcrumb navigation**. A breadcrumb bar helps users track their position and move between sections
+  more easily.
+- **Search and filter support**. A built-in search field allows users to quickly locate file sources
+  or storage locations by name.
+
+These changes provide a cleaner and more consistent interface for interacting with file sources and storage locations.
+[`#19521 <https://github.com/galaxyproject/galaxy/pull/19521>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/XejXhHDE1uw?si=xZ48O3xBLW0o6rGW" title="Galaxy 25.0 - A Redesign of the File Storage Interface " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Enable Cloning Subworkflows in the Workflow Editor
 --------
 
@@ -228,13 +248,6 @@ A long and detailed description of the feature, including how it works, what it 
 is useful. Screen captures, diagrams, and other media can be included here.
 [`#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`__]
 
-Remote File Sources and Storage Locations redesign
---------
-
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
-[`#19521 <https://github.com/galaxyproject/galaxy/pull/19521>`__]
-
 Add User-Defined Tools
 --------
 
@@ -242,13 +255,30 @@ A long and detailed description of the feature, including how it works, what it 
 is useful. Screen captures, diagrams, and other media can be included here.
 [`#19434 <https://github.com/galaxyproject/galaxy/pull/19434>`__]
 
-Allow to send notifications when Admins cancel jobs
+Job Cancellation Notifications for Admins
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+Administrators can now notify users when their jobs are canceled, improving transparency and
+communication.
+
+- **Optional user notification**. When canceling jobs, admins can choose to send a notification message
+  to affected users.
+- **Grouped notifications**. Users receive a single notification listing all canceled jobs, even if
+  multiple jobs were terminated at once.
+- **Job details view**. Clicking on a listed job in the notification opens a detailed job summary page.
+- **Supports email delivery**. If the user has email notifications enabled, they will also receive
+  the message by email.
+
+This feature gives administrators more control over user communication during job management actions.
 [`#19547 <https://github.com/galaxyproject/galaxy/pull/19547>`__]
 
+.. figure:: images/25.0-job-cancel-notifications-1.png
+   :alt: Job Cancellation Notification for Admins 1
+   :width: 100%
+
+.. figure:: images/25.0-job-cancel-notifications-2.png
+   :alt: Job Cancellation Notification for Admins 2
+    :width: 100%
 
 Visualizations
 ===========================================================
