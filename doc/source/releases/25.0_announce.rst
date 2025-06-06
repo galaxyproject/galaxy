@@ -18,12 +18,13 @@ options, while improved rule-based import activities, clearer feedback, and nume
 ZIP explorer, streamlining the process of importing individual files from both local and remote ZIP
 archives.
 
-**Dataset View Component**. Galaxy 25.0 introduces a centralized view for datasets, consolidating common
-dataset actions into a single, streamlined interface, all accessible via the eye icon on datasets.
+**A New Centralized View for Datasets**. Galaxy 25.0 introduces a centralized view for datasets,
+consolidating common dataset actions into a single, streamlined interface, all accessible via the eye
+icon on datasets.
 
-**Add rerun option for workflows**. Users can now easily rerun any workflow with the exact same inputs
-and parameters as a previous run - with a simple click of the new "Rerun" button in the workflow
-invocation view.
+**Allow Rerunning Workflows with the Same Inputs and Parameters**. Users can now easily rerun any
+workflow with the exact same inputs and parameters as a previous run - with a simple click of the new
+"Rerun" button in the workflow invocation view.
 
 **An Enhanced Workflow Run Form Interface**. Galaxy 25.0 introduces a streamlined workflow run interface
 that allows users to upload inputs, create collections, and configure parameters — all within a single,
@@ -34,17 +35,21 @@ associating README/help text with workflows. This provides a way to document wor
 Galaxy interface, with support for Markdown formatting, links, and images. The README is a part of the
 workflow object in the database.
 
-**Enable cloning subworkflows**. A short description of the feature, including
-how it works, what it does, and why it is useful.
+**Bulk Actions for Workflows**. Galaxy 25.0 introduces support for selecting multiple workflows to
+perform actions in bulk, streamlining workflow management for users.
 
-**Add workflow selection and bulk actions**. A short description of the feature,
-including how it works, what it does, and why it is useful.
+**Enable Cloning Subworkflows in the Workflow Editor**. In the Workflow Editor, subworkflows can now be
+cloned just like regular workflow steps, with a singular click of the "Duplicate" button on a
+subworkflow node.
 
-**Add JupyterLite**. A short description of the feature, including how it works,
-what it does, and why it is useful.
+**JupyterLite for Lightweight In-Browser Notebooks within Galaxy**. JupyterLite — a fully browser-based
+Jupyter environment — is now available as a visualization (accessible right in the Galaxy center panel)
+with support for interacting directly with Galaxy datasets and APIs, without requiring any local setup,
+or using the Jupyter interactive tool.
 
-**IT Activity Panel**. A short description of the feature, including how it
-works, what it does, and why it is useful.
+**New Interactive Tools Panel in the Activity Bar**. Interactive Tools now have a dedicated panel in the
+Activity Bar, making them easier to find and launch. Each tool has its own icon, and a badge shows how
+many are currently running. This improves visibility and separates ITs from standard Galaxy tools.
 
 **Visualization-First Display functionality**. A short description of the
 feature, including how it works, what it does, and why it is useful.
