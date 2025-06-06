@@ -145,17 +145,6 @@ const currentValue = computed({
         return undefined;
     },
     set: (val) => {
-        if (val && Array.isArray(val) && val.length > 0) {
-            val.sort((a, b) => {
-                const aHid = a.hid;
-                const bHid = b.hid;
-                if (aHid && bHid) {
-                    return aHid - bHid;
-                } else {
-                    return 0;
-                }
-            });
-        }
         $emit("input", createValue(val));
     },
 });
@@ -220,16 +209,6 @@ const formattedOptions = computed(() => {
                 } else {
                     result.unshift(option);
                 }
-            }
-        });
-        // Sort entries by hid
-        result.sort((a, b) => {
-            const aHid = a.value && a.value.hid;
-            const bHid = b.value && b.value.hid;
-            if (aHid && bHid) {
-                return bHid - aHid;
-            } else {
-                return 0;
             }
         });
         // Add optional entry

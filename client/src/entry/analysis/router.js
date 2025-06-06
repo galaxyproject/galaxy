@@ -89,7 +89,6 @@ import ManageObjectStoreIndex from "@/components/ObjectStore/Instances/ManageInd
 import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/UpgradeInstance.vue";
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
-import CustomToolEditor from "@/components/Tool/CustomToolEditor.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -98,6 +97,21 @@ import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
+
+// Async component for CustomToolEditor to reduce bundle size
+// NOTE: We use the full async component factory pattern instead of simple dynamic imports
+// (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
+const CustomToolEditor = () => ({
+    component: import("@/components/Tool/CustomToolEditor.vue"),
+    loading: {
+        template: '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading Tool Editor...</div>',
+    },
+    error: {
+        template: '<div class="alert alert-danger">Failed to load Tool Editor</div>',
+    },
+    delay: 200,
+    timeout: 10000,
+});
 
 // patches $router.push() to trigger an event and hide duplication warnings
 patchRouterPush(VueRouter);

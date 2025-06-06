@@ -118,7 +118,7 @@ function openInteractiveTool(toolId: string) {
                         <div class="tool-icon mr-2">
                             <img
                                 v-if="tool.icon"
-                                :src="getAppRoot() + 'api/tools/' + tool.id + '/icon'"
+                                :src="getAppRoot() + 'api/tools/' + encodeURIComponent(tool.id) + '/icon'"
                                 alt="tool icon" />
                             <FontAwesomeIcon v-else :icon="faTools" size="2x" />
                         </div>

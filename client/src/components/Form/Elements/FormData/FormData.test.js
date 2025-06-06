@@ -70,6 +70,11 @@ describe("FormData", () => {
         const value_1 = {
             batch: false,
             product: false,
+            values: [{ id: "hda1", src: "hda", map_over_type: null }],
+        };
+        const value_2 = {
+            batch: false,
+            product: false,
             values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
         const options = wrapper.find(".btn-group").findAll("button");
@@ -88,7 +93,7 @@ describe("FormData", () => {
         await elements_0.at(2).find("span").trigger("click");
         expect(wrapper.emitted().input.length).toEqual(2);
         expect(wrapper.emitted().input[1][0]).toEqual(value_1);
-        await wrapper.setProps({ value: value_1 });
+        await wrapper.setProps({ value: value_2 });
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("4: hdaName4");
     });
 
@@ -131,8 +136,8 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toContain("3: hdaName3");
-        expect(selectedValues.at(1).text()).toContain("2: hdaName2");
+        expect(selectedValues.at(0).text()).toContain("2: hdaName2");
+        expect(selectedValues.at(1).text()).toContain("3: hdaName3");
         const value_0 = {
             batch: false,
             product: false,
@@ -146,7 +151,7 @@ describe("FormData", () => {
         const value_1 = {
             batch: false,
             product: false,
-            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
@@ -154,7 +159,7 @@ describe("FormData", () => {
         const value_2 = {
             batch: false,
             product: false,
-            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_2);
         await wrapper.setProps({ value: value_2 });
@@ -165,7 +170,7 @@ describe("FormData", () => {
     it("properly sorts multiple datasets", async () => {
         const wrapper = createTarget({
             value: {
-                // the order of values does not matter here
+                // the order of values does matter here
                 values: [
                     { id: "hda2", src: "hda" },
                     { id: "hda3", src: "hda" },
@@ -178,18 +183,18 @@ describe("FormData", () => {
         });
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(3);
-        // the values in the multiselect are sorted by hid DESC
-        expect(selectedValues.at(0).text()).toContain("3: hdaName3");
+        // the values in the multiselect are sorted by hid ASC
+        expect(selectedValues.at(0).text()).toContain("1: hdaName1");
         expect(selectedValues.at(1).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(2).text()).toContain("1: hdaName1");
+        expect(selectedValues.at(2).text()).toContain("3: hdaName3");
         await selectedValues.at(0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
             values: [
                 // the values in the emitted input are sorted by hid ASC
-                { id: "hda1", map_over_type: null, src: "hda" },
                 { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
@@ -227,24 +232,20 @@ describe("FormData", () => {
         });
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(5);
-        // when dces are mixed in their values are shown first and are
-        // ordered by id descending
         expect(selectedValues.at(0).text()).toContain("dceName4 (as dataset)");
         expect(selectedValues.at(1).text()).toContain("dceName3 (as dataset)");
         expect(selectedValues.at(2).text()).toContain("dceName2 (as dataset)");
-        expect(selectedValues.at(3).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(4).text()).toContain("1: hdaName1");
+        expect(selectedValues.at(3).text()).toContain("1: hdaName1");
+        expect(selectedValues.at(4).text()).toContain("2: hdaName2");
         await selectedValues.at(0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
             values: [
-                // when dces are mixed in, they are emitted first
-                // and are sorted by id descending
-                { id: "dce3", map_over_type: null, src: "dce" },
-                { id: "dce2", map_over_type: null, src: "dce" },
                 { id: "hda1", map_over_type: null, src: "hda" },
+                { id: "dce2", map_over_type: null, src: "dce" },
                 { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "dce3", map_over_type: null, src: "dce" },
             ],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
@@ -446,7 +447,7 @@ describe("FormData", () => {
         const value_0 = {
             batch: true,
             product: false,
-            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
+            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[2][0]).toEqual(value_0);
         await wrapper.setProps({ value: value_0 });
@@ -455,7 +456,7 @@ describe("FormData", () => {
             batch: true,
             product: false,
             values: [
-                { id: "hda3", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
@@ -474,7 +475,7 @@ describe("FormData", () => {
             batch: true,
             product: true,
             values: [
-                { id: "hda3", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         });
@@ -516,16 +517,16 @@ describe("FormData", () => {
         });
         const select_0 = wrapper_0.findAll(SELECT_OPTIONS);
         expect(select_0.length).toBe(4);
-        expect(select_0.at(2).text()).toContain("2: hdaName2");
-        expect(select_0.at(3).text()).toContain("1: hdaName1");
+        expect(select_0.at(2).text()).toContain("1: hdaName1");
+        expect(select_0.at(3).text()).toContain("2: hdaName2");
         const wrapper_1 = createTarget({
             tag: "tag2",
             options: defaultOptions,
         });
         const select_1 = wrapper_1.findAll(SELECT_OPTIONS);
         expect(select_1.length).toBe(4);
-        expect(select_1.at(2).text()).toContain("3: hdaName3");
-        expect(select_1.at(3).text()).toContain("2: hdaName2");
+        expect(select_1.at(2).text()).toContain("2: hdaName2");
+        expect(select_1.at(3).text()).toContain("3: hdaName3");
         const wrapper_2 = createTarget({
             tag: "tag3",
             options: defaultOptions,

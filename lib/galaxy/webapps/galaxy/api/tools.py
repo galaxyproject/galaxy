@@ -124,7 +124,7 @@ class FetchTools:
         return self.service.create_fetch(trans, payload, files)
 
     @router.get(
-        "/api/tools/{tool_id}/icon",
+        "/api/tools/{tool_id:path}/icon",
         summary="Get the icon image associated with a tool",
         response_class=PNGIconResponse,
         responses={
