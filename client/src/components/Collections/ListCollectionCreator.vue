@@ -129,18 +129,18 @@ function _elementsSetUp() {
     const inListElementsPrev = inListElements.value;
     inListElements.value = [];
     inListElementsPrev.forEach((prevElem) => {
-        const element = workingElements.value.find((e) => e.id === prevElem.id);
-        const problem = isElementInvalid(prevElem);
+        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
 
-        if (element) {
-            inListElements.value.push(element);
-        } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+        if (matchingElem) {
+            const problem = isElementInvalid(matchingElem);
+            if (problem) {
+                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                Toast.error(invalidMsg, localize("Invalid element"));
+            } else {
+                inListElements.value.push(matchingElem);
+            }
         } else {
             const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            invalidElements.value.push(invalidMsg);
             Toast.error(invalidMsg, localize("Invalid element"));
         }
     });
