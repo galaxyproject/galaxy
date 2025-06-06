@@ -586,6 +586,24 @@ execution:
       # argument by default. You can turn this off by setting singularity_cleanenv to `false`.
       #singularity_cleanenv: true
 
+      # Singularity by default inherits the PID namespace, this can give
+      # issues with multiprocessing, hence galaxy passes the `--pid` argument
+      # by default to isolate the PID namespace. You can turn this off by setting
+      # singularity_pid to `false`.
+      #singularity_pid: true
+
+      # Singularity by default inherits the IPC namespace, this can give
+      # issues with multiprocessing, hence Galaxy passes the `--ipc` argument
+      # by default to isolate the IPC namespace. You can turn this off by setting
+      # singularity_ipc to `false`.
+      #singularity_ipc: true
+
+      # Singularity mounts some directories, such as $HOME and $PWD by default.
+      # Setting singularity_contain to `true` disables this behaviour and only allows explicitly
+      # requested volumes to be mounted. This gives full control over
+      # the mounting behavior.
+      #singularity_contain: true
+
       # Pass extra arguments to the singularity exec command not covered by the
       # above options.
       #singularity_run_extra_arguments: ''
