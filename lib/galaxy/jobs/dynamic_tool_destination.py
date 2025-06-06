@@ -15,7 +15,6 @@ import yaml
 
 from galaxy.jobs.config import job_config_dict_from_xml_or_yaml
 
-
 __version__ = "1.1.0"
 
 # log to galaxy's logger

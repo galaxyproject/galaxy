@@ -57,13 +57,13 @@ from galaxy.job_execution.setup import (
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
-from galaxy.jobs.mapper import (
-    JobMappingException,
-    JobRunnerMapper,
-)
 from galaxy.jobs.config import (
     JobConfiguration,
     JobDestination,
+)
+from galaxy.jobs.mapper import (
+    JobMappingException,
+    JobRunnerMapper,
 )
 from galaxy.jobs.runners import JobState
 from galaxy.metadata import get_metadata_compute_strategy

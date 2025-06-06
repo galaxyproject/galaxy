@@ -1,8 +1,8 @@
 from typing import Optional
 from unittest.mock import Mock
 
-from galaxy.jobs.config import JobConfigurationLimits
 from galaxy.jobs import MinimalJobWrapper
+from galaxy.jobs.config import JobConfigurationLimits
 from galaxy.model import (
     GalaxySession,
     Job,
