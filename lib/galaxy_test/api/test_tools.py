@@ -23,6 +23,7 @@ from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
+    assert_file_looks_like_xlsx,
     assert_has_keys,
     assert_status_code_is,
 )
@@ -411,6 +412,10 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 history_id, dataset=rval["outputs"][2]
             )
             assert sanitized_address.strip() == cool_name_without_quote
+
+    def test_fetch_workbook_generate(self):
+        workbook_path = self.dataset_populator.download_fetch_workbook()
+        assert_file_looks_like_xlsx(workbook_path)
 
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
