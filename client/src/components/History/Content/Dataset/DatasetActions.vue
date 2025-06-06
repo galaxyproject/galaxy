@@ -86,7 +86,7 @@ function onInfo() {
 }
 
 function onVisualize() {
-    router.push(`/visualizations?dataset_id=${props.item.id}`);
+    router.push(`/datasets/${props.item.id}/visualize`);
 }
 
 function onRerun() {
