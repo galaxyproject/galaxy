@@ -54,10 +54,6 @@ many are currently running. This improves visibility and separates ITs from stan
 **Visualization-First Display functionality**. A short description of the
 feature, including how it works, what it does, and why it is useful.
 
-**Introduce reusable GCard component for unified card layout**. A short
-description of the feature, including how it works, what it does, and why it is
-useful.
-
 **Remote File Sources and Storage Locations redesign**. A short description of
 the feature, including how it works, what it does, and why it is useful.
 
