@@ -69,9 +69,23 @@ barriers to working with large or complex datasets.
 Dataset View Component
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+Galaxy 25.0 introduces a centralized view for datasets, consolidating common dataset actions into a
+single, streamlined interface.
+
+- **Single access point**. Instead of multiple separate buttons, users now interact with a single
+  button on each dataset, which opens a tabbed interface for all dataset-related actions.
+- **Tabbed layout**. Key functionality — such as viewing metadata, peeking into file contents,
+  accessing datatypes/permissions and more — is now organized into clear, intuitive tabs.
+- **Improved usability**. This update provides a one stop shop for dataset management,
+  reducing clutter and confusion from multiple buttons and options.
+
+This change enhances consistency across the Galaxy interface and offers a more intuitive experience
+for both new and experienced users working with datasets.
 [`#20154 <https://github.com/galaxyproject/galaxy/pull/20154>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/34UlI_-wh7s?si=Ct12mE8bBGd-p7Ot" title="Galaxy 25.0 - The New Centralized Dataset View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Add rerun option for workflows
 --------
@@ -86,19 +100,30 @@ form also detects and notifies of any changes to inputs compared to the original
 
    <iframe width="100%" height="360" src="https://www.youtube.com/embed/CaWkstTMXJ0?si=ntvZHNjZ7GuhWmp8" title="Galaxy 25.0 - Rerun Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-Enable cloning subworkflows
+An Enhanced Workflow Run Form Interface
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
-[`#19420 <https://github.com/galaxyproject/galaxy/pull/19420>`__]
+Galaxy 25.0 introduces a streamlined workflow run interface that allows users to upload inputs, create
+collections, and configure parameters — all within a single, unified form.
 
-Workflow Run Form Enhancements
---------
+- **Integrated data upload and collection creation**. Users can now upload datasets or build
+  collections directly from the workflow run form, without navigating away or switching contexts.
+- **Visual input indicators**. Each input now displays a visual status indicator, making it easy to see
+  which inputs are ready and which still need attention.
+- **Improved settings panel**. The run form includes a clearer, more organized settings menu with
+  well-annotated options for configuring the workflow execution.
+- **Live-updating workflow graph**. A dynamic graph of the workflow appears alongside the form,
+  updating in real time as users populate inputs — helping them understand the structure and flow
+  of the analysis.
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+These improvements were inspired by users encountering curated workflows from platforms like the IWC
+Browser or BRC Analytics, and are designed to reduce friction, improve clarity, and enable users to
+complete complex analyses entirely within a single interface.
 [`#19294 <https://github.com/galaxyproject/galaxy/pull/19294>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" src="https://www.youtube.com/embed/zJ_amjaD31c?si=HuQQjaOSGSSh0Ept" title="Galaxy 25.0 - Enhanced Workflow Run Form" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Introducing READMEs for Workflows in the Galaxy Interface
 --------
@@ -121,6 +146,13 @@ environments.
 .. raw:: html
 
    <iframe width="100%" height="360" src="https://www.youtube.com/embed/kJOO41wrnuE?si=Y0UxLwSvQ5gqDpdM" title=Galaxy 25.0 - READMEs for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Enable cloning subworkflows
+--------
+
+A long and detailed description of the feature, including how it works, what it does, and why it
+is useful. Screen captures, diagrams, and other media can be included here.
+[`#19420 <https://github.com/galaxyproject/galaxy/pull/19420>`__]
 
 Add workflow selection and bulk actions
 --------
