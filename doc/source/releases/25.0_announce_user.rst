@@ -43,7 +43,7 @@ Here's an example of one of the new collection builders in action:
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/EFJY-m-ieWQ?si=9PBRgvSiGtP5Fy3F" title="Galaxy 25.0 - New Rule Based Import Activity" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/EFJY-m-ieWQ?si=9PBRgvSiGtP5Fy3F" title="Galaxy 25.0 - New Rule Based Import Activity" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Add ZIP explorer to import individual files from local or remote ZIP archives
 --------
@@ -64,9 +64,9 @@ barriers to working with large or complex datasets.
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/oqEUHoCcEPo?si=NUMkbP_7dc6i_q5f" title="Galaxy 25.0 - New Zip Explorer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/oqEUHoCcEPo?si=NUMkbP_7dc6i_q5f" title="Galaxy 25.0 - New Zip Explorer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-Dataset View Component
+A New Centralized View for Datasets
 --------
 
 Galaxy 25.0 introduces a centralized view for datasets, consolidating common dataset actions into a
@@ -85,9 +85,9 @@ for both new and experienced users working with datasets.
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/34UlI_-wh7s?si=Ct12mE8bBGd-p7Ot" title="Galaxy 25.0 - The New Centralized Dataset View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/34UlI_-wh7s?si=Ct12mE8bBGd-p7Ot" title="Galaxy 25.0 - The New Centralized Dataset View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-Add rerun option for workflows
+Allow Rerunning Workflows with the Same Inputs and Parameters
 --------
 
 Users can now easily rerun any workflow with the exact same inputs and parameters as a previous run - 
@@ -98,7 +98,7 @@ form also detects and notifies of any changes to inputs compared to the original
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/CaWkstTMXJ0?si=ntvZHNjZ7GuhWmp8" title="Galaxy 25.0 - Rerun Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/CaWkstTMXJ0?si=ntvZHNjZ7GuhWmp8" title="Galaxy 25.0 - Rerun Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 An Enhanced Workflow Run Form Interface
 --------
@@ -123,7 +123,7 @@ complete complex analyses entirely within a single interface.
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/zJ_amjaD31c?si=HuQQjaOSGSSh0Ept" title="Galaxy 25.0 - Enhanced Workflow Run Form" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/zJ_amjaD31c?si=HuQQjaOSGSSh0Ept" title="Galaxy 25.0 - Enhanced Workflow Run Form" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Introducing READMEs for Workflows in the Galaxy Interface
 --------
@@ -145,35 +145,81 @@ environments.
 
 .. raw:: html
 
-   <iframe width="100%" height="360" src="https://www.youtube.com/embed/kJOO41wrnuE?si=Y0UxLwSvQ5gqDpdM" title=Galaxy 25.0 - READMEs for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/kJOO41wrnuE?si=Y0UxLwSvQ5gqDpdM" title=Galaxy 25.0 - READMEs for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-Enable cloning subworkflows
+Bulk Actions for Workflows
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
-[`#19420 <https://github.com/galaxyproject/galaxy/pull/19420>`__]
+Galaxy 25.0 introduces support for selecting multiple workflows to perform actions in bulk, streamlining
+workflow management for users.
 
-Add workflow selection and bulk actions
---------
+- **Selectable workflow cards**. In the "My Workflows" tab, users can now select multiple workflows
+  at once.
+- **Bulk operations**. Perform common actions — such as delete, restore, and tag — on all selected
+  workflows simultaneously.
+- **Improved tagging interface**. A new tag selection dialog makes it easier to organize workflows
+  with consistent tagging.
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+These enhancements simplify workflow housekeeping and make it easier to manage shared or long-running
+projects involving many workflows.
 [`#19336 <https://github.com/galaxyproject/galaxy/pull/19336>`__]
 
-Add JupyterLite
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/ycT9SJppXCU?si=ZyLFp0qAsfeKxZH7" title="Galaxy 25.0 - Bulk Actions for Workflows" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Enable Cloning Subworkflows in the Workflow Editor
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+In the Workflow Editor, subworkflows can now be cloned just like regular steps. This allows users
+to easily duplicate subworkflows within a larger workflow, with a singular click of the "Duplicate"
+button on a subworkflow node.
+[`#19420 <https://github.com/galaxyproject/galaxy/pull/19420>`__]
+
+.. figure:: images/25.0-subworkflow-cloning.png
+   :alt: Subworkflow Cloning in the Workflow Editor
+
+JupyterLite for Lightweight In-Browser Notebooks within Galaxy
+--------
+
+JupyterLite — a fully browser-based Jupyter environment — is now available as a visualization
+(accessible right in the Galaxy center panel) with support for interacting directly with Galaxy
+datasets and APIs, without requiring any local setup, or using the Jupyter interactive tool.
+
+- **JupyterLite integration**. Launch Python notebooks directly in the visualization using the jl-galaxy
+  extension.
+- **Access Galaxy data**. Use the `gxy` utility module to download datasets (`await gxy.get()`),
+  upload results (`await gxy.put()`), or access the Galaxy API (`await gxy.api()`).
+- **No setup required**. No need for Conda, Docker, or Python installations — just open a JupyterLite
+  notebook visualization in Galaxy, and start coding.
+
+This makes interactive data exploration and scripting more accessible, where the user prefers to stay
+within the Galaxy interface without needing to switch to a separate Jupyter interactive tool.
 [`#20174 <https://github.com/galaxyproject/galaxy/pull/20174>`__]
 
-IT Activity Panel
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/9F1zHbqbFPk?si=1-Ut-vXHaKUhwnKf" title="Galaxy 25.0 - JupyterLite for Lightweight In-Browser Notebooks" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+New Interactive Tools Panel in the Activity Bar
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+Interactive Tools (ITs) in Galaxy now have their own dedicated panel in the Activity Bar, providing
+a clearer, more accessible experience for users launching and managing interactive environments.
+
+- **Separate from standard tools**. Previously nested under a section in the main Tools panel,
+  Interactive Tools are now listed under their own Activity Bar activity — making them easier to find.
+- **Visual icons for each tool**. Each IT is represented with its own icon for faster recognition
+  and improved usability.
+- **Live status indicators**. A badge on the Activity icon shows how many ITs are currently running.
+
+This update helps distinguish Interactive Tools from standard tools, improves discoverability,
+and provides a more intuitive way to monitor and manage interactive sessions.
 [`#19996 <https://github.com/galaxyproject/galaxy/pull/19996>`__]
+
+.. figure:: images/25.0-it-activity-panel.png
+   :alt: Interactive Tools Activity Panel
+   :width: 100%
 
 Visualization-First Display functionality
 --------
