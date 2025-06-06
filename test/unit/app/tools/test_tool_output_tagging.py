@@ -1,7 +1,7 @@
 """Test tagging behavior on tool outputs."""
 
 from collections import OrderedDict
-from typing import cast
+from typing import Any, List, Optional, cast
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
@@ -26,6 +26,8 @@ COLLECTION_CONTENTS = """<tool id="collection_tool" name="Collection Tool">
 
 
 class TestToolOutputTagging(TestCase, tools_support.UsesTools):
+    tool_action: Optional["MockAction"]
+
     def setUp(self):
         self.setup_app()
         self.history = galaxy.model.History()
@@ -43,9 +45,15 @@ class TestToolOutputTagging(TestCase, tools_support.UsesTools):
         tags = ["tag1", "tag2"]
         vars = self.__handle_with_incoming(param1=hda.id, tags=tags)
         self.__assert_executed(vars)
+
+        assert self.tool_action is not None
         output_hda = self.tool_action.execution_call_args[0]["outgoing"]["out1"]
         assert isinstance(output_hda, galaxy.model.HistoryDatasetAssociation)
-        applied_tag_names = [tag.user_tag for tag in output_hda.tags]
+
+        raw_tags = getattr(output_hda, "tags", [])
+        tags_list = raw_tags if isinstance(raw_tags, list) else [raw_tags] if raw_tags else []
+        applied_tag_names = [tag.user_tag for tag in tags_list if hasattr(tag, "user_tag")]
+
         assert sorted(applied_tag_names) == sorted(tags)
 
     def test_tagging_mapped_tool_outputs(self):
@@ -65,7 +73,11 @@ class TestToolOutputTagging(TestCase, tools_support.UsesTools):
 
         for element in output_collection.collection.elements:
             hda = element.element_object
-            applied_tags = [t.user_tag for t in hda.tags]
+            applied_tags = []
+            if isinstance(hda, (galaxy.model.HistoryDatasetAssociation, galaxy.model.LibraryDatasetDatasetAssociation)):
+                raw_tags = getattr(hda, "tags", [])
+                tags_list = raw_tags if isinstance(raw_tags, list) else [raw_tags] if raw_tags else []
+                applied_tags = [t.user_tag for t in tags_list if hasattr(t, "user_tag")]
             assert sorted(applied_tags) == sorted(tags)
 
     def __handle_with_incoming(self, **kwds):
@@ -118,7 +130,7 @@ class TestToolOutputTagging(TestCase, tools_support.UsesTools):
 class MockAction(tools_support.MockActionI):
     def __init__(self, expected_trans):
         self.expected_trans = expected_trans
-        self.execution_call_args = []
+        self.execution_call_args: List[dict[str, Any]] = []
         self._next_id = 1000
 
     def _get_next_id(self):
@@ -136,7 +148,8 @@ class MockAction(tools_support.MockActionI):
         hda.dataset = galaxy.model.Dataset()
         hda.dataset.state = "ok"
         hda.history = trans.get_history()
-        hda.tags = []
+        if hasattr(hda, "tags") and hda.tags is not None and hasattr(hda.tags, "clear"):
+            hda.tags.clear()
 
         outgoing["out1"] = hda
         job.output_datasets.append(
@@ -159,7 +172,8 @@ class MockMappedCollectionAction(MockAction):
             hda.dataset = galaxy.model.Dataset()
             hda.dataset.state = "ok"
             hda.history = trans.get_history()
-            hda.tags = []
+            if hasattr(hda, "tags") and hda.tags is not None and hasattr(hda.tags, "clear"):
+                hda.tags.clear()
 
             trans.tag_handler.apply_item_tags(trans.user, hda, ",".join(incoming.get("tags", [])))
 
@@ -189,13 +203,14 @@ class MockMappedCollectionAction(MockAction):
 
 class MockTagHandler:
     def apply_item_tags(self, user, item, tags_str, flush=False):
-        if not hasattr(item, 'tags'):
+        if not hasattr(item, 'tags') or item.tags is None:
             item.tags = []
 
         tags = tags_str.split(",") if tags_str else []
 
         def add_tags(target_item, tag_class):
-            existing = {t.user_tag for t in getattr(target_item, 'tags', [])}
+            raw_existing = getattr(target_item, 'tags', [])
+            existing = {t.user_tag for t in raw_existing if t is not None and hasattr(t, "user_tag")}
             for tag in tags:
                 if tag not in existing:
                     tag_assoc = tag_class()
@@ -208,9 +223,10 @@ class MockTagHandler:
             add_tags(item, galaxy.model.HistoryDatasetCollectionTagAssociation)
             for element in item.collection.elements:
                 hda = element.element_object
-                if not hasattr(hda, 'tags'):
-                    hda.tags = []
-                add_tags(hda, galaxy.model.HistoryDatasetAssociationTagAssociation)
+                if isinstance(hda, (galaxy.model.HistoryDatasetAssociation, galaxy.model.LibraryDatasetDatasetAssociation)):
+                    if not hasattr(hda, 'tags') or hda.tags is None:
+                        hda.tags = cast(Any, [])
+                    add_tags(hda, galaxy.model.HistoryDatasetAssociationTagAssociation)
 
 
 class MockTrans:
