@@ -228,13 +228,6 @@ A long and detailed description of the feature, including how it works, what it 
 is useful. Screen captures, diagrams, and other media can be included here.
 [`#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`__]
 
-Introduce reusable GCard component for unified card layout
---------
-
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
-[`#19785 <https://github.com/galaxyproject/galaxy/pull/19785>`__]
-
 Remote File Sources and Storage Locations redesign
 --------
 
