@@ -12,6 +12,12 @@ import { useExtensionFiltering } from "./useExtensionFilter";
 
 export type Mode = "modal" | "wizard";
 
+/** Terminal states that are not usable from an upload (anything but `ok` or `deferred`)
+ */
+const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
+    (state) => state !== STATES.OK && state !== STATES.DEFERRED
+);
+
 interface CommonCollectionBuilderProps {
     extensions?: string[];
     defaultHideSourceItems?: boolean;
@@ -96,9 +102,7 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
             return localize("is a collection, this is not allowed");
         }
 
-        const validState = STATES.VALID_INPUT_STATES.includes(element.state as string);
-
-        if (!validState) {
+        if (UNUSABLE_FROM_UPLOAD_STATES.includes(element.state)) {
             return localize("has errored, is paused, or is not accessible");
         }
 

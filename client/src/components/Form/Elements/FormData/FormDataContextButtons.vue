@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faEye, faPlus, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
@@ -119,22 +119,32 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </BButton>
         <!-- three options here - source is a collection that has multiple builders exposed, source is a collection
              that has a single builder exposed, or source is dataset(s). -->
-        <BDropdown
-            v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType"
-            v-b-tooltip.bottom.hover.noninteractive
-            class="d-flex"
-            data-description="upload"
-            :title="createTitle"
-            split
-            text="Create"
-            @click="createCollectionType(defaultCollectionBuilderType)">
-            <BDropdownItem
-                v-for="colType in availableCollectionBuilders"
-                :key="colType"
-                @click="createCollectionType(colType)">
-                {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
-            </BDropdownItem>
-        </BDropdown>
+        <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
+            <BDropdown
+                v-b-tooltip.bottom.hover.noninteractive
+                class="d-flex"
+                data-description="upload"
+                :title="createTitle"
+                split
+                text="Create"
+                @click="createCollectionType(defaultCollectionBuilderType)">
+                <BDropdownItem
+                    v-for="colType in availableCollectionBuilders"
+                    :key="colType"
+                    @click="createCollectionType(colType)">
+                    {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
+                </BDropdownItem>
+            </BDropdown>
+            <BButton
+                v-if="props.workflowTab === 'create'"
+                v-b-tooltip.bottom.hover.noninteractive
+                title="Hide Collection Creator"
+                variant="link"
+                @click="emit('update:workflow-tab', '')">
+                <FontAwesomeIcon :icon="faTimes" />
+                <span class="sr-only">Close Collection Creator</span>
+            </BButton>
+        </template>
         <BButton
             v-else-if="props.showViewCreateOptions && sourceIsCollection"
             v-b-tooltip.bottom.hover.noninteractive
