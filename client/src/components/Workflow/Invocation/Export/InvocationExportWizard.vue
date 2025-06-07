@@ -500,6 +500,7 @@ function resetWizard() {
     height: auto;
     width: auto;
     max-height: 100px;
+    max-width: 100%;
     max-inline-size: -webkit-fill-available;
 }
 </style>
