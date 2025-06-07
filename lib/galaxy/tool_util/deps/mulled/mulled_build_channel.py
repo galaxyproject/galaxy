@@ -63,7 +63,7 @@ def _new_versions(quay, conda):
     return sconda - squay  # sconda.symmetric_difference(squay)
 
 
-def run_channel(args, build_last_n_versions=1):
+def run_channel(args, build_last_n_versions: int = 1) -> None:
     """Build list of involucro commands (as shell snippet) to run."""
     session = requests.session()
     for pkg_name, pkg_tests in get_affected_packages(args):
