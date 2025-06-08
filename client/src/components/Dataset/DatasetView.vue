@@ -82,7 +82,8 @@ watch(
                     class="flex-grow-1"
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
-                    {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
+                    <span class="dataset-hid">{{ dataset?.hid }}:</span>
+                    <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
                     <span class="dataset-state-header">
                         <DatasetState :dataset-id="datasetId" />
                     </span>
@@ -193,16 +194,16 @@ watch(
                 :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-hidden overflow-y">
+        <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'edit'" class="tab-content-panel mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'details'" class="tab-content-panel mt-2">
             <DatasetDetails :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'error'" class="tab-content-panel mt-2">
             <DatasetError :dataset-id="datasetId" />
         </div>
     </div>
@@ -243,9 +244,30 @@ watch(
     opacity: 0;
 }
 
+.dataset-hid,
+.dataset-state-header {
+    white-space: nowrap;
+}
+
+.dataset-hid {
+    margin-right: 0.25rem;
+}
+
+.dataset-name {
+    word-break: break-word;
+}
+
 .dataset-state-header {
     font-size: $h5-font-size;
     vertical-align: middle;
+    margin-left: 0.5rem;
+}
+
+.tab-content-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overflow-y: auto;
 }
 
 .auto-download-message {
