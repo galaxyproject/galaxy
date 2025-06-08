@@ -25,9 +25,10 @@ from .mulled_build import (
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.conda_util import CondaTarget
+    from galaxy.util.path import StrPath
 
 
-def _mulled_build_tool(tool, args):
+def _mulled_build_tool(tool: "StrPath", args):
     tool_source = get_tool_source(tool)
     requirements, *_ = tool_source.parse_requirements_and_containers()
     targets = requirements_to_mulled_targets(requirements)
