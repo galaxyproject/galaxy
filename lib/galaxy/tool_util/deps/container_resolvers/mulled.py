@@ -8,6 +8,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Any,
     Callable,
     Container as TypingContainer,
     Dict,
@@ -734,7 +735,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
-        self._mulled_kwds = {
+        self._mulled_kwds: Dict[str, Any] = {
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",
