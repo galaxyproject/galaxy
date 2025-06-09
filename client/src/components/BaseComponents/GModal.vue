@@ -33,6 +33,8 @@ const props = defineProps<{
     title?: string;
     /** Fixes the height of the modal to a pre-set height based on `size` */
     fixedHeight?: boolean;
+    /** When false, keeps the modal open on "ok" */
+    closeOnOk?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -76,8 +78,12 @@ function showModal() {
 let isOk = false;
 
 function hideModal(ok = false) {
-    isOk = ok;
-    dialog.value?.close();
+    if (ok && props.closeOnOk === false) {
+        emit("ok");
+    } else {
+        isOk = ok;
+        dialog.value?.close();
+    }
 }
 
 watchImmediate(
@@ -195,6 +201,10 @@ defineExpose({ showModal, hideModal });
         .g-modal-content {
             flex-grow: 1;
             overflow: auto;
+
+            padding: var(--spacing-2);
+            margin: calc(var(--spacing-2) * -1);
+
             max-height: 100%;
             display: flex;
             flex-direction: column;
@@ -245,6 +255,8 @@ defineExpose({ showModal, hideModal });
         padding: var(--spacing-3);
         border-top: 1px solid var(--color-grey-200);
         display: flex;
+
+        margin-top: var(--spacing-2);
 
         .g-modal-footer-content {
             flex-grow: 1;
