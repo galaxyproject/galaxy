@@ -962,6 +962,14 @@ steps:
             assert_ok=True,
         )
 
+    @skip_without_tool("multiple_versions")
+    def test_job_build_for_rerun_switch_version(self, history_id):
+        run_response = self._run("multiple_versions", history_id, {}, tool_version="0.1").json()
+        rerun_params = self._get(
+            f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun", {"tool_version": "0.2"}
+        ).json()
+        assert rerun_params["version"] == "0.2"
+
     @skip_without_tool("collection_paired_test")
     def test_dce_submission_security(self, history_id):
         rerun_params = self._get_simple_rerun_params(history_id, private=True)
