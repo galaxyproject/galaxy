@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { faExpand, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { debounce } from "lodash";
 import { computed, onMounted, ref } from "vue";
 
@@ -27,6 +29,7 @@ const emitChange = debounce((newValue: string) => {
 }, DELAY);
 
 const errorMessage = ref("");
+const expand = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 const minMaxHeight = computed(() => `max-height: ${props.height}px; min-height: ${props.height}px`);
@@ -105,12 +108,64 @@ onMounted(() => render());
     <div v-if="errorMessage">
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
-    <iframe v-else ref="iframeRef" class="visualization-wrapper" title="visualization" :style="minMaxHeight"></iframe>
+    <div v-else class="position-relative">
+        <iframe
+            ref="iframeRef"
+            :class="expand ? 'visualization-popout-wrapper' : 'visualization-wrapper'"
+            title="visualization"
+            :style="expand ? '' : minMaxHeight"></iframe>
+        <BButton
+            class="visualization-popout-expand"
+            variant="link"
+            size="sm"
+            title="Maximize"
+            @click="expand = !expand">
+            <FontAwesomeIcon :icon="faExpand" />
+        </BButton>
+        <BButton
+            v-if="expand"
+            class="visualization-popout-close"
+            variant="link"
+            size="sm"
+            title="Minimize"
+            @click="expand = !expand">
+            <FontAwesomeIcon :icon="faWindowMaximize" />
+        </BButton>
+    </div>
 </template>
 
-<style>
+<style lang="scss">
+@import "theme/blue.scss";
+
+.visualization-popout-close {
+    left: 1rem;
+    position: fixed;
+    margin: 0.2rem;
+    padding: 0 0.5rem;
+    top: 1rem;
+    z-index: 1001;
+}
+.visualization-popout-expand {
+    left: 0;
+    padding: 0 0.5rem;
+    position: absolute;
+    top: 0;
+}
+.visualization-popout-wrapper {
+    background: $white;
+    border: $border-default;
+    border-radius: $border-radius-base;
+    height: calc(100vh - 2rem);
+    left: 1rem;
+    padding-top: 1.5rem;
+    position: fixed;
+    top: 1rem;
+    width: calc(100vw - 2rem);
+    z-index: 1000;
+}
 .visualization-wrapper {
     border: none;
     width: 100%;
+    padding-top: 1.5rem;
 }
 </style>
