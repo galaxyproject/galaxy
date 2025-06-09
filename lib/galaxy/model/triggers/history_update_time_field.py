@@ -5,14 +5,6 @@ Database trigger installation and removal
 from galaxy.model.triggers.utils import execute_statements
 
 
-def install_timestamp_triggers(engine):
-    """
-    Install update_time propagation triggers for history table
-    """
-    statements = get_timestamp_install_sql(engine.name)
-    execute_statements(engine, statements)
-
-
 def drop_timestamp_triggers(engine):
     """
     Remove update_time propagation triggers for history table
