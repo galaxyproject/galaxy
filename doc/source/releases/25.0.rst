@@ -942,6 +942,9 @@ Fixes
   `Pull Request 19763`_
 .. bug_tag_workflows
 
+* Bug fix: allow any collection type in FormCollectionType
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 20403`_
 * Better handling of public pages and workflows authored by deleted users
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 19394`_
@@ -1033,6 +1036,9 @@ Fixes
   `Pull Request 20086`_
 .. bug_tag_jobs
 
+* Fix job rerun with tool version change
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20417`_
 * Don't calculate dataset hash for datasets in non-OK state
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 19191`_
@@ -1068,6 +1074,12 @@ Fixes
   `Pull Request 19753`_
 .. bug_tag_admin
 
+* Fix searching roles in admin UI
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 20394`_
+* Fixes for the admin jobs interface
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 20405`_
 * Update eLabFTW file source template docs
   (thanks to `@kysrpex <https://github.com/kysrpex>`__).
   `Pull Request 19632`_
@@ -1082,6 +1094,30 @@ Fixes
   `Pull Request 20333`_
 .. bug
 
+* Make invocation errors more compact
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20369`_
+* Fix create file source button, show only at root
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20385`_
+* Fix interactive activity highlighting
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20276`_
+* Avoid displaying dataset tab view in window manager
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20317`_
+* Fix form select input sorting
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20401`_
+* Add job config variable for singularity `--contain`
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 20400`_
+* Prevent waiting for history item state to be ok in uploader
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20397`_
+* Fix ``mull_targets()`` with mamba 2.x
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20416`_
 * 2 small uv config fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 19146`_
