@@ -18,7 +18,7 @@ options, while improved rule-based import activities, clearer feedback, and nume
 ZIP explorer, streamlining the process of importing individual files from both local and remote ZIP
 archives.
 
-**A New Centralized View for Datasets**. Galaxy 25.0 introduces a centralized view for datasets,
+**A New Unified View for Datasets**. Galaxy 25.0 introduces a unified view for datasets,
 consolidating common dataset actions into a single, streamlined interface, all accessible via the eye
 icon on datasets.
 
@@ -55,11 +55,12 @@ or using the Jupyter interactive tool.
 Activity Bar, making them easier to find and launch. Each tool has its own icon, and a badge shows how
 many are currently running. This improves visibility and separates ITs from standard Galaxy tools.
 
-**Visualization-First Display functionality**. A short description of the
-feature, including how it works, what it does, and why it is useful.
+**Preferred Visualization Display for Dataset Types**. Galaxy now allows administrators to configure default
+visualizations for specific datatypes. Instead of showing raw file content in the (new) Preview tab, datasets with a
+preferred visualization will now display that visualization by default.
 
-**Add User-Defined Tools**. A short description of the feature, including how it
-works, what it does, and why it is useful.
+**User-Defined Tools (Beta)**. Galaxy 25.0 introduces support for user-defined tools — a new feature that lets selected
+users define and run tools directly in the Galaxy interface, without requiring regular administrative intervention.
 
 **Job Cancellation Notifications for Admins**. Admins can now choose to notify users when canceling
 jobs. Users receive grouped notifications with job details, and optional email delivery if enabled.
