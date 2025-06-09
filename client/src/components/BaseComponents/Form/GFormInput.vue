@@ -1,7 +1,19 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const props = defineProps<{
+    value?: string | null;
+}>();
+
+const emit = defineEmits<{
+    (e: "input", value: string | null): void;
+}>();
+
+function onInput(event: Event) {
+    emit("input", (event as InputEvent).data);
+}
+</script>
 
 <template>
-    <input class="g-form-input" />
+    <input class="g-form-input" :value="props.value" @input="onInput" />
 </template>
 
 <style scoped lang="scss">
