@@ -640,7 +640,12 @@ class ToolBox(AbstractToolBox):
         return None
 
     def tool_for_job(
-        self, job: model.Job, exact=True, check_access=True, user: Optional[model.User] = None
+        self,
+        job: model.Job,
+        exact=True,
+        check_access=True,
+        user: Optional[model.User] = None,
+        tool_version: Optional[str] = None,
     ) -> Optional["Tool"]:
         if job.dynamic_tool:
             if check_access:
@@ -650,7 +655,7 @@ class ToolBox(AbstractToolBox):
                     self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
             return self.dynamic_tool_to_tool(job.dynamic_tool)
         else:
-            return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
+            return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
 
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format
