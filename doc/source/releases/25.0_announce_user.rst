@@ -66,11 +66,11 @@ barriers to working with large or complex datasets.
 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/oqEUHoCcEPo?si=NUMkbP_7dc6i_q5f" title="Galaxy 25.0 - New Zip Explorer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-A New Centralized View for Datasets
+A New Unified View for Datasets
 --------
 
-Galaxy 25.0 introduces a centralized view for datasets, consolidating common dataset actions into a
-single, streamlined interface.
+Galaxy 25.0 introduces a unified view for datasets, consolidating common dataset actions into a single, streamlined
+interface.
 
 - **Single access point**. Instead of multiple separate buttons, users now interact with a single
   button on each dataset, which opens a tabbed interface for all dataset-related actions.
@@ -85,7 +85,7 @@ for both new and experienced users working with datasets.
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/34UlI_-wh7s?si=Ct12mE8bBGd-p7Ot" title="Galaxy 25.0 - The New Centralized Dataset View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/vQ8pSgiVTpQ?si=Ab61hzSs94WswoIR" title="Galaxy 25.0 - The New Unified Dataset View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Allow Rerunning Workflows with the Same Inputs and Parameters
 --------
@@ -241,19 +241,44 @@ and provides a more intuitive way to monitor and manage interactive sessions.
    :alt: Interactive Tools Activity Panel
    :width: 100%
 
-Visualization-First Display functionality
+Preferred Visualization Display for Dataset Types
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+Galaxy now allows administrators to configure default visualizations for specific datatypes. Instead of
+showing raw file content in the (new) Preview tab, datasets with a preferred visualization will now display that
+visualization by default.
+
+This improves the default experience for formats like HDF5, where binary previews are not useful, and makes
+interactive visualizations immediately accessible to users.
 [`#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`__]
 
-Add User-Defined Tools
+Here is a quick example:
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/0SorpUTXDCQ?si=1tKZGa_ONw4BltTM" title="Galaxy 25.0 - Preferred Visualization Display for Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+User-Defined Tools (Beta)
 --------
 
-A long and detailed description of the feature, including how it works, what it does, and why it
-is useful. Screen captures, diagrams, and other media can be included here.
+Galaxy 25.0 introduces support for user-defined tools — a new feature that lets selected users define and run tools
+directly in the Galaxy interface, without requiring regular administrative intervention.
+
+- **Create and run tools without admin requests**. For the first time, users can define tools without needing to go
+  through the standard installation process.
+- **YAML-based tool definitions**. Tools are written in a structured YAML format and stored in the Galaxy database.
+  They include inputs, outputs, and shell commands written using sandboxed JavaScript expressions.
+- **Container execution only**. All user-defined tools must run inside containers for enhanced security.
+- **Workflow support**. User-defined tools are automatically included when shared as part of a workflow, ensuring
+  seamless collaboration.
+
+This feature is currently in beta and must be explicitly enabled by administrators. It is recommended only for trusted
+users while safety audits are ongoing.
 [`#19434 <https://github.com/galaxyproject/galaxy/pull/19434>`__]
+
+.. figure:: images/25.0-user-defined-tools-beta.png
+   :alt: User-Defined Tools in Galaxy
+   :width: 100%
 
 Job Cancellation Notifications for Admins
 --------
