@@ -46,3 +46,10 @@ class Container(LagomContainer):
             return self[dep_type]
         except UnresolvableType:
             return None
+
+    def __getitem__(self, dep_type: Type[T]) -> T:
+        if isinstance(dep_type, str):
+            # Workaround for accessing attributes of $app inside cheetah templates.
+            # Cheetah's searchList implementation tests access via __getitem__ before __getattr__.
+            return getattr(self, dep_type)  # type: ignore[unreachable]
+        return self.resolve(dep_type)

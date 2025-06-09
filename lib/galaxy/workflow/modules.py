@@ -1636,7 +1636,19 @@ class InputParameterModule(WorkflowModule):
         input_param = self.get_runtime_inputs(self)["input"]
         # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
         try:
-            input_param.validate(input_value, trans)
+            if not isinstance(
+                input_value,
+                (
+                    model.DatasetInstance,
+                    model.HistoryDatasetCollectionAssociation,
+                    model.DatasetCollection,
+                    model.DatasetCollectionElement,
+                ),
+            ):
+                # We could attempt to turn expression.json datasets back into validatable values,
+                # but then we'd have to delay scheduling until they are ready. workflow parmater value validators are
+                # likely most important for parent workflows, where they run on primitive values.
+                input_param.validate(input_value, trans)
         except ValueError as e:
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
