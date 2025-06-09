@@ -639,7 +639,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
-        tool = self.app.toolbox.tool_for_job(job, exact=False, check_access=True, user=trans.user)
+        tool = self.app.toolbox.tool_for_job(
+            job, exact=False, check_access=True, user=trans.user, tool_version=kwd.get("tool_version")
+        )
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
