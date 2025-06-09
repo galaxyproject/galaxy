@@ -28,11 +28,11 @@ import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
 import TextContent from "./Elements/TextContent.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import VisualizationFrame from "./Elements/VisualizationFrame.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
 import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
 
@@ -239,7 +239,11 @@ watch(
                 :job-id="args.job_id"
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
-            <VisualizationFrame v-else-if="name == 'visualization'" :args="args" />
+            <VisualizationWrapper
+                v-else-if="name == 'visualization'"
+                :name="args.visualization_id"
+                :config="{ dataset_id: args.history_dataset_id }"
+                :height="args.height && parseInt(args.height)" />
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
