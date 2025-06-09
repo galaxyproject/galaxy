@@ -141,7 +141,7 @@ pyyaml==6.0.2
 rdflib==7.1.4
 readme-renderer==44.0
 referencing==0.36.2
-requests==2.32.3
+requests==2.32.4
 requests-cache==1.2.1
 requests-toolbelt==1.0.0
 responses==0.25.7

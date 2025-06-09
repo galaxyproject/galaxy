@@ -161,7 +161,7 @@ referencing==0.36.2
 refgenconf==0.12.2
 regex==2024.11.6
 repoze-lru==0.7
-requests==2.32.3
+requests==2.32.4
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
 requests-unixsocket==0.4.1
