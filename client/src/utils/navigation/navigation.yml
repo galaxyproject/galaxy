@@ -76,7 +76,7 @@ preferences:
     object_store: '#select-preferred-object-store'
     delete_account: '#delete-account'
     delete_account_input: '#name-input'
-    delete_account_ok_btn: '.modal-footer .btn-primary'
+    delete_account_ok_btn: '.g-modal-confirm-buttons button.g-blue'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '.preferred-storage'
