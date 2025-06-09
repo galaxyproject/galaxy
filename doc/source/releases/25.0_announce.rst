@@ -247,7 +247,17 @@ config/galaxy.yml.sample:galaxy
 
 Deprecation Notices
 ===========================================================
-Add content or drop section.
+
+**Deprecation of support for Python 3.8 in Galaxy release 25.0**
+  The previous Galaxy release (24.2) was the last to support Python 3.8.
+  Galaxy 25.0 and all future releases will now require Python 3.9 or later.
+
+**Removal of Backbone-Based Chart Visualizations**
+  The legacy Backbone-based chart visualization modules have been removed. These visualizations were no
+  longer maintained, and the last active one ("Nora") is currently non-functional. Future visualizations
+  should be restored or developed using the new script entry point approach.
+
+  As part of this change, no visualizations will be bundled with the Galaxy client build by default.
 
 Developer Notes
 ===========================================================
