@@ -392,14 +392,8 @@ def parse_xml(
     parser = None
     schema = None
     if LXML_AVAILABLE:
+        parser = etree.XMLParser(resolve_entities=True, remove_comments=remove_comments)
         base_dir = Path(str(fname)).resolve().parent
-        if remove_comments:
-            # If using stdlib etree comments are always removed,
-            # but lxml doesn't do this by default
-            parser = etree.XMLParser(remove_comments=True, resolve_entities=True)
-        else:
-            parser = etree.XMLParser(resolve_entities=True)
-
         parser.resolvers.add(LocalOnlyResolver(base_dir))
         if schemafname:
             with open(str(schemafname), "rb") as schema_file:
