@@ -338,7 +338,7 @@ function getIdpPreference() {
     flex-direction: column;
     gap: 0.5rem;
     height: 100%;
-    justify-items: center;
+    justify-content: center;
     .oidc-button {
         width: 100%;
     }
