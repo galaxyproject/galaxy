@@ -984,6 +984,8 @@ class JobConfiguration(ConfiguresHandlers):
 
 
 class HasResourceParameters:
+    tool: Optional["Tool"]
+
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
         # to rule.
@@ -991,8 +993,8 @@ class HasResourceParameters:
         if job is None:
             job = self.get_job()
 
-        app = self.app
-        param_values = job.get_param_values(app, ignore_errors=True)
+        assert self.tool
+        param_values = self.tool.get_param_values(job, ignore_errors=True)
         resource_params = {}
         try:
             resource_params_raw = param_values["__job_resource"]
@@ -1234,7 +1236,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         job = _job or self.get_job()
         param_dict = {p.name: p.value for p in job.parameters}
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
+        param_dict = self.tool.params_from_strings(param_dict)
         return param_dict
 
     @property
@@ -1297,7 +1299,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # search again, now we know tool doesn't require name match
             param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
-            params = self.tool.params_from_strings(param_dump, self.app)
+            params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
@@ -2700,7 +2702,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         if self.tool and self.tool.id == "upload1":
             job = self.get_job()
-            param_dict = job.get_param_values(self.app)
+            param_dict = self.tool.get_param_values(job)
             return param_dict.get("link_data_only") == "link_to_files"
         else:
             # The tool is unavailable, we try to move the outputs.

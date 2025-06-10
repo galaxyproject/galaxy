@@ -634,7 +634,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict(trans, io_details=True)
         tool_param_values = {p.name: p.value for p in job.parameters}
-        tool_param_values = tool.params_from_strings(tool_param_values, trans.app, ignore_errors=True)
+        tool_param_values = tool.params_from_strings(tool_param_values, ignore_errors=True)
 
         # Only get values for simple inputs for now.
         inputs_dict = [i for i in tool_dict["inputs"] if i["type"] not in ["data", "hidden_data", "conditional"]]

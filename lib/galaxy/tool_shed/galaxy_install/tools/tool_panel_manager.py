@@ -259,7 +259,7 @@ class ToolPanelManager:
         for elem in root:
             if elem.tag == "tool":
                 guid = elem.get("guid")
-                if guid in guids_and_configs:
+                if guid and guid in guids_and_configs:
                     # The tool is displayed in the tool panel outside of any tool sections.
                     tool_section_dict = dict(tool_config=guids_and_configs[guid], id="", name="", version="")
                     if guid in tool_panel_dict:
@@ -273,7 +273,7 @@ class ToolPanelManager:
                 for section_elem in elem:
                     if section_elem.tag == "tool":
                         guid = section_elem.get("guid")
-                        if guid in guids_and_configs:
+                        if guid and guid in guids_and_configs:
                             # The tool is displayed in the tool panel inside the current tool section.
                             tool_section_dict = dict(
                                 tool_config=guids_and_configs[guid],

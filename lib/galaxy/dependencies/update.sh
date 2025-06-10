@@ -44,5 +44,6 @@ fi
 # Update pinned requirements files.
 UV_EXPORT_OPTIONS='--frozen --no-annotate --no-hashes'
 ${uv} export ${UV_EXPORT_OPTIONS} --no-dev > "$this_directory/pinned-requirements.txt"
+${uv} export ${UV_EXPORT_OPTIONS} --only-group=test > "$this_directory/pinned-test-requirements.txt"
 ${uv} export ${UV_EXPORT_OPTIONS} --only-group=dev > "$this_directory/dev-requirements.txt"
 ${uv} export ${UV_EXPORT_OPTIONS} --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"

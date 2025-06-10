@@ -1771,7 +1771,7 @@ class ToolParameterBundleModel(BaseModel):
 def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) -> ToolParameterT:
     if input_parameter.__class__ == ToolParameterModel:
         assert isinstance(input_parameter, ToolParameterModel)
-        return cast(ToolParameterT, input_parameter.root)
+        return input_parameter.root
     else:
         return cast(ToolParameterT, input_parameter)
 

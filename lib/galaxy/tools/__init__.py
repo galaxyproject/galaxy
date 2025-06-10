@@ -53,6 +53,8 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
     JobToOutputDatasetAssociation,
@@ -2156,7 +2158,7 @@ class Tool(UsesDictVisibleKeys):
             # If `self.check_values` is false we don't do any checking or
             # processing on input  This is used to pass raw values
             # through to/from external sites.
-            params = cast(ToolStateJobInstancePopulatedT, expanded_incoming)
+            params = expanded_incoming
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
@@ -2213,7 +2215,7 @@ class Tool(UsesDictVisibleKeys):
         self,
         trans,
         incoming: ToolRequestT,
-        history: Optional[model.History] = None,
+        history: Optional[History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
         input_format: InputFormatT = "legacy",
@@ -2293,7 +2295,7 @@ class Tool(UsesDictVisibleKeys):
         trans,
         rerun_remap_job_id: Optional[int],
         execution_slice: ExecutionSlice,
-        history: model.History,
+        history: History,
         execution_cache: ToolExecutionCache,
         completed_job: Optional[Job],
         collection_info: Optional[MatchingCollections],
@@ -2398,7 +2400,7 @@ class Tool(UsesDictVisibleKeys):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
-        history: Optional[model.History] = None,
+        history: Optional[History] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
     ):
@@ -2424,7 +2426,7 @@ class Tool(UsesDictVisibleKeys):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
-        history: Optional[model.History] = None,
+        history: Optional[History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
         dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = None,
@@ -2468,8 +2470,16 @@ class Tool(UsesDictVisibleKeys):
     def params_to_strings(self, params: ToolStateJobInstancePopulatedT, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)
 
-    def params_from_strings(self, params, app, ignore_errors=False):
-        return params_from_strings(self.inputs, params, app, ignore_errors)
+    def params_from_strings(self, params: Dict, ignore_errors: bool = False) -> Dict:
+        return params_from_strings(self.inputs, params, self.app, ignore_errors)
+
+    def get_param_values(self, job: Job, ignore_errors: bool = False) -> Dict:
+        """
+        Read encoded parameter values from the database and turn back into a
+        dict of tool parameter values.
+        """
+        param_dict = job.raw_param_dict()
+        return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(self, values, trans, update_values=True, workflow_building_mode=False):
         """
@@ -2862,7 +2872,14 @@ class Tool(UsesDictVisibleKeys):
 
         return tool_dict
 
-    def to_json(self, trans, kwd=None, job=None, workflow_building_mode=False, history=None):
+    def to_json(
+        self,
+        trans,
+        kwd=None,
+        job: Optional[Job] = None,
+        workflow_building_mode=False,
+        history: Optional[History] = None,
+    ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2875,6 +2892,7 @@ class Tool(UsesDictVisibleKeys):
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
             history = history or trans.get_history()
             if history is None and job is not None:
+                assert job.history
                 history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
             # We can show the tool form if the current user is anonymous and doesn't have a history
             user = trans.get_user()
@@ -2889,7 +2907,7 @@ class Tool(UsesDictVisibleKeys):
         tool_warnings = None
         if job:
             try:
-                job_params = job.get_param_values(self.app, ignore_errors=True)
+                job_params = self.get_param_values(job, ignore_errors=True)
                 tool_warnings = self.check_and_update_param_values(job_params, request_context, update_values=True)
                 self._map_source_to_history(request_context, self.inputs, job_params)
                 tool_message = self._compare_tool_version(job)
@@ -2975,31 +2993,33 @@ class Tool(UsesDictVisibleKeys):
             other_values=other_values,
         )
 
-    def _map_source_to_history(self, trans, tool_inputs, params):
+    def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: Dict) -> None:
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
         history = trans.history
+        assert history
 
         # Create index for hdas.
-        hda_source_dict = {}
+        hda_source_dict: Dict[Union[int, str], HistoryDatasetAssociation] = {}
         for hda in history.datasets:
             key = f"{hda.hid}_{hda.dataset.id}"
             hda_source_dict[hda.dataset.id] = hda_source_dict[key] = hda
 
         # Ditto for dataset collections.
-        hdca_source_dict = {}
+        hdca_source_dict: Dict[Union[int, str], HistoryDatasetCollectionAssociation] = {}
         for hdca in history.dataset_collections:
             key = f"{hdca.hid}_{hdca.collection.id}"
             hdca_source_dict[hdca.collection.id] = hdca_source_dict[key] = hdca
 
         # Map dataset or collection to current history
         def map_to_history(value):
-            id = None
-            source = None
-            if isinstance(value, model.HistoryDatasetAssociation):
-                id = value.dataset.id
-                source = hda_source_dict
+            if isinstance(value, HistoryDatasetAssociation):
+                id: int = value.dataset.id
+                source: Union[
+                    Dict[Union[int, str], HistoryDatasetAssociation],
+                    Dict[Union[int, str], HistoryDatasetCollectionAssociation],
+                ] = hda_source_dict
             elif isinstance(value, HistoryDatasetCollectionAssociation):
                 id = value.collection.id
                 source = hdca_source_dict
@@ -3264,7 +3284,7 @@ class ExpressionTool(Tool):
                             output.set_meta()
                             output.set_metadata_success_state()
                         except Exception:
-                            output.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
+                            output.state = HistoryDatasetAssociation.states.FAILED_METADATA
                             log.exception("Exception occured while setting metdata")
 
     def parse_environment_variables(self, tool_source):
@@ -3386,7 +3406,7 @@ class SetMetadataTool(Tool):
     tool_action: "SetMetadataToolAction"
 
     def regenerate_imported_metadata_if_needed(
-        self, hda: model.HistoryDatasetAssociation, history: model.History, user: model.User, session_id: int
+        self, hda: HistoryDatasetAssociation, history: History, user: model.User, session_id: int
     ):
         if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
@@ -3520,7 +3540,7 @@ class DataManagerTool(OutputParameterJSONTool):
             pass
         elif data_manager_mode == "bundle":
             for bundle_path, dataset in data_manager.write_bundle(out_data).items():
-                hda = cast(model.HistoryDatasetAssociation, dataset)
+                hda = cast(HistoryDatasetAssociation, dataset)
                 hda.dataset.object_store.update_from_file(
                     hda.dataset,
                     extra_dir=hda.dataset.extra_files_path_name,
@@ -3536,7 +3556,7 @@ class DataManagerTool(OutputParameterJSONTool):
 
     def get_default_history_by_trans(self, trans, create=False):
         def _create_data_manager_history(user):
-            history = model.History(name="Data Manager History (automatically created)", user=user)
+            history = History(name="Data Manager History (automatically created)", user=user)
             data_manager_association = model.DataManagerHistoryAssociation(user=user, history=history)
             trans.sa_session.add_all((history, data_manager_association))
             trans.sa_session.commit()

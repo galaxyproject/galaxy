@@ -472,7 +472,7 @@ class FastAPIJobs:
         """
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/datasets/{dataset_id}/parameters_display",
@@ -492,7 +492,7 @@ class FastAPIJobs:
         this endpoint will change frequently.
         """
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/jobs/{job_id}/metrics",

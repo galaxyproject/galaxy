@@ -9,7 +9,6 @@ from galaxy.model.unittest_utils.store_fixtures import (
 )
 from galaxy.util import unlink
 from galaxy_test.api.test_histories import ImportExportTests
-from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -33,16 +32,14 @@ class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, I
         self._set_up_populators()
 
 
-class TestImportExportHistoryViaTasksIntegration(
-    ImportExportTests, IntegrationTestCase, UsesCeleryTasks, PosixFileSourceSetup
-):
+class TestImportExportHistoryViaTasksIntegration(PosixFileSourceSetup, ImportExportTests, IntegrationTestCase):
     task_based = True
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
-        UsesCeleryTasks.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
+        IntegrationTestCase.handle_galaxy_config_kwds(config)
         cls.setup_ftp_config(config)
 
     @classmethod
@@ -216,7 +213,7 @@ class TestImportExportHistoryViaTasksIntegration(
         assert "Cannot export history dataset" in result_response.json()["err_msg"]
 
 
-class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
+class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase):
     dataset_populator: DatasetPopulator
     task_based = True
     framework_tool_and_types = True

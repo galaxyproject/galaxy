@@ -83,10 +83,7 @@ class TestToolShedApp(ToolShedApp):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.repository_registry = tool_shed.repository_registry.Registry(self)
         self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
-
-    @property
-    def security_agent(self):
-        return self.model.security_agent
+        self.security_agent = self.model.security_agent
 
 
 def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:

@@ -510,6 +510,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             log.debug(f"Appending to tool panel section: {str(tool_section.name)}")
         elif new_label and self._tool_panel.get_label(new_label):
             tool_section = self._tool_panel.get_label(new_label)
+            assert tool_section  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
             tool_panel_section_key = tool_section.id
         elif create_if_needed:
             # Appending a new section to toolbox._tool_panel

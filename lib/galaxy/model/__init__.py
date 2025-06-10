@@ -2008,21 +2008,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             self.state_history.append(JobStateHistory(self))
             return True
 
-    def get_param_values(self, app, ignore_errors=False):
-        """
-        Read encoded parameter values from the database and turn back into a
-        dict of tool parameter values.
-        """
-        param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool(
-            self.tool_id,
-            tool_version=self.tool_version,
-            tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
-            user=self.user,
-        )
-        param_dict = tool.params_from_strings(param_dict, app, ignore_errors=ignore_errors)
-        return param_dict
-
     def raw_param_dict(self):
         param_dict = {p.name: p.value for p in self.parameters}
         return param_dict
@@ -2436,7 +2421,7 @@ class Task(Base, JobLike, RepresentById):
         """
         param_dict = {p.name: p.value for p in self.job.parameters}
         tool = app.toolbox.get_tool(self.job.tool_id, tool_version=self.job.tool_version)
-        param_dict = tool.params_from_strings(param_dict, app)
+        param_dict = tool.params_from_strings(param_dict)
         return param_dict
 
     def get_id_tag(self):
@@ -5471,9 +5456,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         Create a a new HDA and associate it with the given history.
         """
-        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
+        # FIXME: sa_session must be passed to DataSetInstance if the create_dataset
         # parameter is True so that the new object can be flushed.  Is there a better way?
-        DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
+        super().__init__(sa_session=sa_session, **kwd)
         self.hid = hid
         # Relationships
         self.history = history

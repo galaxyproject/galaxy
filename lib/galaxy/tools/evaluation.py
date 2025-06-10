@@ -154,7 +154,7 @@ class ToolEvaluator:
 
         job = self.job
         incoming = {p.name: p.value for p in job.parameters}
-        incoming = self.tool.params_from_strings(incoming, self.app)
+        incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
 
