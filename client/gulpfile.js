@@ -157,5 +157,5 @@ const plugins = series(installVisualizations, stagePlugins);
 const pluginsRebuild = series(forceInstallVisualizations, stagePlugins);
 
 module.exports.client = client;
-module.exports.default = plugins;
+module.exports.default = parallel(client, plugins);
 module.exports.pluginsRebuild = pluginsRebuild;
