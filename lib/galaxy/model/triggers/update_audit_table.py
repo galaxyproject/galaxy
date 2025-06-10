@@ -56,7 +56,7 @@ def _postgres_install(engine):
             AS $BODY$
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    SELECT DISTINCT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
                     FROM new_table
                     WHERE {id_field} IS NOT NULL
                     ON CONFLICT DO NOTHING;
@@ -75,7 +75,7 @@ def _postgres_install(engine):
             AS $BODY$
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    VALUES (NEW.{id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                    VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
                     ON CONFLICT DO NOTHING;
                     RETURN NULL;
                 END;
