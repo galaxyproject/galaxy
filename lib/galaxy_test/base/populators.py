@@ -2113,7 +2113,12 @@ class BaseWorkflowPopulator(BasePopulator):
         store_dict: Optional[Dict[str, Any]] = None,
         store_path: Optional[str] = None,
         model_store_format: Optional[str] = None,
+        archive_path: Optional[str] = None,
     ) -> Response:
+        if archive_path is not None:
+
+            tus_session_id = self.galaxy_interactor.tus_upload(archive_path, "upload/resumable_upload")
+            store_path = f"tus://{tus_session_id}"
         url = "invocations/from_store"
         payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
         payload["history_id"] = history_id
@@ -2126,9 +2131,14 @@ class BaseWorkflowPopulator(BasePopulator):
         store_dict: Optional[Dict[str, Any]] = None,
         store_path: Optional[str] = None,
         model_store_format: Optional[str] = None,
+        archive_path: Optional[str] = None,
     ) -> Response:
         create_response = self.create_invocation_from_store_raw(
-            history_id, store_dict=store_dict, store_path=store_path, model_store_format=model_store_format
+            history_id,
+            store_dict=store_dict,
+            store_path=store_path,
+            model_store_format=model_store_format,
+            archive_path=archive_path,
         )
         api_asserts.assert_status_code_is_ok(create_response)
         return create_response.json()

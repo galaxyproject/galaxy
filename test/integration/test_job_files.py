@@ -18,11 +18,9 @@ API has gone too far.
 import io
 import os
 import tempfile
-from typing import Dict
 
 import requests
 from sqlalchemy import select
-from tusclient import client
 
 from galaxy import model
 from galaxy.model.base import ensure_object_added_to_session
@@ -35,7 +33,6 @@ SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 TEST_INPUT_TEXT = "test input content\n"
 TEST_FILE_IO = io.StringIO("some initial text data")
-TEST_TUS_CHUNK_SIZE = 1024
 
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
@@ -135,24 +132,14 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         path = self._app.object_store.get_filename(output_hda.dataset)
         assert path
 
-        upload_url = self._api_url(f"job_files/resumable_upload?job_key={job_key}", use_key=False)
-        headers: Dict[str, str] = {}
-        my_client = client.TusClient(upload_url, headers=headers)
-
-        storage = None
-        metadata: Dict[str, str] = {}
         t_file = tempfile.NamedTemporaryFile("w")
         t_file.write("some initial text data")
         t_file.flush()
 
         input_path = t_file.name
 
-        uploader = my_client.uploader(input_path, metadata=metadata, url_storage=storage)
-        uploader.chunk_size = TEST_TUS_CHUNK_SIZE
-        uploader.upload()
-        upload_session_url = uploader.url
-        assert upload_session_url
-        tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
+        endpoint_url = f"job_files/resumable_upload?job_key={job_key}"
+        tus_session_id = self.galaxy_interactor.tus_upload(input_path, endpoint_url)
 
         data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
