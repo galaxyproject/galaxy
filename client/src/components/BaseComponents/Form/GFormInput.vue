@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 const props = defineProps<{
     value?: string | null;
 }>();
@@ -7,13 +9,18 @@ const emit = defineEmits<{
     (e: "input", value: string | null): void;
 }>();
 
-function onInput(event: Event) {
-    emit("input", (event as InputEvent).data);
-}
+const inputValue = computed({
+    get() {
+        return props.value;
+    },
+    set(value) {
+        emit("input", value ?? null);
+    },
+});
 </script>
 
 <template>
-    <input class="g-form-input" :value="props.value" @input="onInput" />
+    <input v-model="inputValue" class="g-form-input" />
 </template>
 
 <style scoped lang="scss">
