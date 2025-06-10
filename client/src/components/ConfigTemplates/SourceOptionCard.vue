@@ -50,7 +50,7 @@ const uniqueId = computed(() => {
     } else if ("object_store_id" in props.sourceOption && props.sourceOption.object_store_id) {
         return props.sourceOption.object_store_id;
     } else {
-        return Math.random().toString(36).substring(7);
+        return undefined;
     }
 });
 const buttonTitle = computed(() => {
