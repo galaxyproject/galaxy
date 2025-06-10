@@ -228,6 +228,7 @@ class Png(Image):
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
+    display_behavior = "download"  # TIFF files trigger browser downloads
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -505,6 +506,7 @@ class Rast(Image):
 class Pdf(Image):
     edam_format = "format_3508"
     file_ext = "pdf"
+    display_behavior = "download"  # PDFs often trigger downloads depending on browser settings
 
     def sniff(self, filename: str) -> bool:
         """Determine if the file is in pdf format."""
