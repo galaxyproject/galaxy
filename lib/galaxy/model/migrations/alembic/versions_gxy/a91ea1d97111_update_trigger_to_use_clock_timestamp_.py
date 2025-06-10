@@ -63,7 +63,8 @@ def create_functions_and_triggers(timestamp):
         for operation in ["UPDATE", "INSERT"]:
             sql.append(trigger_def(table, id_field, operation, function_keyword, function_name))
 
-    op.execute(sql)
+    for stmt in sql:
+        op.execute(stmt)
 
 
 def statement_trigger_fn(function_name, id_field, timestamp):
