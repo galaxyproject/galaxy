@@ -30,8 +30,9 @@ def downgrade():
 
 
 def create_functions_and_triggers(timestamp):
-    version = op.get_bind().engine.dialect.server_version_info[0]
-    if version > 10:
+    version_info = op.get_bind().engine.dialect.server_version_info
+    # For offline mode (version_info is None), we assume that version > 10
+    if version_info and version_info[0] > 10 or not version_info:
         trigger_fn = statement_trigger_fn
     else:
         trigger_fn = row_trigger_fn
