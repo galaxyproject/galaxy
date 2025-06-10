@@ -12,7 +12,7 @@ import { assertDefined } from "@/utils/assertions";
 import { useD3Zoom } from "./composables/d3Zoom";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Vector } from "./modules/geometry";
+import type { Rectangle, Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -21,6 +21,7 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
@@ -54,6 +55,14 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     canvas,
     scroll,
     props.initialPosition
+);
+
+watch(
+    () => transform.value,
+    () => {
+        stateStore.position[0] = transform.value.x;
+        stateStore.position[1] = transform.value.y;
+    }
 );
 
 const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
@@ -151,10 +160,19 @@ const canvasStyle = computed(() => {
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
 
+const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
+
+function moveToAndHighlightRegion(bounds: Rectangle) {
+    const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
+    areaHighlight.value?.show(bounds);
+    moveTo(centerPosition);
+}
+
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
+    moveToAndHighlightRegion,
 });
 </script>
 
@@ -215,6 +233,7 @@ defineExpose({
                     :readonly="readonly"
                     :root-offset="elementBounding"
                     @pan-by="panBy" />
+                <AreaHighlight ref="areaHighlight" />
             </div>
         </div>
         <WorkflowMinimap

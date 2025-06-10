@@ -51,6 +51,7 @@
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -261,6 +262,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
+import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
@@ -287,6 +289,7 @@ export default {
         NodeInspector,
         InputPanel,
         UserToolPanel,
+        SearchPanel,
     },
     props: {
         workflowId: {
@@ -600,11 +603,16 @@ export default {
             )
         );
 
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
         return {
             id,
             name,
             parameters,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
