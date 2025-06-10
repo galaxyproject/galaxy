@@ -3,12 +3,20 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheckCircle, faExclamationCircle } from "font-awesome-6";
 import { computed } from "vue";
 
-const props = defineProps<{
-    title?: string;
-    description?: string;
-    state?: boolean;
-    invalidFeedback?: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        title?: string;
+        description?: string;
+        state?: boolean;
+        invalidFeedback?: string;
+    }>(),
+    {
+        title: undefined,
+        description: undefined,
+        state: undefined,
+        invalidFeedback: undefined,
+    }
+);
 
 const stateClasses = computed(() => {
     return {
