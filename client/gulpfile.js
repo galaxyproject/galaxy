@@ -25,6 +25,7 @@ PATHS.pluginBaseDir =
         ? process.env.GALAXY_PLUGIN_PATH
         : undefined) || "../config/plugins/";
 
+const staticPluginDir = "../static/plugins";
 const visualizationsConfig = "./visualizations.yml";
 const file = fs.readFileSync(visualizationsConfig, "utf8");
 const VISUALIZATION_PLUGINS = yaml.parse(file);
@@ -51,6 +52,8 @@ async function icons() {
 }
 
 function stagePlugins(callback) {
+    fs.ensureDirSync(path.join(staticPluginDir));
+
     // Get visualization directories
     const visualizationDirs = [
         path.join(PATHS.pluginBaseDir, "visualizations/*/static"),
@@ -65,7 +68,7 @@ function stagePlugins(callback) {
         // Get the relative path from the plugin base dir
         const relativeDir = path.relative(PATHS.pluginBaseDir, sourceDir);
         // The target should preserve the full path including 'static'
-        const targetDir = path.join("../static/plugins", relativeDir);
+        const targetDir = path.join(staticPluginDir, relativeDir);
 
         // Skip node_modules/.bin directories
         if (sourceDir.includes("node_modules/.bin")) {
@@ -98,9 +101,11 @@ function stagePlugins(callback) {
  * Produce plugins from fully self-contained npm packages
  */
 async function installVisualizations(callback, forceReinstall = false) {
+    const visualizationsDir = path.join(staticPluginDir, "visualizations");
+    fs.ensureDirSync(visualizationsDir);
     for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
         const { package: pluginPackage, version } = VISUALIZATION_PLUGINS[pluginName];
-        const pluginDir = path.join("../static/plugins/", `visualizations/${pluginName}`);
+        const pluginDir = path.join(visualizationsDir, pluginName);
         const staticDir = path.join(pluginDir, "static");
         const xmlPath = path.join(staticDir, `${pluginName}.xml`);
         const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
@@ -157,5 +162,7 @@ const plugins = series(installVisualizations, stagePlugins);
 const pluginsRebuild = series(forceInstallVisualizations, stagePlugins);
 
 module.exports.client = client;
+module.exports.plugins = plugins;
 module.exports.default = parallel(client, plugins);
+module.exports.installVisualizations = installVisualizations;
 module.exports.pluginsRebuild = pluginsRebuild;
