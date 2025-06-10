@@ -7,13 +7,13 @@ const props = withDefaults(
     defineProps<{
         title?: string;
         description?: string;
-        state?: boolean;
+        state?: boolean | null;
         invalidFeedback?: string;
     }>(),
     {
         title: undefined,
         description: undefined,
-        state: undefined,
+        state: null,
         invalidFeedback: undefined,
     }
 );
