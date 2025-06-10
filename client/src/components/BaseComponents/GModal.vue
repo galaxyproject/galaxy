@@ -15,27 +15,41 @@ import { match } from "@/utils/utils";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-const props = defineProps<{
-    id?: string;
-    /** Controls if the modal is showing. Syncable */
-    show?: boolean;
-    /** Controls the modals size. If unset, size can be controlled via css `width` and `height` */
-    size?: ComponentSize;
-    /** Shows confirm an cancel buttons in the footer, and sends out `ok` and `cancel` events */
-    confirm?: boolean;
-    /** Custom text for the Ok confirm button */
-    okText?: string;
-    /** Custom text for the Cancel confirm button */
-    cancelText?: string;
-    /** Renders the footer region, even if confirm is disabled */
-    footer?: boolean;
-    /** Text to display in the title */
-    title?: string;
-    /** Fixes the height of the modal to a pre-set height based on `size` */
-    fixedHeight?: boolean;
-    /** When false, keeps the modal open on "ok" */
-    closeOnOk?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        id?: string;
+        /** Controls if the modal is showing. Syncable */
+        show?: boolean;
+        /** Controls the modals size. If unset, size can be controlled via css `width` and `height` */
+        size?: ComponentSize;
+        /** Shows confirm an cancel buttons in the footer, and sends out `ok` and `cancel` events */
+        confirm?: boolean;
+        /** Custom text for the Ok confirm button */
+        okText?: string;
+        /** Custom text for the Cancel confirm button */
+        cancelText?: string;
+        /** Renders the footer region, even if confirm is disabled */
+        footer?: boolean;
+        /** Text to display in the title */
+        title?: string;
+        /** Fixes the height of the modal to a pre-set height based on `size` */
+        fixedHeight?: boolean;
+        /** When false, keeps the modal open on "ok" */
+        closeOnOk?: boolean;
+    }>(),
+    {
+        id: undefined,
+        show: false,
+        confirm: false,
+        size: undefined,
+        okText: undefined,
+        cancelText: undefined,
+        footer: false,
+        title: undefined,
+        fixedHeight: false,
+        closeOnOk: true,
+    }
+);
 
 const emit = defineEmits<{
     (e: "update:show", show: boolean): void;
