@@ -281,9 +281,10 @@ CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
 
 class TransformAction(TypedDict):
     action: DatasetSourceTransformActionTypeLiteral
-    datatype_ext: NotRequired[
-        str
-    ]  # if action == 'datatype_groom', this is the datatype ext that was used to groom the dataset.
+    # if action == 'datatype_groom', this is the datatype that was used to groom the dataset.
+    datatype_class: NotRequired[str]
+    # if action == 'datatype_groom', this is the datatype ext that was used to groom the dataset.
+    datatype_ext: NotRequired[str]
 
 
 class RequestedTransformAction(TypedDict):
