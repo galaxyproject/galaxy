@@ -47,6 +47,7 @@ class QuaySearch:
     """
     Tool to search within a quay organization for a given software name.
     """
+
     tmp_dir_prefix = "mulled_search.quay."
 
     def __init__(self, organization, cache_time=900):
@@ -90,8 +91,9 @@ class QuaySearch:
             entries.append((entry_st.st_mtime, entry.path))
         if entries:
             tmp_dir = sorted(entries)[-1][1]
-            print(f"Using existing quay.io index, remove or decrease --cache-time to rebuild: {tmp_dir}",
-                  file=sys.stderr)
+            print(
+                f"Using existing quay.io index, remove or decrease --cache-time to rebuild: {tmp_dir}", file=sys.stderr
+            )
             self.index = open_dir(tmp_dir)
         else:
             tmp_dir = tempfile.mkdtemp(prefix=QuaySearch.tmp_dir_prefix)
