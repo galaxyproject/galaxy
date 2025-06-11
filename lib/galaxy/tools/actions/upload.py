@@ -5,6 +5,9 @@ from typing import Optional
 
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.model import (
+    Dataset,
+    DatasetSource,
+    DatasetSourceHash,
     History,
     Job,
 )
@@ -28,6 +31,7 @@ from . import (
     ToolAction,
     ToolActionExecuteResult,
 )
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -143,9 +147,29 @@ class FetchUploadToolAction(BaseUploadToolAction):
         return self._create_job(trans, incoming, tool, None, outputs, history=history)
 
 
-def _precreate_fetched_hdas(trans, history, target, outputs):
+def _precreate_fetched_hdas(trans: WorkRequestContext, history: History, target, outputs):
     for item in target.get("elements", []):
         name = item.get("name", None)
+        replacement_dataset: Optional[Dataset] = None
+        if item.get("url") and item.get("hashes"):
+            dataset_hashes = [
+                DatasetSourceHash(hash_function=item["hash_function"], hash_value=item["hash_value"])
+                for item in item["hashes"]
+            ]
+            transforms = []
+            if item.get("space_to_tab"):
+                transforms.append({"action": "spaces_to_tabs"})
+            if item.get("to_posix_lines"):
+                transforms.append({"action": "to_posix_lines"})
+            dataset_sources = [DatasetSource(source_uri=item["url"], transform=transforms)]
+            replacement_dataset = trans.app.hda_manager.get_replacement_dataset(
+                trans.sa_session,
+                user=trans.user,
+                dataset_sources=dataset_sources,
+                dataset_hashes=dataset_hashes,
+                extension=item.get("ext"),
+                object_store_id=history.preferred_object_store_id,  # need to get the real object store id somehow
+            )
         if name is None:
             src = item.get("src", None)
             if src == "url":
@@ -166,6 +190,11 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
         )
         outputs.append(data)
         item["object_id"] = data.id
+        if replacement_dataset:
+            item["replacement"] = {
+                "path": replacement_dataset.get_file_name(),
+                "transform": replacement_dataset.sources[0].transform,
+            }
 
 
 def _precreate_fetched_collection_instance(trans, history, target, outputs):
