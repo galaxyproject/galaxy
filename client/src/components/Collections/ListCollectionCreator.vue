@@ -18,6 +18,7 @@ import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
@@ -343,11 +344,38 @@ function addUploadedFiles(files: HDASummary[]) {
     });
 }
 
+/** If we are creating a collection from a history (not a pre-selection of elements),
+ * once we have some selected elements, we provide an option to rename them in a modal.
+ */
+const canRenameElements = computed(() => {
+    return !props.fromSelection && inListElements.value.length > 0;
+});
+/** A toggle for the modal that allows renaming elements in the selected list */
+const renamingElements = ref(false);
 /** find the element in the workingElements array and update its name */
 function renameElement(element: any, name: string) {
+    // We do this whole process of removing and readding because inListElements
+    // might be reacting to changes in workingElements, and we want to
+    // prevent that from causing issues with producing duplicate elements in either list:
+
+    // first check at what index of inlistElements the element is
+    const index = inListElements.value.findIndex((e) => e.id === element.id);
+    if (index < 0) {
+        return;
+    }
+
+    // remove from inListElements
+    inListElements.value = inListElements.value.filter((e) => e.id !== element.id);
+
+    // then find the element in workingElements, and rename it
     element = workingElements.value.find((e) => e.id === element.id);
     if (element) {
         element.name = name;
+    }
+
+    // now add again to inListElements at same index
+    if (index >= 0) {
+        inListElements.value.splice(index, 0, element);
     }
 }
 
@@ -413,11 +441,13 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 :show-buttons="showButtonsForModal"
                 :collection-name="collectionName"
                 :mode="mode"
+                :can-rename-elements="canRenameElements"
                 @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
                 @remove-extensions-toggle="removeExtensionsToggle"
+                @clicked-rename="renamingElements = true"
                 @clicked-create="attemptCreate">
                 <template v-slot:help-content>
                     <p>
@@ -443,7 +473,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         <li v-if="!fromSelection">
                             The filter textbox can be used to rapidly find the datasets of interest by name.
                         </li>
-                        <li>
+                        <li v-if="fromSelection">
                             {{ localize("Change the identifier of elements in the list by clicking on") }}
                             <i data-target=".collection-element .name">
                                 {{ localize("the existing name") }}
@@ -519,6 +549,21 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             {{ localize("Create list") }}
                         </i>
                         {{ localize(".") }}
+                    </p>
+
+                    <p v-if="!fromSelection">
+                        <strong>
+                            {{ localize("Optional:") }}
+                        </strong>
+                        {{
+                            localize(
+                                "Once you have made your selection, if you wish to rename the elements in the list, click"
+                            )
+                        }}
+                        <i data-target=".rename-elements">
+                            {{ localize("Rename list elements") }}
+                        </i>
+                        {{ localize(". This opens a modal where you can rename the elements individually.") }}
                     </p>
                 </template>
 
@@ -669,14 +714,28 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
                         <template v-slot:label-area="{ value }">
                             <DatasetCollectionElementView
-                                class="w-100"
+                                text-only
+                                not-editable
                                 :element="selectionAsHdaSummary(value)"
-                                :hide-extension="!showElementExtension"
-                                @onRename="(name) => renameElement(value, name)" />
+                                :hide-extension="!showElementExtension" />
                         </template>
                     </FormSelectMany>
                 </template>
             </CollectionCreator>
+
+            <GModal
+                class="rename-elements-modal"
+                :show.sync="renamingElements"
+                size="small"
+                title="Click on dataset names to rename them">
+                <DatasetCollectionElementView
+                    v-for="value in inListElements"
+                    :key="value.id"
+                    class="w-100"
+                    :element="selectionAsHdaSummary(value)"
+                    :hide-extension="!showElementExtension"
+                    @onRename="(name) => renameElement(value, name)" />
+            </GModal>
         </div>
     </div>
 </template>
@@ -686,6 +745,12 @@ function selectionAsHdaSummary(value: any): HDASummary {
 @import "theme/blue.scss";
 
 .list-collection-creator {
+    .rename-elements-modal {
+        .collection-element {
+            cursor: unset;
+        }
+    }
+
     .footer {
         margin-top: 8px;
     }
@@ -730,11 +795,6 @@ function selectionAsHdaSummary(value: any): HDASummary {
             margin: 2px 4px 0px 4px;
             &:hover {
                 border-color: black;
-            }
-        }
-        &:not(.with-actions) {
-            &:hover {
-                border: none;
             }
         }
 

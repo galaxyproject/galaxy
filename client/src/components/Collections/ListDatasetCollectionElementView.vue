@@ -15,6 +15,7 @@ interface Props {
     notEditable?: boolean;
     hideExtension?: boolean;
     showHid?: boolean;
+    textOnly?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -45,10 +46,11 @@ watch(
 
 <template>
     <div
-        class="collection-element d-flex justify-content-between"
+        class="d-flex justify-content-between"
         :data-hid="element.hid"
-        :class="{ 'with-actions': hasActions }"
+        :class="{ 'collection-element': !textOnly, 'with-actions': hasActions }"
         role="button"
+        data-description="list dataset collection element"
         tabindex="0"
         @keyup.enter="emit('element-is-selected', element)"
         @click="emit('element-is-selected', element)">
