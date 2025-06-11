@@ -54,6 +54,9 @@ const hasStepVersionChanges = ref(false);
 const invocations = ref([]);
 const simpleForm = ref(false);
 const disableSimpleForm = ref(false);
+const disableSimpleFormReason = ref<
+    "hasReplacementParameters" | "hasDisconnectedInputs" | "hasWorkflowResourceParameters" | undefined
+>(undefined);
 const submissionError = ref("");
 const workflowError = ref("");
 const workflowName = ref("");
@@ -115,24 +118,24 @@ async function loadRun() {
             // on the frontend. If these are implemented on the backend at some
             // point this restriction can be lifted.
             if (incomingModel.hasReplacementParametersInToolForm) {
-                console.log("cannot render simple workflow form - has ${} values in tool steps");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasReplacementParameters";
             }
             // If there are required parameters in a tool form (a disconnected runtime
             // input), we have to render the tool form steps and cannot use the
             // simplified tool form.
             if (incomingModel.hasOpenToolSteps) {
-                console.log("cannot render simple workflow form - one or more tools have disconnected runtime inputs");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasDisconnectedInputs";
             }
             // Just render the whole form for resource request parameters (kind of
             // niche - I'm not sure anyone is using these currently anyway).
             if (incomingModel.hasWorkflowResourceParameters) {
-                console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasWorkflowResourceParameters";
             }
         }
 
@@ -260,6 +263,7 @@ defineExpose({
                         :model="workflowModel"
                         :can-mutate-current-history="canRunOnHistory"
                         :disable-simple-form="disableSimpleForm"
+                        :disable-simple-form-reason="disableSimpleFormReason"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showSimple="advancedForm = false" />
