@@ -446,7 +446,17 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for source_attrs in dataset_or_file_attrs["sources"]:
                 source_obj = model.DatasetSource()
                 source_obj.source_uri = source_attrs["source_uri"]
-                source_obj.transform = source_attrs["transform"]
+                transform_actions = source_attrs["transform"]
+                recorded_requested_transform = "requested_transform" in source_attrs
+                if recorded_requested_transform:
+                    source_obj.requested_transform = source_attrs["requested_transform"]
+                else:
+                    # legacy transform actions - if this is a deferred dataset treat as requested
+                    # transform actions
+                    if dataset_instance.state == "deferred":
+                        source_obj.requested_transform = transform_actions or []
+                    else:
+                        source_obj.transform = transform_actions
                 source_obj.extra_files_path = source_attrs["extra_files_path"]
                 for hash_attrs in source_attrs["hashes"]:
                     hash_obj = model.DatasetSourceHash()

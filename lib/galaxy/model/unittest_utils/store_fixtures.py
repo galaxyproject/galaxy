@@ -3,12 +3,14 @@
 from typing import (
     Any,
     Dict,
+    Literal,
 )
 from uuid import uuid4
 
 from galaxy.model.orm.now import now
 
 TEST_SOURCE_URI = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed"
+TEST_SOURCE_URI_SIMPLE_LINE = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/simple_line.txt"
 TEST_SOURCE_URI_BAM = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam"
 TEST_HASH_FUNCTION = "MD5"
 TEST_HASH_VALUE = "f568c29421792b1b1df4474dafae01f1"
@@ -28,6 +30,12 @@ TEST_LIBRARY_DATASET_INFO = "important info about the library dataset"
 BED_2_METADATA = {
     "dbkey": "?",
     "data_lines": 68,
+    "comment_lines": 0,
+    "columns": 6,
+}
+SIMPLE_LINE_AS_TSV_METADATA = {
+    "dbkey": "?",
+    "data_lines": 1,
     "comment_lines": 0,
     "columns": 6,
 }
@@ -326,6 +334,69 @@ def deferred_hda_model_store_dict(
     )
     if not metadata_deferred:
         serialized_hda["metadata"] = metadata
+    return {
+        "datasets": [
+            serialized_hda,
+        ]
+    }
+
+
+TRANSFORM_ACTIONS_TYPE = Literal["25.1", "legacy"]
+
+
+def deferred_hda_model_store_dict_space_to_tab(
+    actions_type: TRANSFORM_ACTIONS_TYPE,
+    apply_transform: bool = True,
+):
+    dataset_source: Dict[str, Any] = dict(
+        model_class="DatasetSource",
+        source_uri=TEST_SOURCE_URI_SIMPLE_LINE,
+        extra_files_path=None,
+        transform=None,
+        hashes=[],
+    )
+    metadata = SIMPLE_LINE_AS_TSV_METADATA
+    file_metadata = dict(
+        hashes=[],
+        sources=[dataset_source],
+        created_from_basename="simple_line.txt",
+    )
+    if actions_type == "25.1":
+        dataset_source["transform"] = None
+        if apply_transform:
+            dataset_source["requested_transform"] = [
+                {"action": "datatype_groom"},
+                {"action": "spaces_to_tabs"},
+            ]
+        else:
+            dataset_source["requested_transform"] = [{"action": "datatype_groom"}]
+    else:
+        if apply_transform:
+            # legacy transform (pre 25.1) would have looked like this...
+            dataset_source["transform"] = [{"action": "spaces_to_tabs"}]
+        else:
+            dataset_source["transform"] = None
+
+    serialized_hda = dict(
+        encoded_id="id_hda1",
+        model_class="HistoryDatasetAssociation",
+        create_time=now().__str__(),
+        update_time=now().__str__(),
+        name="my cool name",
+        info="my cool info",
+        blurb="a blurb goes here...",
+        peek="A bit of the data...",
+        extension="tabular",
+        designation=None,
+        deleted=False,
+        visible=True,
+        dataset_uuid=str(uuid4()),
+        annotation="my cool annotation",
+        file_metadata=file_metadata,
+        state="deferred",
+        metadata_deferred=False,
+        metadata=metadata,
+    )
     return {
         "datasets": [
             serialized_hda,
