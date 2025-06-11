@@ -117,8 +117,9 @@ collections, and configure parameters — all within a single, unified form.
   updating in real time as users populate inputs — helping them understand the structure and flow
   of the analysis.
 
-These improvements were inspired by users encountering curated workflows from platforms like the IWC
-Browser or BRC Analytics, and are designed to reduce friction, improve clarity, and enable users to
+These improvements were inspired by users encountering curated workflows from platforms like the 
+`IWC Browser <https://iwc.galaxyproject.org/>`__ or `BRC Analytics <https://brc-analytics.org/>`__
+, and are designed to reduce friction, improve clarity, and enable users to
 complete complex analyses entirely within a single interface.
 [`#19294 <https://github.com/galaxyproject/galaxy/pull/19294>`__]
 
