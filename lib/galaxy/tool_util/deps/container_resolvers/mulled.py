@@ -15,10 +15,8 @@ from typing import (
 from requests import Session
 from typing_extensions import Literal
 
-from galaxy.tool_util.deps.installable import ensure_installed as deps_ensure_installed
 from galaxy.util import (
     string_as_bool,
-    unicodify,
 )
 from galaxy.util.commands import shell
 from . import (
@@ -31,7 +29,6 @@ from . import (
     CliContainerResolver,
     ResolutionCache,
     SingularityCliContainerResolver,
-    identifier_to_cached_target,
     list_docker_cached_mulled_images,
 )
 from ..conda_util import CondaTarget
@@ -41,7 +38,6 @@ from ..container_classes import (
     DockerContainer,
     SingularityContainer,
 )
-from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
     ensure_installed,
     InvolucroContext,
@@ -55,7 +51,6 @@ from ..mulled.util import (
     split_tag,
     v1_image_name,
     v2_image_name,
-    version_sorted,
 )
 from ..requirements import (
     ContainerDescription,

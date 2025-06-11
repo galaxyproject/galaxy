@@ -2,6 +2,7 @@
 
 import logging
 import os
+import subprocess
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -10,6 +11,7 @@ from typing import (
     Any,
     Callable,
     Container,
+    Dict,
     List,
     NamedTuple,
     Optional,
@@ -20,9 +22,11 @@ from typing import (
 
 from typing_extensions import Literal
 
+from galaxy.tool_util.deps.installable import ensure_installed as deps_ensure_installed
 from galaxy.util import (
     safe_makedirs,
     string_as_bool,
+    unicodify,
     which,
 )
 from galaxy.util.bunch import Bunch
@@ -31,6 +35,11 @@ from ..apptainer_util import (
     ApptainerContext,
     DEFAULT_APPTAINER_COMMAND,
     install_apptainer,
+)
+from ..docker_util import build_docker_images_command
+from ..mulled.util import (
+    split_tag,
+    version_sorted,
 )
 
 if TYPE_CHECKING:
