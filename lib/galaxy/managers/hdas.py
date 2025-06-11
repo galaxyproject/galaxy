@@ -30,7 +30,10 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import (
+    aliased,
+    Session,
+)
 from sqlalchemy.orm.session import object_session
 
 from galaxy import (
@@ -60,6 +63,7 @@ from galaxy.model.dereference import (
     derefence_collection_to_model,
     dereference_to_model,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -199,6 +203,73 @@ class HDAManager(
             new_hda.set_total_size()
         session.commit()
         return new_hda.is_ok
+
+    def get_replacement_dataset(
+        self,
+        session: galaxy_scoped_session,
+        user: Optional[model.User],
+        dataset_sources: List[model.DatasetSource],
+        dataset_hashes: List[Union[model.DatasetHash, model.DatasetSourceHash]],
+        extension: str,
+        object_store_id: Optional[str] = None,
+    ) -> Optional[model.Dataset]:
+        """
+        Get a replacement dataset for the given source URI and dataset hash.
+        If we already have such a dataset we don't need to create a new one.
+        """
+        if not user:
+            return None
+
+        # TODO: generalize
+        dataset_hash = dataset_hashes[0]
+        dataset_source = dataset_sources[0]
+
+        existing_source = aliased(model.DatasetSource, name="existing_source")
+        existing_dataset_select = (
+            select(model.Dataset)
+            .join(existing_source, existing_source.dataset_id == model.Dataset.id)
+            .join(model.HistoryDatasetAssociation, model.Dataset.id == model.HistoryDatasetAssociation.dataset_id)
+            .join(model.History, model.HistoryDatasetAssociation.history_id == model.History.id)
+            .where(
+                model.Dataset.deleted == false(),
+                model.Dataset.purged == false(),
+                model.Dataset.state == model.Dataset.states.OK,
+                model.HistoryDatasetAssociation.extension == extension,
+                model.History.user_id == user.id,
+            )
+        )
+        if object_store_id is not None:
+            # bit of a hack?
+            existing_dataset_select = existing_dataset_select.where(model.Dataset.object_store_id == object_store_id)
+        existing_hash = aliased(model.DatasetHash, name="existing_hash")
+        existing_dataset_select = existing_dataset_select = existing_dataset_select.join(
+            existing_hash, existing_hash.dataset_id == model.Dataset.id
+        )
+        if isinstance(dataset_hash, model.DatasetSourceHash):
+            # This is the hash of the source, prior to any transformations.
+            # We need to ensure that the source uri matches and that the hash was validated (what happens on hash mismatch? needs test).
+            existing_dataset_select = existing_dataset_select.where(
+                # null is a problem: transforms are only recorded if they alter the data.
+                # the same source hash could result in different hashes on disk.
+                # However, we're only comparing to hashes on disk
+                # existing_source.transform.in_((dataset_source.transform, null())),
+                existing_source.source_uri == dataset_source.source_uri,
+                existing_hash.hash_function == dataset_hash.hash_function,
+                existing_hash.hash_value == dataset_hash.hash_value,
+            )
+            # Note that the requester has included the source hash, so we don't care that the source might have changed since the original request.
+        else:
+            # We have the actual calculated hash on disk, we don't need to care about the source
+            existing_dataset_select = existing_dataset_select.where(
+                existing_hash.hash_function == dataset_hash.hash_function,
+                existing_hash.hash_value == dataset_hash.hash_value,
+            )
+        log.debug(
+            "Searching for existing dataset query: %s",
+            str(existing_dataset_select.compile(compile_kwargs={"literal_binds": True})),
+        )
+        existing_dataset = session.scalars(existing_dataset_select.limit(1)).first()
+        return existing_dataset
 
     def copy(
         self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
