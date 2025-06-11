@@ -78,9 +78,8 @@ def data_input_to_staging_path_and_source_path(
     v: "DatasetFilenameWrapper", invalid_chars: Sequence[str] = ("/",)
 ) -> Dict[str, Any]:
     staging_path = v.get_staging_path(invalid_chars=invalid_chars)
-    # note that the element identifier should be always a list
     return {
-        "element_identifier": [v.element_identifier],
+        "element_identifier": v.element_identifier,
         "ext": v.file_ext,
         "staging_path": staging_path,
         "source_path": data_input_to_path(v),
