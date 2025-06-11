@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faStop, faTools } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faStop, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
@@ -88,12 +88,22 @@ function openInteractiveTool(toolId: string) {
                                 | Created <UtcDate :date="tool.created_time" mode="elapsed" />
                             </div>
                         </div>
-                        <button
-                            class="btn btn-sm btn-link text-danger"
-                            title="Stop this interactive tool"
-                            @click="stopInteractiveTool(tool.id, tool.name)">
-                            <FontAwesomeIcon :icon="faStop" />
-                        </button>
+                        <div class="d-flex align-items-center">
+                            <a
+                                v-if="tool.target"
+                                :href="tool.target"
+                                target="_blank"
+                                class="btn btn-sm btn-link text-muted me-1"
+                                title="Open in new tab">
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                            </a>
+                            <button
+                                class="btn btn-sm btn-link text-danger"
+                                title="Stop this interactive tool"
+                                @click="stopInteractiveTool(tool.id, tool.name)">
+                                <FontAwesomeIcon :icon="faStop" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

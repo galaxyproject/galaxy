@@ -125,22 +125,21 @@ onMounted(() => {
                     :name="row.item.name"
                     @click.prevent="openInteractiveTool(row.item.id)"
                     >{{ row.item.name }}
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
-                <!-- Add a direct link option as well -->
                 <a
+                    v-if="row.item.target"
                     :id="createId('external-link', row.item.id)"
                     v-b-tooltip
                     class="ml-2"
                     title="Open in new tab"
                     :href="row.item.target"
                     target="_blank">
-                    <small>(new tab)</small>
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
-                <label v-if="row.item.active"> running </label>
-                <label v-else> stopped </label>
+                <label v-if="row.item.active"> Running </label>
+                <label v-else> Starting </label>
             </template>
             <template v-slot:cell(created_time)="row">
                 <UtcDate :date="row.item.created_time" mode="elapsed" />
