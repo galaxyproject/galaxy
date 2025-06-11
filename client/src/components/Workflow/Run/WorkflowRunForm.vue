@@ -18,9 +18,6 @@
                     @click="$emit('showSimple')">
                     <span class="fas fa-arrow-left" /> Simple Form
                 </b-button>
-                <b-badge v-else class="d-flex align-items-center flex-gapx-1" variant="warning">
-                    <span class="fas fa-exclamation-triangle" /> Legacy Form
-                </b-badge>
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
