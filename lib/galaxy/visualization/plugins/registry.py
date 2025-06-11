@@ -90,6 +90,8 @@ class VisualizationsRegistry:
         # due to the ordering of listdir, there is an implicit plugin loading order here
         # could instead explicitly list on/off in master config file
         for directory in self.directories:
+            if not os.path.isdir(directory):
+                continue
             for plugin_dir in sorted(os.listdir(directory)):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
