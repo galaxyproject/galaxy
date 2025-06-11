@@ -60,13 +60,12 @@ def dereference_to_model(
     dataset_source.hashes = hashes
     assert hda.dataset
     hda.dataset.sources = [dataset_source]
-    transform: List[TransformAction] = []
+    transform: List[TransformAction] = [{"action": "datatype_groom"}]
     if data_request_uri.space_to_tab:
         transform.append({"action": "spaces_to_tabs"})
     elif data_request_uri.to_posix_lines:
         transform.append({"action": "to_posix_lines"})
-    if len(transform) > 0:
-        dataset_source.transform = transform
+    dataset_source.requested_transform = transform
 
     sa_session.add(hda)
     sa_session.add(dataset_source)

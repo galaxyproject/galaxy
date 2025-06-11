@@ -286,12 +286,18 @@ class TransformAction(TypedDict):
     ]  # if action == 'datatype_groom', this is the datatype ext that was used to groom the dataset.
 
 
+class RequestedTransformAction(TypedDict):
+    action: DatasetSourceTransformActionTypeLiteral
+
+
 TRANSFORM_ACTIONS = List[TransformAction]
+REQUESTED_TRANSFORM_ACTIONS = List[RequestedTransformAction]
 
 mapper_registry = registry(
     type_annotation_map={
         Optional[STR_TO_STR_DICT]: JSONType,
         Optional[TRANSFORM_ACTIONS]: MutableJSONType,
+        Optional[REQUESTED_TRANSFORM_ACTIONS]: MutableJSONType,
         Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
         Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
         Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]: JSONType,
@@ -4652,7 +4658,10 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
+    # actions actually applied to this source when creating the dataset.
     transform: Mapped[Optional[TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
+    # actions that may be applied to this source when creating the dataset
+    requested_transform: Mapped[Optional[REQUESTED_TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="sources")
     hashes: Mapped[List["DatasetSourceHash"]] = relationship(back_populates="source")
     dict_collection_visible_keys = ["id", "source_uri", "extra_files_path", "transform"]
@@ -4669,6 +4678,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
             source_uri=self.source_uri,
             extra_files_path=self.extra_files_path,
             transform=self.transform,
+            requested_transform=self.requested_transform,
             hashes=[h.serialize(id_encoder, serialization_options) for h in self.hashes],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
@@ -4679,6 +4689,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
         new_source.source_uri = self.source_uri
         new_source.extra_files_path = self.extra_files_path
         new_source.transform = self.transform
+        new_source.requested_transform = self.requested_transform
         new_source.hashes = [h.copy() for h in self.hashes]
         return new_source
 
