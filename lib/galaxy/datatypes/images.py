@@ -20,6 +20,7 @@ import mrcfile
 import numpy as np
 import png
 import tifffile
+from typing_extensions import Literal
 
 try:
     import PIL
@@ -65,7 +66,7 @@ class Image(data.Data):
     edam_data = "data_2968"
     edam_format = "format_3547"
     file_ext = ""
-    display_behavior = "inline"  # Most image formats can be displayed inline in browsers
+    display_behavior: Literal["inline", "download"] = "inline"  # Most image formats can be displayed inline in browsers
 
     MetadataElement(
         name="axes",
