@@ -29,6 +29,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
     required_object_session,
+    TRANSFORM_ACTIONS,
 )
 from galaxy.objectstore import (
     ObjectStore,
@@ -231,7 +232,7 @@ class DatasetInstanceMaterializer:
                 _validate_hash(path, source_hash, "downloaded file")
 
         requested_transforms = target_source.requested_transform or []
-        applied_transforms = []
+        applied_transforms: TRANSFORM_ACTIONS = []
         to_posix_lines = False
         spaces_to_tabs = False
         datatype_groom = False
@@ -239,10 +240,8 @@ class DatasetInstanceMaterializer:
             action = transform_action["action"]
             if action == "to_posix_lines":
                 to_posix_lines = True
-                applied_transforms.append(transform_action)
             elif action == "spaces_to_tabs":
                 spaces_to_tabs = True
-                applied_transforms.append(transform_action)
             elif action == "datatype_groom":
                 datatype_groom = True
             else:
@@ -252,6 +251,12 @@ class DatasetInstanceMaterializer:
             convert_result = convert_fxn(path, False)
             assert convert_result.converted_path
             path = convert_result.converted_path
+            if convert_result.converted_newlines:
+                applied_transforms.append({"action": "to_posix_lines"})
+            if convert_result.converted_regex:
+                # TODO: rename this converted_regex nonsense to converted_spaces to match upload
+                # utility used in data_fetch.py.
+                applied_transforms.append({"action": "spaces_to_tabs"})
         if datatype_groom and datatype.dataset_content_needs_grooming(path):
             datatype.groom_dataset_content(path)
             applied_transforms.append(
