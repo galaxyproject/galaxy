@@ -1,8 +1,5 @@
 import os.path
-from typing import (
-    List,
-    Union,
-)
+from typing import Union
 
 from galaxy.model import (
     DatasetCollection,
@@ -12,7 +9,7 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
-    TransformAction,
+    REQUESTED_TRANSFORM_ACTIONS,
     User,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -60,7 +57,7 @@ def dereference_to_model(
     dataset_source.hashes = hashes
     assert hda.dataset
     hda.dataset.sources = [dataset_source]
-    transform: List[TransformAction] = [{"action": "datatype_groom"}]
+    transform: REQUESTED_TRANSFORM_ACTIONS = [{"action": "datatype_groom"}]
     if data_request_uri.space_to_tab:
         transform.append({"action": "spaces_to_tabs"})
     elif data_request_uri.to_posix_lines:
