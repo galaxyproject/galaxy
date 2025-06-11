@@ -7331,11 +7331,14 @@ class HistoryDatasetCollectionAssociation(
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
-            stmt = self.collection._build_nested_collection_attributes_stmt(hda_attributes=("_metadata", "extension"))
+            stmt = self.collection._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension"), dataset_attributes=("object_store_id", "create_time")
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
+            store_times = {}
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7346,7 +7349,13 @@ class HistoryDatasetCollectionAssociation(
                         dbkeys.add(dbkey_field)
                     if row.extension:
                         extensions.add(row.extension)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+                    store_id = row.object_store_id
+                    create_time = row.create_time
+                    if store_id is not None and create_time is not None:
+                        store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
+            # Convert to set of (object_store_id, oldest_create_time) pairs
+            store_times_summary = set(store_times.items())
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, store_times_summary)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -7420,7 +7429,7 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
+            (dbkeys, extensions, object_store_ids) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",

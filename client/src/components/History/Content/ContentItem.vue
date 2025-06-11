@@ -19,10 +19,10 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
-import { JobStateSummary } from "./Collection/JobStateSummary";
 import { getContentItemState, type StateMap, STATES } from "./model/states";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
+import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -90,12 +90,8 @@ const eventStore = useEventStore();
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
 
-const jobState = computed(() => {
-    return new JobStateSummary(props.item);
-});
-
 const itemIsRunningInteractiveTool = computed(() => {
-    // If our datset id is in the entrypOintStore it's a running it
+    // If our dataset id is in the entrypOintStore it's a running it
     return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
 });
 
@@ -441,15 +437,10 @@ function unexpandedClick(event: Event) {
                 </span>
             </div>
         </div>
+        <ContentExpirationIndicator :item="item" class="ml-auto align-self-start btn-group p-1" />
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
-            <CollectionDescription
-                v-if="!isDataset"
-                class="px-2 pb-2 cursor-pointer"
-                :job-state-summary="jobState"
-                :collection-type="item.collection_type"
-                :element-count="item.element_count"
-                :elements-datatypes="item.elements_datatypes" />
+            <CollectionDescription v-if="!isDataset" class="px-2 pb-2 cursor-pointer" :hdca="item" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"

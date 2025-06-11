@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { JobStateSummary } from "./JobStateSummary";
+import type { HDCASummary } from "@/api";
+
+import { JobStateSummary } from "./JobStateSummary";
 
 import CollectionProgress from "./CollectionProgress.vue";
 
 interface Props {
-    elementCount?: number;
-    elementsDatatypes?: string[];
-    jobStateSummary: JobStateSummary;
-    collectionType: string;
+    hdca: HDCASummary;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    elementCount: undefined,
-    elementsDatatypes: undefined,
-});
+const props = defineProps<Props>();
 
 const labels = new Map([
     ["list", "list"],
@@ -25,41 +21,45 @@ const labels = new Map([
     ["paired", "pair"],
 ]);
 
+const jobStateSummary = computed(() => {
+    return new JobStateSummary(props.hdca);
+});
+
 const collectionLabel = computed(() => {
-    const collectionType = props.collectionType;
+    const collectionType = props.hdca.collection_type;
     return labels.get(collectionType) ?? "nested list";
 });
 const hasSingleElement = computed(() => {
-    return props.elementCount === 1;
+    return props.hdca.element_count === 1;
 });
 const isHomogeneous = computed(() => {
-    return props.elementsDatatypes?.length === 1;
+    return props.hdca.elements_datatypes.length === 1;
 });
 const homogeneousDatatype = computed(() => {
-    return isHomogeneous.value ? ` ${props.elementsDatatypes?.[0]}` : "";
+    return isHomogeneous.value ? ` ${props.hdca.elements_datatypes[0]}` : "";
 });
 const pluralizedItem = computed(() => {
-    if (props.collectionType === "list:list") {
+    if (props.hdca.collection_type === "list:list") {
         return pluralize("list");
     }
-    if (props.collectionType === "list:paired") {
+    if (props.hdca.collection_type === "list:paired") {
         return pluralize("pair");
     }
-    if (props.collectionType === "list:paired_or_unpaired") {
+    if (props.hdca.collection_type === "list:paired_or_unpaired") {
         if (!hasSingleElement.value) {
             return "paired and unpaired datasets";
         } else {
             return "dataset pair or unpaired dataset";
         }
     }
-    if (props.collectionType === "paired_or_unpaired") {
+    if (props.hdca.collection_type === "paired_or_unpaired") {
         if (!hasSingleElement.value) {
             return "dataset pair";
         } else {
             return "unpaired dataset";
         }
     }
-    if (!labels.has(props.collectionType)) {
+    if (!labels.has(props.hdca.collection_type)) {
         return pluralize("dataset collection");
     }
     return pluralize("dataset");
@@ -72,11 +72,12 @@ function pluralize(word: string) {
 
 <template>
     <div>
-        <span v-if="collectionType == 'paired_or_unpaired'" class="description mt-1 mb-1">
-            a <b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+        <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
+            a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </span>
         <span v-else class="description mt-1 mb-1">
-            a {{ collectionLabel }} with {{ elementCount || 0 }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+            a {{ collectionLabel }} with {{ hdca.element_count || 0
+            }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </span>
 
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />

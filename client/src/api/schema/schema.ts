@@ -7316,6 +7316,8 @@ export interface components {
             device?: string | null;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -11391,6 +11393,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -11504,9 +11511,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Created from basename
              * @description The basename of the output that produced this dataset.
@@ -11643,6 +11651,11 @@ export interface components {
              */
             name: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -11737,9 +11750,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -11856,9 +11870,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
@@ -11907,6 +11922,11 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.
@@ -12053,6 +12073,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
              * Type
@@ -12103,9 +12128,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12194,6 +12220,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -12246,9 +12277,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12321,6 +12353,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -16638,6 +16675,23 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * OldestCreateTimeByObjectStoreId
+         * @description Represents the oldest creation time of a set of datasets stored in a specific object store.
+         */
+        OldestCreateTimeByObjectStoreId: {
+            /**
+             * Object Store ID
+             * @description The ID of the object store.
+             */
+            object_store_id: string;
+            /**
+             * Oldest Create Time
+             * Format: date-time
+             * @description The oldest creation time of a set of datasets stored in this object store.
+             */
+            oldest_create_time: string;
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -20202,6 +20256,8 @@ export interface components {
             hidden: boolean;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
