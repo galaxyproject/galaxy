@@ -99,7 +99,7 @@ class CachedExplicitSingularityContainerResolver(SingularityCliContainerResolver
             if not self.cli_available:
                 return container_description
             image_id = container_description.identifier
-            cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
+            cache_path = os.path.normpath(os.path.join(self.cache_directory.path, image_id))
             if install and not os.path.exists(cache_path):
                 destination_info = {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
@@ -122,7 +122,7 @@ class CachedExplicitSingularityContainerResolver(SingularityCliContainerResolver
             return None
 
     def __str__(self):
-        return f"CachedExplicitSingularityContainerResolver[cache_directory={self.cache_directory_path}]"
+        return f"CachedExplicitSingularityContainerResolver[cache_directory={self.cache_directory.path}]"
 
 
 class CachedExplicitApptainerContainerResolver(

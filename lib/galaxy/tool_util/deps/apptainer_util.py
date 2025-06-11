@@ -25,18 +25,20 @@ log = logging.getLogger(__name__)
 
 
 def _glibc_version() -> Optional[packaging.version.Version]:
+    version = None
     try:
         # First line should always be 'ldd (dist-specific) VERSION'
         glibc_version = commands.execute(["ldd", "--version"]).splitlines()[0].split()[-1]
-        return packaging.version.parse(glibc_version)
+        version = packaging.version.parse(glibc_version)
     except Exception as exc:
         log.warning(f"Unable to get glibc version: {str(exc)}")
+    return version
 
 
 def apptainer_url() -> str:
     glibc_version = _glibc_version()
     el = "el8"
-    if glibc_version >= packaging.version.parse("2.34"):
+    if glibc_version and glibc_version >= packaging.version.parse("2.34"):
         el = "el9"
     url = APPTAINER_URL_TEMPLATE.format(version=APPTAINER_VERSION, el=el, arch=platform.machine())
     return url
@@ -86,8 +88,10 @@ class ApptainerContext(installable.InstallableContext):
 
     @property
     def parent_path(self) -> Optional[str]:
+        prefix = None
         if self.apptainer_prefix:
-            return os.path.dirname(os.path.abspath(self.apptainer_prefix))
+            prefix = os.path.dirname(os.path.abspath(self.apptainer_prefix))
+        return prefix
 
 
 def install_apptainer(apptainer_context: ApptainerContext) -> int:
@@ -97,6 +101,7 @@ def install_apptainer(apptainer_context: ApptainerContext) -> int:
     fetch_url = apptainer_url()
     log.info("Installing Apptainer, this may take several minutes.")
     log.info(f"Fetching from: {fetch_url}")
+    assert apptainer_context.apptainer_prefix
     try:
         os.makedirs(apptainer_context.apptainer_prefix)
         download_to_file(fetch_url, tarball_path)
@@ -108,3 +113,4 @@ def install_apptainer(apptainer_context: ApptainerContext) -> int:
         if os.path.exists(tarball_path):
             os.remove(tarball_path)
     log.info(f"Apptainer installed to: {apptainer_context.apptainer_prefix}")
+    return 0
