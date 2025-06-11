@@ -31,7 +31,7 @@ advanced use cases for both users and developers.
   space, clarity, and flexibility. Notably, you can now drop files directly onto the “Paste Table”
   form, and work with rules in a more consistent, central location.
 - **Better error handling and feedback**. The new interfaces provide clear feedback and tailored
-  warnings for duplicate identifiers and unpaired datasets, streamlining the user experience.
+  warnings for duplicate identifiers and unpaired datasets, improving the user experience.
 - **Refinements and bug fixes**. Includes fixes for extension handling, improved abstractions for
   collection input adaptation, and refactoring for easier future maintenance.
 
@@ -48,7 +48,7 @@ Here's an example of one of the new collection builders in action:
 Add ZIP explorer to import individual files from local or remote ZIP archives
 --------
 
-Galaxy now features a ZIP explorer, streamlining the process of importing individual files from both
+Galaxy now features a ZIP explorer, refining the process of importing individual files from both
 local and remote ZIP archives.
 
 - **ZIP explorer integration**. Browse the contents of ZIP files directly in Galaxy and select only the
@@ -77,7 +77,7 @@ interface.
   button on each dataset, which opens a tabbed interface for all dataset-related actions.
 - **Tabbed layout**. Key functionality — such as viewing metadata, peeking into file contents,
   accessing datatypes/permissions and more — is now organized into clear, intuitive tabs.
-- **Improved usability**. This update provides a one stop shop for dataset management,
+- **Consolidated interface**. This update provides a one stop shop for dataset management,
   reducing clutter and confusion from multiple buttons and options.
 
 This change enhances consistency across the Galaxy interface and offers a more intuitive experience
@@ -92,7 +92,7 @@ Allow Rerunning Workflows with the Same Inputs and Parameters
 --------
 
 Users can now easily rerun any workflow with the exact same inputs and parameters as a previous run - 
-with a simple click of the new "Rerun" button in the workflow invocation view. This feature streamlines
+with a simple click of the new "Rerun" button in the workflow invocation view. This feature simplifies
 reproducibility and troubleshooting by letting you repeat analyses with a single click. The workflow run
 form also detects and notifies of any changes to inputs compared to the original run!
 [`#20032 <https://github.com/galaxyproject/galaxy/pull/20032>`__]
@@ -151,7 +151,7 @@ environments.
 Bulk Actions for Workflows
 --------
 
-Galaxy 25.0 introduces support for selecting multiple workflows to perform actions in bulk, streamlining
+Galaxy 25.0 introduces support for selecting multiple workflows to perform actions in bulk, simplifying
 workflow management for users.
 
 - **Selectable workflow cards**. In the "My Workflows" tab, users can now select multiple workflows
@@ -230,8 +230,7 @@ a clearer, more accessible experience for users launching and managing interacti
 
 - **Separate from standard tools**. Previously nested under a section in the main Tools panel,
   Interactive Tools are now listed under their own Activity Bar activity — making them easier to find.
-- **Visual icons for each tool**. Each IT is represented with its own icon for faster recognition
-  and improved usability.
+- **Visual icons for each tool**. Each IT is represented with its own icon for faster recognition.
 - **Live status indicators**. A badge on the Activity icon shows how many ITs are currently running.
 
 This update helps distinguish Interactive Tools from standard tools, improves discoverability,
