@@ -8,6 +8,7 @@ from abc import (
 )
 from typing import (
     Any,
+    Callable,
     Container,
     List,
     NamedTuple,
@@ -269,3 +270,87 @@ def get_cache_directory_cacher(cacher_type: Optional[str]) -> Type[CacheDirector
     }
     cacher_type = cacher_type or "uncached"
     return cachers[cacher_type]
+
+
+def list_docker_cached_mulled_images(
+    namespace: Optional[str] = None,
+    hash_func: Literal["v1", "v2"] = "v2",
+    resolution_cache: Optional[ResolutionCache] = None,
+) -> List[CachedTarget]:
+    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:cached_images"
+    if resolution_cache is not None and cache_key in resolution_cache:
+        images_and_versions = resolution_cache.get(cache_key)
+    else:
+        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+        try:
+            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
+        except subprocess.CalledProcessError:
+            log.info("Call to `docker images` failed, configured container resolution may be broken")
+            return []
+        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
+        if resolution_cache is not None:
+            resolution_cache[cache_key] = images_and_versions
+
+    def output_line_to_image(line: str) -> Optional[CachedTarget]:
+        image = identifier_to_cached_target(line, hash_func, namespace=namespace)
+        return image
+
+    name_filter = get_filter(namespace)
+    sorted_images = version_sorted(list(filter(name_filter, images_and_versions)))
+    raw_images = (output_line_to_image(_) for _ in sorted_images)
+    return [i for i in raw_images if i is not None]
+
+
+def identifier_to_cached_target(
+    identifier: str, hash_func: Literal["v1", "v2"], namespace: Optional[str] = None
+) -> Optional[CachedTarget]:
+    if ":" in identifier:
+        image_name, version = identifier.rsplit(":", 1)
+    else:
+        image_name = identifier
+        version = None
+
+    if not version or version == "latest":
+        version = None
+
+    image: Optional[CachedTarget] = None
+    prefix = ""
+    if namespace is not None:
+        prefix = f"quay.io/{namespace}/"
+    if image_name.startswith(f"{prefix}mulled-v1-"):
+        if hash_func == "v2":
+            return None
+
+        hash = image_name
+        build = None
+        if version and version.isdigit():
+            build = version
+        image = CachedV1MulledImageMultiTarget(hash, build, identifier)
+    elif image_name.startswith(f"{prefix}mulled-v2-"):
+        if hash_func == "v1":
+            return None
+
+        version_hash = None
+        build = None
+        if version:
+            if "-" in version:
+                version_hash, build = version.rsplit("-", 1)
+            elif version.isdigit():
+                version_hash, build = None, version
+            else:
+                log.debug(f"Unparsable mulled image tag encountered [{version}]")
+
+        image = CachedV2MulledImageMultiTarget(image_name, version_hash, build, identifier)
+    else:
+        build = None
+        if version and "--" in version:
+            version, build = split_tag(version)
+        if prefix and image_name.startswith(prefix):
+            image_name = image_name[len(prefix) :]
+        image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
+    return image
+
+
+def get_filter(namespace: Optional[str]) -> Callable[[str], bool]:
+    prefix = "quay.io/" if namespace is None else f"quay.io/{namespace}"
+    return lambda name: name.startswith(prefix) and name.count("/") == 2
