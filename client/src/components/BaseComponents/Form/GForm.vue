@@ -20,5 +20,3 @@ defineExpose({
         <slot></slot>
     </form>
 </template>
-
-<style scoped lang="scss"></style>
