@@ -1,5 +1,7 @@
 """The module defines the abstract interface for resolving container images for tool execution."""
 
+import logging
+import os
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -38,6 +40,8 @@ if TYPE_CHECKING:
         ToolInfo,
     )
     from ..requirements import ContainerDescription
+
+log = logging.getLogger(__name__)
 
 
 class CachedMulledImageSingleTarget(NamedTuple):
