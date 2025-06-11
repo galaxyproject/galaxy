@@ -56,7 +56,8 @@ local and remote ZIP archives.
 - **Support for local and remote archives**. Import from ZIP files on your computer or by providing a
   remote URL.
 - **Improved user experience**. The intuitive interface simplifies file selection and import, making it
-  easier to work with compressed data.
+  easier to work with compressed data. It also recognizes some known archive structures like RO-Crate
+  and Galaxy export archives, and will display additional useful information in those cases.
 
 These enhancements make importing data from ZIP archives more flexible and efficient, further reducing
 barriers to working with large or complex datasets.
