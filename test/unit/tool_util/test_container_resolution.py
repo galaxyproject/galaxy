@@ -54,7 +54,7 @@ def test_container_registry(container_registry, mocker):
 
 
 def test_docker_container_resolver_detects_docker_cli_absent(appinfo, mocker):
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value=None)
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.which", return_value=None)
     resolver = CachedMulledDockerContainerResolver(appinfo)
     assert resolver._cli_available is False
 
@@ -69,14 +69,14 @@ def test_docker_container_resolver_detects_docker_cli(appinfo, mocker):
 
 
 def test_cached_docker_container_docker_cli_absent_resolve(appinfo, mocker) -> None:
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value=None)
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.which", return_value=None)
     resolver = CachedMulledDockerContainerResolver(appinfo)
     assert resolver.cli_available is False
     assert resolver.resolve(enabled_container_types=[], tool_info=ToolInfo()) is None
 
 
 def test_docker_container_docker_cli_absent_resolve(appinfo, mocker):
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value=None)
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.which", return_value=None)
     resolver = MulledDockerContainerResolver(appinfo)
     assert resolver.cli_available is False
     requirement = ToolRequirement(name="samtools", version="1.10", type="package")
@@ -92,7 +92,7 @@ def test_docker_container_docker_cli_absent_resolve(appinfo, mocker):
 
 
 def test_docker_container_docker_cli_exception_resolve(appinfo, mocker):
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/bin/docker")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.which", return_value="/bin/docker")
     resolver = MulledDockerContainerResolver(appinfo)
     assert resolver.cli_available is True
     requirement = ToolRequirement(name="samtools", version="1.10", type="package")
