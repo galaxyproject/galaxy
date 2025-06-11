@@ -15,8 +15,8 @@ const selectors = {
     invocationSummary: ".invocation-overview",
     bAlertStub: "balert-stub",
     spanElement: "span",
-    invocationReportTab: '[titleitemclass="invocation-report-tab"]',
-    invocationExportTab: '[titleitemclass="invocation-export-tab"]',
+    invocationReportTab: ".invocation-report-tab",
+    invocationExportTab: ".invocation-export-tab",
     fullPageHeading: "anonymous-stub[h1='true']",
 };
 
