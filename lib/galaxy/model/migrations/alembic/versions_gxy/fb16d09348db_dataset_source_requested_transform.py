@@ -1,7 +1,7 @@
-"""Add requested_actions column to dataset_source table
+"""Add requested_transform column to dataset_source table
 
 Revision ID: fb16d09348db
-Revises: 3af58c192752
+Revises: a91ea1d97111
 Create Date: 2025-06-11 08:48:10.124300
 """
 
@@ -15,13 +15,13 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "fb16d09348db"
-down_revision = "3af58c192752"
+down_revision = "a91ea1d97111"
 branch_labels = None
 depends_on = None
 
 # database object names used in this revision
 table_name = "dataset_source"
-column_name = "requested_actions"
+column_name = "requested_transform"
 
 
 def upgrade():
