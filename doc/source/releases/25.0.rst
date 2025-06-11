@@ -1103,6 +1103,9 @@ Fixes
   `Pull Request 20333`_
 .. bug
 
+* Fix unit tests returning values
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20413`_
 * Update pulsar-galaxy-lib to 0.15.8
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 20419`_
