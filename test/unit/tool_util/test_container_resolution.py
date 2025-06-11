@@ -115,7 +115,7 @@ def test_docker_container_docker_cli_exception_resolve(appinfo, mocker):
 def test_cached_singularity_container_resolver_uncached(mocker):
     mocker.patch("os.listdir", return_value=SINGULARITY_IMAGES)
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.safe_makedirs")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.safe_makedirs")
     resolver = CachedMulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/"))
     requirement = ToolRequirement(name="foo", version="1.0", type="package")
     tool_info = ToolInfo(requirements=[requirement])
@@ -128,7 +128,7 @@ def test_cached_singularity_container_resolver_uncached(mocker):
 def test_cached_singularity_container_resolver_dir_mtime_cached(mocker):
     mocker.patch("os.listdir", return_value=SINGULARITY_IMAGES)
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.safe_makedirs")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.safe_makedirs")
     mocker.patch("os.stat", return_value=mocker.Mock(st_mtime=42))
     resolver = CachedMulledSingularityContainerResolver(
         app_info=mocker.Mock(container_image_cache_path="/"), cache_directory_cacher_type="dir_mtime"

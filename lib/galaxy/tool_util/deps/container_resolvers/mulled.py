@@ -27,9 +27,9 @@ from . import (
     CachedV1MulledImageMultiTarget,
     CachedV2MulledImageMultiTarget,
     CliContainerResolver,
+    list_docker_cached_mulled_images,
     ResolutionCache,
     SingularityCliContainerResolver,
-    list_docker_cached_mulled_images,
 )
 from ..conda_util import CondaTarget
 from ..container_classes import (
