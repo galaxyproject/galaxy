@@ -590,6 +590,7 @@ registration:
 
 tool_form:
   selectors:
+    tool_version: '[data-description="galaxy tool version"]'
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
@@ -781,6 +782,14 @@ workflow_editor:
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
+  changes:
+    selectors:
+      action_insert_data_input: ".action[data-type='step-insert'][data-step-type='data_input']"
+      action_insert_data_collection_input: ".action[data-type='step-insert'][data-step-type='data_collection_input']"
+      action_insert_parameter: ".action[data-type='step-insert'][data-step-type='parameter_input']"
+      action_set_license: ".action[data-type='set-license']"
+      action_set_annotation: ".action[data-type='set-annotation']"
+
   tool_bar:
     selectors:
       _: ".workflow-editor-toolbar"
@@ -801,6 +810,16 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
+      attributes: "#activity-workflow-editor-attributes"
+      changes: "#activity-workflow-undo-redo"
+      upgrade_all: "#activity-workflow-upgrade"
+      best_practices: "#activity-workflow-best-practices"
+
+  best_practices:
+    selectors:
+      section_input_metadata: '[data-description="linting input metadata"]'
+      item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
+
   comment:
     selectors:
       _: ".workflow-editor-comment"

@@ -31,6 +31,10 @@ export class UndoRedoAction {
     destroy() {
         return;
     }
+
+    get dataAttributes(): Record<string, string> {
+        return {};
+    }
 }
 
 export class LazyUndoRedoAction extends UndoRedoAction {
