@@ -321,10 +321,13 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 convert_spaces_to_tabs=space_to_tab,
             )
             transform = []
+            requested_transform = [{"action": "datatype_groom"}]
             if converted_newlines:
                 transform.append({"action": "to_posix_lines"})
+                requested_transform.append({"action": "to_posix_lines"})
             if converted_spaces:
                 transform.append({"action": "spaces_to_tabs"})
+                requested_transform.append({"action": "spaces_to_tabs"})
             if link_data_only:
                 # Never alter a file that will not be copied to Galaxy's local file store.
                 if datatype.dataset_content_needs_grooming(path):
@@ -392,6 +395,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 transform.append({"action": "to_posix_lines"})
             if space_to_tab:
                 transform.append({"action": "spaces_to_tabs"})
+            source_dict["requested_transform"] = transform
             effective_state = "deferred"
             registry = upload_config.registry
             ext = sniff.guess_ext_from_file_name(name, registry=registry, requested_ext=requested_ext)

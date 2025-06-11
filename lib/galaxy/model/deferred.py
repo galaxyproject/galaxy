@@ -122,7 +122,22 @@ class DatasetInstanceMaterializer:
             materialized_dataset.state = Dataset.states.OK
             materialized_dataset.deleted = False
             materialized_dataset.purged = False
-            materialized_dataset.sources = [s.copy() for s in dataset.sources]
+            copied_sources = [s.copy() for s in dataset.sources]
+            for source in copied_sources:
+                if source.requested_transform is None and source.transform is not None:
+                    # legacy dataset being copied, new paradigm is to treat transform as
+                    # what happened and requested_transform as what should happen - so lets
+                    # swap these in this new dataset.
+                    source.requested_transform = source.transform
+
+                # we have not applied any transforms yet, so we can clear these
+                source.transform = None
+
+                # lets ensure we record we thought through requested_transform - so we use
+                # an empty list instead of None.
+                source.requested_transform = source.requested_transform or []
+
+            materialized_dataset.sources = copied_sources
             materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
         transient_paths = None
@@ -215,16 +230,19 @@ class DatasetInstanceMaterializer:
             for source_hash in target_source.hashes:
                 _validate_hash(path, source_hash, "downloaded file")
 
-        transform = target_source.transform or []
+        requested_transforms = target_source.requested_transform or []
+        applied_transforms = []
         to_posix_lines = False
         spaces_to_tabs = False
         datatype_groom = False
-        for transform_action in transform:
+        for transform_action in requested_transforms:
             action = transform_action["action"]
             if action == "to_posix_lines":
                 to_posix_lines = True
+                applied_transforms.append(transform_action)
             elif action == "spaces_to_tabs":
                 spaces_to_tabs = True
+                applied_transforms.append(transform_action)
             elif action == "datatype_groom":
                 datatype_groom = True
             else:
@@ -234,8 +252,16 @@ class DatasetInstanceMaterializer:
             convert_result = convert_fxn(path, False)
             assert convert_result.converted_path
             path = convert_result.converted_path
-        if datatype_groom:
+        if datatype_groom and datatype.dataset_content_needs_grooming(path):
             datatype.groom_dataset_content(path)
+            applied_transforms.append(
+                {
+                    "action": "datatype_groom",
+                    "datatype_ext": datatype.ext,
+                    "datatype_class": datatype.__class__.__name__,
+                }
+            )
+
             # Grooming is not reproducible (e.g. temporary paths in BAM headers), so invalidate hashes
             dataset.hashes = []
 
@@ -243,6 +269,8 @@ class DatasetInstanceMaterializer:
             for dataset_hash in dataset.hashes:
                 _validate_hash(path, dataset_hash, "dataset contents")
 
+        for materialized_source in dataset.sources:
+            materialized_source.transform = applied_transforms
         return path
 
     def _find_closest_dataset_source(self, dataset: Dataset) -> DatasetSource:
