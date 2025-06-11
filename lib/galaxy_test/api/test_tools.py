@@ -1056,6 +1056,41 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert len(filenames) == 3, filenames
             assert len(set(filenames)) <= 2, filenames
 
+    @skip_without_tool("cat_list")
+    @skip_without_tool("__SORTLIST__")
+    def test_run_cat_list_hdca_sort_order_respecrted_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_cat_list_hdca_sort_order_respecrted_use_cached_job
+        ) as history_id:
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, wait=True, contents=[("C", "3"), ("B", "2"), ("A", "1")]
+            ).json()
+            hdca_not_sorted_id = fetch_response["output_collections"][0]["id"]
+            result = self._run(
+                tool_id="__SORTLIST__",
+                history_id=history_id,
+                inputs={"input": {"src": "hdca", "id": hdca_not_sorted_id}},
+                assert_ok=True,
+            )
+            hdca_sorted_id = result["output_collections"][0]["id"]
+            self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_sorted_id)
+            hdca_sorted = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_sorted_id)
+            hdca_not_sorted = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca_not_sorted_id
+            )
+            assert hdca_sorted["elements"][0]["object"]["name"] == "A"
+            assert hdca_not_sorted["elements"][0]["object"]["name"] == "C"
+            self._run("cat_list", history_id, inputs={"input1": {"src": "hdca", "id": hdca_sorted_id}}, assert_ok=True)
+            job = self._run(
+                "cat_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca_not_sorted_id}},
+                assert_ok=True,
+                use_cached_job=True,
+            )
+            job_details = self.dataset_populator.get_job_details(job["jobs"][0]["id"], full=True).json()
+            assert not job_details["copied_from_job_id"]
+
     @skip_without_tool("cat1")
     @requires_new_history
     def test_run_cat1_use_cached_job_from_public_history(self):
