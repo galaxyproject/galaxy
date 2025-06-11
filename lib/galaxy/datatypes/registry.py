@@ -516,56 +516,6 @@ class Registry:
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
 
-    def get_preferred_visualization(self, datatype_extension):
-        """
-        Get the preferred visualization mapping for a specific datatype extension.
-        Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.
-
-        Preferred visualizations are defined inline within each datatype definition in the
-        datatypes_conf.xml configuration file. These mappings determine which visualization plugin
-        should be used by default when viewing datasets of a specific type.
-
-        If no direct mapping exists for the extension, this method will walk up the inheritance
-        chain to find a preferred visualization from a parent datatype class.
-
-        Example configuration:
-        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
-            <visualization plugin="igv" />
-        </datatype>
-        """
-        direct_mapping = self.visualization_mappings.get(datatype_extension)
-        if direct_mapping:
-            return direct_mapping
-
-        current_datatype = self.get_datatype_by_extension(datatype_extension)
-        if not current_datatype:
-            return None
-
-        # Use the same mapping approach as the datatypes API for consistency
-        from galaxy.managers.datatypes import view_mapping
-
-        mapping_data = view_mapping(self)
-
-        current_class_name = mapping_data.ext_to_class_name.get(datatype_extension)
-        if not current_class_name:
-            return None
-
-        current_class_mappings = mapping_data.class_to_classes.get(current_class_name, {})
-
-        # Find parent extensions that have preferred visualizations
-        for ext, visualization_mapping in self.visualization_mappings.items():
-            if ext == datatype_extension:
-                continue
-
-            parent_class_name = mapping_data.ext_to_class_name.get(ext)
-            if parent_class_name and parent_class_name in current_class_mappings:
-                self.log.debug(
-                    f"Found inherited preferred visualization '{visualization_mapping['visualization']}' for datatype '{datatype_extension}' from parent '{ext}'"
-                )
-                return visualization_mapping
-
-        return None
-
     def get_all_visualization_mappings(self):
         """
         Get all datatype to visualization mappings.

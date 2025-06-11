@@ -26,6 +26,7 @@ from galaxy.managers.datatypes import (
     DatatypesEDAMDetailsDict,
     DatatypesMap,
     DatatypeVisualizationMappingsList,
+    get_preferred_visualization,
     view_converters,
     view_edam_data,
     view_edam_formats,
@@ -258,7 +259,7 @@ class FastAPIDatatypes:
             result["converters"] = list(converters.keys())
 
         # Add preferred visualization if any and if the plugin is available
-        preferred_viz = self.datatypes_registry.get_preferred_visualization(datatype)
+        preferred_viz = get_preferred_visualization(self.datatypes_registry, datatype)
         if preferred_viz:
             plugin_name = preferred_viz["visualization"]
 
