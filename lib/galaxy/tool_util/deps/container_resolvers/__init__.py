@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+
 from typing_extensions import Literal
 
 from galaxy.util import (
@@ -23,7 +24,6 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-
 from ..apptainer_util import (
     ApptainerContext,
     DEFAULT_APPTAINER_COMMAND,
@@ -219,9 +219,7 @@ class SingularityCliContainerResolver(CliContainerResolver):
     cli = "singularity"
     cmd = None
 
-    def __init__(
-        self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs
-    ) -> None:
+    def __init__(self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs) -> None:
         super().__init__(app_info=app_info, **kwargs)
         self.hash_func = hash_func
         self.cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
@@ -229,7 +227,10 @@ class SingularityCliContainerResolver(CliContainerResolver):
         cache_directory_path = kwargs.get("cache_directory")
         if not cache_directory_path:
             assert self.app_info.container_image_cache_path
-            cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
+            cache_subdirectory = "mulled" if "mulled" in self.resolver_type else "explicit"
+            cache_directory_path = os.path.join(
+                self.app_info.container_image_cache_path, "singularity", cache_subdirectory
+            )
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
         safe_makedirs(self.cache_directory.path)
 
@@ -239,9 +240,7 @@ class ApptainerCliContainerResolver(SingularityCliContainerResolver):
     cli = "apptainer"
     cmd = None
 
-    def __init__(
-        self, app_info: "AppInfo", auto_init: bool = False, **kwargs
-    ) -> None:
+    def __init__(self, app_info: "AppInfo", auto_init: bool = False, **kwargs) -> None:
         super().__init__(app_info=app_info, **kwargs)
         self.auto_init = string_as_bool(auto_init)
         apptainer_exec = kwargs.get("exec")

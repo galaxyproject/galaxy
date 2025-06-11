@@ -10,8 +10,11 @@ from typing import (
 )
 
 from galaxy.util.commands import shell
-from . import ContainerResolver
-from . import CliContainerResolver
+from . import (
+    ApptainerCliContainerResolver,
+    ContainerResolver,
+    SingularityCliContainerResolver,
+)
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
 
@@ -72,20 +75,10 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
         return None
 
 
-# TODO: should this derive from SingularityCliContainerResolver?
-class CachedExplicitSingularityContainerResolver(CliContainerResolver):
+class CachedExplicitSingularityContainerResolver(SingularityCliContainerResolver):
     resolver_type = "cached_explicit_singularity"
     container_type = "singularity"
     cli = "singularity"
-
-    def __init__(self, app_info: "AppInfo", **kwargs) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        cache_directory_path = kwargs.get("cache_directory")
-        if not cache_directory_path:
-            assert self.app_info.container_image_cache_path
-            cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "explicit")
-        self.cache_directory_path = cache_directory_path
-        os.makedirs(self.cache_directory_path, exist_ok=True)
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", install: bool = False, **kwds
@@ -130,6 +123,17 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
 
     def __str__(self):
         return f"CachedExplicitSingularityContainerResolver[cache_directory={self.cache_directory_path}]"
+
+
+class CachedExplicitApptainerContainerResolver(
+    ApptainerCliContainerResolver, CachedExplicitSingularityContainerResolver
+):
+    resolver_type = "cached_explicit_apptainer"
+    container_type = "singularity"
+    cli = "apptainer"
+
+    def __str__(self):
+        return f"CachedExplicitApptainerContainerResolver[cache_directory={self.cache_directory.path},apptainer_exec={self.apptainer_exec}]"
 
 
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
@@ -257,6 +261,7 @@ __all__ = (
     "ExplicitContainerResolver",
     "ExplicitSingularityContainerResolver",
     "CachedExplicitSingularityContainerResolver",
+    "CachedExplicitApptainerContainerResolver",
     "FallbackContainerResolver",
     "FallbackSingularityContainerResolver",
     "FallbackNoRequirementsContainerResolver",

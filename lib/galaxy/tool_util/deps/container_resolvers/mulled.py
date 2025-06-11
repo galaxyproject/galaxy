@@ -27,15 +27,15 @@ from galaxy.util import (
 )
 from galaxy.util.commands import shell
 from . import (
+    ApptainerCliContainerResolver,
     CacheDirectory,
     CachedMulledImageSingleTarget,
     CachedTarget,
     CachedV1MulledImageMultiTarget,
     CachedV2MulledImageMultiTarget,
     CliContainerResolver,
-    SingularityCliContainerResolver,
-    ApptainerCliContainerResolver,
     ResolutionCache,
+    SingularityCliContainerResolver,
 )
 from ..conda_util import CondaTarget
 from ..container_classes import (
@@ -405,7 +405,11 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell, cmd=self.cmd,
+            targets,
+            self.cache_directory,
+            hash_func=self.hash_func,
+            shell=self.shell,
+            cmd=self.cmd,
         )
 
     def __str__(self) -> str:
