@@ -13,11 +13,8 @@ from typing import (
     Container as TypingContainer,
     Dict,
     List,
-    NamedTuple,
     Optional,
-    Type,
     TYPE_CHECKING,
-    Union,
 )
 
 from requests import Session
@@ -25,20 +22,20 @@ from typing_extensions import Literal
 
 from galaxy.tool_util.deps.installable import ensure_installed as deps_ensure_installed
 from galaxy.util import (
-    safe_makedirs,
     string_as_bool,
     unicodify,
-    which,
 )
 from galaxy.util.commands import shell
 from . import (
-    ContainerResolver,
+    CacheDirectory,
+    CachedMulledImageSingleTarget,
+    CachedTarget,
+    CachedV1MulledImageMultiTarget,
+    CachedV2MulledImageMultiTarget,
+    CliContainerResolver,
+    SingularityCliContainerResolver,
+    ApptainerCliContainerResolver,
     ResolutionCache,
-)
-from ..apptainer_util import (
-    ApptainerContext,
-    DEFAULT_APPTAINER_COMMAND,
-    install_apptainer,
 )
 from ..conda_util import CondaTarget
 from ..container_classes import (
@@ -75,114 +72,6 @@ if TYPE_CHECKING:
     )
 
 log = logging.getLogger(__name__)
-
-
-class CachedMulledImageSingleTarget(NamedTuple):
-    package_name: str
-    version: Optional[str]
-    build: Optional[str]
-    image_identifier: str
-
-
-class CachedV1MulledImageMultiTarget(NamedTuple):
-    hash: str
-    build: Optional[str]
-    image_identifier: str
-
-
-class CachedV2MulledImageMultiTarget(NamedTuple):
-    image_name: str
-    version_hash: Optional[str]
-    build: Optional[str]
-    image_identifier: str
-
-    @property
-    def package_hash(self) -> str:
-        # Make this work for Singularity file name or fully qualified Docker repository
-        # image names.
-        image_name = self.image_name
-        if "/" not in image_name:
-            return image_name
-        else:
-            return image_name.rsplit("/")[-1]
-
-
-CachedTarget = Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]
-
-
-class CacheDirectory(metaclass=ABCMeta):
-    def __init__(self, path: str, hash_func: Literal["v1", "v2"] = "v2") -> None:
-        self.path = path
-        self.hash_func = hash_func
-
-    def _list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
-        contents = os.listdir(self.path)
-        sorted_images = version_sorted(contents)
-        raw_images = (identifier_to_cached_target(name, self.hash_func) for name in sorted_images)
-        return [i for i in raw_images if i is not None]
-
-    @abstractmethod
-    def list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
-        """Generate a list of cached, mulled images in the cache."""
-
-    @abstractmethod
-    def invalidate_cache(self) -> None:
-        """Invalidate the cache."""
-
-
-class UncachedCacheDirectory(CacheDirectory):
-    cacher_type = "uncached"
-
-    def list_cached_mulled_images_from_path(
-        self,
-    ) -> List[CachedTarget]:
-        return self._list_cached_mulled_images_from_path()
-
-    def invalidate_cache(self) -> None:
-        pass
-
-
-class DirMtimeCacheDirectory(CacheDirectory):
-    cacher_type = "dir_mtime"
-
-    def __init__(self, path: str, **kwargs):
-        super().__init__(path, **kwargs)
-        self.invalidate_cache()
-
-    def __get_mtime(self) -> float:
-        return os.stat(self.path).st_mtime
-
-    def __cache(self) -> None:
-        self.__contents = self._list_cached_mulled_images_from_path()
-        self.__mtime = self.__get_mtime()
-        log.debug(f"Cached images in path {self.path} at directory mtime {self.__mtime}")
-
-    def list_cached_mulled_images_from_path(
-        self,
-    ) -> List[CachedTarget]:
-        mtime = self.__get_mtime()
-        if mtime != self.__mtime:
-            if mtime < self.__mtime:
-                log.warning(
-                    f"Modification time '{mtime}' of cache directory '{self.path}' is older than previous "
-                    f"modification time '{self.__mtime}'! Cache directory will be recached"
-                )
-            self.__cache()
-        return self.__contents
-
-    def invalidate_cache(self) -> None:
-        self.__mtime = -1.0
-        self.__contents = []
-
-
-def get_cache_directory_cacher(cacher_type: Optional[str]) -> Type[CacheDirectory]:
-    # these can become a separate module and use plugin_config if we need more
-    cachers: Dict[str, Type[CacheDirectory]] = {
-        UncachedCacheDirectory.cacher_type: UncachedCacheDirectory,
-        DirMtimeCacheDirectory.cacher_type: DirMtimeCacheDirectory,
-    }
-    cacher_type = cacher_type or "uncached"
-    return cachers[cacher_type]
 
 
 def list_docker_cached_mulled_images(
@@ -358,7 +247,7 @@ def singularity_cached_container_description(
     if not os.path.exists(cache_directory.path):
         return None
 
-    cached_images = cache_directory.list_cached_mulled_images_from_path()
+    cached_images = cache_directory.list_cached_images_from_path()
     image = find_best_matching_cached_image(targets, cached_images, hash_func)
 
     container = None
@@ -469,71 +358,6 @@ def targets_to_mulled_name(
         unresolved_cache.add(name)
 
     return name
-
-
-class CliContainerResolver(ContainerResolver):
-    container_type = "docker"
-    cli = "docker"
-
-    def __init__(self, app_info: "AppInfo", **kwargs) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        self._cli_available = bool(which(self.cli))
-
-    @property
-    def cli_available(self) -> bool:
-        return self._cli_available
-
-    @cli_available.setter
-    def cli_available(self, value: bool) -> None:
-        if not value:
-            log.info(
-                f"{self.cli} CLI not available, cannot list or pull images in Galaxy process. Does not impact kubernetes."
-            )
-        self._cli_available = value
-
-
-class SingularityCliContainerResolver(CliContainerResolver):
-    container_type = "singularity"
-    cli = "singularity"
-    cmd = None
-
-    def __init__(
-        self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs
-    ) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        self.hash_func = hash_func
-        self.cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
-        cacher_class = get_cache_directory_cacher(self.cache_directory_cacher_type)
-        cache_directory_path = kwargs.get("cache_directory")
-        if not cache_directory_path:
-            assert self.app_info.container_image_cache_path
-            cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
-        self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
-        safe_makedirs(self.cache_directory.path)
-
-
-class ApptainerCliContainerResolver(SingularityCliContainerResolver):
-    container_type = "singularity"
-    cli = "apptainer"
-    cmd = None
-
-    def __init__(
-        self, app_info: "AppInfo", auto_init: bool = False, **kwargs
-    ) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        self.auto_init = string_as_bool(auto_init)
-        apptainer_exec = kwargs.get("exec")
-        if self.auto_init:
-            apptainer_prefix = kwargs.get("prefix")
-            if apptainer_prefix is None and apptainer_exec is None:
-                assert self.app_info.apptainer_prefix
-                apptainer_prefix = self.app_info.apptainer_prefix
-            apptainer_context = ApptainerContext(apptainer_prefix=apptainer_prefix, apptainer_exec=apptainer_exec)
-            deps_ensure_installed(apptainer_context, install_apptainer, self.auto_init)
-            apptainer_exec = apptainer_context.apptainer_exec
-            self._cli_available = True
-        self.apptainer_exec = apptainer_exec
-        self.cmd = apptainer_exec or DEFAULT_APPTAINER_COMMAND
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):

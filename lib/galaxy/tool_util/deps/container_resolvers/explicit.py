@@ -11,7 +11,7 @@ from typing import (
 
 from galaxy.util.commands import shell
 from . import ContainerResolver
-from .mulled import CliContainerResolver
+from . import CliContainerResolver
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
 
