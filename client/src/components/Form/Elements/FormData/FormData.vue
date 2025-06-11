@@ -571,7 +571,7 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
-const collectionTypesWithBuilders = [
+const collectionTypesWithBuilders: CollectionBuilderType[] = [
     "list",
     "list:paired",
     "paired",
@@ -581,8 +581,8 @@ const collectionTypesWithBuilders = [
 ];
 
 /** Allowed collection types for collection creation */
-const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    collectionTypesWithBuilders.includes(collectionType)
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType: string) =>
+    (collectionTypesWithBuilders as string[]).includes(collectionType)
 );
 
 const currentCollectionTypeTab = ref<CollectionBuilderType | undefined>(
