@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
-import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -35,12 +34,14 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     invocationId: string;
+    tab?: "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    tab: undefined,
     isSubworkflow: false,
 });
 
@@ -63,16 +64,14 @@ const uniqueMessages = computed(() => {
 });
 
 // after the report tab is first activated, no longer lazy-render it from then on
-const reportActive = ref(false);
+const reportActive = computed({
+    get: () => props.tab === "report",
+    set: () => {
+        // TODO: router handle here..
+        reportLazy.value = false;
+    },
+});
 const reportLazy = ref(true);
-watch(
-    () => reportActive.value,
-    (newValue) => {
-        if (newValue) {
-            reportLazy.value = false;
-        }
-    }
-);
 
 const workflowStore = useWorkflowStore();
 const tabsDisabled = computed(
@@ -92,13 +91,6 @@ const disabledTabTooltip = computed(() => {
     } else {
         return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
-});
-
-const invocationTabs = ref<BTabs>();
-const scrollableDiv = computed(() => invocationTabs.value?.$el.querySelector(".tab-content") as HTMLElement);
-const isScrollable = ref(false);
-useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
-    isScrollable.value = scrollSize.height >= clientSize.height + 1;
 });
 
 const invocation = computed(() => {
@@ -212,7 +204,15 @@ const jobStatesStr = computed(() => {
 watch(
     () => props.invocationId,
     async (id) => {
-        invocationLoaded.value = false;
+        // Prevent the page from reloading when you switch tabs. We set the boolean as soon as we know that
+        // the invocation exists in the store, and with this, when we change tabs there isn't a refresh every time.
+        const storedInvocation = invocationStore.getInvocationById(id);
+        if (storedInvocation) {
+            invocationLoaded.value = true;
+        } else {
+            invocationLoaded.value = false;
+        }
+
         try {
             await invocationStore.fetchInvocationById({ id });
             invocationLoaded.value = true;
@@ -301,6 +301,7 @@ async function onCancel() {
                     :history-id="invocation.history_id" />
             </template>
         </WorkflowNavigationTitle>
+
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
@@ -343,11 +344,63 @@ async function onCancel() {
                 </div>
             </template>
         </WorkflowAnnotation>
-        <BTabs
-            ref="invocationTabs"
-            class="mt-1 d-flex flex-column overflow-auto"
-            :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
-            <BTab key="0" title="Overview" active>
+
+        <BNav pills class="mb-2 p-2 bg-light border-bottom">
+            <BNavItem title="Overview" :active="!props.tab" :to="`/workflows/invocations/${props.invocationId}`">
+                Overview
+            </BNavItem>
+            <BNavItem
+                title="Steps"
+                :active="props.tab === 'steps'"
+                :to="`/workflows/invocations/${props.invocationId}/steps`">
+                Steps
+            </BNavItem>
+            <BNavItem
+                title="Inputs"
+                :active="props.tab === 'inputs'"
+                :to="`/workflows/invocations/${props.invocationId}/inputs`">
+                Inputs
+            </BNavItem>
+            <BNavItem
+                title="Outputs"
+                :active="props.tab === 'outputs'"
+                :to="`/workflows/invocations/${props.invocationId}/outputs`">
+                Outputs
+            </BNavItem>
+            <BNavItem
+                title="Report"
+                class="invocation-report-tab"
+                :active="props.tab === 'report'"
+                :to="`/workflows/invocations/${props.invocationId}/report`"
+                :disabled="tabsDisabled">
+                Report
+            </BNavItem>
+            <BNavItem
+                title="Export"
+                class="invocation-export-tab"
+                :active="props.tab === 'export'"
+                :to="`/workflows/invocations/${props.invocationId}/export`"
+                :disabled="tabsDisabled">
+                Export
+            </BNavItem>
+            <BNavItem
+                title="Metrics"
+                :active="props.tab === 'metrics'"
+                :to="`/workflows/invocations/${props.invocationId}/metrics`">
+                Metrics
+            </BNavItem>
+            <BNavItem
+                v-if="canSubmitFeedback && stepsJobsSummary && storeId"
+                title="Debug"
+                class="invocation-debug-tab"
+                :active="props.tab === 'debug'"
+                :to="`/workflows/invocations/${props.invocationId}/debug`">
+                Debug
+            </BNavItem>
+        </BNav>
+
+        <div class="mt-1 d-flex flex-column overflow-auto">
+            <div v-if="!props.tab">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
@@ -356,44 +409,51 @@ async function onCancel() {
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
-            </BTab>
-            <BTab v-if="!isSubworkflow" title="Steps" lazy>
+            </div>
+            <div v-if="props.tab === 'steps'">
+                <BAlert v-if="isSubworkflow" variant="info" show>
+                    <span v-localize>Subworkflow steps are not available.</span>
+                </BAlert>
                 <WorkflowInvocationSteps
-                    v-if="invocation && storeId"
+                    v-else-if="invocation && storeId"
                     :invocation="invocation"
                     :store-id="storeId"
                     :is-full-page="props.isFullPage" />
-            </BTab>
-            <WorkflowInvocationInputOutputTabs :invocation="invocation" :terminal="invocationAndJobTerminal" />
-            <BTab
-                v-if="!props.isSubworkflow"
-                title="Report"
-                title-item-class="invocation-report-tab"
-                :disabled="tabsDisabled"
-                :lazy="reportLazy"
-                :active.sync="reportActive">
-                <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
-            </BTab>
-            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
+            </div>
+            <WorkflowInvocationInputOutputTabs
+                :invocation="invocation"
+                :terminal="invocationAndJobTerminal"
+                :tab="props.tab" />
+            <div v-if="props.tab === 'report'">
+                <BAlert v-if="isSubworkflow" variant="info" show>
+                    <span v-localize>Subworkflow steps are not available.</span>
+                </BAlert>
+                <InvocationReport v-else-if="invocationStateSuccess" :invocation-id="invocation.id" />
+            </div>
+            <div v-if="props.tab === 'export'">
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
-            </BTab>
-            <BTab title="Metrics" :lazy="true">
+            </div>
+            <div v-if="props.tab === 'metrics'">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
-            </BTab>
-            <BTab
-                v-if="canSubmitFeedback && stepsJobsSummary && storeId"
-                title="Debug"
-                title-item-class="invocation-debug-tab">
+            </div>
+            <div v-if="props.tab === 'debug'">
+                <BAlert v-if="!canSubmitFeedback || !stepsJobsSummary || !storeId" variant="info" show>
+                    <span v-localize>Debug information is not available.</span>
+                </BAlert>
                 <WorkflowInvocationFeedback
+                    v-else
                     :invocation-id="invocation.id"
                     :steps-jobs-summary="stepsJobsSummary"
                     :store-id="storeId"
                     :invocation="invocation"
                     :invocation-messages="uniqueMessages" />
-            </BTab>
-            <template v-slot:tabs-end>
+            </div>
+
+            <!-- TODO: Deal with the nav end section -->
+
+            <!-- <template v-slot:tabs-end>
                 <div class="ml-auto d-flex align-items-center">
                     <BBadge
                         v-if="tabsDisabled"
@@ -415,8 +475,8 @@ async function onCancel() {
                         Cancel Workflow
                     </GButton>
                 </div>
-            </template>
-        </BTabs>
+            </template> -->
+        </div>
     </div>
     <BAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
