@@ -272,7 +272,7 @@ Release Notes
 Release Team
 ===========================================================
 
-Release manager:  `Ahmed Awan <https://github.com/ahmedhamidawan>`__
+Release manager:  `Ahmed Awan <https://github.com/ahmedhamidawan>`__, `John Davis <https://github.com/jdavcs>`__
 
 Release testing:
 
