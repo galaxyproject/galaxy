@@ -223,6 +223,29 @@ config/file_sources_conf.yml.sample
 config/galaxy.yml.sample:galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-  mapping.galaxy.mapping.enable_tool_document_cache.desc has changed from
+
+   ::
+
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly faster startup
+    times. The tool cache is backed by a SQLite database, which cannot
+    be stored on certain network disks. The cache location is configurable
+    with the ``tool_cache_data_dir`` tag in tool config files.
+
+   to
+
+   ::
+
+    This option is deprecated, and the tool document cache will be removed
+    in the next release.
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly faster startup
+    times. The tool cache is backed by a SQLite database, which cannot
+    be stored on certain network disks. The cache location is configurable
+    with the ``tool_cache_data_dir`` tag in tool config files.
+
+
 -  mapping.galaxy.mapping.helpsite_url.required has changed from
 
    ::
@@ -257,7 +280,13 @@ config/galaxy.yml.sample:galaxy
 
 Deprecation Notices
 ===========================================================
-Add content or drop section.
+
+**Deprecation of the tool document cache in Galaxy release 25.1**
+  The ``ToolDocumentCache`` (enabled via the config option: ``enable_tool_document_cache``) is
+  deprecated and will be removed in the next Galaxy release (25.1). It is based on the unmaintained
+  `sqlitedict <https://github.com/piskvorky/sqlitedict>`__ library and was not enabled on any of the
+  UseGalaxy.* servers. Its only known usage was within AnVIL, which has since dropped support for it in
+  `galaxyproject/galaxy-helm#438 <https://github.com/galaxyproject/galaxy-helm/pull/438>`__.
 
 Developer Notes
 ===========================================================
