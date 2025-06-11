@@ -632,6 +632,8 @@ export default {
             help,
             setHelp,
             logoUrl,
+            // make component look like an API workflow with logo_url alias for logoUrl
+            logo_url: logoUrl,
             setLogoUrl,
             tags,
             setTags,

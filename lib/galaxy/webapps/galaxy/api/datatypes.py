@@ -229,6 +229,9 @@ class FastAPIDatatypes:
             "display_in_upload": datatype in self.datatypes_registry.upload_file_formats,
             "mimetype": self.datatypes_registry.get_mimetype_by_extension(datatype),
             "is_binary": getattr(dt_object, "is_binary", False),
+            "display_behavior": (
+                dt_object.get_display_behavior() if hasattr(dt_object, "get_display_behavior") else None
+            ),
         }
 
         # Add composite files if applicable

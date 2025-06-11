@@ -66,6 +66,11 @@ class DatatypeDetails(BaseModel):
         title="Upload warning",
         description="End-user information regarding potential pitfalls with this upload type.",
     )
+    display_behavior: Optional[str] = Field(
+        default=None,
+        title="Display behavior",
+        description="How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)",
+    )
 
 
 class DatatypesMap(BaseModel):

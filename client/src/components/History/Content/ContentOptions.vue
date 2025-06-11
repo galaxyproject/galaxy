@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
-import { faStop } from "font-awesome-6";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -112,14 +114,14 @@ function onDisplay($event: MouseEvent) {
         <BButton
             v-if="isDataset"
             v-b-tooltip.hover
-            title="Display"
+            title="View"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <icon icon="eye" />
+            <ScanEye absolute-stroke-width :size="16" />
         </BButton>
         <BButton
             v-if="writable && isHistoryItem"

@@ -343,6 +343,11 @@ class Registry:
                             "description": description,
                             "description_url": description_url,
                             "upload_warning": upload_warning(upload_warning_template),
+                            "display_behavior": (
+                                datatype_instance.get_display_behavior()
+                                if hasattr(datatype_instance, "get_display_behavior")
+                                else None
+                            ),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
