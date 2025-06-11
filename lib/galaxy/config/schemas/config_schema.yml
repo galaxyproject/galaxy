@@ -887,6 +887,8 @@ mapping:
         default: false
         required: false
         desc: |
+          This option is deprecated, and the tool document cache will be removed
+          in the next release.
           Whether to enable the tool document cache. This cache stores
           expanded XML strings. Enabling the tool cache results in slightly faster startup
           times. The tool cache is backed by a SQLite database, which cannot
