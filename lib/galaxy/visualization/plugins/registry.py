@@ -31,6 +31,8 @@ class VisualizationsRegistry:
             used in the visualization template
     """
 
+    #: base directory of visualizations
+    BASE_DIR = "static/plugins/visualizations"
     #: base url to controller endpoint
     BASE_URL = "visualizations"
     #: built-in visualizations
@@ -57,7 +59,7 @@ class VisualizationsRegistry:
         self.template_cache_dir = template_cache_dir
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
-        self.directories = [os.path.join(app.config.root, "static/plugins/visualizations")]
+        self.directories = [os.path.join(app.config.root, self.BASE_DIR)]
         self._load_plugins()
 
     def _load_plugins(self):
@@ -102,9 +104,6 @@ class VisualizationsRegistry:
                         if self._is_plugin(plugin_subpath):
                             yield plugin_subpath
 
-    # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
-    # TODO: add template helpers specific to the plugins
-    # TODO: some sort of url_for for these plugins
     def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
