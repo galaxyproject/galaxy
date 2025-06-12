@@ -5,10 +5,10 @@ from typing import Optional
 
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.model import (
-    Dataset,
     DatasetSource,
     DatasetSourceHash,
     History,
+    HistoryDatasetAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -150,25 +150,26 @@ class FetchUploadToolAction(BaseUploadToolAction):
 def _precreate_fetched_hdas(trans: WorkRequestContext, history: History, target, outputs):
     for item in target.get("elements", []):
         name = item.get("name", None)
-        replacement_dataset: Optional[Dataset] = None
-        if item.get("url") and item.get("hashes"):
+        replacement_hda: Optional[HistoryDatasetAssociation] = None
+        if item.get("url") and item.get("hashes") and not item.get("extra_files"):
             dataset_hashes = [
                 DatasetSourceHash(hash_function=item["hash_function"], hash_value=item["hash_value"])
                 for item in item["hashes"]
             ]
-            transforms = []
+            requested_transforms = [{"action": "datatype_groom"}]
             if item.get("space_to_tab"):
-                transforms.append({"action": "spaces_to_tabs"})
+                requested_transforms.append({"action": "spaces_to_tabs"})
             if item.get("to_posix_lines"):
-                transforms.append({"action": "to_posix_lines"})
-            dataset_sources = [DatasetSource(source_uri=item["url"], transform=transforms)]
-            replacement_dataset = trans.app.hda_manager.get_replacement_dataset(
+                requested_transforms.append({"action": "to_posix_lines"})
+            dataset_sources = [DatasetSource(source_uri=item["url"], requested_transform=requested_transforms)]
+            replacement_hda = trans.app.hda_manager.get_replacement_dataset(
                 trans.sa_session,
                 user=trans.user,
                 dataset_sources=dataset_sources,
                 dataset_hashes=dataset_hashes,
                 extension=item.get("ext"),
                 object_store_id=history.preferred_object_store_id,  # need to get the real object store id somehow
+                created_from_basename=item.get("created_from_basename"),
             )
         if name is None:
             src = item.get("src", None)
@@ -190,10 +191,13 @@ def _precreate_fetched_hdas(trans: WorkRequestContext, history: History, target,
         )
         outputs.append(data)
         item["object_id"] = data.id
-        if replacement_dataset:
+        if replacement_hda:
             item["replacement"] = {
-                "path": replacement_dataset.get_file_name(),
-                "transform": replacement_dataset.sources[0].transform,
+                "name": name,
+                "dbkey": dbkey,
+                "ext": file_type,
+                "state": replacement_hda.dataset.state,  # must be OK, get_replacement_dataset ensures this
+                "replacement_hda_id": replacement_hda.id,
             }
 
 
