@@ -450,6 +450,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 recorded_requested_transform = "requested_transform" in source_attrs
                 if recorded_requested_transform:
                     source_obj.requested_transform = source_attrs["requested_transform"]
+                    if dataset_instance.state != "deferred":
+                        source_obj.transform = transform_actions
                 else:
                     # legacy transform actions - if this is a deferred dataset treat as requested
                     # transform actions
