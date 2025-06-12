@@ -1828,9 +1828,12 @@ class NavigatesGalaxy(HasDriver):
         selection_component = self.components.preferences.object_store_selection
         selection_component.option_cards.wait_for_present()
         button = selection_component.option_card_select(object_store_id=storage_id)
-        button.wait_for_and_click()
+        if not button.is_absent and button.is_clickable:
+            button.wait_for_and_click()
         if self.find_element_by_selector(".btn-primary"):
             self.find_element_by_selector(".btn-primary").click()
+        if not selection_component.confirm_button.is_absent:
+            selection_component.confirm_button.wait_for_and_click()
         selection_component.option_cards.wait_for_absent_or_hidden()
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
