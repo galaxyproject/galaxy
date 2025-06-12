@@ -2804,7 +2804,7 @@ def raw_to_galaxy(
         source = DatasetSource()
         source.source_uri = location
         # TODO: validate this...
-        source.transform = as_dict_value.get("transform")
+        source.requested_transform = as_dict_value.get("transform")
         dataset.sources.append(source)
 
         for hash_name in HASH_NAMES:
