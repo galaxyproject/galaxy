@@ -1,8 +1,8 @@
 import { faFileImport, faGlobe, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref } from "vue";
 
-import { type WorkflowSummary } from "@/api/workflows";
-import { type CardAttributes } from "@/components/Common/GCard.types";
+import type { WorkflowSummary } from "@/api/workflows";
+import type { CardAttributes } from "@/components/Common/GCard.types";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";

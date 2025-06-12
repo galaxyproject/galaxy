@@ -215,6 +215,9 @@
   <tool file="collection_paired_or_list_paired_input.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
+  <tool file="collection_record_test_two_files.xml" />
+  <tool file="collection_paired_or_unpaired.xml" />
+  <tool file="collection_list_paired_or_unpaired.xml" />
   <tool file="discover_sort_by.xml" />
   <tool file="discover_default_ext.xml" />
   <tool file="expression_forty_two.xml" />
@@ -302,6 +305,7 @@
   <tool file="explicit_container.xml" />
   <tool file="explicit_singularity_container.xml"/>
   <tool file="simple_constructs.yml" />
+  <tool file="cat_user_defined.yml" />
   <tool file="from_work_dir_glob.xml" />
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
@@ -330,5 +334,5 @@
   <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
   <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
-
+  <tool file="${model_tools_path}/split_paired_and_unpaired.xml" />
 </toolbox>

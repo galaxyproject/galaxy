@@ -5,8 +5,10 @@ import tempfile
 from json import dumps
 from typing import (
     Any,
+    cast,
     Dict,
     List,
+    Literal,
     Optional,
     Union,
 )
@@ -121,7 +123,11 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
-        tool = trans.app.toolbox.get_tool(**get_kwds)
+        tool: Optional[Tool] = None
+        if tool_uuid and trans.user:
+            tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
+        if not tool:
+            tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:
             log.debug(f"Not found tool with kwds [{get_kwds}]")
             raise exceptions.ToolMissingException("Tool not found.")
@@ -170,6 +176,9 @@ class ToolsService(ServiceBase):
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
         input_format = str(payload.get("input_format", "legacy"))
+        if input_format not in ("legacy", "21.01"):
+            raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
+        input_format = cast(Literal["legacy", "21.01"], input_format)
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         vars = tool.handle_input(

@@ -11,6 +11,7 @@
     </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+        <param type="data" name="replacement" optional="true" label="Replace failed elements with this dataset" help="If provided, failed elements will be replaced with this dataset"/>
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >

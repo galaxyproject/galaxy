@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Histories</Heading>
             <div v-if="!userStore.isAnonymous">
                 <GButton
                     size="small"

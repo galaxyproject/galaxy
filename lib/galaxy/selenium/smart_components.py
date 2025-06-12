@@ -78,6 +78,9 @@ class SmartTarget:
     def wait_for_and_click(self, **kwds):
         return self._has_driver.wait_for_and_click(self._target, **kwds)
 
+    def wait_for_and_double_click(self, **kwds):
+        return self._has_driver.wait_for_and_double_click(self._target, **kwds)
+
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
 

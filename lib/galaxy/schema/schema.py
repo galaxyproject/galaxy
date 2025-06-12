@@ -50,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -668,7 +669,7 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time: Optional[datetime] = CreateTimeField
+    create_time: datetime = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrlField
     tags: TagCollection
@@ -1715,6 +1716,11 @@ class CreateNewCollectionPayload(Model):
         default=None,
         description="The ID of the library folder that will contain the collection. Required if `instance_type=library`.",
     )
+    fields_: Optional[Union[str, List[FieldDict]]] = Field(
+        default=[],
+        description="List of fields to create for this collection. Set to 'auto' to guess fields from identifiers.",
+        alias="fields",
+    )
 
 
 class ModelStoreFormat(str, Enum):
@@ -2737,6 +2743,7 @@ class RoleDefinitionModel(Model):
     description: RoleDescriptionField
     user_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="User IDs", default=[])
     group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
+    role_type: Literal["admin", "user_tool_create", "user_tool_execute"] = "admin"
 
 
 class RoleListResponse(RootModel):

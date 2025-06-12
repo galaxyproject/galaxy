@@ -18,6 +18,7 @@ from typing_extensions import (
     Literal,
 )
 
+from galaxy.tool_util_models.tool_source import JavascriptRequirement
 from galaxy.util import (
     asbool,
     xml_text,
@@ -309,11 +310,13 @@ def parse_requirements_from_lists(
     software_requirements: List[Union[ToolRequirement, Dict[str, Any]]],
     containers: Iterable[Dict[str, Any]],
     resource_requirements: Iterable[Dict[str, Any]],
-) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement]]:
+    javascript_requirements: List[Dict[str, Any]],
+) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement], List[JavascriptRequirement]]:
     return (
         ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
         resource_requirements_from_list(resource_requirements),
+        [JavascriptRequirement(**r) for r in javascript_requirements],
     )
 
 
@@ -363,7 +366,8 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
     if parse_resources:
         resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
-        return requirements, containers, resources
+        javascript_requirements: List[Dict[str, Any]] = []
+        return requirements, containers, resources, javascript_requirements
 
     return requirements, containers
 

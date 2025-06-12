@@ -49,19 +49,19 @@ steps:
 
     - element: "#current-history-panel div.content-item .download-btn"
       title: "Download your dataset"
-      intro: "You can download every dataset by using the floppy disc symbol."
-
-    - element: "#current-history-panel div.content-item .params-btn"
-      title: "Even more information"
-      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
-      preclick: true
+      intro: "You can download every dataset by using the floppy disk symbol."
 
     - element: "#current-history-panel div.content-item .display-btn"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
       preclick: true
 
-    - element: "#current-history-panel div.content-item .edit-btn"
+    - component: dataset_view.details_tab
+      title: "Even more information"
+      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
+      preclick: true
+
+    - component: dataset_view.edit_tab
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
       preclick: true

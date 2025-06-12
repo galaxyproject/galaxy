@@ -9,6 +9,7 @@ const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 const CircularDependencyPlugin = require("circular-dependency-plugin");
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -29,6 +30,7 @@ const modulesExcludedFromLibs = [
     "vega-embed",
     "vega-lite",
     "ace-builds",
+    "schema-to-ts",
 ].join("|");
 
 const buildDate = new Date();
@@ -71,6 +73,9 @@ module.exports = (env = {}, argv = {}) => {
                 querystring: require.resolve("querystring-es3"),
                 util: require.resolve("util/"),
                 assert: require.resolve("assert/"),
+                url: false,
+                perf_hooks: false,
+                buffer: require.resolve("buffer/"),
             },
             alias: {
                 vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
@@ -97,6 +102,12 @@ module.exports = (env = {}, argv = {}) => {
                         test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
                         chunks: "all",
                         priority: -10,
+                    },
+                    monaco: {
+                        test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+                        name: "monaco",
+                        chunks: "all",
+                        enforce: true,
                     },
                 },
             },
@@ -177,7 +188,24 @@ module.exports = (env = {}, argv = {}) => {
                     ],
                 },
                 {
+                    test: /\.css$/,
+                    include: /monaco-editor/,
+                    use: [
+                        {
+                            loader: MiniCssExtractPlugin.loader,
+                            options: {},
+                        },
+                        {
+                            loader: "css-loader",
+                        },
+                        {
+                            loader: "postcss-loader",
+                        },
+                    ],
+                },
+                {
                     test: /\.(sa|sc|c)ss$/,
+                    exclude: /monaco-editor/,
                     use: [
                         {
                             loader: MiniCssExtractPlugin.loader,
@@ -211,6 +239,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.ya?ml$/,
                     use: "yaml-loader",
                 },
+                {
+                    test: /\.ttf$/,
+                    type: "asset/resource",
+                },
             ],
         },
         resolveLoader: {
@@ -238,6 +270,11 @@ module.exports = (env = {}, argv = {}) => {
                 __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
                 __license__: JSON.stringify(require("./package.json").license),
             }),
+            new webpack.DefinePlugin({
+                // Define empty stubs for required modules
+                "node:stream": JSON.stringify({}),
+                "node:url": JSON.stringify({}),
+            }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
@@ -249,6 +286,27 @@ module.exports = (env = {}, argv = {}) => {
                     hash: stats.hash,
                     epoch: Date.parse(buildDate),
                 }),
+            }),
+            new MonacoWebpackPlugin({
+                languages: ["yaml", "javascript"],
+                customLanguages: [
+                    {
+                        label: "yaml",
+                        entry: "monaco-yaml",
+                        worker: {
+                            id: "monaco-yaml/yamlWorker",
+                            entry: "monaco-yaml/yaml.worker",
+                        },
+                    },
+                    {
+                        label: "typescript",
+                        entry: "vs/language/typescript/ts.worker", // TypeScript worker
+                        worker: {
+                            id: "vs/language/typescript/ts.worker",
+                            entry: "vs/language/typescript/ts.worker",
+                        },
+                    },
+                ],
             }),
             new ForkTsCheckerWebpackPlugin({
                 async: false,

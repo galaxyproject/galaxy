@@ -3,7 +3,7 @@ import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { type HistorySummary, type ObjectExportTaskResponse } from "@/api";
+import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,

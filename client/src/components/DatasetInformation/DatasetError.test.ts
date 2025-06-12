@@ -5,7 +5,7 @@ import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";

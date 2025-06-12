@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type ExportRecord } from "./models/exportRecordModel";
+import type { ExportRecord } from "./models/exportRecordModel";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";

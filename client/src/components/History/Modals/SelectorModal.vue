@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormGroup, BModal } from "bootstrap-vue";
+import { BButton, BFormGroup } from "bootstrap-vue";
 import { orderBy } from "lodash";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
@@ -10,8 +10,8 @@ import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
-import Heading from "@/components/Common/Heading.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
@@ -52,7 +52,7 @@ const selectedHistories = ref<PinnedHistory[]>([]);
 const filter = ref("");
 const busy = ref(false);
 const showAdvanced = ref(false);
-const modal = ref<BModal | null>(null);
+const modal = ref<InstanceType<typeof GModal> | null>(null);
 
 const { pinnedHistories } = storeToRefs(useHistoryStore());
 
@@ -85,7 +85,7 @@ function selectHistory(history: HistorySummary) {
         }
     } else {
         emit("selectHistory", history);
-        modal.value?.hide();
+        modal.value?.hideModal();
     }
 }
 
@@ -94,7 +94,7 @@ function selectHistories() {
     emit("selectHistories", selectedHistories.value);
     // set local value equal to updated value from store
     selectedHistories.value = pinnedHistories.value;
-    modal.value?.hide();
+    modal.value?.hideModal();
 }
 
 function setFilterValue(newFilter: string, newValue: string) {
@@ -105,7 +105,6 @@ function setFilterValue(newFilter: string, newValue: string) {
 // https://github.com/galaxyproject/galaxy/issues/17711
 const modalBodyClasses = computed(() => {
     return [
-        "history-selector-modal-body",
         showAdvanced.value
             ? "history-selector-modal-body-allow-overflow"
             : "history-selector-modal-body-prevent-overflow",
@@ -114,90 +113,68 @@ const modalBodyClasses = computed(() => {
 </script>
 
 <template>
-    <div>
-        <BModal
-            ref="modal"
-            v-model="propShowModal"
-            content-class="history-selector-modal-content"
-            v-bind="$attrs"
-            :body-class="modalBodyClasses"
-            static
-            centered
-            hide-footer
-            v-on="$listeners">
-            <template v-slot:modal-title>
-                <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
+    <GModal
+        ref="modal"
+        size="small"
+        fixed-height
+        :show.sync="propShowModal"
+        :class="modalBodyClasses"
+        :title="localize(title)">
+        <BFormGroup :description="localize('Filter histories')">
+            <FilterMenu
+                ref="filterMenuRef"
+                name="Histories"
+                placeholder="search histories"
+                :filter-class="HistoriesFilters"
+                :filter-text.sync="filter"
+                :loading="busy"
+                :show-advanced.sync="showAdvanced" />
+        </BFormGroup>
+
+        <HistoryList
+            v-show="!showAdvanced"
+            :multiple="props.multiple"
+            :selected-histories="selectedHistories"
+            :additional-options="props.additionalOptions"
+            :show-modal.sync="propShowModal"
+            in-modal
+            :filter="filter"
+            :loading.sync="busy"
+            @selectHistory="selectHistory"
+            @setFilter="setFilterValue">
+            <template v-slot:modal-button-area>
+                <span class="d-flex align-items-center">
+                    <a
+                        v-if="multiple"
+                        v-b-tooltip.noninteractive.hover
+                        :title="localize('Click here to reset selection')"
+                        class="mr-2"
+                        href="javascript:void(0)"
+                        @click="selectedHistories = []">
+                        <i>{{ selectedHistories.length }} histories selected</i>
+                    </a>
+                    <BButton
+                        v-if="multiple"
+                        v-localize
+                        data-description="change selected histories button"
+                        :disabled="pinnedSelectedEqual || showAdvanced"
+                        variant="primary"
+                        @click="selectHistories">
+                        Change Selected
+                    </BButton>
+                    <span v-else v-localize> Click a history to switch to it </span>
+                </span>
             </template>
-
-            <BFormGroup :description="localize('Filter histories')">
-                <FilterMenu
-                    ref="filterMenuRef"
-                    name="Histories"
-                    placeholder="search histories"
-                    :filter-class="HistoriesFilters"
-                    :filter-text.sync="filter"
-                    :loading="busy"
-                    :show-advanced.sync="showAdvanced" />
-            </BFormGroup>
-
-            <HistoryList
-                v-show="!showAdvanced"
-                :multiple="props.multiple"
-                :selected-histories="selectedHistories"
-                :additional-options="props.additionalOptions"
-                :show-modal.sync="propShowModal"
-                in-modal
-                :filter="filter"
-                :loading.sync="busy"
-                @selectHistory="selectHistory"
-                @setFilter="setFilterValue">
-                <template v-slot:modal-button-area>
-                    <span class="d-flex align-items-center">
-                        <a
-                            v-if="multiple"
-                            v-b-tooltip.noninteractive.hover
-                            :title="localize('Click here to reset selection')"
-                            class="mr-2"
-                            href="javascript:void(0)"
-                            @click="selectedHistories = []">
-                            <i>{{ selectedHistories.length }} histories selected</i>
-                        </a>
-                        <BButton
-                            v-if="multiple"
-                            v-localize
-                            data-description="change selected histories button"
-                            :disabled="pinnedSelectedEqual || showAdvanced"
-                            variant="primary"
-                            @click="selectHistories">
-                            Change Selected
-                        </BButton>
-                        <span v-else v-localize> Click a history to switch to it </span>
-                    </span>
-                </template>
-            </HistoryList>
-        </BModal>
-    </div>
+        </HistoryList>
+    </GModal>
 </template>
 
-<style>
-/** NOTE: Not using `<style scoped> here because these classes are
-`BModal` `body-class` and `content-class` and so don't seem to work
-with scoped or lang="scss" */
-
-.history-selector-modal-body {
-    display: flex;
-    flex-direction: column;
-}
-
+<style scoped lang="scss">
 .history-selector-modal-body-allow-overflow {
     overflow: visible;
 }
 
 .history-selector-modal-body-prevent-overflow {
     overflow: hidden;
-}
-
-.history-selector-modal-content {
-    max-height: 80vh !important;
 }
 </style>

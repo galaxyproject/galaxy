@@ -49,7 +49,9 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(
+    base.ModelManager[Dataset], secured.AccessibleManagerMixin[Dataset], deletable.PurgableManagerMixin
+):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -326,7 +328,7 @@ U = TypeVar("U", bound=DatasetInstance)
 
 class DatasetAssociationManager(
     base.ModelManager[U],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[U],
     secured.OwnableManagerMixin[U],
     deletable.PurgableManagerMixin,
 ):
@@ -756,7 +758,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         """
         dataset = item
         if dataset.creating_job:
-            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            tool = self.app.toolbox.tool_for_job(
+                dataset.creating_job, exact=False, check_access=True, user=context.get("user")
+            )
             if tool and tool.is_workflow_compatible:
                 return True
         return False

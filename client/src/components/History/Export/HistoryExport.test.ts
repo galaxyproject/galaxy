@@ -4,10 +4,10 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { type HistorySummary } from "@/api";
+import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,

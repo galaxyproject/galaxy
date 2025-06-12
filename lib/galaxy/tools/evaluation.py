@@ -35,6 +35,7 @@ from galaxy.structured_app import (
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import determine_output_format
+from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -127,6 +128,7 @@ class ToolEvaluator:
     app: MinimalToolApp
     job: model.Job
     materialize_datasets: bool = True
+    param_dict_style = "regular"
 
     def __init__(self, app: MinimalToolApp, tool: "Tool", job, local_working_directory):
         self.app = app
@@ -152,7 +154,7 @@ class ToolEvaluator:
 
         job = self.job
         incoming = {p.name: p.value for p in job.parameters}
-        incoming = self.tool.params_from_strings(incoming, self.app)
+        incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
 
@@ -174,25 +176,35 @@ class ToolEvaluator:
         # replace materialized objects back into tool input parameters
         self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
 
-        if get_special:
-            special = get_special()
-            if special:
-                out_data["output_file"] = special
-
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update(model.User.user_template_environment(self._user))
-
-        # Build params, done before hook so hook can use
-        self.param_dict = self.build_param_dict(
-            incoming,
-            inp_data,
-            out_data,
-            output_collections=out_collections,
-        )
         # late update of format_source outputs
         self._eval_format_source(job, inp_data, out_data)
 
-        self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+        if self.param_dict_style == "regular":
+            if get_special:
+                special = get_special()
+                if special:
+                    out_data["output_file"] = special
+
+            # These can be passed on the command line if wanted as $__user_*__
+
+            incoming.update(model.User.user_template_environment(self._user))
+
+            # Build params, done before hook so hook can use
+            self.param_dict = self.build_param_dict(
+                incoming,
+                inp_data,
+                out_data,
+                output_collections=out_collections,
+            )
+            self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+
+        else:
+            self.param_dict = self.build_param_dict(
+                incoming,
+                inp_data,
+                out_data,
+                output_collections=out_collections,
+            )
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
@@ -905,6 +917,64 @@ class PartialToolEvaluator(ToolEvaluator):
             self.environment_variables,
             self.interactivetools,
         )
+
+
+class UserToolEvaluator(ToolEvaluator):
+
+    param_dict_style = "json"
+
+    def _build_config_files(self):
+        pass
+
+    def _build_param_file(self):
+        pass
+
+    def _build_version_command(self):
+        pass
+
+    def __sanitize_param_dict(self, param_dict):
+        pass
+
+    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+        """
+        Build the dictionary of parameters for substituting into the command
+        line. We're effecively building the CWL job object here.
+        """
+        compute_environment = self.compute_environment
+        job_working_directory = compute_environment.working_directory()
+        from galaxy.workflow.modules import to_cwl
+
+        hda_references: List[model.HistoryDatasetAssociation] = []
+        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+        return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
+
+    def _build_command_line(self):
+        if self.tool.base_command:
+            base_command = self.tool.base_command
+            arguments = self.tool.arguments or []
+            bound_arguments = [*base_command]
+            for argument in arguments:
+                if (
+                    bound_argument := do_eval(argument, self.param_dict["inputs"], outdir=self.param_dict["outdir"])
+                ) != argument:
+                    # variables will be shell-escaped, but you can of course still
+                    # write invalid things into the literal portion of the arguments.
+                    # The upside is that we can use `>`, `|`.
+                    # Maybe we should wrap this in `sh -c` or something like that though.
+                    bound_argument = shlex.quote(str(bound_argument))
+                if bound_argument is not None:
+                    bound_arguments.append(bound_argument)
+            command_line = " ".join(bound_arguments)
+        elif self.tool.shell_command:
+            command_line = do_eval(
+                self.tool.shell_command,
+                self.param_dict["inputs"],
+                javascript_requirements=self.tool.javascript_requirements,
+                outdir=self.param_dict["outdir"],
+            )
+        else:
+            raise Exception("Tool must define shell_command or base_command")
+        self.command_line = command_line
 
 
 class RemoteToolEvaluator(ToolEvaluator):

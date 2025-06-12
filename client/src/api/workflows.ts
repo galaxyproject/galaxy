@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";

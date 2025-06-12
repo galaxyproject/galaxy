@@ -8,12 +8,27 @@ import os
 import re
 import sys
 from functools import reduce
-from typing import Set
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Union,
+)
 
 import numpy as np
 import yaml
 
 from galaxy.util import parse_xml
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetInstance,
+        Job,
+    )
+    from galaxy.structured_app import MinimalManagerApp
+    from galaxy.tools import Tool
 
 __version__ = "1.1.0"
 
@@ -66,7 +81,7 @@ class ScannerError(Exception):
     pass
 
 
-def get_keys_from_dict(dl, keys_list):
+def get_keys_from_dict(dl: Union[Dict, List], keys_list: List) -> None:
     """
     This function builds a list using the keys from nest dictionaries
     """
@@ -1251,30 +1266,15 @@ def str_to_bytes(size):
     return curr_size
 
 
-def importer(test):
-    """
-    Uses Mock galaxy for testing or real galaxy for production
-
-    @type test: bool
-    @param test: True when being run from a test
-    """
-    global JobDestination
-    global JobMappingException
-    if test:
-
-        class JobDestination:
-            def __init__(self, *kwd):
-                self.id = kwd.get("id")
-                self.nativeSpec = kwd.get("params")["nativeSpecification"]
-                self.runner = kwd.get("runner")
-
-        from galaxy.jobs.mapper import JobMappingException
-    else:
-        from galaxy.jobs import JobDestination
-        from galaxy.jobs.mapper import JobMappingException
-
-
-def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, job_conf_path=None):
+def map_tool_to_destination(
+    job: "Job",
+    app: "MinimalManagerApp",
+    tool: "Tool",
+    user_email: Optional[str],
+    test: bool = False,
+    path: Optional[str] = None,
+    job_conf_path: Optional[str] = None,
+):
     """
     Dynamically allocate resources
 
@@ -1283,7 +1283,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     @param tool: current tool
 
     @type test: bool
-    @param test: True when running in test mode
+    @param test: unused and ignored
 
     @type path: str
     @param path: path to tool_destinations.yml
@@ -1291,7 +1291,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     @type job_conf_path: str
     @param job_conf_path: path to job_conf.xml
     """
-    importer(test)
+    from galaxy.jobs.mapper import JobMappingException
 
     # set verbose to True by default, just in case (some tests fail without
     # this due to how the tests apparently work)
@@ -1313,7 +1313,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data = {da.name: da.dataset for da in job.input_datasets}
+    inp_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets}
     inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
 
     if config is not None and str(tool.old_id) in config["tools"]:
@@ -1333,13 +1333,6 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     num_input_datasets = 0
 
     if filesize_rule_present or records_rule_present or num_input_datasets_rule_present:
-        # Loop through the database and look for amount of records
-        try:
-            for line in inp_db:
-                if line[0] == ">":
-                    records += 1
-        except NameError:
-            pass
         # Loops through each input file and adds the size to the total
         # or looks through db for records
         for da in inp_data:
@@ -1505,12 +1498,12 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                         matched = True
 
                             elif rule["rule_type"] == "arguments":
-                                options = job.get_param_values(app)
+                                options = tool.get_param_values(job)
                                 matched = True
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
                                     arg_dict = {arg: rule["arguments"][arg]}
-                                    arg_keys_list = []
+                                    arg_keys_list: List = []
                                     get_keys_from_dict(arg_dict, arg_keys_list)
                                     try:
                                         options_value = reduce(dict.__getitem__, arg_keys_list, options)
@@ -1581,6 +1574,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         if fail_message:
             raise JobMappingException(fail_message)
         else:
+            assert matched_rule
             raise JobMappingException(matched_rule["fail_message"])
 
     if config is not None:

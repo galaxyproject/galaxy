@@ -535,7 +535,7 @@ onMounted(() => {
         </div>
 
         <TagsSelectionDialog
-            v-if="showBulkAddTagsModal"
+            :show="showBulkAddTagsModal"
             :title="`Add tags to ${selectedWorkflowIds.length} selected workflow${
                 selectedWorkflowIds.length > 1 ? 's' : ''
             }`"

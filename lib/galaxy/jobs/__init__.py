@@ -97,6 +97,7 @@ from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
+    UserToolEvaluator,
 )
 from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
@@ -983,6 +984,8 @@ class JobConfiguration(ConfiguresHandlers):
 
 
 class HasResourceParameters:
+    tool: Optional["Tool"]
+
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
         # to rule.
@@ -990,8 +993,8 @@ class HasResourceParameters:
         if job is None:
             job = self.get_job()
 
-        app = self.app
-        param_values = job.get_param_values(app, ignore_errors=True)
+        assert self.tool
+        param_values = self.tool.get_param_values(job, ignore_errors=True)
         resource_params = {}
         try:
             resource_params_raw = param_values["__job_resource"]
@@ -1233,7 +1236,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         job = _job or self.get_job()
         param_dict = {p.name: p.value for p in job.parameters}
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
+        param_dict = self.tool.params_from_strings(param_dict)
         return param_dict
 
     @property
@@ -1296,7 +1299,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # search again, now we know tool doesn't require name match
             param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
-            params = self.tool.params_from_strings(param_dump, self.app)
+            params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
@@ -1415,7 +1418,12 @@ class MinimalJobWrapper(HasResourceParameters):
         return job
 
     def _get_tool_evaluator(self, job):
-        klass = PartialToolEvaluator if self.remote_command_line else ToolEvaluator
+        if self.remote_command_line:
+            klass = PartialToolEvaluator
+        elif self.tool.base_command or self.tool.shell_command:
+            klass = UserToolEvaluator
+        else:
+            klass = ToolEvaluator
         tool_evaluator = klass(
             app=self.app,
             job=job,
@@ -1961,8 +1969,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.mark_unhidden()
         elif not purged:
             # If the tool was expected to set the extension, attempt to retrieve it
-            if dataset.ext == "auto":
-                dataset.extension = context.get("ext", "data")
+            context_ext = context.get("ext", "data")
+            if dataset.ext == "auto" or (dataset.ext == "data" and context_ext != "data"):
+                dataset.extension = context_ext
                 dataset.init_meta(copy_from=dataset)
             # if a dataset was copied, it won't appear in our dictionary:
             # either use the metadata from originating output dataset, or call set_meta on the copies
@@ -2693,7 +2702,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         if self.tool and self.tool.id == "upload1":
             job = self.get_job()
-            param_dict = job.get_param_values(self.app)
+            param_dict = self.tool.get_param_values(job)
             return param_dict.get("link_data_only") == "link_to_files"
         else:
             # The tool is unavailable, we try to move the outputs.
@@ -2747,7 +2756,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        tool = self.app.toolbox.tool_for_job(job, check_access=False)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 
@@ -2770,7 +2779,7 @@ class JobWrapper(MinimalJobWrapper):
             job,
             app=app,
             use_persisted_destination=use_persisted_destination,
-            tool=app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True),
+            tool=app.toolbox.tool_for_job(job, exact=True, check_access=False),
         )
         self.queue = queue
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)

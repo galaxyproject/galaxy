@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BModal } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -13,8 +13,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import GButton from "../BaseComponents/GButton.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const CLIPBOARD_MSG = "The link to the invocation has been copied to your clipboard.";
 
@@ -97,10 +98,10 @@ function shareInvocationButtonClicked() {
 </script>
 
 <template>
-    <div v-if="owned">
+    <div v-if="owned" class="d-flex">
         <GButton
-            title="Share Invocation"
             tooltip
+            title="Share Invocation"
             size="small"
             transparent
             color="blue"
@@ -110,11 +111,12 @@ function shareInvocationButtonClicked() {
             <FontAwesomeIcon :icon="faShareAlt" fixed-width />
         </GButton>
 
-        <BModal
-            v-model="modalToggle"
+        <GModal
+            :show.sync="modalToggle"
             title="Share Workflow Invocation"
-            title-tag="h2"
-            ok-title="Share"
+            confirm
+            ok-text="Share"
+            size="small"
             data-description="share invocation modal"
             @ok="makeInvocationShareable">
             <BAlert v-if="error" variant="danger" show>
@@ -124,20 +126,20 @@ function shareInvocationButtonClicked() {
             <LoadingSpan v-else-if="loading" message="Loading details for invocation" />
 
             <div v-else-if="workflow">
-                <p v-localize>
+                <p>
                     To share this invocation, you need to make sure that the workflow
                     <strong>"{{ workflow.name }}"</strong>
                     and history
                     <strong>"{{ historyStore.getHistoryNameById(props.historyId) }}"</strong>
                     are accessible via link.
                 </p>
-                <p v-localize>
+                <p>
                     You can do this by clicking the <i>"Share"</i>
                     button below. This will
                     <strong>make the workflow and history shareable</strong>
                     and generate a link that you can share with others, allowing them to view the invocation.
                 </p>
             </div>
-        </BModal>
+        </GModal>
     </div>
 </template>

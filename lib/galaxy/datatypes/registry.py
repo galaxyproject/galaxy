@@ -103,6 +103,8 @@ class Registry:
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
         self._converters_by_datatype = {}
+        # Datatype visualization mappings
+        self.visualization_mappings: Dict[str, Dict[str, Any]] = {}
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -314,6 +316,24 @@ class Registry:
                             self.datatypes_by_extension[extension].add_composite_file(
                                 name, optional=optional, mimetype=mimetype
                             )
+                        # Check for preferred visualization definitions
+                        for visualization_elem in elem.findall("visualization"):
+                            plugin = visualization_elem.get("plugin", None)
+
+                            # Skip incomplete visualization definitions
+                            if not plugin:
+                                self.log.warning(
+                                    "Incomplete visualization definition (missing plugin) for datatype %s", extension
+                                )
+                                continue
+
+                            # Store the mapping
+                            self.visualization_mappings[extension] = {
+                                "visualization": plugin,
+                            }
+
+                            self.log.debug("Loaded preferred visualization definition: %s -> %s", extension, plugin)
+
                         for _display_app in elem.findall("display"):
                             if elem not in self.display_app_containers:
                                 self.display_app_containers.append(elem)
@@ -323,6 +343,11 @@ class Registry:
                             "description": description,
                             "description_url": description_url,
                             "upload_warning": upload_warning(upload_warning_template),
+                            "display_behavior": (
+                                datatype_instance.get_display_behavior()
+                                if hasattr(datatype_instance, "get_display_behavior")
+                                else None
+                            ),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
@@ -417,6 +442,7 @@ class Registry:
             # Load build sites
             if use_build_sites:
                 self._load_build_sites(root)
+
         self.set_default_values()
 
         def append_to_sniff_order() -> None:
@@ -489,6 +515,32 @@ class Registry:
 
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
+
+    def get_preferred_visualization(self, datatype_extension):
+        """
+        Get the preferred visualization mapping for a specific datatype extension.
+        Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.
+
+        Preferred visualizations are defined inline within each datatype definition in the
+        datatypes_conf.xml configuration file. These mappings determine which visualization plugin
+        should be used by default when viewing datasets of a specific type.
+
+        Example configuration:
+        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
+            <visualization plugin="igv" />
+        </datatype>
+        """
+        return self.visualization_mappings.get(datatype_extension)
+
+    def get_all_visualization_mappings(self):
+        """
+        Get all datatype to visualization mappings.
+        Returns a dictionary where keys are datatype extensions and values are mapping configurations.
+
+        Mappings are defined inline within each datatype definition in the datatypes_conf.xml
+        configuration file and are read-only.
+        """
+        return self.visualization_mappings
 
     def load_datatype_sniffers(
         self,

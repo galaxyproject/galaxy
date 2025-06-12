@@ -52,11 +52,11 @@ def get_posix_file_source_config(
 
 
 def create_file_source_config_file_on(
-    temp_dir,
-    root_dir,
-    include_test_data_dir,
-    required_role_expression,
-    required_group_expression,
+    temp_dir: str,
+    root_dir: str,
+    include_test_data_dir: bool,
+    required_role_expression: str,
+    required_group_expression: str,
     prefer_links: bool = False,
 ):
     file_contents = get_posix_file_source_config(
@@ -72,29 +72,24 @@ class PosixFileSourceSetup:
     _test_driver: GalaxyTestDriver
     root_dir: str
     include_test_data_dir: ClassVar[bool] = False
+    # Require role for access but do not require groups by default on every test to simplify them
+    required_role_expression: str = REQUIRED_ROLE_EXPRESSION
+    required_group_expression: str = ""
+    prefer_links: bool = False
 
     @classmethod
-    def handle_galaxy_config_kwds(
-        cls,
-        config,
-        clazz_=None,
-        # Require role for access but do not require groups by default on every test to simplify them
-        required_role_expression=REQUIRED_ROLE_EXPRESSION,
-        required_group_expression="",
-        prefer_links: bool = False,
-    ):
+    def handle_galaxy_config_kwds(cls, config):
         temp_dir = os.path.realpath(mkdtemp())
-        clazz_ = clazz_ or cls
-        clazz_._test_driver.temp_directories.append(temp_dir)
-        clazz_.root_dir = os.path.join(temp_dir, "root")
+        cls._test_driver.temp_directories.append(temp_dir)
+        cls.root_dir = os.path.join(temp_dir, "root")
 
         file_sources_config_file = create_file_source_config_file_on(
             temp_dir,
-            clazz_.root_dir,
-            clazz_.include_test_data_dir,
-            required_role_expression,
-            required_group_expression,
-            prefer_links=prefer_links,
+            cls.root_dir,
+            cls.include_test_data_dir,
+            cls.required_role_expression,
+            cls.required_group_expression,
+            prefer_links=cls.prefer_links,
         )
         config["file_sources_config_file"] = file_sources_config_file
 

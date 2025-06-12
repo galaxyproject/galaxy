@@ -151,6 +151,21 @@ onMounted(() => {
                     },
                 ]"
                 @click="userLogout" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && config.single_user"
+                id="user"
+                class="loggedin-only"
+                icon="fa-user"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: 'fa-gear',
+                        handler: () => openUrl('/user'),
+                    },
+                ]"
+                @click="user" />
         </BNavbarNav>
         <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
@@ -163,9 +178,9 @@ onMounted(() => {
     padding: 0;
     margin-bottom: 0;
     background: var(--masthead-color);
-    height: $masthead-height;
+    height: var(--masthead-height);
     &:deep(.navbar-nav) {
-        height: $masthead-height;
+        height: var(--masthead-height);
         & > li {
             // This allows the background color to fill the full height of the
             // masthead, while still keeping the contents centered (using flex)
@@ -211,12 +226,13 @@ onMounted(() => {
     }
     .navbar-brand {
         cursor: pointer;
-        line-height: $masthead-height;
+        line-height: var(--masthead-height);
         img {
             filter: $text-shadow;
             display: inline;
             border: none;
-            height: 2rem;
+            height: var(--masthead-logo-height);
+            padding: inherit;
         }
     }
     .navbar-text {
@@ -224,7 +240,7 @@ onMounted(() => {
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: 1rem;
-        line-height: $masthead-height;
+        line-height: var(--masthead-height);
         color: var(--masthead-text-color);
     }
 }

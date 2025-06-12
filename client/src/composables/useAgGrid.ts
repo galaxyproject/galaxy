@@ -1,7 +1,7 @@
 import "ag-grid-community/styles/ag-grid.min.css";
 import "ag-grid-community/styles/ag-theme-alpine.min.css";
 
-import { type ColumnApi, type GridApi, type GridReadyEvent } from "ag-grid-community";
+import type { ColumnApi, GridApi, GridReadyEvent } from "ag-grid-community";
 import { defineAsyncComponent, nextTick, ref } from "vue";
 
 export function useAgGrid(forceGridSize: () => void) {

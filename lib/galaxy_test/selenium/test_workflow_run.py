@@ -7,6 +7,8 @@ from typing_extensions import Literal
 
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
+    WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -403,6 +405,70 @@ steps: {}
 
     @selenium_test
     @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_build_list_of_pairs()
+        self.collection_builder_set_name("my awesome paired list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(5)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "forward content\nreverse content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_build_list_advanced_and_select_builder("list")
+        self.collection_builder_set_name("my awesome flat list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(5)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "reverse content\nforward content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+                "other.fasta": "unpaired content",
+            }
+        )
+        self.history_panel_wait_for_and_select([1, 2, 3])
+        self.history_panel_build_list_of_paired_or_unpaireds()
+        self.collection_builder_set_name("my awesome flat list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(7)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(8)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
+        assert content.strip() == "forward content\nreverse content\nunpaired content"
+
+    @selenium_test
+    @managed_history
     def test_upload_dataset_from_workflow_simple(self):
         history_id = self.current_history_id()
         self._create_and_run_workflow_with_unique_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -457,23 +523,65 @@ steps: {}
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input1")
         self._upload_hello_world_for_input(builder, count=2)
-        input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
 
+    @selenium_test
+    @managed_history
+    def test_upload_list_paired_from_workflow(self):
+        history_id = self.current_history_id()
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input_list")
+        input.upload.wait_for_and_click()
+        input.collection_tab_upload_link.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input_list")
+        self._upload_hello_world_for_input(builder, count=2)
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+        assert content.strip() == "hello world\nhello world"
+
+    @selenium_test
+    @managed_history
+    def test_upload_list_paired_or_unpaired_from_workflow(self):
+        history_id = self.current_history_id()
+        self.perform_upload_of_pasted_content(
+            {
+                "foo_1.fasta": "forward content",
+                "foo_2.fasta": "reverse content",
+                "other.fasta": "unpaired content",
+            }
+        )
+        self.history_panel_wait_for_hid_ok(3)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input_list")
+        input.upload.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input_list")
+        builder.element_by_hid(hid=3).wait_for_present()
+        # self.sleep_for(self.wait_types.UX_TRANSITION)
+        builder.select_all.wait_for_and_click()
+        input.collection_tab_build_link.wait_for_and_click()
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+
+        self.history_panel_wait_for_hid_ok(8)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
+        assert content.strip() == "unpaired content\nreverse content\nforward content"
+
     def _upload_hello_world_for_input(self, workflow_input, count=1, from_hid=1):
         # assumes fresh history...
-        workflow_input.create_button.wait_for_and_click()
-        url = self.dataset_populator.base64_url_for_string("hello world")
-        content = ""
-        for _ in range(count):
-            content += url + "\n"
-        workflow_input.paste_content(n=0).wait_for_and_send_keys(content)
+        for i in range(count):
+            workflow_input.create_button.wait_for_and_click()
+            url = self.dataset_populator.base64_url_for_string("hello world")
+            workflow_input.paste_content(n=i).wait_for_and_send_keys(url)
+            workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
+
         workflow_input.embedded_start_button.wait_for_and_click()
-        workflow_input.status.wait_for_present()
-        for i in range(from_hid, from_hid + count):
-            self.history_panel_wait_for_hid_ok(i)
+        workflow_input.use_button_disabled.wait_for_absent()
         workflow_input.use_button.wait_for_and_click()
 
     def _create_and_run_workflow_with_unique_name(

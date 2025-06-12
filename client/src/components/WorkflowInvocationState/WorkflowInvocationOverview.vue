@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, ref } from "vue";
 
-import { type WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { withPrefix } from "@/utils/redirect";
 
 import ExternalLink from "../ExternalLink.vue";
@@ -23,11 +25,27 @@ const props = defineProps<Props>();
 
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
+const invocationGraph = ref<InstanceType<typeof InvocationGraph> | null>(null);
+
 const uniqueMessages = computed(() => {
     const messages = props.invocation.messages || [];
     const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
     return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
 });
+
+// TODO: Refactor so that `storeId` is only defined here, and then used in all children components/composables.
+const storeId = computed(() => `invocation-${props.invocation.id}`);
+const stateStore = useWorkflowStateStore(storeId.value);
+const { activeNodeId } = storeToRefs(stateStore);
+
+async function showStep(stepId: number) {
+    if (invocationGraph.value) {
+        activeNodeId.value = stepId;
+        await nextTick();
+        const graphSelector = invocationGraph.value?.$el?.querySelector(".invocation-graph");
+        graphSelector?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
 </script>
 
 <template>
@@ -44,7 +62,9 @@ const uniqueMessages = computed(() => {
                 :key="message.reason"
                 class="steps-progress my-1 w-100"
                 :invocation-message="message"
-                :invocation="invocation">
+                :invocation="invocation"
+                :store-id="storeId"
+                @view-step="showStep">
             </InvocationMessage>
         </div>
         <!-- Once the workflow for the invocation has been loaded, display the graph -->
@@ -56,6 +76,7 @@ const uniqueMessages = computed(() => {
         </BAlert>
         <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
+                ref="invocationGraph"
                 class="mt-1"
                 data-description="workflow invocation graph"
                 :invocation="invocation"

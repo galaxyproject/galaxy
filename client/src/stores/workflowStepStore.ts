@@ -1,6 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
-import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import type { FieldDict } from "@/api";
+import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -40,6 +41,7 @@ export interface DataOutput {
     extensions: string[];
     name: string;
     optional: boolean;
+    type?: "data";
 }
 
 export interface CollectionOutput extends Omit<DataOutput, "type"> {
@@ -73,6 +75,7 @@ export interface DataStepInput extends BaseStepInput {
 export interface DataCollectionStepInput extends BaseStepInput {
     input_type: "dataset_collection";
     collection_types: string[];
+    fields: FieldDict[];
 }
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
@@ -104,6 +107,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_id?: string;
+    tool_uuid?: string;
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;

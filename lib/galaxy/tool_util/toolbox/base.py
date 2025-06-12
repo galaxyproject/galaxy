@@ -510,6 +510,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             log.debug(f"Appending to tool panel section: {str(tool_section.name)}")
         elif new_label and self._tool_panel.get_label(new_label):
             tool_section = self._tool_panel.get_label(new_label)
+            assert tool_section  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
             tool_panel_section_key = tool_section.id
         elif create_if_needed:
             # Appending a new section to toolbox._tool_panel
@@ -734,6 +735,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         user: Optional["User"] = None,
     ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
+        if tool_uuid and user:
+            unprivileged_tool = self.get_unprivileged_tool_or_none(user, tool_uuid=tool_uuid)
+            if unprivileged_tool:
+                return unprivileged_tool
         if tool_version:
             tool_version = str(tool_version)
 
@@ -827,6 +832,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return (
             self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
         )
+
+    def get_unprivileged_tool(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
+
+    def get_unprivileged_tool_or_none(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""

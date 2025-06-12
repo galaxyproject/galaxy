@@ -1,4 +1,4 @@
-import { type AnyHistory, type components } from "@/api";
+import type { AnyHistory, components } from "@/api";
 
 type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 

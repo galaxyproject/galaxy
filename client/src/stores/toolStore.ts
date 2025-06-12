@@ -50,6 +50,7 @@ export interface Tool {
     panel_section_name: string | null;
     form_style: string;
     disabled?: boolean;
+    icon?: string;
 }
 
 export interface ToolSection {
@@ -96,6 +97,12 @@ export const useToolStore = defineStore("toolStore", () => {
                 const q = createWhooshQuery(filterSettings);
                 return filterTools(toolsById.value, toolResults.value[q] || []);
             }
+        };
+    });
+
+    const getInteractiveTools = computed(() => {
+        return () => {
+            return Object.values(toolsById.value).filter((tool) => tool.model_class === "InteractiveTool");
         };
     });
 
@@ -252,6 +259,7 @@ export const useToolStore = defineStore("toolStore", () => {
         getToolForId,
         getToolNameById,
         getToolsById,
+        getInteractiveTools,
         panels,
         saveAllTools,
         saveToolForId,

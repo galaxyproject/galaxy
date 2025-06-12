@@ -10,10 +10,7 @@ from galaxy.managers import (
     histories,
 )
 from galaxy.util import asbool
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous_and_sessionless,
-)
+from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -42,7 +39,7 @@ class PluginsController(BaseGalaxyAPIController):
             target_object = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
         return registry.get_visualizations(trans, target_object=target_object, embeddable=embeddable)
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwargs):
         """
         GET /api/plugins/{id}:

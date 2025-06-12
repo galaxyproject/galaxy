@@ -41,6 +41,9 @@ BACKENDS = {
     "google": "social_core.backends.google_openidconnect.GoogleOpenIdConnect",
     "globus": "social_core.backends.globus.GlobusOpenIdConnect",
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
+    "lifescience": "social_core.backends.lifescience.LifeScienceOpenIdConnect",
+    "einfracz": "social_core.backends.einfracz.EInfraCZOpenIdConnect",
+    "nfdi": "social_core.backends.nfdi.InfraproxyOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
@@ -52,6 +55,9 @@ BACKENDS_NAME = {
     "google": "google-openidconnect",
     "globus": "globus",
     "elixir": "elixir",
+    "lifescience": "life_science",
+    "einfracz": "e-infra_cz",
+    "nfdi": "infraproxy",
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
@@ -192,7 +198,11 @@ class PSAAuthnz(IdentityProvider):
         else:
             log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
             return False
-        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
+        if (
+            int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2
+            <= int(time.time())
+            < int(user_authnz_token.extra_data["auth_time"]) + int(expires)
+        ):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)

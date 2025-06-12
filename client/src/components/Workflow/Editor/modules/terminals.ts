@@ -1,16 +1,16 @@
 import EventEmitter from "events";
 
-import { type DatatypesMapperModel } from "@/components/Datatypes/model";
-import { type useWorkflowStores } from "@/composables/workflowStores";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
-import {
-    type CollectionOutput,
-    type DataCollectionStepInput,
-    type DataOutput,
-    type DataStepInput,
-    type ParameterOutput,
-    type ParameterStepInput,
-    type TerminalSource,
+import type {
+    CollectionOutput,
+    DataCollectionStepInput,
+    DataOutput,
+    DataStepInput,
+    ParameterOutput,
+    ParameterStepInput,
+    TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { Connection, ConnectionId } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
@@ -652,7 +652,17 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                     );
                 }
             } else {
-                return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
+                let reason = "Incompatible collection type(s) for attachment.";
+                if (this.collectionTypes.length == 1) {
+                    if (
+                        otherCollectionType.collectionType?.endsWith("paired_or_unpaired") &&
+                        this.collectionTypes[0]?.collectionType?.endsWith("paired")
+                    ) {
+                        reason =
+                            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";
+                    }
+                }
+                return new ConnectionAcceptable(false, reason);
             }
         } else {
             return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");

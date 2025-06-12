@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { faCopy, faEdit, faFolderOpen, faLaptop, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,15 +12,16 @@ import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipEx
 import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
+import type { ComponentSize } from "../BaseComponents/componentVariants";
 import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
+import GButton from "../BaseComponents/GButton.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 
@@ -40,14 +40,14 @@ interface Props {
     isCollection?: boolean;
     disableFooter?: boolean;
     emitUploaded?: boolean;
-    size?: string;
+    size?: ComponentSize;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     ftpUploadSite: undefined,
     multiple: true,
     lazyLoad: 150,
-    size: "md",
+    size: "medium",
     isCollection: false,
 });
 
@@ -260,7 +260,11 @@ function eventRemoteFiles() {
                 })
             );
         },
-        { multiple: true }
+        { multiple: true },
+        (route: string) => {
+            router.push(route);
+            emit("dismiss");
+        }
     );
 }
 
@@ -373,12 +377,6 @@ defineExpose({
 <template>
     <div class="upload-wrapper">
         <div class="upload-header">
-            <div v-if="props.emitUploaded && historyItemsStateInfo">
-                <BAlert show :variant="historyItemsStateInfo.variant" data-description="upload state alert">
-                    <LoadingSpan v-if="historyItemsStateInfo.spin" :message="historyItemsStateInfo.message" />
-                    <span v-else>{{ historyItemsStateInfo.message }}</span>
-                </BAlert>
-            </div>
             <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
             <div v-else-if="counterAnnounce === 0">
                 <div v-if="!!hasBrowserSupport">&nbsp;</div>
@@ -473,11 +471,11 @@ defineExpose({
                 'upload-buttons': !disableFooter,
                 'flex-gapx-1': disableFooter,
             }">
-            <BButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
+            <GButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
                 <FontAwesomeIcon :icon="faLaptop" />
                 <span v-localize>Choose local file</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="hasRemoteFiles"
                 id="btn-remote-files"
                 :size="size"
@@ -485,12 +483,12 @@ defineExpose({
                 @click="eventRemoteFiles">
                 <FontAwesomeIcon :icon="faFolderOpen" />
                 <span v-localize>Choose from repository</span>
-            </BButton>
-            <BButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
+            </GButton>
+            <GButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
                 <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-start"
                 :size="size"
                 :disabled="!enableStart"
@@ -498,51 +496,53 @@ defineExpose({
                 :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
                 <span v-localize>Start</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="isCollection"
                 id="btn-build"
                 :size="size"
                 :disabled="!enableBuild"
+                :tooltip="!enableBuild && Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Build is not available'"
                 title="Build"
-                :variant="enableBuild ? 'primary' : null"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(true)">
-                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
                 <span v-localize>Build</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="emitUploaded"
                 id="btn-emit"
                 :size="size"
                 :disabled="!enableBuild"
-                title="Use Uploaded Files"
-                :variant="enableBuild ? 'primary' : null"
+                :tooltip="Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Upload Valid Files to Use'"
+                :title="historyItemsStateInfo?.message || 'Use Uploaded Files'"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(false)">
-                <FontAwesomeIcon v-if="!uploadedHistoryItemsReady" :icon="faSpinner" spin />
-                <slot name="emit-btn-txt">
-                    <span v-localize>Use Uploaded</span>
-                </slot>
-                ({{ counterSuccess }})
-            </BButton>
-            <BBadge
-                v-if="props.isCollection && historyItemsStateInfo?.icon"
-                v-b-tooltip.hover.noninteractive
-                role="button"
-                class="d-flex align-items-center"
-                :variant="historyItemsStateInfo.variant"
-                :title="historyItemsStateInfo.message">
-                <FontAwesomeIcon :icon="historyItemsStateInfo.icon" :spin="historyItemsStateInfo.spin" />
-            </BBadge>
-            <BButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
+                <span v-localize>Use Uploaded</span>
+                <span v-if="uploadedHistoryItemsOk.length < counterSuccess">
+                    ({{ uploadedHistoryItemsOk.length }}/{{ counterSuccess }})
+                </span>
+                <span v-else> ({{ counterSuccess }}) </span>
+            </GButton>
+            <GButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
-            </BButton>
-            <BButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
+            </GButton>
+            <GButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
                 <span v-localize>Reset</span>
-            </BButton>
-            <BButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
+            </GButton>
+            <GButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Cancel</span>
                 <span v-else v-localize>Close</span>
-            </BButton>
+            </GButton>
         </div>
         <CollectionCreatorIndex
             v-if="isCollection && historyId"

@@ -723,7 +723,13 @@ class XmlToolSource(ToolSource):
             return citations
 
         for citation_elem in citations_elem:
-            citation = parse_citation_elem(citation_elem)
+            try:
+                citation = parse_citation_elem(citation_elem)
+            except Exception:
+                if Version(self.parse_profile()) < Version("24.2"):
+                    continue
+                else:
+                    raise
             if citation:
                 citations.append(citation)
 
@@ -1045,13 +1051,18 @@ def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
         else:
             element_definition = __parse_param_elem(element)
         elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
-
+    fields_json = "null"
+    fields_el = elem.find("fields")
+    if fields_el is not None:
+        fields_json = fields_el.text or "null"
+    fields = json.loads(fields_json)
     return XmlTestCollectionDefDict(
         model_class="TestCollectionDef",
         attributes=attrib,
         collection_type=collection_type,
         elements=elements,
         name=name,
+        fields=fields,
     )
 
 

@@ -33,7 +33,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
+        super().handle_galaxy_config_kwds(config)
         UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
     def setUp(self):

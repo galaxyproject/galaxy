@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
 
 import DescribeObjectStore from "./DescribeObjectStore.vue";
 import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";

@@ -160,12 +160,8 @@ class VisualizationsRegistry:
         if not os.path.isdir(plugin_path):
             # super won't work here - different criteria
             return False
-        if "config" not in os.listdir(plugin_path):
-            return False
-        expected_config_filename = f"{os.path.split(plugin_path)[1]}.xml"
-        if not os.path.isfile(os.path.join(plugin_path, "config", expected_config_filename)):
-            return False
-        return True
+        expected_config_filename = f"{os.path.basename(plugin_path)}.xml"
+        return os.path.isfile(os.path.join(plugin_path, "static", expected_config_filename))
 
     def _load_plugin(self, plugin_path):
         """
@@ -178,31 +174,24 @@ class VisualizationsRegistry:
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split(plugin_path)[1]
-        # TODO: this is the standard/older way to config
-        config_file = os.path.join(plugin_path, "config", (f"{plugin_name}.xml"))
+        config_file = os.path.join(plugin_path, "static", f"{plugin_name}.xml")
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                # config may be none if the visualization is disabled
                 plugin = self._build_plugin(plugin_name, plugin_path, config)
                 return plugin
-        else:
-            raise ObjectNotFound(f"Visualization XML not found: {config_file}.")
+        raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def _build_plugin(self, plugin_name, plugin_path, config):
-        # TODO: as builder not factory
-
-        # default class
-        plugin_class = vis_plugins.VisualizationPlugin
-        # js only
-        if config["entry_point"]["type"] == "script":
-            plugin_class = vis_plugins.ScriptVisualizationPlugin
-        # js only using charts environment
-        elif config["entry_point"]["type"] == "chart":
-            plugin_class = vis_plugins.ChartVisualizationPlugin
+        # from mako
+        if config["entry_point"]["type"] == "mako":
+            plugin_class = vis_plugins.VisualizationPlugin
         # from a static file (html, etc)
         elif config["entry_point"]["type"] == "html":
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
+        else:
+            # default from js
+            plugin_class = vis_plugins.ScriptVisualizationPlugin
         return plugin_class(
             self.app(),
             plugin_path,
@@ -251,7 +240,7 @@ class VisualizationsRegistry:
             for data_source in data_sources:
                 model_class = data_source["model_class"]
                 model_class = getattr(galaxy.model, model_class, None)
-                if isinstance(target_object, model_class):
+                if model_class and isinstance(target_object, model_class):
                     tests = data_source["tests"]
                     if tests is None or is_object_applicable(trans, target_object, tests):
                         return visualization.to_dict()

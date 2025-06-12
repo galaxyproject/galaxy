@@ -43,9 +43,7 @@ MINIMAL_TOOL = {
     "version": "1.0.0",
     "command": "echo 'Hello World' > $output1",
     "inputs": [],
-    "outputs": dict(
-        output1=dict(format="txt"),
-    ),
+    "outputs": {"output1": {"format": "txt", "type": "data"}},
 }
 MINIMAL_TOOL_NO_ID = {
     "name": "Minimal Tool",
@@ -53,9 +51,30 @@ MINIMAL_TOOL_NO_ID = {
     "version": "1.0.0",
     "command": "echo 'Hello World 2' > $output1",
     "inputs": [],
-    "outputs": dict(
-        output1=dict(format="txt"),
-    ),
+    "outputs": {"output1": {"format": "txt", "type": "data"}},
+}
+
+TOOL_WITH_SHELL_COMMAND = {
+    "id": "basecommand",
+    "name": "Base command tool",
+    "class": "GalaxyUserTool",
+    "container": "busybox",
+    "version": "1.0.0",
+    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+            "format": "txt",
+        }
+    ],
+    "outputs": [
+        {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    ],
 }
 
 
@@ -237,6 +256,20 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output = outputs[0]
         assert output["label"] == "Duplicate List"
         assert output["inherit_format"] is True
+
+    def test_tool_icon_endpoint_with_simple_id(self):
+        response = self._get("tools/simple_tool_id/icon")
+        self._assert_status_code_is(response, 404)
+
+    def test_tool_icon_endpoint_with_toolshed_id(self):
+        # Test complex toolshed tool ID with slashes
+        toolshed_tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+        response = self._get(f"tools/{toolshed_tool_id}/icon")
+        # We expect either 200 (if tool is installed and has icon) or 404 (if
+        # not found), but this tests the routing either way.
+        assert response.status_code in [200, 404]
+        if response.status_code == 200:
+            assert response.headers["Content-Type"] == "image/png"
 
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):
@@ -843,6 +876,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
             example["check"](output_hdca, self.dataset_populator)
 
+    def test_apply_rules_flatten_paired_unpaired(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+
     def test_apply_rules_1(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_1)
 
@@ -860,6 +896,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_apply_rules_6(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
+
+    def test_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
 
     @skip_without_tool("galaxy_json_sleep")
     def test_dataset_hidden_after_job_finish(self):
@@ -1017,6 +1056,41 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert len(filenames) == 3, filenames
             assert len(set(filenames)) <= 2, filenames
 
+    @skip_without_tool("cat_list")
+    @skip_without_tool("__SORTLIST__")
+    def test_run_cat_list_hdca_sort_order_respecrted_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_cat_list_hdca_sort_order_respecrted_use_cached_job
+        ) as history_id:
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, wait=True, contents=[("C", "3"), ("B", "2"), ("A", "1")]
+            ).json()
+            hdca_not_sorted_id = fetch_response["output_collections"][0]["id"]
+            result = self._run(
+                tool_id="__SORTLIST__",
+                history_id=history_id,
+                inputs={"input": {"src": "hdca", "id": hdca_not_sorted_id}},
+                assert_ok=True,
+            )
+            hdca_sorted_id = result["output_collections"][0]["id"]
+            self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_sorted_id)
+            hdca_sorted = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_sorted_id)
+            hdca_not_sorted = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca_not_sorted_id
+            )
+            assert hdca_sorted["elements"][0]["object"]["name"] == "A"
+            assert hdca_not_sorted["elements"][0]["object"]["name"] == "C"
+            self._run("cat_list", history_id, inputs={"input1": {"src": "hdca", "id": hdca_sorted_id}}, assert_ok=True)
+            job = self._run(
+                "cat_list",
+                history_id,
+                inputs={"input1": {"src": "hdca", "id": hdca_not_sorted_id}},
+                assert_ok=True,
+                use_cached_job=True,
+            )
+            job_details = self.dataset_populator.get_job_details(job["jobs"][0]["id"], full=True).json()
+            assert not job_details["copied_from_job_id"]
+
     @skip_without_tool("cat1")
     @requires_new_history
     def test_run_cat1_use_cached_job_from_public_history(self):
@@ -1053,6 +1127,23 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.rename_dataset(inputs["input1"]["id"])
             outputs_two = self._run_cat1(
                 history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+            )
+            copied_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
+            assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    @skip_without_tool("cat_list")
+    @requires_new_history
+    def test_run_cat_list_use_cached_job_repeated_input(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_cat_list_use_cached_job_repeated_input
+        ) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            input_value = dataset_to_param(self.dataset_populator.new_dataset(history_id=history_id))
+            inputs = {"input1": {"batch": False, "values": [input_value, input_value]}}
+            outputs_one = self._run("cat_list", history_id, inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run(
+                "cat_list", history_id, inputs, assert_ok=True, wait_for_job=True, use_cached_job=True
             )
             copied_job_id = outputs_two["jobs"][0]["id"]
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
@@ -1535,7 +1626,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_nonadmin_users_cannot_create_tools(self):
         payload = dict(
-            representation=json.dumps(MINIMAL_TOOL),
+            representation=MINIMAL_TOOL,
         )
         create_response = self._post("dynamic_tools", data=payload, admin=False)
         self._assert_status_code_is(create_response, 403)
@@ -1575,11 +1666,67 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        self._run(history_id=history_id, tool_uuid=tool_response["uuid"])
+        self._run(history_id=history_id, tool_uuid=tool_response["uuid"], assert_ok=True)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "Hello World 2\n"
+
+    # This works except I don't want to add it to the schema right now,
+    # since I think the shell_command is what we'll go with (at least initially)
+    # def test_dynamic_tool_base_command(self):
+    #     TOOL_WITH_BASE_COMMAND = {
+    #         "name": "Base command tool",
+    #         "class": "GalaxyTool",
+    #         "version": "1.0.0",
+    #         "base_command": "cat",
+    #         "arguments": ["$(inputs.input.path)", ">", "output.fastq"],
+    #         "inputs": [
+    #             {
+    #                 "type": "data",
+    #                 "name": "input",
+    #             }
+    #         ],
+    #         "outputs": {
+    #             "output": {
+    #                 "type": "data",
+    #                 "from_work_dir": "output.fastq",
+    #                 "name": "output",
+    #             }
+    #         },
+    #     }
+    #     tool_response = self.dataset_populator.create_tool(TOOL_WITH_BASE_COMMAND)
+    #     self._assert_has_keys(tool_response, "uuid")
+
+    #     # Run tool.
+    #     history_id = self.dataset_populator.new_history()
+    #     dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+    #     self._run(
+    #         history_id=history_id,
+    #         tool_uuid=tool_response["uuid"],
+    #         inputs={"input": {"src": "hda", "id": dataset["id"]}},
+    #     )
+
+    #     self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+    #     output_content = self.dataset_populator.get_history_dataset_content(history_id)
+    #     assert output_content == "abc\n"
+
+    def test_dynamic_tool_shell_command(self):
+        tool_response = self.dataset_populator.create_tool(TOOL_WITH_SHELL_COMMAND)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+        self._run(
+            history_id=history_id,
+            tool_uuid=tool_response["uuid"],
+            inputs={"input": {"src": "hda", "id": dataset["id"]}},
+        )
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "abc\n"
 
     def test_show_dynamic_tools(self):
         # Create tool.

@@ -215,6 +215,65 @@ def test_persist_target_hdca():
         assert f.read().startswith("file 2 contents")
 
 
+def test_persist_target_list_paired():
+    work_directory = mkdtemp()
+    with open(os.path.join(work_directory, "file1.txt"), "w") as f:
+        f.write("hello world\nhello world line 2")
+    with open(os.path.join(work_directory, "file2.txt"), "w") as f:
+        f.write("file 2 contents")
+
+    target = {
+        "destination": {
+            "type": "hdca",
+        },
+        "name": "My HDCA",
+        "collection_type": "list:paired",
+        "elements": [
+            {
+                "name": "sample1",
+                "elements": [
+                    {
+                        "filename": "file1.txt",
+                        "ext": "txt",
+                        "dbkey": "hg19",
+                        "info": "dataset info",
+                        "name": "forward",
+                    },
+                    {
+                        "filename": "file2.txt",
+                        "ext": "txt",
+                        "dbkey": "hg18",
+                        "info": "dataset info 2",
+                        "name": "reverse",
+                    },
+                ],
+            }
+        ],
+    }
+
+    app = _mock_app()
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
+        persist_target_to_export_store(target, export_store, app.object_store, work_directory)
+
+    import_history = _import_directory_to_history(app, temp_directory, work_directory)
+    assert len(import_history.dataset_collections) == 1
+    assert len(import_history.datasets) == 2
+
+    import_hdca = import_history.dataset_collections[0]
+    assert import_hdca.collection.collection_type == "list:paired"
+    datasets = import_hdca.collection.elements[0].child_collection.dataset_instances
+    assert import_hdca.collection.elements[0].child_collection.collection_type == "paired"
+    assert len(datasets) == 2
+    dataset0 = datasets[0]
+    dataset1 = datasets[1]
+
+    with open(dataset0.get_file_name()) as f:
+        assert f.read().startswith("hello world\n")
+    with open(dataset1.get_file_name()) as f:
+        assert f.read().startswith("file 2 contents")
+
+
 def _assert_one_library_created(sa_session):
     all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)

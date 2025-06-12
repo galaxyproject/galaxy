@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { type RegisteredUser } from "@/api";
+import type { RegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";

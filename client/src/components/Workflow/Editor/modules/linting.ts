@@ -1,7 +1,7 @@
-import { type DatatypesMapperModel } from "@/components/Datatypes/model";
-import { type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
-import { type useWorkflowStores } from "@/composables/workflowStores";
-import { type Step, type Steps } from "@/stores/workflowStepStore";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import type { useWorkflowStores } from "@/composables/workflowStores";
+import type { Step, Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { terminalFactory } from "./terminals";
@@ -13,6 +13,7 @@ interface LintState {
     name?: string;
     inputName?: string;
     autofix?: boolean;
+    data?: Record<string, string>;
 }
 
 export const bestPracticeWarningAnnotation =
@@ -61,23 +62,41 @@ export function getMissingMetadata(steps: Steps) {
             const noAnnotation = !step.annotation;
             const noLabel = !step.label;
             let warningLabel = null;
+            const data = {
+                "missing-label": "false",
+                "missing-annotation": "false",
+            };
             if (noLabel && noAnnotation) {
                 warningLabel = "Missing a label and annotation";
+                data["missing-label"] = "true";
+                data["missing-annotation"] = "true";
             } else if (noLabel) {
                 warningLabel = "Missing a label";
+                data["missing-label"] = "true";
             } else if (noAnnotation) {
                 warningLabel = "Missing an annotation";
+                data["missing-annotation"] = "true";
             }
             if (warningLabel) {
                 inputs.push({
                     stepId: step.id,
                     stepLabel: step.label || step.content_id || step.name,
                     warningLabel: warningLabel,
+                    data: data,
                 });
             }
         }
     });
     return inputs;
+}
+
+export function dataAttributes(action: LintState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(action.data || {})) {
+        result[`data-${key}`] = value;
+    }
+
+    return result;
 }
 
 export function getUnlabeledOutputs(steps: Steps) {

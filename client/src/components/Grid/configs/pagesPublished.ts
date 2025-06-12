@@ -5,7 +5,7 @@ import { GalaxyApi } from "@/api";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

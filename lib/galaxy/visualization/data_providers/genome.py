@@ -763,22 +763,21 @@ class RawVcfDataProvider(VcfDataProvider):
         with open(self.original_dataset.get_file_name()) as f:
             yield f
 
-    def get_iterator(self, data_file, chrom, start, end, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         # Skip comments.
-        line = None
+        line: Optional[str] = None
         for line in data_file:
             if not line.startswith("#"):
                 break
 
         # If last line is a comment, there are no data lines.
-        if line.startswith("#"):
-            return []
+        if not line or line.startswith("#"):
+            return iter([])
 
         # Match chrom naming format.
-        if line:
-            dataset_chrom = line.split()[0]
-            if not _chrom_naming_matches(chrom, dataset_chrom):
-                chrom = _convert_between_ucsc_and_ensemble_naming(chrom)
+        dataset_chrom = line.split()[0]
+        if not _chrom_naming_matches(chrom, dataset_chrom):
+            chrom = _convert_between_ucsc_and_ensemble_naming(chrom)
 
         def line_in_region(vcf_line, chrom, start, end):
             """Returns true if line is in region."""

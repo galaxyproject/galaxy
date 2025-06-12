@@ -12,11 +12,19 @@ Build all recipes discovered in tsv files in a single directory.
 
 """
 
-import collections
 import glob
 import os
 import sys
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+)
 
+from galaxy.tool_util.deps.conda_util import CondaTarget
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
@@ -27,7 +35,15 @@ from .mulled_build import (
 )
 
 KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
-FALLBACK_LINE_TUPLE = collections.namedtuple("FALLBACK_LINE_TUPLE", "targets image_build name_override base_image")
+FALLBACK_FIELD_ORDER = ("targets", "image_build", "name_override", "base_image")
+
+
+@dataclass
+class Target:
+    targets: List[CondaTarget]
+    image_build: Optional[str]
+    name_override: Optional[str]
+    base_image: Optional[str]
 
 
 def main(argv=None):
@@ -58,7 +74,7 @@ def main(argv=None):
             sys.exit(ret)
 
 
-def generate_targets(target_source):
+def generate_targets(target_source) -> Iterator[Target]:
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
     if os.path.isdir(target_source):
@@ -69,19 +85,19 @@ def generate_targets(target_source):
     for target_source_file in target_source_files:
         # If no headers are defined we use the 4 default fields in the order
         # that has been used in galaxy-tool-util / galaxy-lib < 20.01
-        line_tuple = FALLBACK_LINE_TUPLE
+        field_order: Sequence[str] = FALLBACK_FIELD_ORDER
         with open(target_source_file) as f:
             for line in f.readlines():
                 if line:
                     line = line.strip()
                     if line.startswith("#"):
                         # headers can define a different column order
-                        line_tuple = tuple_from_header(line)
+                        field_order = field_order_from_header(line)
                     else:
-                        yield line_to_targets(line, line_tuple)
+                        yield line_to_targets(line, field_order)
 
 
-def tuple_from_header(header):
+def field_order_from_header(header: str) -> List[str]:
     fields = header[1:].split("\t")
     for field in fields:
         assert field in KNOWN_FIELDS, f"'{field}' is not one of {KNOWN_FIELDS}"
@@ -89,20 +105,20 @@ def tuple_from_header(header):
     for field in KNOWN_FIELDS:
         if field not in fields:
             fields.append(field)
-    return collections.namedtuple("_Line", f"{' '.join(fields)}")
+    return fields
 
 
-def line_to_targets(line_str, line_tuple):
+def line_to_targets(line_str: str, field_order: Sequence[str]) -> Target:
     """Parse a line so that some columns can remain unspecified."""
-    line_parts = line_str.split("\t")
-    n_fields = len(line_tuple._fields)
-    targets_column = line_tuple._fields.index("targets")
+    line_parts: List[Any] = line_str.split("\t")
+    n_fields = len(field_order)
+    targets_column = field_order.index("targets")
     assert (
         len(line_parts) <= n_fields
     ), f"Too many fields in line [{line_str}], expect at most {n_fields} - targets, image build number, and name override."
     line_parts += [None] * (n_fields - len(line_parts))
     line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
-    return line_tuple(*line_parts)
+    return Target(**dict(zip(field_order, line_parts)))
 
 
 __all__ = ("main",)

@@ -19,6 +19,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from pydantic import BaseModel
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -35,6 +36,7 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
+from galaxy.model.dataset_collections.adapters import CollectionAdapter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
@@ -70,7 +72,10 @@ from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetInstance,
+    )
     from galaxy.tool_util.parser.output_objects import ToolOutput
     from galaxy.tools import Tool
 
@@ -266,16 +271,20 @@ class DefaultToolAction(ToolAction):
                 if not value:
                     return
 
-                collection = None
                 child_collection = False
-                if hasattr(value, "child_collection"):
-                    # if we are mapping a collection over a tool, we only require the child_collection
+                if isinstance(value, CollectionAdapter):
+                    # collection was created for this execution, use it as is
+                    collection: Union[CollectionAdapter, DatasetCollection] = value
+                elif hasattr(value, "child_collection"):
+                    # if we are mapping a collection over a tool, so value is a DCE and
+                    # we only require the child_collection
                     child_collection = True
                     collection = value.child_collection
                 else:
-                    # else the tool takes a collection as input so we need everything
+                    # else the tool takes the collection as input so we need everything
                     collection = value.collection
 
+                assert collection
                 action_tuples = collection.dataset_action_tuples
                 if not trans.user_is_admin and not trans.app.security_agent.can_access_datasets(
                     current_user_roles, action_tuples
@@ -298,7 +307,7 @@ class DefaultToolAction(ToolAction):
                         if not datatype.matches_any(input.formats):
                             conversion_required = True
                             break
-                processed_dataset_dict = {}
+                processed_dataset_dict: Dict[DatasetInstance, DatasetInstance] = {}
                 for i, v in enumerate(collection.dataset_instances):
                     processed_dataset = None
                     if conversion_required:
@@ -686,7 +695,10 @@ class DefaultToolAction(ToolAction):
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
-                        element_kwds = dict(element_identifiers=element_identifiers)
+                        element_kwds = dict(
+                            element_identifiers=element_identifiers,
+                            fields=output.structure.fields,
+                        )
                     output_collections.create_collection(
                         output=output, name=name, completed_job=completed_job, **element_kwds
                     )
@@ -945,6 +957,26 @@ class DefaultToolAction(ToolAction):
                     job.add_input_dataset_collection(name, dataset_collection)
                 elif isinstance(dataset_collection, model.DatasetCollectionElement):
                     job.add_input_dataset_collection_element(name, dataset_collection)
+                elif isinstance(dataset_collection, CollectionAdapter):
+                    adapter = dataset_collection
+                    # we are recording the adapter json in the database for tracking but it isn't
+                    # actually used in the code and we don't track the adapter json for like list
+                    # of datasets -> collection adaption because it isn't clear where to track that
+                    # (see elif isinstance(adapting, list) branch below).
+                    adapting = adapter.adapting
+                    adapter_model = cast(BaseModel, adapter.to_adapter_model())
+                    if isinstance(adapting, model.DatasetCollectionElement):
+                        job.add_input_dataset_collection_element(
+                            name, adapting, adapter_json=adapter_model.model_dump()
+                        )
+                    elif isinstance(adapting, model.HistoryDatasetAssociation):
+                        job.add_input_dataset(name, dataset=adapting, adapter_json=adapter_model.model_dump())
+                    elif isinstance(adapting, list):
+                        for element in adapting:
+                            input_key = f"{name}|__adapter_part__|{element.element_identifier}"
+                            job.add_input_dataset(input_key, dataset=element.hda)
+                else:
+                    log.info(f"not recording something as a collection in here... for name {name}")
 
         # If this an input collection is a reduction, we expanded it for dataset security, type
         # checking, and such, but the persisted input must be the original collection

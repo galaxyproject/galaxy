@@ -31,7 +31,9 @@ from galaxy.tool_util_models.tool_source import (
     BaseJsonTestCollectionDefCollectionElementDict,
     Citation,
     DrillDownOptionsDict,
+    FieldDict,
     HelpContent,
+    JavascriptRequirement,
     JsonTestCollectionDefCollectionElementDict,
     JsonTestCollectionDefDatasetElementDict,
     JsonTestCollectionDefDict,
@@ -47,7 +49,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
@@ -219,6 +221,18 @@ class ToolSource(metaclass=ABCMeta):
     def parse_command(self):
         """Return string contianing command to run."""
 
+    def parse_shell_command(self) -> Optional[str]:
+        """Return string that after input binding can be executed."""
+        return None
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return None
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        """Return list of strings to append to base_command."""
+        return None
+
     def parse_expression(self):
         """Return string contianing command to run."""
         return None
@@ -306,7 +320,9 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements_and_containers(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+    ) -> Tuple[
+        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+    ]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
@@ -596,7 +612,8 @@ class TestCollectionDefElementInternal(TypedDict):
 class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
-    collection_type: CollectionType
+    collection_type: Optional[CollectionType]
+    fields: Optional[List[FieldDict]]
     elements: List[TestCollectionDefElementDict]
     name: str
 
@@ -634,12 +651,17 @@ def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = Non
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
     elements: List[TestCollectionDefElementInternal]
+    collection_type: Optional[str]
+    fields: Optional[List[FieldDict]]
 
-    def __init__(self, attrib, name, collection_type, elements):
+    def __init__(
+        self, attrib, name, collection_type: Optional[str], elements, fields: Optional[List[FieldDict]] = None
+    ):
         self.attrib = attrib
         self.collection_type = collection_type
         self.elements = elements
         self.name = name
+        self.fields = fields
 
     def _test_format_to_dict(self) -> "BaseJsonTestCollectionDefCollectionElementDict":
 
@@ -653,9 +675,7 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(
-                    cast(ToolSourceTestInput, element_object)
-                )
+                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(element_object)
                 if input_as_dict is not None:
                     as_dict = JsonTestCollectionDefDatasetElementDict(
                         identifier=identifier,
@@ -696,6 +716,7 @@ class TestCollectionDef:
             "collection_type": self.collection_type,
             "elements": list(map(element_to_dict, self.elements or [])),
             "name": self.name,
+            "fields": self.fields,
         }
 
     @staticmethod
@@ -719,6 +740,7 @@ class TestCollectionDef:
                 name=xml_as_dict.get("name", "Unnamed Collection"),
                 elements=list(map(element_from_dict, xml_as_dict["elements"] or [])),
                 collection_type=xml_as_dict["collection_type"],
+                fields=xml_as_dict.get("fields", None),
             )
         else:
             json_as_dict = cast(JsonTestCollectionDefDict, as_dict)

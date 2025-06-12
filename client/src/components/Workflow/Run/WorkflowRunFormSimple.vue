@@ -325,7 +325,7 @@ async function onExecute() {
 </script>
 
 <template>
-    <div class="d-flex flex-column h-100 workflow-run-form-simple">
+    <div class="d-flex flex-column h-100 workflow-run-form-simple" data-galaxy-file-drop-target>
         <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>

@@ -88,6 +88,7 @@ export async function copyDataset(
             type,
             copy_elements: true,
             // TODO: Investigate. These should be optional, but the API requires explicit null values?
+            fields: null,
             hide_source_items: null,
             instance_type: null,
         },

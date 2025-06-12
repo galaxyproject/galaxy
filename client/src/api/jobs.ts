@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 export type JobDestinationParams = components["schemas"]["JobDestinationParams"];
 export type ShowFullJobResponse = components["schemas"]["ShowFullJobResponse"];

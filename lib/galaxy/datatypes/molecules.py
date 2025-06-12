@@ -34,7 +34,7 @@ from galaxy.util import (
 try:
     from ase import io as ase_io
 except ImportError:
-    ase_io = None
+    ase_io = None  # type: ignore[assignment, unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -245,10 +245,7 @@ class AtomicStructFile(GenericMolFile):
         Find Atom IDs for metadata.
         """
         self.meta_error = False
-        if ase_io is None:
-            # Don't have optional dependency, can't set advanced values
-            return
-        else:
+        if ase_io is not None:
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.get_file_name(), index=":", format=self.ase_format)

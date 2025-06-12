@@ -27,7 +27,7 @@ import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/com
  * |-- file1
  * |-- file2
  */
-import { type RemoteFilesList } from "./testingData";
+import type { RemoteFilesList } from "./testingData";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -256,8 +256,32 @@ describe("FilesDialog, file mode", () => {
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
+});
 
+describe("FilesDialog, create new file source button", () => {
+    let wrapper: Wrapper<any>;
+    let utils: Utils;
+
+    beforeEach(async () => {
+        const hasTemplates = true;
+        wrapper = await initComponent({ multiple: false }, hasTemplates);
+        utils = new Utils(wrapper);
+    });
     it("should not render create new button since file source templates are not defined", async () => {
+        const hasTemplates = false;
+        wrapper = await initComponent({ multiple: true }, hasTemplates);
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(false);
+    });
+
+    it("should render create new button since file source templates are defined and is at root", async () => {
+        await utils.openRoot();
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(true);
+    });
+
+    it("should not render create new button inside folders", async () => {
+        await utils.openRootDirectory();
         const createNewButton = wrapper.find("[data-description='create new file source button']");
         expect(createNewButton.exists()).toBe(false);
     });

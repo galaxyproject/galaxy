@@ -472,7 +472,7 @@ class FastAPIJobs:
         """
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/datasets/{dataset_id}/parameters_display",
@@ -492,7 +492,7 @@ class FastAPIJobs:
         this endpoint will change frequently.
         """
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/jobs/{job_id}/metrics",
@@ -639,7 +639,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
+        tool = self.app.toolbox.tool_for_job(
+            job, exact=False, check_access=True, user=trans.user, tool_version=kwd.get("tool_version")
+        )
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:

@@ -50,6 +50,8 @@ interface FilesDialogProps {
     selectedItem?: SelectionItem;
     /** Whether the dialog is visible at the start */
     isOpen?: boolean;
+    /** Function to push a new route, used for navigation */
+    routePush?: (route: string) => void;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     requireWritable: false,
     selectedItem: undefined,
     isOpen: true,
+    routePush: () => {},
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -103,6 +106,10 @@ const fileMode = computed(() => props.mode == "file");
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
+
+const canCreateNewFileSource = computed(() => {
+    return urlTracker.value.atRoot() && fileSourceTemplatesStore.hasTemplates;
+});
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.ensureTemplates();
@@ -423,6 +430,13 @@ function onOk() {
     finalize();
 }
 
+function pushToPropRouter(route: string) {
+    if (props.routePush) {
+        modalShow.value = false;
+        props.routePush(route);
+    }
+}
+
 onMounted(() => {
     load(props.selectedItem);
 });
@@ -465,14 +479,13 @@ onMounted(() => {
             </BAlert>
         </template>
         <template v-slot:buttons>
-            <!-- TODO: Change this to a `:to` router-link button -->
             <GButton
-                v-if="fileSourceTemplatesStore.hasTemplates"
+                v-if="canCreateNewFileSource"
                 tooltip
                 size="small"
                 title="Create a new remote file source"
                 data-description="create new file source button"
-                href="/file_source_instances/create">
+                @click="pushToPropRouter('/file_source_instances/create')">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create new
             </GButton>

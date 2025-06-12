@@ -240,6 +240,10 @@ class Data(metaclass=DataMeta):
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
+    # Display behavior when preview=True: "inline" (can be displayed in browser),
+    # "download" (always triggers download), or None (default behavior)
+    display_behavior: Optional[Literal["inline", "download"]] = None
+
     # Trackster track type.
     track_type: Optional[str] = None
 
@@ -252,7 +256,7 @@ class Data(metaclass=DataMeta):
         """Initialize the datatype"""
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = {}
+        self.display_applications: Dict[str, DisplayApplication] = {}
 
     @classmethod
     def is_datatype_change_allowed(cls) -> bool:
@@ -263,6 +267,23 @@ class Data(metaclass=DataMeta):
         if cls.allow_datatype_change is not None:
             return cls.allow_datatype_change
         return cls.composite_type is None
+
+    @classmethod
+    def get_display_behavior(cls) -> str:
+        """
+        Returns the display behavior for this datatype.
+
+        If display_behavior is set on the class, returns that value.
+        Otherwise, returns "inline" for text-based types and "download" for binary types.
+        """
+        if cls.display_behavior is not None:
+            return cls.display_behavior
+
+        # Default behavior based on whether the datatype is binary
+        if cls.is_binary is True:
+            return "download"
+        else:
+            return "inline"
 
     def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """This function is called on an output dataset file after the content is initially generated."""
@@ -580,7 +601,7 @@ class Data(metaclass=DataMeta):
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
-                self._clean_and_set_mime_type(trans, mime, headers)  # type: ignore[arg-type]
+                self._clean_and_set_mime_type(trans, mime, headers)
                 return self._yield_user_file_content(trans, dataset, file_path, headers), headers
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
@@ -747,7 +768,9 @@ class Data(metaclass=DataMeta):
         assert display_application.id not in self.display_applications, "Attempted to add a display application twice"
         self.display_applications[display_application.id] = display_application
 
-    def get_display_application(self, key: str, default: Optional["DisplayApplication"] = None) -> "DisplayApplication":
+    def get_display_application(
+        self, key: str, default: Optional["DisplayApplication"] = None
+    ) -> Union["DisplayApplication", None]:
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset: DatasetProtocol, trans) -> Dict[str, "DisplayApplication"]:

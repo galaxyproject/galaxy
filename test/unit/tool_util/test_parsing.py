@@ -19,6 +19,10 @@ from galaxy.tool_util_models.tool_outputs import (
     ToolOutputDataset,
 )
 from galaxy.util import galaxy_directory
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.unittest import TestCase
 
 TOOL_XML_1 = """
@@ -346,7 +350,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -532,7 +536,9 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, *_ = (
+            self._tool_source.parse_requirements_and_containers()
+        )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
         assert containers[0].to_dict() == {
@@ -945,6 +951,23 @@ class TestCollectionCatGroupTag(FunctionalTestToolTestCase):
         assert output_model.label is None
         output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
         assert output_dataset_model.metadata_source == "input1"
+
+
+def test_old_invalid_citation_dont_cause_failure_to_load():
+    with as_file(resource_path(__name__, "invalid_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    assert tool_source.parse_citations() == []
+
+
+def test_invalid_citation_not_allowed_in_modern_tools():
+    with as_file(resource_path(__name__, "invalid_citation_24.2.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    exc = None
+    try:
+        tool_source.parse_citations()
+    except Exception as e:
+        exc = e
+    assert exc is not None
 
 
 class TestToolProvidedMetadata2(FunctionalTestToolTestCase):

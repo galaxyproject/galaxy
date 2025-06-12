@@ -8,7 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
-import { type BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import BroadcastCard from "./BroadcastCard.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";

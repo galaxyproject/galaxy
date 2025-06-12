@@ -120,12 +120,12 @@ export function isEmpty(value: any | Readonly<any[]>) {
  *
  * @param list List of strings to be converted in human readable list sentence
  */
-export function textify(list: Readonly<string[]>): string {
+export function textify(list: Readonly<string[]>, connectorWord = "or"): string {
     let string = list.toString().replace(/,/g, ", ");
     const pos = string.lastIndexOf(", ");
 
     if (pos !== -1) {
-        string = `${string.substring(0, pos)} or ${string.substring(pos + 2)}`;
+        string = `${string.substring(0, pos)} ${connectorWord} ${string.substring(pos + 2)}`;
     }
 
     return string;

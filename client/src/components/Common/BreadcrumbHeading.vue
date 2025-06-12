@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 
-import { type BreadcrumbItem } from "@/components/Common/index";
+import type { BreadcrumbItem } from "@/components/Common/index";
 import localize from "@/utils/localization";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -15,7 +15,7 @@ const props = defineProps<Props>();
 
 <template>
     <div class="breadcrumb-heading mb-2">
-        <Heading h1 separator inline size="md" class="breadcrumb-heading-header mr-2 mb-0">
+        <Heading h1 separator inline size="lg" class="breadcrumb-heading-header mr-2 mb-0">
             <template v-for="(item, index) in props.items">
                 <RouterLink
                     v-if="item.to"

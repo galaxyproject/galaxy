@@ -336,7 +336,7 @@ class HistoryContentsManager(base.SortableManager):
         # pull column from class by name or override with kwargs if listed there, then label
         for column_name in self.common_columns:
             if column_name in kwargs:
-                column = kwargs.get(column_name, None)
+                column = kwargs[column_name]
             elif column_name == "model_class":
                 column = literal(component_class.__name__)
             else:

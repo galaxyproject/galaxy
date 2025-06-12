@@ -254,11 +254,10 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                                 raise exceptions.RequestParameterInvalidException(message)
                             stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
                         elif q == "bookmarked":
-                            stmt = (
-                                stmt.join(model.StoredWorkflowMenuEntry)
-                                .where(model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
-                                .where(model.StoredWorkflowMenuEntry.user_id == user.id)
-                            )
+                            stmt = stmt.join(
+                                model.StoredWorkflowMenuEntry,
+                                model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id,
+                            ).where(model.StoredWorkflowMenuEntry.user_id == user.id)
                 elif isinstance(term, RawTextTerm):
                     tf = w_tag_filter(term.text, False)
                     alias = aliased(User)
@@ -925,7 +924,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None):
+    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None, instance_id=None):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -942,6 +941,12 @@ class WorkflowContentsManager(UsesAnnotations):
             version = None
         if version is not None:
             version = int(version)
+        elif instance_id:
+            # If the instance_id is provided, we need to extract the workflow instance via the version.
+            for i, workflow in enumerate(reversed(stored.workflows)):
+                if workflow.id == instance_id:
+                    version = i
+                    break
         workflow = stored.get_internal_version(version)
         if style == "export":
             style = self.app.config.default_workflow_export_format
@@ -1055,7 +1060,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if step.type == "tool":
                 incoming: Dict[str, Any] = {}
                 tool = trans.app.toolbox.get_tool(
-                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid
+                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
                 )
                 if not tool:
                     raise exceptions.MessageException(

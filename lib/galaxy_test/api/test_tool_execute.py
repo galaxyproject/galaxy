@@ -380,6 +380,136 @@ def test_map_over_collection(
     output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
 
 
+@requires_tool_id("cat|cat1")
+def test_map_over_data_with_paired_or_unpaired_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_unpaired()
+    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("paired_or_unpaired")
+    output_collection.assert_has_dataset_element("unpaired").with_contents_stripped("123")
+
+
+@requires_tool_id("cat|cat1")
+def test_map_over_data_with_paired_or_unpaired_paired(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_paired_or_unpaired_pair()
+    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute.assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("paired_or_unpaired")
+    output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
+
+
+@requires_tool_id("cat|cat1")
+def test_map_over_data_with_list_paired_or_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_list_of_paired_and_unpaired()
+    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute.assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("list:paired_or_unpaired")
+    output_collection.with_element_dict("paired_el")
+    output_collection.with_element_dict("unpaired_el")
+
+
+@requires_tool_id("collection_paired_or_unpaired")
+def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_example_list_of_pairs()
+    execute = required_tool.execute.with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab")
+
+
+@requires_tool_id("collection_paired_or_unpaired")
+def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, required_tool: RequiredTool):
+    contents = [("foo", "text for foo element")]
+    hdca = target_history.with_list(contents)
+    execute = required_tool.execute.with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("foo").with_contents_stripped("text for foo element")
+
+
+@requires_tool_id("collection_paired_or_unpaired")
+def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_example_list_of_lists()
+    execute = required_tool.execute.with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(3).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    print(output_collection.details)
+    assert output_collection.details["collection_type"] == "list:list"
+    as_dict_0 = output_collection.with_element_dict(0)
+    assert len(as_dict_0["object"]["elements"]) == 3
+
+
+@requires_tool_id("collection_paired_or_unpaired")
+def test_adapting_dataset_to_paired_or_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
+    hda1 = target_history.with_dataset("1\t2\t3").src_dict
+    execution = required_tool.execute.with_inputs(
+        {
+            "f1": {
+                "src": "CollectionAdapter",
+                "adapter_type": "PromoteDatasetToCollection",
+                "collection_type": "paired_or_unpaired",
+                "adapting": hda1,
+            }
+        }
+    )
+    execution.assert_has_job(0).with_output("out1").with_contents_stripped("1\t2\t3")
+
+
+@requires_tool_id("cat_collection")
+def test_adapting_dataset_to_list(target_history: TargetHistory, required_tool: RequiredTool):
+    hda1 = target_history.with_dataset("1\t2\t3").src_dict
+    execution = required_tool.execute.with_inputs(
+        {
+            "input1": {
+                "src": "CollectionAdapter",
+                "adapter_type": "PromoteDatasetToCollection",
+                "collection_type": "list",
+                "adapting": hda1,
+            }
+        }
+    )
+    execution.assert_has_job(0).with_output("out_file1").with_contents_stripped("1\t2\t3")
+
+
+@requires_tool_id("collection_paired_test")
+def test_adapting_two_datasets_to_paired_collection(target_history: TargetHistory, required_tool: RequiredTool):
+    hda1 = target_history.with_dataset("1\t2\t3").src_dict
+    hda2 = target_history.with_dataset("4\t5\t6").src_dict
+    execution = required_tool.execute.with_inputs(
+        {
+            "f1": {
+                "src": "CollectionAdapter",
+                "adapter_type": "PromoteDatasetsToCollection",
+                "collection_type": "paired",
+                "adapting": [
+                    {"name": "forward", **hda1},
+                    {"name": "reverse", **hda2},
+                ],
+            }
+        }
+    )
+    execution.assert_has_job(0).with_output("out1").with_contents_stripped("1\t2\t3\n4\t5\t6")
+
+
+@requires_tool_id("gx_data")
+def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, required_tool: RequiredTool):
+    hdca = target_history.with_example_list_of_lists()
+    execute = required_tool.execute.with_inputs({"parameter": {"batch": True, "values": [hdca.src_dict]}})
+    execute.assert_has_n_jobs(3).assert_creates_n_implicit_collections(1)
+    execute.assert_creates_implicit_collection(0)
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the

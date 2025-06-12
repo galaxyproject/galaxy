@@ -1,58 +1,19 @@
 const path = require("path");
 const fs = require("fs-extra");
 const del = require("del");
-const { src, dest, series, parallel, watch } = require("gulp");
+const { series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
-const xml2js = require("xml2js");
+const os = require("os");
+const yaml = require("yaml");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_IDS = [
-    "annotate_image",
-    "chiraviz",
-    "example",
-    "fits_graph_viewer",
-    "hyphyvision",
-    "jqplot/jqplot_bar",
-    "mvpapp",
-    "nora",
-    "nvd3/nvd3_bar",
-    "pv",
-    "scatterplot",
-    "tiffviewer",
-];
-const INSTALL_PLUGIN_BUILD_IDS = [
-    "aceeditor",
-    "aladin",
-    "alignment",
-    "cytoscape",
-    "drawrna",
-    "h5web",
-    "heatmap",
-    "kepler",
-    "ngl",
-    "molstar",
-    "msa",
-    "niivue",
-    "openlayers",
-    "openseadragon",
-    "pca",
-    "phylocanvas",
-    "plotly",
-    "plyr",
-    "tabulator",
-    "ts_visjs",
-    "unipept",
-    "venn",
-    "vitessce",
-    "vizarr",
-    "vtk",
-]; // todo: derive from XML
+const PLUGIN_BUILD_IDS = ["hyphyvision"];
 
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf("--limit");
@@ -94,6 +55,10 @@ PATHS.pluginBuildModules = [
         path.join(PATHS.pluginBaseDir, `visualizations/${plugin}/package.json`)
     ),
 ];
+
+const visualizationsConfig = "./visualizations.yml";
+const file = fs.readFileSync(visualizationsConfig, "utf8");
+const VISUALIZATION_PLUGINS = yaml.parse(file);
 
 function stageLibs(callback) {
     Object.keys(PATHS.stagedLibraries).forEach((lib) => {
@@ -251,62 +216,52 @@ function buildPlugins(callback, forceRebuild) {
 }
 
 /**
- * Same logic as buildPlugins, but for 'installed' plugins that rely on an XML
- * specifying npm dependencies (the INSTALL_PLUGIN_BUILD_IDS).
+ * Produce plugins from fully self-contained npm packages
  */
-async function installPlugins(callback, forceReinstall) {
-    for (const pluginName of INSTALL_PLUGIN_BUILD_IDS.filter(applyPluginFilter)) {
+async function installVisualizations(callback, forceReinstall = false) {
+    for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
+        const { package: pluginPackage, version } = VISUALIZATION_PLUGINS[pluginName];
         const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${pluginName}`);
-        const xmlPath = path.join(pluginDir, `config/${pluginName}.xml`);
-
-        if (!fs.existsSync(xmlPath)) {
-            console.error(`XML file not found: ${xmlPath}`);
-            continue;
-        }
-
-        const hashFilePath = path.join(pluginDir, "static", "plugin_build_hash.txt");
-
-        let skipInstall = false;
-        if (!forceReinstall && fs.existsSync(hashFilePath)) {
-            const oldHash = fs.readFileSync(hashFilePath, "utf8").trim();
-            const isHash = /^[0-9a-f]{7,40}$/.test(oldHash);
-
-            if (!isHash) {
-                console.log(`Hash file for ${pluginName} exists but is not a valid git hash.`);
-            } else {
-                const diffResult = child_process.spawnSync("git", ["diff", "--quiet", oldHash, "--", pluginDir], {
-                    stdio: "inherit",
-                    shell: true,
-                });
-                skipInstall = diffResult.status === 0;
-                if (!skipInstall) {
-                    fs.renameSync(hashFilePath, `${hashFilePath}.orig`);
+        const staticDir = path.join(pluginDir, "static");
+        const xmlPath = path.join(staticDir, `${pluginName}.xml`);
+        const hashFilePath = path.join(staticDir, "plugin_build_hash.txt");
+        const currentHash = `${pluginPackage}@${version}`;
+        let tempDir = null;
+        try {
+            if (!forceReinstall && fs.existsSync(hashFilePath)) {
+                const storedHash = fs.readFileSync(hashFilePath, "utf8").trim();
+                if (storedHash === currentHash) {
+                    console.log(`Package ${currentHash} already installed for ${pluginName}, skipping.`);
+                    continue;
                 }
             }
-        } else if (!fs.existsSync(hashFilePath)) {
-            console.log(`No install hashfile detected for ${pluginName}, generating now.`);
-        }
-
-        if (skipInstall) {
-            console.log(`No changes detected for ${pluginName}, skipping re-installation.`);
-        } else {
-            console.log(`Installing npm dependencies for installed plugin ${pluginName}...`);
-            try {
-                await installDependenciesFromXML(xmlPath, pluginDir);
-                console.log(`Finished installing for ${pluginName}, saving new hash.`);
-
-                // Save the current commit hash
-                child_process.execSync(`git rev-parse HEAD > ${hashFilePath}`, {
-                    stdio: "inherit",
-                    shell: true,
-                });
-            } catch (err) {
-                console.error(`Error installing for ${pluginName}:`, err);
-                if (failOnError) {
-                    console.error(
-                        "Failing build due to GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR being set, see error(s) above."
-                    );
-                    process.exit(1);
+            console.log(`Installing ${currentHash} into ${pluginDir}...`);
+            tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${pluginName}-`));
+            fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ private: true }, null, 2));
+            child_process.execSync(`npm install ${currentHash}`, {
+                cwd: tempDir,
+                stdio: "pipe",
+                shell: true,
+            });
+            const pkgDir = path.join(tempDir, "node_modules", pluginPackage);
+            if (!fs.existsSync(pkgDir)) {
+                throw new Error(`Package directory not found: ${pkgDir}`);
+            }
+            fs.emptyDirSync(pluginDir);
+            fs.copySync(pkgDir, pluginDir, { overwrite: true });
+            if (!fs.existsSync(xmlPath)) {
+                throw new Error(`Expected XML file not found after install: ${xmlPath}`);
+            }
+            fs.writeFileSync(hashFilePath, currentHash);
+            console.log(`Installed ${currentHash} into ${pluginDir}`);
+        } catch (err) {
+            console.error(`Failed to install ${pluginPackage}@${version} for ${pluginName}:`, err);
+        } finally {
+            if (tempDir && fs.existsSync(tempDir)) {
+                try {
+                    fs.removeSync(tempDir);
+                } catch (cleanupErr) {
+                    console.warn(`Warning: Failed to clean temp dir ${tempDir}:`, cleanupErr);
                 }
             }
         }
@@ -314,46 +269,12 @@ async function installPlugins(callback, forceReinstall) {
     return callback();
 }
 
-// Function to parse XML and install specified npm packages
-async function installDependenciesFromXML(xmlPath, pluginDir) {
-    const pluginXML = fs.readFileSync(xmlPath);
-    const parsedXML = await xml2js.parseStringPromise(pluginXML);
-    const requirements = parsedXML?.visualization?.requirements?.[0]?.requirement || [];
-
-    // For each <requirement type="npm" package="xxx" version="yyy" />
-    for (const dep of requirements) {
-        const { type: reqType, package: pkgName, version } = dep.$;
-        if (reqType === "npm" && pkgName && version) {
-            console.log(`   → Installing ${pkgName}@${version} in ${pluginDir}`);
-            const installResult = child_process.spawnSync(
-                "npm",
-                ["install", "--silent", "--no-save", `--prefix= .`, `${pkgName}@${version}`],
-                {
-                    cwd: pluginDir,
-                    stdio: "inherit",
-                    shell: true,
-                }
-            );
-
-            if (installResult.status === 0) {
-                // Installed successfully, copy over '/static' assets
-                const potentialStaticPath = path.join(pluginDir, "node_modules", pkgName, "static");
-                if (fs.existsSync(potentialStaticPath)) {
-                    await fs.copy(potentialStaticPath, path.join(pluginDir, "static"));
-                }
-            } else {
-                throw new Error(`npm install of ${pkgName}@${version} failed in ${pluginDir}`);
-            }
-        }
-    }
-}
-
 function forceBuildPlugins(callback) {
     return buildPlugins(callback, true);
 }
 
-function forceInstallPlugins(callback) {
-    return installPlugins(callback, true);
+function forceInstallVisualizations(callback) {
+    return installVisualizations(callback, true);
 }
 
 function cleanPlugins() {
@@ -361,8 +282,8 @@ function cleanPlugins() {
 }
 
 const client = parallel(stageLibs, icons);
-const plugins = series(buildPlugins, installPlugins, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(forceBuildPlugins, forceInstallPlugins, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installVisualizations, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, forceInstallVisualizations, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
@@ -376,4 +297,4 @@ module.exports.plugins = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
-module.exports.installPlugins = installPlugins;
+module.exports.installVisualizations = installVisualizations;

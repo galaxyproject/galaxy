@@ -11,9 +11,9 @@ from types import TracebackType
 from typing import (
     Any,
     cast,
-    Generator,
     IO,
     Iterable,
+    Iterator,
     List,
     Optional,
     overload,
@@ -147,7 +147,7 @@ def get_fileobj_raw(
         return compressed_format, fh
 
 
-def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
+def file_iter(fname: str, sep: Optional[Any] = None) -> Iterator[List[str]]:
     """
     This generator iterates over a file and yields its lines
     splitted via the C{sep} parameter. Skips empty lines and lines starting with

@@ -80,7 +80,7 @@ class RoleManager(base.ModelManager[model.Role]):
         if trans.sa_session.scalars(stmt).first():
             raise Conflict(f"A role with that name already exists [{name}]")
 
-        role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
+        role_type = role_definition_model.role_type  # TODO: allow non-admins to create roles
 
         role = Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)

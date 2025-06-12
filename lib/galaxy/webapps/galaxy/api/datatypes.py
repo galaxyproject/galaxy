@@ -11,7 +11,11 @@ from typing import (
     Union,
 )
 
-from fastapi import Query
+from fastapi import (
+    Path,
+    Query,
+    Response,
+)
 
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
@@ -20,12 +24,14 @@ from galaxy.managers.datatypes import (
     DatatypesCombinedMap,
     DatatypesEDAMDetailsDict,
     DatatypesMap,
+    DatatypeVisualizationMappingsList,
     view_converters,
     view_edam_data,
     view_edam_formats,
     view_index,
     view_mapping,
     view_sniffers,
+    view_visualization_mappings,
 )
 from . import (
     depends,
@@ -165,3 +171,93 @@ class FastAPIDatatypes:
         """Gets a map of datatypes and their corresponding EDAM data.
         EDAM data contains the EDAM iri, label, and definition."""
         return view_edam_data(self.datatypes_registry, True)
+
+    @router.get(
+        "/api/datatypes/{datatype}/visualizations",
+        public=True,
+        summary="Returns the visualization mapping for a specific datatype",
+        response_description="Visualization mapping for the specified datatype",
+        response_model=DatatypeVisualizationMappingsList,
+    )
+    async def visualization_for_datatype(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get visualization mapping for",
+            examples=["bam", "h5"],
+        ),
+    ) -> DatatypeVisualizationMappingsList:
+        """Gets the visualization mapping for a specific datatype.
+
+        Mappings are defined in the datatypes_conf.xml configuration file.
+        """
+        return view_visualization_mappings(self.datatypes_registry, datatype)
+
+    @router.get(
+        "/api/datatypes/{datatype}",
+        public=True,
+        summary="Get details for a specific datatype",
+        response_description="Detailed information about a datatype",
+    )
+    async def show(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get information for",
+            examples=["bam", "h5", "vcf"],
+        ),
+    ):
+        """Gets detailed information about a specific datatype.
+
+        Includes information about:
+        - Basic properties (description, mime type, etc.)
+        - Available converters
+        - EDAM mappings
+        - Preferred visualization
+        """
+        # Get the datatype object
+        dt_object = self.datatypes_registry.get_datatype_by_extension(datatype)
+        if dt_object is None:
+            return Response(status_code=404, content=f"Datatype '{datatype}' not found")
+
+        # Basic information
+        result = {
+            "extension": datatype,
+            "description": getattr(dt_object, "description", None),
+            "display_in_upload": datatype in self.datatypes_registry.upload_file_formats,
+            "mimetype": self.datatypes_registry.get_mimetype_by_extension(datatype),
+            "is_binary": getattr(dt_object, "is_binary", False),
+            "display_behavior": (
+                dt_object.get_display_behavior() if hasattr(dt_object, "get_display_behavior") else None
+            ),
+        }
+
+        # Add composite files if applicable
+        composite_files = getattr(dt_object, "composite_files", None)
+        if composite_files:
+            result["composite_files"] = [{"name": k, **v.dict()} for k, v in composite_files.items()]
+
+        # Add EDAM information if available
+        edam_format = self.datatypes_registry.edam_formats.get(datatype)
+        if edam_format:
+            result["edam_format"] = edam_format
+
+        edam_data = self.datatypes_registry.edam_data.get(datatype)
+        if edam_data:
+            result["edam_data"] = edam_data
+
+        # Add converter information
+        converters = self.datatypes_registry.get_converters_by_datatype(datatype)
+        if converters:
+            result["converters"] = list(converters.keys())
+
+        # Add preferred visualization if any
+        preferred_viz = self.datatypes_registry.get_preferred_visualization(datatype)
+        if preferred_viz:
+            result["preferred_visualization"] = {
+                "visualization": preferred_viz["visualization"],
+            }
+
+        return result

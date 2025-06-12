@@ -1,7 +1,7 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
 import { GalaxyApi } from "@/api/client";
-import { type components, type GalaxyApiPaths } from "@/api/schema";
+import type { components, GalaxyApiPaths } from "@/api/schema";
 
 export { type components, GalaxyApi, type GalaxyApiPaths };
 
@@ -317,6 +317,9 @@ export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
  */
 export type MessageException = components["schemas"]["MessageExceptionModel"];
 
+export type FieldDict = components["schemas"]["FieldDict"];
+export type FieldType = FieldDict["type"];
+
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
@@ -324,3 +327,9 @@ export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectReq
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+
+export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
+export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
+export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
+export type UserToolSource = components["schemas"]["UserToolSource-Input"];
+export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];

@@ -1,11 +1,14 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
+
+const { emit } = useEventBus<string>("grid-router-push");
 
 /**
  * Local types
@@ -57,7 +60,9 @@ const fields: FieldArray = [
                     if (data.type === "trackster") {
                         window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
                     } else {
-                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
+                        emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
+                            title: data.title,
+                        });
                     }
                 },
             },

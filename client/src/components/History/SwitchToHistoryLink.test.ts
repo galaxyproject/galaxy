@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import { type HistorySummaryExtended } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 

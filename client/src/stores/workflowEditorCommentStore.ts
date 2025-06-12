@@ -1,6 +1,6 @@
 import { computed, del, ref, set } from "vue";
 
-import { type Color } from "@/components/Workflow/Editor/Comments/colors";
+import type { Color } from "@/components/Workflow/Editor/Comments/colors";
 import {
     AxisAlignedBoundingBox,
     type Rectangle,

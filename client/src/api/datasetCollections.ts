@@ -1,6 +1,7 @@
 import {
+    type CollectionElementIdentifiers,
     type CollectionEntry,
-    type components,
+    type CreateNewCollectionPayload,
     type DCESummary,
     GalaxyApi,
     type HDCADetailed,
@@ -87,10 +88,7 @@ export async function fetchElementsFromCollection(params: {
     });
 }
 
-type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
-type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
-
-type NewCollectionOptions = {
+export type NewCollectionOptions = {
     name: string;
     element_identifiers: CollectionElementIdentifiers;
     collection_type: string;
@@ -107,13 +105,18 @@ export function createCollectionPayload(options: NewCollectionOptions): CreateNe
         element_identifiers: options.element_identifiers,
         collection_type: options.collection_type,
         instance_type: "history",
+        fields: "auto",
         copy_elements: options.copy_elements || true,
         hide_source_items: hideSourceItems,
-    };
+    } as CreateNewCollectionPayload;
 }
 
-export async function createHistoryDatasetCollectionInstance(options: NewCollectionOptions) {
+export async function createHistoryDatasetCollectionInstanceSimple(options: NewCollectionOptions) {
     const payload = createCollectionPayload(options);
+    return createHistoryDatasetCollectionInstanceFull(payload);
+}
+
+export async function createHistoryDatasetCollectionInstanceFull(payload: CreateNewCollectionPayload) {
     const { data, error } = await GalaxyApi().POST("/api/dataset_collections", {
         body: payload,
     });

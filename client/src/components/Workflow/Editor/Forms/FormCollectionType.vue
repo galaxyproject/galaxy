@@ -22,7 +22,10 @@ function onInput(newCollectionType: string | undefined) {
 const collectionTypeOptions = [
     { value: "list", label: "List of Datasets" },
     { value: "paired", label: "Dataset Pair" },
+    { value: "record", label: "Record" },
+    { value: "list:record", label: "List of Records" },
     { value: "list:paired", label: "List of Dataset Pairs" },
+    { value: "list:paired_or_unpaired", label: "Mixed List of Paired and Unpaired Datasets" },
 ];
 
 function updateValue(newValue: string | undefined) {
@@ -44,11 +47,11 @@ const emit = defineEmits(["onChange"]);
     <FormElement
         id="collection_type"
         :value="currentValue"
-        :attributes="{ data: collectionTypeOptions, display: 'simple' }"
+        :attributes="{ datalist: collectionTypeOptions }"
         :warning="warning ?? undefined"
         :error="error ?? undefined"
         title="Collection type"
         :optional="true"
-        type="select"
+        type="text"
         @input="onInput" />
 </template>

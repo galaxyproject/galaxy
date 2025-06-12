@@ -1,8 +1,8 @@
 import { readonly, ref, watch } from "vue";
 
-import { type StoreExportPayload } from "@/api";
+import type { StoreExportPayload } from "@/api";
 import { GalaxyApi } from "@/api";
-import { type ExportParams } from "@/components/Common/models/exportRecordModel";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 

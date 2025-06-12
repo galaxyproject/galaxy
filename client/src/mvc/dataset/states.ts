@@ -55,9 +55,6 @@ const STATES = {
         RAW_STATES.SETTING_METADATA,
         RAW_STATES.NEW,
     ],
-    VALID_INPUT_STATES: Object.values(RAW_STATES).filter(
-        (state) => ![RAW_STATES.ERROR, RAW_STATES.DISCARDED, RAW_STATES.FAILED_METADATA].includes(state)
-    ),
 };
 
 //==============================================================================

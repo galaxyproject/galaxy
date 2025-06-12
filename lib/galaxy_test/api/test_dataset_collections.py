@@ -1,3 +1,4 @@
+import json
 import zipfile
 from io import BytesIO
 from typing import List
@@ -99,6 +100,125 @@ class TestDatasetCollectionsApi(ApiTestCase):
             assert len(pair_elements) == 2
             pair_1_element_1 = pair_elements[0]
             assert pair_1_element_1["element_index"] == 0
+
+    def test_create_paried_or_unpaired(self, history_id):
+        collection_name = "a singleton in a paired_or_unpaired collection"
+        contents = [
+            ("unpaired", "1\t2\t3"),
+        ]
+        single_identifier = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name=collection_name,
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=single_identifier,
+            collection_type="paired_or_unpaired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+        assert dataset_collection["collection_type"] == "paired_or_unpaired"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 1, dataset_collection
+
+    def test_create_record(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control2", "type": "File"},
+        ]
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=record_identifiers,
+            collection_type="record",
+            fields=fields,
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+        assert dataset_collection["collection_type"] == "record"
+        assert dataset_collection["name"] == "a record"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 3, dataset_collection
+        record_pos_0_element = returned_collections[0]
+        self._assert_has_keys(record_pos_0_element, "element_index")
+        record_pos_0_object = record_pos_0_element["object"]
+        self._assert_has_keys(record_pos_0_object, "name", "history_content_type")
+
+    def test_record_requires_fields(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=json.dumps(record_identifiers),
+            collection_type="record",
+        )
+        create_response = self._post("dataset_collections", payload)
+        self._assert_status_code_is(create_response, 400)
+
+    def test_record_auto_fields(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=record_identifiers,
+            collection_type="record",
+            fields="auto",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        self._check_create_response(create_response)
+
+    def test_record_field_validation(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        too_few_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+        ]
+        too_many_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control2", "type": "File"},
+            {"name": "control3", "type": "File"},
+        ]
+        wrong_name_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control3", "type": "File"},
+        ]
+        for fields in [too_few_fields, too_many_fields, wrong_name_fields]:
+            payload = dict(
+                name="a record",
+                instance_type="history",
+                history_id=history_id,
+                element_identifiers=json.dumps(record_identifiers),
+                collection_type="record",
+                fields=json.dumps(fields),
+            )
+            create_response = self._post("dataset_collections", payload)
+            self._assert_status_code_is(create_response, 400)
 
     def test_list_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
@@ -317,13 +437,13 @@ class TestDatasetCollectionsApi(ApiTestCase):
             element0 = hdca["elements"][0]
             assert element0["element_identifier"] == "samp1"
 
-    @skip_if_github_down
     def test_upload_collection_from_url(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             elements = [
                 {
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                    "url": self.dataset_populator.base64_url_for_string("hello world"),
+                    "name": "hello.txt",
                     "info": "my cool bed",
                 }
             ]
@@ -342,8 +462,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
             hdca = self._assert_one_collection_created_in_history(history_id)
             assert len(hdca["elements"]) == 1, hdca
             element0 = hdca["elements"][0]
-            assert element0["element_identifier"] == "4.bed"
-            assert element0["object"]["file_size"] == 61
+            assert element0["element_identifier"] == "hello.txt"
+            assert element0["object"]["file_size"] == 11
 
     def test_upload_collection_deferred(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

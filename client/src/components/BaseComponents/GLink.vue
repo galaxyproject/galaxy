@@ -1,24 +1,37 @@
 <script setup lang="ts">
-import type { Placement } from "@popperjs/core";
+/**
+ * Clickable inline text element that can be used for router links, anchors, or inline text buttons.
+ * Defaults to button behavior.
+ */
+
+import type { Placement } from "@floating-ui/dom";
 import { computed, ref } from "vue";
 import type { RouterLink } from "vue-router";
 
 import { useClickableElement } from "@/components/BaseComponents/composables/clickableElement";
 import { useCurrentTitle } from "@/components/BaseComponents/composables/currentTitle";
 import { useResolveElement } from "@/composables/resolveElement";
-import { useUid } from "@/composables/utils/uid";
 
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 const props = defineProps<{
+    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
     href?: string;
+    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
     to?: string;
+    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
     disabled?: boolean;
+    /** Title attribute, or tooltip text */
     title?: string;
+    /** Alternative title to be displayed in a disabled state */
     disabledTitle?: string;
+    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
     tooltip?: boolean;
+    /** Controls the positioning of the tooltip, if a tooltip is active */
     tooltipPlacement?: Placement;
+    /** Dark variant, instead of default blue */
     dark?: boolean;
+    /** Disables the default bold look of the link */
     thin?: boolean;
 }>();
 
@@ -44,7 +57,6 @@ const styleClasses = computed(() => {
 
 const baseComponent = useClickableElement(props);
 const currentTitle = useCurrentTitle(props);
-const tooltipId = useUid("g-tooltip");
 
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
@@ -62,7 +74,6 @@ const linkElementRef = useResolveElement(linkRef);
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? props.to ?? props.href : ''"
         :title="props.tooltip ? false : currentTitle"
-        :aria-describedby="showTooltip ? tooltipId : false"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
         @click="onClick">
@@ -71,7 +82,6 @@ const linkElementRef = useResolveElement(linkRef);
         <!-- TODO: make tooltip a sibling in Vue 3 -->
         <GTooltip
             v-if="showTooltip"
-            :id="tooltipId"
             :reference="linkElementRef"
             :text="currentTitle"
             :placement="props.tooltipPlacement" />

@@ -2,7 +2,7 @@
 import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
+import type { InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 import ExportForm from "@/components/Common/ExportForm.vue";
 

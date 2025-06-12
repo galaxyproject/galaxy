@@ -14,7 +14,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
-import { faDiagramNext } from "font-awesome-6";
+import { faDiagramNext, faSearch } from "font-awesome-6";
 import { computed, type Ref } from "vue";
 
 import { useActivityStore } from "@/stores/activityStore";
@@ -28,6 +28,15 @@ export const workflowEditorActivities = [
         description: "View and edit the attributes of this workflow.",
         panel: true,
         icon: faPencilAlt,
+        visible: true,
+    },
+    {
+        title: "Search",
+        id: "workflow-editor-search",
+        tooltip: "Search the contents of this workflow",
+        description: "Search the contents of this workflow.",
+        panel: true,
+        icon: faSearch,
         visible: true,
     },
     {
@@ -127,6 +136,17 @@ export const workflowEditorActivities = [
         visible: true,
         click: true,
         optional: true,
+    },
+    {
+        description: "Insert custom tools.",
+        icon: faWrench,
+        id: "workflow-editor-user-defined-tools",
+        optional: true,
+        panel: true,
+        title: "Custom Tools",
+        to: null,
+        tooltip: "List and create user-defined tools",
+        visible: true,
     },
     {
         title: "Download",

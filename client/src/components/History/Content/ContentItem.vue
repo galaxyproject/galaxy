@@ -19,7 +19,6 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
-import { JobStateSummary } from "./Collection/JobStateSummary";
 import { getContentItemState, type StateMap, STATES } from "./model/states";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
@@ -90,8 +89,9 @@ const eventStore = useEventStore();
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
 
-const jobState = computed(() => {
-    return new JobStateSummary(props.item);
+const itemIsRunningInteractiveTool = computed(() => {
+    // If our dataset id is in the entrypOintStore it's a running it
+    return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
 });
 
 const contentId = computed(() => {
@@ -171,7 +171,7 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
-    let display = `/datasets/${id}/preview`;
+    let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
     }
@@ -263,10 +263,10 @@ function onDisplay() {
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name, force: true });
+            router.push(itemUrls.value.display, { force: true, preventWindowManager: true });
         } else if (itemUrls.value.display) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name });
+            router.push(itemUrls.value.display, { preventWindowManager: true });
         }
     }
 }
@@ -293,6 +293,10 @@ function onDragEnd() {
 
 function onEdit() {
     router.push(itemUrls.value.edit!);
+}
+
+function onView() {
+    router.push(itemUrls.value.view!);
 }
 
 function onShowCollectionInfo() {
@@ -418,8 +422,13 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :is-running-interactive-tool="itemIsRunningInteractiveTool"
+                        :interactive-tool-id="
+                            itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''
+                        "
                         @delete="onDelete"
                         @display="onDisplay"
+                        @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
                         @undelete="onUndelete"
@@ -429,13 +438,7 @@ function unexpandedClick(event: Event) {
         </div>
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
-            <CollectionDescription
-                v-if="!isDataset"
-                class="px-2 pb-2 cursor-pointer"
-                :job-state-summary="jobState"
-                :collection-type="item.collection_type"
-                :element-count="item.element_count"
-                :elements-datatypes="item.elements_datatypes" />
+            <CollectionDescription v-if="!isDataset" class="px-2 pb-2 cursor-pointer" :hdca="item" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"

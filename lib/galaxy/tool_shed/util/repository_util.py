@@ -4,7 +4,6 @@ import re
 import shutil
 from typing import (
     Any,
-    cast,
     Dict,
     List,
     Optional,
@@ -345,7 +344,6 @@ AnyRepositoryTupleT = Union[OldRepositoryTupleT, RepositoryTupleT]
 def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> RepositoryTupleT:
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len(repo_info_tuple) == 6:
-        old_repo_info = cast(OldRepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -353,10 +351,9 @@ def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> Reposi
             ctx_rev,
             repository_owner,
             tool_dependencies,
-        ) = old_repo_info
+        ) = repo_info_tuple
         repository_dependencies = None
     elif len(repo_info_tuple) == 7:
-        repo_info = cast(RepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -365,7 +362,7 @@ def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> Reposi
             repository_owner,
             repository_dependencies,
             tool_dependencies,
-        ) = repo_info
+        ) = repo_info_tuple
     return (
         description,
         repository_clone_url,

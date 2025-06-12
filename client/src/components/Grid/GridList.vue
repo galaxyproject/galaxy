@@ -7,14 +7,7 @@ import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bo
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    type BatchOperation,
-    type FieldEntry,
-    type FieldHandler,
-    type GridConfig,
-    type Operation,
-    type RowData,
-} from "./configs/types";
+import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
@@ -337,7 +330,7 @@ watch(operationMessage, () => {
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                <Heading h1 separator inline size="lg" class="flex-grow-1 m-0" data-description="grid title">
                     <span v-localize>{{ gridConfig.title }}</span>
                 </Heading>
                 <div class="d-flex justify-content-between">

@@ -49,9 +49,6 @@ setup-venv:
 test:
 	$(IN_VENV) pytest $(TESTS)
 
-develop:
-	python setup.py develop
-
 dist: clean
 	$(IN_VENV) python -m build
 	ls -l dist

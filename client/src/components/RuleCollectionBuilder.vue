@@ -132,6 +132,10 @@
                                 {{ l("Replacement Expression") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
                             </label>
+                            <label v-b-tooltip.hover>
+                                <input v-model="addColumnRegexAllowUnmatched" type="checkbox" />
+                                {{ l("Allow regular expression unmatched.") }}
+                            </label>
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_concatenate"
@@ -464,6 +468,7 @@
                         v-else
                         id="hot-table"
                         ref="hotTable"
+                        height="400px"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         stretch-h="all"></RuleGrid>
@@ -513,7 +518,7 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
+            <b-row v-if="mode == 'modal'" class="mx-auto">
                 <GButton
                     tooltip
                     :title="titleCancel"
@@ -555,7 +560,7 @@
                 )
             }}
         </RuleModalHeader>
-        <RuleModalFooter>
+        <RuleModalFooter v-if="mode == 'modal'">
             <GButton class="creator-cancel-btn" tabindex="-1" @click="cancel"> {{ l("Close") }} </GButton>
         </RuleModalFooter>
     </StateDiv>
@@ -565,11 +570,11 @@
         <RuleModalMiddle>
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
-        <RuleModalFooter>
-            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">
-                {{ l("Close") }}
-            </GButton>
-            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'"> {{ l("Okay") }} </GButton>
+        <RuleModalFooter v-if="mode == 'modal'">
+            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
+                l("Close")
+            }}</GButton>
+            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{ l("Okay") }}</GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>
@@ -676,14 +681,16 @@ export default {
             required: false,
             default: true,
         },
-        // Callbacks sent in by modal code.
+        // Callbacks sent in by modal code, optional if mode is not modal
         oncancel: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         oncreate: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         ftpUploadSite: {
             type: String,
@@ -694,6 +701,11 @@ export default {
             type: String,
             required: false,
             default: "aggrid",
+        },
+        mode: {
+            type: String,
+            required: false,
+            default: "modal", // set to wizard to use embedded formatting
         },
     },
     data: function () {
@@ -797,6 +809,7 @@ export default {
             addColumnRegexExpression: "",
             addColumnRegexReplacement: null,
             addColumnRegexGroupCount: null,
+            addColumnRegexAllowUnmatched: false,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
             addColumnGroupTagValueValue: "",
@@ -999,11 +1012,17 @@ export default {
                     if (collectionTypeRank == "list") {
                         if (flatishList) {
                             metadataOptions["identifier" + index] = _l("List Identifier");
+                            metadataOptions["index" + index] = _l("List Index");
                         } else {
                             metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                            metadataOptions["index" + index] = _l("List Index ") + (parseInt(index) + 1);
                         }
+                    } else if (collectionTypeRank == "record") {
+                        metadataOptions["identifier" + index] = _l("Record Identifier");
+                        metadataOptions["index" + index] = _l("Record Index");
                     } else {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
+                        metadataOptions["index" + index] = _l("Paired Index (0 or 1)");
                     }
                 }
                 metadataOptions["tags"] = _l("Tags");
@@ -1184,6 +1203,9 @@ export default {
                     this.addColumnRegexGroupCount = 1;
                 }
             }
+        },
+        validInput: function (newState) {
+            this.$emit("validInput", newState);
         },
     },
     created() {
@@ -1376,7 +1398,11 @@ export default {
                     this.doFullJobCheck(jobId);
                 } else {
                     startWatchingHistory();
-                    this.oncreate();
+                    this.$emit("onCreate", jobResponse.data);
+                    if (this.oncreate) {
+                        // legacy non-event handling
+                        this.oncreate();
+                    }
                 }
             };
             const doJobCheck = () => {
@@ -1428,6 +1454,9 @@ export default {
                 });
             }
         },
+        attemptCreate() {
+            this.createCollection();
+        },
         createCollection() {
             const asJson = {
                 rules: this.rules,
@@ -1445,21 +1474,36 @@ export default {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    const deferreds = Object.entries(elements).map(([name, els]) => {
-                        // This looks like a promise but it is not one because creationFn and
-                        // oncreate are references to function from the backbone models which means
-                        // they are expecting their arguments in a different order. So, looks like,
-                        // jQuery.Deferred and therefore jQuery are still dependencies
-                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                    });
-                    const promises = deferreds.map(deferredToPromise);
-                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    if (this.creationFn) {
+                        const deferreds = Object.entries(elements).map(([name, els]) => {
+                            // This looks like a promise but it is not one because creationFn and
+                            // oncreate are references to function from the backbone models which means
+                            // they are expecting their arguments in a different order. So, looks like,
+                            // jQuery.Deferred and therefore jQuery are still dependencies
+                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                        });
+                        const promises = deferreds.map(deferredToPromise);
+                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    } else {
+                        const request = Object.entries(elements).map(([name, els]) => {
+                            return {
+                                name,
+                                elementIdentifiers: els,
+                                collectionType: collectionType,
+                                hideSourceItems,
+                            };
+                        });
+                        this.$emit("onAttemptCreate", request);
+                    }
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
                 if (this.state !== "error") {
                     this.saveRulesFn(this.ruleSourceJson);
-                    this.oncreate();
+                    this.$emit("onCreate");
+                    if (this.oncreate) {
+                        this.oncreate();
+                    }
                 }
             } else {
                 const Galaxy = getGalaxyInstance();
@@ -1670,26 +1714,35 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_) {
+        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_, parentIndices_) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
+            const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
             let sources = [];
-            for (const element of elements) {
+            for (const index in elements) {
+                const element = elements[index];
                 const elementObject = element.object;
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
+                const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
                     data.push([]);
-                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    const source = {
+                        identifiers: identifiers,
+                        indices: indices,
+                        dataset: elementObject,
+                        tags: elementObject.tags,
+                    };
                     sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     const elementObj = this.populateElementsFromCollectionDescription(
                         elementObject.elements,
                         restCollectionType,
-                        identifiers
+                        identifiers,
+                        indices
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;

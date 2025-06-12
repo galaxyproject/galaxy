@@ -18,6 +18,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 from typing_extensions import (
@@ -27,19 +28,128 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
 from .assertions import assertions
-from .parameters import (
-    ToolParameterT,
-)
+from .parameters import ToolParameterT
 from .tool_outputs import (
+    IncomingToolOutput,
     ToolOutput,
 )
 from .tool_source import (
     Citation,
+    ContainerRequirement,
     HelpContent,
+    JavascriptRequirement,
     OutputCompareType,
+    ResourceRequirement,
     XrefDict,
 )
+
+
+def normalize_dict(values, keys: List[str]):
+    for key in keys:
+        items = values.get(key)
+        if isinstance(items, dict):  # dict-of-dicts format
+            # Transform dict-of-dicts to list-of-dicts
+            values[key] = [{"name": k, **v} for k, v in items.items()]
+
+
+class ToolSourceBase(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    version: Optional[str] = "1.0"
+    profile: Optional[float] = None
+    description: Optional[str] = None
+    container: Optional[str] = None
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
+    inputs: List[GalaxyToolParameterModel] = []
+    outputs: List[IncomingToolOutput] = []
+    citations: Optional[List[Citation]] = None
+    license: Optional[str] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Optional[HelpContent] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
+
+
+# repeated fields to get consistent order, ugh, FIXME obviously
+class UserToolSource(BaseModel):
+    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
+    id: Annotated[
+        str,
+        Field(
+            description="Unique identifier for the tool. Should be all lower-case and should not include whitespace.",
+            examples=["my-cool-tool"],
+            min_length=3,
+            max_length=255,
+        ),
+    ]
+    version: Annotated[str, Field(description="Version for the tool.", examples=["0.1.0"])]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool."
+        ),
+    ]
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="The description is displayed in the tool menu immediately following the hyperlink for the tool."
+        ),
+    ] = None
+    container: Annotated[
+        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+    ]
+    requirements: Annotated[
+        Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
+        Field(
+            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
+        ),
+    ] = []
+    shell_command: Annotated[
+        str,
+        Field(
+            title="shell_command",
+            description="A string that contains the command to be executed. Parameters can be referenced inside $().",
+            examples=["head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'"],
+        ),
+    ]
+    inputs: List[GalaxyToolParameterModel] = []
+    outputs: List[IncomingToolOutput] = []
+    citations: Optional[List[Citation]] = None
+    license: Annotated[
+        Optional[str],
+        Field(
+            description="A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.",
+            examples=["MIT"],
+        ),
+    ] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Annotated[Optional[HelpContent], Field(description="Help text shown below the tool interface.")] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
+
+
+class AdminToolSource(ToolSourceBase):
+    class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
+    command: str
+
+
+DynamicToolSources = Annotated[Union[UserToolSource, AdminToolSource], Field(discriminator="class_")]
 
 
 class ParsedTool(BaseModel):

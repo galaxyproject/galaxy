@@ -1,6 +1,6 @@
 import { computed, type Ref, ref, watch } from "vue";
 
-import { type AnyUser } from "@/api";
+import type { AnyUser } from "@/api";
 
 import { usePersistentRef } from "./persistentRef";
 

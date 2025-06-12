@@ -29,7 +29,7 @@
         </b-modal>
         <ActivityBar
             ref="activityBar"
-            :default-activities="workflowEditorActivities"
+            :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false"
@@ -51,6 +51,7 @@
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -105,6 +106,10 @@
                     @update:annotationCurrent="setAnnotation"
                     @update:logoUrlCurrent="setLogoUrl"
                     @update:helpCurrent="setHelp" />
+                <UserToolPanel
+                    v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
+                    :in-workflow-editor="true"
+                    @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -228,8 +233,10 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { textify } from "@/utils/utils";
 
 import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
@@ -255,7 +262,9 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
+import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 
@@ -279,6 +288,8 @@ export default {
         WorkflowPanel,
         NodeInspector,
         InputPanel,
+        UserToolPanel,
+        SearchPanel,
     },
     props: {
         workflowId: {
@@ -359,7 +370,8 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "set license",
+            "license"
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -373,7 +385,8 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "set creator",
+            "creator"
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -396,7 +409,8 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify short description"
+            "modify short description",
+            "annotation"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -508,6 +522,23 @@ export default {
         const { hasChanges } = storeToRefs(stateStore);
         const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
+        const hasDuplicateOutputs = computed(() => stepStore.duplicateLabels.size > 0);
+
+        const hasErrors = computed(() => hasInvalidConnections.value || hasDuplicateOutputs.value);
+
+        const errorText = computed(() => {
+            const texts = [];
+
+            if (hasInvalidConnections.value) {
+                texts.push("invalid connections");
+            }
+
+            if (hasDuplicateOutputs.value) {
+                texts.push("duplicate output labels");
+            }
+
+            return `Workflow has ${textify(texts, "and")}`;
+        });
 
         stepStore.$subscribe((_mutation, _state) => {
             if (!initialLoading.value) {
@@ -554,9 +585,7 @@ export default {
         const getLabels = computed(() => fromSteps(steps.value));
 
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value
-                ? "Workflow has invalid connections, review and remove invalid connections"
-                : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
         );
 
         useActivityLogic(
@@ -569,11 +598,24 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const unprivilegedToolStore = useUnprivilegedToolStore();
+        const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+        const workflowActivities = computed(() =>
+            workflowEditorActivities.filter(
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
+            )
+        );
+
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
         return {
             id,
             name,
             parameters,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -593,6 +635,8 @@ export default {
             help,
             setHelp,
             logoUrl,
+            // make component look like an API workflow with logo_url alias for logoUrl
+            logo_url: logoUrl,
             setLogoUrl,
             tags,
             setTags,
@@ -601,6 +645,9 @@ export default {
             connectionStore,
             hasChanges,
             hasInvalidConnections,
+            hasDuplicateOutputs,
+            hasErrors,
+            errorText,
             stepStore,
             steps,
             comments,
@@ -624,6 +671,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            workflowActivities,
         };
     },
     data() {
@@ -649,7 +697,6 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
-            workflowEditorActivities,
             faTimes,
             faCog,
             faSave,
@@ -790,8 +837,8 @@ export default {
                 position: defaultPosition(this.graphOffset, this.transform),
             });
         },
-        onInsertTool(tool_id, tool_name) {
-            this._insertStep(tool_id, tool_name, "tool");
+        onInsertTool(tool_id, tool_name, toolUuid) {
+            this._insertStep(tool_id, tool_name, "tool", undefined, toolUuid);
         },
         async onInsertModule(module_id, module_name, state) {
             this._insertStep(module_name, module_name, module_id, state);
@@ -861,9 +908,9 @@ export default {
             this.$router.push("/workflows/edit");
         },
         async saveOrCreate() {
-            if (this.hasInvalidConnections) {
+            if (this.hasErrors) {
                 const confirmed = await this.confirm(
-                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
@@ -1052,7 +1099,7 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        async _insertStep(contentId, name, type, state) {
+        async _insertStep(contentId, name, type, state, toolUuid) {
             const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,
@@ -1064,13 +1111,14 @@ export default {
             const stepData = action.getNewStepData();
 
             const response = await getModule(
-                { name, type, content_id: contentId, tool_state: state },
+                { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
                 stepData.id,
                 this.stateStore.setLoadingState
             );
 
             const updatedStep = {
                 ...stepData,
+                tool_uuid: toolUuid,
                 tool_state: response.tool_state,
                 inputs: response.inputs,
                 outputs: response.outputs,

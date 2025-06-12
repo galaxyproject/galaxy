@@ -85,15 +85,14 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     def test_edit_license(self):
         editor = self.components.workflow_editor
         name = self.create_and_wait_for_new_workflow_in_editor()
-        editor.license_selector.wait_for_visible()
-        assert "Do not specify" in editor.license_current_value.wait_for_text()
+        editor.canvas_body.wait_for_visible()
+        assert "Do not specify" in self.workflow_editor_license_text()
 
         self.workflow_editor_set_license("MIT")
         self.workflow_editor_click_save()
 
         self.workflow_index_open_with_name(name)
-        editor.license_selector.wait_for_visible()
-        assert "MIT" in editor.license_current_value.wait_for_text()
+        assert "MIT" in self.workflow_editor_license_text()
 
     @selenium_test
     def test_parameter_regex_validation(self):
@@ -209,8 +208,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         name = self.workflow_create_new()
         self.workflow_editor_add_input(item_name="data_input")
         self.screenshot("workflow_editor_data_input_new")
-        editor.label_input.wait_for_and_send_keys("input1")
-        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.workflow_editor_set_node_label("input1")
+        self.workflow_editor_set_node_annotation("my cool annotation")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
@@ -442,6 +441,81 @@ steps:
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
+    def test_editor_change_stack_inserting_inputs(self):
+        editor = self.components.workflow_editor
+        annotation = "change_stack_test_inserting_inputs"
+        self.workflow_create_new(annotation=annotation)
+
+        self.workflow_editor_add_input(item_name="data_input")
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.workflow_editor_add_input(item_name="parameter_input")
+
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+        editor.tool_bar.changes.wait_for_and_click()
+        changes = editor.changes
+
+        changes.action_insert_data_input.wait_for_present()
+        changes.action_insert_data_collection_input.wait_for_present()
+        changes.action_insert_parameter.wait_for_present()
+
+        # Undo all of it by clicking the first node.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        # now that same action has become a redo, so we should have a node back afterward.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_data_collection_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_parameter.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+    @selenium_test
+    def test_editor_change_stack_set_attributes(self):
+        editor = self.components.workflow_editor
+        annotation = "change_stack_test_set_attributes"
+        name = self.workflow_create_new(annotation=annotation)
+
+        assert "Do not specify" in self.workflow_editor_license_text()
+        self.workflow_editor_set_license("MIT")
+        assert "MIT" in self.workflow_editor_license_text()
+
+        editor.tool_bar.changes.wait_for_and_click()
+
+        changes = editor.changes
+        changes.action_set_license.wait_for_and_click()
+        # it switches back so this isn't needed per se
+        # editor.tool_bar.attributes.wait_for_and_click()
+        assert "Do not specify" in self.workflow_editor_license_text()
+
+        # for annotation we want to reset the change stack to dismiss
+        # the original setting of the annotation
+        name = self.workflow_index_open_with_name(name)
+
+        annotation_modified = "change_stack_test_set_attributes modified!!!"
+
+        self.workflow_editor_set_annotation(annotation_modified)
+        self.assert_wf_annotation_is(annotation_modified)
+
+        editor.tool_bar.changes.wait_for_and_click()
+        changes.action_set_annotation.wait_for_and_click()
+
+        self.assert_wf_annotation_is(annotation)
+
+    @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
         self.workflow_editor_maximize_center_pane()
@@ -465,6 +539,38 @@ steps:
         self.open_in_workflow_editor(WORKFLOW_NESTED_SIMPLE)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_nested")
+
+    @selenium_test
+    def test_best_practices_input_label(self):
+        editor = self.components.workflow_editor
+        annotation = "best_practices_input_label"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_input(item_name="data_input")
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_input_metadata.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_input_metadata(index=0)
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "true"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        item.wait_for_and_click()
+        self.workflow_editor_set_node_label("best practice input")
+
+        # editor.tool_bar.best_practices.wait_for_and_click()
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "false"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        self.workflow_editor_set_node_annotation("informative annotation")
+
+        @retry_assertion_during_transitions
+        def assert_linting_input_metadata_okay():
+            section_element = best_practices.section_input_metadata.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_input_metadata_okay()
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):
@@ -558,9 +664,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        editor.node._(label="multiple_versions").wait_for_and_click()
-        editor.tool_version_button.wait_for_and_click()
-        assert self.select_dropdown_item("Switch to 0.2"), "Switch to tool version dropdown item not found"
+        self.workflow_editor_set_tool_vesrion("0.2", node="multiple_versions")
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
@@ -574,6 +678,22 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
+
+    @selenium_test
+    def test_editor_tool_upgrade_all_tools(self):
+        editor = self.components.workflow_editor
+        annotation = "upgarde_all_test"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_tool_step("multiple_versions")
+        self.workflow_editor_set_node_label(label="target label")
+        self.workflow_editor_set_tool_vesrion("0.1")
+        self.assert_workflow_has_changes_and_save()
+
+        editor.tool_bar.upgrade_all.wait_for_and_click()
+        self.workflow_editor_ensure_tool_form_open(node=0)
+        node = self.components.tool_form.tool_version.wait_for_present()
+        version = node.get_attribute("data-version")
+        assert version == "0.2"
 
     @selenium_test
     def test_editor_tool_upgrade_message(self):
@@ -747,9 +867,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        cat_node = editor.node._(label="first_cat")
-        cat_node.wait_for_and_click()
-        self.set_text_element(editor.label_input, "source label")
+        self.workflow_editor_set_node_label(label="source label", node="first_cat")
         # Select node using new label, ensures labels are synced between side panel and node
         cat_node = editor.node._(label="source label")
         self.assert_workflow_has_changes_and_save()
@@ -1300,7 +1418,7 @@ steps:
         canvas = editor.canvas_body.wait_for_visible()
 
         # place tool in center of canvas
-        self.tool_open("cat")
+        self.workflow_editor_add_tool_step("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("tool_node")
         tool_node = editor.node._(label="tool_node").wait_for_present()

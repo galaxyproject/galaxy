@@ -39,7 +39,6 @@ from galaxy.model import (
     FormDefinition,
     FormValues,
     HistoryDatasetAssociation,
-    Job,
     Role,
     User,
     UserAddress,
@@ -489,7 +488,7 @@ class FastAPIUsers:
                 trans.sa_session.add(new_len)
                 new_len.name = name
                 new_len.visible = False
-                new_len.state = Job.states.OK
+                new_len.state = Dataset.states.OK
                 new_len.info = "custom build .len file"
                 try:
                     trans.app.object_store.create(new_len.dataset)

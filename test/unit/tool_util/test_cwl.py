@@ -281,7 +281,7 @@ def test_load_proxy_simple():
     outputs, output_collections = tool_source.parse_outputs(None)
     assert len(outputs) == 1
 
-    software_requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+    software_requirements, containers, resource_requirements, *_ = tool_source.parse_requirements_and_containers()
     assert software_requirements.to_dict() == []
     assert len(containers) == 1
     assert containers[0].to_dict() == {

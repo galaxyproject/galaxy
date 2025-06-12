@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HDCASummary } from "@/api";
+import type { HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
 const router = useRouter();

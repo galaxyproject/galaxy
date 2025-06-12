@@ -46,6 +46,7 @@ dependencies = [
     "gxformat2",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
+    "httpx",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
@@ -92,7 +93,7 @@ dependencies = [
     "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
-    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlitedict",
     "sqlparse",
     "starlette",
@@ -115,21 +116,13 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "httpx",
-    "isort",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
@@ -146,17 +139,27 @@ dev = [
     "pytest-shard",
     "responses",
     "roc-validator",
-    "rucio-clients>=33.6.0,!=37.0.*,!=37.1.0,!=37.1.0.post1",  # https://github.com/rucio/rucio/pull/7665
+    "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
     "tuspy",
     "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",
