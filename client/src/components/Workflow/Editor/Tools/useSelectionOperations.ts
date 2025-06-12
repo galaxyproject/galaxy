@@ -2,16 +2,15 @@ import { computed, inject, type Ref, unref } from "vue";
 
 import { Services } from "@/components/Workflow/services";
 import { useWorkflowStores } from "@/composables/workflowStores";
-import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type ConnectionOutputLink, type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import type { ConnectionOutputLink, Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
 import { DeleteSelectionAction, DuplicateSelectionAction } from "../Actions/workflowActions";
 import { useMultiSelect } from "../composables/multiSelect";
 
 export function useSelectionOperations() {
-    const { undoRedoStore } = useWorkflowStores();
+    const { undoRedoStore, stateStore, commentStore, stepStore } = useWorkflowStores();
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
@@ -48,10 +47,6 @@ export function useSelectionOperations() {
     const services = new Services();
 
     async function copySelectionToNewWorkflow() {
-        const stateStore = useWorkflowStateStore(id);
-        const commentStore = useWorkflowCommentStore(id);
-        const stepStore = useWorkflowStepStore(id);
-
         const commentIds = [...commentStore.multiSelectedCommentIds];
         const stepIds = [...stateStore.multiSelectedStepIds];
 
