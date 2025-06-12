@@ -557,13 +557,13 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </strong>
                         {{
                             localize(
-                                "Once you have made your selection, if you wish to rename the elements in the list, click"
+                                "Once you have made your selection, if you wish to rename identifiers for elements in the list, click"
                             )
                         }}
                         <i data-target=".rename-elements">
                             {{ localize("Rename list elements") }}
                         </i>
-                        {{ localize(". This opens a modal where you can rename the elements individually.") }}
+                        {{ localize(". This opens a modal where you can change the identifiers individually.") }}
                     </p>
                 </template>
 
@@ -727,13 +727,14 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 class="rename-elements-modal"
                 :show.sync="renamingElements"
                 size="small"
-                title="Click on dataset names to rename them">
+                title="Click on element identifiers to change them">
                 <DatasetCollectionElementView
                     v-for="value in inListElements"
                     :key="value.id"
                     class="w-100"
+                    hide-hid
                     :element="selectionAsHdaSummary(value)"
-                    :hide-extension="!showElementExtension"
+                    hide-extension
                     @onRename="(name) => renameElement(value, name)" />
             </GModal>
         </div>
