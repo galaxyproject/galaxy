@@ -31,7 +31,7 @@ const emit = defineEmits<{
                 size="small"
                 :disabled="!validInput"
                 @click="emit('clicked-rename')">
-                {{ localize("Rename " + shortWhatIsBeingCreated) + " elements" }}
+                {{ localize("Rename/Reorder " + shortWhatIsBeingCreated) + " elements" }}
             </GButton>
             <GButton class="create-collection" color="blue" :disabled="!validInput" @click="emit('clicked-create')">
                 {{ localize("Create " + shortWhatIsBeingCreated) }}

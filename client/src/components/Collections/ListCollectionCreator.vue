@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import "ui/hoverhighlight";
 
-import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faGripLines, faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -557,13 +557,16 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </strong>
                         {{
                             localize(
-                                "Once you have made your selection, if you wish to rename identifiers for elements in the list, click"
+                                [
+                                    "Once you have made your selection, if you wish to rename identifiers for elements in the list",
+                                    "or change/set the order in which they exist in the final list, you can click on ",
+                                ].join("")
                             )
                         }}
                         <i data-target=".rename-elements">
-                            {{ localize("Rename list elements") }}
+                            {{ localize("Rename/Reorder list elements") }}
                         </i>
-                        {{ localize(". This opens a modal where you can change the identifiers individually.") }}
+                        {{ localize(". This opens a modal where you can perform these actions.") }}
                     </p>
                 </template>
 
@@ -691,6 +694,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         <draggable
                             v-model="workingElements"
                             class="collection-elements scroll-container flex-row drop-zone"
+                            style="max-height: 400px"
                             chosen-class="bg-secondary">
                             <DatasetCollectionElementView
                                 v-for="element in workingElements"
@@ -726,16 +730,37 @@ function selectionAsHdaSummary(value: any): HDASummary {
             <GModal
                 class="rename-elements-modal"
                 :show.sync="renamingElements"
+                fixed-height
                 size="small"
-                title="Click on element identifiers to change them">
-                <DatasetCollectionElementView
-                    v-for="value in inListElements"
-                    :key="value.id"
-                    class="w-100"
-                    hide-hid
-                    :element="selectionAsHdaSummary(value)"
-                    hide-extension
-                    @onRename="(name) => renameElement(value, name)" />
+                title="Rename and Reorder List Elements">
+                <div>
+                    <FontAwesomeIcon :icon="faEdit" fixed-width />
+                    {{ localize("Here, you can change the identifiers of the elements in the list.") }}
+                    {{
+                        localize(
+                            "The final list will then have these identifiers, and this does not modify the original datasets."
+                        )
+                    }}
+                </div>
+                <div>
+                    <FontAwesomeIcon :icon="faGripLines" fixed-width />
+                    {{ localize("Also, you can click and drag to reorder the elements in the list.") }}
+                </div>
+                <hr class="w-100 my-2" />
+                <draggable
+                    v-model="inListElements"
+                    class="collection-elements scroll-container flex-row"
+                    chosen-class="bg-secondary"
+                    @wheel.stop>
+                    <DatasetCollectionElementView
+                        v-for="value in inListElements"
+                        :key="value.id"
+                        class="w-100"
+                        hide-hid
+                        :element="selectionAsHdaSummary(value)"
+                        hide-extension
+                        @onRename="(name) => renameElement(value, name)" />
+                </draggable>
             </GModal>
         </div>
     </div>
@@ -748,7 +773,10 @@ function selectionAsHdaSummary(value: any): HDASummary {
 .list-collection-creator {
     .rename-elements-modal {
         .collection-element {
-            cursor: unset;
+            cursor: grab;
+            &:focus {
+                cursor: grabbing;
+            }
         }
     }
 
@@ -775,7 +803,6 @@ function selectionAsHdaSummary(value: any): HDASummary {
     }
 
     .collection-elements {
-        max-height: 400px;
         border: 0px solid lightgrey;
         overflow-y: auto;
         overflow-x: hidden;
