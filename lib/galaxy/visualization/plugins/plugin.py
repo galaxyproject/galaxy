@@ -242,8 +242,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a single (js) script.
 
-    The script is loaded into a pre-defined mako template:
-        `config/plugins/visualizations/common/templates/script_entry_point.mako`
+    The script is loaded into a pre-defined mako template: `script_entry_point.mako`
     """
 
     MAKO_TEMPLATE = "script_entry_point.mako"

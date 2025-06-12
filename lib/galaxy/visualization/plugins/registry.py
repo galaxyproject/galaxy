@@ -11,6 +11,7 @@ import weakref
 
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
+from galaxy.util import config_directories_from_setting
 from galaxy.visualization.plugins import (
     config_parser,
     plugin as vis_plugins,
@@ -59,7 +60,8 @@ class VisualizationsRegistry:
         self.template_cache_dir = template_cache_dir
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
-        self.directories = [os.path.join(app.config.root, self.BASE_DIR)]
+        self.directories = config_directories_from_setting(directories_setting, app.config.root)
+        self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
 
     def _load_plugins(self):
