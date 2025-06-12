@@ -25,6 +25,7 @@ from sqlalchemy import (
     exists,
     false,
     func,
+    null,
     nulls_first,
     nulls_last,
     select,
@@ -212,12 +213,19 @@ class HDAManager(
         dataset_hashes: List[Union[model.DatasetHash, model.DatasetSourceHash]],
         extension: str,
         object_store_id: Optional[str] = None,
-    ) -> Optional[model.Dataset]:
+        created_from_basename: Optional[str] = None,
+    ) -> Optional[model.HistoryDatasetAssociation]:
         """
         Get a replacement dataset for the given source URI and dataset hash.
         If we already have such a dataset we don't need to create a new one.
         """
         if not user:
+            return None
+
+        datatype = self.app.datatypes_registry.get_datatype_by_extension(extension)
+        if not datatype:
+            return None
+        if datatype.composite_files:
             return None
 
         # TODO: generalize
@@ -226,15 +234,17 @@ class HDAManager(
 
         existing_source = aliased(model.DatasetSource, name="existing_source")
         existing_dataset_select = (
-            select(model.Dataset)
+            select(model.HistoryDatasetAssociation)
+            .join(model.Dataset, model.Dataset.id == model.HistoryDatasetAssociation.dataset_id)
             .join(existing_source, existing_source.dataset_id == model.Dataset.id)
-            .join(model.HistoryDatasetAssociation, model.Dataset.id == model.HistoryDatasetAssociation.dataset_id)
             .join(model.History, model.HistoryDatasetAssociation.history_id == model.History.id)
             .where(
                 model.Dataset.deleted == false(),
                 model.Dataset.purged == false(),
+                model.Dataset.created_from_basename == created_from_basename,
                 model.Dataset.state == model.Dataset.states.OK,
                 model.HistoryDatasetAssociation.extension == extension,
+                model.HistoryDatasetAssociation._state == null(),
                 model.History.user_id == user.id,
             )
         )
@@ -252,7 +262,7 @@ class HDAManager(
                 # null is a problem: transforms are only recorded if they alter the data.
                 # the same source hash could result in different hashes on disk.
                 # However, we're only comparing to hashes on disk
-                # existing_source.transform.in_((dataset_source.transform, null())),
+                existing_source.requested_transform == dataset_source.requested_transform,
                 existing_source.source_uri == dataset_source.source_uri,
                 existing_hash.hash_function == dataset_hash.hash_function,
                 existing_hash.hash_value == dataset_hash.hash_value,
@@ -269,6 +279,9 @@ class HDAManager(
             str(existing_dataset_select.compile(compile_kwargs={"literal_binds": True})),
         )
         existing_dataset = session.scalars(existing_dataset_select.limit(1)).first()
+        if existing_dataset and existing_dataset.extra_files_path_exists():
+            # Can't deal with this (yet)
+            return None
         return existing_dataset
 
     def copy(
