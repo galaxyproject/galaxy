@@ -32,16 +32,14 @@ class ServesTemplatesPluginMixin:
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
 
-    def _set_up_template_plugin(self, template_cache_dir, additional_template_paths=None, **kwargs):
+    def _set_up_template_plugin(self, template_cache_dir, **kwargs):
         """
         Detect and set up template paths if the plugin serves templates.
         """
         self.serves_templates = False
         if self._is_template_plugin():
             self.template_path = self._build_template_path()
-            self.template_lookup = self._build_template_lookup(
-                template_cache_dir, additional_template_paths=additional_template_paths
-            )
+            self.template_lookup = self._build_template_lookup(template_cache_dir)
             self.serves_templates = True
         return self.serves_templates
 
@@ -52,14 +50,12 @@ class ServesTemplatesPluginMixin:
         return os.path.join(self.path, "templates")
 
     def _build_template_lookup(
-        self, template_cache_dir, additional_template_paths=None, collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE
+        self, template_cache_dir, collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE
     ):
         """
         Build a mako template filename lookup for the plugin.
         """
         template_lookup_paths = self.template_path
-        if additional_template_paths:
-            template_lookup_paths = [template_lookup_paths] + additional_template_paths
         return mako.lookup.TemplateLookup(
             directories=template_lookup_paths, module_directory=template_cache_dir, collection_size=collection_size
         )
@@ -81,8 +77,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.base_url = "/".join((base_url, self.name)) if base_url else self.name
         self.static_path = os.path.join("./static/plugins/visualizations/", name, "static")
         template_cache_dir = context.get("template_cache_dir", None)
-        additional_template_paths = context.get("additional_template_paths", [])
-        self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
+        self._set_up_template_plugin(template_cache_dir)
         self.resource_parser = resource_parser.ResourceParser(app)
         self._set_logo()
 
