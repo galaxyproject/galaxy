@@ -33,6 +33,10 @@ const props = defineProps<{
     title?: string;
     /** Fixes the height of the modal to a pre-set height based on `size` */
     fixedHeight?: boolean;
+    /** Disables the Ok button */
+    okDisabled?: boolean;
+    /** Title to show when the Ok button is disabled */
+    okDisabledTitle?: string;
 }>();
 
 const emit = defineEmits<{
@@ -170,7 +174,13 @@ defineExpose({ showModal, hideModal });
 
                 <div v-if="props.confirm" class="g-modal-confirm-buttons">
                     <GButton @click="hideModal(false)"> {{ props.cancelText ?? "Cancel" }} </GButton>
-                    <GButton color="blue" @click="hideModal(true)"> {{ props.okText ?? "Ok" }} </GButton>
+                    <GButton
+                        :disabled="okDisabled"
+                        :disabled-title="okDisabledTitle"
+                        color="blue"
+                        @click="hideModal(true)">
+                        {{ props.okText ?? "Ok" }}
+                    </GButton>
                 </div>
             </footer>
         </section>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -16,6 +16,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const tags = ref(props.initialTags);
+
+const emptyTagList = computed(() => {
+    return tags.value.length === 0;
+});
 
 const emit = defineEmits<{
     (e: "cancel"): void;
@@ -42,7 +46,16 @@ function resetTags() {
 </script>
 
 <template>
-    <GModal :show="show" ok-text="Add" :confirm="true" size="small" :title="title" @ok="onOk" @cancel="onCancel">
+    <GModal
+        :show="show"
+        ok-text="Add"
+        :confirm="true"
+        size="small"
+        :title="title"
+        :ok-disabled="emptyTagList"
+        ok-disabled-title="Please select at least one tag"
+        @ok="onOk"
+        @cancel="onCancel">
         <StatelessTags :value="tags" @input="onTagsChange($event)" />
     </GModal>
 </template>
