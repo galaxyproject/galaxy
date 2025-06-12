@@ -253,7 +253,7 @@ class DatasetInstanceMaterializer:
             applied_transforms.append(
                 {
                     "action": "datatype_groom",
-                    "datatype_ext": datatype.ext,
+                    "datatype_ext": datatype.file_ext,
                     "datatype_class": datatype.__class__.__name__,
                 }
             )
