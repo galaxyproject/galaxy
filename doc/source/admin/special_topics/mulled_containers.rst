@@ -24,7 +24,7 @@ requirement field.
 
 This approach has shown two limitations that slowed down the adoption by tool developers.
 First, every tool needs to be annotated with a container name (as shown above) and this container needs
-to be created beforehand, usually manually. The second reason is that a Galaxy tool aims to be deployed everywhere,
+to be created beforehand, usually manually. The second reason is that Galaxy tools should be deployable everywhere,
 independent of the underlying system, meaning if Docker is not available Galaxy should use Conda packages. 
 This puts an additional burden on tool developers who need to take care of two dependency resolvers. This setup can cause
 different tool results depending on the resolver, because both the Conda package and the Docker container are
