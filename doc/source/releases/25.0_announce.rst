@@ -65,6 +65,18 @@ users define and run tools directly in the Galaxy interface, without requiring r
 **Job Cancellation Notifications for Admins**. Admins can now choose to notify users when canceling
 jobs. Users receive grouped notifications with job details, and optional email delivery if enabled.
 
+**eLabFTW integration**
+Galaxy is now integrated with `eLabFTW <https://www.elabftw.net/>`__, a free and open source electronic lab notebook
+from `Deltablot <https://www.deltablot.com/about/>`__ via a new file source. Further details are available on
+`this blog post <https://galaxyproject.org/news/2025-04-02-elabftw-integration/>`__.
+
+**RSpace integration**
+Galaxy 25.0 includes a new file source that integrates it with `RSpace <https://www.researchspace.com/>`__, an
+open-source research data management system (RDM) and electronic lab notebook (ELN) providing inventory and sample
+management systems and featuring
+`a wide collection of integrations with other services <https://www.researchspace.com/integrations>`__. Read more on
+`this blog post <https://galaxyproject.org/news/2025-06-XX-rspace-integration/>`__.
+
 Please see the `25.0 user release notes <25.0_announce_user.html>`__ for a summary of new user features.
 
 Get Galaxy
