@@ -227,8 +227,6 @@ from .execute import (
 )
 
 if TYPE_CHECKING:
-    from sqlalchemy.orm.scoping import scoped_session
-
     from galaxy.app import UniverseApplication
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
@@ -236,6 +234,7 @@ if TYPE_CHECKING:
         DynamicTool,
         LibraryFolder,
     )
+    from galaxy.model.scoped_session import galaxy_scoped_session
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
     from galaxy.tool_util.parser.output_objects import (
@@ -841,7 +840,7 @@ class JobContext(BaseJobContext):
         self._permission_provider = permission_provider
         self._input_dbkey = input_dbkey
         self.app = tool.app
-        self._sa_session = tool.sa_session
+        self._sa_session = cast(galaxy_scoped_session, tool.sa_session)
         self._job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
@@ -867,7 +866,7 @@ class JobContext(BaseJobContext):
         return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
 
     @property
-    def sa_session(self) -> "scoped_session":
+    def sa_session(self) -> "galaxy_scoped_session":
         return self._sa_session
 
     @property
