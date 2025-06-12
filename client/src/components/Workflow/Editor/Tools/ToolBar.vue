@@ -16,14 +16,16 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
+import { faPlus, faSitemap } from "font-awesome-6";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { BoxSelect, Workflow } from "lucide-vue";
 import { storeToRefs } from "pinia";
-import { computed, toRefs, watch } from "vue";
+import { computed, nextTick, ref, toRefs, watch } from "vue";
 
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { getAppRoot } from "@/onload/loadConfig";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
@@ -33,6 +35,8 @@ import { useToolLogic } from "./useToolLogic";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
 library.add(
@@ -151,7 +155,31 @@ const toggleVisibilityButtonTitle = computed(() => {
     }
 });
 
-const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection } = useSelectionOperations();
+const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection, copySelectionToNewWorkflow } =
+    useSelectionOperations();
+
+const toWorkflowModal = ref<InstanceType<typeof GModal>>();
+const workflowCreatedModal = ref<InstanceType<typeof GModal>>();
+
+const newWorkflowURL = ref("about:blank");
+
+async function onClickCopy() {
+    const newTab = window.open("about:blank", "_blank");
+
+    const newWF = await copySelectionToNewWorkflow();
+
+    toWorkflowModal.value?.hideModal();
+
+    newWorkflowURL.value = `${getAppRoot(undefined, true)}/workflows/edit?id=${newWF.id}`;
+
+    if (newTab && !newTab.closed) {
+        newTab.location = newWorkflowURL.value;
+        newTab.focus();
+    } else {
+        await nextTick();
+        workflowCreatedModal.value?.showModal();
+    }
+}
 
 function autoLayout() {
     undoRedoStore.applyAction(new AutoLayoutAction(workflowId));
@@ -298,17 +326,43 @@ function autoLayout() {
             <div v-if="anySelected" class="selection-options">
                 <span>{{ selectedCountText }}</span>
 
-                <GButtonGroup>
-                    <GButton class="button" title="clear selection" @click="deselectAll">
-                        Clear <FontAwesomeIcon icon="fa-times" />
+                <span class="d-flex flex-gapx-1">
+                    <GButtonGroup>
+                        <GButton class="button" title="clear selection" @click="deselectAll">
+                            Clear <FontAwesomeIcon icon="fa-times" />
+                        </GButton>
+                        <GButton class="button" title="duplicate selected" @click="duplicateSelection">
+                            Duplicate <FontAwesomeIcon icon="fa-clone" />
+                        </GButton>
+                        <GButton class="button" title="delete selected" @click="deleteSelection">
+                            Delete <FontAwesomeIcon icon="fa-trash" />
+                        </GButton>
+                    </GButtonGroup>
+
+                    <GButton
+                        class="button"
+                        title="move or copy selected to workflow"
+                        @click="toWorkflowModal?.showModal()">
+                        To Workflow... <FontAwesomeIcon :icon="faSitemap" />
                     </GButton>
-                    <GButton class="button" title="duplicate selected" @click="duplicateSelection">
-                        Duplicate <FontAwesomeIcon icon="fa-clone" />
-                    </GButton>
-                    <GButton class="button" title="delete selected" @click="deleteSelection">
-                        Delete <FontAwesomeIcon icon="fa-trash" />
-                    </GButton>
-                </GButtonGroup>
+                </span>
+
+                <GModal ref="toWorkflowModal" title="Selection To Workflow">
+                    <div class="d-flex flex-column flex-gapy-1">
+                        <GButton @click="onClickCopy">
+                            Copy selection into new Workflow
+                            <FontAwesomeIcon :icon="faPlus" />
+                        </GButton>
+                        <GButton>
+                            Move selection to Sub-Workflow
+                            <FontAwesomeIcon :icon="faSitemap" />
+                        </GButton>
+                    </div>
+                </GModal>
+
+                <GModal ref="workflowCreatedModal" title="New Workflow Created">
+                    <span> Open the new workflow <GLink :href="newWorkflowURL">here</GLink>. </span>
+                </GModal>
             </div>
 
             <div
