@@ -25,10 +25,10 @@ import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
-    Dataset,
     DatasetHash,
     DatasetSource,
     DatasetSourceHash,
+    HistoryDatasetAssociation,
     LibraryFolder,
 )
 from galaxy.model.dataset_collections.builder import BoundCollectionBuilder
@@ -92,7 +92,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         dataset_hashes: List[Union[DatasetSourceHash, DatasetHash]],
         extension: str,
         output_name: Optional[str],
-    ) -> Optional[Dataset]:
+    ) -> Optional[HistoryDatasetAssociation]:
         """Return a replacement dataset for the given source and hash, if available."""
         return None
 
@@ -122,6 +122,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         output_name=None,
         storage_callbacks=None,
         purged=False,
+        replacement_hda_id: Optional[int] = None,
     ) -> "DatasetInstance":
         tag_list = tag_list or []
         sources = sources or []
@@ -129,6 +130,20 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         dataset_attributes = dataset_attributes or {}
 
         sa_session = self.sa_session
+        replacement_hda = None
+        if sa_session and primary_data and replacement_hda_id:
+            replacement_hda = sa_session.get(galaxy.model.HistoryDatasetAssociation, replacement_hda_id)
+            if replacement_hda:
+                assert replacement_hda.dataset
+                if replacement_hda.dataset.object_store_id != self.override_object_store_id(output_name):
+                    # File should be placed in different object store.
+                    # That'll be handled by finalize_storage.
+                    filename = replacement_hda.dataset.get_file_name()
+                    replacement_hda = None
+                else:
+                    primary_data.dataset = replacement_hda.dataset
+                    primary_data.dataset_id = replacement_hda.dataset_id
+                    primary_data._metadata = replacement_hda._metadata
 
         # You can initialize a dataset or initialize from a dataset but not both.
         if init_from:
@@ -185,29 +200,31 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     setattr(primary_data.metadata, key, value)
 
         assert primary_data.dataset
-        for source_dict in sources:
-            source = galaxy.model.DatasetSource()
-            source.source_uri = source_dict["source_uri"]
-            source.transform = source_dict.get("transform")
-            source.requested_transform = source_dict.get("requested_transform")
-            primary_data.dataset.sources.append(source)
+        if not replacement_hda:
+            for source_dict in sources:
+                source = galaxy.model.DatasetSource()
+                source.source_uri = source_dict["source_uri"]
+                source.transform = source_dict.get("transform")
+                source.requested_transform = source_dict.get("requested_transform")
+                primary_data.dataset.sources.append(source)
 
-        for hash_dict in hashes:
-            hash_object = galaxy.model.DatasetHash()
-            hash_object.hash_function = hash_dict["hash_function"]
-            hash_object.hash_value = hash_dict["hash_value"]
-            primary_data.dataset.hashes.append(hash_object)
+            for hash_dict in hashes:
+                hash_object = galaxy.model.DatasetHash()
+                hash_object.hash_function = hash_dict["hash_function"]
+                hash_object.hash_value = hash_dict["hash_value"]
+                primary_data.dataset.hashes.append(hash_object)
 
-        replacement_dataset = None
-        if primary_data.dataset.hashes and primary_data.dataset.sources and not purged:
-            replacement_dataset = self.get_replacement_dataset(
-                primary_data.dataset.sources,
-                primary_data.dataset.hashes,
-                extension=primary_data.extension,
-                output_name=output_name,
-            )
-            if replacement_dataset:
-                primary_data.dataset = replacement_dataset
+            if primary_data.dataset.hashes and primary_data.dataset.sources and not purged:
+                replacement_hda = self.get_replacement_dataset(
+                    primary_data.dataset.sources,
+                    primary_data.dataset.hashes,
+                    extension=primary_data.extension,
+                    output_name=output_name,
+                )
+                if replacement_hda:
+                    primary_data.dataset = replacement_hda.dataset
+                    primary_data.dataset_id = replacement_hda.dataset_id
+                    primary_data._metadata = replacement_hda._metadata
 
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
@@ -237,9 +254,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.info = info
 
         if purged:
-            primary_data.dataset.purged = True
+            if not replacement_hda:
+                primary_data.dataset.purged = True
             primary_data.purged = True
-        if filename and not purged and not replacement_dataset:
+        if filename and not purged and not replacement_hda:
             if storage_callbacks is None:
                 self.finalize_storage(
                     primary_data=primary_data,
@@ -943,6 +961,7 @@ def persist_hdas(elements, model_persistence_context: ModelPersistenceContext, f
                     created_from_basename=created_from_basename,
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
+                    replacement_hda_id=fields_match.replacement_hda_id,
                 )
                 dataset.discovered = True  # type: ignore[attr-defined]
                 if not hda_id:
@@ -1166,6 +1185,10 @@ class JsonCollectedDatasetMatch:
     @property
     def object_id(self):
         return self.as_dict.get("object_id", None)
+
+    @property
+    def replacement_hda_id(self):
+        return self.as_dict.get("replacement_hda_id", None)
 
     @property
     def sources(self):

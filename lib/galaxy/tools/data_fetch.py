@@ -247,6 +247,22 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         error_message = None
         converted_path = None
 
+        if replacement := item.get("replacement"):
+            name = _has_src_to_name(item) or "Unnamed Dataset"
+            return _copy_and_validate_simple_attributes(
+                item,
+                {
+                    "name": name,
+                    "dbkey": replacement["dbkey"],
+                    "ext": replacement["ext"],
+                    "link_data_only": True,
+                    "sources": [],  # Will be overwritten when replacing dataset
+                    "hashes": [],  # Will be overwritten when replacing dataset
+                    "state": replacement["state"],
+                    "replacement_hda_id": replacement["replacement_hda_id"],
+                },
+            )
+
         deferred = upload_config.get_option(item, "deferred")
 
         link_data_only = upload_config.link_data_only
@@ -255,7 +271,6 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
             # Allow overriding this on a per file basis.
             link_data_only, link_data_only_explicit = _link_data_only(item)
 
-        name: str
         path: Optional[str]
         default_in_place = False
         if not deferred:
