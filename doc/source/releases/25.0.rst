@@ -333,6 +333,9 @@ Enhancements
   `Pull Request 19990`_
 .. enhancement
 
+* Improve performance of job cache query
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20319`_
 * DatasetView and Card Polish
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 20342`_
@@ -1103,6 +1106,15 @@ Fixes
   `Pull Request 20333`_
 .. bug
 
+* Add user-facing explanation for legacy workflow run form usage
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20431`_
+* Wrap Tool and Workflow run headers properly
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20440`_
+* Fix add button is enabled when empty tag list
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20443`_
 * Fix unit tests returning values
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 20413`_
