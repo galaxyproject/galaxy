@@ -914,7 +914,7 @@ class JobContext(BaseJobContext):
         dataset_hashes: List[Union[model.DatasetHash, model.DatasetSourceHash]],
         extension: str,
         output_name: Optional[str],
-    ) -> Optional[model.Dataset]:
+    ) -> Optional[model.HistoryDatasetAssociation]:
         """
         Get a replacement dataset for the given source URI and dataset hash.
         If we already have such a dataset we don't need to create a new one.
