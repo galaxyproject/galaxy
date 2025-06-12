@@ -2,6 +2,7 @@
 Mock infrastructure for testing ModelManagers.
 """
 
+import mako
 import os
 import shutil
 import tempfile
@@ -373,6 +374,8 @@ class MockTrans:
         self.history = history
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
+        if template_lookup is None:
+            template_lookup = mako.lookup.TemplateLookup(directories="templates/")
         template = template_lookup.get_template(filename)
         kwargs.update(h=MockTemplateHelpers())
         return template.render(**kwargs)
