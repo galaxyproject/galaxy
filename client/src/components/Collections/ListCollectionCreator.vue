@@ -333,7 +333,7 @@ function addUploadedFiles(files: HDASummary[]) {
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
                 localize("Uploaded item is invalid")
             );
-        } else {
+        } else if (!file) {
             invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
