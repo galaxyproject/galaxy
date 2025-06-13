@@ -1052,6 +1052,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             for output in [outputs_one, outputs_two, outputs_three]:
                 output_id = output["outputs"][0]["id"]
                 dataset_details.append(self._get(f"datasets/{output_id}").json())
+                assert self._get(f"jobs/{output['jobs'][0]['id']}/metrics").json()
             filenames = [dd["file_name"] for dd in dataset_details]
             assert len(filenames) == 3, filenames
             assert len(set(filenames)) <= 2, filenames
