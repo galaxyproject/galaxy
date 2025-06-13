@@ -47,6 +47,7 @@ name_tag:
   modes:
     - "raw"
     - "ftp"
+  example_column_names: ["Name Tag", "nametag"]  
 tags:
   multiple: true
   label: "General Purpose Tag(s)"
@@ -60,6 +61,7 @@ tags:
     - "datasets"
     - "library_datasets"
     - "collection_contents"
+  example_column_names: ["Tag"]  
 group_tags:
   multiple: true
   label: "Group Tag(s)"
@@ -73,38 +75,64 @@ group_tags:
     - "datasets"
     - "library_datasets"
     - "collection_contents"
+  example_column_names: ["Group Tag", "grouptag"]
 name:
   label: "Name"
   importType: "datasets"
+  help: |
+    This is just the name of the dataset as it appears in the Galaxy history
+    panel.
+  example_column_names: ["Name"]
 dbkey:
   label: "Genome"
+  help: |
+    This should be the genome build (e.g. hg19, mm9, etc...) that the data 
+    is associated with. If this is not set, there will be no genome associated
+    with the dataset.
   modes:
     - "raw"
     - "ftp"
+  example_column_names: ["DBKey", "DB Key", "Genome", "Genome Build"]
 hash_sha1:
   label: "Hash (SHA1)"
+  help: |
+    This is the SHA1 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
   modes:
     - "raw"
     - "ftp"
   advanced: true
+  example_column_names: ["SHA1", "sha-1 hash", "SHA1-Sum"]
 hash_md5:
   label: "Hash (MD5)"
+  help: |
+    This is the MD5 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
   modes:
     - "raw"
     - "ftp"
   advanced: true
+  example_column_names: ["MD5", "MD5 hash", "MD5-Sum"]
 hash_sha256:
   label: "Hash (SHA256)"
+  help: |
+    This is the SHA256 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
   modes:
     - "raw"
     - "ftp"
   advanced: true
+  example_column_names: ["SHA256", "sha-256 hash", "SHA256-Sum"]
 hash_sha512:
   label: "Hash (SHA512)"
+  help: |
+    This is the SHA512 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
   modes:
     - "raw"
     - "ftp"
   advanced: true
+  example_column_names: ["SHA512", "sha-512 hash", "SHA512-Sum"]
 file_type:
   label: "Type"
   modes:
@@ -112,6 +140,7 @@ file_type:
     - "ftp"
   help: |
     This should be the Galaxy file type corresponding to this file.
+  example_column_names: ["File Type", "file extension", "Extension"]
 url:
   label: "URL"
   modes:
@@ -134,6 +163,7 @@ info:
   modes:
     - "raw"
     - "ftp"
+  example_column_names: [Info]
 ftp_path:
   label: "FTP Path"
   modes:

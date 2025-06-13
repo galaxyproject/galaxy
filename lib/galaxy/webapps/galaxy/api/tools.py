@@ -16,12 +16,14 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    Query,
     Request,
     Response,
     UploadFile,
 )
 from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
@@ -33,6 +35,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -40,6 +43,15 @@ from galaxy.schema.fetch_data import (
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.fetch.workbooks import (
+    FetchWorkbookCollectionType,
+    FetchWorkbookType,
+    generate,
+    GenerateFetchWorkbookRequest,
+    parse,
+    ParsedFetchWorkbook,
+    ParseFetchWorkbook,
+)
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
     memory_bound_hexdigest,
@@ -53,6 +65,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api.common import serve_workbook
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
@@ -84,6 +97,22 @@ class JsonApiRoute(APIContentTypeRoute):
 
 class PNGIconResponse(FileResponse):
     media_type = "image/png"
+
+
+FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
+    default="datasets",
+    title="Workbook Type",
+    description="Generate a workbook for simple datasets or a collection.",
+)
+FetchWorkbookCollectionTypeQueryParam: FetchWorkbookCollectionType = Query(
+    default="list",
+    title="Collection Type",
+    description="Generate workbook for specified collection type (not all collection types are supported)",
+)
+FetchWorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
 
 
 router = Router(tags=["tools"])
@@ -122,6 +151,39 @@ class FetchTools:
         files: List[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
+
+    @router.get(
+        "/api/tools/fetch/workbook",
+        summary="Generate a template workbook to use with the activity builder UI",
+        response_class=StreamingResponse,
+        operation_id="tools__fetch_workbook_download",
+    )
+    def fetch_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        type: FetchWorkbookType = FetchWorkbookTypeQueryParam,
+        collection_type: FetchWorkbookCollectionType = FetchWorkbookCollectionTypeQueryParam,
+        filename: Optional[str] = FetchWorkbookFilenameQueryParam,
+    ):
+        generate_request = GenerateFetchWorkbookRequest(
+            type=type,
+            collection_type=collection_type,
+        )
+        workbook = generate(generate_request)
+        contents = workbook_to_bytes(workbook)
+        return serve_workbook(contents, filename)
+
+    @router.post(
+        "/api/tools/fetch/workbook/parse",
+        summary="Generate a template workbook to use with the activity builder UI",
+        operation_id="tools__fetch_workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseFetchWorkbook = Body(...),
+    ) -> ParsedFetchWorkbook:
+        return parse(payload)
 
     @router.get(
         "/api/tools/{tool_id:path}/icon",

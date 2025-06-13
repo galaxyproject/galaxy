@@ -690,6 +690,11 @@ export default {
             required: false,
             type: Object,
         },
+        initialMapping: {
+            // only respected if elementsType is raw currently - other element types have their own default behaviors that make sense (e.g. assigning ftp paths to a URI implicitly)
+            required: false,
+            type: Array,
+        },
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
@@ -736,6 +741,8 @@ export default {
                 mapping = [{ type: "url", columns: [0] }];
             } else if (this.elementsType == "datasets") {
                 mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else if (this.initialMapping) {
+                mapping = this.initialMapping;
             } else {
                 mapping = [];
             }
@@ -1293,6 +1300,11 @@ export default {
             setTimeout(() => {
                 this.$refs.hotTable.$el.click();
             }, 200);
+        }
+        // is this comparable to watch immediate in newer Vue code?, I just need that event to
+        // to flair if it is initially okay also.
+        if (this.validInput) {
+            this.$emit("validInput", true);
         }
     },
     methods: {

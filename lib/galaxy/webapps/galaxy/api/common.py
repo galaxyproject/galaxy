@@ -1,5 +1,6 @@
 """This module contains utility functions shared across the api package."""
 
+from io import BytesIO
 from typing import (
     Any,
     List,
@@ -13,6 +14,7 @@ from fastapi import (
     Query,
     Request,
 )
+from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
 from galaxy.schema import (
@@ -294,3 +296,12 @@ def query_parameter_as_list(query):
         return elements
 
     return parse_elements
+
+
+def serve_workbook(content: BytesIO, filename: Optional[str]) -> StreamingResponse:
+    filename = filename or "galaxy_sample_sheet_workbook.xlsx"
+    return StreamingResponse(
+        content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
