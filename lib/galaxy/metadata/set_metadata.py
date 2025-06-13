@@ -373,6 +373,7 @@ def set_metadata_portable(
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
+    skip_outputs = set()
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
@@ -386,9 +387,14 @@ def set_metadata_portable(
                 filename = element.get("filename")
                 if filename and object_id:
                     unnamed_id_to_path[object_id] = os.path.join(job_context.job_working_directory, filename)
+                if object_id and element.get("replacement_hda_id"):
+                    skip_outputs.add(object_id)
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
+        if dataset_instance_id in skip_outputs:
+            # We just copy the dataset, nothing to do here.
+            continue
         klass = getattr(galaxy.model, output_dict.get("model_class", "HistoryDatasetAssociation"))
         dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
         assert dataset is not None
