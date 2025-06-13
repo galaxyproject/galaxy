@@ -19,6 +19,8 @@
 #- type: cached_explicit_singularity
   # set the cache directory for storing images
   #cache_directory: database/container_cache/singularity/explicit
+  # automatically cache images
+  #auto_install: true
 
 # Mulled container resolvers
 # ==========================
