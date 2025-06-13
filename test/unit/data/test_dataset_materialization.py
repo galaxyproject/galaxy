@@ -16,6 +16,7 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
+    deferred_hda_model_store_dict_space_to_tab,
     one_ld_library_deferred_model_store_dict,
 )
 from .model.test_model_store import (
@@ -87,6 +88,34 @@ def test_hash_invalid():
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "error"
+
+
+def test_legacy_transform_actions_on_deferred_hdas_become_requested_actions():
+    # pre 25.1 we didn't have the distinction between requested and applied transforms,
+    # so we need to ensure that legacy transforms are converted to requested transforms for
+    # deferred datasets. In 25.1 - deferred datasets should always have empty transforms as
+    # no actions have been applied yet.
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["file_metadata"]["sources"][0]["transform"] = [{"action": "spaces_to_tabs"}]
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    deferred_dataset = deferred_hda.dataset
+    assert deferred_dataset.sources[0].transform is None
+    assert deferred_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
+
+
+def test_requested_transform_actions_on_deferred_hdas_preserved():
+    # Continued from previous comment, in 25.1 - deferred datasets should have transforms saved
+    # as requested transforms, so we need to ensure that these are preserved during store import.
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["file_metadata"]["sources"][0]["requested_transform"] = [{"action": "spaces_to_tabs"}]
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    deferred_dataset = deferred_hda.dataset
+    assert deferred_dataset.sources[0].transform is None
+    assert deferred_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
 
 
 def test_hash_validate_source_of_download():
@@ -161,6 +190,96 @@ def test_deferred_hdas_basic_detached(tmpdir):
     assert external_filename.startswith(str(tmpdir))
     _assert_path_contains_2_bed(external_filename)
     _assert_2_bed_metadata(materialized_hda)
+
+
+def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy")
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    assert deferred_hda.dataset.state == "deferred"
+    assert deferred_hda.dataset.sources[0].transform is None
+    assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
+    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.sources[0].transform == [{"action": "spaces_to_tabs"}]
+    assert materialized_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
+    assert materialized_dataset.state == "ok"
+    external_filename = materialized_dataset.external_filename
+    assert external_filename
+    assert external_filename.startswith(str(tmpdir))
+    _assert_path_contains_simple_lines_as_tsv(external_filename)
+
+
+def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1")
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    assert deferred_hda.dataset.state == "deferred"
+    assert deferred_hda.dataset.sources[0].transform is None
+    assert deferred_hda.dataset.sources[0].requested_transform == [
+        {"action": "datatype_groom"},
+        {"action": "spaces_to_tabs"},
+    ]
+    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.sources[0].transform == [{"action": "spaces_to_tabs"}]
+    assert materialized_dataset.sources[0].requested_transform == [
+        {"action": "datatype_groom"},
+        {"action": "spaces_to_tabs"},
+    ]
+    assert materialized_dataset.state == "ok"
+    external_filename = materialized_dataset.external_filename
+    assert external_filename
+    assert external_filename.startswith(str(tmpdir))
+    _assert_path_contains_simple_lines_as_tsv(external_filename)
+
+
+def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy", apply_transform=False)
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    assert deferred_hda.dataset.state == "deferred"
+    assert deferred_hda.dataset.sources[0].transform is None
+    assert deferred_hda.dataset.sources[0].requested_transform == []
+    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.sources[0].transform == []
+    assert materialized_dataset.sources[0].requested_transform == []
+    assert materialized_dataset.state == "ok"
+    external_filename = materialized_dataset.external_filename
+    assert external_filename
+    assert external_filename.startswith(str(tmpdir))
+    _assert_path_contains_simple_lines_as_text(external_filename)
+
+
+def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1", apply_transform=False)
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    assert deferred_hda.dataset.state == "deferred"
+    assert deferred_hda.dataset.sources[0].transform is None
+    assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
+    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.sources[0].transform == []
+    assert materialized_dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
+    assert materialized_dataset.state == "ok"
+    external_filename = materialized_dataset.external_filename
+    assert external_filename
+    assert external_filename.startswith(str(tmpdir))
+    _assert_path_contains_simple_lines_as_text(external_filename)
 
 
 def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
@@ -405,3 +524,15 @@ def _assert_path_contains_2_bed(path) -> None:
     with open(path) as f:
         contents = f.read()
     assert contents == CONTENTS_2_BED
+
+
+def _assert_path_contains_simple_lines_as_tsv(path) -> None:
+    with open(path) as f:
+        contents = f.read()
+    assert contents == "This\tis\ta\tline\tof\ttext.\n"  # simple lines as TSV
+
+
+def _assert_path_contains_simple_lines_as_text(path) -> None:
+    with open(path) as f:
+        contents = f.read()
+    assert contents == "This is a line of text.\n"  # simple lines as text

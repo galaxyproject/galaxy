@@ -298,6 +298,12 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         space_to_tab = upload_config.get_option(item, "space_to_tab")
         auto_decompress = upload_config.get_option(item, "auto_decompress")
 
+        requested_transform = [{"action": "datatype_groom"}]
+        if space_to_tab:
+            requested_transform.append({"action": "spaces_to_tabs"})
+        if to_posix_lines:
+            requested_transform.append({"action": "to_posix_lines"})
+        source_dict["requested_transform"] = requested_transform
         effective_state = "ok"
         if not deferred and not error_message:
             in_place = item.get("in_place", default_in_place)
@@ -384,14 +390,10 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 assert path
                 datatype.groom_dataset_content(path)
 
+            # if length is 0, we should probably persist the empty list? -John
             if len(transform) > 0:
                 source_dict["transform"] = transform
         elif not error_message:
-            transform = []
-            if to_posix_lines:
-                transform.append({"action": "to_posix_lines"})
-            if space_to_tab:
-                transform.append({"action": "spaces_to_tabs"})
             effective_state = "deferred"
             registry = upload_config.registry
             ext = sniff.guess_ext_from_file_name(name, registry=registry, requested_ext=requested_ext)
