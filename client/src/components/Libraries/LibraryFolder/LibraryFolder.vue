@@ -268,6 +268,7 @@ import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
 import { Toast } from "composables/toast";
+import { usePersistentRef } from "composables/persistentRef";
 import { sanitize } from "dompurify";
 import linkifyHtml from "linkify-html";
 import { getAppRoot } from "onload/loadConfig";
@@ -318,6 +319,8 @@ export default {
         },
     },
     data() {
+        const perPageStorage = useLocalStorage("library-folder-per-page", DEFAULT_PER_PAGE);
+        
         return {
             ...initialFolderState(),
             ...{
@@ -331,7 +334,8 @@ export default {
                 folder_metadata: {},
                 fields: fields,
                 selectMode: "multi",
-                perPage: DEFAULT_PER_PAGE,
+                perPage: perPageStorage.value,
+                perPageStorage,
                 maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
                 total_rows: 0,
                 root: getAppRoot(),
@@ -342,7 +346,8 @@ export default {
         ...mapState(useUserStore, ["currentUser"]),
     },
     watch: {
-        perPage() {
+        perPage(newValue) {
+            this.perPageStorage.value = newValue;
             this.fetchFolderContents();
         },
         includeDeleted() {
