@@ -58,7 +58,7 @@ export function useSelectionOperations() {
 
         const stepEntries: [number, Step][] = stepIds.map((id) => [id, ensureDefined(stepStore.steps[id])]);
 
-        const stepEntriesWithFilteredInputs = stepEntries.map(([id, step]) => {
+        const stepEntriesWithFilteredInputs: [number, Step][] = stepEntries.map(([id, step]) => {
             const connectionEntries = Object.entries(step.input_connections);
 
             const filteredConnectionEntries: [string, ConnectionOutputLink[]][] = connectionEntries.flatMap(
