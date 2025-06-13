@@ -1,19 +1,20 @@
 <template>
-    <b-row class="ml-3 mb-1">
+    <div class="ml-3 mb-1 d-flex">
         <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
         <div class="pref-content pr-1">
-            <a id="delete-account" href="javascript:void(0)"
-                ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
-            >
+            <GLink id="delete-account" @click="showModal = true">
+                <b v-localize>Delete Account</b>
+            </GLink>
             <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
-            <b-modal
+            <GModal
                 id="modal-prevent-closing"
-                ref="modal"
-                centered
                 title="Account Deletion"
-                title-tag="h2"
-                @show="resetModal"
-                @hidden="resetModal"
+                :show.sync="showModal"
+                confirm
+                ok-text="Delete Account"
+                :close-on-ok="false"
+                @open="resetModal"
+                @close="resetModal"
                 @ok="handleOk">
                 <p>
                     <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
@@ -22,18 +23,17 @@
                         contained in it.
                     </b>
                 </p>
-                <b-form ref="form" @submit.prevent="handleSubmit">
-                    <b-form-group
+                <GForm ref="form" @submit.prevent="handleSubmit">
+                    <GFormLabel
                         :state="nameState"
-                        label="Enter your user email for this account as confirmation."
-                        label-for="Email"
+                        title="Enter your user email for this account as confirmation."
                         invalid-feedback="Incorrect email">
-                        <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                    </b-form-group>
-                </b-form>
-            </b-modal>
+                        <GFormInput id="name-input" v-model="name" required></GFormInput>
+                    </GFormLabel>
+                </GForm>
+            </GModal>
         </div>
-    </b-row>
+    </div>
 </template>
 
 <script>
@@ -43,9 +43,16 @@ import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import GForm from "@/components/BaseComponents/Form/GForm.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: { GLink, GModal, GForm, GFormLabel, GFormInput },
     props: {
         userId: {
             type: String,
@@ -58,6 +65,7 @@ export default {
     },
     data() {
         return {
+            showModal: false,
             name: "",
             nameState: null,
             deleteError: "",
@@ -78,9 +86,7 @@ export default {
             this.name = "";
             this.nameState = null;
         },
-        handleOk(bvModalEvt) {
-            // Prevent modal from closing
-            bvModalEvt.preventDefault();
+        handleOk() {
             // Trigger submit handler
             this.handleSubmit();
         },
