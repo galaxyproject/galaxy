@@ -376,7 +376,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
                     @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: false }">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -390,6 +390,7 @@ const selectedCount = computed(() => {
                 <span>
                     Selected
                     <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
+                    <slot name="selected-heading-end" />
                 </span>
                 <GButton class="selection-button deselect" :title="deselectText" color="blue" @click="deselectAll">
                     <FontAwesomeIcon :icon="faLongArrowAltLeft" />
@@ -410,7 +411,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
                     @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: true }">
                         {{ option.label }}
                     </slot>
                 </button>
