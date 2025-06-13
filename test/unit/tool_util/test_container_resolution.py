@@ -4,9 +4,9 @@ import pytest
 
 from galaxy.tool_util.deps.container_classes import DOCKER_CONTAINER_TYPE
 from galaxy.tool_util.deps.container_resolvers.mulled import (
+    CachedMulledApptainerContainerResolver,
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
-    CachedMulledApptainerContainerResolver,
     MulledDockerContainerResolver,
 )
 from galaxy.tool_util.deps.containers import ContainerRegistry
