@@ -2,7 +2,6 @@
 Mock infrastructure for testing ModelManagers.
 """
 
-import mako
 import os
 import shutil
 import tempfile
@@ -11,6 +10,8 @@ from typing import (
     cast,
     Optional,
 )
+
+import mako
 
 from galaxy import (
     di,

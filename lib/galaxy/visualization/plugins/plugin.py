@@ -49,9 +49,7 @@ class ServesTemplatesPluginMixin:
     def _build_template_path(self):
         return os.path.join(self.path, "templates")
 
-    def _build_template_lookup(
-        self, template_cache_dir, collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE
-    ):
+    def _build_template_lookup(self, template_cache_dir, collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE):
         """
         Build a mako template filename lookup for the plugin.
         """
