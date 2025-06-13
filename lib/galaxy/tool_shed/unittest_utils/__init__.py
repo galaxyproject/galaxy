@@ -2,10 +2,12 @@ import threading
 from pathlib import Path
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -38,6 +40,10 @@ from galaxy.tool_util.toolbox.watcher import (
     get_tool_watcher,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+    from galaxy.util.path import StrPath
 
 
 class ToolShedTarget(NamedTuple):
@@ -100,8 +106,8 @@ class TestTool:
 
 
 class TestToolBox(AbstractToolBox):
-    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        tool = TestTool(config_file, kwds["tool_shed_repository"], kwds["guid"])
+    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
+        tool = cast("Tool", TestTool(config_file, kwds["tool_shed_repository"], kwds["guid"]))
         tool._lineage = self._lineage_map.register(tool)  # cleanup?
         return tool
 
