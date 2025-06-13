@@ -840,7 +840,7 @@ class JobContext(BaseJobContext):
         self._permission_provider = permission_provider
         self._input_dbkey = input_dbkey
         self.app = tool.app
-        self._sa_session = cast(galaxy_scoped_session, tool.sa_session)
+        self._sa_session = cast("galaxy_scoped_session", tool.sa_session)
         self._job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
