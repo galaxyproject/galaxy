@@ -171,7 +171,8 @@ def test_cached_apptainer_container_resolver_dir_mtime_cached(mocker):
     mocker.patch("galaxy.tool_util.deps.container_resolvers.safe_makedirs")
     mocker.patch("os.stat", return_value=mocker.Mock(st_mtime=42))
     resolver = CachedMulledApptainerContainerResolver(
-        app_info=mocker.Mock(container_image_cache_path="/"), cache_directory_cacher_type="dir_mtime",
+        app_info=mocker.Mock(container_image_cache_path="/"),
+        cache_directory_cacher_type="dir_mtime",
         exec="/bin/apptainer",
     )
     requirement = ToolRequirement(name="baz", version="2.22", type="package")
