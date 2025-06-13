@@ -23,7 +23,6 @@ const PLUGIN_BUILD_IDS = [
     "nvd3/nvd3_bar",
     "pv",
     "scatterplot",
-    "tiffviewer",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "aceeditor",
@@ -47,6 +46,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "plotly",
     "plyr",
     "tabulator",
+    "tiffviewer",
     "ts_visjs",
     "unipept",
     "venn",
