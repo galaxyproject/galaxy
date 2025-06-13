@@ -31,8 +31,10 @@ interface Rootmasthead extends Component {
     logged_out_only: SelectorTemplate;
 }
 interface Rootpreferencesobject_store_selection extends Component {
-    option_buttons: SelectorTemplate;
-    option_button: SelectorTemplate;
+    modal: SelectorTemplate;
+    option_cards: SelectorTemplate;
+    option_card: SelectorTemplate;
+    option_card_select: SelectorTemplate;
 }
 interface Rootpreferences extends Component {
     sign_out: SelectorTemplate;

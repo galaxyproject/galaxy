@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { HistorySummary } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { DetailsLayoutSummarized } from "../Layout/types";
 
 import HistoryIndicators from "../HistoryIndicators.vue";
+import StorageLocationIndicator from "./StorageLocationIndicator.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 interface Props {
@@ -24,6 +26,8 @@ function onSave(newDetails: HistorySummary) {
     const id = props.history.id;
     historyStore.updateHistory({ ...newDetails, id });
 }
+
+const { config } = useConfig();
 </script>
 
 <template>
@@ -38,5 +42,7 @@ function onSave(newDetails: HistorySummary) {
         <template v-if="summarized" v-slot:update-time>
             <HistoryIndicators :history="history" detailed-time />
         </template>
+
+        <StorageLocationIndicator v-if="config && config.object_store_allows_id_selection" :history="history" />
     </DetailsLayout>
 </template>
