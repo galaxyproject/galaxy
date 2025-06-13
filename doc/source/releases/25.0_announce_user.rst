@@ -257,7 +257,7 @@ Here is a quick example:
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/0SorpUTXDCQ?si=1tKZGa_ONw4BltTM" title="Galaxy 25.0 - Preferred Visualization Display for Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/0Tl_bxn7dQo?si=BHrShQav6zbejZU7" title="Galaxy 25.0 - Preferred Visualization Display for Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 User-Defined Tools (Beta)
 --------
@@ -308,6 +308,7 @@ This feature gives administrators more control over user communication during jo
 
 eLabFTW integration
 --------
+
 Galaxy is now integrated with `eLabFTW <https://www.elabftw.net/>`__, a free and open source electronic lab notebook
 from `Deltablot <https://www.deltablot.com/about/>`__ via a new file source.
 
@@ -326,6 +327,7 @@ Further details are available on `this blog post <https://galaxyproject.org/news
 
 RSpace integration
 --------
+
 Galaxy 25.0 includes a new file source that integrates it with `RSpace <https://www.researchspace.com/>`__, an
 open-source research data management system (RDM) and electronic lab notebook (ELN) providing inventory and sample
 management systems and featuring
