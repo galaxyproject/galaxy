@@ -67,6 +67,7 @@ class QuaySearch:
             r = requests.get(
                 QUAY_API_URL, headers={"Accept-encoding": "gzip"}, params=parameters, timeout=MULLED_SOCKET_TIMEOUT
             )
+            r.raise_for_status()
             decoded_request = json_decoder.decode(r.text)
             next_page = decoded_request.get("next_page")
             yield decoded_request
