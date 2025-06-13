@@ -454,7 +454,6 @@ onMounted(() => {
         :provider-url="currentDirectory?.url"
         :total-items="totalItems"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
         :select-all-variant="selectAllIcon"
