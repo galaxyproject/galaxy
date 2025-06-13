@@ -190,7 +190,6 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     load_lib_tools(new_toolbox)
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app._toolbox = new_toolbox
-    app.toolbox.persist_cache()
 
 
 def reload_data_managers(app, **kwargs):

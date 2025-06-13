@@ -1,133 +1,15 @@
-import json
 import logging
 import os
-import shutil
-import sqlite3
-import tempfile
-import zlib
 from threading import Lock
 from typing import (
     Dict,
     Optional,
 )
 
-from sqlitedict import SqliteDict
-
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
-
-CURRENT_TOOL_CACHE_VERSION = 0
-
-
-def encoder(obj):
-    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode("utf-8")))
-
-
-def decoder(obj):
-    return json.loads(zlib.decompress(bytes(obj)).decode("utf-8"))
-
-
-class ToolDocumentCache:
-    def __init__(self, cache_dir):
-        self.cache_dir = cache_dir
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir)
-        self.cache_file = os.path.join(self.cache_dir, "cache.sqlite")
-        self.writeable_cache_file = None
-        self._cache = None
-        self.disabled = False
-        self._get_cache(create_if_necessary=True)
-
-    def close(self):
-        self._cache and self._cache.close()
-
-    def _get_cache(self, flag="r", create_if_necessary=False):
-        try:
-            if create_if_necessary and not os.path.exists(self.cache_file):
-                # Create database if necessary using 'c' flag
-                self._cache = SqliteDict(self.cache_file, flag="c", encode=encoder, decode=decoder, autocommit=False)
-                if flag == "r":
-                    self._cache.flag = flag
-            else:
-                cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
-                self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
-        except (sqlite3.OperationalError, RuntimeError):
-            log.warning("Tool document cache unavailable")
-            self._cache = None
-            self.disabled = True
-
-    @property
-    def cache_file_is_writeable(self):
-        return os.access(self.cache_file, os.W_OK)
-
-    def reopen_ro(self):
-        self._get_cache(flag="r")
-        self.writeable_cache_file = None
-
-    def get(self, config_file):
-        try:
-            tool_document = self._cache.get(config_file)
-        except sqlite3.OperationalError:
-            log.debug("Tool document cache unavailable")
-            return None
-        if not tool_document:
-            return None
-        if tool_document.get("tool_cache_version") != CURRENT_TOOL_CACHE_VERSION:
-            return None
-        if self.cache_file_is_writeable:
-            for path, modtime in tool_document["paths_and_modtimes"].items():
-                if os.path.getmtime(path) != modtime:
-                    return None
-        return tool_document
-
-    def _make_writable(self):
-        if not self.writeable_cache_file:
-            self.writeable_cache_file = tempfile.NamedTemporaryFile(
-                dir=self.cache_dir, suffix="cache.sqlite.tmp", delete=False
-            )
-            if os.path.exists(self.cache_file):
-                shutil.copy(self.cache_file, self.writeable_cache_file.name)
-            self._get_cache(flag="c")
-
-    def persist(self):
-        if self.writeable_cache_file:
-            self._cache.commit()
-            os.rename(self.writeable_cache_file.name, self.cache_file)
-            self.reopen_ro()
-
-    def set(self, config_file, tool_source):
-        try:
-            if self.cache_file_is_writeable:
-                self._make_writable()
-                to_persist = {
-                    "document": tool_source.to_string(),
-                    "macro_paths": tool_source.macro_paths,
-                    "paths_and_modtimes": tool_source.paths_and_modtimes(),
-                    "tool_cache_version": CURRENT_TOOL_CACHE_VERSION,
-                }
-                try:
-                    self._cache[config_file] = to_persist
-                except RuntimeError:
-                    log.debug("Tool document cache not writeable")
-        except sqlite3.OperationalError:
-            log.debug("Tool document cache unavailable")
-
-    def delete(self, config_file):
-        if self.cache_file_is_writeable:
-            self._make_writable()
-            try:
-                del self._cache[config_file]
-            except (KeyError, RuntimeError):
-                pass
-
-    def __del__(self):
-        if self.writeable_cache_file:
-            try:
-                os.unlink(self.writeable_cache_file.name)
-            except Exception:
-                pass
 
 
 class ToolCache:
@@ -162,13 +44,10 @@ class ToolCache:
         removed_tool_ids = []
         try:
             with self._lock:
-                persist_tool_document_cache = False
                 paths_to_cleanup = {
                     (path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)
                 }
                 for config_filename, tool in paths_to_cleanup:
-                    tool.remove_from_cache()
-                    persist_tool_document_cache = True
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk
@@ -184,8 +63,6 @@ class ToolCache:
                     self._removed_tool_ids.add(tool_id)
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
-                if persist_tool_document_cache:
-                    tool.app.toolbox.persist_cache()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime

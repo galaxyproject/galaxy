@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         User,
     )
     from galaxy.tools import Tool
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -266,7 +267,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self.__default_panel_view
 
-    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
+    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool"):
@@ -354,7 +355,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 return
             raise
         tool_path = tool_conf_source.parse_tool_path()
-        tool_cache_data_dir = tool_conf_source.parse_tool_cache_data_dir()
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
@@ -372,7 +372,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self.load_item(
                 item,
                 tool_path=tool_path,
-                tool_cache_data_dir=tool_cache_data_dir,
                 load_panel_dict=load_panel_dict,
                 guid=item.get("guid"),
                 index=index,
@@ -384,7 +383,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 shed_tool_conf_dict = dict(
                     config_filename=config_filename,
                     tool_path=tool_path,
-                    tool_cache_data_dir=tool_cache_data_dir,
                     config_elems=config_elems,
                 )
                 self._dynamic_tool_confs.append(shed_tool_conf_dict)
@@ -427,7 +425,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         load_panel_dict=True,
         guid=None,
         index=None,
-        tool_cache_data_dir=None,
     ):
         with self.app._toolbox_lock:
             item = ensure_tool_conf_item(item)
@@ -445,7 +442,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     load_panel_dict=load_panel_dict,
                     guid=guid,
                     index=index,
-                    tool_cache_data_dir=tool_cache_data_dir,
                 )
             elif item_type == "workflow":
                 self._load_workflow_tag_set(
@@ -461,7 +457,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     tool_path=tool_path,
                     load_panel_dict=load_panel_dict,
                     index=index,
-                    tool_cache_data_dir=tool_cache_data_dir,
                 )
             elif item_type == "label":
                 self._load_label_tag_set(
@@ -478,7 +473,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     tool_path,
                     integrated_panel_dict,
                     load_panel_dict=load_panel_dict,
-                    tool_cache_data_dir=tool_cache_data_dir,
                 )
 
     def get_shed_config_dict_by_filename(self, filename) -> Optional[DynamicToolConfDict]:
@@ -913,7 +907,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         load_panel_dict,
         guid=None,
         index=None,
-        tool_cache_data_dir=None,
     ):
         try:
             path_template = item.get("file")
@@ -945,10 +938,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                         guid=guid,
                         tool_shed_repository=tool_shed_repository,
                         use_cached=False,
-                        tool_cache_data_dir=tool_cache_data_dir,
                     )
             if not tool:  # tool was not in cache and is not a tool shed tool.
-                tool = self.load_tool(concrete_path, use_cached=False, tool_cache_data_dir=tool_cache_data_dir)
+                tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get("hidden", False)):
                 tool.hidden = True
             key = f"tool_{str(tool.id)}"
@@ -1068,7 +1060,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             panel_dict[key] = label
         integrated_panel_dict.update_or_append(index, key, label)
 
-    def _load_section_tag_set(self, item, tool_path, load_panel_dict, index=None, tool_cache_data_dir=None):
+    def _load_section_tag_set(self, item, tool_path, load_panel_dict, index=None):
         key = item.get("id")
         if key in self._tool_panel:
             section = self._tool_panel[key]
@@ -1091,7 +1083,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 load_panel_dict=load_panel_dict,
                 guid=sub_item.get("guid"),
                 index=sub_index,
-                tool_cache_data_dir=tool_cache_data_dir,
             )
 
         # Ensure each tool's section is stored
@@ -1106,9 +1097,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         # Always load sections into the integrated_tool_panel.
         self._integrated_tool_panel.update_or_append(index, key, integrated_section)
 
-    def _load_tooldir_tag_set(
-        self, item, elems, tool_path, integrated_elems, load_panel_dict, tool_cache_data_dir=None
-    ):
+    def _load_tooldir_tag_set(self, item, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join(tool_path, item.get("dir"))
         recursive = string_as_bool(item.get("recursive", True))
         self.__watch_directory(
@@ -1118,7 +1107,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             load_panel_dict,
             recursive,
             force_watch=True,
-            tool_cache_data_dir=tool_cache_data_dir,
         )
 
     def __watch_directory(
@@ -1129,11 +1117,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         load_panel_dict,
         recursive,
         force_watch=False,
-        tool_cache_data_dir=None,
     ):
         def quick_load(tool_file, async_load=True):
             try:
-                tool = self.load_tool(tool_file, tool_cache_data_dir)
+                tool = self.load_tool(tool_file)
                 self.__add_tool(tool, load_panel_dict, elems)
                 # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
                 key = f"tool_{str(tool.id)}"
@@ -1172,18 +1159,22 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self._tool_watcher.watch_directory(directory, quick_load)
 
     def load_tool(
-        self, config_file, guid=None, tool_shed_repository=None, use_cached=False, tool_cache_data_dir=None, **kwds
-    ):
+        self,
+        config_file: "StrPath",
+        guid=None,
+        tool_shed_repository=None,
+        use_cached: bool = False,
+        **kwds,
+    ) -> "Tool":
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tool = None
+        tool: Optional[Tool] = None
         if use_cached:
             tool = self.load_tool_from_cache(config_file)
         if not tool or guid and guid != tool.guid:
             try:
                 tool = self.create_tool(
                     config_file,
-                    tool_cache_data_dir=tool_cache_data_dir,
                     tool_shed_repository=tool_shed_repository,
                     guid=guid,
                     **kwds,

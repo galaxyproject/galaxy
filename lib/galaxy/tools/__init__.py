@@ -127,7 +127,6 @@ from galaxy.tools.actions import (
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
@@ -173,7 +172,6 @@ from galaxy.util import (
     listify,
     Params,
     parse_xml_string,
-    parse_xml_string_to_etree,
     rst_to_html,
     string_as_bool,
     unicodify,
@@ -243,6 +241,7 @@ if TYPE_CHECKING:
         ToolOutputCollection,
     )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
+    from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
     from galaxy.tools.actions.metadata import SetMetadataToolAction
     from galaxy.tools.parameters import ToolInputsT
 
@@ -486,7 +485,6 @@ class ToolBox(AbstractToolBox):
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
-        self.cache_regions: Dict[str, ToolDocumentCache] = {}
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -542,21 +540,6 @@ class ToolBox(AbstractToolBox):
             tool.hidden = False
             section.elems.append_tool(tool)
 
-    def persist_cache(self, register_postfork: bool = False):
-        """
-        Persists any modified tool cache files to disk.
-
-        Set ``register_postfork`` to stop database thread queue,
-        close database connection and register re-open function
-        that re-opens the database after forking.
-        """
-        for region in self.cache_regions.values():
-            if not region.disabled:
-                region.persist()
-                if register_postfork:
-                    region.close()
-                    self.app.application_stack.register_postfork_function(region.reopen_ro)
-
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set(
             "shed_tool_config_file"
@@ -586,36 +569,16 @@ class ToolBox(AbstractToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def get_cache_region(self, tool_cache_data_dir: Optional[str]):
-        if self.app.config.enable_tool_document_cache and tool_cache_data_dir:
-            if tool_cache_data_dir not in self.cache_regions:
-                self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
-            return self.cache_regions[tool_cache_data_dir]
-
-    def create_tool(self, config_file: str, tool_cache_data_dir: Optional[str] = None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir)
-        if config_file.endswith(".xml") and cache and not cache.disabled:
-            tool_document = cache.get(config_file)
-            if tool_document:
-                tool_source = self.get_expanded_tool_source(
-                    config_file=config_file,
-                    xml_tree=parse_xml_string_to_etree(tool_document["document"]),
-                    macro_paths=tool_document["macro_paths"],
-                )
-            else:
-                tool_source = self.get_expanded_tool_source(config_file)
-                cache.set(config_file, tool_source)
-        else:
-            tool_source = self.get_expanded_tool_source(config_file)
+    def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
+        tool_source = self.get_expanded_tool_source(config_file)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file, **kwargs):
+    def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
         try:
             return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
-                **kwargs,
             )
         except Exception as e:
             # capture and log parsing errors
@@ -1077,7 +1040,7 @@ class Tool(UsesDictVisibleKeys):
         self.guid = guid
         self.old_id: Optional[str] = None
         self.python_template_version: Optional[Version] = None
-        self._lineage = None
+        self._lineage: Optional[ToolLineage] = None
         self.dependencies: List = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
@@ -1108,11 +1071,6 @@ class Tool(UsesDictVisibleKeys):
         # loading tools into the toolshed for validation.
         if self.app.name == "galaxy":
             self.job_search = self.app.job_search
-
-    def remove_from_cache(self):
-        if source_path := self.tool_source.source_path:
-            for region in self.app.toolbox.cache_regions.values():
-                region.delete(source_path)
 
     @property
     def history_manager(self):
