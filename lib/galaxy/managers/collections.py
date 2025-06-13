@@ -755,7 +755,7 @@ class DatasetCollectionManager:
                             allow_identifiers = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"]
                             if collection_type_at_depth == "paired_or_unpaired":
                                 allow_identifiers.extend(["unpaired", "u"])
-                            raise Exception(
+                            raise RequestParameterInvalidException(
                                 f"Unknown indicator of paired status encountered ({identifier}) - only values from ({allow_identifiers}) are allowed."
                             )
 

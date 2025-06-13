@@ -23,6 +23,7 @@ from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
+    assert_error_code_is,
     assert_has_keys,
     assert_status_code_is,
 )
@@ -922,6 +923,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id)
             response = self._run("__APPLY_RULES__", history_id, inputs, assert_ok=False)
             assert_status_code_is(response, 400)
+            assert_error_code_is(response, 400008)
             assert "Unknown indicator of paired status encountered (floorward)" in response.json()["err_msg"]
 
     def test_apply_rules_flatten_paired_unpaired(self):
