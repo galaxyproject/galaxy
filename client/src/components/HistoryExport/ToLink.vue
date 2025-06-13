@@ -20,7 +20,7 @@
             <p>Use this link to download the archive or import it on another Galaxy server.</p>
             <b-alert show variant="warning"
                 >History archives are removed at regular intervals. For permanent storage download the archive, export
-                to a remote file or import the archive on another Galaxy server.
+                to a repository or import the archive on another Galaxy server.
             </b-alert>
         </div>
         <div v-else-if="hasReadyExport">

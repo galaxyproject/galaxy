@@ -45,7 +45,7 @@
                             <FontAwesomeIcon icon="upload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
-                            Select a remote file (e.g. Galaxy's FTP)
+                            Select a repository (e.g. Galaxy's FTP)
                             <FontAwesomeIcon icon="folder-open" />
                         </b-form-radio>
                     </b-form-radio-group>
@@ -66,7 +66,7 @@
                 <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
                     <b-form-file v-model="sourceFile" />
                 </b-form-group>
-                <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
+                <b-form-group v-show="importType === 'remoteFilesUri'" label="Repository">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>

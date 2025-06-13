@@ -404,7 +404,7 @@ async function onExecute() {
                                 <BFormCheckbox v-model="splitObjectStore">
                                     <HelpText
                                         uri="galaxy.workflows.runtimeSettings.splitObjectStore"
-                                        text="Send outputs and intermediate to different storage locations?" />
+                                        text="Send outputs and intermediate to different Galaxy storage?" />
                                 </BFormCheckbox>
                             </div>
                             <div class="mr-4">

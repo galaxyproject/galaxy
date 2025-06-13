@@ -98,9 +98,9 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
-        return "Tool Execution Preferred Storage Location";
+        return "Tool Execution Preferred Storage";
     } else {
-        return "Tool Execution Storage Location";
+        return "Tool Execution Storage";
     }
 });
 

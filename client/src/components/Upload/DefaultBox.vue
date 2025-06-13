@@ -482,7 +482,7 @@ defineExpose({
                 :disabled="!enableSources"
                 @click="eventRemoteFiles">
                 <FontAwesomeIcon :icon="faFolderOpen" />
-                <span v-localize>Choose remote files</span>
+                <span v-localize>Choose from repository</span>
             </GButton>
             <GButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
                 <FontAwesomeIcon :icon="faEdit" />

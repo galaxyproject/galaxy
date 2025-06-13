@@ -41,7 +41,7 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 <template>
     <div>
         <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
-        <ManageIndexHeader header="Remote File Sources" :message="message" create-route="/file_source_instances/create">
+        <ManageIndexHeader header="My Repositories" :message="message" create-route="/file_source_instances/create">
         </ManageIndexHeader>
         <BTable
             id="user-file-sources-index"

@@ -192,9 +192,9 @@ function onUndelete(datasetId: string) {
                             <BFormGroup
                                 v-if="selectableObjectStores && hasSelectableObjectStores"
                                 id="input-group-object-store"
-                                label="Storage location:"
+                                label="Galaxy Storage:"
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular storage location.">
+                                description="This will constrain history size calculations to a particular Galaxy storage.">
                                 <FilterObjectStoreLink
                                     :object-stores="selectableObjectStores"
                                     :value="objectStore"

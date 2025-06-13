@@ -10,7 +10,7 @@
                 ><b v-localize>{{ title }}</b></a
             >
             <div v-localize class="form-text text-muted">
-                Select a {{ preferredOrEmptyString }} storage location for the outputs of new jobs.
+                Select a {{ preferredOrEmptyString }} Galaxy storage for the outputs of new jobs.
             </div>
             <BModal
                 id="modal-select-preferred-object-store"
@@ -89,7 +89,7 @@ export default {
             }
         },
         title() {
-            return `${this.preferredOrEmptyString} Storage Location`;
+            return `${this.preferredOrEmptyString} Galaxy Storage`;
         },
     },
     methods: {

@@ -31,9 +31,9 @@ const texts = reactive({
         buttonText: localize("Explore now"),
     },
     explore_by_objectstore: {
-        title: localize("Visually explore your disk usage by storage location"),
+        title: localize("Visually explore your disk usage by storage"),
         description: localize(
-            "Want to know how the space in your account is being distributed across storage locations? Here you can explore your disk usage in a visual way by where it is physically stored."
+            "Want to know how the space in your account is being distributed across storages? Here you can explore your disk usage in a visual way by where it is physically stored."
         ),
         icon: "fas fa-hdd fa-6x",
         buttonText: localize("Explore now"),
