@@ -192,6 +192,8 @@ def _precreate_fetched_hdas(trans: WorkRequestContext, history: History, target,
         outputs.append(data)
         item["object_id"] = data.id
         if replacement_hda:
+            data.dataset = replacement_hda.dataset
+            data._metadata = replacement_hda._metadata
             item["replacement"] = {
                 "name": name,
                 "dbkey": dbkey,
