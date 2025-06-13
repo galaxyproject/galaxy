@@ -559,7 +559,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             localize(
                                 [
                                     "Once you have made your selection, if you wish to rename identifiers for elements in the list",
-                                    "or change/set the order in which they exist in the final list, you can click on ",
+                                    " or change/set the order in which they exist in the final list, you can click on ",
                                 ].join("")
                             )
                         }}
@@ -756,9 +756,8 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         v-for="value in inListElements"
                         :key="value.id"
                         class="w-100"
-                        hide-hid
                         :element="selectionAsHdaSummary(value)"
-                        hide-extension
+                        :hide-extension="!showElementExtension"
                         @onRename="(name) => renameElement(value, name)" />
                 </draggable>
             </GModal>
