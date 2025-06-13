@@ -319,8 +319,8 @@ export default {
         },
     },
     data() {
-        const perPageStorage = useLocalStorage("library-folder-per-page", DEFAULT_PER_PAGE);
-        
+        const perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
+
         return {
             ...initialFolderState(),
             ...{
@@ -334,8 +334,8 @@ export default {
                 folder_metadata: {},
                 fields: fields,
                 selectMode: "multi",
-                perPage: perPageStorage.value,
-                perPageStorage,
+                perPage: perPageRef.value,
+                perPageRef,
                 maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
                 total_rows: 0,
                 root: getAppRoot(),
@@ -347,7 +347,7 @@ export default {
     },
     watch: {
         perPage(newValue) {
-            this.perPageStorage.value = newValue;
+            this.perPageRef.value = newValue;
             this.fetchFolderContents();
         },
         includeDeleted() {
