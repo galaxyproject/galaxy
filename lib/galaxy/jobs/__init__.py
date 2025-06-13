@@ -1501,7 +1501,10 @@ class MinimalJobWrapper(HasResourceParameters):
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
-                dataset.state = dataset.states.ERROR
+                if dataset.dataset.job_id == job.id:
+                    # hda.state is a writable property that persists down to the dataset
+                    # if this job didn't have actually produce this dataset we shouldn't affect the dataset state
+                    dataset.state = dataset.states.ERROR
                 dataset.blurb = "tool error"
                 dataset.info = message
                 dataset.mark_unhidden()
