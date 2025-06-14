@@ -13,14 +13,22 @@
         <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
+                <ErrorPluginTracker />
             </b-alert>
             <b-alert v-if="submissionRequestFailed" show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
             </b-alert>
-            <small class="text-muted">
-                <pre>{{ errorContentPretty }}</pre>
-            </small>
+            <BLink
+                :aria-expanded="isExpanded ? 'true' : 'false'"
+                aria-controls="collapse-previous"
+                @click="isExpanded = !isExpanded">
+                ({{ expandedIcon }}) Error transcript:
+            </BLink>
+            <BCollapse id="collapse-previous" v-model="isExpanded">
+                <pre class="rounded code">{{ errorContentPretty }}</pre>
+            </BCollapse>
+            <br />
         </b-modal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
@@ -107,6 +115,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import { BCollapse, BLink } from "bootstrap-vue";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
@@ -127,6 +136,7 @@ import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 
+import ErrorPluginTracker from "@/components/Common/ErrorPluginTracker.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 export default {
@@ -140,6 +150,9 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
+        ErrorPluginTracker,
+        BCollapse,
+        BLink,
     },
     props: {
         id: {
@@ -204,6 +217,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            isExpanded: false,
         };
     },
     computed: {
@@ -253,6 +267,9 @@ export default {
         },
         runButtonTitle() {
             return "Run Tool";
+        },
+        expandedIcon() {
+            return this.isExpanded ? "-" : "+";
         },
     },
     watch: {
