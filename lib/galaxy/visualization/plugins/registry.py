@@ -11,10 +11,7 @@ import weakref
 
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.util import (
-    config_directories_from_setting,
-    parse_xml,
-)
+from galaxy.util import config_directories_from_setting
 from galaxy.visualization.plugins import (
     config_parser,
     plugin as vis_plugins,
@@ -35,12 +32,12 @@ class VisualizationsRegistry:
             used in the visualization template
     """
 
+    #: base directory of visualizations
+    BASE_DIR = "static/plugins/visualizations"
     #: base url to controller endpoint
     BASE_URL = "visualizations"
-    #: name of files to search for additional template lookup directories
-    TEMPLATE_PATHS_CONFIG = "additional_template_paths.xml"
     #: built-in visualizations
-    BUILT_IN_VISUALIZATIONS = ["trackster", "circster", "sweepster", "phyloviz"]
+    BUILT_IN_VISUALIZATIONS = ["trackster"]
 
     def __str__(self):
         return self.__class__.__name__
@@ -61,45 +58,11 @@ class VisualizationsRegistry:
         self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = self.BASE_URL
         self.template_cache_dir = template_cache_dir
-        self.additional_template_paths = []
-        self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
-        self._load_configuration()
+        self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
-
-    def _load_configuration(self):
-        """
-        Load framework wide configuration, including:
-            additional template lookup directories
-        """
-        for directory in self.directories:
-            possible_path = os.path.join(directory, self.TEMPLATE_PATHS_CONFIG)
-            if os.path.exists(possible_path):
-                added_paths = self._parse_additional_template_paths(possible_path, directory)
-                self.additional_template_paths.extend(added_paths)
-
-    def _parse_additional_template_paths(self, config_filepath, base_directory):
-        """
-        Parse an XML config file at `config_filepath` for template paths
-        (relative to `base_directory`) to add to each plugin's template lookup.
-
-        Allows having a set of common templates for import/inheritance in
-        plugin templates.
-
-        :type   config_filepath:    string
-        :param  config_filepath:    filesystem path to the config file
-        :type   base_directory:     string
-        :param  base_directory:     path prefixed to new, relative template paths
-        """
-        additional_paths = []
-        xml_tree = parse_xml(config_filepath)
-        paths_list = xml_tree.getroot()
-        for rel_path_elem in paths_list.findall("path"):
-            if rel_path_elem.text is not None:
-                additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
-        return additional_paths
 
     def _load_plugins(self):
         """
@@ -131,6 +94,8 @@ class VisualizationsRegistry:
         # due to the ordering of listdir, there is an implicit plugin loading order here
         # could instead explicitly list on/off in master config file
         for directory in self.directories:
+            if not os.path.isdir(directory):
+                continue
             for plugin_dir in sorted(os.listdir(directory)):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
@@ -141,9 +106,6 @@ class VisualizationsRegistry:
                         if self._is_plugin(plugin_subpath):
                             yield plugin_subpath
 
-    # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
-    # TODO: add template helpers specific to the plugins
-    # TODO: some sort of url_for for these plugins
     def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
@@ -186,9 +148,6 @@ class VisualizationsRegistry:
         # from mako
         if config["entry_point"]["type"] == "mako":
             plugin_class = vis_plugins.VisualizationPlugin
-        # from a static file (html, etc)
-        elif config["entry_point"]["type"] == "html":
-            plugin_class = vis_plugins.StaticFileVisualizationPlugin
         else:
             # default from js
             plugin_class = vis_plugins.ScriptVisualizationPlugin
@@ -200,7 +159,6 @@ class VisualizationsRegistry:
             context=dict(
                 base_url=self.base_url,
                 template_cache_dir=self.template_cache_dir,
-                additional_template_paths=self.additional_template_paths,
             ),
         )
 
