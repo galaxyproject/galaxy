@@ -1,7 +1,7 @@
 <template>
     <div v-if="!multiple || !ordered" class="rule-column-selector">
         <label class="d-flex justify-content-end align-items-center">
-            <span v-b-tooltip.hover class="mr-auto" :title="help">{{ label }}</span>
+            <span v-b-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
             <div v-b-tooltip.hover class="mr-1" :title="title">
                 <Select2 :value="target" :multiple="multiple" @input="handleInput">
                     <option v-for="(col, index) in colHeaders" :key="col" :value="index">{{ col }}</option>
@@ -11,7 +11,7 @@
         </label>
     </div>
     <div v-else class="rule-column-selector">
-        <span>{{ label }}</span>
+        <span class="help-text" :title="help">{{ label }}</span>
         <slot></slot>
         <ol>
             <li v-for="(targetEl, index) in target" :key="targetEl" :index="index" class="rule-column-selector-target">
@@ -136,3 +136,5 @@ export default {
     },
 };
 </script>
+
+<style scoped src="@/components/Help/help-text.scss" />
