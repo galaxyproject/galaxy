@@ -321,11 +321,19 @@ class ExecutionTracker:
         log.warning(message, self.tool.id, error)
         self.execution_errors.append(error)
 
+    @staticmethod
+    def label_for_item(item: Union[model.DatasetCollectionElement, model.HistoryDatasetCollectionAssociation]) -> str:
+        if isinstance(item, model.DatasetCollectionElement):
+            assert item.element_identifier is not None
+            return item.element_identifier
+        else:
+            return f"collection {item.hid}"
+
     @property
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_names = [f"collection {c.hid}" for c in collection_info.collections.values()]
+            collection_names = [self.label_for_item(c) for c in collection_info.collections.values()]
             self._on_text = on_text_for_names(collection_names)
 
         return self._on_text

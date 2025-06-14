@@ -260,7 +260,11 @@ class DatasetCollectionManager:
             assert isinstance(dataset_collection_instance, model.HistoryDatasetCollectionAssociation)
             if implicit_inputs:
                 for input_name, input_collection in implicit_inputs:
-                    dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
+                    if isinstance(input_collection, model.HistoryDatasetCollectionAssociation):
+                        # Can also get dragged DatasetCollectionElement's here.
+                        # We only use this for extracting workflows currently,
+                        # but obviously it would be better to track that somehow.
+                        dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
 
             if implicit_output_name:
                 dataset_collection_instance.implicit_output_name = implicit_output_name
