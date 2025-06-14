@@ -1252,6 +1252,8 @@ class NavigatesGalaxy(HasDriver):
 
         if editor.inputs.activity_panel.is_absent:
             editor.inputs.activity_button.wait_for_and_click()
+            # occasionally the tooltip on the input will block the collection input click
+            self.clear_tooltips()
 
         editor.inputs.input(id=item_name).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
