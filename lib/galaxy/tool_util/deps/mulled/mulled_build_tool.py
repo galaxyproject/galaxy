@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 def _mulled_build_tool(tool: "StrPath", args):
     tool_source = get_tool_source(tool)
-    requirements, *_ = tool_source.parse_requirements_and_containers()
+    requirements, *_ = tool_source.parse_requirements()
     targets = requirements_to_mulled_targets(requirements)
     kwds = args_to_mull_targets_kwds(args)
     mull_targets(targets, **kwds)
