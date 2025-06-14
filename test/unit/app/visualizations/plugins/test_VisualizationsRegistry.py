@@ -18,7 +18,6 @@ from . import VisualizationsBase_TestCase
 
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
-additional_templates_dir = os.path.join(glx_dir, "config", "plugins", "visualizations", "common", "templates")
 vis_reg_path = "config/plugins/visualizations"
 
 config1 = """\

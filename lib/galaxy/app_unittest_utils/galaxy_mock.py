@@ -66,9 +66,14 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
-from galaxy.util import StructuredExecutionTimer
+from galaxy.util import (
+    galaxy_directory,
+    StructuredExecutionTimer,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.web_stack import ApplicationStack
+
+glx_dir = galaxy_directory()
 
 
 # =============================================================================
@@ -376,7 +381,8 @@ class MockTrans:
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
         if template_lookup is None:
-            template_lookup = mako.lookup.TemplateLookup(directories="templates/")
+            template_path = os.path.join(glx_dir, "templates")
+            template_lookup = mako.lookup.TemplateLookup(directories=template_path)
         template = template_lookup.get_template(filename)
         kwargs.update(h=MockTemplateHelpers())
         return template.render(**kwargs)
