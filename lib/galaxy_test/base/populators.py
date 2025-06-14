@@ -420,8 +420,11 @@ class BasePopulator(metaclass=ABCMeta):
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
         get_response.raise_for_status()
+        return self._get_response_to_tempfile(get_response)
+
+    def _get_response_to_tempfile(self, response, suffix=None) -> str:
         temp_file = tempfile.NamedTemporaryFile("wb", delete=False, suffix=suffix)
-        temp_file.write(get_response.content)
+        temp_file.write(response.content)
         temp_file.flush()
         return temp_file.name
 
@@ -1107,6 +1110,12 @@ class BaseDatasetPopulator(BasePopulator):
         response = self._get("remote_files", data={"target": target})
         response.raise_for_status()
         return response.json()
+
+    def download_fetch_workbook(self) -> str:
+        url = "tools/fetch/workbook"
+        download_response = self._get(url)
+        api_asserts.assert_status_code_is_ok(download_response)
+        return self._get_response_to_tempfile(download_response)
 
     def run_tool_payload(self, tool_id: Optional[str], inputs: dict, history_id: str, **kwds) -> dict:
         # Remove files_%d|file_data parameters from inputs dict and attach

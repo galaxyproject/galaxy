@@ -393,6 +393,12 @@ class TestLoggedInToolForm(SeleniumTestCase):
         self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
 
     @selenium_test
+    @managed_history
+    def test_run_apply_rules_create_paired_or_unpaired_list(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
     def test_run_apply_rules_flatten_with_indices(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
         self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
