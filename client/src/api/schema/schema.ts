@@ -7127,7 +7127,7 @@ export interface components {
              * Source
              * @description The source of the element.
              */
-            src: components["schemas"]["ColletionSourceType"];
+            src: components["schemas"]["CollectionSourceType"];
             /**
              * Tags
              * @description The list of tags associated with the element.
@@ -7135,10 +7135,10 @@ export interface components {
             tags?: string[] | null;
         };
         /**
-         * ColletionSourceType
+         * CollectionSourceType
          * @enum {string}
          */
-        ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
+        CollectionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
         /** ColorParameterModel */
         ColorParameterModel: {
             /** Argument */

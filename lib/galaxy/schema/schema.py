@@ -533,7 +533,7 @@ class DataItemSourceType(str, Enum):
     dc = "dc"
 
 
-class ColletionSourceType(str, Enum):
+class CollectionSourceType(str, Enum):
     hda = "hda"
     ldda = "ldda"
     hdca = "hdca"
@@ -1658,7 +1658,7 @@ class CollectionElementIdentifier(Model):
         title="Name",
         description="The name of the element.",
     )
-    src: ColletionSourceType = Field(
+    src: CollectionSourceType = Field(
         ...,
         title="Source",
         description="The source of the element.",

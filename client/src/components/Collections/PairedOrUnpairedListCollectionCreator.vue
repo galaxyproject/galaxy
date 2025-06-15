@@ -26,7 +26,7 @@ import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.v
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 type CollectionElementIdentifier = components["schemas"]["CollectionElementIdentifier"];
-type CollectionSourceType = components["schemas"]["ColletionSourceType"];
+type CollectionSourceType = components["schemas"]["CollectionSourceType"];
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 const { confirm } = useConfirmDialog();
