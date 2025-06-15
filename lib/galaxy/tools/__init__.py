@@ -603,7 +603,13 @@ class ToolBox(AbstractToolBox):
             return None
 
     def dynamic_tool_to_tool(self, dynamic_tool: Optional["DynamicTool"]) -> Optional["Tool"]:
-        if not dynamic_tool or not dynamic_tool.active or (tool_representation := dynamic_tool.value) is None:
+        if not dynamic_tool:
+            return None
+        if not dynamic_tool.active:
+            log.debug("Tool %s is not active", dynamic_tool.uuid)
+            return None
+        if (tool_representation := dynamic_tool.value) is None:
+            log.debug("Tool %s has empty representation", dynamic_tool.uuid)
             return None
         if "name" not in tool_representation:
             tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"

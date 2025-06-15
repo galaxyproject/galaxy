@@ -213,9 +213,10 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         session.execute(update_stmt)
         session.commit()
 
-    def deactivate(self, dynamic_tool):
-        self.update(dynamic_tool, {"active": False})
-        return dynamic_tool
+    def deactivate(self, dynamic_tool: DynamicTool) -> DynamicTool:
+        assert isinstance(dynamic_tool.uuid, UUID)
+        del self.app.toolbox._tools_by_uuid[dynamic_tool.uuid]
+        return self.update(dynamic_tool, {"active": False})
 
 
 class ToolFilterMixin:

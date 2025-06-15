@@ -157,6 +157,8 @@ class DynamicToolApi:
         Deactivate the specified dynamic tool. Deactivated tools will not
         be loaded into the toolbox.
         """
-        dynamic_tool = dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
+        dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
+        if dynamic_tool is None:
+            raise ObjectNotFound()
         updated_dynamic_tool = self.dynamic_tools_manager.deactivate(dynamic_tool)
         return updated_dynamic_tool.to_dict()
