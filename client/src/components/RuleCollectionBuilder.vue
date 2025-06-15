@@ -91,6 +91,15 @@
                             </label>
                         </RuleComponent>
                         <RuleComponent
+                            rule-type="add_column_from_sample_sheet_index"
+                            :display-rule-type.sync="displayRuleType"
+                            @saveRule="handleRuleSave">
+                            <label>
+                                {{ l("Value") }}
+                                <input v-model="addColumnSampleSheetIndexValue" type="number" min="0" />
+                            </label>
+                        </RuleComponent>
+                        <RuleComponent
                             rule-type="add_column_group_tag_value"
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
@@ -311,11 +320,25 @@
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a
-                                        v-for="target in unmappedTargets"
+                                        v-for="target in basicUnmappedTargets"
                                         :key="target"
                                         :index="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)"
+                                        >{{ mappingTargets()[target].label }}</a
+                                    >
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><h6 class="dropdown-header">Advanced</h6></li>
+                                    <a
+                                        v-for="target in advancedUnmappedTargets"
+                                        :key="target"
+                                        :index="target"
+                                        class="dropdown-item"
+                                        href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
@@ -435,6 +458,10 @@
                                         <RuleTargetComponent
                                             v-if="metadataOptions"
                                             rule-type="add_column_metadata"
+                                            @addNewRule="addNewRule" />
+                                        <RuleTargetComponent
+                                            v-if="sampleSheetMetadataAvailable"
+                                            rule-type="add_column_from_sample_sheet_index"
                                             @addNewRule="addNewRule" />
                                         <RuleTargetComponent
                                             v-if="hasTagsMetadata"
@@ -581,6 +608,7 @@
 
 <script>
 import HotTable from "@handsontable/vue";
+import { fetch, fetchJobErrorMessage } from "api/tools";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -676,6 +704,11 @@ export default {
             required: false,
             type: Object,
         },
+        initialMapping: {
+            // only respected if elementsType is raw currently - other element types have their own default behaviors that make sense (e.g. assigning ftp paths to a URI implicitly)
+            required: false,
+            type: Array,
+        },
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
@@ -722,6 +755,8 @@ export default {
                 mapping = [{ type: "url", columns: [0] }];
             } else if (this.elementsType == "datasets") {
                 mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else if (this.initialMapping) {
+                mapping = this.initialMapping;
             } else {
                 mapping = [];
             }
@@ -812,6 +847,7 @@ export default {
             addColumnRegexAllowUnmatched: false,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnSampleSheetIndexValue: 0,
             addColumnGroupTagValueValue: "",
             addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
@@ -957,6 +993,18 @@ export default {
             }
             return targets;
         },
+        basicUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return !MAPPING_TARGETS[target].advanced;
+            });
+        },
+        advancedUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return MAPPING_TARGETS[target].advanced;
+            });
+        },
         colHeaders() {
             const { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
@@ -991,6 +1039,19 @@ export default {
             }
             return asDict;
         },
+        sampleSheetMetadataAvailable() {
+            if (this.elementsType !== "collection_contents") {
+                return false;
+            }
+            if (this.initialElements !== null) {
+                const collectionType = this.initialElements.collection_type;
+                const collectionTypeRanks = collectionType.split(":");
+                return collectionTypeRanks[0] == "sample_sheet";
+            } else {
+                // input type unknown right? just have to allow it
+                return true;
+            }
+        },
         metadataOptions() {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
@@ -999,7 +1060,11 @@ export default {
                 let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
-                    if (collectionType == "list:paired" || collectionType == "list") {
+                    if (
+                        collectionType == "list:paired" ||
+                        collectionType == "list" ||
+                        collectionType.startsWith("sample_sheet")
+                    ) {
                         flatishList = true;
                     }
                 } else {
@@ -1009,7 +1074,7 @@ export default {
                 const collectionTypeRanks = collectionType.split(":");
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
-                    if (collectionTypeRank == "list") {
+                    if (collectionTypeRank == "list" || collectionTypeRank == "sample_sheet") {
                         if (flatishList) {
                             metadataOptions["identifier" + index] = _l("List Identifier");
                             metadataOptions["index" + index] = _l("List Index");
@@ -1056,6 +1121,13 @@ export default {
                     collectionType += ":paired";
                 } else {
                     collectionType = "paired";
+                }
+            }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                if (collectionType) {
+                    collectionType += ":paired_or_unpaired";
+                } else {
+                    collectionType = "paired_or_unpaired";
                 }
             }
             return collectionType;
@@ -1261,6 +1333,11 @@ export default {
                 this.$refs.hotTable.$el.click();
             }, 200);
         }
+        // is this comparable to watch immediate in newer Vue code?, I just need that event to
+        // to flair if it is initially okay also.
+        if (this.validInput) {
+            this.$emit("validInput", true);
+        }
     },
     methods: {
         restoreRules(event) {
@@ -1385,7 +1462,7 @@ export default {
             this.waitOnJob(response);
         },
         waitOnJob(response) {
-            const jobId = response.data.jobs[0].id;
+            const jobId = response;
             const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
@@ -1412,14 +1489,8 @@ export default {
         },
         doFullJobCheck(jobId) {
             const handleJobShow = (jobResponse) => {
-                const stderr = jobResponse.data.stderr;
-                if (stderr) {
-                    let errorMessage = "An error was encountered while running your upload job. ";
-                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
-                        errorMessage +=
-                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
-                    }
-                    errorMessage += "Upload job completed with standard error: " + stderr;
+                const errorMessage = fetchJobErrorMessage(jobResponse.data);
+                if (errorMessage) {
                     this.errorMessage = errorMessage;
                 }
             };
@@ -1537,14 +1608,12 @@ export default {
                 }
 
                 if (this.state !== "error") {
-                    axios
-                        .post(`${getAppRoot()}api/tools/fetch`, {
-                            history_id: historyId,
-                            targets: targets,
-                            auto_decompress: true,
-                        })
-                        .then(this.refreshAndWait)
-                        .catch(this.renderFetchError);
+                    const fetchPayload = {
+                        history_id: historyId,
+                        targets: targets,
+                        auto_decompress: true,
+                    };
+                    fetch(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
                 }
             }
         },
@@ -1556,6 +1625,9 @@ export default {
             }
             if (this.mappingAsDict.paired_identifier) {
                 identifierColumns.push(this.mappingAsDict.paired_identifier.columns[0]);
+            }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                identifierColumns.push(this.mappingAsDict.paired_or_unpaired_identifier.columns[0]);
             }
             return identifierColumns;
         },
@@ -1611,15 +1683,24 @@ export default {
                         let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
-                            if (collectionTypeAtDepth === "paired") {
+                            if (["paired", "paired_or_unpaired"].indexOf(collectionTypeAtDepth) > -1) {
                                 if (["f", "1", "r1", "forward"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "forward";
                                 } else if (["r", "2", "r2", "reverse"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "reverse";
+                                } else if (
+                                    collectionTypeAtDepth == "paired_or_unpaired" &&
+                                    ["unpaired", "u"].indexOf(identifier.toLowerCase()) > -1
+                                ) {
+                                    // assert collectionTypeAtDepth == paired_or_unpaired
+                                    identifier = "unpaired";
                                 } else {
                                     this.state = "error";
-                                    this.errorMessage =
-                                        "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    const allowedIndicators = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"];
+                                    if (collectionTypeAtDepth == "paired_or_unpaired") {
+                                        allowedIndicators.push("unpaired", "u");
+                                    }
+                                    this.errorMessage = `Unknown indicator (${identifier}) of paired status encountered - only values of (${allowedIndicators}) are allowed.`;
                                     return;
                                 }
                             }
@@ -1656,6 +1737,29 @@ export default {
                             }
                         }
                     }
+                }
+
+                // Recursively descend elements to handle "paired_or_unpaired" collections
+                const updateUnpairedIdentifiers = (elements) => {
+                    for (const value of Object.values(elements)) {
+                        if (typeof value !== "object" || value === null) {
+                            continue;
+                        }
+                        if (value.src === "new_collection" && value.collection_type === "paired_or_unpaired") {
+                            const subElements = value.elements;
+                            if (subElements["forward"] && !subElements["reverse"]) {
+                                subElements["unpaired"] = subElements["forward"];
+                                delete subElements["forward"];
+                            }
+                        }
+                        if (value.elements) {
+                            updateUnpairedIdentifiers(value.elements);
+                        }
+                    }
+                };
+
+                if (collectionType.endsWith("paired_or_unpaired")) {
+                    updateUnpairedIdentifiers(elements);
                 }
 
                 elementsByName[collectionName] = elements;
@@ -1714,7 +1818,13 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_, parentIndices_) {
+        populateElementsFromCollectionDescription(
+            elements,
+            collectionType,
+            parentIdentifiers_,
+            parentIndices_,
+            parentColumns_
+        ) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
@@ -1725,6 +1835,10 @@ export default {
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
                 const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                let columns = parentColumns_;
+                if (!columns && collectionType.startsWith("sample_sheet")) {
+                    columns = element.columns ? element.columns : [];
+                }
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
@@ -1734,6 +1848,7 @@ export default {
                         indices: indices,
                         dataset: elementObject,
                         tags: elementObject.tags,
+                        columns: columns,
                     };
                     sources.push(source);
                 } else {
@@ -1742,7 +1857,8 @@ export default {
                         elementObject.elements,
                         restCollectionType,
                         identifiers,
-                        indices
+                        indices,
+                        columns
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;
@@ -1819,6 +1935,24 @@ export default {
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
             }
+            const hashTypes = [
+                { key: "hash_md5", function: "MD5" },
+                { key: "hash_sha1", function: "SHA1" },
+                { key: "hash_sha256", function: "SHA256" },
+                { key: "hash_sha515", function: "SHA512" },
+            ];
+
+            hashTypes.forEach(({ key, function: hashFunction }) => {
+                if (mappingAsDict[key]) {
+                    const hashColumn = mappingAsDict[key].columns[0];
+                    const hash = data[dataIndex][hashColumn];
+                    if (res.hashes === undefined) {
+                        res["hashes"] = [];
+                    }
+                    res["hashes"].push({ hash_function: hashFunction, hash_value: hash });
+                }
+            });
+
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;

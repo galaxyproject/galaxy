@@ -2,6 +2,8 @@ import pyre from "pyre-to-regexp";
 import _ from "underscore";
 import _l from "utils/localization";
 
+import MAPPING_TARGETS from "./rule_targets.yml";
+
 const NEW_COLUMN = "new";
 
 const multiColumnsToString = function (targetColumns, colHeaders) {
@@ -218,6 +220,35 @@ const RULES = {
             } else {
                 return { error: `Unknown metadata type [${ruleValue}]` };
             }
+            data = data.map(newRow);
+            columns.push(NEW_COLUMN);
+            return { data, columns };
+        },
+    },
+    add_column_from_sample_sheet_index: {
+        title: _l("Add Column from Sample Sheet Index"),
+        display: (rule, colHeaders) => {
+            return `Add column for value of sample sheet index ${rule.value}.`;
+        },
+        init: (component, rule) => {
+            if (!rule) {
+                component.addColumnSampleSheetIndexValue = null;
+            } else {
+                component.addColumnSampleSheetIndexValue = rule.value;
+            }
+        },
+        save: (component, rule) => {
+            rule.value = component.addColumnSampleSheetIndexValue;
+        },
+        apply: (rule, data, sources, columns) => {
+            const ruleValue = rule.value;
+            const newRow = (row, index) => {
+                const newRow = row.slice();
+                const columns = sources[index]["columns"];
+                const value = columns[ruleValue];
+                newRow.push(value);
+                return newRow;
+            };
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
@@ -793,96 +824,6 @@ const RULES = {
             columns = removeColumns(columns, targets0);
             return { data, sources, columns };
         },
-    },
-};
-
-const MAPPING_TARGETS = {
-    list_identifiers: {
-        multiple: true,
-        label: _l("List Identifier(s)"),
-        columnHeader: _l("List Identifier"),
-        help: _l(
-            "This should be a short description of the replicate, sample name, condition, etc... that describes each level of the list structure."
-        ),
-        importType: "collections",
-    },
-    paired_identifier: {
-        label: _l("Paired-end Indicator"),
-        columnHeader: _l("Paired Indicator"),
-        help: _l(
-            "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads."
-        ),
-        importType: "collections",
-    },
-    collection_name: {
-        label: _l("Collection Name"),
-        help: _l(
-            "If this is set, all rows with the same collection name will be joined into a collection and it is possible to create multiple collections at once."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"],
-        importType: "collections",
-    },
-    name_tag: {
-        label: _l("Name Tag"),
-        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
-        importType: "datasets",
-        modes: ["raw", "ftp"],
-    },
-    tags: {
-        multiple: true,
-        label: _l("General Purpose Tag(s)"),
-        help: _l(
-            "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
-    },
-    group_tags: {
-        multiple: true,
-        label: _l("Group Tag(s)"),
-        help: _l(
-            "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
-        ),
-        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
-    },
-    name: {
-        label: _l("Name"),
-        importType: "datasets",
-    },
-    dbkey: {
-        label: _l("Genome"),
-        modes: ["raw", "ftp"],
-    },
-    file_type: {
-        label: _l("Type"),
-        modes: ["raw", "ftp"],
-        help: _l("This should be the Galaxy file type corresponding to this file."),
-    },
-    url: {
-        label: _l("URL"),
-        modes: ["raw"],
-        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
-    },
-    url_deferred: {
-        label: _l("Deferred URL"),
-        modes: ["raw"],
-        help: _l(
-            "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
-        ),
-    },
-    info: {
-        label: _l("Info"),
-        help: _l(
-            "Unstructured text associated with the dataset that shows up in the history panel, this is optional and can be whatever you would like."
-        ),
-        modes: ["raw", "ftp"],
-    },
-    ftp_path: {
-        label: _l("FTP Path"),
-        modes: ["raw", "ftp"],
-        help: _l(
-            "This should be the path to the target file to include relative to your FTP directory on the Galaxy server"
-        ),
-        requiresFtp: true,
     },
 };
 
