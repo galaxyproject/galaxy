@@ -1,4 +1,4 @@
-import { GalaxyApi } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -34,4 +34,56 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
     }
 
     return toQuotaUsage(data);
+}
+
+export type CreateSourceCredentialsPayload = components["schemas"]["CreateSourceCredentialsPayload"];
+export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
+export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
+export type UserCredentials = components["schemas"]["UserCredentialsResponse"];
+export type ServiceVariableDefinition = components["schemas"]["CredentialDefinitionResponse"];
+
+export function transformToSourceCredentials(
+    toolId: string,
+    toolCredentialsDefinition: ServiceCredentialsDefinition[]
+): SourceCredentialsDefinition {
+    const services = new Map(
+        toolCredentialsDefinition.map((service) => [getKeyFromCredentialsIdentifier(service), service])
+    );
+    return {
+        sourceType: "tool",
+        sourceId: toolId,
+        services,
+    };
+}
+
+export interface ServiceCredentialsIdentifier {
+    name: string;
+    version: string;
+}
+
+export function getKeyFromCredentialsIdentifier(credentialsIdentifier: ServiceCredentialsIdentifier): string {
+    return `${credentialsIdentifier.name}-${credentialsIdentifier.version}`;
+}
+
+/**
+ * Represents the definition of credentials for a particular service.
+ */
+export interface ServiceCredentialsDefinition extends ServiceCredentialsIdentifier {
+    label?: string;
+    description?: string;
+    secrets: ServiceVariableDefinition[];
+    variables: ServiceVariableDefinition[];
+}
+
+/**
+ * Represents the definition of credentials for a particular source.
+ * A source can be a tool, a workflow, etc.Base interface for credentials definitions.
+ * A source may accept multiple services, each with its own credentials.
+ *
+ * The `services` map is indexed by the service name and version using the `getKeyFromCredentialsIdentifier` function.
+ */
+export interface SourceCredentialsDefinition {
+    sourceType: string;
+    sourceId: string;
+    services: Map<string, ServiceCredentialsDefinition>;
 }
