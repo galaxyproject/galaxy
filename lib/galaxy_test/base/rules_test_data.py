@@ -348,6 +348,100 @@ EXAMPLE_FLATTEN_USING_INDICES = {
 }
 
 
+def check_example_create_paired_or_unpaired_with_unmatched_forward_becoming_unpaired(hdca, dataset_populator):
+    assert hdca["collection_type"] == "list:paired_or_unpaired"
+    assert hdca["element_count"] == 4
+    sample1_el = hdca["elements"][0]
+    assert "object" in sample1_el, hdca
+    assert "element_identifier" in sample1_el
+    assert sample1_el["element_identifier"] == "sample1", hdca
+    child_collection_level = sample1_el["object"]
+    assert child_collection_level["collection_type"] == "paired_or_unpaired"
+    assert child_collection_level["elements"][0]["element_identifier"] == "forward", hdca
+
+    sample2_el = hdca["elements"][1]
+    assert "object" in sample2_el, hdca
+    assert "element_identifier" in sample2_el
+    assert sample2_el["element_identifier"] == "sample2", hdca
+    child_collection_level = sample2_el["object"]
+    assert child_collection_level["collection_type"] == "paired_or_unpaired"
+    assert child_collection_level["elements"][0]["element_identifier"] == "unpaired", hdca
+
+    sample3_el = hdca["elements"][2]
+    assert "object" in sample3_el, hdca
+    assert "element_identifier" in sample3_el
+    assert sample3_el["element_identifier"] == "sample3", hdca
+    child_collection_level = sample3_el["object"]
+    assert child_collection_level["collection_type"] == "paired_or_unpaired"
+    assert child_collection_level["elements"][0]["element_identifier"] == "unpaired", hdca
+
+    sample4_el = hdca["elements"][2]
+    assert "object" in sample4_el, hdca
+    assert "element_identifier" in sample4_el
+    assert sample4_el["element_identifier"] == "sample3", hdca
+    child_collection_level = sample4_el["object"]
+    assert child_collection_level["collection_type"] == "paired_or_unpaired"
+    assert child_collection_level["elements"][0]["element_identifier"] == "unpaired", hdca
+
+
+EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION = {
+    "rules": {
+        "rules": [
+            {
+                "type": "add_column_metadata",
+                "value": "identifier0",
+            },
+            {
+                "type": "add_column_metadata",
+                "value": "identifier1",
+            },
+        ],
+        "mapping": [
+            {
+                "type": "list_identifiers",
+                "columns": [0],
+            },
+            {
+                "type": "paired_or_unpaired_identifier",
+                "columns": [1],
+            },
+        ],
+    },
+    "test_data": {
+        "type": "list:list",
+        "elements": [
+            {
+                "identifier": "sample1",
+                "elements": [
+                    {"identifier": "forward", "class": "File", "contents": "TestData123forward"},
+                    {"identifier": "reverse", "class": "File", "contents": "TestData123reverse"},
+                ],
+            },
+            {
+                "identifier": "sample2",
+                "elements": [
+                    {"identifier": "unpaired", "class": "File", "contents": "TestData123unpaired"},
+                ],
+            },
+            {
+                "identifier": "sample3",
+                "elements": [
+                    {"identifier": "u", "class": "File", "contents": "TestData123unpaired-2"},
+                ],
+            },
+            {
+                "identifier": "sample4",
+                "elements": [
+                    {"identifier": "forward", "class": "File", "contents": "TestData123unpaired-3"},
+                ],
+            },
+        ],
+    },
+    "check": check_example_create_paired_or_unpaired_with_unmatched_forward_becoming_unpaired,
+    "output_hid": 12,
+}
+
+
 def check_example_flatten_paired_or_unpaired(hdca, dataset_populator):
     assert hdca["collection_type"] == "list"
     assert hdca["element_count"] == 3

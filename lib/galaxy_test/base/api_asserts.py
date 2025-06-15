@@ -113,3 +113,11 @@ def _as_dict(response: Union[Response, dict]) -> Dict[str, Any]:
 
 
 assert_has_key = assert_has_keys
+
+
+def assert_file_looks_like_xlsx(xlsx_file: str):
+    # Check the file header
+    with open(xlsx_file, "rb") as file:
+        header = file.read(4)
+        # The ZIP file signature is 0x50 0x4B 0x03 0x04
+        return header == b"\x50\x4b\x03\x04"

@@ -42,8 +42,6 @@ interface Props {
     suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
-    height?: string;
-    width?: string;
     forwardFilter?: string;
     reverseFilter?: string;
     collectionType: SupportedPairedOrPairedBuilderCollectionTypes;
@@ -93,7 +91,7 @@ const {
 pairingTargetsStore.setShowElementExtension(showElementExtension);
 
 const style = computed(() => {
-    return { width: props.width || "100%", height: props.height || "500px" };
+    return { width: "100%", height: "500px" };
 });
 
 const flatLists = computed(() => props.collectionType.indexOf("paired") == -1);
