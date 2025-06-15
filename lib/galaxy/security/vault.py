@@ -123,7 +123,7 @@ class HashicorpVault(Vault):
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response["data"]["data"].get("value")
-        except hvac.exceptions.InvalidPath:
+        except Exception:
             log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
             return None
 
