@@ -717,7 +717,7 @@ class AuspiceJson(Json):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in Auspice v2 JSON by looking for keys
-        like "version", "meta" and "updated" that are both required by the 
+        like "version", "meta" and "updated" that are both required by the
         https://docs.nextstrain.org/projects/auspice/en/stable/releases/v2.html format
         and also will be in the first part of the file
 
