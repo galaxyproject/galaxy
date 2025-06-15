@@ -865,6 +865,7 @@
     </datatype>
     <datatype extension="sdf" type="galaxy.datatypes.molecules:SDF" display_in_upload="true">
         <infer_from suffix="sdf" />
+        <visualization plugin="molstar" />
         <converter file="molecules_converter.xml" target_datatype="smi"/>
         <converter file="molecules_converter.xml" target_datatype="inchi"/>
         <converter file="molecules_converter.xml" target_datatype="mol2"/>
@@ -881,6 +882,7 @@
     </datatype>
     <datatype extension="mol" type="galaxy.datatypes.molecules:MOL" display_in_upload="true">
         <infer_from suffix="mol" />
+        <visualization plugin="molstar" />
         <converter file="molecules_converter.xml" target_datatype="smi"/>
         <converter file="molecules_converter.xml" target_datatype="sdf"/>
         <converter file="molecules_converter.xml" target_datatype="inchi"/>
@@ -889,6 +891,7 @@
     </datatype>
     <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="true">
         <infer_from suffix="mol2" />
+        <visualization plugin="molstar" />
         <converter file="molecules_converter.xml" target_datatype="smi"/>
         <converter file="molecules_converter.xml" target_datatype="sdf"/>
         <converter file="molecules_converter.xml" target_datatype="inchi"/>
@@ -898,6 +901,7 @@
     </datatype>
     <datatype extension="cml" type="galaxy.datatypes.molecules:CML" display_in_upload="true">
         <infer_from suffix="cml" />
+        <visualization plugin="molstar" />
         <converter file="cml_to_smi_converter.xml" target_datatype="smi"/>
         <converter file="molecules_converter.xml" target_datatype="inchi"/>
         <converter file="molecules_converter.xml" target_datatype="sdf"/>
@@ -909,6 +913,7 @@
     <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="true"/>
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="true">
         <infer_from suffix="pdb" />
+        <visualization plugin="molstar" />
         <display file="icn3d/icn3d_simple.xml"/>
         <converter file="pdb_to_gro.xml" target_datatype="gro"/>
     </datatype>
@@ -941,6 +946,8 @@
     <datatype extension="edr" type="galaxy.datatypes.binary:Edr" display_in_upload="true"/>
     <datatype extension="tpr" type="galaxy.datatypes.binary:Binary" display_in_upload="true"/>
     <datatype extension="gro" type="galaxy.datatypes.molecules:GRO" display_in_upload="true">
+      <visualization plugin="molstar" />
+      <infer_from suffix="gro" />
       <converter file="gro_to_pdb.xml" target_datatype="pdb"/>
     </datatype>
     <datatype extension="inpcrd" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="AMBER coordinate file" />
