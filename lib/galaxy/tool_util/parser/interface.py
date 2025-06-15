@@ -400,7 +400,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> List[str]:
         return []
 
     @property

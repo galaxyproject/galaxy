@@ -233,7 +233,9 @@ if TYPE_CHECKING:
     from galaxy.model import (
         DynamicTool,
         LibraryFolder,
+        Workflow,
     )
+    from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
     from galaxy.tool_util.parser.output_objects import (
@@ -482,7 +484,9 @@ class ToolBox(AbstractToolBox):
 
     app: "UniverseApplication"
 
-    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
+    def __init__(
+        self, config_filenames: List[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
+    ) -> None:
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
@@ -672,7 +676,9 @@ class ToolBox(AbstractToolBox):
             "model_tools_path": MODEL_TOOLS_PATH,
         }
 
-    def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
+    def _get_tool_shed_repository(
+        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: Optional[str]
+    ) -> "ToolShedRepository":
         # Abstract toolbox doesn't have a dependency on the database, so
         # override _get_tool_shed_repository here to provide this information.
 
@@ -704,7 +710,7 @@ class ToolBox(AbstractToolBox):
             default_tool_dependency_dir=default_tool_dependency_dir,
         )
 
-    def _load_workflow(self, workflow_id):
+    def _load_workflow(self, workflow_id: str) -> "Workflow":
         """
         Return an instance of 'Workflow' identified by `id`,
         which is encoded in the tool panel.
@@ -1046,7 +1052,7 @@ class Tool(UsesDictVisibleKeys):
         self.populate_tool_shed_info(tool_shed_repository)
         # add tool resource parameters
         self.populate_resource_parameters(tool_source)
-        self.tool_errors = None
+        self.tool_errors: Optional[str] = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
         self.outputs: Dict[str, ToolOutputBase] = {}
@@ -1229,7 +1235,7 @@ class Tool(UsesDictVisibleKeys):
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
-    def get_panel_section(self):
+    def get_panel_section(self) -> Union[Tuple[str, str], Tuple[None, None]]:
         return self.app.toolbox.get_section_for_tool(self)
 
     def allow_user_access(self, user, attempting_access=True):

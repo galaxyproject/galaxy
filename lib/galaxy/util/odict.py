@@ -8,12 +8,36 @@ Whenever possible the stdlib `collections.OrderedDict` should be used instead of
 this custom implementation.
 """
 
+import sys
 from collections import UserDict
+from typing import (
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 dict_alias = dict
 
+KeyT = TypeVar("KeyT")
+ValueT = TypeVar("ValueT")
 
-class odict(UserDict):
+if sys.version_info >= (3, 9):
+
+    # A simple type alias doesn't work with mypy
+    class TypedUserDict(UserDict[KeyT, ValueT]): ...
+
+else:
+
+    # UserDict is not generic in Python < 3.9
+    # TypeError: 'ABCMeta' object is not subscriptable
+    class TypedUserDict(UserDict, Generic[KeyT, ValueT]): ...
+
+
+class odict(TypedUserDict[KeyT, ValueT]):
     """
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 
@@ -22,32 +46,32 @@ class odict(UserDict):
     order.
     """
 
-    def __init__(self, dict=None):
+    def __init__(self, dict: Optional[Union[Dict[KeyT, ValueT], List[Tuple[KeyT, ValueT]]]] = None) -> None:
         item = dict
-        self._keys = []
+        self._keys: List[KeyT] = []
         if isinstance(item, dict_alias):
-            UserDict.__init__(self, item)
+            super().__init__(item)
         else:
-            UserDict.__init__(self, None)
+            super().__init__(None)
         if isinstance(item, list):
             for key, value in item:
                 self[key] = value
 
-    def __delitem__(self, key):
-        UserDict.__delitem__(self, key)
+    def __delitem__(self, key: KeyT) -> None:
+        super().__delitem__(key)
         self._keys.remove(key)
 
-    def __setitem__(self, key, item):
-        UserDict.__setitem__(self, key, item)
+    def __setitem__(self, key: KeyT, item: ValueT) -> None:
+        super().__setitem__(key, item)
         if key not in self._keys:
             self._keys.append(key)
 
-    def clear(self):
-        UserDict.clear(self)
+    def clear(self) -> None:
+        super().clear()
         self._keys = []
 
-    def copy(self):
-        new = odict()
+    def copy(self) -> "odict[KeyT, ValueT]":
+        new: odict[KeyT, ValueT] = odict()
         new.update(self)
         return new
 
@@ -57,7 +81,7 @@ class odict(UserDict):
     def keys(self):
         return self._keys[:]
 
-    def popitem(self):
+    def popitem(self) -> Tuple[KeyT, ValueT]:
         try:
             key = self._keys[-1]
         except IndexError:
@@ -69,7 +93,7 @@ class odict(UserDict):
     def setdefault(self, key, failobj=None):
         if key not in self._keys:
             self._keys.append(key)
-        return UserDict.setdefault(self, key, failobj)
+        return super().setdefault(key, failobj)
 
     def values(self):
         return map(self.get, self._keys)
@@ -91,7 +115,7 @@ class odict(UserDict):
     def reverse(self):
         self._keys.reverse()
 
-    def insert(self, index, key, item):
+    def insert(self, index, key: KeyT, item: ValueT) -> None:
         if key not in self._keys:
             self._keys.insert(index, key)
-            UserDict.__setitem__(self, key, item)
+            super().__setitem__(key, item)

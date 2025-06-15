@@ -11,7 +11,10 @@ import sys
 import threading
 import time
 from inspect import ismodule
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from kombu import (
     Consumer,
@@ -33,10 +36,14 @@ logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from galaxy.structured_app import MinimalManagerApp
+    from galaxy.app import UniverseApplication
+    from galaxy.structured_app import (
+        MinimalManagerApp,
+        StructuredApp,
+    )
 
 
-def send_local_control_task(app, task, get_response=False, kwargs=None):
+def send_local_control_task(app: "StructuredApp", task: str, get_response: bool = False, kwargs: Optional[dict] = None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -162,7 +169,7 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
-def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
+def reload_toolbox(app: "UniverseApplication", save_integrated_tool_panel: bool = True, **kwargs) -> None:
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
@@ -174,7 +181,7 @@ def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
     log.debug("Toolbox reload %s", reload_timer)
 
 
-def _get_new_toolbox(app, save_integrated_tool_panel=True):
+def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: bool = True) -> None:
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
@@ -188,7 +195,8 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
-    [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    for tool in new_toolbox.data_manager_tools.values():
+        new_toolbox.register_tool(tool)
     app._toolbox = new_toolbox
 
 

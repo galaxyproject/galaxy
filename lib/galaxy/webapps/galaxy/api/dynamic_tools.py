@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -148,7 +150,7 @@ class DynamicToolApi:
         return dynamic_tool.to_dict()
 
     @router.delete("/api/dynamic_tools/{dynamic_tool_id}", require_admin=True)
-    def delete(self, dynamic_tool_id: DatabaseIdOrUUID):
+    def delete(self, dynamic_tool_id: DatabaseIdOrUUID) -> Dict[str, Any]:
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
 

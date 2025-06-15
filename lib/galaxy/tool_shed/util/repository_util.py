@@ -247,14 +247,14 @@ def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
 
 def get_installed_repository(
     app: "InstallationTarget",
-    tool_shed=None,
-    name=None,
-    owner=None,
-    changeset_revision=None,
-    installed_changeset_revision=None,
-    repository_id=None,
-    from_cache=False,
-):
+    tool_shed: Optional[str] = None,
+    name: Optional[str] = None,
+    owner: Optional[str] = None,
+    changeset_revision: Optional[str] = None,
+    installed_changeset_revision: Optional[str] = None,
+    repository_id: Optional[int] = None,
+    from_cache: bool = False,
+) -> ToolShedRepository:
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
