@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { CreateNewCollectionPayload, HistoryItemSummary } from "@/api";
+import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -40,7 +40,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "created-collection", collection: any): void;
+    (e: "created-collection", collection: HDCASummary): void;
     (e: "update:show", show: boolean): void;
     (e: "on-hide"): void;
 }>();
@@ -158,9 +158,13 @@ const modalTitle = computed(() => {
 
 const historyItemsStore = useHistoryItemsStore();
 /** The created collection accessed from the history items store */
-const createdCollectionInHistory = computed(() => {
+const createdCollectionInHistory = computed<HDCASummary | undefined>(() => {
     const historyItems = historyItemsStore.getHistoryItems(props.historyId, "");
-    return historyItems.find((item) => item.id === createdCollection.value?.id);
+    const createdCollectionItem = historyItems.find((item) => item.id === createdCollection.value?.id);
+    if (createdCollectionItem && isHDCA(createdCollectionItem)) {
+        return createdCollectionItem;
+    }
+    return undefined;
 });
 /** If the created collection has achieved a terminal state */
 const createdCollectionInReadyState = computed(
@@ -189,7 +193,7 @@ async function createHDCA(payload: CreateNewCollectionPayload) {
 watch(
     () => createdCollectionInReadyState.value,
     (stateReady) => {
-        if (stateReady) {
+        if (stateReady && createdCollectionInHistory.value) {
             emit("created-collection", createdCollectionInHistory.value);
         }
     }
