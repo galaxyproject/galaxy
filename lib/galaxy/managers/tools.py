@@ -53,10 +53,10 @@ def tool_payload_to_tool(app, tool_dict: Dict[str, Any]) -> Optional[Tool]:
     return tool
 
 
-class DynamicToolManager(ModelManager[model.DynamicTool]):
+class DynamicToolManager(ModelManager[DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
-    model_class = model.DynamicTool
+    model_class = DynamicTool
 
     def ensure_can_use_unprivileged_tool(self, user: model.User):
         stmt = select(
@@ -70,7 +70,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         if not self.session().execute(stmt).scalar():
             raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
 
-    def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]):
+    def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]) -> Union[DynamicTool, None]:
         if isinstance(id_or_uuid, int):
             return self.get_tool_by_id(id_or_uuid)
         else:

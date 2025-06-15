@@ -89,7 +89,7 @@ class TestTool:
     params_with_missing_data_table_entry: list = []
     params_with_missing_index_file: list = []
 
-    def __init__(self, config_file, tool_shed_repository, guid):
+    def __init__(self, config_file: "StrPath", tool_shed_repository, guid: str) -> None:
         self.config_file = config_file
         self.tool_shed_repository = tool_shed_repository
         self.guid = guid
@@ -111,7 +111,9 @@ class TestToolBox(AbstractToolBox):
         tool._lineage = self._lineage_map.register(tool)  # cleanup?
         return tool
 
-    def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
+    def _get_tool_shed_repository(
+        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: Optional[str]
+    ):
         return get_installed_repository(
             self.app,
             tool_shed=tool_shed,
