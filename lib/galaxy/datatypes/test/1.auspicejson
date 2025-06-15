@@ -1,0 +1,15 @@
+{
+  "version": "v2",
+  "meta": {
+    "title": "Sudan Ebolavirus",
+    "updated": "2025-02-05",
+    "build_url": "https://github.com/pvanheus/nextstrain-sudv",
+    "panels": ["tree"]
+  },
+  "tree": {
+    "name": "1",
+    "node_attrs": {
+      "div": 1
+    }
+  }
+}
