@@ -161,6 +161,9 @@ class HashicorpVault(Vault):
                 key,
             )
             return None
+        except Exception:
+            log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
+            return None
 
     def _read_legacy_and_migrate(self, key: str) -> Optional[str]:
         # Galaxy <= 26.0 emitted a leading slash in Vault paths, which hvac's
