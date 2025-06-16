@@ -837,6 +837,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         element=model.DatasetCollectionElement.UNINITIALIZED_ELEMENT,
                         element_index=element_attrs["element_index"],
                         element_identifier=element_attrs["element_identifier"],
+                        columns=element_attrs.get("columns"),
                     )
                     if "encoded_id" in element_attrs:
                         object_import_tracker.dces_by_key[element_attrs["encoded_id"]] = dce

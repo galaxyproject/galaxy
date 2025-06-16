@@ -301,7 +301,7 @@ def add_extra_column_help_as_new_sheet(workbook: Workbook, extra_columns_help: E
     for column_target in extra_columns_help.column_targets:
         worksheet.cell(row=current_row, column=1, value=column_target.label)
         worksheet.cell(row=current_row, column=2, value=column_target.help)
-        worksheet.cell(row=current_row, column=3, value=column_target.columnHeader or "")
+        worksheet.cell(row=current_row, column=3, value=column_target.example_column_names_as_str)
         current_row += 1
 
     help_label_index = 6
