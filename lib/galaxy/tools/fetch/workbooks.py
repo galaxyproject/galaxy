@@ -24,6 +24,7 @@ from galaxy.model.dataset_collections.rule_target_columns import (
     column_titles_to_headers,
     HeaderColumn,
     implied_paired_or_unpaired_column_header,
+    InferredColumnMapping,
     ParsedColumn,
 )
 from galaxy.model.dataset_collections.rule_target_models import (
@@ -34,12 +35,15 @@ from galaxy.model.dataset_collections.workbook_util import (
     add_extra_column_help_as_new_sheet,
     add_instructions_to_sheet,
     Base64StringT,
+    ContentTypeMessage,
+    CsvDialectInferenceMessage,
     ExtraColumnsHelpConfiguration,
     freeze_header_row,
     HasHelp,
     HelpConfiguration,
     load_workbook_from_base64,
     make_headers_bold,
+    parse_format_messages,
     ReadOnlyWorkbook,
     set_column_width,
     uri_data_validation,
@@ -168,14 +172,22 @@ class InferredCollectionTypeLogEntry(ParseLogEntry):
     from_columns: List[ParsedColumn]
 
 
-ParseLog = List[ParseLogEntry]
+AnyLogMessage = Union[
+    SplitUpPairedDataLogEntry,
+    InferredCollectionTypeLogEntry,
+    InferredColumnMapping,
+    ContentTypeMessage,
+    CsvDialectInferenceMessage,
+]
+
+FetchParseLog = List[AnyLogMessage]
 
 
 class BaseParsedFetchWorkbook(BaseModel):
     rows: ParsedRows
     columns: List[ParsedColumn]
     workbook_type: FetchWorkbookType
-    parse_log: ParseLog
+    parse_log: FetchParseLog
 
 
 class ParsedFetchWorkbookForDatasets(BaseParsedFetchWorkbook):
@@ -191,9 +203,11 @@ ParsedFetchWorkbook = Union[ParsedFetchWorkbookForDatasets, ParsedFetchWorkbookF
 
 
 def parse(payload: ParseFetchWorkbook) -> ParsedFetchWorkbook:
-    parse_log: ParseLog = []
+    parse_log: FetchParseLog = []
     workbook: ReadOnlyWorkbook = load_workbook_from_base64(payload.content)
-    column_headers = column_titles_to_headers(workbook.column_titles())
+    parse_log.extend(parse_format_messages(workbook))
+    column_headers, inferred_column_log = column_titles_to_headers(workbook.column_titles())
+    parse_log.extend(inferred_column_log)
     _validate_parsed_column_headers(column_headers)
     raw_rows = _load_row_data(workbook, column_headers, payload)
     # the rule builder does require splitting the paired data in this way but it might
