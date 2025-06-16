@@ -15,6 +15,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import LoadingSpan from "../LoadingSpan.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -156,7 +157,11 @@ onMounted(async () => {
             {{ errorMessage }}
         </BAlert>
 
-        <div v-if="!datasetLoading && !jobLoading && dataset && jobDetails">
+        <BAlert v-if="datasetLoading || jobLoading" variant="info" show>
+            <LoadingSpan :message="localize('Loading dataset error details')" />
+        </BAlert>
+
+        <div v-else-if="!datasetLoading && !jobLoading && dataset && jobDetails">
             <div class="page-container edit-attr">
                 <div class="response-message"></div>
             </div>
