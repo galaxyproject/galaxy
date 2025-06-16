@@ -64,6 +64,10 @@ const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundi
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
 function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    if (!Object.keys(props.steps).length) {
+        // If there are no steps, we cannot fit the workflow.
+        return;
+    }
     const aabb = getWorkflowBoundingBox();
     aabb.expand(padding);
 
