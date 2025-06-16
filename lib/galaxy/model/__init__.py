@@ -5474,7 +5474,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     history_id: Mapped[Optional[int]]
     dataset_id: Mapped[Optional[int]]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
-    tags: Mapped[Optional["HistoryDatasetAssociationTagAssociation"]]
+    tags: Mapped[List["HistoryDatasetAssociationTagAssociation"]]
 
     def __init__(
         self,
@@ -7729,6 +7729,13 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             self.child_collection = value
         else:
             raise AttributeError(f"Unknown element type provided: {type(value)}")
+
+    @property
+    def auto_propagated_tags(self):
+        first_dataset_instance = self.first_dataset_instance()
+        if first_dataset_instance:
+            return [t for t in first_dataset_instance.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
+        return []
 
     @property
     def dataset_instance(self):
