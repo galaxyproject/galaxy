@@ -351,6 +351,7 @@ const selectedCount = computed(() => {
                 <span>
                     Unselected
                     <span class="font-weight-normal unselected-count"> ({{ unselectedCount }}) </span>
+                    <slot name="column-heading-end" />
                 </span>
                 <GButton
                     class="selection-button select"
@@ -390,7 +391,7 @@ const selectedCount = computed(() => {
                 <span>
                     Selected
                     <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
-                    <slot name="selected-heading-end" />
+                    <slot name="column-heading-end" />
                 </span>
                 <GButton class="selection-button deselect" :title="deselectText" color="blue" @click="deselectAll">
                     <FontAwesomeIcon :icon="faLongArrowAltLeft" />

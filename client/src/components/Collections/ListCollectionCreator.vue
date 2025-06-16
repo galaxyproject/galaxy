@@ -345,18 +345,16 @@ function addUploadedFiles(files: HDASummary[]) {
 
 /** find the element in the workingElements array and update its name */
 function renameElement(element: any, name: string) {
-    // We do this whole process of removing and readding because inListElements
-    // might be reacting to changes in workingElements, and we want to
-    // prevent that from causing issues with producing duplicate elements in either list:
+    // We do this whole process of removing and readding because, in the case that the element
+    // is in the list, inListElements might be reacting to changes in workingElements, and we
+    // want to prevent that from causing issues with producing duplicate elements in either array:
 
     // first check at what index of inlistElements the element is
     const index = inListElements.value.findIndex((e) => e.id === element.id);
-    if (index < 0) {
-        return;
+    if (index >= 0) {
+        // remove from inListElements
+        inListElements.value = inListElements.value.filter((e) => e.id !== element.id);
     }
-
-    // remove from inListElements
-    inListElements.value = inListElements.value.filter((e) => e.id !== element.id);
 
     // then find the element in workingElements, and rename it
     element = workingElements.value.find((e) => e.id === element.id);
@@ -467,7 +465,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             <i data-target=".collection-element .name">
                                 {{ localize("the existing name") }}
                             </i>
-                            {{ localize("in the 'Selected' column.") }}
+                            {{ localize("in either column.") }}
                         </li>
 
                         <li>
@@ -686,15 +684,14 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         maintain-selection-order
                         :placeholder="localize('Filter datasets by name')"
                         :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
-                        <template v-slot:selected-heading-end>
+                        <template v-slot:column-heading-end>
                             <i style="font-weight: normal">
-                                {{ localize("(Click name to edit") }}
+                                {{ localize("(Click name to edit)") }}
                             </i>
                         </template>
                         <template v-slot:label-area="selectValue">
                             <DatasetCollectionElementView
                                 text-only
-                                :not-editable="!selectValue.selected"
                                 :element="selectionAsHdaSummary(selectValue.option.value)"
                                 :hide-extension="!showElementExtension"
                                 @onRename="(name) => renameElement(selectValue.option.value, name)" />
