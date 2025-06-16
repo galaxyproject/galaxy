@@ -55,7 +55,7 @@ watch(
         @keyup.enter="emit('element-is-selected', element)"
         @click="emit('element-is-selected', element)">
         <span class="d-flex flex-gapx-1 align-items-center">
-            <span v-if="!hideHid && (element.hid ?? true)">{{ element.hid }}:</span>
+            <span v-if="!hideHid && (element.hid ?? true)" data-description="dataset hid">{{ element.hid }}:</span>
             <strong>
                 <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
                 <span v-else>{{ elementName }}</span>
