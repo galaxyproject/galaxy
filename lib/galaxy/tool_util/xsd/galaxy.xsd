@@ -6346,7 +6346,7 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
 ``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
 tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
-the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``. 
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``.
 In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
@@ -7210,8 +7210,10 @@ paths for data or collection inputs set the ``data_style`` attribute to ``paths`
 To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
-Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
-and the other elements the identifiers of the collections containing the dataset.
+Note that the ``element_identifier`` field matches the type of input, which means for simple data inputs ``element_identifier`` is a string,
+for multiple="true" data inputs ``element_identifier`` is a list of strings corresponding to the element identifiers of each dataset passed to the input.
+For dataset collections the element identifier is a list of strings with as many items in the list as the nesting level of the collection (i.e. 1 for list, 2 for list:list, 3 for list:list:list etc),
+where the first item represents the outermost element identifier and the innermost item represents the innermost element identifier of the collection.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
