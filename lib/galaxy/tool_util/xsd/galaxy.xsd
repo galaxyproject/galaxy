@@ -6346,7 +6346,7 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
 ``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
 tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
-the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``. 
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``.
 In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
