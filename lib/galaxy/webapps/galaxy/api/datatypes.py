@@ -18,6 +18,7 @@ from fastapi import (
 )
 
 from galaxy.datatypes.registry import Registry
+from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
@@ -25,6 +26,7 @@ from galaxy.managers.datatypes import (
     DatatypesEDAMDetailsDict,
     DatatypesMap,
     DatatypeVisualizationMappingsList,
+    get_preferred_visualization,
     view_converters,
     view_edam_data,
     view_edam_formats,
@@ -33,8 +35,10 @@ from galaxy.managers.datatypes import (
     view_sniffers,
     view_visualization_mappings,
 )
+from galaxy.structured_app import StructuredApp
 from . import (
     depends,
+    DependsOnApp,
     Router,
 )
 
@@ -64,6 +68,7 @@ IdentifierOnly: Optional[bool] = Query(
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
+    app: StructuredApp = DependsOnApp
 
     @router.get(
         "/api/datatypes",
@@ -253,11 +258,24 @@ class FastAPIDatatypes:
         if converters:
             result["converters"] = list(converters.keys())
 
-        # Add preferred visualization if any
-        preferred_viz = self.datatypes_registry.get_preferred_visualization(datatype)
+        # Add preferred visualization if any and if the plugin is available
+        preferred_viz = get_preferred_visualization(self.datatypes_registry, datatype)
         if preferred_viz:
-            result["preferred_visualization"] = {
-                "visualization": preferred_viz["visualization"],
-            }
+            plugin_name = preferred_viz["visualization"]
+
+            # Check if the visualization plugin is actually available
+            try:
+                if self.app.visualizations_registry:
+                    self.app.visualizations_registry.get_plugin(plugin_name)
+                    result["preferred_visualization"] = {
+                        "visualization": plugin_name,
+                    }
+                else:
+                    log.warning(
+                        f"Visualizations registry not available, skipping preferred visualization for '{datatype}'"
+                    )
+            except ObjectNotFound:
+                # Plugin not available, don't include preferred_visualization
+                log.warning(f"Preferred visualization '{plugin_name}' for datatype '{datatype}' is not available")
 
         return result

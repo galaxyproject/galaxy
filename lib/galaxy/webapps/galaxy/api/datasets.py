@@ -271,6 +271,29 @@ class FastAPIDatasets:
         return self.service.extra_files(trans, dataset_id)
 
     @router.get(
+        "/api/datasets/{dataset_id}/extra_files/raw/{filename:path}",
+        summary="Downloads a raw extra file associated with a dataset.",
+    )
+    def extra_file_raw(
+        self,
+        dataset_id: DatasetIDPathParam,
+        request: Request,
+        filename: str = Path(..., description="The name of the extra file to retrieve."),
+        trans=DependsOnTrans,
+    ) -> GalaxyFileResponse:
+        display_data, headers = self.service.display(
+            trans,
+            dataset_id,
+            preview=False,
+            filename=filename,
+            raw=True,
+        )
+        assert isinstance(display_data, IOBase)
+        file_name = getattr(display_data, "name", None)
+        assert file_name
+        return GalaxyFileResponse(file_name, headers=headers, method=request.method)
+
+    @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/display",
         name="history_contents_display",
         summary="Displays (preview) or downloads dataset content.",

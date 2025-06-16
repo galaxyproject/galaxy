@@ -94,7 +94,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
         fh, headers = self.service.get_metadata_file(
-            trans, history_content_id=hda_id, metadata_file=metadata_name, open_file=True
+            trans, history_content_id=self.decode_id(hda_id), metadata_file=metadata_name, open_file=True
         )
         trans.response.headers.update(headers)
         return fh
@@ -371,6 +371,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                     )
                 else:
+                    # we can't detect datatype if the dataset is not on disk
+                    self.hda_manager.ensure_dataset_on_disk(trans, data)
                     path = data.dataset.get_file_name()
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)

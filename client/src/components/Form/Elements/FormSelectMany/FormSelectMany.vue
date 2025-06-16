@@ -472,6 +472,7 @@ const selectedCount = computed(() => {
     }
 
     .toggle-button {
+        display: block;
         padding-left: 0;
         padding-right: 0;
     }

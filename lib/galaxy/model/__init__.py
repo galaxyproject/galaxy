@@ -1491,6 +1491,15 @@ class JobMetricText(BaseJobMetric, RepresentById):
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_value: Mapped[Optional[str]] = mapped_column(Unicode(JOB_METRIC_MAX_LENGTH))
 
+    def copy_to_job(self, job: "Job"):
+        job.text_metrics.append(
+            JobMetricText(
+                plugin=self.plugin,
+                metric_name=self.metric_name,
+                metric_value=self.metric_value,
+            )
+        )
+
 
 class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = "job_metric_numeric"
@@ -1500,6 +1509,15 @@ class JobMetricNumeric(BaseJobMetric, RepresentById):
     plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+
+    def copy_to_job(self, job: "Job"):
+        job.numeric_metrics.append(
+            JobMetricNumeric(
+                plugin=self.plugin,
+                metric_name=self.metric_name,
+                metric_value=self.metric_value,
+            )
+        )
 
 
 class TaskMetricText(BaseJobMetric, RepresentById):
@@ -1671,8 +1689,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
-        self.numeric_metrics = job.numeric_metrics
-        self.text_metrics = job.text_metrics
+        for metric in job.numeric_metrics + job.text_metrics:
+            metric.copy_to_job(self)
         self.dependencies = job.dependencies
         self.state = job.state
         self.job_stderr = job.job_stderr
@@ -5453,7 +5471,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     history_id: Mapped[Optional[int]]
     dataset_id: Mapped[Optional[int]]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
-    tags: Mapped[Optional["HistoryDatasetAssociationTagAssociation"]]
+    tags: Mapped[List["HistoryDatasetAssociationTagAssociation"]]
 
     def __init__(
         self,
@@ -7708,6 +7726,13 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             self.child_collection = value
         else:
             raise AttributeError(f"Unknown element type provided: {type(value)}")
+
+    @property
+    def auto_propagated_tags(self):
+        first_dataset_instance = self.first_dataset_instance()
+        if first_dataset_instance:
+            return [t for t in first_dataset_instance.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
+        return []
 
     @property
     def dataset_instance(self):

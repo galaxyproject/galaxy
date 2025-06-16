@@ -516,22 +516,6 @@ class Registry:
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
 
-    def get_preferred_visualization(self, datatype_extension):
-        """
-        Get the preferred visualization mapping for a specific datatype extension.
-        Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.
-
-        Preferred visualizations are defined inline within each datatype definition in the
-        datatypes_conf.xml configuration file. These mappings determine which visualization plugin
-        should be used by default when viewing datasets of a specific type.
-
-        Example configuration:
-        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
-            <visualization plugin="igv" />
-        </datatype>
-        """
-        return self.visualization_mappings.get(datatype_extension)
-
     def get_all_visualization_mappings(self):
         """
         Get all datatype to visualization mappings.

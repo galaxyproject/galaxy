@@ -8,6 +8,7 @@ import {
     type DCESummary,
     type HDAObject,
     type HistoryItemSummary,
+    isCollectionElement,
     isDatasetElement,
     isDCE,
     isHDCA,
@@ -16,7 +17,10 @@ import {
 import type { CollectionType } from "@/api/datasetCollections";
 import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
-import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import {
+    COLLECTION_TYPE_TO_LABEL,
+    type CollectionBuilderType,
+} from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -103,10 +107,20 @@ const restrictsExtensions = computed(() => {
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
 
+/** Update counter for keep-options, used to trigger a re-compute of `formattedOptions` */
+const keepOptionsUpdate = ref(0);
+
 /**
  * Determine whether the file dialog can be used or not
  */
 const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.src === SOURCE.DATASET));
+
+/**
+ * A list of valid `src`s for the variant
+ */
+const validSrcs = computed(() => {
+    return variant.value ? variant.value.map((v) => v.src) : [];
+});
 
 /**
  * Provides the currently shown source type
@@ -164,6 +178,9 @@ const currentVariant = computed(() => {
  * Converts and populates options for the shown select field
  */
 const formattedOptions = computed(() => {
+    // When the keepOptionsUpdate value changes, this computed property is re-evaluated
+    keepOptionsUpdate.value;
+
     if (currentSource.value && currentSource.value in props.options) {
         // Map incoming values to available options
         const options = props.options[currentSource.value] || [];
@@ -254,6 +271,7 @@ const usingSimpleSelect = computed(
  */
 function clearHighlighting(timeout = 1000) {
     setTimeout(() => {
+        $emit("alert", undefined);
         currentHighlighting.value = null;
     }, timeout);
 }
@@ -354,8 +372,7 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
         }
         if (
             values.some((v) => {
-                const { historyContentType } = getSrcAndContentType(v);
-                const collectionType = "collection_type" in v && v.collection_type ? v.collection_type : undefined;
+                const { historyContentType, collectionType } = getElementAttributes(v);
                 return !canAcceptSrc(historyContentType, collectionType);
             })
         ) {
@@ -373,11 +390,13 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                 const keepKey = `${newValue.id}_${newValue.src}`;
                 const existingOptions = props.options && props.options[newValue.src];
                 const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
-                if (!foundOption && !(keepKey in keepOptions)) {
+                if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
                     keepOptions[keepKey] = {
                         label: `${newValue.hid || "Selected"}: ${newValue.name}`,
                         value: newValue,
                     };
+                    // this is used to trigger an update on formattedOptions
+                    keepOptionsUpdate.value++;
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
@@ -417,7 +436,11 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
 }
 
 function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
-    const { newSrc, datasetCollectionDataset } = getSrcAndContentType(item);
+    const { newSrc, datasetCollectionDataset } = getElementAttributes(item);
+
+    // for name, somehow even though schema says otherwise, DCESummary can return a name
+    const newName = "name" in item && typeof item.name === "string" ? item.name : null;
+
     let v: HistoryOrCollectionItem | HDAObject;
     if (datasetCollectionDataset) {
         v = datasetCollectionDataset;
@@ -426,14 +449,13 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
     }
     const newHid = isHistoryItem(v) ? v.hid : undefined;
     const newId = v.id;
-    const newName = isHistoryItem(v) && v.name ? v.name : newId;
     const newValue: DataOption = {
         id: newId,
         src: newSrc,
         batch: false,
         map_over_type: undefined,
         hid: newHid,
-        name: newName,
+        name: newName || newId,
         keep: true,
         tags: [],
     };
@@ -451,6 +473,22 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         }
     }
     return newValue;
+}
+
+/**
+ * Check if the new value is already in the keepOptions.
+ * This doesn't only check if the value is already stored by the `keepKey`, but also if the new value
+ * has a `hid` and the existing value doesn't. This is to ensure that values with `hid` are preferred.
+ */
+function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
+    if (keepKey in keepOptions) {
+        const existingOption = keepOptions[keepKey];
+        if (!existingOption?.value || (!!newValue.hid && !existingOption.value.hid)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -500,14 +538,16 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
  * Given an element, determine the source and content type.
  * Also returns the collection element dataset object if it exists.
  */
-function getSrcAndContentType(element: HistoryOrCollectionItem): {
+function getElementAttributes(element: HistoryOrCollectionItem): {
     historyContentType: HistoryContentType;
     newSrc: string;
     datasetCollectionDataset: HDAObject | undefined;
+    collectionType?: string;
 } {
     let historyContentType: HistoryContentType;
     let newSrc: string;
     let datasetCollectionDataset: HDAObject | undefined;
+    let collectionType: string | undefined;
     if (isDCE(element)) {
         if (isDatasetElement(element)) {
             historyContentType = "dataset";
@@ -516,9 +556,14 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
         } else {
             historyContentType = "dataset_collection";
             newSrc = SOURCE.COLLECTION_ELEMENT;
+            // we already know it is a collection element by this point
+            if (isCollectionElement(element)) {
+                collectionType = element.object.collection_type;
+            }
         }
     } else {
         historyContentType = element.history_content_type;
+        collectionType = "collection_type" in element && element.collection_type ? element.collection_type : undefined;
         newSrc =
             "src" in element && typeof element.src === "string"
                 ? element.src
@@ -526,7 +571,7 @@ function getSrcAndContentType(element: HistoryOrCollectionItem): {
                 ? SOURCE.COLLECTION
                 : SOURCE.DATASET;
     }
-    return { historyContentType, newSrc, datasetCollectionDataset };
+    return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
 }
 
 function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
@@ -540,7 +585,12 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
         }
     } else if (historyContentType === "dataset_collection") {
         if (props.type === "data") {
-            // collection can always be mapped over a data input ... in theory.
+            // if this input doesn't accept collections at all, return false
+            if (!validSrcs.value.includes(SOURCE.COLLECTION)) {
+                $emit("alert", "dataset collection is not a valid input for this dataset parameter.");
+                return false;
+            }
+            // otherwise, collection can always be mapped over a data input ... in theory.
             // One day we should also validate the map over model
             return true;
         }
@@ -559,7 +609,7 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
             } else {
                 $emit(
                     "alert",
-                    `${collectionType} dataset collection is not a valid input for ${orList(
+                    `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
                         props.collectionTypes
                     )} type dataset collection parameter.`
                 );
@@ -627,16 +677,14 @@ function onDragEnter(evt: DragEvent) {
         for (const item of eventData) {
             if (isHistoryOrCollectionItem(item)) {
                 const extensions = getExtensionsForItem(item);
-                const { historyContentType } = getSrcAndContentType(item);
-                const collectionType =
-                    "collection_type" in item && item.collection_type ? item.collection_type : undefined;
+                const { historyContentType, collectionType } = getElementAttributes(item);
 
                 if (extensions && !canAcceptDatatype(extensions)) {
                     highlightingState = "warning";
                     $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
                 } else if (!canAcceptSrc(historyContentType, collectionType)) {
                     highlightingState = "warning";
-                    $emit("alert", `${historyContentType} is not an acceptable input type for this parameter.`);
+                    // `canAcceptSrc` already alerts if false so no need to alert again
                 }
                 // Check if the item is already in the current value
                 const option = toDataOption(item);
@@ -686,7 +734,6 @@ function onDrop(e: DragEvent) {
         } else {
             currentHighlighting.value = "warning";
         }
-        $emit("alert", undefined);
         dragData.value = [];
         clearHighlighting();
     } else if (props.workflowRun && e.dataTransfer?.files?.length) {
@@ -740,8 +787,8 @@ const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
-    if (collectionType == "list:paired") {
-        return "list of pairs";
+    if (COLLECTION_TYPE_TO_LABEL[collectionType]) {
+        return COLLECTION_TYPE_TO_LABEL[collectionType].toLowerCase();
     } else {
         return collectionType;
     }

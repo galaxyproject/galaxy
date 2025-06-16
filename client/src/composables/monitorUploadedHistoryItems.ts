@@ -37,10 +37,16 @@ export function monitorUploadedHistoryItems(
         const uploadedDatasets: HistoryItemSummary[] = [];
         uploadValues.value.forEach((model) => {
             const outputs = model.outputs;
+            // Some uploads (e.g.: in the case of remote file upload) may have the entire set of uploaded files
+            // in the `outputs` object, while typically, the `outputs` object contains each individual upload.
             if (outputs) {
                 Object.entries(outputs).forEach((output) => {
                     const outputDetails = output[1] as HistoryItemSummary;
-                    uploadedDatasets.push(outputDetails);
+                    // Since there is a possibility of all uploads being in the `outputs` object,
+                    // we need to ensure that we only add unique datasets to the list.
+                    if (!uploadedDatasets.some((item) => item.id === outputDetails.id)) {
+                        uploadedDatasets.push(outputDetails);
+                    }
                 });
             }
         });

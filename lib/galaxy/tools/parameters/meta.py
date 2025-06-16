@@ -14,7 +14,10 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.model import HistoryDatasetCollectionAssociation
+from galaxy.model import (
+    DatasetCollectionElement,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
@@ -28,6 +31,7 @@ from galaxy.util.permutations import (
     state_remove_value,
     state_set_value,
 )
+from galaxy.work.context import WorkRequestContext
 from . import visit_input_values
 from .wrapped import process_key
 from .._types import (
@@ -178,7 +182,9 @@ def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, A
     return nested_dict
 
 
-def expand_meta_parameters(trans, tool, incoming: ToolRequestT, input_format: InputFormatT) -> ExpandedT:
+def expand_meta_parameters(
+    trans: WorkRequestContext, tool, incoming: ToolRequestT, input_format: InputFormatT
+) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -327,7 +333,9 @@ def split_inputs_nested(inputs, nested_dict, classifier):
     return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
 
 
-def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
+def __expand_collection_parameter(
+    trans: WorkRequestContext, input_key, incoming_val, collections_to_match, linked=False
+):
     # If subcollectin multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
@@ -335,24 +343,30 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
     else:
         try:
             src = incoming_val["src"]
-            if src != "hdca":
+            if src not in ("hdca", "dce"):
                 raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-            encoded_hdc_id = incoming_val["id"]
+            encoded_id = incoming_val["id"]
             subcollection_type = incoming_val.get("map_over_type", None)
         except TypeError:
-            encoded_hdc_id = incoming_val
+            encoded_id = incoming_val
             subcollection_type = None
-    hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
-    if not hdc.collection.populated_optimized:
+    decoded_id = trans.app.security.decode_id(encoded_id)
+    if src == "dce":
+        item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
+        collection = item.child_collection
+    else:
+        item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
+        collection = item.collection
+    assert collection
+    if not collection.populated_optimized:
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
-    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
         return subcollection_elements
     else:
         hdas = []
-        for element in hdc.collection.dataset_elements:
+        for element in collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
             hdas.append(hda)
