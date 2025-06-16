@@ -78,7 +78,7 @@ function onHighlight() {
 }
 
 function onError() {
-    window.location.href = reportErrorUrl.value;
+    router.push(`/datasets/${props.item.id}/error`);
 }
 
 function onInfo() {
