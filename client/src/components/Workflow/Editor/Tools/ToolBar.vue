@@ -155,8 +155,15 @@ const toggleVisibilityButtonTitle = computed(() => {
     }
 });
 
-const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection, copySelectionToNewWorkflow } =
-    useSelectionOperations();
+const {
+    anySelected,
+    selectedCountText,
+    deleteSelection,
+    deselectAll,
+    duplicateSelection,
+    copySelectionToNewWorkflow,
+    moveSelectionToSubworkflow,
+} = useSelectionOperations();
 
 const toWorkflowModal = ref<InstanceType<typeof GModal>>();
 const workflowCreatedModal = ref<InstanceType<typeof GModal>>();
@@ -179,6 +186,10 @@ async function onClickCopy() {
         await nextTick();
         workflowCreatedModal.value?.showModal();
     }
+}
+
+async function onClickExtract() {
+    const _newWF = await moveSelectionToSubworkflow();
 }
 
 function autoLayout() {
@@ -353,7 +364,7 @@ function autoLayout() {
                             Copy selection into new Workflow
                             <FontAwesomeIcon :icon="faPlus" />
                         </GButton>
-                        <GButton>
+                        <GButton @click="onClickExtract">
                             Move selection to Sub-Workflow
                             <FontAwesomeIcon :icon="faSitemap" />
                         </GButton>
