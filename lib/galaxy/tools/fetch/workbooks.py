@@ -8,7 +8,6 @@ from typing import (
 )
 
 from openpyxl import Workbook
-from openpyxl.worksheet.worksheet import Worksheet
 from pydantic import (
     BaseModel,
     Field,
@@ -41,7 +40,7 @@ from galaxy.model.dataset_collections.workbook_util import (
     HelpConfiguration,
     load_workbook_from_base64,
     make_headers_bold,
-    read_column_header_titles,
+    ReadOnlyWorkbook,
     set_column_width,
     uri_data_validation,
 )
@@ -193,10 +192,10 @@ ParsedFetchWorkbook = Union[ParsedFetchWorkbookForDatasets, ParsedFetchWorkbookF
 
 def parse(payload: ParseFetchWorkbook) -> ParsedFetchWorkbook:
     parse_log: ParseLog = []
-    workbook = load_workbook_from_base64(payload.content)
-    column_headers = _read_column_headers(workbook.active)
+    workbook: ReadOnlyWorkbook = load_workbook_from_base64(payload.content)
+    column_headers = column_titles_to_headers(workbook.column_titles())
     _validate_parsed_column_headers(column_headers)
-    raw_rows = _load_row_data(workbook, payload)
+    raw_rows = _load_row_data(workbook, column_headers, payload)
     # the rule builder does require splitting the paired data in this way but it might
     # be worth it to do it with an "initial rule" instead to demo how you'd do it
     # with actual rule builder rules? Not sure.
@@ -276,16 +275,15 @@ def _request_to_columns(request: GenerateFetchWorkbookRequest) -> List[HeaderCol
         return header_columns
 
 
-def _load_row_data(workbook: Workbook, payload: ParseFetchWorkbook) -> ParsedRows:
-    sheet = workbook.active  # Get the first sheet
-
+def _load_row_data(
+    workbook: ReadOnlyWorkbook, column_headers: List[HeaderColumn], payload: ParseFetchWorkbook
+) -> ParsedRows:
     rows: ParsedRows = []
 
-    column_headers = _read_column_headers(sheet)
     columns_to_read = len(column_headers)
     index_of_first_uri = _index_of_fist_uri_column(column_headers)
 
-    for row_index, row in enumerate(sheet.iter_rows(max_col=columns_to_read, values_only=True)):
+    for row_index, row in enumerate(workbook.iter_rows(columns_to_read)):
         if row_index == 0:  # skip column headers
             continue
         if not row[index_of_first_uri]:
@@ -398,11 +396,6 @@ def _fill_in_identifier_column_if_needed(
     for row, new_identifier in zip(rows, new_identifiers):
         row[inner_list_identifier_column.name] = new_identifier
     return rows
-
-
-def _read_column_headers(worksheet: Worksheet) -> List[HeaderColumn]:
-    column_titles = read_column_header_titles(worksheet)
-    return column_titles_to_headers(column_titles)
 
 
 def _uri_like_columns(column_headers: List[HeaderColumn]) -> List[HeaderColumn]:
