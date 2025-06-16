@@ -85,6 +85,7 @@
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
+                    class="text-nowrap"
                     title="Run Tool"
                     :disabled="!canMutateHistory"
                     size="small"

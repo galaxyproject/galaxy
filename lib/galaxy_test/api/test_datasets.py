@@ -357,11 +357,16 @@ class TestDatasetsApi(ApiTestCase):
         )
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"])
         directory_dataset = response["outputs"][0]
+        # Check that we can access extra_files/1.fasta via the display endpoint.
         display_response = self._get(
             f"histories/{history_id}/contents/{directory_dataset['id']}/display?filename=/1.fasta"
         )
         display_response.raise_for_status()
         assert display_response.text == fasta_contents
+        # Check that we can access extra_files/1.fasta via the extra_files/raw endpoint.
+        extra_files_response = self._get(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
+        extra_files_response.raise_for_status()
+        assert extra_files_response.text == fasta_contents
 
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(

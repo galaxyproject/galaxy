@@ -20,6 +20,7 @@ import mrcfile
 import numpy as np
 import png
 import tifffile
+from typing_extensions import Literal
 
 try:
     import PIL
@@ -65,6 +66,7 @@ class Image(data.Data):
     edam_data = "data_2968"
     edam_format = "format_3547"
     file_ext = ""
+    display_behavior: Literal["inline", "download"] = "inline"  # Most image formats can be displayed inline in browsers
 
     MetadataElement(
         name="axes",
@@ -419,18 +421,22 @@ class OMEZarr(data.ZarrDirectory):
 
 class Hamamatsu(Image):
     file_ext = "vms"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Mirax(Image):
     file_ext = "mrxs"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Sakura(Image):
     file_ext = "svslide"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Nrrd(Image):
     file_ext = "nrrd"
+    display_behavior = "download"  # Medical imaging format, not browser-displayable
 
 
 class Bmp(Image):
