@@ -17,6 +17,7 @@ from galaxy.tools.fetch.workbooks import (
     generate,
     GenerateFetchWorkbookRequest,
     parse,
+    ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
 from galaxy.util.resources import resource_path
@@ -104,12 +105,34 @@ def test_parse_datasets():
         content=content,
     )
     parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
+
+
+def assert_is_simple_example_parsed(parsed: ParsedFetchWorkbook):
     assert len(parsed.rows) == 1
     row0 = parsed.rows[0]
     assert row0["url"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
     assert row0["name"] == "4.bed"
 
     assert len(parsed.columns) == 2
+
+
+def test_parse_datasets_csv():
+    content = unittest_file_to_base64("fetch_workbook.csv")
+    parse_request = ParseFetchWorkbook(
+        content=content,
+    )
+    parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
+
+
+def test_parse_datasets_tsv():
+    content = unittest_file_to_base64("fetch_workbook.tsv")
+    parse_request = ParseFetchWorkbook(
+        content=content,
+    )
+    parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
 
 
 def test_parse_paired_list():
