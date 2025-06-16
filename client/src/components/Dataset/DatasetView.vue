@@ -185,7 +185,11 @@ watch(
                     </a>
                 </div>
             </div>
-            <DatasetAsImage v-else-if="isImageDataset" :history-dataset-id="datasetId" class="p-3" />
+            <DatasetAsImage
+                v-else-if="isImageDataset"
+                :history-dataset-id="datasetId"
+                :allow-size-toggle="true"
+                class="p-3" />
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
