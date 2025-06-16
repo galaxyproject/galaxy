@@ -83,7 +83,7 @@ class User(BaseUser):
             if success:
                 redirect_url = redirect
         if not success and not user and trans.app.config.require_login:
-            if trans.app.config.allow_user_creation:
+            if trans.app.config.allow_local_account_creation:
                 create_account_str = (
                     "  If you don't already have an account, <a href='{}'>you may create one</a>.".format(
                         web.url_for(controller="user", action="create", cntrller="user")
@@ -133,7 +133,7 @@ class User(BaseUser):
         is_admin = trans.user_is_admin
         success = False
         show_user_prepopulate_form = False
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        if not trans.app.config.allow_local_account_creation and not trans.user_is_admin:
             message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
             if trans.app.config.error_email_to is not None:
                 message += f" Contact: {trans.app.config.error_email_to}"

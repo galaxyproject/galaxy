@@ -1,7 +1,7 @@
 export default {
     config: {
         allow_user_deletion: false,
-        allow_user_creation: true,
+        allow_local_account_creation: true,
         wiki_url: "https://galaxyproject.org/",
         ftp_upload_site: null,
         support_url: "https://galaxyproject.org/support/",
