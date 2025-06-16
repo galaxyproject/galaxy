@@ -5,10 +5,22 @@ workbooks.
 """
 
 import base64
+from csv import (
+    reader,
+    Sniffer,
+)
 from dataclasses import dataclass
-from io import BytesIO
+from io import (
+    BytesIO,
+    StringIO,
+)
 from textwrap import wrap
-from typing import List
+from typing import (
+    Any,
+    Generator,
+    List,
+    Protocol,
+)
 
 from openpyxl import (
     load_workbook,
@@ -73,11 +85,68 @@ def set_column_width(worksheet: Worksheet, column_index: int, width: int):
     worksheet.column_dimensions[index_to_excel_column(column_index)].width = width
 
 
-def load_workbook_from_base64(content: str) -> Workbook:
+class ReadOnlyWorkbook(Protocol):
+
+    def column_titles(self) -> List[str]:
+        """Return the column titles from the first (or only) worksheet."""
+
+    def iter_rows(self, num_columns: int) -> Generator[tuple[Any, ...], None, None]:
+        """Iterate over the rows in the first (or only) worksheet, returning tuples of values."""
+
+
+class ExcelReadOnlyWorkbook(ReadOnlyWorkbook):
+    """A protocol for a read-only workbook, used to ensure compatibility with load_workbook."""
+
+    def __init__(self, workbook: Workbook):
+        """Initialize the read-only workbook."""
+        self._workbook = workbook
+
+    def column_titles(self) -> List[str]:
+        """Return the column titles from the first worksheet."""
+        return read_column_header_titles(self._workbook.active)
+
+    def iter_rows(self, num_columns: int) -> Generator[tuple[Any, ...], None, None]:
+        """Iterate over the rows in the first worksheet, returning tuples of values."""
+        return self._workbook.active.iter_rows(max_col=num_columns, values_only=True)
+
+
+class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
+
+    def __init__(self, file_like: StringIO):
+        """Initialize the read-only workbook."""
+        self._file_like = file_like
+
+        dialect = Sniffer().sniff(self._file_like.read(1024))
+        self._file_like.seek(0)
+        self._dialect = dialect
+
+    def column_titles(self) -> List[str]:
+        titles = next(reader(self._file_like, self._dialect))
+        self._file_like.seek(0)  # Reset the file pointer after reading
+        return titles
+
+    def iter_rows(self, num_columns: int) -> Generator[tuple[Any, ...], None, None]:
+        """Iterate over the rows in the CSV file, returning tuples of values."""
+        csv_reader = reader(self._file_like, self._dialect)
+        for row in csv_reader:
+            if len(row) > num_columns:
+                row = row[:num_columns]
+            yield tuple(row)
+
+
+def load_workbook_from_base64(content: str) -> ReadOnlyWorkbook:
     decoded_content = base64.b64decode(content)
     file_like = BytesIO(decoded_content)
+    is_excel = file_like.read(4) == b"\x50\x4b\x03\x04"
+    workbook: ReadOnlyWorkbook
+    file_like.seek(0)
     try:
-        workbook = load_workbook(file_like, data_only=True)
+        if is_excel:
+            workbook = ExcelReadOnlyWorkbook(load_workbook(file_like, data_only=True))
+        else:
+            tabular = decoded_content.decode("utf-8")
+            file_like_as_utf8 = StringIO(tabular)
+            workbook = CsvReaderReadOnlyWorkbook(file_like_as_utf8)
     except Exception:
         raise RequestParameterInvalidException(
             "The provided content is not a valid Excel file. Please check the content and try again."
