@@ -57,18 +57,23 @@ class ConfigurationError(Exception):
 
 class Registry:
     def __init__(self, config=None):
-        edam_ontology_path = config.get("edam_toolbox_ontology_path", None) if config is not None else None
-
-        edam = load_edam_tree(
-            None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
-            "format_",
-            "data_",
-            "operation_",
-            "topic_",
-        )
-
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
+
+        edam_ontology_path = config.get("edam_toolbox_ontology_path", None) if config is not None else None
+
+        try:
+            edam = load_edam_tree(
+                None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
+                "format_",
+                "data_",
+                "operation_",
+                "topic_",
+            )
+        except AssertionError as exc:
+            self.log.warning(exc)
+            edam = None
+
         self.config = config
         self.edam = edam
         self.datatypes_by_extension: Dict[str, Data] = {}
