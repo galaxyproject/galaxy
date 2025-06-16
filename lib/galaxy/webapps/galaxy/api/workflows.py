@@ -631,7 +631,9 @@ class WorkflowsAPIController(
         workflow_id = workflow.id
         # api encoded, id
         encoded_id = trans.security.encode_id(workflow_id)
-        item = workflow.to_dict(value_mapper={"id": trans.security.encode_id})
+        item = workflow.to_dict(
+            value_mapper={"id": trans.security.encode_id, "latest_workflow_id": trans.security.encode_id}
+        )
         item["annotations"] = [x.annotation for x in workflow.annotations]
         item["url"] = url_for("workflow", id=encoded_id)
         item["owner"] = workflow.user.username
