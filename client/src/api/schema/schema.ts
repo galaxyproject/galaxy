@@ -7587,6 +7587,13 @@ export interface components {
              */
             type: "container";
         };
+        /** ContentTypeMessage */
+        ContentTypeMessage: {
+            /** Content Type */
+            content_type: string;
+            /** Message */
+            message: string;
+        };
         /** ContentsObject */
         ContentsObject: {
             /**
@@ -8130,6 +8137,27 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /** CsvDialect */
+        CsvDialect: {
+            /** Delimiter */
+            delimiter: string;
+            /** Double Quote */
+            double_quote: boolean;
+            /** Escape Character */
+            escape_character: string | null;
+            /** Line Terminator */
+            line_terminator: string;
+            /** Quote Character */
+            quote_character: string | null;
+            /** Skip Initial Space */
+            skip_initial_space: boolean;
+        };
+        /** CsvDialectInferenceMessage */
+        CsvDialectInferenceMessage: {
+            dialect: components["schemas"]["CsvDialect"];
+            /** Message */
+            message: string;
         };
         /** CustomArchivedHistoryView */
         CustomArchivedHistoryView: {
@@ -13435,6 +13463,21 @@ export interface components {
              */
             type: "data";
         };
+        /** InferredCollectionTypeLogEntry */
+        InferredCollectionTypeLogEntry: {
+            /** From Columns */
+            from_columns: components["schemas"]["ParsedColumn"][];
+            /** Message */
+            message: string;
+        };
+        /** InferredColumnMapping */
+        InferredColumnMapping: {
+            /** Column Index */
+            column_index: number;
+            /** Column Title */
+            column_title: string;
+            parsed_column: components["schemas"]["ParsedColumn"];
+        };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
             /**
@@ -16947,11 +16990,6 @@ export interface components {
             content: string;
             fill_identifiers?: components["schemas"]["FillIdentifiers"] | null;
         };
-        /** ParseLogEntry */
-        ParseLogEntry: {
-            /** Message */
-            message: string;
-        };
         /** ParsedColumn */
         ParsedColumn: {
             /** Title */
@@ -16992,7 +17030,13 @@ export interface components {
             /** Columns */
             columns: components["schemas"]["ParsedColumn"][];
             /** Parse Log */
-            parse_log: components["schemas"]["ParseLogEntry"][];
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
             /** Rows */
             rows: {
                 [key: string]: string | null;
@@ -17009,7 +17053,13 @@ export interface components {
             /** Columns */
             columns: components["schemas"]["ParsedColumn"][];
             /** Parse Log */
-            parse_log: components["schemas"]["ParseLogEntry"][];
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
             /** Rows */
             rows: {
                 [key: string]: string | null;
@@ -18869,6 +18919,15 @@ export interface components {
              * @description User ID of user that ran this job
              */
             user_id?: string | null;
+        };
+        /** SplitUpPairedDataLogEntry */
+        SplitUpPairedDataLogEntry: {
+            /** Message */
+            message: string;
+            /** New Paired Status Column */
+            new_paired_status_column: number;
+            old_forward_column: components["schemas"]["ParsedColumn"];
+            old_reverse_column: components["schemas"]["ParsedColumn"];
         };
         /**
          * Src
