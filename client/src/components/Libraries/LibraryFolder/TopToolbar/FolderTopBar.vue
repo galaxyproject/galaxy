@@ -444,6 +444,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             v-if="collectionModalType && collectionHistoryId"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
+            :extended-collection-type="{}"
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
             default-hide-source-items />
