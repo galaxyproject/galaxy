@@ -89,7 +89,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
         fh, headers = self.service.get_metadata_file(
-            trans, history_content_id=hda_id, metadata_file=metadata_name, open_file=True
+            trans, history_content_id=self.decode_id(hda_id), metadata_file=metadata_name, open_file=True
         )
         trans.response.headers.update(headers)
         return fh
