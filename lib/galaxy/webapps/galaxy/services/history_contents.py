@@ -85,7 +85,7 @@ from galaxy.schema.schema import (
     BulkOperationItemError,
     ChangeDatatypeOperationParams,
     ChangeDbkeyOperationParams,
-    ColletionSourceType,
+    CollectionSourceType,
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
@@ -197,7 +197,7 @@ class CollectionElementIdentifier(Model):
         title="Name",
         description="The name of the element.",
     )
-    src: ColletionSourceType = Field(
+    src: CollectionSourceType = Field(
         ...,
         title="Source",
         description="The source of the element.",
