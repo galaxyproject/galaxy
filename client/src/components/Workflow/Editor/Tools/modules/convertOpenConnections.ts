@@ -27,22 +27,26 @@ function getOpenInputConnections(selectedKeys: number[], allSteps: Record<number
     return openInputConnections;
 }
 
-/*
 function getOpenOutputConnections(selectedKeys: number[], allSteps: Record<number, Step>) {
     const selectedKeysSet = new Set(selectedKeys);
     const notSelected = Object.values(allSteps).filter((step) => !selectedKeysSet.has(step.id));
-    const openOutputConnections: [ConnectionOutputLink, string][] = [];
+    const openOutputConnections: { connection: ConnectionOutputLink; name: string; nodeId: number }[] = [];
 
     notSelected.forEach((step) => {
         onAllInputs(step, (connection, name) => {
             if (selectedKeysSet.has(connection.id)) {
-                openOutputConnections.push([connection, name]);
+                const connectedNode = ensureDefined(allSteps[connection.id]);
+
+                // don't count open input node outputs as open connections
+                if (!["data_input", "data_collection_input", "parameter_input"].includes(connectedNode.type)) {
+                    openOutputConnections.push({ connection, name, nodeId: step.id });
+                }
             }
         });
     });
 
     return openOutputConnections;
-}*/
+}
 
 function prettifyName(
     type: "data_input" | "data_collection_input" | "parameter_input",
@@ -120,6 +124,43 @@ async function outputConnectionToStep(
     return updatedStep;
 }
 
+function inputConnectionsToWorkflowOutputs(
+    steps: Step[],
+    openConnections: { connection: ConnectionOutputLink; name: string; nodeId: number }[],
+    indexOffset = 0
+) {
+    const newSteps = structuredClone(steps);
+    const newConnections: { connection: ConnectionOutputLink; name: string; nodeId: number }[] = [];
+
+    openConnections.forEach(({ connection, name, nodeId }, index) => {
+        const step = ensureDefined(newSteps.find((step) => step.id === connection.id));
+
+        const existingOutput = step.workflow_outputs?.find((output) => output.output_name === connection.output_name);
+        const newOutputName = existingOutput?.output_name ?? `Subworkflow output ${index + indexOffset}`;
+
+        if (!existingOutput) {
+            step.workflow_outputs = step.workflow_outputs ?? [];
+            step.workflow_outputs.push({
+                output_name: newOutputName,
+                label: newOutputName,
+            });
+        }
+
+        const newConnection = {
+            connection: {
+                ...connection,
+                output_name: newOutputName,
+            },
+            name,
+            nodeId,
+        };
+
+        newConnections.push(newConnection);
+    });
+
+    return { steps: newSteps, connections: newConnections };
+}
+
 export async function convertOpenConnections(
     selectedKeys: number[],
     allSteps: Record<number, Step>,
@@ -140,13 +181,17 @@ export async function convertOpenConnections(
     const inputReconnectionMap = Object.fromEntries(
         inputBaseSteps.map((step, index) => {
             assertDefined(step.label);
-            return [step.label, ensureDefined(openInputConnections[index])];
+            return [step.label, structuredClone(ensureDefined(openInputConnections[index]))];
         })
     );
 
     // convert output connections to outputs
 
-    //const openOutputConnections = getOpenOutputConnections(selectedKeys, allSteps);
+    const openOutputConnections = getOpenOutputConnections(selectedKeys, allSteps);
+    const { steps: modifiedSelection, connections: outputReconnectionMap } = inputConnectionsToWorkflowOutputs(
+        selection,
+        openOutputConnections
+    );
 
-    return { stepArray: [...selection, ...inputBaseSteps], inputReconnectionMap };
+    return { stepArray: [...modifiedSelection, ...inputBaseSteps], inputReconnectionMap, outputReconnectionMap };
 }
