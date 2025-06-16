@@ -641,7 +641,7 @@ class Data(metaclass=DataMeta):
             content_type = "text/html"
             if from_dataset.creating_job.imported:
                 content_type = "text/plain"
-                headers["x-sanitized-job-imported"] = True
+                headers["x-sanitized-job-imported"] = "true"
             if not from_dataset.creating_job.tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
                 content_type = "text/plain"
                 headers["x-sanitized-tool-id"] = from_dataset.creating_job.tool_id
