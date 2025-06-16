@@ -327,6 +327,10 @@ export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskRe
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
+export type SampleSheetColumnDefinition = components["schemas"]["SampleSheetColumnDefinitionModel"];
+export type SampleSheetColumnDefinitionType = SampleSheetColumnDefinition["type"];
+export type SampleSheetColumnDefinitions = SampleSheetColumnDefinition[] | null;
+
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
 
 export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];

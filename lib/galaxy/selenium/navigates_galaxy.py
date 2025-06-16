@@ -34,6 +34,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
+from seletools.actions import drag_and_drop
 
 from galaxy.navigation.components import (
     Component,
@@ -207,6 +208,16 @@ class ObjectStoreInstance:
     name: str
     description: Optional[str]
     parameters: List[ConfigTemplateParameter] = field(default_factory=list)
+
+
+@dataclass
+class ColumnDefinition:
+    name: str
+    description: str
+    # I wish these were set by value instead of by text in the text box but this is how select_set_value seems to work
+    type: Literal["Text", "Integer", "Element Identifier"] = "Text"
+    optional: bool = False
+    default_value: Optional[str] = None
 
 
 class NavigatesGalaxy(HasDriver):
@@ -1258,6 +1269,42 @@ class NavigatesGalaxy(HasDriver):
         editor.inputs.input(id=item_name).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
+    def workflow_editor_connect(self, source, sink, screenshot_partial=None):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        source_element = self.find_element_by_selector(f"#{source_id}")
+        sink_element = self.find_element_by_selector(f"#{sink_id}")
+        ac = self.action_chains()
+        ac = ac.move_to_element(source_element).click_and_hold()
+        if screenshot_partial:
+            ac = ac.move_by_offset(10, 10)
+            ac.perform()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot(screenshot_partial)
+        drag_and_drop(self.driver, source_element, sink_element)
+
+    def workflow_editor_source_sink_terminal_ids(self, source, sink):
+        editor = self.components.workflow_editor
+
+        source_node_label, source_output = source.split("#", 1)
+        sink_node_label, sink_input = sink.split("#", 1)
+
+        source_node = editor.node._(label=source_node_label)
+        sink_node = editor.node._(label=sink_node_label)
+
+        source_node.wait_for_present()
+        sink_node.wait_for_present()
+
+        output_terminal = source_node.output_terminal(name=source_output)
+        input_terminal = sink_node.input_terminal(name=sink_input)
+
+        output_element = output_terminal.wait_for_present()
+        input_element = input_terminal.wait_for_present()
+
+        source_id = output_element.get_attribute("id").replace("|", r"\|")
+        sink_id = input_element.get_attribute("id").replace("|", r"\|")
+
+        return source_id, sink_id
+
     def workflow_editor_set_license(self, license: str) -> None:
         license_selector = self.components.workflow_editor.license_selector
         license_selector.wait_for_and_click()
@@ -1358,6 +1405,41 @@ class NavigatesGalaxy(HasDriver):
         self.components.workflow_editor.node._(label=name).wait_for_present()
 
         self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_enter_column_definitions(self, column_definitions: List[ColumnDefinition]):
+        for index, column_definition in enumerate(column_definitions):
+            self.workflow_editor_enter_column_definition(column_definition, index)
+
+    def workflow_editor_enter_column_definition(self, column_definition: ColumnDefinition, index: int):
+        editor = self.components.workflow_editor
+
+        editor.add_column_definition.wait_for_and_click()
+        elem = editor.column_definition_name_by_index(index=index).wait_for_and_clear_and_send_keys(
+            column_definition.name
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # seems like a Galaxy bug that these enter's are needed? - they are not when manually inputting things a human speeds
+        self.send_enter(elem)
+        elem = editor.column_definition_description_by_index(index=index).wait_for_and_clear_and_send_keys(
+            column_definition.description
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.send_enter(elem)
+        component = editor.column_definition_type_by_index(index=index)
+        self.select_set_value(component, column_definition.type)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        if column_definition.optional:
+            elem = editor.column_definition_optional_by_index(index=index).wait_for_present()
+            action_chains = self.action_chains()
+            action_chains.move_to_element(elem).click().perform()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+        if column_definition.default_value is not None:
+            elem = editor.column_definition_default_value_by_index(index=index).wait_for_and_clear_and_send_keys(
+                column_definition.default_value
+            )
+            self.send_enter(elem)
+            self.sleep_for(self.wait_types.UX_RENDER)
 
     def navigate_to_histories_page(self):
         self.home()
@@ -1582,6 +1664,11 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_open(self):
         self.home()
         self.click_activity_workflow()
+
+    def workflow_index_open_with_name(self, name: str):
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self.components.workflows.edit_button.wait_for_and_click()
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -2477,6 +2564,7 @@ class NavigatesGalaxy(HasDriver):
             text_input = None
         if text_input:
             text_input.send_keys(value)
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
             self.send_enter(text_input)
             if multiple:
                 self.send_escape(text_input)
