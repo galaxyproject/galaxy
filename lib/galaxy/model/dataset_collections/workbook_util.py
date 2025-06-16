@@ -6,6 +6,7 @@ workbooks.
 
 import base64
 from csv import (
+    Dialect,
     reader,
     Sniffer,
 )
@@ -19,7 +20,11 @@ from typing import (
     Any,
     Generator,
     List,
+    Literal,
+    Optional,
     Protocol,
+    Type,
+    Union,
 )
 
 from openpyxl import (
@@ -29,6 +34,7 @@ from openpyxl import (
 from openpyxl.styles import Font
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.worksheet import Worksheet
+from pydantic import BaseModel
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections.rule_target_models import (
@@ -85,7 +91,17 @@ def set_column_width(worksheet: Worksheet, column_index: int, width: int):
     worksheet.column_dimensions[index_to_excel_column(column_index)].width = width
 
 
+KnownContentTypes = Literal[
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/csv",
+    "text/tab-separated-values",
+    "text/plain",
+]
+
+
 class ReadOnlyWorkbook(Protocol):
+    typed: bool
+    content_type: KnownContentTypes
 
     def column_titles(self) -> List[str]:
         """Return the column titles from the first (or only) worksheet."""
@@ -96,6 +112,11 @@ class ReadOnlyWorkbook(Protocol):
 
 class ExcelReadOnlyWorkbook(ReadOnlyWorkbook):
     """A protocol for a read-only workbook, used to ensure compatibility with load_workbook."""
+
+    typed: bool = True
+    content_type: Literal["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] = (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     def __init__(self, workbook: Workbook):
         """Initialize the read-only workbook."""
@@ -110,7 +131,40 @@ class ExcelReadOnlyWorkbook(ReadOnlyWorkbook):
         return self._workbook.active.iter_rows(max_col=num_columns, values_only=True)
 
 
+class CsvDialect(BaseModel):
+    delimiter: str
+    quote_character: Optional[str]
+    double_quote: bool
+    skip_initial_space: bool
+    line_terminator: str
+    escape_character: Optional[str]
+
+    @staticmethod
+    def from_csv_dialect(dialect: Type[Dialect]) -> "CsvDialect":
+        """Create a CsvDialect from a csv.Sniffer dialect."""
+        return CsvDialect(
+            delimiter=dialect.delimiter,
+            quote_character=dialect.quotechar,
+            double_quote=dialect.doublequote,
+            skip_initial_space=dialect.skipinitialspace,
+            line_terminator=dialect.lineterminator,
+            escape_character=dialect.escapechar,
+        )
+
+
+class ContentTypeMessage(BaseModel):
+    message: str
+    content_type: str
+
+
+class CsvDialectInferenceMessage(BaseModel):
+    message: str
+    dialect: CsvDialect
+
+
 class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
+    typed: bool = False
+    content_type: KnownContentTypes
 
     def __init__(self, file_like: StringIO):
         """Initialize the read-only workbook."""
@@ -119,6 +173,17 @@ class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
         dialect = Sniffer().sniff(self._file_like.read(1024))
         self._file_like.seek(0)
         self._dialect = dialect
+        if self._dialect.delimiter == "\t":
+            self.content_type = "text/tab-separated-values"
+        elif self._dialect.delimiter == ",":
+            self.content_type = "text/csv"
+        else:
+            self.content_type = "text/plain"
+
+    @property
+    def dialect(self) -> CsvDialect:
+        """Return the CSV dialect used by this workbook."""
+        return CsvDialect.from_csv_dialect(self._dialect)
 
     def column_titles(self) -> List[str]:
         titles = next(reader(self._file_like, self._dialect))
@@ -132,6 +197,38 @@ class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
             if len(row) > num_columns:
                 row = row[:num_columns]
             yield tuple(row)
+
+
+def parse_format_messages(
+    workbook: ReadOnlyWorkbook,
+) -> List[Union[ContentTypeMessage, CsvDialectInferenceMessage]]:
+    """Parse and return client-facing messages about parsing the target workbook."""
+    messages: List[Union[ContentTypeMessage, CsvDialectInferenceMessage]] = []
+
+    if isinstance(workbook, ExcelReadOnlyWorkbook):
+        excel_content_type = workbook.content_type
+        messages.append(
+            ContentTypeMessage(
+                message=f"This appears to be a xlsx workbook with content type {excel_content_type}.",
+                content_type=workbook.content_type,
+            )
+        )
+    elif isinstance(workbook, CsvReaderReadOnlyWorkbook):
+        csv_content_type = workbook.content_type
+        messages.append(
+            ContentTypeMessage(
+                message=f"This appears to be text workbook with content type {csv_content_type}.",
+                content_type=workbook.content_type,
+            )
+        )
+        # TODO: place CSV parsing parameters into the message in the future.
+        messages.append(
+            CsvDialectInferenceMessage(
+                message="CSV parsing parameters we're inferred for this workbook.", dialect=workbook.dialect
+            )
+        )
+
+    return messages
 
 
 def load_workbook_from_base64(content: str) -> ReadOnlyWorkbook:
