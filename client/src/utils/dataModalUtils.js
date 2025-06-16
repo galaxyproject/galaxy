@@ -3,6 +3,8 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+let lastSelectionDialog = null;
+
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
 // interface.
@@ -25,10 +27,16 @@ export async function getCurrentGalaxyHistory(galaxy) {
 }
 
 export function mountSelectionDialog(clazz, options) {
+    if (lastSelectionDialog) {
+        lastSelectionDialog.$destroy();
+        $(lastSelectionDialog.$el).remove();
+        lastSelectionDialog = null;
+    }
+
     const instance = Vue.extend(clazz);
     const vm = document.createElement("div");
     $("body").append(vm);
-    new instance({
+    lastSelectionDialog = new instance({
         propsData: options,
     }).$mount(vm);
 }
