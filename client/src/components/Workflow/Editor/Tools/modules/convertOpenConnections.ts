@@ -211,6 +211,16 @@ function outputConnectionsToWorkflowOutputs(
     return { steps: newSteps, connections: newConnections };
 }
 
+export type InputReconnectionMap = {
+    [label: string]: ConnectionOutputLink;
+};
+
+export type OutputReconnectionMap = {
+    connection: ConnectionOutputLink;
+    name: string;
+    nodeId: number;
+}[];
+
 export async function convertOpenConnections(
     selectedKeys: number[],
     allSteps: Record<number, Step>,
@@ -238,7 +248,7 @@ export async function convertOpenConnections(
         )
     );
 
-    const inputReconnectionMap = Object.fromEntries(
+    const inputReconnectionMap: InputReconnectionMap = Object.fromEntries(
         inputBaseSteps.map((step, index) => {
             assertDefined(step.label);
             return [step.label, structuredClone(ensureDefined(openInputConnections[index]))];

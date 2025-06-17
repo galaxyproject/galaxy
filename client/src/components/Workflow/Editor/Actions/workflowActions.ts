@@ -1,3 +1,15 @@
+import { reactive } from "vue";
+
+import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
+import { getModule } from "@/components/Workflow/Editor/modules/services";
+import {
+    convertOpenConnections,
+    type InputReconnectionMap,
+    type OutputReconnectionMap,
+} from "@/components/Workflow/Editor/Tools/modules/convertOpenConnections";
+import { removeOpenConnections } from "@/components/Workflow/Editor/Tools/modules/removeOpenConnections";
+import { getTraversedSelection } from "@/components/Workflow/Editor/Tools/modules/traversedSelection";
+import { Services } from "@/components/Workflow/services";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import {
@@ -6,8 +18,9 @@ import {
     type WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
-import { ensureDefined } from "@/utils/assertions";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
@@ -448,5 +461,169 @@ export class DeleteSelectionAction extends UndoRedoAction {
     undo() {
         this.storedSelectionAction.redo();
         this.storedConnections.forEach((connection) => this.connectionStore.addConnection(structuredClone(connection)));
+    }
+}
+
+export class ExtractSubworkflowAction extends UndoRedoAction {
+    deleteSelectionSubAction?: DeleteSelectionAction;
+    insertSubworkflowSubAction?: InsertStepAction;
+
+    asyncOperationDone: { value: boolean };
+
+    workflowId;
+    services;
+
+    stateStore;
+    stepStore;
+    commentStore;
+    searchStore;
+
+    inputReconnectionMap?: InputReconnectionMap;
+    outputReconnectionMap?: OutputReconnectionMap;
+
+    constructor(workflowId: string) {
+        super();
+
+        this.workflowId = workflowId;
+        this.services = new Services();
+
+        this.stateStore = useWorkflowStateStore(workflowId);
+        this.stepStore = useWorkflowStepStore(workflowId);
+        this.commentStore = useWorkflowCommentStore(workflowId);
+        this.searchStore = useWorkflowSearchStore(workflowId);
+
+        this.asyncOperationDone = reactive({ value: false });
+    }
+
+    reconnect() {
+        const stepId = this.insertSubworkflowSubAction?.stepId;
+        const inputReconnectionMap = this.inputReconnectionMap;
+        const outputReconnectionMap = this.outputReconnectionMap;
+
+        assertDefined(stepId);
+        assertDefined(inputReconnectionMap);
+        assertDefined(outputReconnectionMap);
+
+        // reconnect inputs
+
+        const step = this.stepStore.getStep(stepId);
+
+        assertDefined(step);
+
+        const updatedStep = {
+            ...step,
+            input_connections: inputReconnectionMap,
+        };
+
+        this.stepStore.updateStep(updatedStep);
+
+        // reconnect outputs
+
+        outputReconnectionMap.forEach(({ connection, name, nodeId }) => {
+            const step = this.stepStore.getStep(nodeId);
+
+            assertDefined(step);
+
+            const updatedInputConnections = {
+                ...step.input_connections,
+            };
+
+            updatedInputConnections[name] = connection;
+
+            const updatedStep = {
+                ...step,
+                input_connections: updatedInputConnections,
+            };
+
+            this.stepStore.updateStep(updatedStep);
+        });
+    }
+
+    async run() {
+        const stepIds = [...this.stateStore.multiSelectedStepIds];
+        const commentIds = [...this.commentStore.multiSelectedCommentIds];
+
+        const expandedSelection = getTraversedSelection(stepIds, this.stepStore.steps);
+
+        expandedSelection.forEach((stepId) => this.stateStore.setStepMultiSelected(stepId, true));
+
+        this.deleteSelectionSubAction = new DeleteSelectionAction(this.workflowId);
+
+        const comments = commentIds.map((id) =>
+            structuredClone(ensureDefined(this.commentStore.commentsRecord[id]))
+        ) as WorkflowComment[];
+
+        const { stepArray, inputReconnectionMap, outputReconnectionMap } = await convertOpenConnections(
+            expandedSelection,
+            this.stepStore.steps,
+            this.searchStore
+        );
+
+        this.inputReconnectionMap = inputReconnectionMap;
+        this.outputReconnectionMap = outputReconnectionMap;
+
+        const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
+
+        const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));
+
+        const partialWorkflow = {
+            comments,
+            steps,
+            name: "Extracted Subworkflow Test",
+            id: this.workflowId,
+            annotation: "",
+        };
+        const newWf = await this.services.createWorkflow(partialWorkflow);
+
+        this.insertSubworkflowSubAction = new InsertStepAction(this.stepStore, this.stateStore, {
+            contentId: newWf.latest_workflow_id,
+            name: newWf.name,
+            type: "subworkflow",
+            position: { top: 0, left: 0 },
+        });
+
+        this.deleteSelectionSubAction.run();
+        this.insertSubworkflowSubAction.run();
+        const stepData = this.insertSubworkflowSubAction.getNewStepData();
+
+        const response = await getModule(
+            { name: newWf.name, type: "subworkflow", content_id: newWf.latest_workflow_id },
+            stepData.id,
+            this.stateStore.setLoadingState
+        );
+
+        const updatedStep = {
+            ...stepData,
+            tool_state: response.tool_state,
+            inputs: response.inputs,
+            outputs: response.outputs,
+            config_form: response.config_form,
+        };
+
+        this.stepStore.updateStep(updatedStep);
+        this.insertSubworkflowSubAction.updateStepData = updatedStep;
+        this.stateStore.activeNodeId = stepData.id;
+
+        this.reconnect();
+
+        this.asyncOperationDone.value = true;
+    }
+
+    undo() {
+        assertDefined(this.insertSubworkflowSubAction);
+        assertDefined(this.deleteSelectionSubAction);
+
+        this.insertSubworkflowSubAction.undo();
+        this.deleteSelectionSubAction.undo();
+    }
+
+    redo() {
+        assertDefined(this.insertSubworkflowSubAction);
+        assertDefined(this.deleteSelectionSubAction);
+
+        this.insertSubworkflowSubAction.redo();
+        this.deleteSelectionSubAction.redo();
+
+        this.reconnect();
     }
 }
