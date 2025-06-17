@@ -145,7 +145,7 @@
     <datatype extension="geojson" type="galaxy.datatypes.text:GeoJson" mimetype="application/json" display_in_upload="True">
       <visualization plugin="openlayers" />
     </datatype>
-    <datatype extension="vitesscejson" type="galaxy.datatypes.text:VitessceJson" mimetype="application/json" display_in_upload="True">
+    <datatype extension="vitessce.json" type="galaxy.datatypes.text:VitessceJson" mimetype="application/json" display_in_upload="True">
       <visualization plugin="vitessce" />
     </datatype>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:DataManagerJson" mimetype="application/json" subclass="true" display_in_upload="false"/>
@@ -611,11 +611,11 @@
     </datatype>
     <datatype extension="nhx" type="galaxy.datatypes.data:Newick" subclass="true" display_in_upload="true" description="The New Hampshire X (NHX) format is an extension to Newick that adds key-value data to Newick nodes.">
         <infer_from suffix="nhx" />
-    </datatype>    
+    </datatype>
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true"/>
     <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree">
         <infer_from suffix="iqtree" />
-    </datatype>  
+    </datatype>
     <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
@@ -655,7 +655,7 @@
     <!-- deprecated, should use excel.xls -->
     <datatype extension="xls" type="galaxy.datatypes.binary:ExcelXls">
         <infer_from suffix="xls" />
-    </datatype>  
+    </datatype>
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true">
         <infer_from suffix="ipynb" />
