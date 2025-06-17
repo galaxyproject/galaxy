@@ -1,20 +1,17 @@
+import { until } from "@vueuse/core";
 import { computed, inject, type Ref, unref } from "vue";
 
-import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
-import { getModule } from "@/components/Workflow/Editor/modules/services";
-import { convertOpenConnections } from "@/components/Workflow/Editor/Tools/modules/convertOpenConnections";
 import { removeOpenConnections } from "@/components/Workflow/Editor/Tools/modules/removeOpenConnections";
-import { getTraversedSelection } from "@/components/Workflow/Editor/Tools/modules/traversedSelection";
 import { Services } from "@/components/Workflow/services";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { ensureDefined } from "@/utils/assertions";
 
-import { DeleteSelectionAction, DuplicateSelectionAction } from "../Actions/workflowActions";
+import { DeleteSelectionAction, DuplicateSelectionAction, ExtractSubworkflowAction } from "../Actions/workflowActions";
 import { useMultiSelect } from "../composables/multiSelect";
 
 export function useSelectionOperations() {
-    const { undoRedoStore, stateStore, commentStore, stepStore, searchStore } = useWorkflowStores();
+    const { undoRedoStore, stateStore, commentStore, stepStore } = useWorkflowStores();
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
@@ -70,73 +67,10 @@ export function useSelectionOperations() {
     }
 
     async function moveSelectionToSubworkflow() {
-        const stepIds = [...stateStore.multiSelectedStepIds];
-        const commentIds = [...commentStore.multiSelectedCommentIds];
-
-        const comments = commentIds.map((id) =>
-            structuredClone(ensureDefined(commentStore.commentsRecord[id]))
-        ) as WorkflowComment[];
-
-        const expandedSelection = getTraversedSelection(stepIds, stepStore.steps);
-        const {
-            stepArray,
-            inputReconnectionMap,
-            outputReconnectionMap: _o,
-        } = await convertOpenConnections(expandedSelection, stepStore.steps, searchStore);
-        const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
-
-        const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));
-
-        const partialWorkflow = { comments, steps, name: "Extracted Subworkflow Test", id, annotation: "" };
-        const newWf = await services.createWorkflow(partialWorkflow);
-
-        // ---------------
-
-        commentIds.forEach((id) => {
-            commentStore.deleteComment(id);
-        });
-
-        commentStore.clearMultiSelectedComments();
-
-        expandedSelection.forEach((id) => {
-            stepStore.removeStep(id);
-        });
-
-        stateStore.clearStepMultiSelection();
-
-        // -------------
-
-        const action = new InsertStepAction(stepStore, stateStore, {
-            contentId: newWf.latest_workflow_id,
-            name: newWf.name,
-            type: "subworkflow",
-            position: { top: 0, left: 0 },
-        });
-
+        const action = new ExtractSubworkflowAction(id);
         undoRedoStore.applyAction(action);
-        const stepData = action.getNewStepData();
 
-        const response = await getModule(
-            { name: newWf.name, type: "subworkflow", content_id: newWf.latest_workflow_id },
-            stepData.id,
-            stateStore.setLoadingState
-        );
-
-        const updatedStep = {
-            ...stepData,
-            tool_state: response.tool_state,
-            inputs: response.inputs,
-            input_connections: inputReconnectionMap,
-            outputs: response.outputs,
-            config_form: response.config_form,
-        };
-
-        stepStore.updateStep(updatedStep);
-        action.updateStepData = updatedStep;
-
-        stateStore.activeNodeId = stepData.id;
-
-        return newWf;
+        await until(() => action.asyncOperationDone.value);
     }
 
     return {
