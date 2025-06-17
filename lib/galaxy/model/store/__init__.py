@@ -1207,6 +1207,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 label = workflow_output.get("label")
                 workflow_output = workflow.workflow_output_for(label)
                 output_dataset_collection.workflow_output = workflow_output
+                output_dataset_collection_attrs = output_dataset_collection_attrs.get("dataset_collection") or {}
+                if hdca_id := output_dataset_collection_attrs.get(object_key):
+                    hdca = object_import_tracker.find_hdca(hdca_id)
+                    if hdca:
+                        output_dataset_collection.dataset_collection = hdca
                 self._session_add(output_dataset_collection)
                 output_dataset_collections.append(output_dataset_collection)
 
@@ -1219,6 +1224,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 label = workflow_output.get("label")
                 workflow_output = workflow.workflow_output_for(label)
                 output_dataset.workflow_output = workflow_output
+                output_dataset_dataset_attrs = output_dataset_attrs.get("dataset") or {}
+                if dataset_id := output_dataset_dataset_attrs.get(object_key):
+                    dataset = object_import_tracker.find_hda(dataset_id)
+                    if dataset:
+                        output_dataset.dataset = dataset
                 self._session_add(output_dataset)
                 output_datasets.append(output_dataset)
 

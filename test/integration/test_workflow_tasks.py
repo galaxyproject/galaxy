@@ -101,6 +101,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
             assert "wf_output_1" in output_collections
             out = output_collections["wf_output_1"]
             assert out["src"] == "hdca"
+            assert out["id"]
 
             inputs = invocation_details["inputs"]
             assert inputs["0"]["src"] == "hdca"
@@ -146,6 +147,9 @@ steps:
     in:
       input:
         source: input
+outputs:
+  extracted_dataset:
+    outputSource: extract_dataset/output
 """
             )
             inputs = {"input": {"src": "hdca", "id": copied_collection["id"]}}
@@ -166,6 +170,8 @@ steps:
                 workflow_request=workflow_request,
             )
             imported_invocation_details = self._export_and_import_workflow_invocation(summary)
+            assert imported_invocation_details["outputs"]["extracted_dataset"]["src"] == "hda"
+            assert imported_invocation_details["outputs"]["extracted_dataset"]["id"]
             original_contents = self.dataset_populator.get_history_contents(new_history["id"])
             contents = self.dataset_populator.get_history_contents(imported_invocation_details["history_id"])
             assert len(contents) == len(original_contents) == 5
