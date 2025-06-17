@@ -133,6 +133,12 @@ Enhancements
   `Pull Request 20167`_
 .. enhancement_tag_viz
 
+* Update tiffviewer to latest version supporting more formats
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20457`_
+* Add ``/api/datasets/{dataset_id}/extra_files/raw/{filename:path}``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20468`_
 * Move phylocanvas to script entry point
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19193`_
@@ -177,6 +183,12 @@ Enhancements
   `Pull Request 20271`_
 .. enhancement_tag_datatypes
 
+* Add Aladin as standard FITS viewer
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20465`_
+* Add molstar as default viewer for some molecule formats
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20467`_
 * Enhance UTF-8 support for filename handling in downloads
   (thanks to `@arash77 <https://github.com/arash77>`__).
   `Pull Request 19161`_
@@ -238,6 +250,9 @@ Enhancements
   `Pull Request 19924`_
 .. enhancement_tag_workflows
 
+* Selenium tests for various 24.2 features
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 20215`_
 * Implement workflow parameter validators
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 19092`_
@@ -333,6 +348,9 @@ Enhancements
   `Pull Request 19990`_
 .. enhancement
 
+* Fix Invenio file source downloads not working with some Invenio instances
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19930`_
 * Improve performance of job cache query
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 20319`_
@@ -755,6 +773,12 @@ Enhancements
   `Pull Request 19612`_
 .. small_enhancement
 
+* Remove legacy visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20173`_
+* Use TUS streaming and remove redundant IndexDB temp store in Zip Explorer
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20226`_
 * Switch h5web to script endpoint
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 19211`_
@@ -911,6 +935,15 @@ Fixes
   `Pull Request 20102`_
 .. bug_tag_datatypes
 
+* Dataset Display and Preferred Viz fixes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20439`_
+* Make optional edam-ontology in datatypes registry optional
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20492`_
+* Handle isatools dependency
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19582`_
 * Fail request explicitly when sqlite provider used on non-sqlite file
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 19630`_
@@ -951,6 +984,15 @@ Fixes
   `Pull Request 19763`_
 .. bug_tag_workflows
 
+* Link workflow invocation outputs upon importing invocation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20485`_
+* Allow unused query params in ``workflows/export_to_file``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19574`_
+* Fix invocation failure dataset reference
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20200`_
 * Bug fix: allow any collection type in FormCollectionType
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 20403`_
@@ -1048,6 +1090,9 @@ Fixes
   `Pull Request 20086`_
 .. bug_tag_jobs
 
+* Set ``GALAXY_CONFIG_FILE`` env var if starting handler with `-c`
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20449`_
 * Fix job rerun with tool version change
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 20417`_
@@ -1106,6 +1151,108 @@ Fixes
   `Pull Request 20333`_
 .. bug
 
+* Change wording of the client side storage handling
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 19815`_
+* Fix `mulled-search --destination quay`, add index reuse
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20107`_
+* Data Libraries - persist number of entries displayed in folders
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20455`_
+* Fix copying of job metrics for cached jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20436`_
+* Fix multiple remote file upload to collection creator
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20456`_
+* Fix pagination state in FilesDialog
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20452`_
+* Fix inconsistent styling in List Collection Builder selector
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20442`_
+* Fix bug with handling compressed file names while auto-pairing.
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 20459`_
+* Fix dataset error button not using router
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20472`_
+* Prevent running datatype autodetect on purged datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20479`_
+* Fix legacy get_metadata_file controller route
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20477`_
+* Make response header values strings
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20475`_
+* More fixes to `FormData` drag and drop and typing
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19900`_
+* Replace Bootstrap Popover with Popper wrapper
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20246`_
+* Recreate triggers
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 20491`_
+* Use DatasetAsImage component for DatasetView image display
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20488`_
+* Bug fix: paired_or_unpaired also endswith paired
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 20458`_
+* Don't fit workflow if it doesn't have steps
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20480`_
+* Fix libraries folder include deleted
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19553`_
+* Fix "export datasets" tool displaying dialog right away
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19555`_
+* Fix saved visualization (non-trackster ones) not displaying
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19561`_
+* Add Python 3.13 classifier to packages
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19569`_
+* Fix job paused on user defined object store
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19578`_
+* Fix collection load error handling
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19585`_
+* Fix mulled tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19626`_
+* Apply exec options to connection
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19651`_
+* Initialize dictionary used to set connection execution options
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19653`_
+* Pin mercurial to >=6.8.1 for Python 3.12 support
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19693`_
+* Fix container building
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19714`_
+* Check if index exists before creating
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19873`_
+* Fall back to name in job summary if no input label given
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20258`_
+* Group Tool Versions in IT Panel
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20244`_
+* Fix vue-tsc issue in ParameterStep
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20245`_
+* Remove rename modal from List Collection Creator
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 20487`_
 * Add user-facing explanation for legacy workflow run form usage
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 20431`_

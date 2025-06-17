@@ -343,6 +343,18 @@ Visualizations
 ===========================================================
 
 .. visualizations
+* Update tiffviewer to latest version supporting more formats
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20457`_
+* Rename vitessce_json file_ext to vitessce.json
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20473`_
+* Add ``/api/datasets/{dataset_id}/extra_files/raw/{filename:path}``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20468`_
+* Remove legacy visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20173`_
 * Fix phylocanvas visualization build
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 19138`_
@@ -450,6 +462,24 @@ Datatypes
 ===========================================================
 
 .. datatypes
+* Add Aladin as standard FITS viewer
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20465`_
+* Dataset Display and Preferred Viz fixes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 20439`_
+* Make optional edam-ontology in datatypes registry optional
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20492`_
+* Rename vitessce_json file_ext to vitessce.json
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20473`_
+* Add molstar as default viewer for some molecule formats
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20467`_
+* Handle isatools dependency
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19582`_
 * Enhance UTF-8 support for filename handling in downloads
   (thanks to `@arash77 <https://github.com/arash77>`__).
   `Pull Request 19161`_
