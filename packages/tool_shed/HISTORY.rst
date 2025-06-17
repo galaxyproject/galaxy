@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
----------
-25.0.dev0
----------
+-------
+25.0rc1
+-------
 
 
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix unit tests returning values by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20413 <https://github.com/galaxyproject/galaxy/pull/20413>`_
 
 -------------------
 24.2.3 (2025-03-16)

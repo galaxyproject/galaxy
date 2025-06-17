@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
----------
-25.0.dev0
----------
+-------
+25.0rc1
+-------
 
 
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Fix Invenio file source downloads not working with some Invenio instances by `@davelopez <https://github.com/davelopez>`_ in `#19930 <https://github.com/galaxyproject/galaxy/pull/19930>`_
 
 -------------------
 24.2.3 (2025-03-16)

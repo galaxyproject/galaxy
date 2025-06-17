@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
----------
-25.0.dev0
----------
+-------
+25.0rc1
+-------
 
 
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Don't collect unnamed outputs twice in extended metadata mode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19868 <https://github.com/galaxyproject/galaxy/pull/19868>`_
 
 -------------------
 24.2.3 (2025-03-16)
