@@ -1,5 +1,6 @@
 import type { ConnectionOutputLink, Step } from "@/stores/workflowStepStore";
 
+/** Remove dangling connections from an array of Steps */
 export function removeOpenConnections(steps: Step[]) {
     const stepIdSet = new Set(steps.map((step) => step.id));
 
