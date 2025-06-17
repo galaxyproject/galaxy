@@ -662,12 +662,7 @@ class VitessceJson(Json):
     https://www.npmjs.com/package/@vitessce/json-schema
     """
 
-    file_ext = "vitesscejson"
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset)
-        if not dataset.dataset.purged:
-            dataset.blurb = "VitessceJSON"
+    file_ext = "vitessce.json"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -677,7 +672,7 @@ class VitessceJson(Json):
         >>> fname = get_test_fname( '1.json' )
         >>> VitessceJson().sniff( fname )
         False
-        >>> fname = get_test_fname( '1.vitesscejson' )
+        >>> fname = get_test_fname( '1.vitessce.json' )
         >>> VitessceJson().sniff( fname )
         True
         """
