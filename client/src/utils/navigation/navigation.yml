@@ -729,7 +729,7 @@ workflow_run:
         _: '[data-label="${label}"] .tabs'
         create: '${_} .create-collection'
         select_all: "${_} [data-description='select many select all']"
-        element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}']"
+        element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}'] [data-description='dataset hid']"
         <<: *upload_mixin
 
   form_element:
