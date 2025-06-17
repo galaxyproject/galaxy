@@ -21,6 +21,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = """<?xml version="1.0"?>
         <client_secret>{client_secret}</client_secret>
         <redirect_uri>$galaxy_url/authnz/keycloak/callback</redirect_uri>
         <enable_idp_logout>{enable_idp_logout}</enable_idp_logout>
+        <require_create_confirmation>{require_create_confirmation}</require_create_confirmation>
         <accepted_audiences>{accepted_audiences}</accepted_audiences>
         <username_key>{username_key}</username_key>
     </provider>
@@ -48,6 +49,7 @@ def create_backend_config(
         client_id="client_id",
         client_secret="client_secret",
         enable_idp_logout="true",
+        require_create_confirmation="false",
         accepted_audiences="https://audience.example.com",
         username_key="custom_username",
 ) -> (str, Path):
@@ -57,6 +59,7 @@ def create_backend_config(
         client_id=client_id,
         client_secret=client_secret,
         enable_idp_logout=enable_idp_logout,
+        require_create_confirmation=require_create_confirmation,
         accepted_audiences=accepted_audiences,
         username_key=username_key,
     )
@@ -71,6 +74,7 @@ def test_parse_backend_config(mock_app):
         "client_id": "example_app",
         "client_secret": "abcd1234",
         "enable_idp_logout": "true",
+        "require_create_confirmation": "false",
         "accepted_audiences": "https://audience.example.com",
         "username_key": "custom_username",
     }
@@ -85,9 +89,11 @@ def test_parse_backend_config(mock_app):
     assert parsed["url"] == config_values["url"]
     assert parsed["client_id"] == config_values["client_id"]
     assert parsed["client_secret"] == config_values["client_secret"]
-    assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
     assert parsed["accepted_audiences"] == config_values["accepted_audiences"]
     assert parsed["username_key"] == config_values["username_key"]
+    # Boolean values should be parsed into bools
+    assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
+    assert parsed["require_create_confirmation"] == asbool(config_values["require_create_confirmation"])
 
 
 
