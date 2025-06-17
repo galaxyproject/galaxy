@@ -326,7 +326,7 @@ Release testing:
 
 Communications:
 
-* `Natalie Whitaker-Allen <https://github.com/natwhitaker>`__
+* `Natalie Whitaker-Allen <https://github.com/natalie-wa>`__
 * `Scott Cain <https://github.com/scottcain>`__
 
 A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
