@@ -6,11 +6,13 @@ import { computed, ref, watch } from "vue";
 
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
@@ -21,6 +23,7 @@ import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
+const datatypesMapperStore = useDatatypesMapperStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
@@ -42,7 +45,7 @@ const isDatatypeLoading = ref(false);
 
 // Consolidated loading state
 const isLoading = computed(() => {
-    return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value;
+    return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value || datatypesMapperStore.loading;
 });
 
 const showError = computed(
@@ -54,6 +57,14 @@ const isAutoDownloadType = computed(
 const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
 );
+const isImageDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
+        "galaxy.datatypes.images.Image",
+    ]);
+});
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
@@ -61,7 +72,10 @@ watch(
     async () => {
         if (dataset.value && dataset.value.file_ext) {
             isDatatypeLoading.value = true;
-            await datatypeStore.fetchDatatypeDetails(dataset.value.file_ext);
+            await Promise.all([
+                datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
+                datatypesMapperStore.createMapper(),
+            ]);
             isDatatypeLoading.value = false;
         }
     },
@@ -171,6 +185,11 @@ watch(
                     </a>
                 </div>
             </div>
+            <DatasetAsImage
+                v-else-if="isImageDataset"
+                :history-dataset-id="datasetId"
+                :allow-size-toggle="true"
+                class="p-3" />
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
