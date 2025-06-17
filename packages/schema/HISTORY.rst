@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.2.4.dev0
------------
+-------------------
+24.2.4 (2025-06-17)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* ChatGXY Error Handling by `@dannon <https://github.com/dannon>`_ in `#19987 <https://github.com/galaxyproject/galaxy/pull/19987>`_
 
 -------------------
 24.2.3 (2025-03-16)

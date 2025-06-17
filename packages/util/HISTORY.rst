@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.2.4.dev0
------------
+-------------------
+24.2.4 (2025-06-17)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use ``make_fast_zipfile`` directly by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19947 <https://github.com/galaxyproject/galaxy/pull/19947>`_
 
 -------------------
 24.2.3 (2025-03-16)
