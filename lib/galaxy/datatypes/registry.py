@@ -72,7 +72,7 @@ class Registry:
             )
         except AssertionError as exc:
             self.log.warning(exc)
-            edam = None
+            edam = {}
 
         self.config = config
         self.edam = edam
