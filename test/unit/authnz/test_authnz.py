@@ -1,5 +1,5 @@
-from pathlib import Path
 import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -37,7 +37,8 @@ OIDC_CONFIG_TEMPLATE = """
 </OIDC>
 """
 
-def create_oidc_config(extra_properties: str = '') -> (str, Path):
+
+def create_oidc_config(extra_properties: str = "") -> (str, Path):
     contents = OIDC_CONFIG_TEMPLATE.format(extra_properties=extra_properties)
     file = tempfile.NamedTemporaryFile(mode="w", delete=False)
     file.write(contents)
@@ -45,14 +46,14 @@ def create_oidc_config(extra_properties: str = '') -> (str, Path):
 
 
 def create_backend_config(
-        provider_name="oidc",
-        url="https://example.com",
-        client_id="client_id",
-        client_secret="client_secret",
-        enable_idp_logout="true",
-        require_create_confirmation="false",
-        accepted_audiences="https://audience.example.com",
-        username_key="custom_username",
+    provider_name="oidc",
+    url="https://example.com",
+    client_id="client_id",
+    client_secret="client_secret",
+    enable_idp_logout="true",
+    require_create_confirmation="false",
+    accepted_audiences="https://audience.example.com",
+    username_key="custom_username",
 ) -> (str, Path):
     contents = OIDC_BACKEND_CONFIG_TEMPLATE.format(
         provider_name=provider_name,
@@ -114,9 +115,8 @@ def test_psa_authnz_config(mock_app):
     backend_contents, backend_path = create_backend_config(provider_name="oidc", **config_values)
     manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
     from galaxy.authnz.psa_authnz import PSAAuthnz
-    psa_authnz = PSAAuthnz(provider="oidc",
-                           oidc_config=manager.oidc_config,
-                           oidc_backend_config=manager.oidc_backends_config["oidc"])
+
+    psa_authnz = PSAAuthnz(
+        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config["oidc"]
+    )
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
-
-
