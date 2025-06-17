@@ -300,10 +300,6 @@ Deprecation Notices
   UseGalaxy.* servers. Its only known usage was within AnVIL, which has since dropped support for it in
   `galaxyproject/galaxy-helm#438 <https://github.com/galaxyproject/galaxy-helm/pull/438>`__.
 
-Developer Notes
-===========================================================
-Add content or drop section.
-
 Release Notes
 ===========================================================
 
