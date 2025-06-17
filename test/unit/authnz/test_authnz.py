@@ -3,6 +3,7 @@ import tempfile
 from unittest.mock import MagicMock
 
 import pytest
+from social_core.utils import setting_name
 
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.util import asbool
@@ -95,5 +96,27 @@ def test_parse_backend_config(mock_app):
     assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
     assert parsed["require_create_confirmation"] == asbool(config_values["require_create_confirmation"])
 
+
+def test_psa_authnz_config(mock_app):
+    """
+    Test config values are set correctly in PSAAuthnz
+    """
+    config_values = {
+        "url": "https://example.com",
+        "client_id": "example_app",
+        "client_secret": "abcd1234",
+        "enable_idp_logout": "true",
+        "require_create_confirmation": "false",
+        "accepted_audiences": "https://audience.example.com",
+        "username_key": "custom_username",
+    }
+    oidc_contents, oidc_path = create_oidc_config()
+    backend_contents, backend_path = create_backend_config(provider_name="oidc", **config_values)
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+    from galaxy.authnz.psa_authnz import PSAAuthnz
+    psa_authnz = PSAAuthnz(provider="oidc",
+                           oidc_config=manager.oidc_config,
+                           oidc_backend_config=manager.oidc_backends_config["oidc"])
+    assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
 
 
