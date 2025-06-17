@@ -75,7 +75,7 @@ Galaxy 25.0 includes a new file source that integrates it with `RSpace <https://
 open-source research data management system (RDM) and electronic lab notebook (ELN) providing inventory and sample
 management systems and featuring
 `a wide collection of integrations with other services <https://www.researchspace.com/integrations>`__. Read more on
-`this blog post <https://galaxyproject.org/news/2025-06-XX-rspace-integration/>`__.
+`this blog post <https://galaxyproject.org/news/2025-06-23-rspace-integration/>`__.
 
 Please see the `25.0 user release notes <25.0_announce_user.html>`__ for a summary of new user features.
 
