@@ -1,7 +1,7 @@
 """Replace triggers
 
 Revision ID: c716ee82337b
-Revises: a91ea1d97111
+Revises: fb16d09348db
 Create Date: 2025-06-16 12:43:36.193648
 
 """
@@ -15,7 +15,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "c716ee82337b"
-down_revision = "a91ea1d97111"
+down_revision = "fb16d09348db"
 branch_labels = None
 depends_on = None
 
