@@ -3,11 +3,37 @@ History
 
 .. to_doc
 
--------
-25.0rc1
--------
+-------------------
+25.0.0 (2025-06-18)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+* Fix wrong URI written to `ExportObjectResultMetadata` when exporting histories to eLabFTW by `@kysrpex <https://github.com/kysrpex>`_ in `#19541 <https://github.com/galaxyproject/galaxy/pull/19541>`_
+* Update webdav user file source template help text by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#19784 <https://github.com/galaxyproject/galaxy/pull/19784>`_
+* Change wording in the google drive user file source template by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#19927 <https://github.com/galaxyproject/galaxy/pull/19927>`_
+
+============
+Enhancements
+============
+
+* Let file sources choose a path for uploaded files by `@kysrpex <https://github.com/kysrpex>`_ in `#19154 <https://github.com/galaxyproject/galaxy/pull/19154>`_
+* eLabFTW integration via Galaxy file source by `@kysrpex <https://github.com/kysrpex>`_ in `#19319 <https://github.com/galaxyproject/galaxy/pull/19319>`_
+* Add Dataverse RDM repository integration by `@KaiOnGitHub <https://github.com/KaiOnGitHub>`_ in `#19367 <https://github.com/galaxyproject/galaxy/pull/19367>`_
+* Type annotation fixes for mypy 1.14.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19372 <https://github.com/galaxyproject/galaxy/pull/19372>`_
+* Handles S3 listing errors by `@itisAliRH <https://github.com/itisAliRH>`_ in `#19446 <https://github.com/galaxyproject/galaxy/pull/19446>`_
+* Add eLabFTW file source from file source templates by `@kysrpex <https://github.com/kysrpex>`_ in `#19493 <https://github.com/galaxyproject/galaxy/pull/19493>`_
+* Add InvenioRDM file source template by `@davelopez <https://github.com/davelopez>`_ in `#19619 <https://github.com/galaxyproject/galaxy/pull/19619>`_
+* Use discriminated unions in object stores and file source template configs by `@davelopez <https://github.com/davelopez>`_ in `#19621 <https://github.com/galaxyproject/galaxy/pull/19621>`_
+* Add Zenodo file source template by `@davelopez <https://github.com/davelopez>`_ in `#19638 <https://github.com/galaxyproject/galaxy/pull/19638>`_
+* Drop support for Python 3.8 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19685 <https://github.com/galaxyproject/galaxy/pull/19685>`_
+* Enable ``warn_redundant_casts`` mypy option and drop redundant casts by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20008 <https://github.com/galaxyproject/galaxy/pull/20008>`_
+* Add ZIP explorer to import individual files from local or remote ZIP archives by `@davelopez <https://github.com/davelopez>`_ in `#20054 <https://github.com/galaxyproject/galaxy/pull/20054>`_
+* Implement file source to integrate Galaxy with RSpace by `@kysrpex <https://github.com/kysrpex>`_ in `#20167 <https://github.com/galaxyproject/galaxy/pull/20167>`_
 
 -------------------
 24.2.4 (2025-06-17)

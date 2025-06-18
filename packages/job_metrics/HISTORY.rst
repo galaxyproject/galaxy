@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
--------
-25.0rc1
--------
+-------------------
+25.0.0 (2025-06-18)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use ``backports.zoneinfo`` in ``job_metrics`` package under Python <3.9 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20178 <https://github.com/galaxyproject/galaxy/pull/20178>`_
+
+============
+Enhancements
+============
+
+* Fix UP031 errors - Part 5 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19282 <https://github.com/galaxyproject/galaxy/pull/19282>`_
+* Support setting and displaying timezone with the core metrics plugin by `@natefoo <https://github.com/natefoo>`_ in `#19527 <https://github.com/galaxyproject/galaxy/pull/19527>`_
 
 -------------------
 24.2.4 (2025-06-17)
