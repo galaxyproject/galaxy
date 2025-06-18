@@ -4,7 +4,13 @@ History
 .. to_doc
 
 ---------
-25.0.dev0
+25.1.dev0
 ---------
 
-* Initial creation of package during 25.0 development cycle.
+
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+First release

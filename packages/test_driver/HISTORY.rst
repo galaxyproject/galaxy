@@ -10,6 +10,17 @@ History
 
 
 -------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Remove transaction helper by `@jdavcs <https://github.com/jdavcs>`_ in `#19407 <https://github.com/galaxyproject/galaxy/pull/19407>`_
+
+-------------------
 24.2.4 (2025-06-17)
 -------------------
 

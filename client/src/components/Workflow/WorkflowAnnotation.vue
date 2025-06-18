@@ -80,7 +80,7 @@ const workflowTags = computed(() => {
             </div>
         </div>
         <div v-if="props.showDetails">
-            <TextSummary v-if="description" class="my-1" :description="description" one-line-summary component="span" />
+            <TextSummary v-if="description" class="my-1" :description="description" component="span" />
             <StatelessTags v-if="workflowTags.length" :value="workflowTags" :disabled="true" />
             <hr v-if="!props.hideHr" class="mb-0 mt-2" />
         </div>

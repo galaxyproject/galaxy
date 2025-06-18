@@ -10,6 +10,23 @@ History
 
 
 -------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+
+============
+Enhancements
+============
+
+* Selenium test cases for running workflow from form upload. by `@jmchilton <https://github.com/jmchilton>`_ in `#19997 <https://github.com/galaxyproject/galaxy/pull/19997>`_
+
+-------------------
 24.2.4 (2025-06-17)
 -------------------
 
