@@ -15,6 +15,7 @@ galaxycloudrunner
 pkce
 total-perspective-vortex>=2.3.2,<3
 openai
+redis==5.3.0
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
