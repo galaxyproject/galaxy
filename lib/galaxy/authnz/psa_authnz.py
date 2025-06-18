@@ -9,6 +9,7 @@ from social_core.actions import (
     do_complete,
     do_disconnect,
 )
+from social_core.backends.open_id_connect import OpenIdConnectAuth
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
 from social_core.utils import (
@@ -497,3 +498,41 @@ def disconnect(
     # option B
     # user_authnz.extra_data = None
     sa_session.commit()
+
+
+def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **kwargs):
+    """
+    Auth pipeline step to decode the OIDC access token.
+
+    Returns the access token, making it available as a new argument
+    "access_token" that can be used in future pipeline steps
+
+    Depends on "access_token" being present in social.extra_data,
+    which should be handled by social_core.pipeline.social_auth.load_extra_data, so
+    this step should be placed after load_extra_data in the pipeline.
+    """
+    access_token_encoded = social.extra_data.get("access_token")
+    if access_token_encoded is None:
+        return {"access_token": None}
+    access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
+    return {"access_token": access_token_data}
+
+
+def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> dict:
+    """
+    Decode the access token (verifying that signature, expiry and
+    audience are valid).
+
+    Requires accepted_audiences to be configured in the OIDC backend config
+    """
+    signing_key = backend.find_valid_key(token_str)
+    jwk = jwt.PyJWK(signing_key)
+    decoded = jwt.decode(
+        token_str,
+        key=jwk,
+        algorithms=[jwk.algorithm_name],
+        audience=backend.strategy.config["accepted_audiences"],
+        issuer=backend.id_token_issuer(),
+        options={"verify_signature": True, "verify_exp": True, "verify_aud": True},
+    )
+    return decoded
