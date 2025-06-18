@@ -12,7 +12,10 @@ from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
-from galaxy.tool_util.verify.assertion_models import assertion_list, relaxed_assertion_list
+from galaxy.tool_util.verify.assertion_models import (
+    assertion_list,
+    relaxed_assertion_list,
+)
 from galaxy.tool_util.verify.parse import tag_structure_to_that_structure
 from galaxy.util import asbool
 from ._util import is_datasource
