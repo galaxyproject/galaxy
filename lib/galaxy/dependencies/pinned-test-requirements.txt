@@ -145,7 +145,7 @@ typing-extensions==4.14.0
 tzdata==2025.2 ; sys_platform == 'win32'
 url-normalize==2.2.1
 urllib3==1.26.20 ; python_full_version < '3.10'
-urllib3==2.4.0 ; python_full_version >= '3.10'
+urllib3==2.5.0 ; python_full_version >= '3.10'
 watchdog==6.0.0
 wcwidth==0.2.13
 webencodings==0.5.1
