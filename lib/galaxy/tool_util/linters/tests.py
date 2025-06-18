@@ -148,6 +148,8 @@ class TestsAssertionValidation(Linter):
             lint_ctx.warn("Failed to parse test dictionaries from tool - cannot lint assertions")
             return
         assert "tests" in raw_tests_dict
+        # This really only allows coercion from strings, the values themselves will still be validated
+        strict_validation = tool_source.language != "xml"
         for test_idx, test in enumerate(raw_tests_dict["tests"], start=1):
             # TODO: validate command, command_version, element tests. What about children?
             for output in test["outputs"]:
@@ -156,7 +158,7 @@ class TestsAssertionValidation(Linter):
                 for raw_assert in asserts_raw:
                     to_yaml_assertions.append({"that": raw_assert["tag"], **raw_assert.get("attributes", {})})
                 try:
-                    assertion_list.model_validate(to_yaml_assertions)
+                    assertion_list.model_validate(to_yaml_assertions, strict=strict_validation)
                 except Exception as e:
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
