@@ -206,6 +206,7 @@ class ConfigSerializer(base.ModelSerializer):
             "upload_from_form_button": _use_config,
             "release_doc_base_url": _use_config,
             "expose_user_email": _use_config,
+            "expose_user_name": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
             "quota_source_labels": lambda item, key, **context: list(
