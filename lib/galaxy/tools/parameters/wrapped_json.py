@@ -135,7 +135,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
                 if isinstance(value_wrapper, list):
                     value_wrapper = value_wrapper[0]
                 json_value = _hda_to_object(value_wrapper)
-                if input.load_contents:
+                if json_value is not None and input.load_contents:
                     with open(str(value_wrapper), mode="rb") as fh:
                         json_value["contents"] = fh.read(input.load_contents).decode("utf-8", errors="replace")
                 return json_value
