@@ -263,7 +263,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             if archive_type == HistoryImportArchiveSourceType.url:
                 assert archive_source
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
-            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            target_history = None
+            if payload.name:
+                # A name for a new history was supplied, so we will create a new history and do the import
+                # into that - only useful for non-history imports - e.g. workflow invocations.
+                target_history = self.manager.create(user=trans.user, name=hist_name)
+            log.info(f"target history for import: {target_history}")
+            job = self.manager.queue_history_import(
+                trans, archive_type=archive_type, archive_source=archive_source, target_history=target_history
+            )
             job_dict = job.to_dict()
             job_dict["message"] = (
                 f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
