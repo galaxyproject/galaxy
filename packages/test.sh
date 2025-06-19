@@ -4,6 +4,18 @@ set -ex
 
 PACKAGE_LIST_FILE=packages_by_dep_dag.txt
 FOR_PULSAR=0
+SKIP_PACKAGES=(
+    web_client
+    meta
+)
+
+should_skip_package() {
+    local pkg
+    for pkg in ${SKIP_PACKAGES[@]}; do
+        [[ $1 == $pkg ]] && return 0
+    done
+    return 1
+}
 
 for arg in "$@"; do
     if [ "$arg" = "--for-pulsar" ]; then
@@ -40,6 +52,9 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     fi
     # Ignore lines beginning with `#`
     if  [[ $package_dir =~ ^#.* ]]; then
+        continue
+    fi
+    if should_skip_package "$package_dir"; then
         continue
     fi
 
