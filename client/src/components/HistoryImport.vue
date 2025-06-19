@@ -30,7 +30,7 @@
         </div>
         <div v-else>
             <b-form @submit.prevent="submit">
-                <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
+                <b-form-group v-slot="{ ariaDescribedby }" :label="howLabel">
                     <b-form-radio-group
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
@@ -51,7 +51,7 @@
                     </b-form-radio-group>
                 </b-form-group>
 
-                <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
+                <b-form-group v-if="importType === 'externalUrl'" :label="urlLabel">
                     <b-alert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
@@ -63,7 +63,7 @@
 
                     <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
-                <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
+                <b-form-group v-else-if="importType === 'upload'" :label="fileLabel">
                     <b-form-file v-model="sourceFile" />
                 </b-form-group>
                 <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
@@ -148,6 +148,15 @@ export default {
         };
     },
     computed: {
+        howLabel() {
+            return `How would you like to specify the ${this.identifierText} archive?`;
+        },
+        urlLabel() {
+            return `Archived ${this.identifierTextCapitalized} URL`;
+        },
+        fileLabel() {
+            return `Archived ${this.identifierTextCapitalized} File`;
+        },
         importReady() {
             const importType = this.importType;
             if (importType == "externalUrl") {
