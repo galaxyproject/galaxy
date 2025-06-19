@@ -42,7 +42,6 @@ class ToolPanelManager:
             return
         old_toolbox = self.app.toolbox
         shed_tool_conf = shed_tool_conf_dict["config_filename"]
-        tool_cache_data_dir = shed_tool_conf_dict.get("tool_cache_data_dir")
         tool_path = shed_tool_conf_dict["tool_path"]
         config_elems = []
         # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
@@ -83,7 +82,7 @@ class ToolPanelManager:
                 else:
                     config_elems.append(elem_entry)
             # Persist the altered shed_tool_config file.
-            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path, tool_cache_data_dir)
+            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
             self.app.wait_for_toolbox_reload(old_toolbox)
         else:
             log.error(error_message)
@@ -135,16 +134,13 @@ class ToolPanelManager:
             self.app.toolbox.update_shed_config(shed_tool_conf_dict)
             self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
-    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path, tool_cache_data_dir=None) -> None:
+    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the
         value of config_filename.
         """
         try:
-            tool_cache_data_dir = f' tool_cache_data_dir="{tool_cache_data_dir}"' if tool_cache_data_dir else ""
-            root = parse_xml_string(
-                f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"{tool_cache_data_dir}></toolbox>'
-            )
+            root = parse_xml_string(f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"></toolbox>')
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode="w") as fh:

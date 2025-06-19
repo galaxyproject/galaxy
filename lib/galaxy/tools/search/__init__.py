@@ -32,6 +32,7 @@ import shutil
 from typing import (
     Dict,
     List,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -63,6 +64,13 @@ from galaxy.util import (
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tools import (
+        Tool,
+        ToolBox,
+    )
+    from galaxy.tools.cache import ToolCache
+
 log = logging.getLogger(__name__)
 
 CanConvertToFloat = Union[str, int, float]
@@ -90,8 +98,8 @@ class ToolBoxSearch:
     Search is delegated off to ToolPanelViewSearch for each panel object.
     """
 
-    def __init__(self, toolbox, index_dir: str, index_help: bool = True):
-        panel_searches = {}
+    def __init__(self, toolbox: "ToolBox", index_dir: str, index_help: bool = True) -> None:
+        panel_searches: Dict[str, ToolPanelViewSearch] = {}
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
@@ -108,7 +116,7 @@ class ToolBoxSearch:
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         self.index_count += 1
         for panel_search in self.panel_searches.values():
             panel_search.build_index(tool_cache, toolbox, index_help=index_help)
@@ -202,7 +210,7 @@ class ToolPanelViewSearch:
         """Get or create a reference to the index."""
         return get_or_create_index(self.index_dir, self.schema)
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         """Prepare search index for tools loaded in toolbox.
 
         Use `tool_cache` to determine which tools need indexing and which
@@ -234,7 +242,7 @@ class ToolPanelViewSearch:
 
         log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
-    def _get_tools_to_remove(self, tool_cache) -> list:
+    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> list:
         """Return list of tool IDs to be removed from index."""
         tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
             tool_cache._removed_tool_ids
@@ -252,9 +260,9 @@ class ToolPanelViewSearch:
 
         return list(tool_ids_to_remove)
 
-    def _get_tool_list(self, toolbox, tool_cache) -> list:
+    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> List["Tool"]:
         """Return list of tools to add and remove from index."""
-        tools_to_index = []
+        tools_to_index: List[Tool] = []
 
         for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
             tool = toolbox.get_tool(tool_id)
@@ -267,6 +275,8 @@ class ToolPanelViewSearch:
                             tool = tool_cache.get_tool_by_id(tool_version.id)
                             if tool and not tool.hidden:
                                 break
+                        else:
+                            continue
                     else:
                         continue
                 tools_to_index.append(tool)
