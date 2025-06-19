@@ -323,7 +323,12 @@ class WorkflowRequestMonitor(Monitors):
         else:
             last_schedule_time = self.update_time_tracking_dict[invocation.id]
             last_history_update_time = invocation.history.update_time
-            return last_history_update_time > last_schedule_time
+            do_schedule = last_history_update_time > last_schedule_time
+            if not do_schedule and (
+                invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time()
+            ):
+                return invocation_step_update_time > last_schedule_time
+            return do_schedule
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
