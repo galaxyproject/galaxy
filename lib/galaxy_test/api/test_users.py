@@ -51,7 +51,7 @@ class TestUsersApi(ApiTestCase):
     @requires_new_user
     def test_index_anon(self):
         user = self._setup_user(TEST_USER_EMAIL_INDEX_DELETED)
-        with self._different_user(anon=True)
+        with self._different_user(anon=True):
             all_users_response = self._get("users")
 
     @requires_new_user
