@@ -25,7 +25,5 @@ app
 
 web_apps
 
-web_client
-
 test_driver
 tool_shed
