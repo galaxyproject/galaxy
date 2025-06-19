@@ -55,6 +55,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         continue
     fi
     if should_skip_package "$package_dir"; then
+        printf "\nSkipping package %s\n\n" "$package_dir"
         continue
     fi
 
