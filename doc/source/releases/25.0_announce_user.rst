@@ -337,7 +337,7 @@ Thanks to this integration, files from the
 `RSpace Gallery <https://documentation.researchspace.com/article/sl6mo1i9do-the-gallery>`__ can be easily imported to
 Galaxy histories. After the analysis is complete, datasets and even whole histories can be exported back to the Gallery.
 
-Read more on `this blog post <https://galaxyproject.org/news/2025-06-XX-rspace-integration/>`__.
+Read more on `this blog post <https://galaxyproject.org/news/2025-06-23-rspace-integration/>`__.
 
 Visualizations
 ===========================================================
