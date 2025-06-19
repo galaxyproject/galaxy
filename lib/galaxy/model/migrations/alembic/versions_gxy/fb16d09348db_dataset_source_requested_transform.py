@@ -1,7 +1,7 @@
 """Add requested_transform column to dataset_source table
 
 Revision ID: fb16d09348db
-Revises: a91ea1d97111
+Revises: c716ee82337b
 Create Date: 2025-06-11 08:48:10.124300
 """
 
@@ -15,7 +15,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "fb16d09348db"
-down_revision = "a91ea1d97111"
+down_revision = "c716ee82337b"
 branch_labels = None
 depends_on = None
 
