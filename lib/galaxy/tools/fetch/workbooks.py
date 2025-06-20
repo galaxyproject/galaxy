@@ -100,6 +100,7 @@ class GenerateFetchWorkbookRequest:
 
 WorkbookContentField: Base64StringT = Field(
     ...,
+    max_length=1024 * 1024 * 10,  # 10MB
     title="Workbook Content (Base 64 encoded)",
     description="The workbook content (the contents of the xlsx file) that have been base64 encoded.",
 )
