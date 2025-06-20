@@ -34,7 +34,7 @@ const whatText = computed(() => {
             <b>External Workbook</b>
         </BCardTitle>
         <div>
-            This option le ts you fill in URLs/URIs in an external workbook using tools like Excel or Google Sheets and
+            This option lets you fill in URLs/URIs in an external workbook using tools like Excel or Google Sheets and
             specify {{ whatText }} in the workbook also.
         </div>
     </BCard>
