@@ -2502,9 +2502,9 @@
 
 :Description:
     Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    it via a proxy server. You can use these paths (or ones in the
+    proxy server) to point to your own styles. The static_* options
+    that refer to paths are relative to the current working directory.
 :Default: ``true``
 :Type: bool
 
@@ -2514,10 +2514,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Value of cache time for static content served by Galaxy. Ignored
+    if static_enabled is false.
 :Default: ``360``
 :Type: int
 
@@ -2527,11 +2525,21 @@
 ~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to the static content dir. Ignored if static_enabled is
+    false.
 :Default: ``static/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``static_dist_dir``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the built Galaxy client application, static/dist/ in the
+    Galaxy source code after the build is complete. Ignored if
+    static_enabled is false.
+:Default: ``static/dist/``
 :Type: str
 
 
@@ -2540,11 +2548,9 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
-:Default: ``static/images``
+    Path to the static images directory. Ignored if static_enabled is
+    false.
+:Default: ``static/images/``
 :Type: str
 
 
@@ -2553,10 +2559,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to favicon.ico, not the directory that contains it (the name
+    is a misnomer). Ignored if static_enabled is false.
 :Default: ``static/favicon.ico``
 :Type: str
 
@@ -2566,10 +2570,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to the static scripts directory. Ignored if static_enabled is
+    false.
 :Default: ``static/scripts/``
 :Type: str
 
@@ -2579,11 +2581,9 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
-:Default: ``static/style``
+    Path to the static style directory. Ignored if static_enabled is
+    false.
+:Default: ``static/style/``
 :Type: str
 
 
@@ -2592,10 +2592,7 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to robots.txt. Ignored if static_enabled is false.
 :Default: ``static/robots.txt``
 :Type: str
 

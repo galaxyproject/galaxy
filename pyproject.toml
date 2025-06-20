@@ -41,14 +41,14 @@ dependencies = [
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity>=1.0.4",
+    "gravity>=1.1.1",
     "gunicorn",
     "gxformat2",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
-    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions

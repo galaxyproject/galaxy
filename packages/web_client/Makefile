@@ -53,12 +53,11 @@ setup-venv:
 test:
 	$(IN_VENV) pytest $(TESTS)
 
-dist: clean $(VENV) galaxy/web_client/client_build_hash.txt
+dist: clean $(VENV)/bin/yarn galaxy/web_client/client_build_hash.txt
 	$(IN_VENV) python -m build
 	ls -l dist
 
-$(VENV):
-	python3 -m venv $(VENV)
+$(VENV)/bin/yarn: setup-venv
 	$(IN_VENV) pip install build nodeenv
 	$(IN_VENV) nodeenv -n $(shell cat ../../client/.node_version) -p
 	$(IN_VENV) npm install --global yarn

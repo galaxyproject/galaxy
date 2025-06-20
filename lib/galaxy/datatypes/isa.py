@@ -19,20 +19,12 @@ from typing import (
 
 logger = logging.getLogger(__name__)
 
-ISA_MISSING_MODULE_MESSAGE = "Please install the missing isatools dependency from `isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master`"
-
-try:
-    # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
-    logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-    from isatools import (
-        isajson,
-        isatab_meta,
-    )
-except ImportError:
-    isajson = None
-    isatab_meta = None
-    logger.exception(ISA_MISSING_MODULE_MESSAGE)
-
+# Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
+logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
+from isatools import (
+    isajson,
+    isatab_meta,
+)
 from markupsafe import escape
 
 from galaxy import util
@@ -283,8 +275,6 @@ class IsaTab(_Isa):
         super().__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
     def _make_investigation_instance(self, filename: str):
-        if not isatab_meta:
-            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
@@ -308,8 +298,6 @@ class IsaJson(_Isa):
         super().__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
     def _make_investigation_instance(self, filename: str):
-        if not isajson:
-            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
             isa = isajson.load(fp)
