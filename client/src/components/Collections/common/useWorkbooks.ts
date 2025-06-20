@@ -2,6 +2,8 @@ import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import HiddenWorkbookUploadInput from "@/components/Collections/wizard/HiddenWorkbookUploadInput.vue";
 
 export const fileToBase64 = (file: File): Promise<string> =>
@@ -57,7 +59,7 @@ export function useWorkbookDropHandling(workbookHandler: WorkbookHandler) {
             await workbookHandler(base64Content);
         } catch (error) {
             console.error("Error uploading file:", error);
-            uploadErrorMessage.value = "There was an error processing the file.";
+            uploadErrorMessage.value = "Error processing the file: " + errorMessageAsString(error);
         } finally {
             isProcessingUpload.value = false;
         }
