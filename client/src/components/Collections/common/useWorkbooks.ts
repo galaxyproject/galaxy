@@ -25,6 +25,11 @@ export function useWorkbookDropHandling(workbookHandler: WorkbookHandler) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0] ?? null;
         if (file) {
+            if (file.size > 10 * 1024 * 1024) {
+                // Limit to 10MB
+                uploadErrorMessage.value = "File size exceeds 10MB limit.";
+                return;
+            }
             const base64Content = await readAsBase64(file);
             workbookHandler(base64Content);
         }
@@ -48,6 +53,11 @@ export function useWorkbookDropHandling(workbookHandler: WorkbookHandler) {
     const handleDrop = async (event: DragEvent) => {
         const file = checkDrop(event);
         if (!file) {
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            // Limit to 10MB
+            uploadErrorMessage.value = "File size exceeds 10MB limit.";
             return;
         }
 
