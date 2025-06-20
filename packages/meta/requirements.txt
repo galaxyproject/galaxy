@@ -68,29 +68,30 @@ frozenlist==1.6.0
 fs==2.4.16
 fsspec==2025.3.2
 future==1.0.0
-galaxy-app==25.0.1.dev0
-galaxy-auth==25.0.1.dev0
-galaxy-config==25.0.1.dev0
-galaxy-data==25.0.1.dev0
-galaxy-files==25.0.1.dev0
-galaxy-job_execution==25.0.1.dev0
-galaxy-job_metrics==25.0.1.dev0
-galaxy-navigation==25.0.1.dev0
-galaxy-objectstore==25.0.1.dev0
-galaxy-schema==25.0.1.dev0
-galaxy-selenium==25.0.1.dev0
-galaxy-test_api==25.0.1.dev0
-galaxy-test_base==25.0.1.dev0
-galaxy-test_driver==25.0.1.dev0
-galaxy-tool_shed_schema==25.0.1.dev0
-galaxy-tool_util==25.0.1.dev0
-galaxy-tool_util_models==25.0.1.dev0
-galaxy-tours==25.0.1.dev0
-galaxy-util==25.0.1.dev0
-galaxy-web_apps==25.0.1.dev0
-galaxy-web_framework==25.0.1.dev0
-galaxy-web_stack==25.0.1.dev0
-gravity==1.0.7
+galaxy-app==25.0.1
+galaxy-auth==25.0.1
+galaxy-config==25.0.1
+galaxy-data==25.0.1
+galaxy-files==25.0.1
+galaxy-job_execution==25.0.1
+galaxy-job_metrics==25.0.1
+galaxy-navigation==25.0.1
+galaxy-objectstore==25.0.1
+galaxy-schema==25.0.1
+galaxy-selenium==25.0.1
+galaxy-test_api==25.0.1
+galaxy-test_base==25.0.1
+galaxy-test_driver==25.0.1
+galaxy-tool_shed_schema==25.0.1
+galaxy-tool_util==25.0.1
+galaxy-tool_util_models==25.0.1
+galaxy-tours==25.0.1
+galaxy-util==25.0.1
+galaxy-web_apps==25.0.1
+galaxy-web_client==25.0.1
+galaxy-web_framework==25.0.1
+galaxy-web_stack==25.0.1
+gravity==1.1.1
 greenlet==3.2.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
 gunicorn==23.0.0
 gxformat2==0.20.0
@@ -103,7 +104,7 @@ humanfriendly==10.0
 idna==3.10
 importlib-metadata==8.6.1
 importlib-resources==6.5.2 ; python_full_version < '3.12'
-isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@3d989181058d2765a93cb0e7ca85d6955e0eb6ef
+isa-rwval==0.10.11
 isal==1.7.2
 isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
