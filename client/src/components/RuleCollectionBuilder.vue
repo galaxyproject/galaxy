@@ -311,11 +311,25 @@
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a
-                                        v-for="target in unmappedTargets"
+                                        v-for="target in basicUnmappedTargets"
                                         :key="target"
                                         :index="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)"
+                                        >{{ mappingTargets()[target].label }}</a
+                                    >
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><h6 class="dropdown-header">Advanced</h6></li>
+                                    <a
+                                        v-for="target in advancedUnmappedTargets"
+                                        :key="target"
+                                        :index="target"
+                                        class="dropdown-item"
+                                        href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
@@ -676,6 +690,11 @@ export default {
             required: false,
             type: Object,
         },
+        initialMapping: {
+            // only respected if elementsType is raw currently - other element types have their own default behaviors that make sense (e.g. assigning ftp paths to a URI implicitly)
+            required: false,
+            type: Array,
+        },
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
@@ -722,6 +741,8 @@ export default {
                 mapping = [{ type: "url", columns: [0] }];
             } else if (this.elementsType == "datasets") {
                 mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else if (this.initialMapping) {
+                mapping = this.initialMapping;
             } else {
                 mapping = [];
             }
@@ -957,6 +978,18 @@ export default {
             }
             return targets;
         },
+        basicUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return !MAPPING_TARGETS[target].advanced;
+            });
+        },
+        advancedUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return MAPPING_TARGETS[target].advanced;
+            });
+        },
         colHeaders() {
             const { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
@@ -1056,6 +1089,13 @@ export default {
                     collectionType += ":paired";
                 } else {
                     collectionType = "paired";
+                }
+            }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                if (collectionType) {
+                    collectionType += ":paired_or_unpaired";
+                } else {
+                    collectionType = "paired_or_unpaired";
                 }
             }
             return collectionType;
@@ -1251,6 +1291,11 @@ export default {
                 .catch((err) => {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
                 });
+        }
+        // is this comparable to watch immediate in newer Vue code?, I just need that event to
+        // to flair if it is initially okay also.
+        if (this.validInput) {
+            this.$emit("validInput", true);
         }
     },
     mounted() {
@@ -1557,6 +1602,9 @@ export default {
             if (this.mappingAsDict.paired_identifier) {
                 identifierColumns.push(this.mappingAsDict.paired_identifier.columns[0]);
             }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                identifierColumns.push(this.mappingAsDict.paired_or_unpaired_identifier.columns[0]);
+            }
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
@@ -1611,15 +1659,24 @@ export default {
                         let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
-                            if (collectionTypeAtDepth === "paired") {
+                            if (["paired", "paired_or_unpaired"].indexOf(collectionTypeAtDepth) > -1) {
                                 if (["f", "1", "r1", "forward"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "forward";
                                 } else if (["r", "2", "r2", "reverse"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "reverse";
+                                } else if (
+                                    collectionTypeAtDepth == "paired_or_unpaired" &&
+                                    ["unpaired", "u"].indexOf(identifier.toLowerCase()) > -1
+                                ) {
+                                    // assert collectionTypeAtDepth == paired_or_unpaired
+                                    identifier = "unpaired";
                                 } else {
                                     this.state = "error";
-                                    this.errorMessage =
-                                        "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    const allowedIndicators = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"];
+                                    if (collectionTypeAtDepth == "paired_or_unpaired") {
+                                        allowedIndicators.push("unpaired", "u");
+                                    }
+                                    this.errorMessage = `Unknown indicator (${identifier}) of paired status encountered - only values of (${allowedIndicators}) are allowed.`;
                                     return;
                                 }
                             }
@@ -1656,6 +1713,29 @@ export default {
                             }
                         }
                     }
+                }
+
+                // Recursively descend elements to handle "paired_or_unpaired" collections
+                const updateUnpairedIdentifiers = (elements) => {
+                    for (const value of Object.values(elements)) {
+                        if (typeof value !== "object" || value === null) {
+                            continue;
+                        }
+                        if (value.src === "new_collection" && value.collection_type === "paired_or_unpaired") {
+                            const subElements = value.elements;
+                            if (subElements["forward"] && !subElements["reverse"]) {
+                                subElements["unpaired"] = subElements["forward"];
+                                delete subElements["forward"];
+                            }
+                        }
+                        if (value.elements) {
+                            updateUnpairedIdentifiers(value.elements);
+                        }
+                    }
+                };
+
+                if (collectionType.endsWith("paired_or_unpaired")) {
+                    updateUnpairedIdentifiers(elements);
                 }
 
                 elementsByName[collectionName] = elements;
@@ -1819,6 +1899,24 @@ export default {
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
             }
+            const hashTypes = [
+                { key: "hash_md5", function: "MD5" },
+                { key: "hash_sha1", function: "SHA1" },
+                { key: "hash_sha256", function: "SHA256" },
+                { key: "hash_sha515", function: "SHA512" },
+            ];
+
+            hashTypes.forEach(({ key, function: hashFunction }) => {
+                if (mappingAsDict[key]) {
+                    const hashColumn = mappingAsDict[key].columns[0];
+                    const hash = data[dataIndex][hashColumn];
+                    if (res.hashes === undefined) {
+                        res["hashes"] = [];
+                    }
+                    res["hashes"].push({ hash_function: hashFunction, hash_value: hash });
+                }
+            });
+
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;

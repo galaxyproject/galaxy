@@ -4626,6 +4626,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/fetch/workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generate a template workbook to use with the activity builder UI */
+        get: operations["tools__fetch_workbook_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/fetch/workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a template workbook to use with the activity builder UI */
+        post: operations["tools__fetch_workbook_parse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/{tool_id}/icon": {
         parameters: {
             query?: never;
@@ -10780,6 +10814,24 @@ export interface components {
              */
             sorting: boolean;
         };
+        /** FillIdentifiers */
+        FillIdentifiers: {
+            /**
+             * Deduplication Index From
+             * @default 1
+             */
+            deduplication_index_from: number;
+            /**
+             * Deduplication Pattern
+             * @default _{#}
+             */
+            deduplication_pattern: string;
+            /**
+             * Fill Inner List Identifiers
+             * @default false
+             */
+            fill_inner_list_identifiers: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
@@ -16885,6 +16937,89 @@ export interface components {
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
+        /** ParseFetchWorkbook */
+        ParseFetchWorkbook: {
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+            fill_identifiers?: components["schemas"]["FillIdentifiers"] | null;
+        };
+        /** ParseLogEntry */
+        ParseLogEntry: {
+            /** Message */
+            message: string;
+        };
+        /** ParsedColumn */
+        ParsedColumn: {
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type:
+                | "list_identifiers"
+                | "paired_identifier"
+                | "paired_or_unpaired_identifier"
+                | "collection_name"
+                | "name_tag"
+                | "tags"
+                | "group_tags"
+                | "name"
+                | "dbkey"
+                | "hash_sha1"
+                | "hash_md5"
+                | "hash_sha256"
+                | "hash_sha512"
+                | "file_type"
+                | "url"
+                | "url_deferred"
+                | "info"
+                | "ftp_path";
+            /** Type Index */
+            type_index: number;
+        };
+        /** ParsedFetchWorkbookForCollections */
+        ParsedFetchWorkbookForCollections: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: components["schemas"]["ParseLogEntry"][];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default collection
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedFetchWorkbookForDatasets */
+        ParsedFetchWorkbookForDatasets: {
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: components["schemas"]["ParseLogEntry"][];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default datasets
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
         /** PastedDataElement */
         PastedDataElement: {
             /** Md5 */
@@ -36400,6 +36535,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__fetch_workbook_download: {
+        parameters: {
+            query?: {
+                /** @description Generate a workbook for simple datasets or a collection. */
+                type?: "datasets" | "collection" | "collections";
+                /** @description Generate workbook for specified collection type (not all collection types are supported) */
+                collection_type?: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__fetch_workbook_parse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseFetchWorkbook"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["ParsedFetchWorkbookForDatasets"]
+                        | components["schemas"]["ParsedFetchWorkbookForCollections"];
                 };
             };
             /** @description Request Error */
