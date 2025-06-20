@@ -42,12 +42,13 @@ clean-pyc:
 clean-tests:
 	rm -fr .tox/
 
+# Removing .venv instead of $(VENV) is intentional, because we can't guarantee we created $(VENV)
 clean-web-client:
 	rm -rf .venv
 	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then virtualenv $(VENV); exit; fi;
+	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
 	$(IN_VENV) pip install -r dev-requirements.txt
 
 test:
