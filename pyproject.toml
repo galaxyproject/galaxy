@@ -41,7 +41,7 @@ dependencies = [
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity>=1.0.4",
+    "gravity>=1.1.1",
     "gunicorn",
     "gxformat2",
     "h5grove>=1.2.1",
