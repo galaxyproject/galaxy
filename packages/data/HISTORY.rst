@@ -10,6 +10,17 @@ History
 
 
 -------------------
+25.0.1 (2025-06-20)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Pin isa-rwval 0.10.11, drop conditional import handling by `@natefoo <https://github.com/natefoo>`_ in `#20527 <https://github.com/galaxyproject/galaxy/pull/20527>`_
+
+-------------------
 25.0.0 (2025-06-18)
 -------------------
 
