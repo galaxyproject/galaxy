@@ -3,11 +3,18 @@ History
 
 .. to_doc
 
------------
-25.0.1.dev0
------------
+-------------------
+25.0.1 (2025-06-20)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix single data element identifier to be a regular string by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20438 <https://github.com/galaxyproject/galaxy/pull/20438>`_
+* Relax validation of XML test assertion parsing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20511 <https://github.com/galaxyproject/galaxy/pull/20511>`_
+* Fix import of ``galaxy.tool_util.cwl`` module by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20529 <https://github.com/galaxyproject/galaxy/pull/20529>`_
 
 -------------------
 25.0.0 (2025-06-18)

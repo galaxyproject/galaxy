@@ -3,11 +3,39 @@ History
 
 .. to_doc
 
------------
-25.0.1.dev0
------------
+-------------------
+25.0.1 (2025-06-20)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix single data element identifier to be a regular string by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20438 <https://github.com/galaxyproject/galaxy/pull/20438>`_
+* Relax validation of XML test assertion parsing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20511 <https://github.com/galaxyproject/galaxy/pull/20511>`_
+* Add id-token: write for npm publishing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20519 <https://github.com/galaxyproject/galaxy/pull/20519>`_
+* Do not expose user info to non authenticated users by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20524 <https://github.com/galaxyproject/galaxy/pull/20524>`_
+* names of package extras cannot contain underscores by `@mr-c <https://github.com/mr-c>`_ in `#20525 <https://github.com/galaxyproject/galaxy/pull/20525>`_
+* Pin isa-rwval 0.10.11, drop conditional import handling by `@natefoo <https://github.com/natefoo>`_ in `#20527 <https://github.com/galaxyproject/galaxy/pull/20527>`_
+* Fix import of ``galaxy.tool_util.cwl`` module by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20529 <https://github.com/galaxyproject/galaxy/pull/20529>`_
+* Fix `galaxy-config` script, move install to `galaxy-dependencies` in app package by `@natefoo <https://github.com/natefoo>`_ in `#20531 <https://github.com/galaxyproject/galaxy/pull/20531>`_
+
+============
+Enhancements
+============
+
+* Bump gravity dependency to 1.1.0 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20520 <https://github.com/galaxyproject/galaxy/pull/20520>`_
+* Update the dev package build and install script by `@natefoo <https://github.com/natefoo>`_ in `#20526 <https://github.com/galaxyproject/galaxy/pull/20526>`_
+
+=============
+Other changes
+=============
+
+* Merge Release 25.0 into the master branch by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20514 <https://github.com/galaxyproject/galaxy/pull/20514>`_
+* Fixes for static handling and the web_client package by `@natefoo <https://github.com/natefoo>`_ in `#20516 <https://github.com/galaxyproject/galaxy/pull/20516>`_
+* Fix link in user release notes by `@bgruening <https://github.com/bgruening>`_ in `#20518 <https://github.com/galaxyproject/galaxy/pull/20518>`_
+* Bump Gravity to 1.1.1 by `@natefoo <https://github.com/natefoo>`_ in `#20533 <https://github.com/galaxyproject/galaxy/pull/20533>`_
 
 -------------------
 25.0.0 (2025-06-18)
