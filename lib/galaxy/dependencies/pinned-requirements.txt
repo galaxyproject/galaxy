@@ -83,7 +83,7 @@ humanfriendly==10.0
 idna==3.10
 importlib-metadata==8.6.1
 importlib-resources==6.5.2 ; python_full_version < '3.12'
-isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@3d989181058d2765a93cb0e7ca85d6955e0eb6ef
+isa-rwval==0.10.11
 isal==1.7.2
 isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
