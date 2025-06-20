@@ -1292,6 +1292,11 @@ export default {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
                 });
         }
+        // is this comparable to watch immediate in newer Vue code?, I just need that event to
+        // to flair if it is initially okay also.
+        if (this.validInput) {
+            this.$emit("validInput", true);
+        }
     },
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
@@ -1300,11 +1305,6 @@ export default {
             setTimeout(() => {
                 this.$refs.hotTable.$el.click();
             }, 200);
-        }
-        // is this comparable to watch immediate in newer Vue code?, I just need that event to
-        // to flair if it is initially okay also.
-        if (this.validInput) {
-            this.$emit("validInput", true);
         }
     },
     methods: {
