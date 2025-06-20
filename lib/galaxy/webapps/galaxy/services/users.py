@@ -202,6 +202,10 @@ class UsersService(ServiceBase):
         f_name: Optional[str],
         f_any: Optional[str],
     ) -> List[MaybeLimitedUserModel]:
+        # never give any info to non-authenticated users
+        if not trans.user:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can view the list of users")
+
         # check for early return conditions
         if deleted:
             if not trans.user_is_admin:
@@ -216,10 +220,7 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                if trans.user:
-                    return [UserModel(**trans.user.to_dict())]
-                else:
-                    return []
+                return [UserModel(**trans.user.to_dict())]
 
         users = get_users_for_index(
             trans.sa_session,

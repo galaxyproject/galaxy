@@ -47,6 +47,11 @@ class TestUsersApi(ApiTestCase):
         all_deleted_users = all_deleted_users_response_2.json()
         assert len([u for u in all_deleted_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
 
+    def test_index_anon(self):
+        with self._different_user(anon=True):
+            all_users_response = self._get("users")
+            self._assert_status_code_is(all_users_response, 403)
+
     @requires_new_user
     def test_index_only_self_for_nonadmins(self):
         self._setup_user(TEST_USER_EMAIL)
