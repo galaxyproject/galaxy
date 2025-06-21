@@ -82,6 +82,14 @@
                     :options="bundleOptions"
                     title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
             </div>
+            <FormElement
+                id="tags"
+                :attributes="{ optional: true }"
+                :value="tags"
+                title="Output tags"
+                type="tags"
+                help="Enter tags to apply to the output datasets in your history (e.g., 'sample1'). Tags starting with '#' (e.g., '#sample1') will propagate to datasets derived from these outputs. Tags help you organize and search your history."
+                @input="updateTags" />
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
@@ -205,6 +213,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            tags: [],
         };
     },
     computed: {
@@ -346,6 +355,7 @@ export default {
                 tool_uuid: this.toolUuid,
                 inputs: {
                     ...this.formData,
+                    tags: this.tags,
                 },
             };
             if (this.useEmail) {
@@ -433,6 +443,9 @@ export default {
                     }
                 }
             );
+        },
+        updateTags(newTags) {
+            this.tags = newTags;
         },
     },
 };
