@@ -371,7 +371,7 @@ class ContainerRegistry:
         tool_info: "ToolInfo",
         index: Optional[int] = None,
         resolver_type: Optional[str] = None,
-        install: bool = True,
+        install: bool = False,
         resolution_cache: Optional[ResolutionCache] = None,
         session: Optional[Session] = None,
     ) -> Optional[ResolvedContainerDescription]:
