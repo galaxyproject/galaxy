@@ -532,8 +532,11 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
 
     def get_singularity_target_kwds(self) -> Dict[str, Any]:
+        cmd_default = (
+            self.container_description and self.container_description.cmd
+        ) or singularity_util.DEFAULT_SINGULARITY_COMMAND
         return dict(
-            singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
+            singularity_cmd=self.prop("cmd", cmd_default),
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
             sudo_cmd=self.prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
         )
