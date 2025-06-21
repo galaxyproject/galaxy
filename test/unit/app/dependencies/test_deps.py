@@ -3,6 +3,8 @@ from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
+import pytest
+
 from galaxy.dependencies import ConditionalDependencies
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
@@ -120,6 +122,44 @@ def test_vault_hashicorp_configured():
         cds = cc.get_cond_deps(config=config)
         assert cds.check_hvac()
         assert not cds.check_custos_sdk()
+
+
+@pytest.mark.parametrize(
+    "config,expected",
+    [
+        (
+            {
+                "enable_celery_tasks": True,
+            },
+            False,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"result_backend": None},
+            },
+            False,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"broker_url": "redis://localhost:6379/0"},
+            },
+            True,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"result_backend": "redis://localhost:6379/0"},
+            },
+            True,
+        ),
+    ],
+)
+def test_conditional_redis(config, expected):
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config=config)
+        assert cds.check_redis() is expected
 
 
 @contextmanager
