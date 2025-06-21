@@ -325,7 +325,7 @@ class ConditionalDependencies:
         celery_conf = self.config.get("celery_conf") or {}
         celery_result_backend = celery_conf.get("result_backend") or ""
         celery_broker_url = celery_conf.get("broker_url") or ""
-        return celery_enabled and celery_result_backend.startswith("redis") or celery_broker_url.startswith("redis")
+        return celery_enabled and celery_result_backend.startswith("redis://") or celery_broker_url.startswith("redis://")
 
 
 def optional(config_file=None):
