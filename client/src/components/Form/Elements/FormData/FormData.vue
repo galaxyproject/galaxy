@@ -26,7 +26,7 @@ import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
 
-import type { DataOption } from "./types";
+import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
@@ -60,6 +60,7 @@ const props = withDefaults(
         tag?: string;
         userDefinedTitle?: string;
         workflowRun?: boolean;
+        extendedCollectionType: ExtendedCollectionType;
     }>(),
     {
         loading: false,
@@ -72,6 +73,7 @@ const props = withDefaults(
         flavor: undefined,
         tag: undefined,
         userDefinedTitle: undefined,
+        extendedCollectionType: () => ({} as ExtendedCollectionType),
     }
 );
 
@@ -628,6 +630,10 @@ const collectionTypesWithBuilders: CollectionBuilderType[] = [
     "list:list",
     "list:list:paired",
     "list:paired_or_unpaired",
+    "sample_sheet",
+    "sample_sheet:paired",
+    "sample_sheet:paired_or_unpaired",
+    "sample_sheet:record",
 ];
 
 /** Allowed collection types for collection creation */
@@ -932,6 +938,7 @@ const noOptionsWarningMessage = computed(() => {
             :can-browse="canBrowse"
             :extensions="props.extensions"
             :collection-type="currentCollectionTypeTab"
+            :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
