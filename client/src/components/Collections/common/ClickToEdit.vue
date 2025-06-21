@@ -70,6 +70,7 @@ function revertToOriginal() {
             title="Press enter/return to save, esc to revert changes"
             contenteditable
             max-rows="4"
+            aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
