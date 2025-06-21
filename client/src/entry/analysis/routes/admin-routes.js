@@ -17,6 +17,7 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import RoleForm from "components/admin/RoleForm";
 import SanitizeAllow from "components/admin/SanitizeAllow";
+import VisualizationsAdmin from "components/admin/Visualizations/VisualizationsAdmin";
 import FormGeneric from "components/Form/FormGeneric";
 import adminFormsGridConfig from "components/Grid/configs/adminForms";
 import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
@@ -60,6 +61,7 @@ export default [
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
+            { path: "visualizations", component: VisualizationsAdmin },
 
             // user registration route
             {
