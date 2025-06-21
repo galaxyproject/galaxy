@@ -29,6 +29,35 @@ class ToolOutputBaseModel(BaseModel):
     hidden: bool
 
 
+DiscoverViaT = Literal["tool_provided_metadata", "pattern"]
+SortKeyT = Literal["filename", "name", "designation", "dbkey"]
+SortCompT = Literal["lexical", "numeric"]
+
+
+class DatasetCollectionDescription(BaseModel):
+    discover_via: DiscoverViaT
+    format: Optional[str]
+    visible: bool
+    assign_primary_output: bool
+    directory: Optional[str]
+    recurse: bool
+    match_relative_path: bool
+
+
+class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
+    discover_via: Literal["tool_provided_metadata"]
+
+
+class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
+    discover_via: Literal["pattern"]
+    sort_key: SortKeyT
+    sort_comp: SortCompT
+    pattern: str
+
+
+DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
+
+
 class ToolOutputDataset(ToolOutputBaseModel):
     type: Literal["data"]
     format: str
@@ -68,35 +97,6 @@ class ToolOutputFloat(ToolOutputSimple):
 
 class ToolOutputBoolean(ToolOutputSimple):
     type: Literal["boolean"]
-
-
-DiscoverViaT = Literal["tool_provided_metadata", "pattern"]
-SortKeyT = Literal["filename", "name", "designation", "dbkey"]
-SortCompT = Literal["lexical", "numeric"]
-
-
-class DatasetCollectionDescription(BaseModel):
-    discover_via: DiscoverViaT
-    format: Optional[str]
-    visible: bool
-    assign_primary_output: bool
-    directory: Optional[str]
-    recurse: bool
-    match_relative_path: bool
-
-
-class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
-    discover_via: Literal["tool_provided_metadata"]
-
-
-class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
-    discover_via: Literal["pattern"]
-    sort_key: SortKeyT
-    sort_comp: SortCompT
-    pattern: str
-
-
-DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
 
 
 ToolOutputT = Union[
