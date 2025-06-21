@@ -40,16 +40,14 @@ const queryAttributeForceString = function (
         <LoginIndex
             v-else-if="isConfigLoaded"
             id="login-index"
-            :allow-user-creation="config.allow_user_creation"
+            :allow-user-creation="config.allow_local_account_creation"
+            :disable-local-accounts="config.disable_local_accounts"
             :enable-oidc="config.enable_oidc"
-            :mailing-join-addr="config.mailing_join_addr"
-            :prefer-custos-login="config.prefer_custos_login"
             :redirect="queryAttributeForceString(router.currentRoute.query.redirect)"
             :registration-warning-message="config.registration_warning_message"
-            :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"
-            :show-welcome-with-login="config.show_welcome_with_login"
             :show-reset-link="config.enable_account_interface"
+            :show-welcome-with-login="config.show_welcome_with_login"
             :terms-url="config.terms_url"
             :welcome-url="config.welcome_url" />
     </div>

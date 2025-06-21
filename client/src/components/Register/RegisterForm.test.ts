@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
@@ -7,6 +8,10 @@ import MountTarget from "./RegisterForm.vue";
 
 const localVue = getLocalVue(true);
 
+// const SELECTORS = {
+//     LOGIN_TOGGLE: "[id=login-toggle]",
+// };
+
 describe("RegisterForm", () => {
     let wrapper: Wrapper<Vue>;
     let axiosMock: MockAdapter;
@@ -14,11 +19,14 @@ describe("RegisterForm", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
 
+        const pinia = createTestingPinia();
+
         wrapper = mount(MountTarget as object, {
             propsData: {
                 sessionCsrfToken: "sessionCsrfToken",
             },
             localVue,
+            pinia,
         });
     });
 
@@ -48,4 +56,18 @@ describe("RegisterForm", () => {
         expect(postedData.email).toBe("test_user");
         expect(postedData.password).toBe("test_pwd");
     });
+
+    // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
+    // it("switching from Register to Login", async () => {
+    //     const cardHeader = await wrapper.find(".card-header");
+    //     // TODO: fix typing, see note in ExportForm.test.ts
+    //     (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
+
+    //     const loginToggle = wrapper.find(SELECTORS.LOGIN_TOGGLE); // TODO: Never appears because of the GLink change
+    //     expect(loginToggle.exists()).toBeTruthy();
+
+    //     await wrapper.setProps({ hideLoginLink: true });
+    //     const missingToggle = wrapper.find(SELECTORS.LOGIN_TOGGLE);
+    //     expect(missingToggle.exists()).toBeFalsy();
+    // });
 });

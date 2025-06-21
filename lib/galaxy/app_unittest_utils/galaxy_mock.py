@@ -227,7 +227,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         self.activation_grace_period = 0
         self.allow_user_dataset_purge = True
-        self.allow_user_creation = True
+        self.allow_local_account_creation = True
         self.auth_config_file = "config/auth_conf.xml.sample"
         self.custom_activation_email_message = "custom_activation_email_message"
         self.email_domain_allowlist_content = None
