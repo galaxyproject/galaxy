@@ -139,7 +139,7 @@ test = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "roc-validator",
+    "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
     "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
