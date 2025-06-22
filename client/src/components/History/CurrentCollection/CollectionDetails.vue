@@ -17,6 +17,7 @@ defineProps<Props>();
         :name="dsc.name ?? ''"
         :tags="dsc.tags"
         :writeable="writeable"
+        :renameable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:description>
