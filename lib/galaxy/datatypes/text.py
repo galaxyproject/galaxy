@@ -742,7 +742,9 @@ class AuspiceJson(Json):
             with open(file_prefix.filename) as fh:
                 segment_str = fh.read(load_size)
 
-                if segment_str.startswith('{') and all(x in segment_str for x in ["version", "meta", "updated", "panels"]):
+                if segment_str.startswith("{") and all(
+                    x in segment_str for x in ["version", "meta", "updated", "panels"]
+                ):
                     return True
         except Exception:
             pass
