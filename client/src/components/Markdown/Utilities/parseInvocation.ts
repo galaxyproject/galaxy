@@ -26,10 +26,10 @@ export function parseInput(invocation: Invocation, name: string | undefined) {
 }
 
 export function parseOutput(invocation: Invocation, name: string | undefined) {
-    if (name && invocation.outputs) {
-        const output = invocation.outputs[name];
-        return output?.id;
+    if (!name) {
+        return undefined
     }
+    return invocation.outputs[name]?.id || invocation.output_collections[name]?.id
 }
 
 export function parseStep(invocation: Invocation, name: string | undefined) {
