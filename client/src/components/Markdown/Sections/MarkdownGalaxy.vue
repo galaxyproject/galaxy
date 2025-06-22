@@ -14,6 +14,7 @@ import { useConfig } from "@/composables/config";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
+import DatasetCollectionElementPicker from "./Elements/DatasetCollectionElementPicker.vue";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
@@ -240,10 +241,22 @@ watch(
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
             <VisualizationWrapper
-                v-else-if="name == 'visualization'"
+                v-else-if="name == 'visualization' && !args.history_dataset_collection_id"
                 :name="args.visualization_id"
                 :config="{ dataset_id: args.history_dataset_id }"
                 :height="args.height && parseInt(args.height)" />
+            <DatasetCollectionElementPicker
+                v-else-if="name == 'visualization'"
+                :hdca-id="args.history_dataset_collection_id">
+                <template v-slot:element="{ element }">
+                    <VisualizationWrapper
+                        v-if="element"
+                        :key="element"
+                        :name="args.visualization_id"
+                        :config="{ dataset_id: element }"
+                        :height="args.height && parseInt(args.height)" />
+                </template>
+            </DatasetCollectionElementPicker>
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
