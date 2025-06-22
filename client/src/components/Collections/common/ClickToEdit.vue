@@ -67,8 +67,10 @@ function revertToOriginal() {
             v-model="localValue"
             class="w-100 input-with-icon"
             tabindex="0"
+            title="Press enter/return to save, esc to revert changes"
             contenteditable
             max-rows="4"
+            aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
