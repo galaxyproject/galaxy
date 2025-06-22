@@ -21,6 +21,8 @@ const INVOCATION = {
         output_1: {
             id: "output_id_1",
         },
+    },
+    output_collections: {
         output_2: {
             id: "output_id_2",
         },
