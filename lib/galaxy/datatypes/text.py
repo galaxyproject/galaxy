@@ -736,13 +736,13 @@ class AuspiceJson(Json):
 
     def _looks_like_is_auspicejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
         """
-        Expects 'meta', 'tree', and 'nodes' to be present as keys in the JSON structure.
+        Expects JSON to start with { and 'meta', 'tree', 'updated' and 'nodes' to be present as keys in the JSON structure.
         """
         try:
             with open(file_prefix.filename) as fh:
                 segment_str = fh.read(load_size)
 
-                if all(x in segment_str for x in ["version", "meta", "updated", "panels"]):
+                if segment_str.startswith('{') and all(x in segment_str for x in ["version", "meta", "updated", "panels"]):
                     return True
         except Exception:
             pass
