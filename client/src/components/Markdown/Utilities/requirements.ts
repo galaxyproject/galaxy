@@ -61,5 +61,10 @@ export function hasValidName(name: string | undefined) {
 
 export function hasValidObject(name: string | undefined, args: Record<string, string>): boolean {
     const requiredObject = getRequiredObject(name);
+    if (requiredObject === "history_dataset_id" && args.history_dataset_collection_id) {
+        // accept a collection where a dataset is expected.
+        // we don't control this anyway
+        return true;
+    }
     return !requiredObject || !!args[requiredObject];
 }
