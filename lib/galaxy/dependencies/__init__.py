@@ -325,9 +325,13 @@ class ConditionalDependencies:
         celery_conf = self.config.get("celery_conf") or {}
         celery_result_backend = celery_conf.get("result_backend") or ""
         celery_broker_url = celery_conf.get("broker_url") or ""
-        return (
-            celery_enabled and celery_result_backend.startswith("redis://") or celery_broker_url.startswith("redis://")
-        )
+
+        def is_redis_url(url: str) -> bool:
+            # https://docs.celeryq.dev/en/stable/userguide/configuration.html#conf-redis-result-backend
+            protocol = url.split("://")[0]
+            return protocol in {"redis", "rediss", "redis+socket", "socket"}
+
+        return celery_enabled and is_redis_url(celery_result_backend) or is_redis_url(celery_broker_url)
 
 
 def optional(config_file=None):
