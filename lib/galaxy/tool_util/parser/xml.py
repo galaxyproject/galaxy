@@ -1353,6 +1353,9 @@ class XmlInputSource(InputSource):
     def parse_input_type(self):
         return self.input_type
 
+    def parse_extensions(self):
+        return [extension.strip().lower() for extension in self.get("format", "data").split(",")]
+
     def elem(self):
         return self.input_elem
 
