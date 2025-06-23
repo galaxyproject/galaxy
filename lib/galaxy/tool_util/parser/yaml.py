@@ -395,7 +395,10 @@ class YamlInputSource(InputSource):
             return "param"
 
     def parse_extensions(self):
-        return [ext.strip().lower() for ext in self.input_dict.get("extensions", ["data"])]
+        extensions = self.input_dict.get("extensions")
+        if not extensions:
+            extensions = self.get("format", "data").split(",")
+        return [ext.strip().lower() for ext in extensions]
 
     def parse_nested_inputs_source(self):
         assert self.parse_input_type() == "repeat"
