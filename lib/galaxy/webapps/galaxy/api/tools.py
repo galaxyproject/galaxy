@@ -361,7 +361,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         except exceptions.MessageException:
             raise
         except Exception:
-            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+            msg = "Error: Could not convert toolbox to dictionary"
+            log.exception(msg)
+            raise exceptions.InternalServerError(msg)
 
     @expose_api_anonymous_and_sessionless
     def panel_views(self, trans: GalaxyWebTransaction, **kwds):
