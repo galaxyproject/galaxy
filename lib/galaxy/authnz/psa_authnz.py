@@ -145,6 +145,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
+        self.config["accepted_audiences"] = oidc_backend_config.get("accepted_audiences")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
         if oidc_backend_config.get("oidc_endpoint"):
             self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
