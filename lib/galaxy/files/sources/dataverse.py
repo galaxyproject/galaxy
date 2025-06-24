@@ -79,7 +79,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self.repository: DataverseRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return "dataverse"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else self.plugin_type
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
