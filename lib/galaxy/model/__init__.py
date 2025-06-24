@@ -5473,6 +5473,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     extension: Mapped[str]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[List["HistoryDatasetAssociationTagAssociation"]]
+    copied_to_history_dataset_associations: Mapped[List["HistoryDatasetAssociation"]]
 
     def __init__(
         self,
@@ -5560,6 +5561,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
         self.copied_from_history_dataset_association_id = other_hda.id
+        for copied_hda in self.copied_to_history_dataset_associations:
+            copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
+
         if old_dataset:
             old_dataset.full_delete()
 
