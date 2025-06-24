@@ -49,6 +49,7 @@ FileSourceTemplateType = Literal[
     "inveniordm",
     "zenodo",
     "rspace",
+    "dataverse",
 ]
 
 
@@ -282,6 +283,24 @@ class RSpaceFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class DataverseFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["dataverse"]
+    url: Union[str, TemplateExpansion]
+    public_name: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class DataverseFileSourceConfiguration(StrictModel):
+    type: Literal["dataverse"]
+    url: str
+    public_name: str
+    token: str
+    writable: bool = True
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
@@ -296,6 +315,7 @@ FileSourceTemplateConfiguration = Annotated[
         InvenioFileSourceTemplateConfiguration,
         ZenodoFileSourceTemplateConfiguration,
         RSpaceFileSourceTemplateConfiguration,
+        DataverseFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -314,6 +334,7 @@ FileSourceConfiguration = Annotated[
         InvenioFileSourceConfiguration,
         ZenodoFileSourceConfiguration,
         RSpaceFileSourceConfiguration,
+        DataverseFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -390,6 +411,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "inveniordm": InvenioFileSourceConfiguration,
     "zenodo": ZenodoFileSourceConfiguration,
     "rspace": RSpaceFileSourceConfiguration,
+    "dataverse": DataverseFileSourceConfiguration,
 }
 
 

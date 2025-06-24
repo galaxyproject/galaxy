@@ -62,6 +62,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a remote file source that connects with the Gallery of an RSpace instance.",
     },
+    dataverse: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a Dataverse.org instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {
