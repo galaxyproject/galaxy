@@ -84,7 +84,7 @@ humanfriendly==10.0
 idna==3.10
 importlib-metadata==8.7.0 ; python_full_version < '3.10'
 importlib-resources==6.5.2 ; python_full_version < '3.12'
-isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@85b28b25c12e41debb3ae3d117dabf1b8c9760da
+isa-rwval==0.10.11
 isal==1.7.2
 isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
@@ -118,6 +118,7 @@ numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'
 numpy==2.3.0 ; python_full_version >= '3.11'
 oauthlib==3.2.2
+openpyxl==3.1.5
 orjson==3.10.18
 oyaml==1.0
 packaging==24.2 ; python_full_version < '3.10'

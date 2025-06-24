@@ -18,7 +18,6 @@ from . import VisualizationsBase_TestCase
 
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
-additional_templates_dir = os.path.join(glx_dir, "config", "plugins", "visualizations", "common", "templates")
 vis_reg_path = "config/plugins/visualizations"
 
 config1 = """\
@@ -70,7 +69,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
 
         expected_plugins_path = os.path.join(glx_dir, vis_reg_path)
         assert plugin_mgr.base_url == "visualizations"
-        assert plugin_mgr.directories == [expected_plugins_path]
+        assert expected_plugins_path in plugin_mgr.directories
 
         example = plugin_mgr.plugins["example"]
         assert example.name == "example"
@@ -112,7 +111,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         expected_plugin_names = ["vis1", "vis2"]
 
         assert plugin_mgr.base_url == "visualizations"
-        assert plugin_mgr.directories == [expected_plugins_path]
+        assert expected_plugins_path in plugin_mgr.directories
         assert sorted(plugin_mgr.plugins.keys()) == expected_plugin_names
 
         vis1 = plugin_mgr.plugins["vis1"]
@@ -174,7 +173,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert script_entry.serves_templates
 
         trans = galaxy_mock.MockTrans()
-        script_entry._set_up_template_plugin(mock_app_dir.root_path, [additional_templates_dir])
         response = script_entry.render(trans=trans, embedded=True)
         assert '<script type="module" src="mysrc">' in response
         assert '<link rel="stylesheet" href="mycss">' in response

@@ -364,11 +364,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         stmt = select(Job).where(Job.history == history).where(Job.state.in_(Job.non_ready_states))
         return self.session().scalars(stmt)
 
-    def queue_history_import(self, trans, archive_type, archive_source):
+    def queue_history_import(self, trans, archive_type, archive_source, target_history=None):
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool("__IMPORT_HISTORY__")
         incoming = {"__ARCHIVE_SOURCE__": archive_source, "__ARCHIVE_TYPE__": archive_type}
-        job, *_ = history_imp_tool.execute(trans, incoming=incoming)
+        job, *_ = history_imp_tool.execute(trans, incoming=incoming, history=target_history)
         trans.app.job_manager.enqueue(job, tool=history_imp_tool)
         return job
 

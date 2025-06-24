@@ -42,23 +42,23 @@ clean-pyc:
 clean-tests:
 	rm -fr .tox/
 
+# Removing .venv instead of $(VENV) is intentional, because we can't guarantee we created $(VENV)
 clean-web-client:
 	rm -rf .venv
 	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then virtualenv $(VENV); exit; fi;
+	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
 	$(IN_VENV) pip install -r dev-requirements.txt
 
 test:
 	$(IN_VENV) pytest $(TESTS)
 
-dist: clean $(VENV) galaxy/web_client/client_build_hash.txt
+dist: clean $(VENV)/bin/yarn galaxy/web_client/client_build_hash.txt
 	$(IN_VENV) python -m build
 	ls -l dist
 
-$(VENV):
-	python3 -m venv $(VENV)
+$(VENV)/bin/yarn: setup-venv
 	$(IN_VENV) pip install build nodeenv
 	$(IN_VENV) nodeenv -n $(shell cat ../../client/.node_version) -p
 	$(IN_VENV) npm install --global yarn

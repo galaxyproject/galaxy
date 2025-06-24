@@ -31,6 +31,8 @@ jobs:
     if: github.repository_owner == 'galaxyproject'
     name: Build and Publish to NPM
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Read Node.js version

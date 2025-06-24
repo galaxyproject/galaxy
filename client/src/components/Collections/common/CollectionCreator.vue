@@ -36,7 +36,6 @@ interface Props {
     showButtons?: boolean;
     collectionName: string;
     mode: "wizard" | "modal";
-    canRenameElements?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,14 +46,12 @@ const props = withDefaults(defineProps<Props>(), {
     collectionType: undefined,
     showButtons: true,
     mode: "modal",
-    canRenameElements: false,
 });
 
 const emit = defineEmits<{
     (e: "on-update-collection-name", name: string): void;
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
-    (e: "clicked-rename"): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
     (e: "on-update-datatype-toggle", value: "all" | "datatype" | "ext"): void;
     (e: "add-uploaded-files", value: HDASummary[]): void;
@@ -199,11 +196,9 @@ watch(
                         <CollectionCreatorFooterButtons
                             v-if="showButtons"
                             :short-what-is-being-created="shortWhatIsBeingCreated"
-                            :can-rename-elements="props.canRenameElements"
                             :valid-input="validInput"
                             @clicked-cancel="cancelCreate"
-                            @clicked-create="emit('clicked-create', collectionName)"
-                            @clicked-rename="emit('clicked-rename')" />
+                            @clicked-create="emit('clicked-create', collectionName)" />
                     </div>
                 </div>
             </BTab>

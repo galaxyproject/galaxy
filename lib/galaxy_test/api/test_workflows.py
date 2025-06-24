@@ -1930,6 +1930,128 @@ steps:
                 == "1 2 34 5 6"
             )
 
+    @skip_without_tool("implicit_conversion_format_input")
+    def test_run_workflow_from_url_with_implicit_conversion_on_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_fastq_gz: collection
+outputs:
+  convert_out:
+    outputSource: convert_input/output1
+steps:
+  convert_input:
+    tool_id: implicit_conversion_format_input
+    in:
+      input1: input_fastq_gz
+    """
+            )
+            base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
+            deferred = False
+            inputs = {
+                "input_fastq_gz": {
+                    "src": "url",
+                    "url": base64_url,
+                    "ext": "fastq.gz",
+                    "deferred": deferred,
+                },
+            }
+            workflow_request = dict(
+                history=f"hist_id={history_id}",
+            )
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request, assert_ok=False
+            ).json()["id"]
+            invocation_details = self._invocation_details(workflow_id, invocation_id)
+            if "convert_out" not in invocation_details["outputs"]:
+                raise AssertionError(f"Expected 'convert_out' in outputs, but it was not found. {invocation_details}")
+            convert_out_hda = invocation_details["outputs"]["convert_out"]
+            dataset_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id, content_id=convert_out_hda["id"]
+            )
+            assert (
+                "gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCC"
+                in dataset_content
+            )
+
+    @skip_without_tool("implicit_conversion_format_input")
+    def test_run_workflow_from_urls_with_implicit_conversion_on_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_fastq_gz: File
+outputs:
+  convert_out:
+    outputSource: convert_input/output1
+steps:
+  convert_input:
+    tool_id: implicit_conversion_format_input
+    in:
+      input1: input_fastq_gz
+    """
+            )
+            base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
+            deferred = False
+            inputs = {
+                "input_fastq_gz": {
+                    "class": "Collection",
+                    "collection_type": "paired",
+                    "elements": [
+                        {
+                            "class": "File",
+                            "identifier": "forward",
+                            "url": base64_url,
+                            "ext": "fastq.gz",
+                            "deferred": deferred,
+                        },
+                        {
+                            "class": "File",
+                            "identifier": "reverse",
+                            "url": base64_url,
+                            "ext": "fastq.gz",
+                            "deferred": deferred,
+                        },
+                    ],
+                },
+            }
+            workflow_request = dict(
+                history=f"hist_id={history_id}",
+            )
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request, assert_ok=False
+            ).json()["id"]
+            invocation_details = self._invocation_details(workflow_id, invocation_id)
+            if "convert_out" not in invocation_details["output_collections"]:
+                raise AssertionError(f"Expected 'convert_out' in outputs, but it was not found. {invocation_details}")
+            convert_out_hdca = invocation_details["output_collections"]["convert_out"]
+            replaced_hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=convert_out_hdca["id"], assert_ok=True
+            )
+            forward_hda = replaced_hdca["elements"][0]["object"]
+            reverse_hda = replaced_hdca["elements"][1]["object"]
+            forward_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id, content_id=forward_hda["id"]
+            )
+            reverse_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id, content_id=reverse_hda["id"]
+            )
+            assert (
+                "gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCC"
+                in forward_content
+            )
+            assert (
+                "gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCC"
+                in reverse_content
+            )
+
     def __run_cat_workflow(self, inputs_by, history_id: Optional[str] = None):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         workflow["steps"]["0"]["uuid"] = str(uuid4())
