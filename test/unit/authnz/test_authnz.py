@@ -82,11 +82,8 @@ def test_parse_backend_config(mock_app):
     }
     oidc_contents, oidc_path = create_oidc_config()
     backend_contents, backend_path = create_backend_config(provider_name="oidc", **config_values)
-    print(backend_contents)
     manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
     assert isinstance(manager.oidc_backends_config["oidc"], dict)
-    print(manager.oidc_backends_config["oidc"])
-    print(mock_app.config.oidc["oidc"])
     parsed = manager.oidc_backends_config["oidc"]
     assert parsed["url"] == config_values["url"]
     assert parsed["client_id"] == config_values["client_id"]
