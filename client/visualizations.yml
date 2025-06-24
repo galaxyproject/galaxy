@@ -39,6 +39,9 @@ jupyterlite:
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
+locuszoom:
+    package: "@galaxyproject/locuszoom"
+    version: 0.0.6
 molstar:
     package: "@galaxyproject/molstar"
     version: 0.0.2
