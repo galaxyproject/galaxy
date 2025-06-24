@@ -1892,7 +1892,7 @@ class BaseDataToolParameter(ToolParameter):
         """
         Build list of classes for supported data formats
         """
-        self.extensions = [extension.strip().lower() for extension in input_source.get("format", "data").split(",")]
+        self.extensions = input_source.parse_extensions()
         formats = []
         if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
             for extension in self.extensions:

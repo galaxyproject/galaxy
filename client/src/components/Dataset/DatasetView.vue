@@ -66,6 +66,10 @@ const isImageDataset = computed(() => {
     ]);
 });
 
+const isPdfDataset = computed(() => {
+    return dataset.value?.file_ext === "pdf";
+});
+
 // Watch for changes to the dataset to fetch datatype info
 watch(
     () => dataset.value?.file_ext,
@@ -175,6 +179,11 @@ watch(
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
+            <CenterFrame
+                v-else-if="isPdfDataset"
+                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :is-preview="true"
+                @load="iframeLoading = false" />
             <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
@@ -197,7 +206,12 @@ watch(
                 @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'raw'" class="h-100">
-            <div v-if="isAutoDownloadType" class="auto-download-message p-4">
+            <CenterFrame
+                v-if="isPdfDataset"
+                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :is-preview="true"
+                @load="iframeLoading = false" />
+            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
