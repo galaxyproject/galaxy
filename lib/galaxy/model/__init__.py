@@ -127,6 +127,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
     relationship,
+    remote,
     validates,
 )
 from sqlalchemy.orm.attributes import flag_modified
@@ -11950,15 +11951,34 @@ mapper_registry.map_imperatively(
             lazy="joined",
             back_populates="history_associations",
         ),
-        copied_from_history_dataset_association=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
-                == HistoryDatasetAssociation.table.c.id
+        copied_to_history_dataset_associations=relationship(
+            "HistoryDatasetAssociation",
+            primaryjoin=lambda: and_(
+                HistoryDatasetAssociation.id
+                == remote(HistoryDatasetAssociation.copied_from_history_dataset_association_id),
+                # Include dataset_id, not technically necessary but allows filtering early
+                # and avoid the need for an index on copied_from_history_dataset_association_id
+                HistoryDatasetAssociation.dataset_id == remote(HistoryDatasetAssociation.dataset_id),
             ),
-            remote_side=[HistoryDatasetAssociation.table.c.id],
-            uselist=False,
+            remote_side=lambda: [
+                HistoryDatasetAssociation.copied_from_history_dataset_association_id,
+                HistoryDatasetAssociation.dataset_id,
+            ],
+            back_populates="copied_from_history_dataset_association",
+        ),
+        copied_from_history_dataset_association=relationship(
+            "HistoryDatasetAssociation",
+            primaryjoin=lambda: and_(
+                HistoryDatasetAssociation.copied_from_history_dataset_association_id
+                == remote(HistoryDatasetAssociation.id),
+                HistoryDatasetAssociation.dataset_id == remote(HistoryDatasetAssociation.dataset_id),
+            ),
+            remote_side=lambda: [
+                HistoryDatasetAssociation.id,
+                HistoryDatasetAssociation.dataset_id,
+            ],
             back_populates="copied_to_history_dataset_associations",
+            uselist=False,
         ),
         copied_from_library_dataset_dataset_association=relationship(
             LibraryDatasetDatasetAssociation,
@@ -11967,14 +11987,6 @@ mapper_registry.map_imperatively(
                 == HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
             ),
             back_populates="copied_to_history_dataset_associations",
-        ),
-        copied_to_history_dataset_associations=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
-                == HistoryDatasetAssociation.table.c.id
-            ),
-            back_populates="copied_from_history_dataset_association",
         ),
         copied_to_library_dataset_dataset_associations=relationship(
             LibraryDatasetDatasetAssociation,
