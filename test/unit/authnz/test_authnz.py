@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from typing import Tuple
 from unittest.mock import MagicMock
 
 import pytest
@@ -38,7 +39,7 @@ OIDC_CONFIG_TEMPLATE = """
 """
 
 
-def create_oidc_config(extra_properties: str = "") -> (str, Path):
+def create_oidc_config(extra_properties: str = "") -> Tuple[str, str]:
     contents = OIDC_CONFIG_TEMPLATE.format(extra_properties=extra_properties)
     file = tempfile.NamedTemporaryFile(mode="w", delete=False)
     file.write(contents)
@@ -54,7 +55,7 @@ def create_backend_config(
     require_create_confirmation="false",
     accepted_audiences="https://audience.example.com",
     username_key="custom_username",
-) -> (str, Path):
+) -> Tuple[str, str]:
     contents = OIDC_BACKEND_CONFIG_TEMPLATE.format(
         provider_name=provider_name,
         url=url,
