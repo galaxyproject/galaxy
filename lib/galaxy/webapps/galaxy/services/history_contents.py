@@ -483,7 +483,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def prepare_collection_download(self, trans, id: DecodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         dataset_collection_instance = self.__get_accessible_collection(trans, id)
-        archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}"
+        archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}.zip"
         short_term_storage_target = self.short_term_storage_allocator.new_target(
             filename=archive_name, mime_type="application/x-zip-compressed"
         )
