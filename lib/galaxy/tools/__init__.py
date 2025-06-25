@@ -117,9 +117,9 @@ from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
-    LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util.version_util import AnyVersionT
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     HelpContent,
@@ -372,8 +372,8 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
 
 
 class safe_update(NamedTuple):
-    min_version: Union[LegacyVersion, Version]
-    current_version: Union[LegacyVersion, Version]
+    min_version: AnyVersionT
+    current_version: AnyVersionT
 
 
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
