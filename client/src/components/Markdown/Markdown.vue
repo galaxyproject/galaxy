@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { parseMarkdown } from "./parse";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
@@ -75,6 +76,10 @@ function initConfig() {
     }
 }
 
+function onDirectGeneratePDF() {
+    window.location.assign(props.downloadEndpoint);
+}
+
 // Watchers
 watch(() => props.markdownConfig, initConfig);
 
@@ -94,16 +99,30 @@ onMounted(() => {
                         {{ pageTitle }}
                     </Heading>
                     <div>
-                        <StsDownloadButton
-                            v-if="effectiveExportLink"
-                            class="markdown-pdf-export"
-                            :fallback-url="exportLink"
-                            :download-endpoint="downloadEndpoint"
-                            size="small"
-                            title="Generate PDF"
-                            color="blue"
-                            :direct-download-link="directDownloadLink"
-                            outline />
+                        <template v-if="effectiveExportLink">
+                            <GButton
+                                v-if="directDownloadLink"
+                                tooltip
+                                title="Generate PDF"
+                                size="small"
+                                color="blue"
+                                outline
+                                @click="onDirectGeneratePDF">
+                                Generate PDF
+                                <FontAwesomeIcon :icon="faDownload" />
+                            </GButton>
+
+                            <StsDownloadButton
+                                v-else
+                                class="markdown-pdf-export"
+                                :fallback-url="exportLink"
+                                :download-endpoint="downloadEndpoint"
+                                size="small"
+                                title="Generate PDF"
+                                color="blue"
+                                outline />
+                        </template>
+
                         <BButton
                             v-if="!readOnly"
                             v-b-tooltip.hover

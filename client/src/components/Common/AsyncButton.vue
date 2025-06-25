@@ -42,6 +42,7 @@ async function onClick() {
         :color="color"
         :transparent="transparent"
         :disabled="loading || disabled"
+        :outline="outline"
         @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" />
         <FontAwesomeIcon v-else :icon="props.icon" fixed-width />
