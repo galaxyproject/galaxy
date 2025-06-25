@@ -3086,6 +3086,17 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      oidc_auth_pipeline:
+        type: seq
+        required: false
+        desc: |
+          Sets the sequence of steps that Python Social Auth goes
+          through when authenticating an OIDC login. By default,
+          Galaxy uses galaxy.authnz.psa_authnz.AUTH_PIPELINE - see
+          there for example steps.
+          Each element should be an import path to a function,
+          e.g. galaxy.authnz.psa_authnz.contains_required_data
+
       oidc_scope_prefix:
         type: str
         default: https://galaxyproject.org/api
