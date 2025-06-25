@@ -142,6 +142,7 @@ __all__ = (
     "RepeatParameterModel",
     "RawStateDict",
     "ValidationFunctionT",
+    "is_optional",
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_landing_request",
