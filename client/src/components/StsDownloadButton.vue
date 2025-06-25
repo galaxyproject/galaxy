@@ -68,6 +68,10 @@ export default {
             type: String,
             default: "medium",
         },
+        directDownloadLink: {
+            type: Boolean,
+            default: false,
+        },
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
@@ -94,10 +98,14 @@ export default {
                 window.open(withPrefix(this.fallbackUrl));
             } else {
                 this.waiting = true;
-                axios
-                    .post(this.downloadEndpoint, this.postParameters)
-                    .then(this.handleInitialize)
-                    .catch(this.handleError);
+                if (this.directDownloadLink) {
+                    window.location.assign(withPrefix(this.downloadEndpoint));
+                } else {
+                    axios
+                        .post(this.downloadEndpoint, this.postParameters)
+                        .then(this.handleInitialize)
+                        .catch(this.handleError);
+                }
             }
         },
         handleInitialize(response) {

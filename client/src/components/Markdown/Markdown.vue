@@ -31,6 +31,7 @@ const props = defineProps<{
     readOnly?: boolean;
     exportLink?: string;
     showIdentifier?: boolean;
+    directDownloadLink?: boolean;
 }>();
 
 // Refs and data
@@ -101,6 +102,7 @@ onMounted(() => {
                             size="small"
                             title="Generate PDF"
                             color="blue"
+                            :direct-download-link="directDownloadLink"
                             outline />
                         <BButton
                             v-if="!readOnly"
