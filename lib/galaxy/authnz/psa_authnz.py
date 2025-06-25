@@ -115,7 +115,7 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name(key)] = value
 
         self.config[setting_name("USER_MODEL")] = "models.User"
-        self.config["SOCIAL_AUTH_PIPELINE"] = AUTH_PIPELINE
+        self.config["SOCIAL_AUTH_PIPELINE"] = oidc_config.get("AUTH_PIPELINE", AUTH_PIPELINE)
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
 
