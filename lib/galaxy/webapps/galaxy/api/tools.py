@@ -55,7 +55,12 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     ToolRequestDetailedModel,
 )
-from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters import (
+    LandingRequestToolState,
+    RequestToolState,
+    TestCaseToolState,
+    ToolParameterT,
+)
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
@@ -90,6 +95,7 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    json_schema_response_for_tool_state_model,
     LandingUuidPathParam,
     Router,
 )
@@ -363,6 +369,62 @@ class FetchTools:
         uuid: UUID4 = LandingUuidPathParam,
     ) -> ToolLandingRequest:
         return self.landing_manager.get_tool_landing_request(trans, uuid)
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_request_schema",
+        operation_id="tools__parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",
+        description="The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.",
+    )
+    def tool_state_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            RequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_landing_request_schema",
+        operation_id="tools__parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            LandingRequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_test_case_xml_schema",
+        operation_id="tools__parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            TestCaseToolState,
+            inputs,
+        )
+
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
