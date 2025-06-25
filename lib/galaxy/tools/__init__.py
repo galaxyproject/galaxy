@@ -80,6 +80,10 @@ from galaxy.tool_util.ontologies.ontology_data import (
     expand_ontology_data,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tool_util.parameters import (
+    input_models_for_pages,
+    ToolParameterBundle,
+)
 from galaxy.tool_util.parser import (
     get_tool_source,
     RequiredFiles,
@@ -1001,7 +1005,7 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys):
+class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1693,6 +1697,11 @@ class Tool(UsesDictVisibleKeys):
         self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
+        try:
+            parameters = input_models_for_pages(pages, self.profile)
+            self.parameters = parameters
+        except Exception:
+            pass
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem

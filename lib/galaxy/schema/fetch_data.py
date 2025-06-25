@@ -14,6 +14,7 @@ from pydantic import (
     Field,
     field_validator,
     Json,
+    TypeAdapter,
 )
 from typing_extensions import (
     Annotated,
@@ -200,7 +201,9 @@ CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
-    elements: List[Union["AnyElement", "NestedElement"]] = Field(..., validation_alias=AliasChoices("elements", "items"))
+    elements: List[Union["AnyElement", "NestedElement"]] = Field(
+        ..., validation_alias=AliasChoices("elements", "items")
+    )
 
 
 AnyElement = Annotated[
@@ -282,6 +285,9 @@ Targets = List[
 ]
 
 
+TargetsAdapter = TypeAdapter(Targets)
+
+
 class FetchDataPayload(BaseDataPayload):
     targets: Targets
 
@@ -296,10 +302,8 @@ class DataLandingRequestState(Model):
 
 # Vaguely matches the schema.schema.ToolLandingState but we don't allow data_fetch to be called directly
 # via the tool API so we have a more specific model here.
-class DataLandingPayload(Model):
-    tool_id: str
-    tool_version: Optional[str] = None
-    request_state: DataLandingRequestState = None
+class CreateDataLandingPayload(Model):
+    request_state: DataLandingRequestState
     client_secret: Optional[str] = None
     public: bool = False
 
