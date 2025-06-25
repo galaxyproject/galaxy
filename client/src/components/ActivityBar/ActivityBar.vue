@@ -98,9 +98,20 @@ const emit = defineEmits<{
 // activities from store
 const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
-const activities = computed(() =>
-    storeActivities.value.filter((activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value)
-);
+const activities = computed({
+    get() {
+        return storeActivities.value.filter(
+            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value
+        );
+    },
+    set(newActivities: Activity[]) {
+        // Find any filtered-out activities and add them back
+        const filteredOut = storeActivities.value.filter(
+            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value
+        );
+        storeActivities.value = [...newActivities, ...filteredOut];
+    },
+});
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -219,7 +230,7 @@ defineExpose({
             @dragleave.prevent="onDragLeave">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
-                    :list="activities"
+                    v-model="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :disabled="!canDrag"
                     :force-fallback="true"
