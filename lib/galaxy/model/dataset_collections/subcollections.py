@@ -1,8 +1,23 @@
+from typing import (
+    List,
+    TYPE_CHECKING,
+    Union,
+)
+
 from galaxy import exceptions
 from .adapters import PromoteCollectionElementToCollectionAdapter
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionElement,
+        HistoryDatasetCollectionAssociation,
+    )
 
-def split_dataset_collection_instance(dataset_collection_instance, collection_type):
+
+def split_dataset_collection_instance(
+    dataset_collection_instance: "HistoryDatasetCollectionAssociation", collection_type: str
+) -> List["DatasetCollectionElement"]:
     """Split up collection into collection."""
     return _split_dataset_collection(dataset_collection_instance.collection, collection_type)
 
@@ -16,13 +31,18 @@ def _is_a_subcollection_type(this_collection_type: str, collection_type: str):
     return True
 
 
-def _split_dataset_collection(dataset_collection, collection_type):
+SplitReturnType = List[Union["DatasetCollectionElement", "PromoteCollectionElementToCollectionAdapter"]]
+
+
+def _split_dataset_collection(
+    dataset_collection: "DatasetCollection", collection_type: str
+) -> SplitReturnType:
     this_collection_type = dataset_collection.collection_type
     is_this_collection_nested = ":" in this_collection_type
     if not _is_a_subcollection_type(this_collection_type, collection_type):
         raise exceptions.MessageException("Cannot split collection in desired fashion.")
 
-    split_elements = []
+    split_elements: SplitReturnType = []
     for element in dataset_collection.elements:
         if not is_this_collection_nested and collection_type == "single_datasets":
             split_elements.append(PromoteCollectionElementToCollectionAdapter(element))
