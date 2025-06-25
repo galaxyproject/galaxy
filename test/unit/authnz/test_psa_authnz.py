@@ -1,4 +1,5 @@
 import base64
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -202,3 +203,20 @@ def test_decode_access_token_invalid_audience():
         decode_access_token(social=mock_social, backend=mock_backend)
 
 
+def test_decode_access_token_opaque_token():
+    """
+    Test that when the access token is opaque (e.g.
+    those returned by Google Auth), we don't decode
+    and just return None
+    """
+    def generate_google_style_token():
+        prefix = "ya29"
+        part1 = secrets.token_urlsafe(32)
+        part2 = secrets.token_urlsafe(64)
+        return f"{prefix}.{part1}{part2}"
+
+    opaque_token = generate_google_style_token()
+    mock_social = MagicMock()
+    mock_social.extra_data.get.return_value = opaque_token
+    result = decode_access_token(social=mock_social, backend=MagicMock())
+    assert result["access_token"] == None
