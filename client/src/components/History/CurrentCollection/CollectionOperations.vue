@@ -5,6 +5,8 @@ import { useRouter } from "vue-router/composables";
 import type { HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
+import StsDownloadButton from "@/components/StsDownloadButton.vue";
+
 const router = useRouter();
 
 const props = defineProps<{
@@ -12,6 +14,9 @@ const props = defineProps<{
 }>();
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
+const asyncDownloadUrl = computed(() => {
+    return `${getAppRoot()}api/dataset_collections/${props.dsc.id}/prepare_download`;
+});
 const rerunUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null
 );
@@ -19,26 +24,19 @@ const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null
 );
 const disableDownload = props.dsc.populated_state !== "ok";
-
-function onDownload() {
-    window.location.href = downloadUrl.value;
-}
 </script>
 <template>
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
             <b-button-group>
-                <b-button
-                    title="Download Collection"
-                    :disabled="disableDownload"
-                    class="rounded-0 text-decoration-none"
-                    size="sm"
-                    variant="link"
-                    :href="downloadUrl"
-                    @click="onDownload">
-                    <Icon class="mr-1" icon="download" />
-                    <span>Download</span>
-                </b-button>
+                <StsDownloadButton
+                    v-if="!disableDownload"
+                    :fallback-url="downloadUrl"
+                    :download-endpoint="asyncDownloadUrl"
+                    size="small"
+                    title="Download Collection as Zip"
+                    color="blue"
+                    outline />
                 <b-button
                     v-if="showCollectionDetailsUrl"
                     class="collection-job-details-btn px-1"
