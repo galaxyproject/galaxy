@@ -1,3 +1,4 @@
+from galaxy.tool_util_models._types import is_optional
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ColorParameterModel,
