@@ -8,6 +8,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from galaxy import (
@@ -16,12 +17,14 @@ from galaxy import (
 )
 from galaxy.model import (
     DatasetCollectionElement,
+    DatasetInstance,
     HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
+from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.util.permutations import (
     build_combos,
     input_classification,
@@ -333,9 +336,18 @@ def split_inputs_nested(inputs, nested_dict, classifier):
     return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
 
 
+CollectionExpansionListT = Union[
+    List[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]], List[DatasetInstance]
+]
+
+
 def __expand_collection_parameter(
-    trans: WorkRequestContext, input_key, incoming_val, collections_to_match, linked=False
-):
+    trans: WorkRequestContext,
+    input_key,
+    incoming_val,
+    collections_to_match: "matching.CollectionsToMatch",
+    linked=False,
+) -> CollectionExpansionListT:
     # If subcollectin multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
@@ -365,7 +377,7 @@ def __expand_collection_parameter(
         subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
         return subcollection_elements
     else:
-        hdas = []
+        hdas: List[DatasetInstance] = []
         for element in collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
@@ -373,7 +385,7 @@ def __expand_collection_parameter(
         return hdas
 
 
-def __collection_multirun_parameter(value):
+def __collection_multirun_parameter(value: Dict[str, Any]) -> bool:
     is_batch = value.get("batch", False)
     if not is_batch:
         return False
