@@ -28,4 +28,5 @@ export interface ResponseVal {
     jobDef: JobDef;
     jobResponse: JobResponse;
     toolName: string;
+    usedToolRequest: boolean;
 }
