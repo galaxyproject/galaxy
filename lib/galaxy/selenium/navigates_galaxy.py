@@ -1830,8 +1830,6 @@ class NavigatesGalaxy(HasDriver):
         button = selection_component.option_card_select(object_store_id=storage_id)
         if button:
             button.wait_for_and_click()
-        if self.find_element_by_selector(".btn-primary"):
-            self.find_element_by_selector(".btn-primary").click()
         if not selection_component.confirm_button.is_absent:
             selection_component.confirm_button.wait_for_and_click()
         selection_component.option_cards.wait_for_absent_or_hidden()
