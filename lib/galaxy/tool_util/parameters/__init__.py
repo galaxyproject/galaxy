@@ -34,7 +34,6 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterModel,
     ToolParameterT,
 )
-from galaxy.tool_util_models._types import is_optional
 from .case import (
     test_case_state,
     validate_test_cases_for_tool_source,
