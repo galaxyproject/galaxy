@@ -155,6 +155,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                     :user="currentUser" />
                 <BModal
+                    id="modal-select-preferred-object-store"
                     v-model="showPreferredObjectStoreModal"
                     :title="storageLocationModalTitle"
                     scrollable
