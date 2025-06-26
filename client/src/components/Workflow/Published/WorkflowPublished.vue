@@ -189,6 +189,7 @@ defineExpose({
         display: grid;
         gap: 0.5rem 1rem;
         grid-template-columns: auto auto 30%;
+        grid-template-rows: max-content;
 
         height: 100%;
 
