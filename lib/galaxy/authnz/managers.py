@@ -176,6 +176,8 @@ class AuthnzManager:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
         if config_xml.find("accepted_audiences") is not None:
             rtv["accepted_audiences"] = config_xml.find("accepted_audiences").text
+        if config_xml.find("username_key") is not None:
+            rtv["username_key"] = config_xml.find("username_key").text
         # this is a EGI Check-in specific config
         if config_xml.find("checkin_env") is not None:
             rtv["checkin_env"] = config_xml.find("checkin_env").text
