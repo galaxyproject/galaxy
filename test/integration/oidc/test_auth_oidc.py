@@ -3,8 +3,8 @@
 import html
 import os
 import re
-import subprocess
 import socket
+import subprocess
 import tempfile
 import time
 from string import Template
@@ -218,6 +218,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     """
     Test Galaxy's keycloak-based OIDC login integration.
     """
+
     REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
     provider_name = "keycloak"
 
@@ -399,6 +400,7 @@ class TestGalaxyOIDCLoginPSA(AbstractTestCases.BaseKeycloakIntegrationTestCase):
     """
     Test the Python Social Auth-based implementation of OIDC.
     """
+
     provider_name = "oidc"
 
     @classmethod

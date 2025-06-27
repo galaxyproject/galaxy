@@ -2,15 +2,29 @@ import base64
 import secrets
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import (
+    datetime,
+    timedelta,
+)
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
+import pytest
+
 # Tools from hazmat should only be used for testing!
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-from jwt import InvalidIssuerError, InvalidAudienceError, InvalidSignatureError
-import pytest
+from cryptography.hazmat.primitives.asymmetric.rsa import (
+    RSAPrivateKey,
+    RSAPublicKey,
+)
+from jwt import (
+    InvalidAudienceError,
+    InvalidIssuerError,
+    InvalidSignatureError,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -38,6 +52,7 @@ class AuthTokenData:
     Stores all the information needed to generate an access token and
     test that it can be decoded.
     """
+
     private_key: RSAPrivateKey
     public_key: RSAPublicKey
     access_token_str: str
@@ -46,18 +61,18 @@ class AuthTokenData:
 
 
 def create_access_token(
-        email: str = "user@example.com",
-        roles: list[str] = None,
-        iss: str = "https://issuer.example.com",
-        sub: str = None,
-        iat: int = None,
-        exp: int = None,
-        aud: str = "https://audience.example.com",
-        scope: list[str] = None,
-        azp: str = None,
-        permissions: list[str] = None,
-        algorithm: str = "RS256",
-        public_key_id: str = "example-key",
+    email: str = "user@example.com",
+    roles: list[str] = None,
+    iss: str = "https://issuer.example.com",
+    sub: str = None,
+    iat: int = None,
+    exp: int = None,
+    aud: str = "https://audience.example.com",
+    scope: list[str] = None,
+    azp: str = None,
+    permissions: list[str] = None,
+    algorithm: str = "RS256",
+    public_key_id: str = "example-key",
 ) -> AuthTokenData:
     """
     Create an OIDC access token along with a dummy private and public key
@@ -102,7 +117,7 @@ def create_access_token(
         public_key=public_key,
         access_token_str=access_token_encoded,
         access_token_data=payload,
-        key_id=public_key_id
+        key_id=public_key_id,
     )
 
 
@@ -117,16 +132,14 @@ def get_jwk_data(public_key: RSAPublicKey):
     """
     Format an RSAPublicKey into the structure PyJWK expects.
     """
+
     def base64url_uint(val: int) -> str:
         """Base64url encode a big integer."""
-        b = val.to_bytes((val.bit_length() + 7) // 8, 'big')
-        return base64.urlsafe_b64encode(b).rstrip(b'=').decode('ascii')
+        b = val.to_bytes((val.bit_length() + 7) // 8, "big")
+        return base64.urlsafe_b64encode(b).rstrip(b"=").decode("ascii")
+
     numbers = public_key.public_numbers()
-    return {
-        "kty": "RSA",
-        "n": base64url_uint(numbers.n),
-        "e": base64url_uint(numbers.e)
-    }
+    return {"kty": "RSA", "n": base64url_uint(numbers.n), "e": base64url_uint(numbers.e)}
 
 
 def test_decode_access_token():
@@ -184,6 +197,7 @@ def test_decode_access_token_invalid_issuer():
     with pytest.raises(InvalidIssuerError):
         decode_access_token(social=mock_social, backend=mock_backend)
 
+
 def test_decode_access_token_invalid_audience():
     """
     Test that a token with an invalid audience (doesn't match what we expect) raises
@@ -209,6 +223,7 @@ def test_decode_access_token_opaque_token():
     those returned by Google Auth), we don't decode
     and just return None
     """
+
     def generate_google_style_token():
         prefix = "ya29"
         part1 = secrets.token_urlsafe(32)
