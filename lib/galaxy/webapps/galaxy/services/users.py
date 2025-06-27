@@ -203,7 +203,7 @@ class UsersService(ServiceBase):
         f_any: Optional[str],
     ) -> List[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
-        if not trans.user:
+        if not trans.user and not trans.user_is_bootstrap_admin:
             raise glx_exceptions.AuthenticationRequired("Only registered users can view the list of users")
 
         # check for early return conditions
