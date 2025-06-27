@@ -14,10 +14,10 @@ interface ProcessedObject {
     id: string;
 
     /**
-     * The type of the object.
-     * For example, "history", "dataset", "workflow", "invocation", etc.
+     * The type of the object being processed.
+     * For example, "history", "invocation", etc.
      */
-    type: string;
+    type: "history" | "invocation" | "collection";
 
     /**
      * The name of the object.

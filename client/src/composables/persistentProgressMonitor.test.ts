@@ -47,7 +47,7 @@ const MOCK_REQUEST: MonitoringRequest = {
     taskType: "task",
     object: {
         id: "1",
-        type: "dataset",
+        type: "history",
     },
     description: "Test description",
 };
