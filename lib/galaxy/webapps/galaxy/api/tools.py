@@ -16,12 +16,14 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    Path,
     Query,
     Request,
     Response,
     UploadFile,
 )
 from fastapi.responses import FileResponse
+from pydantic import UUID4
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from starlette.responses import StreamingResponse
 
@@ -32,13 +34,32 @@ from galaxy import (
 )
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.landing import LandingRequestManager
+from galaxy.managers.tools import ToolRunReference
+from galaxy.model import ToolRequest
 from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
+)
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    ClaimLandingPayload,
+    CreateToolLandingRequestPayload,
+    ToolLandingRequest,
+    ToolRequestModel,
+)
+from galaxy.tool_util.parameters import (
+    LandingRequestToolState,
+    RequestToolState,
+    TestCaseToolState,
+    ToolParameterT,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
@@ -66,6 +87,7 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api.common import serve_workbook
+from galaxy.webapps.galaxy.services.base import tool_request_to_model
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
@@ -73,6 +95,8 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    json_schema_response_for_tool_state_model,
+    LandingUuidPathParam,
     Router,
 )
 
@@ -119,6 +143,13 @@ router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
+ToolIDPathParam: str = Path(
+    ...,
+    title="Tool ID",
+    description="The tool ID for the lineage stored in Galaxy's toolbox.",
+)
+ToolVersionQueryParam: Optional[str] = Query(default=None, title="Tool Version", description="")
+
 
 async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
@@ -134,6 +165,7 @@ async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
@@ -238,6 +270,137 @@ class FetchTools:
         response.headers["ETag"] = etag
         response.headers["Last-Modified"] = last_modified
         return response
+
+    @router.get(
+        "/api/tool_requests/{id}",
+        summary="Get tool request state.",
+    )
+    def get_tool_request(
+        self,
+        id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ToolRequestModel:
+        tool_request = self._get_tool_request_or_raise_not_found(trans, id)
+        return tool_request_to_model(tool_request)
+
+    @router.get(
+        "/api/tool_requests/{id}/state",
+        summary="Get tool request state.",
+    )
+    def tool_request_state(
+        self,
+        id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> str:
+        tool_request = self._get_tool_request_or_raise_not_found(trans, id)
+        state = tool_request.state
+        if not state:
+            raise exceptions.InconsistentDatabase()
+        return cast(str, state)
+
+    @router.get(
+        "/api/tools/{tool_id}/inputs",
+        summary="Get tool inputs.",
+    )
+    def tool_inputs(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> List[ToolParameterT]:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        return self.service.inputs(trans, tool_run_ref)
+
+    def _get_tool_request_or_raise_not_found(
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField
+    ) -> ToolRequest:
+        tool_request: Optional[ToolRequest] = cast(
+            Optional[ToolRequest], trans.app.model.context.query(ToolRequest).get(id)
+        )
+        if tool_request is None:
+            raise exceptions.ObjectNotFound()
+        assert tool_request
+        return tool_request
+
+    @router.post("/api/tool_landings", public=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        tool_landing_request: CreateToolLandingRequestPayload = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.claim_tool_landing_request(trans, uuid, payload)
+
+    @router.get("/api/tool_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> ToolLandingRequest:
+        return self.landing_manager.get_tool_landing_request(trans, uuid)
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_request_schema",
+        operation_id="tools__parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",
+        description="The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.",
+    )
+    def tool_state_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            RequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_landing_request_schema",
+        operation_id="tools__parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            LandingRequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_test_case_xml_schema",
+        operation_id="tools__parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            TestCaseToolState,
+            inputs,
+        )
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -729,14 +892,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type input_format: str
         """
         tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException(
-                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
+        validate_not_protected(tool_id)
         return self.service._create(trans, payload, **kwd)
+
+
+def validate_not_protected(tool_id: Optional[str]):
+    if tool_id in PROTECTED_TOOLS:
+        raise exceptions.RequestParameterInvalidException(
+            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+        )
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:

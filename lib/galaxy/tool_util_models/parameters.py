@@ -46,7 +46,7 @@ from typing_extensions import (
 from ._types import (
     cast_as_type,
     expand_annotation,
-    is_optional,
+    is_optional as is_python_type_optional,
     list_type,
     optional,
     optional_if_needed,
@@ -120,6 +120,7 @@ def allow_batching(job_template: DynamicModelInformation, batch_type: Optional[T
     class BatchRequest(StrictModel):
         meta_class: Literal["Batch"] = Field(..., alias="__class__")
         values: List[batch_type]  # type: ignore[valid-type]
+        linked: Optional[bool] = None  # maybe True instead?
 
     request_type = union_type([job_py_type, BatchRequest])
 
@@ -160,7 +161,7 @@ def dynamic_model_information_from_py_type(
     if requires_value is None:
         requires_value = param_model.request_requires_value
     initialize = ... if requires_value else None
-    py_type_is_optional = is_optional(py_type)
+    py_type_is_optional = is_python_type_optional(py_type)
     validators = validators or {}
     if not py_type_is_optional and not requires_value:
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
@@ -1756,6 +1757,14 @@ ConditionalWhen.model_rebuild()
 ConditionalParameterModel.model_rebuild()
 RepeatParameterModel.model_rebuild()
 CwlUnionParameterModel.model_rebuild()
+
+
+def is_optional(tool_parameter: ToolParameterT):
+    if isinstance(tool_parameter, BaseGalaxyToolParameterModelDefinition):
+        return tool_parameter.optional
+    else:
+        # refine CWL logic in CWL branch...
+        return False
 
 
 class ToolParameterBundle(Protocol):
