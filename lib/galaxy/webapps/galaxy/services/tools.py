@@ -50,6 +50,9 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
+ToolRunPayload = Dict[str, Any]
+JobCreateResponse = Dict[str, Any]
+
 
 def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
     get_kwds = dict(
@@ -100,7 +103,7 @@ class ToolsService(ServiceBase):
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[List[UploadFile]] = None,
-    ):
+    ) -> JobCreateResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
@@ -127,7 +130,7 @@ class ToolsService(ServiceBase):
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
         request = dumps(clean_payload)
-        create_payload = {
+        create_payload: ToolRunPayload = {
             "tool_id": "__DATA_FETCH__",
             "history_id": history_id,
             "inputs": {
@@ -139,7 +142,7 @@ class ToolsService(ServiceBase):
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
+    def _create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
         action = payload.get("action")
         if action == "rerun":
             raise Exception("'rerun' action has been deprecated")
@@ -215,7 +218,7 @@ class ToolsService(ServiceBase):
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> JobCreateResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
