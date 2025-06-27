@@ -26,16 +26,37 @@ KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 <OIDC>
-    <provider name="keycloak">
+    <provider name="$provider_name">
         <url>{KEYCLOAK_URL}</url>
+        <oidc_endpoint>{KEYCLOAK_URL}</oidc_endpoint>
         <client_id>gxyclient</client_id>
         <client_secret>dummyclientsecret</client_secret>
-        <redirect_uri>$galaxy_url/authnz/keycloak/callback</redirect_uri>
+        <redirect_uri>$galaxy_url/authnz/$provider_name/callback</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
         <accepted_audiences>gxyclient</accepted_audiences>
     </provider>
 </OIDC>
 """
+
+# Debug authentication pipeline that saves access token data
+#   for testing
+DEBUG_AUTH_PIPELINE = (
+    "social_core.pipeline.social_auth.social_details",
+    "social_core.pipeline.social_auth.social_uid",
+    "social_core.pipeline.social_auth.auth_allowed",
+    "galaxy.authnz.psa_authnz.contains_required_data",
+    "galaxy.authnz.psa_authnz.verify",
+    "social_core.pipeline.social_auth.social_user",
+    "social_core.pipeline.user.get_username",
+    "social_core.pipeline.social_auth.associate_by_email",
+    "social_core.pipeline.user.create_user",
+    "social_core.pipeline.social_auth.associate_user",
+    "social_core.pipeline.social_auth.load_extra_data",
+    "galaxy.authnz.psa_authnz.decode_access_token",
+    # Debug step saves data to UserAuthnzToken.extra_data
+    "galaxy.authnz.util.debug_access_token_data",
+    "social_core.pipeline.user.user_details",
+)
 
 
 def wait_till_app_ready(url):
@@ -372,3 +393,32 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 401)
         assert "Invalid access token" in response.json()["err_msg"]
+
+
+class TestGalaxyOIDCLoginPSA(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    """
+    Test the Python Social Auth-based implementation of OIDC.
+    """
+    provider_name = "oidc"
+
+    @classmethod
+    def handle_galaxy_oidc_config_kwds(cls, config):
+        # super().handle_galaxy_config_kwds(config)
+        config["enable_oidc"] = True
+        config["oidc_config_file"] = os.path.join(os.path.dirname(__file__), "oidc_config.xml")
+        config["oidc_backends_config_file"] = cls.backend_config_file
+        # Use a debug auth pipeline that stores access token data in the user model
+        config["oidc_auth_pipeline"] = DEBUG_AUTH_PIPELINE
+
+    def test_oidc_login_decode_access_token(self):
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
+        sa_session = self._app.model.session
+        user = sa_session.query(model.User).filter_by(email="gxyuser@galaxy.org").one()
+        social = next((s for s in user.social_auth if s.provider == "oidc"), None)
+        extra_data = social.extra_data
+        assert "access_token_decoded" in extra_data
+        assert "realm_access" in extra_data["access_token_decoded"]
