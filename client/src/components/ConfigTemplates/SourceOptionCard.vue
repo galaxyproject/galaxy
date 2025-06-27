@@ -30,13 +30,11 @@ const props = defineProps<Props>();
 
 const description = markup(props.sourceOption.description ?? "", true) ?? undefined;
 
-const primaryActions: CardAttributes[] = [
+const secondaryActions: CardAttributes[] = [
     {
-        id: "select",
-        label: "Select",
-        title: "Select this option to create a new instance",
-        variant: "outline-primary",
-        to: props.selectRoute,
+        id: "view-request",
+        label: "View Request JSON",
+        title: "View the raw request JSON for this data import request",
         visible: true,
     },
 ];
@@ -47,7 +45,7 @@ const primaryActions: CardAttributes[] = [
         :id="props.sourceOption.id"
         :title="props.sourceOption.name ?? ''"
         :description="description"
-        :primary-actions="primaryActions"
+        :secondary-actions="secondaryActions"
         :grid-view="props.gridView">
         <template v-slot:titleActions>
             <GButton
