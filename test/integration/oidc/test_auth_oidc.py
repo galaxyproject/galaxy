@@ -4,6 +4,7 @@ import html
 import os
 import re
 import subprocess
+import socket
 import tempfile
 import time
 from string import Template
@@ -52,7 +53,7 @@ def wait_till_app_ready(url):
     )
 
 
-def start_keycloak_docker(container_name, image="keycloak/keycloak:22.0.1"):
+def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
     keycloak_realm_data = os.path.dirname(__file__)
     START_SLURM_DOCKER = [
         "docker",
@@ -66,14 +67,13 @@ def start_keycloak_docker(container_name, image="keycloak/keycloak:22.0.1"):
         "-v",
         f"{keycloak_realm_data}:/opt/keycloak/data/import",
         "-e",
-        f"KEYCLOAK_ADMIN={KEYCLOAK_ADMIN_USERNAME}",
+        f"KC_BOOTSTRAP_ADMIN_USERNAME={KEYCLOAK_ADMIN_USERNAME}",
         "-e",
-        f"KEYCLOAK_ADMIN_PASSWORD={KEYCLOAK_ADMIN_PASSWORD}",
+        f"KC_BOOTSTRAP_ADMIN_PASSWORD={KEYCLOAK_ADMIN_PASSWORD}",
         "-e",
         "KC_HOSTNAME_STRICT=false",
         image,
         "start",
-        "--optimized",
         "--import-realm",
         "--https-certificate-file=/opt/keycloak/data/import/keycloak-server.crt.pem",
         "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
@@ -89,8 +89,10 @@ def stop_keycloak_docker(container_name):
 class AbstractTestCases:
     @integration_util.skip_unless_docker()
     class BaseKeycloakIntegrationTestCase(integration_util.IntegrationTestCase):
+        REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*?)\"\s+")
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
+        provider_name: ClassVar[str]
         saved_oauthlib_insecure_transport: ClassVar[bool]
 
         @classmethod
@@ -100,6 +102,12 @@ class AbstractTestCases:
             cls.disableOauthlibHttps()
             cls.container_name = f"{cls.__name__}_container"
             start_keycloak_docker(container_name=cls.container_name)
+
+            # Dynamically find a free port
+            cls.random_port = cls._find_free_port()
+            os.environ["GALAXY_TEST_PORT"] = str(cls.random_port)
+            os.environ["GALAXY_WEB_PORT"] = str(cls.random_port)
+
             super().setUpClass()
             # For the oidc callback to work, we need to know Galaxy's hostname and port.
             # However, we won't know what the host and port are until the Galaxy test driver is started.
@@ -108,23 +116,32 @@ class AbstractTestCases:
             cls.configure_oidc_and_restart()
 
         @classmethod
-        def generate_oidc_config_file(cls, server_wrapper):
+        def _find_free_port(cls):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                return s.getsockname()[1]
+
+        @classmethod
+        def generate_oidc_config_file(cls, server_wrapper, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 host = server_wrapper.host
                 port = server_wrapper.port
                 prefix = server_wrapper.prefix or ""
                 galaxy_url = f"http://{host}:{port}{prefix.rstrip('/')}"
-                data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(galaxy_url=galaxy_url)
+                data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
+                    galaxy_url=galaxy_url,
+                    provider_name=provider_name,
+                )
                 tmp_file.write(data)
                 return tmp_file.name
 
         @classmethod
         def configure_oidc_and_restart(cls):
             server_wrapper = cls._test_driver.server_wrappers[0]
-            cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper)
-            # Explicitly assign the previously used port, as it's random otherwise
-            del os.environ["GALAXY_TEST_PORT_RANDOM"]
-            os.environ["GALAXY_TEST_PORT"] = os.environ["GALAXY_WEB_PORT"]
+            cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper, provider_name=cls.provider_name)
+            # Explicitly assign previously chosen dynamic port
+            os.environ["GALAXY_TEST_PORT"] = str(cls.random_port)
+            os.environ["GALAXY_WEB_PORT"] = str(cls.random_port)
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
 
         @classmethod
@@ -158,26 +175,30 @@ class AbstractTestCases:
         def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
+        def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
+
+            if expected_codes is None:
+                expected_codes = [200, 404]
+            session = session or requests.Session()
+            response = session.get(f"{self.url}authnz/{self.provider_name}/login")
+            provider_url = response.json()["redirect_uri"]
+            response = session.get(provider_url, verify=False)
+            matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
+            assert matches
+            auth_url = html.unescape(str(matches.group(1)))
+            response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
+            assert response.status_code in expected_codes, response
+            if save_cookies:
+                self.galaxy_interactor.cookies = session.cookies
+            return session, response
+
 
 class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
-    REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*)\"\s+")
+    """
+    Test Galaxy's keycloak-based OIDC login integration.
+    """
     REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
-
-    def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
-        if expected_codes is None:
-            expected_codes = [200, 404]
-        session = session or requests.Session()
-        response = session.get(f"{self.url}authnz/keycloak/login")
-        provider_url = response.json()["redirect_uri"]
-        response = session.get(provider_url, verify=False)
-        matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
-        assert matches
-        auth_url = html.unescape(str(matches.groups(1)[0]))
-        response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
-        assert response.status_code in expected_codes, response
-        if save_cookies:
-            self.galaxy_interactor.cookies = session.cookies
-        return session, response
+    provider_name = "keycloak"
 
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
