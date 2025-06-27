@@ -9,6 +9,7 @@ from typing import (
 )
 
 from pydantic import (
+    AliasChoices,
     ConfigDict,
     Field,
     field_validator,
@@ -122,7 +123,7 @@ class BaseDataElement(FetchBaseModel):
     created_from_basename: Optional[str] = None
     extra_files: Optional[ExtraFiles] = None
     auto_decompress: bool = AutoDecompressField
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
     collection_type: Optional[str] = None
     MD5: Optional[str] = None
     SHA1: Optional[str] = Field(None, alias="SHA-1")
@@ -170,13 +171,13 @@ class ItemsFromModel(Model):
 class FtpImportTarget(BaseCollectionTarget):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
 
 
 class PathDataElement(BaseDataElement):
     src: Literal["path"]
     path: str
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
     link_data_only: Optional[bool] = None
 
 
@@ -189,14 +190,14 @@ class CompositeDataElement(BaseDataElement):
 class CompositeItems(FetchBaseModel):
     items: List[
         Union[FileDataElement, PastedDataElement, UrlDataElement, PathDataElement, ServerDirElement, FtpImportElement]
-    ] = Field(..., alias="elements")
+    ] = Field(..., validation_alias=AliasChoices("items", "elements"))
 
 
 CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
-    items: List[Union["AnyElement", "NestedElement"]] = Field(..., alias="elements")
+    items: List[Union["AnyElement", "NestedElement"]] = Field(..., validation_alias=AliasChoices("items", "elements"))
 
 
 AnyElement = Annotated[
@@ -235,7 +236,7 @@ class BaseDataTarget(BaseFetchDataTarget):
 
 
 class DataElementsTarget(BaseDataTarget):
-    items: List[Union[AnyElement, NestedElement]] = Field(..., alias="elements")
+    items: List[Union[AnyElement, NestedElement]] = Field(..., validation_alias=AliasChoices("items", "elements"))
 
 
 class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
@@ -243,11 +244,11 @@ class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
 
 
 class HdcaDataItemsTarget(BaseCollectionTarget):
-    items: List[Union[AnyElement2, NestedElement]] = Field(..., alias="elements")
+    items: List[Union[AnyElement2, NestedElement]] = Field(..., validation_alias=AliasChoices("items", "elements"))
 
 
 class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
-    items_from: ElementsFromType = Field(..., alias="elements_from")
+    items_from: ElementsFromType = Field(..., validation_alias=AliasChoices("items_from", "elements_from"))
 
 
 class FilesPayload(Model):
