@@ -20,7 +20,7 @@ const FAKE_MONITOR_REQUEST: MonitoringRequest = {
     source: "test",
     action: "testing",
     taskType: "task",
-    object: { id: "1", type: "dataset" },
+    object: { id: "1", type: "history" },
     description: "Test description",
 };
 
