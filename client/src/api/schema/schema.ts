@@ -7266,7 +7266,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -7277,6 +7276,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -7334,8 +7334,8 @@ export interface components {
         };
         /** CompositeItems */
         CompositeItems: {
-            /** Elements */
-            elements: (
+            /** Items */
+            items: (
                 | components["schemas"]["FileDataElement"]
                 | components["schemas"]["PastedDataElement"]
                 | components["schemas"]["UrlDataElement"]
@@ -8923,8 +8923,8 @@ export interface components {
                 | components["schemas"]["HdaDestination"]
                 | components["schemas"]["LibraryFolderDestination"]
                 | components["schemas"]["LibraryDestination"];
-            /** Elements */
-            elements: (
+            /** Items */
+            items: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -10549,7 +10549,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -10560,6 +10559,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -10966,7 +10966,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -10979,6 +10978,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -11010,9 +11010,9 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /** Ftp Path */
             ftp_path: string;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | null;
             /**
@@ -12541,9 +12541,9 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
-            elements_from: components["schemas"]["ElementsFromType"];
             /** Ftp Path */
             ftp_path?: string | null;
+            items_from: components["schemas"]["ElementsFromType"];
             /** Name */
             name?: string | null;
             /** Path */
@@ -12567,8 +12567,8 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
-            /** Elements */
-            elements: (
+            /** Items */
+            items: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -16279,8 +16279,18 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            /** Elements */
-            elements: (
+            /**
+             * Ext
+             * @default auto
+             */
+            ext: string;
+            extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
+            /** Info */
+            info?: string | null;
+            /** Items */
+            items: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -16292,17 +16302,7 @@ export interface components {
                   )
                 | components["schemas"]["NestedElement"]
             )[];
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
-            /**
-             * Ext
-             * @default auto
-             */
-            ext: string;
-            extra_files?: components["schemas"]["ExtraFiles"] | null;
-            /** Hashes */
-            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
-            info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -17053,7 +17053,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -17064,6 +17063,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
@@ -17137,7 +17137,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -17148,6 +17147,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
@@ -18338,7 +18338,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -18349,6 +18348,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
@@ -20302,7 +20302,6 @@ export interface components {
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
              * @default auto
@@ -20313,6 +20312,7 @@ export interface components {
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
