@@ -109,6 +109,7 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
+from galaxy.util.properties import running_from_source
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
@@ -1161,6 +1162,22 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def requires_containerization(self):
         return util.asbool(self.get_destination_configuration("require_container", "False"))
+
+    @property
+    def use_metadata_venv(self):
+        return util.asbool(self.get_destination_configuration("use_metadata_venv", not running_from_source))
+
+    @property
+    def create_metadata_venv(self):
+        return util.asbool(self.get_destination_configuration("create_metadata_venv", self.use_metadata_venv))
+
+    @property
+    def metadata_venv_python(self):
+        return self.get_destination_configuration("metadata_venv_python", sys.executable)
+
+    @property
+    def metadata_venv_path(self):
+        return util.asbool(self.get_destination_configuration("metadata_venv_path", "False")) or None
 
     @property
     def use_metadata_binary(self):

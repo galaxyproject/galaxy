@@ -16,7 +16,7 @@ from typing_extensions import (
     Protocol,
 )
 
-from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
+from galaxy.tool_util.deps.container_resolvers import list_docker_cached_mulled_images
 from galaxy.util.commands import (
     execute,
     shell,
