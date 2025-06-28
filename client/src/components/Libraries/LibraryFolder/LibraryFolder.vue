@@ -258,12 +258,10 @@
                 </b-col>
             </b-row>
         </b-container>
-        <section v-if="folder_metadata.readme_rendered" class="library-readme-section">
-            <hr/>
-            <b-card
-                v-html="sanitize(folder_metadata.readme_rendered)"
-                class="readme-content"
-                v-if="folder_metadata.readme_rendered">
+        <section v-if="renderedReadme" class="library-readme-section">
+            <hr />
+            <b-card class="readme-content">
+                <div v-html="renderedReadme"></div>
             </b-card>
         </section>
     </div>
@@ -277,6 +275,7 @@ import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/l
 import UtcDate from "components/UtcDate";
 import { usePersistentRef } from "composables/persistentRef";
 import { Toast } from "composables/toast";
+import { useMarkdown } from "@/composables/markdown";
 import { sanitize } from "dompurify";
 import linkifyHtml from "linkify-html";
 import { getAppRoot } from "onload/loadConfig";
@@ -293,6 +292,8 @@ import FolderTopBar from "./TopToolbar/FolderTopBar";
 initFolderTableIcons();
 
 Vue.use(BootstrapVue);
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 function initialFolderState() {
     return {
@@ -349,6 +350,9 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        renderedReadme() {
+            return this.folder_metadata.readme_rendered;
+        },
     },
     watch: {
         perPage(newValue) {
@@ -366,6 +370,10 @@ export default {
         sortDesc() {
             this.fetchFolderContents();
         },
+        folderReadme() {
+            this.renderReadme();
+        },
+        
     },
     created() {
         this.services = new Services({ root: this.root });
@@ -634,7 +642,13 @@ export default {
         changePage(page) {
             this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
         },
-
+        renderReadme() {
+            if (this.folder_metadata.readme_raw) {
+                this.folder_metadata.readme_rendered = renderMarkdown(this.folder_metadata.readme_raw);
+            } else {
+                this.folder_metadata.readme_rendered = "";
+            }
+        },
         /*
          Former Backbone code, adopted to work with Vue
         */
