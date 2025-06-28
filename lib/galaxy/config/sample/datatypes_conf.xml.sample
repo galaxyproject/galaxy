@@ -463,6 +463,7 @@
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="netcdf" type="galaxy.datatypes.binary:NetCDF" mimetype="application/octet-stream" display_in_upload="true" description="Format used by netCDF software library for writing and reading chromatography-MS data files."/>
+    <datatype extension="odv" type="galaxy.datatypes.text:ODV" display_in_upload="true" description="Ocean Data View format file"/>
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -1379,6 +1380,7 @@
     <sniffer type="galaxy.datatypes.text:PithyaResult"/>
     <sniffer type="galaxy.datatypes.text:BCSLts"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
+    <sniffer type="galaxy.datatypes.text:ODV"/>
     <sniffer type="galaxy.datatypes.genetics:GenotypeMatrix"/>
     <sniffer type="galaxy.datatypes.genetics:DataIn"/>
     <sniffer type="galaxy.datatypes.genetics:MarkerMap"/>
