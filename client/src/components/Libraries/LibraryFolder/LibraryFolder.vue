@@ -258,6 +258,14 @@
                 </b-col>
             </b-row>
         </b-container>
+        <section v-if="folder_metadata.readme_rendered" class="library-readme-section">
+            <hr/>
+            <b-card
+                v-html="sanitize(folder_metadata.readme_rendered)"
+                class="readme-content"
+                v-if="folder_metadata.readme_rendered">
+            </b-card>
+        </section>
     </div>
 </template>
 

@@ -22,7 +22,6 @@ from galaxy.schema.schema import (
     LibraryFolderContentsIndexQueryPayload,
     LibraryFolderContentsIndexResult,
     LibraryFolderMetadata,
-    ExtendedLibraryFolderMetadata,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -84,11 +83,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
-        readme_raw = None
-        readme_rendered = None
-
         # Find and load README
+        readme_raw = ""
+        readme_rendered = ""
         README_FILENAMES = {"readme.md", "readme.txt", "readme"}
         for content_item in contents:
             if isinstance(content_item, model.LibraryDataset):
@@ -105,14 +102,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                                 log.warning(f"Could not render README for folder {folder_id}: {e}")
                             break
 
-        extended_metadata = ExtendedLibraryFolderMetadata(
-            **base_metadata.dict(),
-            readme_raw=readme_raw,
-            readme_rendered=readme_rendered,
-        )
-
+        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme_raw=readme_raw, readme_rendered=readme_rendered)
         return LibraryFolderContentsIndexResult(
-            metadata=extended_metadata,
+            metadata=base_metadata,
             folder_contents=folder_contents,
         )
 
@@ -240,6 +232,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         folder: model.LibraryFolder,
         user_permissions: UserFolderPermissions,
         total_rows: int,
+        readme_raw: str,
+        readme_rendered: str,
     ) -> LibraryFolderMetadata:
         full_path = self.folder_manager.build_folder_path(trans.sa_session, folder)
         parent_library_id = folder.parent_library.id if folder.parent_library else None
@@ -251,5 +245,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_name=folder.name,
             folder_description=folder.description,
             parent_library_id=parent_library_id,
+            readme_raw=readme_raw,
+            readme_rendered=readme_rendered,
+
         )
         return metadata
