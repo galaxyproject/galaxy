@@ -386,7 +386,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             )
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
-        index_help = getattr(self.config, "index_tool_help", True)
+        index_help = self.config.index_tool_help
         self.toolbox_search = self._register_singleton(
             ToolBoxSearch,
             ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
@@ -494,7 +494,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     def _configure_models(self, check_migrate_databases=False, config_file=None):
         """Preconditions: object_store must be set on self."""
         # TODO this block doesn't seem to belong in this method
-        if getattr(self.config, "max_metadata_value_size", None):
+        if self.config.max_metadata_value_size:
             custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         db_url = self.config.database_connection
@@ -526,8 +526,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     def _verify_databases(self, engine, install_engine, combined_install_database):
         install_template, install_encoding = None, None
         if not combined_install_database:  # Otherwise these options are not used.
-            install_template = getattr(self.config, "install_database_template", None)
-            install_encoding = getattr(self.config, "install_database_encoding", None)
+            install_template = self.config.install_database_template
+            install_encoding = self.config.install_database_encoding
 
         verify_databases(
             engine,

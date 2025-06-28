@@ -54,7 +54,7 @@ class ApplicationStack:
         self._supports_returning = None
         self._supports_skip_locked = None
         self._preferred_handler_assignment_method = None
-        multiprocessing.current_process().name = getattr(self.config, "server_name", "main")
+        multiprocessing.current_process().name = self.config.server_name
         if app:
             log.debug("%s initialized", self.__class__.__name__)
 

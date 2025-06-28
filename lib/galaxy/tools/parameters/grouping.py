@@ -518,7 +518,7 @@ class UploadDataset(Group):
                                         "local_filename": os.path.abspath(os.path.join(user_ftp_dir, path)),
                                         "filename": os.path.basename(path),
                                     }
-                                    purge = getattr(trans.app.config, "ftp_upload_purge", True)
+                                    purge = trans.app.config.ftp_upload_purge
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
                                         override_name=name,
@@ -617,7 +617,7 @@ class UploadDataset(Group):
                     "local_filename": os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
                     "filename": os.path.basename(ftp_file),
                 }
-                purge = getattr(trans.app.config, "ftp_upload_purge", True)
+                purge = trans.app.config.ftp_upload_purge
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines

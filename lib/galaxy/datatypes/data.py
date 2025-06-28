@@ -1024,7 +1024,7 @@ class Data(metaclass=DataMeta):
 
     def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers) -> None:
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
-            if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
+            if not trans.app.config.serve_xss_vulnerable_mimetypes:
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
 

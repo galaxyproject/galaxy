@@ -1183,7 +1183,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def shell(self):
-        return self.job_destination.shell or getattr(self.app.config, "default_job_shell", DEFAULT_JOB_SHELL)
+        return self.job_destination.shell or self.app.config.default_job_shell
 
     def disable_commands_in_new_shell(self):
         """Provide an extension point to disable this isolation,

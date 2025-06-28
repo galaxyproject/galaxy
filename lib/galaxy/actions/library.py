@@ -288,7 +288,7 @@ class LibraryActions:
         uploaded_dataset.space_to_tab = params.get("space_to_tab", None)
         uploaded_dataset.tag_using_filenames = params.get("tag_using_filenames", False)
         uploaded_dataset.tags = params.get("tags", None)
-        uploaded_dataset.purge_source = getattr(trans.app.config, "ftp_upload_purge", True)
+        uploaded_dataset.purge_source = trans.app.config.ftp_upload_purge
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload(trans, "api", uploaded_dataset, library_bunch)
