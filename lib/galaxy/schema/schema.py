@@ -3463,7 +3463,6 @@ class LibraryFolderMetadata(Model):
     can_add_library_item: bool
     full_path: list[tuple[EncodedLibraryFolderDatabaseIdField, str]]
     readme_raw: Optional[str] = None
-    readme_rendered: Optional[str] = None
 
 
 class LibraryFolderContentsIndexResult(Model):
