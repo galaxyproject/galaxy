@@ -257,12 +257,10 @@
                 </BCol>
             </BRow>
         </BContainer>
-        <section v-if="folder_metadata.readme_rendered" class="library-readme-section">
-            <hr/>
-            <b-card
-                v-html="sanitize(folder_metadata.readme_rendered)"
-                class="readme-content"
-                v-if="folder_metadata.readme_rendered">
+        <section v-if="renderedReadme" class="library-readme-section">
+            <hr />
+            <b-card class="readme-content">
+                <div v-html="renderedReadme"></div>
             </b-card>
         </section>
     </div>
@@ -287,6 +285,7 @@ import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
 
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
+import { useMarkdown } from "@/composables/markdown";
 import { usePersistentRef } from "@/composables/persistentRef";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -300,6 +299,8 @@ import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 function initialFolderState() {
     return {
@@ -387,6 +388,9 @@ export default {
                 .filter(({ item }) => this.isRowSelected(item))
                 .map(({ index }) => index);
         },
+        renderedReadme() {
+            return this.folder_metadata.readme_rendered;
+        },
     },
     watch: {
         perPage(newValue) {
@@ -404,6 +408,10 @@ export default {
         sortDesc() {
             this.fetchFolderContents();
         },
+        folderReadme() {
+            this.renderReadme();
+        },
+        
     },
     created() {
         this.services = new Services({ root: this.root });
@@ -672,7 +680,13 @@ export default {
         changePage(page) {
             this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
         },
-
+        renderReadme() {
+            if (this.folder_metadata.readme_raw) {
+                this.folder_metadata.readme_rendered = renderMarkdown(this.folder_metadata.readme_raw);
+            } else {
+                this.folder_metadata.readme_rendered = "";
+            }
+        },
         /*
          Former code, adopted to work with Vue
         */
