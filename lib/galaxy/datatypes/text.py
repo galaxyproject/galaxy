@@ -1538,24 +1538,18 @@ class ODV(Text):
 
     MetadataElement(name="meta_var_count", default=0, desc="Number of Meta Variables", readonly=True)
     MetadataElement(name="var_count", default=0, desc="Number of Variables", readonly=True)
-    MetadataElement(name="meta_variables", default=[], desc="Meta Variable Names", readonly=True)
-    MetadataElement(name="variables", default=[], desc="Variable Names", readonly=True)
 
-    def sniff(self, filename):
-        try:
-            with open(filename, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip().startswith("CollectionFormat") and "ODVCF" in line:
-                        return True
-        except Exception:
-            return False
-        return False
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is has some required details in General section
+        """
+        header = file_prefix.contents_header.lower()
+        keywords = ["collectionformat", "odvcf"]
+        return all(keyword in header for keyword in keywords)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
         dataset.metadata.meta_var_count = 0
         dataset.metadata.var_count = 0
-        dataset.metadata.meta_variables = []
-        dataset.metadata.variables = []
 
         section = None
         try:
@@ -1565,25 +1559,20 @@ class ODV(Text):
 
                     if line.startswith("[") and line.endswith("]"):
                         section = line[1:-1].strip()
+                        if section != "General":
+                            # Stop after [General] section
+                            break
                         continue
 
-                    if not line or "=" not in line:
+                    if section != "General" or not line or "=" not in line:
                         continue
 
                     key, value = map(str.strip, line.split("=", 1))
-                    if section == "General":
-                        if key == "NumberOfMetaVariables":
-                            dataset.metadata.meta_var_count = int(value)
-                        elif key == "NumberOfVariables":
-                            dataset.metadata.var_count = int(value)
+                    if key == "NumberOfMetaVariables":
+                        dataset.metadata.meta_var_count = int(value)
+                    elif key == "NumberOfVariables":
+                        dataset.metadata.var_count = int(value)
 
-                    elif section == "Meta Variables":
-                        name = value.split(";")[0].strip()
-                        dataset.metadata.meta_variables.append(name)
-
-                    elif section == "Variables":
-                        name = value.split(";")[0].strip()
-                        dataset.metadata.variables.append(name)
         except Exception:
             log.exception("Error in set_meta")
 
