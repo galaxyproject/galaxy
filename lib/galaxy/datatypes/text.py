@@ -1532,3 +1532,65 @@ class Prm(Text):
         False
         """
         return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
+
+class ODV(Text):
+    file_ext = "odv"
+
+    MetadataElement(name="meta_var_count", default=0, desc="Number of Meta Variables", readonly=True)
+    MetadataElement(name="var_count", default=0, desc="Number of Variables", readonly=True)
+    MetadataElement(name="meta_variables", default=[], desc="Meta Variable Names", readonly=True)
+    MetadataElement(name="variables", default=[], desc="Variable Names", readonly=True)
+
+    def sniff(self, filename):
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip().startswith("CollectionFormat") and "ODVCF" in line:
+                        return True
+        except Exception:
+            return False
+        return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
+        dataset.metadata.meta_var_count = 0
+        dataset.metadata.var_count = 0
+        dataset.metadata.meta_variables = []
+        dataset.metadata.variables = []
+
+        section = None
+        try:
+            with open(dataset.get_file_name(), "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+
+                    if line.startswith("[") and line.endswith("]"):
+                        section = line[1:-1].strip()
+                        continue
+
+                    if not line or "=" not in line:
+                        continue
+
+                    key, value = map(str.strip, line.split("=", 1))
+                    if section == "General":
+                        if key == "NumberOfMetaVariables":
+                            dataset.metadata.meta_var_count = int(value)
+                        elif key == "NumberOfVariables":
+                            dataset.metadata.var_count = int(value)
+
+                    elif section == "Meta Variables":
+                        name = value.split(";")[0].strip()
+                        dataset.metadata.meta_variables.append(name)
+
+                    elif section == "Variables":
+                        name = value.split(";")[0].strip()
+                        dataset.metadata.variables.append(name)
+        except Exception:
+            log.exception("Error in set_meta")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.blurb = f"ODV Collection Format: {dataset.metadata.meta_var_count} meta variables, {dataset.metadata.var_count} variables"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disc"
