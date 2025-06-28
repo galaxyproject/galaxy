@@ -236,6 +236,9 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "instance_citation_link":
                 url = trans.app.config.citation_url
                 rval = self.handle_instance_citation_link(line, url)
+            elif container == "instance_citation_bibtex":
+                url = trans.app.config.citation_bibtex
+                rval = self.handle_instance_citation_bibtex(line, url)
             elif container == "instance_terms_link":
                 url = trans.app.config.terms_url
                 rval = self.handle_instance_terms_link(line, url)
