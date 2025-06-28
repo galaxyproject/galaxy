@@ -86,7 +86,7 @@ mirakuru==2.6.0
 mistune==3.0.2
 more-itertools==10.7.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
 msgpack==1.1.1
-multidict==6.5.0
+multidict==6.6.0
 mypy-extensions==1.1.0
 myst-parser==3.0.1 ; python_full_version < '3.10'
 myst-parser==4.0.1 ; python_full_version >= '3.10'
@@ -106,7 +106,7 @@ pfzy==0.3.4
 pillow==11.2.1
 pkce==1.0.3
 platformdirs==4.3.8
-playwright==1.52.0
+playwright==1.53.0
 pluggy==1.6.0
 port-for==0.7.4
 prettytable==3.16.0
@@ -159,7 +159,7 @@ roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
 rpds-py==0.25.1
 ruamel-yaml==0.18.14
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
-rucio-clients==37.5.0
+rucio-clients==37.6.0
 s3transfer==0.13.0
 schema-salad==8.9.20250408123006
 scipy==1.13.1 ; python_full_version < '3.10'

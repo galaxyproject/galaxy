@@ -41,7 +41,7 @@ circus==0.19.0
 click==8.1.8 ; python_full_version < '3.10'
 click==8.2.1 ; python_full_version >= '3.10'
 click-didyoumean==0.3.1
-click-plugins==1.1.1
+click-plugins==1.1.1.2
 click-repl==0.3.0
 cloudauthz==0.6.0
 cloudbridge==3.2.0
@@ -65,7 +65,7 @@ edam-ontology==1.25.2
 email-validator==2.2.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
-fastapi-slim==0.115.13
+fastapi-slim==0.115.14
 filelock==3.18.0
 fissix==24.4.24
 frozenlist==1.7.0
@@ -109,7 +109,7 @@ mistune==3.0.2
 mrcfile==1.5.4
 msal==1.32.3
 msgpack==1.1.1
-multidict==6.5.0
+multidict==6.6.0
 mypy-extensions==1.1.0
 networkx==3.2.1 ; python_full_version < '3.10'
 networkx==3.4.2 ; python_full_version == '3.10.*'
@@ -183,7 +183,7 @@ setuptools-scm==8.3.1
 six==1.17.0
 slowapi==0.1.9
 sniffio==1.3.1
-social-auth-core==4.6.1
+social-auth-core==4.7.0
 sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.40
