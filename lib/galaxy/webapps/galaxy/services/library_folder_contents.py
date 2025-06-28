@@ -1,4 +1,5 @@
 import logging
+import markdown
 from dataclasses import dataclass
 
 from galaxy import (
@@ -21,6 +22,7 @@ from galaxy.schema.schema import (
     LibraryFolderContentsIndexQueryPayload,
     LibraryFolderContentsIndexResult,
     LibraryFolderMetadata,
+    ExtendedLibraryFolderMetadata,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -82,8 +84,37 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
-        return LibraryFolderContentsIndexResult(metadata=metadata, folder_contents=folder_contents)
+        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
+        readme_raw = None
+        readme_rendered = None
+
+        # Find and load README
+        README_FILENAMES = {"readme.md", "readme.txt", "readme"}
+        for content_item in contents:
+            if isinstance(content_item, model.LibraryDataset):
+                name = content_item.name.strip().lower()
+                if name in README_FILENAMES and not content_item.deleted:
+                    ldda = content_item.library_dataset_dataset_association
+                    if ldda and ldda.dataset and ldda.dataset.has_data():
+                        if ldda.extension in {"txt", "md"}:
+                            try:
+                                with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
+                                    readme_raw = f.read()
+                                    readme_rendered = markdown.markdown(readme_raw)
+                            except Exception as e:
+                                log.warning(f"Could not render README for folder {folder_id}: {e}")
+                            break
+
+        extended_metadata = ExtendedLibraryFolderMetadata(
+            **base_metadata.dict(),
+            readme_raw=readme_raw,
+            readme_rendered=readme_rendered,
+        )
+
+        return LibraryFolderContentsIndexResult(
+            metadata=extended_metadata,
+            folder_contents=folder_contents,
+        )
 
     def create(
         self,
