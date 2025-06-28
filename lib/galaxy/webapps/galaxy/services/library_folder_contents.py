@@ -85,7 +85,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
         # Find and load README
         readme_raw = ""
-        readme_rendered = ""
         README_FILENAMES = {"readme.md", "readme.txt", "readme"}
         for content_item in contents:
             if isinstance(content_item, model.LibraryDataset):
@@ -97,12 +96,11 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                             try:
                                 with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
                                     readme_raw = f.read()
-                                    readme_rendered = markdown.markdown(readme_raw)
                             except Exception as e:
                                 log.warning(f"Could not render README for folder {folder_id}: {e}")
                             break
 
-        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme_raw=readme_raw, readme_rendered=readme_rendered)
+        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme_raw=readme_raw)
         return LibraryFolderContentsIndexResult(
             metadata=base_metadata,
             folder_contents=folder_contents,
@@ -233,7 +231,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         user_permissions: UserFolderPermissions,
         total_rows: int,
         readme_raw: str,
-        readme_rendered: str,
     ) -> LibraryFolderMetadata:
         full_path = self.folder_manager.build_folder_path(trans.sa_session, folder)
         parent_library_id = folder.parent_library.id if folder.parent_library else None
@@ -246,7 +243,5 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_description=folder.description,
             parent_library_id=parent_library_id,
             readme_raw=readme_raw,
-            readme_rendered=readme_rendered,
-
         )
         return metadata
