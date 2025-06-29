@@ -43,12 +43,14 @@ fi
 
 # Copy working, outputs, and configs before tool execution so that these can be restored on job resubmission
 # xref https://github.com/galaxyproject/galaxy/issues/3289
-PREPARE_DIRS = """mkdir -p working outputs configs
-if [ -d _working ]; then
-    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
-else
-    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
-fi
+PREPARE_DIRS_TEMPLATE = """for dir in working outputs configs; do
+    mkdir -p "{working_directory}/$dir"
+    if [ -d "{working_directory}/_$dir" ]; then
+        rm -rf "{working_directory}/$dir"; cp -R "{working_directory}/_$dir" "{working_directory}/$dir"
+    else
+        cp -R "{working_directory}/$dir" "{working_directory}/_$dir"
+    fi
+done
 """
 
 INTEGRITY_SYNC_COMMAND = "/bin/sync"
@@ -68,7 +70,7 @@ OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "shell": DEFAULT_SHELL,
     "preserve_python_environment": True,
     "tmp_dir_creation_statement": '""',
-    "prepare_dirs_statement": PREPARE_DIRS,
+    "prepare_dirs_statement": "",
 }
 
 
@@ -114,6 +116,9 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     kwds["home_directory"] = kwds.get("home_directory", os.path.join(kwds["working_directory"], "home"))
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
+    template_params["prepare_dirs_statement"] = PREPARE_DIRS_TEMPLATE.format(
+        working_directory=kwds["working_directory"]
+    )
     template_params.update(**kwds)
     env_setup_commands_str = "\n".join(template_params["env_setup_commands"])
     template_params["env_setup_commands"] = env_setup_commands_str
