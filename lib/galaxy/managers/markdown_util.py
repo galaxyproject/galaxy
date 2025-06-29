@@ -391,6 +391,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_instance_citation_bibtex(self, line, url):
+        pass
+
+    @abc.abstractmethod
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -510,6 +514,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_instance_citation_link(self, line, url):
+        pass
+
+    def handle_instance_citation_bibtex(self, line, url):
         pass
 
     def handle_instance_terms_link(self, line, url):
@@ -775,6 +782,9 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return self._handle_link(url)
 
     def handle_instance_citation_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_citation_bibtex(self, line, url):
         return self._handle_link(url)
 
     def handle_instance_terms_link(self, line, url):
