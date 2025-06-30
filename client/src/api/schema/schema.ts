@@ -185,6 +185,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/data_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Data Landing */
+        post: operations["create_data_landing_api_data_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dataset_collection_element/{dce_id}": {
         parameters: {
             query?: never;
@@ -4643,6 +4660,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tool_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_tool_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_tool_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_tool_landings__uuid__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tool_shed_repositories": {
         parameters: {
             query?: never;
@@ -7320,17 +7388,40 @@ export interface components {
         };
         /** CompositeDataElement */
         CompositeDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -7341,11 +7432,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -7353,13 +7454,22 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Metadata */
@@ -7372,6 +7482,11 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -7380,10 +7495,21 @@ export interface components {
              * @enum {string}
              */
             src: "composite";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -7421,8 +7547,8 @@ export interface components {
         };
         /** CompositeItems */
         CompositeItems: {
-            /** Items */
-            items: (
+            /** Elements */
+            elements: (
                 | components["schemas"]["FileDataElement"]
                 | components["schemas"]["PastedDataElement"]
                 | components["schemas"]["UrlDataElement"]
@@ -7713,6 +7839,17 @@ export interface components {
          */
         ConvertedDatasetsMap: {
             [key: string]: string;
+        };
+        /** CreateDataLandingPayload */
+        CreateDataLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            request_state?: components["schemas"]["DataLandingRequestState"];
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -8151,6 +8288,24 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /** CreateToolLandingRequestPayload */
+        CreateToolLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /** Request State */
+            request_state?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
         };
         /**
          * CreateType
@@ -9090,7 +9245,10 @@ export interface components {
         DataElementsFromTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -9114,7 +9272,10 @@ export interface components {
         DataElementsTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -9123,8 +9284,8 @@ export interface components {
                 | components["schemas"]["HdaDestination"]
                 | components["schemas"]["LibraryFolderDestination"]
                 | components["schemas"]["LibraryDestination"];
-            /** Items */
-            items: (
+            /** Elements */
+            elements: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -9142,6 +9303,17 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DataLandingRequestState */
+        DataLandingRequestState: {
+            /** Targets */
+            targets: (
+                | components["schemas"]["DataElementsTarget"]
+                | components["schemas"]["HdcaDataItemsTarget"]
+                | components["schemas"]["DataElementsFromTarget"]
+                | components["schemas"]["HdcaDataItemsFromTarget"]
+                | components["schemas"]["FtpImportTarget"]
+            )[];
+        };
         /** DataParameterModel */
         DataParameterModel: {
             /** Argument */
@@ -10758,17 +10930,40 @@ export interface components {
         };
         /** FileDataElement */
         FileDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -10778,11 +10973,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -10790,13 +10995,22 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
@@ -10805,6 +11019,11 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -10813,10 +11032,21 @@ export interface components {
              * @enum {string}
              */
             src: "files";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -11177,17 +11407,40 @@ export interface components {
         };
         /** FtpImportElement */
         FtpImportElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -11197,11 +11450,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -11209,6 +11472,10 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
@@ -11217,7 +11484,12 @@ export interface components {
             ftp_path: string;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
@@ -11226,6 +11498,11 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -11234,10 +11511,21 @@ export interface components {
              * @enum {string}
              */
             src: "ftp_import";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -11246,7 +11534,10 @@ export interface components {
         FtpImportTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -12820,7 +13111,10 @@ export interface components {
         HdcaDataItemsFromTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -12848,7 +13142,10 @@ export interface components {
         HdcaDataItemsTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -12857,8 +13154,8 @@ export interface components {
             /** Column Definitions */
             column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
-            /** Items */
-            items: (
+            /** Elements */
+            elements: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -16552,17 +16849,40 @@ export interface components {
         ModelStoreFormat: "tgz" | "tar" | "tar.gz" | "bag.zip" | "bag.tar" | "bag.tgz" | "rocrate.zip" | "bco.json";
         /** NestedElement */
         NestedElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -16572,28 +16892,28 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            /**
-             * Ext
-             * @default auto
-             */
-            ext: string;
-            extra_files?: components["schemas"]["ExtraFiles"] | null;
-            /** Hashes */
-            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
-            info?: string | null;
-            /** Items */
-            items: (
+            /** Elements */
+            elements: (
                 | (
                       | components["schemas"]["FileDataElement"]
                       | components["schemas"]["PastedDataElement"]
@@ -16605,6 +16925,25 @@ export interface components {
                   )
                 | components["schemas"]["NestedElement"]
             )[];
+            /**
+             * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
+             * @default auto
+             */
+            ext: string;
+            extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
+            info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
@@ -16612,13 +16951,29 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -17444,17 +17799,40 @@ export interface components {
         };
         /** PastedDataElement */
         PastedDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -17464,11 +17842,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -17476,26 +17864,41 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
              * Paste Content
-             * @description Content to upload
+             * @description This is the text of the content to import if the 'src' of the item is 'pasted'.
+             *
              */
             paste_content: string | number | boolean;
             /** Row */
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -17504,10 +17907,21 @@ export interface components {
              * @enum {string}
              */
             src: "pasted";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -17530,17 +17944,40 @@ export interface components {
         };
         /** PathDataElement */
         PathDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -17550,11 +17987,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -17562,13 +18009,22 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
@@ -17581,6 +18037,11 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -17589,10 +18050,21 @@ export interface components {
              * @enum {string}
              */
             src: "path";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -18805,17 +19277,40 @@ export interface components {
         };
         /** ServerDirElement */
         ServerDirElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -18825,11 +19320,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -18837,13 +19342,22 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
@@ -18856,6 +19370,11 @@ export interface components {
             server_dir: string;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -18864,10 +19383,21 @@ export interface components {
              * @enum {string}
              */
             src: "server_dir";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -20008,6 +20538,24 @@ export interface components {
              */
             values: string;
         };
+        /** ToolLandingRequest */
+        ToolLandingRequest: {
+            /** Request State */
+            request_state?: {
+                [key: string]: unknown;
+            } | null;
+            state: components["schemas"]["LandingRequestState"];
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+        };
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
@@ -20780,17 +21328,40 @@ export interface components {
         UploadOption: "upload_file" | "upload_paths" | "upload_directory";
         /** UrlDataElement */
         UrlDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             *
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             *
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             *
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
+             *
              * @default false
              */
             auto_decompress: boolean;
@@ -20800,11 +21371,21 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
+             *
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
+             *
              * @default false
              */
             deferred: boolean;
@@ -20812,13 +21393,22 @@ export interface components {
             description?: string | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
+             *
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             *
+             */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
@@ -20827,6 +21417,11 @@ export interface components {
             row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
+             *
              * @default false
              */
             space_to_tab: boolean;
@@ -20835,10 +21430,21 @@ export interface components {
              * @enum {string}
              */
             src: "url";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             *
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
+             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -22617,6 +23223,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_data_landing_api_data_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDataLandingPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */
@@ -37107,6 +37758,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_landing_api_tool_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToolLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_tool_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_tool_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */
