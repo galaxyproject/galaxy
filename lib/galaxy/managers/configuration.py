@@ -131,6 +131,7 @@ class ConfigSerializer(base.ModelSerializer):
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
+            "citation_bibtex": _use_config,
             "citations_export_message_html": _use_config,
             "support_url": _use_config,
             "quota_url": _use_config,

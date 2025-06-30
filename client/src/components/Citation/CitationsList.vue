@@ -2,13 +2,14 @@
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
-import { onMounted, onUpdated, ref } from "vue";
+import { computed, onMounted, onUpdated, ref } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
 import { copy } from "@/utils/clipboard";
 
 import type { Citation } from ".";
+import { Cite } from "./cite";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -34,7 +35,7 @@ const { config } = useConfig(true);
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
 const outputFormat = ref<string>(outputFormats.CITATION);
-const citations = ref<Citation[]>([]);
+const fetchedCitations = ref<Citation[]>([]);
 const isLoading = ref<boolean>(false);
 
 onUpdated(() => {
@@ -44,11 +45,29 @@ onUpdated(() => {
 onMounted(async () => {
     try {
         isLoading.value = true;
-        citations.value = await getCitations(props.source, props.id);
+        fetchedCitations.value = await getCitations(props.source, props.id);
     } catch (e) {
         console.error(e);
     } finally {
         isLoading.value = false;
+    }
+});
+
+/** The fetched Citations in addition to the Galaxy citation from config */
+const citations = computed<Citation[]>(() => {
+    const allCitations = [...fetchedCitations.value];
+
+    if (!config.value?.citation_bibtex) {
+        return allCitations;
+    }
+
+    try {
+        const cite = new Cite(config.value.citation_bibtex);
+        const galaxyCitation = { raw: config.value.citation_bibtex, cite };
+        return [galaxyCitation, ...allCitations];
+    } catch (err) {
+        console.warn("Error parsing Galaxy BibTeX citation:", config.value.citation_bibtex, err);
+        return allCitations;
     }
 });
 
