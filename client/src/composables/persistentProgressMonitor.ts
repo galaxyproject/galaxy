@@ -285,14 +285,27 @@ export function usePersistentProgressTaskMonitor(
  */
 export function getStoredProgressData(request: MonitoringRequest): MonitoringData | null {
     const localStorageKey = getPersistentKey(request);
-    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+    return getStoredProgressDataByKey(localStorageKey);
+}
+
+/**
+ * Retrieves task progress data from the local storage by the provided key.
+ * @param key The key to retrieve the stored progress data.
+ * @returns The associated task progress data or null if there is no stored data.
+ */
+export function getStoredProgressDataByKey(key: string): MonitoringData | null {
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(key, null, {
         serializer: StorageSerializers.object,
     });
-
     return currentMonitoringData.value;
 }
 
-function getPersistentKey(request: MonitoringRequest) {
+/**
+ * Builds a persistent key for the monitoring request.
+ * @param request The monitoring request information.
+ * @returns A string key that uniquely identifies the monitoring request.
+ */
+export function getPersistentKey(request: MonitoringRequest) {
     return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
 }
 
