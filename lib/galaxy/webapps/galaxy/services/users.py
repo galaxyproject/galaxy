@@ -1,6 +1,7 @@
 from typing import (
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -40,6 +41,9 @@ from galaxy.webapps.galaxy.services.base import (
 )
 from galaxy.webapps.galaxy.services.roles import role_to_model
 
+if TYPE_CHECKING:
+    from galaxy.work.context import SessionRequestContext
+
 
 class UsersService(ServiceBase):
     """Common interface/service logic for interactions with users in the context of the API.
@@ -66,7 +70,7 @@ class UsersService(ServiceBase):
 
     def recalculate_disk_usage(
         self,
-        trans: ProvidesUserContext,
+        trans: "SessionRequestContext",
         user_id: int,
     ):
         if trans.anonymous:
