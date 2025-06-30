@@ -51,6 +51,7 @@ name_tag:
 tags:
   multiple: true
   label: "General Purpose Tag(s)"
+  columnHeader: "General Purpose Tag"
   help: |
     Add a general purpose tag based on the specified column value, use : 
     to separate key-value pairs if desired. These tags are not propagated 
@@ -65,6 +66,7 @@ tags:
 group_tags:
   multiple: true
   label: "Group Tag(s)"
+  columnHeader: "Group Tag"
   help: |
     Add a group tag based on the specified column value, use : to separate 
     key-value pairs. These tags are propagated to derived datasets and may 
@@ -173,3 +175,31 @@ ftp_path:
     This should be the path to the target file to include relative to your 
     FTP directory on the Galaxy server.
   requiresFtp: true
+space_to_tab:
+  label: "Spaces to Tabs"
+  help: |
+    If this is set to true, all spaces in the column values will be replaced with 
+    tabs.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+to_posix_lines:
+  label: "To POSIX Lines"
+  help: |
+    If this is set to true, convert windows-style line endings to POSIX ones.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+auto_decompress:
+  label: "Auto Decompress"
+  help: |
+    This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+    compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+    explicitly set to a compressed datatype.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+deferred:
+  label: "Deferred"
+  help: |
+    This is a boolean value that indicates whether the dataset should be deferred. If set to true, Galaxy will not
+    download the dataset until it is used by a tool or workflow.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
