@@ -10,6 +10,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    Optional,
 )
 
 from galaxy.util.compression_utils import CompressedFile
@@ -51,6 +52,9 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
 
     def test_export_import_invocation_collection_input_sts(self):
         self._test_export_import_invocation_collection_input(False)
+
+    def test_export_import_invocation_with_input_as_output_tus(self):
+        self._test_export_import_invocation_with_input_as_output(False, use_upload=True)
 
     def test_export_import_invocation_with_input_as_output_uris(self):
         self._test_export_import_invocation_with_input_as_output(True)
@@ -108,10 +112,10 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
 
             self._rerun_imported_workflow(summary, invocation_details)
 
-    def _test_export_import_invocation_with_input_as_output(self, use_uris):
+    def _test_export_import_invocation_with_input_as_output(self, use_uris, use_upload=False):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_inputs_as_outputs(history_id)
-            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
+            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris, use_upload=use_upload)
             output_values = invocation_details["output_values"]
             assert len(output_values) == 1
             assert "wf_output_param" in output_values
@@ -177,24 +181,28 @@ outputs:
             assert len(contents) == len(original_contents) == 5
 
     def _export_and_import_workflow_invocation(
-        self, summary: RunJobsSummary, use_uris: bool = True, model_store_format="tgz"
+        self, summary: RunJobsSummary, use_uris: bool = True, use_upload=False, model_store_format="tgz"
     ) -> Dict[str, Any]:
         invocation_id = summary.invocation_id
         extension = model_store_format or "tgz"
-        if use_uris:
+        archive_path: Optional[str] = None
+        if use_uris or use_upload:
             uri = f"gxfiles://posix_test/invocation.{extension}"
             self.workflow_populator.download_invocation_to_uri(invocation_id, uri, extension=extension)
             root = self.root_dir
             invocation_path = os.path.join(root, f"invocation.{extension}")
             assert os.path.exists(invocation_path)
-            uri = invocation_path
+            if use_uris:
+                uri = invocation_path
+            else:
+                archive_path = invocation_path
         else:
             temp_tar = self.workflow_populator.download_invocation_to_store(invocation_id, extension=extension)
             uri = temp_tar
 
         with self.dataset_populator.test_history() as history_id:
             response = self.workflow_populator.create_invocation_from_store(
-                history_id, store_path=uri, model_store_format=model_store_format
+                history_id, store_path=uri, model_store_format=model_store_format, archive_path=archive_path
             )
 
         imported_invocation_details = self._assert_one_invocation_created_and_get_details(response)
