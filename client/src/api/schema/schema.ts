@@ -17585,7 +17585,11 @@ export interface components {
                 | "url"
                 | "url_deferred"
                 | "info"
-                | "ftp_path";
+                | "ftp_path"
+                | "deferred"
+                | "to_posix_lines"
+                | "space_to_tab"
+                | "auto_decompress";
             /** Type Index */
             type_index: number;
         };
