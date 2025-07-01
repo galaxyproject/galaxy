@@ -129,7 +129,7 @@ parsley==1.3
 paste==3.10.1
 pastedeploy==3.1.0
 pebble==5.1.1
-pillow==11.2.1
+pillow==11.3.0
 prompt-toolkit==3.0.51
 propcache==0.3.2
 prov==1.5.1
