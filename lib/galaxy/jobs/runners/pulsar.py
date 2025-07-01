@@ -247,7 +247,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
         for kwd in self.runner_params.keys():
             if kwd.startswith("amqp_") or kwd.startswith("transport_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
+
+        client_manager_kwargs.update(self._init_client_manager_extend_kwargs(**client_manager_kwargs))
+
         self.client_manager = build_client_manager(**client_manager_kwargs)
+
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        """Override this method to pass additional keyword arguments to the client manager or alter existing ones."""
+        return kwargs
 
     def __init_pulsar_app(self, conf, pulsar_conf_path):
         if conf is None and pulsar_conf_path is None and not self.default_build_pulsar_app:
@@ -1097,6 +1104,10 @@ class PulsarARCJobRunner(PulsarCoexecutionJobRunner):
 
         return super().queue_job(job_wrapper)
 
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        kwargs = super()._init_client_manager_extend_kwargs(**kwargs)
+        kwargs["arc_enabled"] = True
+        return kwargs
 
 KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
 
