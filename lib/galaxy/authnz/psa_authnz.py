@@ -3,6 +3,7 @@ import logging
 import time
 
 import jwt
+from jwt import InvalidTokenError
 from msal import ConfidentialClientApplication
 from social_core.actions import (
     do_auth,
@@ -519,13 +520,17 @@ def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **k
     if not _is_decodable_jwt(access_token_encoded):
         log.info("Access token is not in header.payload.signature format and can't be decoded (may be an opaque token)")
         return {"access_token": None}
-    access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
+    try:
+        access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
+    except InvalidTokenError as e:
+        log.info(f"Access token couldn't be decoded: {e}")
+        return {"access_token": None}
     return {"access_token": access_token_data}
 
 
 def _is_decodable_jwt(token_str: str) -> bool:
     """
-    Check if a token string represents a decodable JWT.
+    Check if a token string looks like a decodable JWT.
     We assume decodable JWTs are in the format header.payload.signature
     """
     components = token_str.split(".")
