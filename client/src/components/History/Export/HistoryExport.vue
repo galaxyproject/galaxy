@@ -14,8 +14,11 @@ import {
 import type { ColorVariant } from "@/components/Common";
 import { areEqual, type ExportParams, type ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useDownloadTracker } from "@/composables/downloadTracker";
 import { useFileSources } from "@/composables/fileSources";
+import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
+import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useHistoryStore } from "@/stores/historyStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
@@ -52,6 +55,8 @@ const {
     downloadObjectByRequestId,
     getDownloadObjectUrl,
 } = useShortTermStorage();
+
+const downloadTracker = useDownloadTracker();
 
 const { confirm } = useConfirmDialog();
 
@@ -165,7 +170,31 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
 }
 
 async function prepareDownload() {
-    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams.value });
+    const result = await prepareHistoryDownload(props.historyId, {
+        pollDelayInMs: POLLING_DELAY,
+        exportParams: exportParams.value,
+    });
+    if (result) {
+        const monitorRequest: MonitoringRequest = {
+            source: "history-export",
+            taskType: "short_term_storage",
+            action: "export",
+            object: {
+                id: props.historyId,
+                type: "history",
+                name: historyName.value,
+            },
+            description: `History export for ${historyName.value} for direct download`,
+        };
+        const { start } = usePersistentProgressTaskMonitor(monitorRequest, useShortTermStorageMonitor());
+        downloadTracker.trackDownloadRequest(monitorRequest);
+        start({
+            taskId: result.storageRequestId,
+            taskType: monitorRequest.taskType,
+            request: monitorRequest,
+            startedAt: new Date(),
+        });
+    }
     updateExports();
 }
 
