@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { faDownload, faHourglassEnd, faInfoCircle, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faDownload,
+    faHourglassEnd,
+    faInfoCircle,
+    faLink,
+    faSpinner,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { formatDistanceToNow } from "date-fns";
@@ -11,6 +18,8 @@ import { usePersistentProgressTaskMonitor } from "@/composables/persistentProgre
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
+import { copy } from "@/utils/clipboard";
+import { absPath } from "@/utils/redirect";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -100,6 +109,15 @@ const primaryActions = computed(() => {
     ];
 
     if (canDownload.value) {
+        actions.push({
+            id: "copy-download-link",
+            label: "Copy Link",
+            icon: faLink,
+            title: "Copy the download link to clipboard",
+            variant: "outline-primary",
+            handler: onCopyDownloadLink,
+            visible: true,
+        });
         actions.push({
             id: "download",
             label: "Download",
@@ -202,6 +220,15 @@ function onDownload() {
         emit("onDownload", downloadUrl.value);
     } else {
         console.error("Download URL is not available.");
+    }
+}
+
+function onCopyDownloadLink() {
+    if (downloadUrl.value) {
+        const link = absPath(downloadUrl.value);
+        copy(link, `Download link for ${prettyObjectType.value} successfully copied to clipboard.`);
+    } else {
+        console.error("Download URL is not available for copying.");
     }
 }
 
