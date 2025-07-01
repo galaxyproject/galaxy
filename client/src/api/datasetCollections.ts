@@ -14,6 +14,14 @@ const DEFAULT_LIMIT = 50;
 
 export type CollectionType = string;
 
+export type SampleSheetCollectionType =
+    | "sample_sheet"
+    | "sample_sheet:paired"
+    | "sample_sheet:paired_or_unpaired"
+    | "sample_sheet:record";
+// mirror the python definition here
+export type SampleSheetColumnValueT = string | number | boolean;
+
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.

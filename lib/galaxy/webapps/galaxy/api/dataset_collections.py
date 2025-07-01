@@ -8,9 +8,16 @@ from fastapi import (
     Response,
     status,
 )
+from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
+    CreateWorkbookFromBase64,
+    ParsedWorkbook,
+    ParseWorkbook,
+    SampleSheetCollectionType,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDCA,
@@ -27,11 +34,15 @@ from galaxy.webapps.galaxy.api import (
 from galaxy.webapps.galaxy.api.common import (
     DatasetCollectionElementIdPathParam,
     HistoryHDCAIDPathParam,
+    serve_workbook,
 )
 from galaxy.webapps.galaxy.services.dataset_collections import (
+    CreateWorkbookForCollectionApi,
     DatasetCollectionAttributesResult,
     DatasetCollectionContentElements,
     DatasetCollectionsService,
+    ParsedWorkbookForCollection,
+    ParseWorkbookForCollectionApi,
     SuitableConverters,
     UpdateCollectionAttributePayload,
 )
@@ -51,6 +62,19 @@ ViewTypeQueryParam: str = Query(
     description="The view of collection instance to return.",
 )
 
+Base64ColumnDefinitionsQueryParam: str = Query(
+    ...,
+    description="Base64 encoding of column definitions.",
+)
+Base64PrefixValuesQueryParam: str = Query(
+    None,
+    description="Prefix values for the seeding the workbook, base64 encoded.",
+)
+WorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
+
 
 @router.cbv
 class FastAPIDatasetCollections:
@@ -66,6 +90,68 @@ class FastAPIDatasetCollections:
         payload: CreateNewCollectionPayload = Body(...),
     ) -> HDCADetailed:
         return self.service.create(trans, payload)
+
+    @router.get(
+        "/api/sample_sheet_workbook/generate",
+        summary="Create an XLSX workbook for a sample sheet definition.",
+        response_class=StreamingResponse,
+        operation_id="dataset_collections__workbook_download",
+    )
+    def create_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        collection_type: SampleSheetCollectionType = "sample_sheet",
+        column_definitions: str = Base64ColumnDefinitionsQueryParam,
+        prefix_values: Optional[str] = Base64PrefixValuesQueryParam,
+        filename: Optional[str] = WorkbookFilenameQueryParam,
+    ):
+        payload = CreateWorkbookFromBase64(
+            collection_type=collection_type, column_definitions=column_definitions, prefix_values=prefix_values
+        )
+        output = self.service.create_workbook(payload)
+        return serve_workbook(output, filename)
+
+    @router.post(
+        "/api/sample_sheet_workbook/parse",
+        summary="Parse an XLSX workbook for a sample sheet definition and supplied file contents.",
+        operation_id="dataset_collections__workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseWorkbook = Body(...),
+    ) -> ParsedWorkbook:
+        return self.service.parse_workbook(payload)
+
+    @router.get(
+        "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/generate",
+        summary="Create an XLSX workbook for a sample sheet definition targeting an existing collection.",
+        response_class=StreamingResponse,
+        operation_id="dataset_collections__workbook_download_for_collection",
+    )
+    def create_workbook_for_collection(
+        self,
+        hdca_id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        column_definitions: str = Base64ColumnDefinitionsQueryParam,
+        filename: Optional[str] = WorkbookFilenameQueryParam,
+    ):
+        payload = CreateWorkbookForCollectionApi(hdca_id=hdca_id, column_definitions=column_definitions)
+        output = self.service.create_workbook_for_collection(trans, payload)
+        return serve_workbook(output, filename)
+
+    @router.post(
+        "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/parse",
+        summary="Parse an XLSX workbook for a sample sheet definition and supplied file contents.",
+        operation_id="dataset_collections__workbook_parse_for_collection",
+    )
+    def parse_workbook_for_collection(
+        self,
+        hdca_id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseWorkbookForCollectionApi = Body(...),
+    ) -> ParsedWorkbookForCollection:
+        return self.service.parse_workbook_for_collection(trans, hdca_id, payload)
 
     @router.post(
         "/api/dataset_collections/{hdca_id}/copy",
