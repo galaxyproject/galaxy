@@ -24,6 +24,11 @@ interface StorageRequestResponse {
     storage_request_id: string;
 }
 
+interface PrepareDownloadResult {
+    storageRequestId: string;
+    downloadUrl: string;
+}
+
 type StartPreparingDownloadCallback = (objectId: string, params: StoreExportPayload) => Promise<StorageRequestResponse>;
 
 const DEFAULT_POLL_DELAY = 3000;
@@ -93,7 +98,7 @@ export function useShortTermStorage() {
         startPreparingDownloadAsync: StartPreparingDownloadCallback,
         objectId: string,
         options = DEFAULT_OPTIONS
-    ) {
+    ): Promise<PrepareDownloadResult | undefined> {
         isPreparing.value = true;
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
         const exportParams: StoreExportPayload = {
@@ -107,6 +112,10 @@ export function useShortTermStorage() {
             const response = await startPreparingDownloadAsync(objectId, exportParams);
             const storageRequestId = response.storage_request_id;
             waitForTask(storageRequestId, finalOptions.pollDelayInMs);
+            return {
+                storageRequestId,
+                downloadUrl: getDownloadObjectUrl(storageRequestId),
+            };
         } catch (err) {
             isPreparing.value = false;
         }
