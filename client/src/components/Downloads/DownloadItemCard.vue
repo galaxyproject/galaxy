@@ -180,8 +180,7 @@ const badges = computed<CardBadge[]>(() => {
             variant: "danger",
             visible: true,
         });
-    }
-    if (hasExpired.value) {
+    } else if (hasExpired.value) {
         badges.push({
             id: "download-request-expired",
             label: "Expired",
@@ -265,10 +264,10 @@ start();
                 <span>Preparing {{ prettyObjectType }} for download...</span>
             </BAlert>
             <BAlert v-if="hasFailed" variant="danger" show>
-                The download request for {{ prettyObjectType }} has failed. <strong>Failure Reason:</strong>
-                {{ failureReason }}
+                The download request for {{ prettyObjectType }} has failed. Failure Reason:
+                <strong>{{ failureReason }}</strong>
             </BAlert>
-            <BAlert v-if="hasExpired" variant="warning" show>
+            <BAlert v-else-if="hasExpired" variant="warning" show>
                 The download request has expired and the result is no longer available. You can go to the
                 <strong>{{ prettyObjectType }}</strong> {{ monitoringData.request.action }} page and try again. This
                 download record can now be removed from the list of recent downloads.
