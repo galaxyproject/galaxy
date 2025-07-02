@@ -1,5 +1,5 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
-import { computed, readonly, watch } from "vue";
+import { computed, readonly, type Ref, watch } from "vue";
 
 import type { StoredTaskStatus, TaskMonitor } from "./genericTaskMonitor";
 
@@ -95,6 +95,40 @@ export interface MonitoringData extends StoredTaskStatus {
 }
 
 /**
+ * The return type of usePersistentProgressTaskMonitor composable.
+ */
+export interface PersistentProgressTaskMonitorResult {
+    /** Start monitoring the background process. */
+    start: (monitoringData?: MonitoringData) => Promise<void | unknown>;
+    /** Clears the monitoring data in the local storage. */
+    reset: () => void;
+    /** The task is still running. */
+    isRunning: Ref<boolean>;
+    /** The task has been completed successfully. */
+    isCompleted: Ref<boolean>;
+    /** Indicates the task has failed and will not yield results. */
+    hasFailed: Ref<boolean>;
+    /** The reason why the task has failed. */
+    failureReason: Ref<string | undefined>;
+    /** If true, the status of the task cannot be determined because of a request error. */
+    requestHasFailed: Ref<boolean>;
+    /** Indicates that there is monitoring data stored. */
+    hasMonitoringData: Ref<boolean>;
+    /** The task ID stored in the monitoring data or undefined if no monitoring data is available. */
+    storedTaskId: string | undefined;
+    /** The current status of the task. */
+    status: Ref<string | undefined>;
+    /** True if the monitoring data can expire. */
+    canExpire: Ref<boolean>;
+    /** True if the monitoring data has expired. */
+    hasExpired: Ref<boolean>;
+    /** The expiration date for the monitoring data. */
+    expirationDate: Ref<Date | undefined>;
+    /** The monitoring data stored in the local storage. */
+    monitoringData: Readonly<Ref<MonitoringData | null>>;
+}
+
+/**
  * This composable is used to store the information about a long-running asynchronous process
  * that persists across page navigation or refresh.
  *
@@ -104,7 +138,7 @@ export function usePersistentProgressTaskMonitor(
     request: MonitoringRequest,
     useMonitor: TaskMonitor,
     monitoringData: MonitoringData | null = null
-) {
+): PersistentProgressTaskMonitorResult {
     const {
         waitForTask,
         isFinalState,
