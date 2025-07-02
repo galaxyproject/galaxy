@@ -461,10 +461,14 @@ class WorkflowsAPIController(
 
             if "published" in workflow_dict and stored_workflow.published != workflow_dict["published"]:
                 stored_workflow.published = workflow_dict["published"]
+                if stored_workflow.importable is False and stored_workflow.published:
+                    stored_workflow.importable = True
                 require_flush = True
 
             if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
                 stored_workflow.importable = workflow_dict["importable"]
+                if stored_workflow.importable is False and stored_workflow.published:
+                    stored_workflow.published = False
                 require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
