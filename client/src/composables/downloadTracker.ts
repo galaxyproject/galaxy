@@ -15,7 +15,13 @@ export function useDownloadTracker() {
     const downloadProgressKeys: Ref<string[]> = useUserLocalStorage("download-tracker", []);
 
     const downloadMonitoringData = computed<MonitoringData[]>(() => {
-        return downloadProgressKeys.value.map((key) => getStoredProgressDataByKey(key)).filter((data) => data !== null);
+        return downloadProgressKeys.value
+            .map((key) => getStoredProgressDataByKey(key))
+            .filter((data) => data !== null)
+            .sort((a, b) => {
+                // Sort by most recent first
+                return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime();
+            });
     });
 
     function trackDownloadRequest(request: MonitoringRequest) {
