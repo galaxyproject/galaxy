@@ -46,6 +46,10 @@ const title = computed(() => {
     }`;
 });
 
+const requestDateISO = computed(() => {
+    return new Date(props.monitoringData.startedAt).toISOString();
+});
+
 const prettyObjectType = computed(() => {
     const type = props.monitoringData.request.object.type;
     switch (type) {
@@ -246,7 +250,7 @@ start();
         :title="title"
         :badges="badges"
         :primary-actions="primaryActions"
-        :update-time="monitoringData.startedAt.toLocaleString()"
+        :update-time="requestDateISO"
         :grid-view="gridView"
         :title-icon="{
             icon: faDownload,
