@@ -4,6 +4,8 @@ import { useRouter } from "vue-router/composables";
 
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { DEFAULT_POLL_DELAY } from "@/composables/shortTermStorageMonitor";
+import { useRoundRobinPoller } from "@/composables/useRoundRobinPoller";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -32,6 +34,16 @@ function onDelete(request: MonitoringRequest): void {
 function onDownload(url: string): void {
     window.open(url, "_blank");
 }
+
+const downloadsInProgress = computed(() => {
+    return downloadMonitoringData.value.filter((data) => !data.isFinal);
+});
+
+const poller = useRoundRobinPoller(downloadsInProgress, DEFAULT_POLL_DELAY);
+
+const taskIdToUpdate = computed(() => {
+    return poller.currentItem.value?.taskId;
+});
 </script>
 <template>
     <div class="recent-downloads">
@@ -46,6 +58,7 @@ function onDownload(url: string): void {
                 v-for="download in downloadMonitoringData"
                 :key="download.taskId"
                 :monitoring-data="download"
+                :update-task-id="taskIdToUpdate"
                 :grid-view="currentListView == 'grid'"
                 @onGoTo="onGoTo"
                 @onDelete="onDelete"
