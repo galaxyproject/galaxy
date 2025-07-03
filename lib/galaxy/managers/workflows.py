@@ -1798,6 +1798,8 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = supplied_steps[step_index]
             uuid = step_dict.get("uuid", None)
             if uuid and uuid != "None":
+                if not util.is_valid_uuid_v4(uuid):
+                    raise exceptions.ObjectAttributeInvalidException(f"Invalid step UUID '{uuid}' in request.")
                 if uuid in discovered_uuids:
                     raise exceptions.DuplicatedIdentifierException(f"Duplicate step UUID '{uuid}' in request.")
                 discovered_uuids.add(uuid)
