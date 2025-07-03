@@ -95,6 +95,7 @@ watch(
                 taskType: props.monitorRequest.taskType,
                 request: props.monitorRequest,
                 startedAt: new Date(),
+                isFinal: false,
             });
             downloadTracker.trackDownloadRequest(props.monitorRequest);
         }

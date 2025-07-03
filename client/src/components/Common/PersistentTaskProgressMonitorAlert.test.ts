@@ -72,6 +72,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -97,6 +98,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -122,6 +124,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -152,6 +155,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "short_term_storage",
             request: monitoringRequest,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(monitoringRequest, useMonitor, existingMonitoringData);
 
@@ -181,6 +185,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -206,6 +211,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 

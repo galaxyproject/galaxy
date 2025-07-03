@@ -33,6 +33,7 @@ const baseMonitoringData: MonitoringData = {
         description: "Test download description",
     },
     startedAt: requestStartDate,
+    isFinal: false,
 };
 
 const defaultMonitor: TaskMonitor = {
@@ -59,6 +60,7 @@ const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult 
     status: ref(""),
     start: jest.fn(),
     reset: jest.fn(),
+    checkStatus: jest.fn(),
 };
 
 const mockUsePersistentProgressTaskMonitor = jest.fn().mockReturnValue(defaultPersistentProgressTaskMonitor);

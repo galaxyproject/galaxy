@@ -193,6 +193,7 @@ async function prepareDownload() {
             taskType: monitorRequest.taskType,
             request: monitorRequest,
             startedAt: new Date(),
+            isFinal: false,
         });
     }
     updateExports();

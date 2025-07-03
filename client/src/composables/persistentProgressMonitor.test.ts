@@ -64,6 +64,7 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { start, isRunning } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor, monitoringData);
@@ -85,6 +86,7 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(

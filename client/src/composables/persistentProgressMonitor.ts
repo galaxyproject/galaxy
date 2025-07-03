@@ -92,6 +92,22 @@ export interface MonitoringData extends StoredTaskStatus {
      * The time when the task was started.
      */
     startedAt: Date;
+
+    /**
+     * Indicates whether the task is in a final state.
+     * A final state means that the task has either completed successfully, has failed or has expired.
+     * This is used to determine if the task can be monitored further or not.
+     */
+    isFinal: boolean;
+}
+
+interface CheckStatusOptions {
+    /**
+     * If true, the status of the task will be fetched from the server unless the task is already in a final state.
+     * If false, the status will be loaded from the stored data.
+     * Defaults to true.
+     */
+    enableFetch?: boolean;
 }
 
 /**
@@ -99,9 +115,14 @@ export interface MonitoringData extends StoredTaskStatus {
  */
 export interface PersistentProgressTaskMonitorResult {
     /** Start monitoring the background process. */
-    start: (monitoringData?: MonitoringData) => Promise<void | unknown>;
+    start: (monitoringData?: MonitoringData) => Promise<void>;
     /** Clears the monitoring data in the local storage. */
     reset: () => void;
+    /**
+     * Fetches the current status of the task from the server and updates the internal state.
+     * If the task is already in a final state, no request will be made and the stored status will be used instead.
+     */
+    checkStatus: (options?: CheckStatusOptions) => Promise<void>;
     /** The task is still running. */
     isRunning: Ref<boolean>;
     /** The task has been completed successfully. */
@@ -143,6 +164,7 @@ export function usePersistentProgressTaskMonitor(
         waitForTask,
         isFinalState,
         loadStatus,
+        fetchTaskStatus,
         isRunning,
         isCompleted,
         hasFailed,
@@ -214,7 +236,10 @@ export function usePersistentProgressTaskMonitor(
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
         }
 
-        if (isFinalState(currentMonitoringData.value.taskStatus)) {
+        const isFinal = isFinalState(currentMonitoringData.value.taskStatus) || hasExpired.value;
+        currentMonitoringData.value.isFinal = isFinal;
+
+        if (isFinal) {
             // The task has already finished no need to start monitoring again.
             // Instead, reload the stored status to update the UI.
             return loadStatus(currentMonitoringData.value);
@@ -227,6 +252,25 @@ export function usePersistentProgressTaskMonitor(
         }
 
         return waitForTask(currentMonitoringData.value.taskId);
+    }
+
+    async function checkStatus(options: CheckStatusOptions = { enableFetch: true }) {
+        if (!currentMonitoringData.value) {
+            throw new Error("No monitoring data stored available to check status.");
+        }
+
+        const isFinal = isFinalState(currentMonitoringData.value.taskStatus) || hasExpired.value;
+        currentMonitoringData.value.isFinal = isFinal;
+
+        if (isFinal || !options.enableFetch) {
+            return loadStatus(currentMonitoringData.value);
+        }
+
+        try {
+            await fetchTaskStatus(currentMonitoringData.value.taskId);
+        } catch (error) {
+            console.error("Failed to fetch task status:", error);
+        }
     }
 
     function reset() {
@@ -245,6 +289,13 @@ export function usePersistentProgressTaskMonitor(
          * Clears the monitoring data in the local storage.
          */
         reset,
+
+        /**
+         * Fetches the current status of the task from the server and updates the internal state.
+         * If the task is already in a final state, no request will be made and the stored status will be used instead.
+         * @param options Optional parameters to control the fetch behavior.
+         */
+        checkStatus,
 
         /**
          * The task is still running.
