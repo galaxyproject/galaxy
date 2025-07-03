@@ -187,7 +187,7 @@ class Registry:
                 auto_compressed_types = galaxy.util.listify(elem.get("auto_compressed_types", ""))
                 sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
                 if sniff_compressed_types is None:
-                    sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
+                    sniff_compressed_types = self.config.sniff_compressed_dynamic_datatypes_default
                     # Make sure this is set in the elems we write out so the config option is passed to the upload
                     # tool which does not have a config object.
                     elem.set("sniff_compressed_types", str(sniff_compressed_types))
@@ -498,7 +498,7 @@ class Registry:
             for elem in root.find("build_sites").findall("site"):
                 load_build_site(elem)
         else:
-            build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
+            build_sites_config_file = self.config.build_sites_config_file
             if build_sites_config_file and os.path.exists(build_sites_config_file):
                 with open(build_sites_config_file) as f:
                     build_sites_config = yaml.safe_load(f)

@@ -613,7 +613,7 @@ class ToolBox(AbstractToolBox):
         try:
             return get_tool_source(
                 config_file,
-                enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+                enable_beta_formats=self.app.config.enable_beta_tool_formats,
                 tool_location_fetcher=self.tool_location_fetcher,
                 **kwargs,
             )
@@ -723,7 +723,7 @@ class ToolBox(AbstractToolBox):
         )
 
     def _looks_like_a_tool(self, path):
-        return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
+        return looks_like_a_tool(path, enable_beta_formats=self.app.config.enable_beta_tool_formats)
 
     def _init_dependency_manager(self):
         use_tool_dependency_resolution = getattr(self.app, "use_tool_dependency_resolution", True)

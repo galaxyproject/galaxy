@@ -770,7 +770,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key), name=name, path=self.cookie_path)
 
     def check_user_library_import_dir(self, user):
-        if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
+        if self.app.config.user_library_import_dir_auto_creation:
             # try to create a user library import directory
             try:
                 safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))

@@ -80,7 +80,7 @@ class ToolValidator:
     def load_tool_from_config(self, repository_id, full_path):
         tool_source = get_tool_source(
             full_path,
-            enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+            enable_beta_formats=self.app.config.enable_beta_tool_formats,
             tool_location_fetcher=ToolLocationFetcher(),
         )
         try:
