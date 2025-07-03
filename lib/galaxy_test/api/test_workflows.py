@@ -1134,6 +1134,16 @@ steps:
         response = self.workflow_populator.create_workflow_response(workflow_dup_uuids)
         self._assert_status_code_is(response, 400)
 
+    def test_require_step_valid_v4_uuids(self):
+        workflow_invalid_uuid = self.workflow_populator.load_workflow(name="test_import")
+        first_step = next(iter(workflow_invalid_uuid["steps"].values()), None)
+        if first_step is None:
+            raise AssertionError("No steps found in the workflow, cannot test invalid UUIDs.")
+        # Set the first step's uuid to a v1 uuid, which is not valid.
+        first_step["uuid"] = "00000000-0000-1000-8000-000000000000"
+        response = self.workflow_populator.create_workflow_response(workflow_invalid_uuid)
+        self._assert_status_code_is(response, 400)
+
     def test_require_unique_step_labels(self):
         workflow_dup_label = self.workflow_populator.load_workflow(name="test_import")
         for step_dict in workflow_dup_label["steps"].values():
