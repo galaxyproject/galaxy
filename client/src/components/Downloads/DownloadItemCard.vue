@@ -10,7 +10,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { formatDistanceToNow } from "date-fns";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
 import type { MonitoringData, MonitoringRequest } from "@/composables/persistentProgressMonitor";
@@ -27,7 +27,10 @@ import GCard from "@/components/Common/GCard.vue";
 const { getDownloadObjectUrl } = useShortTermStorage();
 
 interface Props {
+    /** The monitoring data associated with the download request */
     monitoringData: MonitoringData;
+    /** The ID of the task that needs to be updated */
+    updateTaskId?: string;
     /** Whether to display the card in a grid view */
     gridView?: boolean;
 }
@@ -77,7 +80,7 @@ const {
     storedTaskId,
     hasExpired,
     expirationDate,
-    start,
+    checkStatus,
     reset,
 } = usePersistentProgressTaskMonitor(props.monitoringData.request, useMonitor);
 
@@ -240,7 +243,21 @@ function onRemove() {
     reset();
 }
 
-start();
+// Instead of polling, watch for changes in the updateTaskId and if it matches the
+// current taskId, trigger a status check.
+watch(
+    () => props.updateTaskId,
+    (newTaskId) => {
+        if (newTaskId === props.monitoringData.taskId) {
+            checkStatus();
+        }
+    },
+    { immediate: true }
+);
+
+// Initial check to set the status based on the currently stored monitoring data
+// No request to the server is made here.
+checkStatus({ enableFetch: false });
 </script>
 <template>
     <GCard
