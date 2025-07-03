@@ -130,7 +130,7 @@ async function loadGraph() {
     errorMessage.value = "";
 
     try {
-        await loadInvocationGraph();
+        await loadInvocationGraph(props.isTerminal);
         errored.value = false;
     } catch (error: any) {
         if (error.response?.data.err_msg) {
