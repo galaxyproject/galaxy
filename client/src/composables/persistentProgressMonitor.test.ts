@@ -37,6 +37,7 @@ function useMonitorMock(): TaskMonitor {
         loadStatus(storedStatus) {
             taskStatus.value = storedStatus;
         },
+        fetchTaskStatus: jest.fn(),
     };
 }
 const mockUseMonitor = useMonitorMock();

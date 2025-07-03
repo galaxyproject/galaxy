@@ -47,6 +47,7 @@ const defaultMonitor: TaskMonitor = {
     expirationTime: expirationTime,
     isFinalState: jest.fn(),
     loadStatus: jest.fn(),
+    fetchTaskStatus: jest.fn(),
 };
 
 const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult = {

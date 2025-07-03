@@ -71,6 +71,12 @@ export interface TaskMonitor {
     loadStatus: (persistedTaskStatus: StoredTaskStatus) => void;
 
     /**
+     * Fetches the current status of the task from the server and updates the internal state.
+     * @param taskId The task ID to fetch the status for.
+     */
+    fetchTaskStatus: (taskId: string) => Promise<void>;
+
+    /**
      * Determines if the status represents a final state.
      * @param status The status string to check.
      * @returns True if the status is a final state and is not expected to change.
@@ -140,12 +146,12 @@ export function useGenericMonitor(options: {
         pollDelay = pollDelayInMs ?? pollDelay;
         resetState();
         requestId.value = taskId;
-        isRunning.value = true;
         return fetchTaskStatus(taskId);
     }
 
     async function fetchTaskStatus(taskId: string) {
         try {
+            isRunning.value = true;
             const result = await options.fetchStatus(taskId);
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
@@ -194,6 +200,7 @@ export function useGenericMonitor(options: {
         waitForTask,
         isFinalState,
         loadStatus,
+        fetchTaskStatus,
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),
