@@ -37,6 +37,7 @@ const FAKE_MONITOR: TaskMonitor = {
     expirationTime: FAKE_EXPIRATION_TIME,
     isFinalState: jest.fn(),
     loadStatus: jest.fn(),
+    fetchTaskStatus: jest.fn(),
 };
 
 const mountComponent = (
