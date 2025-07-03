@@ -298,7 +298,8 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     if not volumes_raw_str:
         return []
 
-    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",")]
+    # filter out empty strings, this happens for tools without tool directories.
+    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",") if v]
     rw_paths = [v.target for v in volumes if v.mode == "rw"]
     for volume in volumes:
         mode = volume.mode
