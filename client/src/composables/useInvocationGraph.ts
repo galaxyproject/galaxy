@@ -11,7 +11,6 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
-import { GalaxyApi } from "@/api";
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -92,6 +91,11 @@ export function useInvocationGraph(
     const invocationStore = useInvocationStore();
     const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
+    /** The job summary for each step in the invocation */
+    const stepsJobsSummary = computed(() => {
+        return invocationStore.getInvocationStepJobsSummaryById(invocation.value.id);
+    });
+
     /** The full invocation mapped onto the original workflow */
     const invocationGraph = ref<InvocationGraph | null>(null);
 
@@ -102,7 +106,7 @@ export function useInvocationGraph(
 
     provideScopedWorkflowStores(storeId);
 
-    async function loadInvocationGraph() {
+    async function loadInvocationGraph(isTerminal = false) {
         loading.value = true;
 
         try {
@@ -125,19 +129,13 @@ export function useInvocationGraph(
                 };
             }
 
-            // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
-                "/api/invocations/{invocation_id}/step_jobs_summary",
-                {
-                    params: { path: { invocation_id: invocation.value.id } },
-                }
-            );
-
-            if (error) {
-                rethrowSimple(error);
+            if (!isTerminal || !stepsJobsSummary.value) {
+                await invocationStore.fetchInvocationStepJobsSummaryForId({ id: invocation.value.id });
             }
 
-            await updateSteps(stepsJobsSummary);
+            if (stepsJobsSummary.value) {
+                await updateSteps(stepsJobsSummary.value);
+            }
 
             // Load the invocation graph into the editor the first time
             if (!stepsPopulated.value) {

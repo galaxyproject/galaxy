@@ -5,6 +5,7 @@ import { GalaxyApi } from "@/api";
 import type {
     InvocationJobsSummary,
     InvocationStep,
+    StepJobSummary,
     WorkflowInvocation,
     WorkflowInvocationRequest,
 } from "@/api/invocations";
@@ -29,6 +30,16 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     async function fetchInvocationJobsSummary(params: FetchParams): Promise<InvocationJobsSummary> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
+            params: { path: { invocation_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    async function fetchInvocationStepJobsSummary(params: FetchParams): Promise<StepJobSummary[]> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/step_jobs_summary", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
@@ -85,6 +96,9 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
 
+    const { getItemById: getInvocationStepJobsSummaryById, fetchItemById: fetchInvocationStepJobsSummaryForId } =
+        useKeyedCache<StepJobSummary[]>(fetchInvocationStepJobsSummary);
+
     const { getItemById: getInvocationStepById, fetchItemById: fetchInvocationStepById } =
         useKeyedCache<InvocationStep>(fetchInvocationStep);
 
@@ -94,9 +108,11 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         cancelWorkflowScheduling,
         fetchInvocationById,
         fetchInvocationJobsSummaryForId,
+        fetchInvocationStepJobsSummaryForId,
         fetchInvocationStepById,
         getInvocationById,
         getInvocationJobsSummaryById,
+        getInvocationStepJobsSummaryById,
         getInvocationLoadError,
         getInvocationStepById,
         getInvocationRequestById,
