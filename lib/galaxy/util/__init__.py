@@ -24,6 +24,7 @@ import textwrap
 import threading
 import time
 import unicodedata
+import uuid
 import xml.dom.minidom
 from datetime import (
     datetime,
@@ -241,6 +242,15 @@ def is_uuid(value):
     if re.match(uuid_re, str(value)):
         return True
     else:
+        return False
+
+
+def is_valid_uuid_v4(uuid_str: str) -> bool:
+    """Check if a string is a valid UUID v4."""
+    try:
+        u = uuid.UUID(uuid_str)
+        return u.version == 4
+    except ValueError:
         return False
 
 
