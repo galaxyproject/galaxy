@@ -991,7 +991,9 @@ def replace_request_syntax_sugar(obj):
                 if key.lower() in obj:
                     new_hashes.append({"hash_function": key, "hash_value": obj[key.lower()]})
                     del obj[key.lower()]
-
+            # hack around pydantic stick a None in here for data fetch models.
+            if "hashes" in obj and obj["hashes"] is None:
+                obj["hashes"] = []
             obj.setdefault("hashes", []).extend(new_hashes)
 
 
