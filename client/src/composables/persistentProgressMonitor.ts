@@ -274,7 +274,7 @@ export function usePersistentProgressTaskMonitor(
         }
 
         try {
-            await fetchTaskStatus(currentMonitoringData.value.taskId);
+            await fetchTaskStatus(currentMonitoringData.value.taskId, { keepPolling: false });
         } catch (error) {
             console.error("Failed to fetch task status:", error);
         }

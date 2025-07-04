@@ -20,6 +20,11 @@ export interface StoredTaskStatus {
     failureReason?: string;
 }
 
+interface FetchStatusOptions {
+    /** Whether to keep polling for updates after the initial fetch. */
+    keepPolling?: boolean;
+}
+
 /**
  * Represents a task monitor that can be used to wait for a background task to complete or
  * check its status.
@@ -79,8 +84,9 @@ export interface TaskMonitor {
     /**
      * Fetches the current status of the task from the server and updates the internal state.
      * @param taskId The task ID to fetch the status for.
+     * @param options Options for fetching the status.
      */
-    fetchTaskStatus: (taskId: string) => Promise<void>;
+    fetchTaskStatus: (taskId: string, options?: FetchStatusOptions) => Promise<void>;
 
     /**
      * Determines if the status represents a final state.
@@ -155,7 +161,7 @@ export function useGenericMonitor(options: {
         return fetchTaskStatus(taskId);
     }
 
-    async function fetchTaskStatus(taskId: string) {
+    async function fetchTaskStatus(taskId: string, fetchOptions: FetchStatusOptions = { keepPolling: true }) {
         try {
             isRunning.value = true;
             const result = await options.fetchStatus(taskId);
@@ -166,7 +172,7 @@ export function useGenericMonitor(options: {
                     const errorMessage = await options.fetchFailureReason(taskId);
                     failureReason.value = errorMessage;
                 }
-            } else {
+            } else if (fetchOptions.keepPolling) {
                 pollAfterDelay(taskId);
             }
         } catch (err) {
