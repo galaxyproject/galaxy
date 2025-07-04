@@ -10,7 +10,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { formatDistanceToNow } from "date-fns";
-import { computed, watch } from "vue";
+import { computed, onUnmounted, watch } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
 import type { MonitoringData, MonitoringRequest } from "@/composables/persistentProgressMonitor";
@@ -82,6 +82,7 @@ const {
     expirationDate,
     checkStatus,
     reset,
+    stop: stopCheckingStatus,
 } = usePersistentProgressTaskMonitor(props.monitoringData.request, useMonitor);
 
 const downloadUrl = computed(() => {
@@ -254,6 +255,10 @@ watch(
     },
     { immediate: true }
 );
+
+onUnmounted(() => {
+    stopCheckingStatus();
+});
 
 // Initial check to set the status based on the currently stored monitoring data
 // No request to the server is made here.
