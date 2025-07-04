@@ -399,6 +399,19 @@ export function getStoredProgressDataByKey(key: string): MonitoringData | null {
 }
 
 /**
+ * Stores the provided monitoring data in the local storage under a persistent key
+ * derived from the monitoring request information.
+ * @param monitoringData The monitoring data to store.
+ */
+export function storeProgressData(monitoringData: MonitoringData) {
+    const localStorageKey = getPersistentKey(monitoringData.request);
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+        serializer: StorageSerializers.object,
+    });
+    currentMonitoringData.value = monitoringData;
+}
+
+/**
  * Builds a persistent key for the monitoring request.
  * @param request The monitoring request information.
  * @returns A string key that uniquely identifies the monitoring request.
