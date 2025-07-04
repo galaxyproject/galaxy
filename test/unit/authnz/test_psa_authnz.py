@@ -7,11 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
-from io import StringIO
-from unittest.mock import (
-    MagicMock,
-    patch,
-)
+from unittest.mock import MagicMock
 
 import jwt
 import pytest
@@ -283,7 +279,7 @@ def test_decode_access_token_opaque_token():
     mock_social = MagicMock()
     mock_social.extra_data.get.return_value = opaque_token
     result = decode_access_token(social=mock_social, backend=MagicMock())
-    assert result["access_token"] == None
+    assert result["access_token"] is None
 
 
 def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backend_config_file):
