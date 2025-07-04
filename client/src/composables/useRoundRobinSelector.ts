@@ -25,13 +25,14 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
     async function next() {
         if (!items.value.length) {
             currentIndex = 0;
-        } else if (items.value.length === 1) {
-            // When there's only one item, we still want to trigger a change
-            // to allow Vue watchers to react, even if the value is the same.
-            currentItem.value = null;
-            await nextTick();
         } else {
+            const previousIndex = currentIndex;
             currentIndex = (currentIndex + 1) % items.value.length;
+            if (previousIndex === currentIndex) {
+                // If we wrapped around to the same index, we still want to trigger a change
+                currentItem.value = null;
+                await nextTick();
+            }
         }
         updateExposedItem();
     }
