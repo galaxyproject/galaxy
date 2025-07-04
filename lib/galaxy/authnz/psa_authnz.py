@@ -521,12 +521,12 @@ def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **k
     if access_token_encoded is None:
         return {"access_token": None}
     if not _is_decodable_jwt(access_token_encoded):
-        log.info("Access token is not in header.payload.signature format and can't be decoded (may be an opaque token)")
+        log.warning("Access token is not in header.payload.signature format and can't be decoded (may be an opaque token)")
         return {"access_token": None}
     try:
         access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
     except InvalidTokenError as e:
-        log.info(f"Access token couldn't be decoded: {e}")
+        log.warning(f"Access token couldn't be decoded: {e}")
         return {"access_token": None}
     return {"access_token": access_token_data}
 
