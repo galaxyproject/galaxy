@@ -116,6 +116,8 @@ interface CheckStatusOptions {
 export interface PersistentProgressTaskMonitorResult {
     /** Start monitoring the background process. */
     start: (monitoringData?: MonitoringData) => Promise<void>;
+    /** Stops monitoring the background process. */
+    stop: () => void;
     /** Clears the monitoring data in the local storage. */
     reset: () => void;
     /**
@@ -162,6 +164,7 @@ export function usePersistentProgressTaskMonitor(
 ): PersistentProgressTaskMonitorResult {
     const {
         waitForTask,
+        stopWaitingForTask,
         isFinalState,
         loadStatus,
         fetchTaskStatus,
@@ -254,6 +257,10 @@ export function usePersistentProgressTaskMonitor(
         return waitForTask(currentMonitoringData.value.taskId);
     }
 
+    function stop() {
+        stopWaitingForTask();
+    }
+
     async function checkStatus(options: CheckStatusOptions = { enableFetch: true }) {
         if (!currentMonitoringData.value) {
             throw new Error("No monitoring data stored available to check status.");
@@ -284,6 +291,12 @@ export function usePersistentProgressTaskMonitor(
          * @param monitoringData Optional monitoring data to override the stored one.
          */
         start,
+
+        /**
+         * Stops monitoring the background process.
+         * This will stop polling requests.
+         */
+        stop,
 
         /**
          * Clears the monitoring data in the local storage.

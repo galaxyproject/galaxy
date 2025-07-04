@@ -26,6 +26,7 @@ function useMonitorMock(): TaskMonitor {
         waitForTask: jest.fn().mockImplementation(() => {
             isRunning.value = true;
         }),
+        stopWaitingForTask: jest.fn(),
         isRunning,
         isCompleted: ref(false),
         hasFailed: ref(false),

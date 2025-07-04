@@ -38,6 +38,7 @@ const baseMonitoringData: MonitoringData = {
 
 const defaultMonitor: TaskMonitor = {
     waitForTask: jest.fn(),
+    stopWaitingForTask: jest.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
@@ -60,6 +61,7 @@ const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult 
     storedTaskId: fakeTaskId,
     status: ref(""),
     start: jest.fn(),
+    stop: jest.fn(),
     reset: jest.fn(),
     checkStatus: jest.fn(),
 };

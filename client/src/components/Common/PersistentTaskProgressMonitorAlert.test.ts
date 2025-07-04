@@ -28,6 +28,7 @@ const FAKE_EXPIRATION_TIME = 1000;
 
 const FAKE_MONITOR: TaskMonitor = {
     waitForTask: jest.fn(),
+    stopWaitingForTask: jest.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
