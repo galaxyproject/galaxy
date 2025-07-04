@@ -1,11 +1,13 @@
 import base64
 import secrets
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
 )
+from io import StringIO
 from unittest.mock import (
     MagicMock,
     patch,
@@ -29,7 +31,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
-from galaxy.authnz.psa_authnz import decode_access_token
+from galaxy.authnz.managers import AuthnzManager
+from galaxy.authnz.psa_authnz import decode_access_token, _decode_access_token_helper, PSAAuthnz
 
 
 @pytest.fixture(scope="module")
@@ -44,6 +47,39 @@ def db_session(engine):
     yield session
     session.rollback()
     session.close()
+
+
+@pytest.fixture
+def mock_oidc_backend_config_file(tmp_path):
+    config = """<?xml version="1.0"?>
+    <OIDC>
+        <provider name="oidc">
+            <url>login.example.com</url>
+            <client_id>gxyclient</client_id>
+            <client_secret>dummyclientsecret</client_secret>
+            <redirect_uri>$galaxy_url/authnz/$provider_name/callback</redirect_uri>
+            <enable_idp_logout>true</enable_idp_logout>
+            <accepted_audiences>gxyclient</accepted_audiences>
+        </provider>
+    </OIDC>
+    """
+    filename = tmp_path / "oidc_backends_config.xml"
+    filename.write_text(config)
+    return filename
+
+
+@pytest.fixture
+def mock_oidc_config_file(tmp_path):
+    config = """<?xml version="1.0"?>
+    <OIDC>
+        <Setter Property="VERIFY_SSL" Value="False" Type="bool"/>
+        <Setter Property="REQUESTS_TIMEOUT" Value="3600" Type="float"/>
+        <Setter Property="ID_TOKEN_MAX_AGE" Value="3600" Type="float"/>
+    </OIDC>
+    """
+    filename = tmp_path / "oidc_config.xml"
+    filename.write_text(config)
+    return filename
 
 
 @dataclass
@@ -174,15 +210,18 @@ def test_decode_access_token_invalid_key():
     mock_backend.find_valid_key.return_value = incorrect_public_key_data
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
-    # Check that decoding raises the expected error
+    # Test that the decode function returns None for the access token
+    result = decode_access_token(social=mock_social, backend=mock_backend)
+    assert result["access_token"] is None
+    # Test the actual decoding raises expected error
     with pytest.raises(InvalidSignatureError):
-        decode_access_token(social=mock_social, backend=mock_backend)
+        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_invalid_issuer():
     """
-    Test that a token with an invalid issuer (doesn't match what we expect) raises
-    an error
+    Test that a token with an invalid issuer (doesn't match what we expect)
+    is not decoded/returned
     """
     # Set up example data and mocks
     dummy_access_token = create_access_token(iss="https://invalid.url")
@@ -193,15 +232,18 @@ def test_decode_access_token_invalid_issuer():
     mock_backend.find_valid_key.return_value = public_key_data
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = "https://validissuer.com"
-    # Test decoding raises expected error
+    # Test that the decode function returns None for the access token
+    result = decode_access_token(social=mock_social, backend=mock_backend)
+    assert result["access_token"] is None
+    # Test the actual decoding raises expected error
     with pytest.raises(InvalidIssuerError):
-        decode_access_token(social=mock_social, backend=mock_backend)
+        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_invalid_audience():
     """
-    Test that a token with an invalid audience (doesn't match what we expect) raises
-    an error
+    Test that a token with an invalid audience (doesn't match what we expect)
+    is not decoded/returned
     """
     # Set up example data and mocks
     dummy_access_token = create_access_token(aud="https://invalidaudience.url")
@@ -212,9 +254,12 @@ def test_decode_access_token_invalid_audience():
     mock_backend.find_valid_key.return_value = public_key_data
     mock_backend.strategy.config = {"accepted_audiences": ["https://validaudience.url"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
-    # Test decoding raises expected error
+    # Test that the decode function returns None for the access token
+    result = decode_access_token(social=mock_social, backend=mock_backend)
+    assert result["access_token"] is None
+    # Test the actual decoding raises expected error
     with pytest.raises(InvalidAudienceError):
-        decode_access_token(social=mock_social, backend=mock_backend)
+        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_opaque_token():
@@ -235,3 +280,36 @@ def test_decode_access_token_opaque_token():
     mock_social.extra_data.get.return_value = opaque_token
     result = decode_access_token(social=mock_social, backend=MagicMock())
     assert result["access_token"] == None
+
+
+def test_oidc_config_decode_access_token(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """
+    Test that when we set oidc_decode_access_token in config, the step is added to
+    the auth pipeline in PSAAuthnz
+    """
+    mock_app = MagicMock()
+    mock_app.config.get.side_effect = lambda k: {"oidc_decode_access_token": True}.get(k)
+    mock_app.config.oidc = defaultdict(dict)
+    manager = AuthnzManager(app=mock_app, oidc_config_file=mock_oidc_config_file,
+                            oidc_backends_config_file=mock_oidc_backend_config_file)
+    psa_authnz = PSAAuthnz(provider="oidc",
+                           oidc_config=manager.oidc_config,
+                           oidc_backend_config=manager.oidc_backends_config)
+    assert "galaxy.authnz.psa_authnz.decode_access_token" in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
+
+
+def test_oidc_config_no_decode_access_token(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """
+    Test that when we set oidc_decode_access_token to false in config (the default),
+    the step is not added to the auth pipeline in PSAAuthnz
+    """
+    mock_app = MagicMock()
+    mock_app.config.get.side_effect = lambda k: {"oidc_decode_access_token": False}.get(k)
+    mock_app.config.oidc.return_value = defaultdict(dict)
+    manager = AuthnzManager(app=mock_app, oidc_config_file=mock_oidc_config_file,
+                            oidc_backends_config_file=mock_oidc_backend_config_file)
+    assert manager.oidc_config["decode_access_token"] is False
+    psa_authnz = PSAAuthnz(provider="oidc",
+                           oidc_config=manager.oidc_config,
+                           oidc_backend_config=manager.oidc_backends_config)
+    assert "galaxy.authnz.psa_authnz.decode_access_token" not in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
