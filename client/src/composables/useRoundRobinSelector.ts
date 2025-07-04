@@ -1,21 +1,23 @@
+import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { nextTick, onMounted, onUnmounted, readonly, type Ref, ref, watch } from "vue";
 
 /**
  * Generic round-robin selector for a list of items.
- * @param items - a Ref or computed returning the current list of items to select from
+ * @param items - a Ref, computed, or raw array of items to select from
  * @param pollInterval - ms between switching to the next item. Defaults to 10000ms (10 seconds).
  */
-export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) {
+export function useRoundRobinSelector<T>(items: MaybeRefOrGetter<T[]> | T[], pollInterval = 10000) {
     let currentIndex = 0;
     let timer: ReturnType<typeof setInterval> | null = null;
 
     const currentItem = ref<T | null>(null) as Ref<T | null>;
 
     const getCurrentItem = (): T | null => {
-        if (!items.value.length) {
+        const itemList = toValue(items);
+        if (!itemList.length) {
             return null;
         }
-        return items.value[currentIndex % items.value.length] ?? null;
+        return itemList[currentIndex % itemList.length] ?? null;
     };
 
     function updateExposedItem() {
@@ -23,11 +25,12 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
     }
 
     async function next() {
-        if (!items.value.length) {
+        const itemList = toValue(items);
+        if (!itemList.length) {
             currentIndex = 0;
         } else {
             const previousIndex = currentIndex;
-            currentIndex = (currentIndex + 1) % items.value.length;
+            currentIndex = (currentIndex + 1) % itemList.length;
             if (previousIndex === currentIndex) {
                 // If we wrapped around to the same index, we still want to trigger a change
                 currentItem.value = null;
@@ -39,7 +42,8 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
 
     function start() {
         stop();
-        if (items.value.length > 0) {
+        const itemList = toValue(items);
+        if (itemList.length > 0) {
             timer = setInterval(next, pollInterval);
         }
     }
@@ -51,15 +55,18 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
         }
     }
 
-    watch(items, (newItems) => {
-        currentIndex = 0;
-        updateExposedItem();
-        if (!newItems.length) {
-            stop();
-        } else if (!timer) {
-            start();
+    watch(
+        () => toValue(items),
+        (newItems) => {
+            currentIndex = 0;
+            updateExposedItem();
+            if (!newItems.length) {
+                stop();
+            } else if (!timer) {
+                start();
+            }
         }
-    });
+    );
 
     onMounted(() => {
         updateExposedItem();
