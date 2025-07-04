@@ -246,8 +246,10 @@ class AuthnzManager:
                         True,
                         "",
                         identity_provider_class(
-                            unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name],
-                            self.app.config
+                            unified_provider_name,
+                            self.oidc_config,
+                            self.oidc_backends_config[unified_provider_name],
+                            self.app.config,
                         ),
                     )
             except Exception as e:

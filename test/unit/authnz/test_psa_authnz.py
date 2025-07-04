@@ -289,14 +289,18 @@ def test_decode_access_token_opaque_token():
 def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backend_config_file):
     custom_auth_pipeline = ("custom", "auth", "steps")
     mock_app = MagicMock()
-    mock_app.config.get.side_effect = lambda k, default=None: {"oidc_auth_pipeline": custom_auth_pipeline}.get(k, default)
+    mock_app.config.get.side_effect = lambda k, default=None: {"oidc_auth_pipeline": custom_auth_pipeline}.get(
+        k, default
+    )
     mock_app.config.oidc = defaultdict(dict)
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
     psa_authnz = PSAAuthnz(
-        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline
 
@@ -313,8 +317,10 @@ def test_oidc_config_decode_access_token(mock_oidc_config_file, mock_oidc_backen
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
     psa_authnz = PSAAuthnz(
-        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
     )
     assert "galaxy.authnz.psa_authnz.decode_access_token" in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
 
@@ -331,7 +337,9 @@ def test_oidc_config_no_decode_access_token(mock_oidc_config_file, mock_oidc_bac
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
     psa_authnz = PSAAuthnz(
-        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
     )
     assert "galaxy.authnz.psa_authnz.decode_access_token" not in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
