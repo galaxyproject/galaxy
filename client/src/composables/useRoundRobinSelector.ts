@@ -1,11 +1,11 @@
-import { computed, onMounted, onUnmounted, type Ref, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, readonly, type Ref, ref, watch } from "vue";
 
 /**
- * Generic round-robin poller for a list of items.
- * @param items - a Ref or computed returning the current list of items to poll
+ * Generic round-robin selector for a list of items.
+ * @param items - a Ref or computed returning the current list of items to select from
  * @param pollInterval - ms between switching to the next item. Defaults to 10000ms (10 seconds).
  */
-export function useRoundRobinPoller<T>(items: Ref<T[]>, pollInterval = 10000) {
+export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) {
     const currentIndex = ref(0);
     const timer = ref<ReturnType<typeof setInterval> | null>(null);
 
@@ -45,7 +45,7 @@ export function useRoundRobinPoller<T>(items: Ref<T[]>, pollInterval = 10000) {
     onUnmounted(stop);
 
     return {
-        currentItem,
+        currentItem: readonly(currentItem),
         start,
         stop,
         next,

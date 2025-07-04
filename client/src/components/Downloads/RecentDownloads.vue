@@ -5,7 +5,7 @@ import { useRouter } from "vue-router/composables";
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { MonitoringRequest } from "@/composables/persistentProgressMonitor";
 import { DEFAULT_POLL_DELAY } from "@/composables/shortTermStorageMonitor";
-import { useRoundRobinPoller } from "@/composables/useRoundRobinPoller";
+import { useRoundRobinSelector } from "@/composables/useRoundRobinSelector";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -39,10 +39,10 @@ const downloadsInProgress = computed(() => {
     return downloadMonitoringData.value.filter((data) => !data.isFinal);
 });
 
-const poller = useRoundRobinPoller(downloadsInProgress, DEFAULT_POLL_DELAY);
+const roundRobinSelector = useRoundRobinSelector(downloadsInProgress, DEFAULT_POLL_DELAY);
 
 const taskIdToUpdate = computed(() => {
-    return poller.currentItem.value?.taskId;
+    return roundRobinSelector.currentItem.value?.taskId;
 });
 </script>
 <template>
