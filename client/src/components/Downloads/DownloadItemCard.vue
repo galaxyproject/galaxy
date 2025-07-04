@@ -30,12 +30,15 @@ interface Props {
     /** The monitoring data associated with the download request */
     monitoringData: MonitoringData;
     /** The ID of the task that needs to be updated */
-    updateTaskId?: string;
+    updateTaskId?: string | null;
     /** Whether to display the card in a grid view */
     gridView?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    updateTaskId: null,
+    gridView: false,
+});
 
 const emit = defineEmits<{
     (e: "onGoTo", to: string): void;

@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, readonly, type Ref, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, readonly, type Ref, ref, watch } from "vue";
 
 /**
  * Generic round-robin selector for a list of items.
@@ -6,48 +6,62 @@ import { computed, onMounted, onUnmounted, readonly, type Ref, ref, watch } from
  * @param pollInterval - ms between switching to the next item. Defaults to 10000ms (10 seconds).
  */
 export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) {
-    const currentIndex = ref(0);
-    const timer = ref<ReturnType<typeof setInterval> | null>(null);
+    let currentIndex = 0;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
-    const currentItem = computed(() => {
+    const currentItem = ref<T | null>(null) as Ref<T | null>;
+
+    const getCurrentItem = (): T | null => {
         if (!items.value.length) {
             return null;
         }
-        return items.value[currentIndex.value % items.value.length];
-    });
+        return items.value[currentIndex % items.value.length] ?? null;
+    };
 
-    function next() {
+    function updateExposedItem() {
+        currentItem.value = getCurrentItem();
+    }
+
+    async function next() {
         if (!items.value.length) {
-            currentIndex.value = 0;
+            currentIndex = 0;
+        } else if (items.value.length === 1) {
+            // When there's only one item, we still want to trigger a change
+            // to allow Vue watchers to react, even if the value is the same.
+            currentItem.value = null;
+            await nextTick();
         } else {
-            currentIndex.value = (currentIndex.value + 1) % items.value.length;
+            currentIndex = (currentIndex + 1) % items.value.length;
         }
+        updateExposedItem();
     }
 
     function start() {
         stop();
         if (items.value.length > 0) {
-            timer.value = setInterval(next, pollInterval);
+            timer = setInterval(next, pollInterval);
         }
     }
 
     function stop() {
-        if (timer.value) {
-            clearInterval(timer.value);
-            timer.value = null;
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
         }
     }
 
     watch(items, (newItems) => {
-        currentIndex.value = 0;
+        currentIndex = 0;
+        updateExposedItem();
         if (!newItems.length) {
             stop();
-        } else if (!timer.value) {
+        } else if (!timer) {
             start();
         }
     });
 
     onMounted(() => {
+        updateExposedItem();
         start();
     });
     onUnmounted(stop);

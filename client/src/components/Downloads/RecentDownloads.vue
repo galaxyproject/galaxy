@@ -42,7 +42,7 @@ const downloadsInProgress = computed(() => {
 const roundRobinSelector = useRoundRobinSelector(downloadsInProgress, DEFAULT_POLL_DELAY);
 
 const taskIdToUpdate = computed(() => {
-    return roundRobinSelector.currentItem.value?.taskId;
+    return roundRobinSelector.currentItem.value?.taskId ?? null;
 });
 </script>
 <template>
