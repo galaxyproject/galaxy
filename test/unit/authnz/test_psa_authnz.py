@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import Optional
 from unittest.mock import MagicMock
 
 import jwt
@@ -98,15 +99,15 @@ class AuthTokenData:
 
 def create_access_token(
     email: str = "user@example.com",
-    roles: list[str] = None,
+    roles: Optional[list[str]] = None,
     iss: str = "https://issuer.example.com",
-    sub: str = None,
-    iat: int = None,
-    exp: int = None,
+    sub: Optional[str] = None,
+    iat: Optional[int] = None,
+    exp: Optional[int] = None,
     aud: str = "https://audience.example.com",
-    scope: list[str] = None,
-    azp: str = None,
-    permissions: list[str] = None,
+    scope: Optional[list[str]] = None,
+    azp: Optional[str] = None,
+    permissions: Optional[list[str]] = None,
     algorithm: str = "RS256",
     public_key_id: str = "example-key",
 ) -> AuthTokenData:

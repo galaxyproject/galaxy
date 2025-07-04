@@ -518,6 +518,8 @@ def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **k
     which should be handled by social_core.pipeline.social_auth.load_extra_data, so
     this step should be placed after load_extra_data in the pipeline.
     """
+    if social.extra_data is None:
+        return {"access_token": None}
     access_token_encoded = social.extra_data.get("access_token")
     if access_token_encoded is None:
         return {"access_token": None}

@@ -114,6 +114,7 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
+        random_port: ClassVar[int]
         saved_oauthlib_insecure_transport: ClassVar[bool]
 
         @classmethod
@@ -421,6 +422,8 @@ class TestGalaxyOIDCLoginPSA(AbstractTestCases.BaseKeycloakIntegrationTestCase):
         sa_session = self._app.model.session
         user = sa_session.query(model.User).filter_by(email="gxyuser@galaxy.org").one()
         social = next((s for s in user.social_auth if s.provider == "oidc"), None)
+        assert social is not None
         extra_data = social.extra_data
+        assert extra_data is not None
         assert "access_token_decoded" in extra_data
         assert "realm_access" in extra_data["access_token_decoded"]
