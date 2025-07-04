@@ -34,6 +34,12 @@ export interface TaskMonitor {
     waitForTask: (taskId: string, pollDelayInMs?: number) => Promise<void>;
 
     /**
+     * Stops waiting for the task to complete.
+     * This will stop polling requests.
+     */
+    stopWaitingForTask: () => void;
+
+    /**
      * Whether the task is currently running.
      */
     isRunning: Readonly<Ref<boolean>>;
@@ -198,6 +204,7 @@ export function useGenericMonitor(options: {
 
     return {
         waitForTask,
+        stopWaitingForTask: resetTimeout,
         isFinalState,
         loadStatus,
         fetchTaskStatus,
