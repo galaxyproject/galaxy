@@ -3086,6 +3086,16 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      oidc_decode_access_token:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Decode the OIDC access token as part of the OIDC login
+          pipeline. Note that only some providers will return
+          a decodable access token. Decoding the access token
+          requires accepted_audiences to be set in the oidc_backends_config file
+
       oidc_auth_pipeline:
         type: seq
         required: false
