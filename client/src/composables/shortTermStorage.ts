@@ -38,7 +38,7 @@ const DEFAULT_OPTIONS: Options = { exportParams: DEFAULT_EXPORT_PARAMS, pollDela
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
  */
 export function useShortTermStorage() {
-    const { waitForTask, isRunning } = useShortTermStorageMonitor();
+    const { waitForTask, isRunning, stopWaitingForTask } = useShortTermStorageMonitor();
 
     const isPreparing = ref(false);
 
@@ -121,6 +121,10 @@ export function useShortTermStorage() {
         }
     }
 
+    function stopMonitoring() {
+        stopWaitingForTask();
+    }
+
     return {
         /**
          * Starts preparing a history download file in the short term storage.
@@ -149,5 +153,9 @@ export function useShortTermStorage() {
          * @param {String} storageRequestId The storage request ID associated to the object to be downloaded
          */
         getDownloadObjectUrl,
+        /**
+         * Stops monitoring the short term storage request.
+         */
+        stopMonitoring,
     };
 }
