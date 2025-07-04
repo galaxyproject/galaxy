@@ -514,6 +514,10 @@ class InputSource(metaclass=ABCMeta):
     def parse_input_type(self) -> str:
         """Return the type of this input."""
 
+    @abstractmethod
+    def parse_extensions(self) -> List[str]:
+        """Return list of extensions"""
+
     def parse_help(self):
         return self.get("help")
 

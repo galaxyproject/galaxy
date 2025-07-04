@@ -16,6 +16,7 @@ const MESSAGES = {
     inveniordm: "This is a repository plugin that connects with an InvenioRDM instance.",
     zenodo: "This is a repository plugin that connects with https://zenodo.org/.",
     rspace: "This is a repository plugin that connects with an RSpace instance.",
+    dataverse: "This is a repository plugin that connects with a Dataverse.org instance.",
 };
 
 interface Props {

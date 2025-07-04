@@ -10712,7 +10712,8 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse";
             /** Variables */
             variables?:
                 | (
@@ -20463,7 +20464,8 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse";
             /** Uri Root */
             uri_root: string;
             /**

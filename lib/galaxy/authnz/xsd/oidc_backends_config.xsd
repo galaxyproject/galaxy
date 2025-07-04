@@ -156,6 +156,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="username_key" type="xs:string" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Claim that will be used for the username (python-social-auth uses 'preferred_username' by default)
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>

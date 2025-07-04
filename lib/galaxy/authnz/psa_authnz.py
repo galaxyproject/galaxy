@@ -160,6 +160,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("API_URL")] = oidc_backend_config.get("api_url")
         if oidc_backend_config.get("url") is not None:
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
+        if oidc_backend_config.get("username_key") is not None:
+            self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
 
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))

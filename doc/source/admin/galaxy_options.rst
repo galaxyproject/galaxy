@@ -2464,6 +2464,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``citation_bibtex``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The BibTeX citation for Galaxy, to be displayed in the History
+    Tool Reference List
+:Default: ``@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``release_doc_base_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~

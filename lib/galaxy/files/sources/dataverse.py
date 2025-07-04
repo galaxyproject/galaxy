@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Tuple,
 )
+from urllib.error import HTTPError
 from urllib.parse import quote
 
 from typing_extensions import (
@@ -78,7 +79,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self.repository: DataverseRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return "dataverse"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else self.plugin_type
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
@@ -377,7 +378,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 return stream_to_open_named_file(
                     page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
                 )
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             # TODO: We can only download files from published datasets for now
             if e.code in [401, 403, 404]:
                 raise NotFoundException(
@@ -436,21 +437,21 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:
-            if response.status_code == 403:
-                self._raise_auth_required()
             error_message = self._get_response_error_message(response)
+            if response.status_code == 403:
+                self._raise_auth_required(error_message)
             raise Exception(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 
-    def _raise_auth_required(self):
+    def _raise_auth_required(self, message: Optional[str] = None):
         raise AuthenticationRequired(
-            f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
+            message or f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
         )
 
     def _get_response_error_message(self, response):
         response_json = response.json()
-        error_message = response_json.get("message") if response.status_code == 400 else response.text
+        error_message = response_json.get("message") or response.text
         errors = response_json.get("errors", [])
         for error in errors:
             error_message += f"\n{json.dumps(error)}"
