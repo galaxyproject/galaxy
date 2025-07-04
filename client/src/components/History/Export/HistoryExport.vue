@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import type { AnyHistory } from "@/api";
 import {
@@ -35,6 +35,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const {
     isRunning: isExportTaskRunning,
     waitForTask,
+    stopWaitingForTask,
     requestHasFailed: taskMonitorRequestFailed,
     hasFailed: taskHasFailed,
 } = useTaskMonitor();
@@ -52,6 +53,7 @@ const {
     prepareHistoryDownload,
     downloadObjectByRequestId,
     getDownloadObjectUrl,
+    stopMonitoring: stopMonitoringShortTermStorage,
 } = useShortTermStorage();
 
 const downloadTracker = useDownloadTracker();
@@ -234,6 +236,11 @@ function updateExportParams(newParams: ExportParams) {
         ...newParams,
     };
 }
+
+onUnmounted(() => {
+    stopWaitingForTask();
+    stopMonitoringShortTermStorage();
+});
 </script>
 <template>
     <span class="history-export-component">
