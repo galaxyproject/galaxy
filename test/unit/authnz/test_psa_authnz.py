@@ -32,7 +32,11 @@ from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.authnz.managers import AuthnzManager
-from galaxy.authnz.psa_authnz import decode_access_token, _decode_access_token_helper, PSAAuthnz
+from galaxy.authnz.psa_authnz import (
+    _decode_access_token_helper,
+    decode_access_token,
+    PSAAuthnz,
+)
 
 
 @pytest.fixture(scope="module")
@@ -290,11 +294,12 @@ def test_oidc_config_decode_access_token(mock_oidc_config_file, mock_oidc_backen
     mock_app = MagicMock()
     mock_app.config.get.side_effect = lambda k: {"oidc_decode_access_token": True}.get(k)
     mock_app.config.oidc = defaultdict(dict)
-    manager = AuthnzManager(app=mock_app, oidc_config_file=mock_oidc_config_file,
-                            oidc_backends_config_file=mock_oidc_backend_config_file)
-    psa_authnz = PSAAuthnz(provider="oidc",
-                           oidc_config=manager.oidc_config,
-                           oidc_backend_config=manager.oidc_backends_config)
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+    psa_authnz = PSAAuthnz(
+        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config
+    )
     assert "galaxy.authnz.psa_authnz.decode_access_token" in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
 
 
@@ -306,10 +311,11 @@ def test_oidc_config_no_decode_access_token(mock_oidc_config_file, mock_oidc_bac
     mock_app = MagicMock()
     mock_app.config.get.side_effect = lambda k: {"oidc_decode_access_token": False}.get(k)
     mock_app.config.oidc.return_value = defaultdict(dict)
-    manager = AuthnzManager(app=mock_app, oidc_config_file=mock_oidc_config_file,
-                            oidc_backends_config_file=mock_oidc_backend_config_file)
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
     assert manager.oidc_config["decode_access_token"] is False
-    psa_authnz = PSAAuthnz(provider="oidc",
-                           oidc_config=manager.oidc_config,
-                           oidc_backend_config=manager.oidc_backends_config)
+    psa_authnz = PSAAuthnz(
+        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config
+    )
     assert "galaxy.authnz.psa_authnz.decode_access_token" not in psa_authnz.config["SOCIAL_AUTH_PIPELINE"]
