@@ -103,8 +103,10 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
             import time
 
             time.sleep(30)
+            with open(external_filename, "rb") as fh:
+                x = fh.read(1)
             raise Exception(
-                f"File {external_filename} was empty on first check and not has size {os.path.getsize(external_filename)}."
+                f"File {external_filename} was empty on first check and not has size {os.path.getsize(external_filename)}, first byte {x}"
             )
 
 
