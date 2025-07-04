@@ -114,7 +114,9 @@ def test_psa_authnz_config(mock_app):
     from galaxy.authnz.psa_authnz import PSAAuthnz
 
     psa_authnz = PSAAuthnz(
-        provider="oidc", oidc_config=manager.oidc_config, oidc_backend_config=manager.oidc_backends_config["oidc"],
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config["oidc"],
         app_config=mock_app.config,
     )
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
