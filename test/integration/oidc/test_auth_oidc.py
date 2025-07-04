@@ -59,19 +59,19 @@ DEBUG_AUTH_PIPELINE = (
 )
 
 
-def wait_till_app_ready(url):
-    return (
-        subprocess.call(
-            [
-                "timeout",
-                "300",
-                "bash",
-                "-c",
-                f"'until curl --silent --output /dev/null {url}; do sleep 0.5; done'",
-            ]
-        )
-        == 0
-    )
+def wait_till_app_ready(url, timeout=30):
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            response = requests.get(url, verify=False, timeout=2)
+            if response.status_code in (200, 302):  # allow redirect to login etc.
+                return True
+        except requests.exceptions.RequestException:
+            pass
+        time.sleep(1)
+    raise RuntimeError(f"Keycloak did not become ready in {timeout} seconds")
 
 
 def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
@@ -100,7 +100,7 @@ def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
         "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
     ]
     subprocess.check_call(START_SLURM_DOCKER)
-    wait_till_app_ready(f"http://localhost:{KEYCLOAK_HOST_PORT}")
+    wait_till_app_ready(f"{KEYCLOAK_URL}/.well-known/openid-configuration")
 
 
 def stop_keycloak_docker(container_name):
