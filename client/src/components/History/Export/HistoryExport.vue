@@ -16,9 +16,7 @@ import { areEqual, type ExportParams, type ExportRecord } from "@/components/Com
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import { useFileSources } from "@/composables/fileSources";
-import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
-import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useHistoryStore } from "@/stores/historyStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
@@ -175,23 +173,20 @@ async function prepareDownload() {
         exportParams: exportParams.value,
     });
     if (result) {
-        const monitorRequest: MonitoringRequest = {
-            source: "history-export",
-            taskType: "short_term_storage",
-            action: "export",
-            object: {
-                id: props.historyId,
-                type: "history",
-                name: historyName.value,
-            },
-            description: `History export for ${historyName.value} for direct download`,
-        };
-        const { start } = usePersistentProgressTaskMonitor(monitorRequest, useShortTermStorageMonitor());
-        downloadTracker.trackDownloadRequest(monitorRequest);
-        start({
+        downloadTracker.trackDownloadRequestWithData({
             taskId: result.storageRequestId,
-            taskType: monitorRequest.taskType,
-            request: monitorRequest,
+            taskType: "short_term_storage",
+            request: {
+                source: "history-export",
+                taskType: "short_term_storage",
+                action: "export",
+                object: {
+                    id: props.historyId,
+                    type: "history",
+                    name: historyName.value,
+                },
+                description: `History export for ${historyName.value} for direct download`,
+            },
             startedAt: new Date(),
             isFinal: false,
         });

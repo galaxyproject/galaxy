@@ -2,7 +2,7 @@ import type { Ref } from "vue";
 import { computed } from "vue";
 
 import type { MonitoringData, MonitoringRequest } from "./persistentProgressMonitor";
-import { getPersistentKey, getStoredProgressDataByKey } from "./persistentProgressMonitor";
+import { getPersistentKey, getStoredProgressDataByKey, storeProgressData } from "./persistentProgressMonitor";
 import { useUserLocalStorage } from "./userLocalStorage";
 
 /**
@@ -30,8 +30,22 @@ export function useDownloadTracker() {
             return;
         }
         const persistedProgressKey = getPersistentKey(request);
-        if (!downloadProgressKeys.value.includes(persistedProgressKey)) {
-            downloadProgressKeys.value.push(persistedProgressKey);
+        trackKey(persistedProgressKey);
+    }
+
+    function trackDownloadRequestWithData(monitoringData: MonitoringData) {
+        if (monitoringData.taskType !== "short_term_storage") {
+            console.warn("Download tracking is only supported for short-term storage requests.");
+            return;
+        }
+        storeProgressData(monitoringData);
+        const persistedProgressKey = getPersistentKey(monitoringData.request);
+        trackKey(persistedProgressKey);
+    }
+
+    function trackKey(key: string) {
+        if (!downloadProgressKeys.value.includes(key)) {
+            downloadProgressKeys.value.push(key);
         }
         downloadProgressKeys.value = [...new Set(downloadProgressKeys.value)];
     }
@@ -46,6 +60,7 @@ export function useDownloadTracker() {
 
     return {
         trackDownloadRequest,
+        trackDownloadRequestWithData,
         untrackDownloadRequest,
         downloadMonitoringData,
     };
