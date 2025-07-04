@@ -55,10 +55,6 @@ class AuthnzManager:
 
     def _parse_oidc_config(self, config_file):
         self.oidc_config = {}
-        if self.app.config.get("oidc_auth_pipeline") is not None:
-            self.oidc_config["AUTH_PIPELINE"] = self.app.config.get("oidc_auth_pipeline")
-        if self.app.config.get("oidc_decode_access_token") is not None:
-            self.oidc_config["decode_access_token"] = self.app.config.get("oidc_decode_access_token")
         try:
             tree = parse_xml(config_file)
             root = tree.getroot()
@@ -250,7 +246,8 @@ class AuthnzManager:
                         True,
                         "",
                         identity_provider_class(
-                            unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name]
+                            unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name],
+                            self.app.config
                         ),
                     )
             except Exception as e:

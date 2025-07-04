@@ -32,6 +32,7 @@ from galaxy.util import (
     requests,
 )
 from . import IdentityProvider
+from ..config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -109,15 +110,15 @@ DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy
 
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, oidc_config, oidc_backend_config):
+    def __init__(self, provider, oidc_config, oidc_backend_config, app_config: GalaxyAppConfiguration):
         self.config = {"provider": provider.lower()}
         for key, value in oidc_config.items():
             self.config[setting_name(key)] = value
 
         self.config[setting_name("USER_MODEL")] = "models.User"
         # Add decode_access_token to the auth pipeline if configured
-        auth_pipeline = oidc_config.get("AUTH_PIPELINE", AUTH_PIPELINE)
-        if oidc_config["decode_access_token"]:
+        auth_pipeline = app_config.get("oidc_auth_pipeline", AUTH_PIPELINE)
+        if app_config.get("oidc_decode_access_token"):
             auth_pipeline = (*auth_pipeline, "galaxy.authnz.psa_authnz.decode_access_token")
         self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
