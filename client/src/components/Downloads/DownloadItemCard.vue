@@ -75,7 +75,6 @@ const prettyAction = computed(() => capitalizeFirstLetter(props.monitoringData.r
 const useMonitor = props.monitoringData.request.taskType === "task" ? useTaskMonitor() : useShortTermStorageMonitor();
 
 const {
-    isRunning,
     isCompleted,
     hasFailed,
     failureReason,
@@ -87,6 +86,10 @@ const {
     reset,
     stop: stopCheckingStatus,
 } = usePersistentProgressTaskMonitor(props.monitoringData.request, useMonitor);
+
+const isRunning = computed(() => {
+    return !isCompleted.value && !hasFailed.value && !hasExpired.value;
+});
 
 const downloadUrl = computed(() => {
     // We can only download the result if the task type is short_term_storage.
