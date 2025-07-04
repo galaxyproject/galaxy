@@ -103,7 +103,6 @@ AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
-    "galaxy.authnz.psa_authnz.decode_access_token",
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
@@ -116,7 +115,11 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name(key)] = value
 
         self.config[setting_name("USER_MODEL")] = "models.User"
-        self.config["SOCIAL_AUTH_PIPELINE"] = oidc_config.get("AUTH_PIPELINE", AUTH_PIPELINE)
+        # Add decode_access_token to the auth pipeline if configured
+        auth_pipeline = oidc_config.get("AUTH_PIPELINE", AUTH_PIPELINE)
+        if oidc_config["decode_access_token"]:
+            auth_pipeline = (*auth_pipeline, "galaxy.authnz.psa_authnz.decode_access_token")
+        self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
 

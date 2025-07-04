@@ -57,6 +57,8 @@ class AuthnzManager:
         self.oidc_config = {}
         if self.app.config.get("oidc_auth_pipeline") is not None:
             self.oidc_config["AUTH_PIPELINE"] = self.app.config.get("oidc_auth_pipeline")
+        if self.app.config.get("oidc_decode_access_token") is not None:
+            self.oidc_config["decode_access_token"] = self.app.config.get("oidc_decode_access_token")
         try:
             tree = parse_xml(config_file)
             root = tree.getroot()
