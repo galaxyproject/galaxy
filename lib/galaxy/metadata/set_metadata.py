@@ -96,8 +96,16 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
-    if not dataset.dataset.purged and os.path.getsize(external_filename):
-        object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+    if not dataset.dataset.purged:
+        if os.path.getsize(external_filename):
+            object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+        else:
+            import time
+
+            time.sleep(30)
+            raise Exception(
+                f"File {external_filename} was empty on first check and not has size {os.path.getsize(external_filename)}."
+            )
 
 
 def set_validated_state(dataset_instance):
