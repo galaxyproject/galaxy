@@ -1,5 +1,5 @@
 import type { Ref } from "vue";
-import { computed } from "vue";
+import { computed, readonly } from "vue";
 
 import type { MonitoringData, MonitoringRequest } from "./persistentProgressMonitor";
 import { getPersistentKey, getStoredProgressDataByKey, storeProgressData } from "./persistentProgressMonitor";
@@ -62,6 +62,6 @@ export function useDownloadTracker() {
         trackDownloadRequest,
         trackDownloadRequestWithData,
         untrackDownloadRequest,
-        downloadMonitoringData,
+        downloadMonitoringData: readonly(downloadMonitoringData),
     };
 }
