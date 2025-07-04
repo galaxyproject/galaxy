@@ -26,7 +26,9 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
 
     function start() {
         stop();
-        timer.value = setInterval(next, pollInterval);
+        if (items.value.length > 0) {
+            timer.value = setInterval(next, pollInterval);
+        }
     }
 
     function stop() {
@@ -36,12 +38,18 @@ export function useRoundRobinSelector<T>(items: Ref<T[]>, pollInterval = 10000) 
         }
     }
 
-    // Reset index if items change
-    watch(items, () => {
+    watch(items, (newItems) => {
         currentIndex.value = 0;
+        if (!newItems.length) {
+            stop();
+        } else if (!timer.value) {
+            start();
+        }
     });
 
-    onMounted(start);
+    onMounted(() => {
+        start();
+    });
     onUnmounted(stop);
 
     return {
