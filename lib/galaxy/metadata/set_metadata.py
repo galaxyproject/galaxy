@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import sys
+import time
 import traceback
 from functools import partial
 from pathlib import Path
@@ -91,23 +92,30 @@ def reset_external_filename(dataset_instance: DatasetInstance):
     dataset_instance.dataset.extra_files_path = None
 
 
+def wait_until_readable(path, timeout=90):
+    for _ in range(timeout):
+        try:
+            with open(path, "rb") as f:
+                if f.read(1):
+                    return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+
+
 def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, external_filename):
     # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
     if not dataset.dataset.purged:
-        if os.path.getsize(external_filename):
-            object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
-        else:
-            import time
-
-            time.sleep(30)
-            with open(external_filename, "rb") as fh:
-                x = fh.read(1)
-            raise Exception(
-                f"File {external_filename} was empty on first check and not has size {os.path.getsize(external_filename)}, first byte {x}"
-            )
+        if not os.path.getsize(external_filename):
+            if wait_until_readable(external_filename):
+                raise Exception("Success, we've waited for the file to become non-empty and it did.")
+            else:
+                raise Exception(f"Output file '{external_filename}' is empty and it never became non-empty.")
+        object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
 
 
 def set_validated_state(dataset_instance):
