@@ -215,7 +215,7 @@ tifffile==2024.8.30 ; python_full_version < '3.10'
 tifffile==2025.3.30 ; python_full_version >= '3.10'
 tinydb==4.8.2
 tomli==2.2.1 ; python_full_version < '3.11'
-tornado==6.4.2
+tornado==6.5
 tqdm==4.67.1
 tuspy==1.1.0
 tuswsgi==0.5.5
