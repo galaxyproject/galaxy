@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import type { AnyHistory } from "@/api";
 import {
@@ -14,6 +14,7 @@ import {
 import type { ColorVariant } from "@/components/Common";
 import { areEqual, type ExportParams, type ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useDownloadTracker } from "@/composables/downloadTracker";
 import { useFileSources } from "@/composables/fileSources";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -34,6 +35,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const {
     isRunning: isExportTaskRunning,
     waitForTask,
+    stopWaitingForTask,
     requestHasFailed: taskMonitorRequestFailed,
     hasFailed: taskHasFailed,
 } = useTaskMonitor();
@@ -51,7 +53,10 @@ const {
     prepareHistoryDownload,
     downloadObjectByRequestId,
     getDownloadObjectUrl,
+    stopMonitoring: stopMonitoringShortTermStorage,
 } = useShortTermStorage();
+
+const downloadTracker = useDownloadTracker();
 
 const { confirm } = useConfirmDialog();
 
@@ -165,7 +170,29 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
 }
 
 async function prepareDownload() {
-    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams.value });
+    const result = await prepareHistoryDownload(props.historyId, {
+        pollDelayInMs: POLLING_DELAY,
+        exportParams: exportParams.value,
+    });
+    if (result) {
+        downloadTracker.trackDownloadRequestWithData({
+            taskId: result.storageRequestId,
+            taskType: "short_term_storage",
+            request: {
+                source: "history-export",
+                taskType: "short_term_storage",
+                action: "export",
+                object: {
+                    id: props.historyId,
+                    type: "history",
+                    name: historyName.value,
+                },
+                description: `History export for ${historyName.value} for direct download`,
+            },
+            startedAt: new Date(),
+            isFinal: false,
+        });
+    }
     updateExports();
 }
 
@@ -209,6 +236,11 @@ function updateExportParams(newParams: ExportParams) {
         ...newParams,
     };
 }
+
+onUnmounted(() => {
+    stopWaitingForTask();
+    stopMonitoringShortTermStorage();
+});
 </script>
 <template>
     <span class="history-export-component">

@@ -316,6 +316,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/libraries{path:.*?}")
     webapp.add_client_route("/storage{path:.*?}")
     webapp.add_client_route("/import/zip")
+    webapp.add_client_route("/downloads")
 
     # ==== Done
     # Indicate that all configuration settings have been provided

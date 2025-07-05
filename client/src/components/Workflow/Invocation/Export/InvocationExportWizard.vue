@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
@@ -321,6 +321,11 @@ function resetWizard() {
     Object.assign(exportData, initialExportData);
     wizard.goTo("select-format");
 }
+
+onUnmounted(() => {
+    taskMonitor.stopWaitingForTask();
+    stsMonitor.stopWaitingForTask();
+});
 </script>
 
 <template>

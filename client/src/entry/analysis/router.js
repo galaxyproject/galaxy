@@ -72,6 +72,7 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
+import RecentDownloads from "@/components/Downloads/RecentDownloads.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
 import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
@@ -806,6 +807,12 @@ export function getRouter(Galaxy) {
                             workflowFileCount: Number(route.params.workflowFileCount),
                             regularFileCount: Number(route.params.regularFileCount),
                         }),
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "downloads",
+                        name: "RecentDownloads",
+                        component: RecentDownloads,
                         redirect: redirectAnon(),
                     },
                 ],

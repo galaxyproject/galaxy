@@ -20,6 +20,11 @@ export interface StoredTaskStatus {
     failureReason?: string;
 }
 
+interface FetchStatusOptions {
+    /** Whether to keep polling for updates after the initial fetch. */
+    keepPolling?: boolean;
+}
+
 /**
  * Represents a task monitor that can be used to wait for a background task to complete or
  * check its status.
@@ -32,6 +37,12 @@ export interface TaskMonitor {
      * @param pollDelayInMs The time (milliseconds) between poll requests to update the task state.
      */
     waitForTask: (taskId: string, pollDelayInMs?: number) => Promise<void>;
+
+    /**
+     * Stops waiting for the task to complete.
+     * This will stop polling requests.
+     */
+    stopWaitingForTask: () => void;
 
     /**
      * Whether the task is currently running.
@@ -69,6 +80,13 @@ export interface TaskMonitor {
      * @param persistedTaskStatus The stored state of the task.
      */
     loadStatus: (persistedTaskStatus: StoredTaskStatus) => void;
+
+    /**
+     * Fetches the current status of the task from the server and updates the internal state.
+     * @param taskId The task ID to fetch the status for.
+     * @param options Options for fetching the status.
+     */
+    fetchTaskStatus: (taskId: string, options?: FetchStatusOptions) => Promise<void>;
 
     /**
      * Determines if the status represents a final state.
@@ -140,12 +158,12 @@ export function useGenericMonitor(options: {
         pollDelay = pollDelayInMs ?? pollDelay;
         resetState();
         requestId.value = taskId;
-        isRunning.value = true;
         return fetchTaskStatus(taskId);
     }
 
-    async function fetchTaskStatus(taskId: string) {
+    async function fetchTaskStatus(taskId: string, fetchOptions: FetchStatusOptions = { keepPolling: true }) {
         try {
+            isRunning.value = true;
             const result = await options.fetchStatus(taskId);
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
@@ -154,7 +172,7 @@ export function useGenericMonitor(options: {
                     const errorMessage = await options.fetchFailureReason(taskId);
                     failureReason.value = errorMessage;
                 }
-            } else {
+            } else if (fetchOptions.keepPolling) {
                 pollAfterDelay(taskId);
             }
         } catch (err) {
@@ -192,8 +210,10 @@ export function useGenericMonitor(options: {
 
     return {
         waitForTask,
+        stopWaitingForTask: resetTimeout,
         isFinalState,
         loadStatus,
+        fetchTaskStatus,
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),

@@ -1,5 +1,5 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
-import { computed, readonly, watch } from "vue";
+import { computed, readonly, type Ref, watch } from "vue";
 
 import type { StoredTaskStatus, TaskMonitor } from "./genericTaskMonitor";
 
@@ -14,10 +14,10 @@ interface ProcessedObject {
     id: string;
 
     /**
-     * The type of the object.
-     * For example, "history", "dataset", "workflow", "invocation", etc.
+     * The type of the object being processed.
+     * For example, "history", "invocation", etc.
      */
-    type: string;
+    type: "history" | "invocation" | "collection";
 
     /**
      * The name of the object.
@@ -92,6 +92,63 @@ export interface MonitoringData extends StoredTaskStatus {
      * The time when the task was started.
      */
     startedAt: Date;
+
+    /**
+     * Indicates whether the task is in a final state.
+     * A final state means that the task has either completed successfully, has failed or has expired.
+     * This is used to determine if the task can be monitored further or not.
+     */
+    isFinal: boolean;
+}
+
+interface CheckStatusOptions {
+    /**
+     * If true, the status of the task will be fetched from the server unless the task is already in a final state.
+     * If false, the status will be loaded from the stored data.
+     * Defaults to true.
+     */
+    enableFetch?: boolean;
+}
+
+/**
+ * The return type of usePersistentProgressTaskMonitor composable.
+ */
+export interface PersistentProgressTaskMonitorResult {
+    /** Start monitoring the background process. */
+    start: (monitoringData?: MonitoringData) => Promise<void>;
+    /** Stops monitoring the background process. */
+    stop: () => void;
+    /** Clears the monitoring data in the local storage. */
+    reset: () => void;
+    /**
+     * Fetches the current status of the task from the server and updates the internal state.
+     * If the task is already in a final state, no request will be made and the stored status will be used instead.
+     */
+    checkStatus: (options?: CheckStatusOptions) => Promise<void>;
+    /** The task is still running. */
+    isRunning: Ref<boolean>;
+    /** The task has been completed successfully. */
+    isCompleted: Ref<boolean>;
+    /** Indicates the task has failed and will not yield results. */
+    hasFailed: Ref<boolean>;
+    /** The reason why the task has failed. */
+    failureReason: Ref<string | undefined>;
+    /** If true, the status of the task cannot be determined because of a request error. */
+    requestHasFailed: Ref<boolean>;
+    /** Indicates that there is monitoring data stored. */
+    hasMonitoringData: Ref<boolean>;
+    /** The task ID stored in the monitoring data or undefined if no monitoring data is available. */
+    storedTaskId: string | undefined;
+    /** The current status of the task. */
+    status: Ref<string | undefined>;
+    /** True if the monitoring data can expire. */
+    canExpire: Ref<boolean>;
+    /** True if the monitoring data has expired. */
+    hasExpired: Ref<boolean>;
+    /** The expiration date for the monitoring data. */
+    expirationDate: Ref<Date | undefined>;
+    /** The monitoring data stored in the local storage. */
+    monitoringData: Readonly<Ref<MonitoringData | null>>;
 }
 
 /**
@@ -104,11 +161,13 @@ export function usePersistentProgressTaskMonitor(
     request: MonitoringRequest,
     useMonitor: TaskMonitor,
     monitoringData: MonitoringData | null = null
-) {
+): PersistentProgressTaskMonitorResult {
     const {
         waitForTask,
+        stopWaitingForTask,
         isFinalState,
         loadStatus,
+        fetchTaskStatus,
         isRunning,
         isCompleted,
         hasFailed,
@@ -180,7 +239,10 @@ export function usePersistentProgressTaskMonitor(
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
         }
 
-        if (isFinalState(currentMonitoringData.value.taskStatus)) {
+        const isFinal = isFinalState(currentMonitoringData.value.taskStatus) || hasExpired.value;
+        currentMonitoringData.value.isFinal = isFinal;
+
+        if (isFinal) {
             // The task has already finished no need to start monitoring again.
             // Instead, reload the stored status to update the UI.
             return loadStatus(currentMonitoringData.value);
@@ -193,6 +255,29 @@ export function usePersistentProgressTaskMonitor(
         }
 
         return waitForTask(currentMonitoringData.value.taskId);
+    }
+
+    function stop() {
+        stopWaitingForTask();
+    }
+
+    async function checkStatus(options: CheckStatusOptions = { enableFetch: true }) {
+        if (!currentMonitoringData.value) {
+            throw new Error("No monitoring data stored available to check status.");
+        }
+
+        const isFinal = isFinalState(currentMonitoringData.value.taskStatus) || hasExpired.value;
+        currentMonitoringData.value.isFinal = isFinal;
+
+        if (isFinal || !options.enableFetch) {
+            return loadStatus(currentMonitoringData.value);
+        }
+
+        try {
+            await fetchTaskStatus(currentMonitoringData.value.taskId, { keepPolling: false });
+        } catch (error) {
+            console.error("Failed to fetch task status:", error);
+        }
     }
 
     function reset() {
@@ -208,9 +293,22 @@ export function usePersistentProgressTaskMonitor(
         start,
 
         /**
+         * Stops monitoring the background process.
+         * This will stop polling requests.
+         */
+        stop,
+
+        /**
          * Clears the monitoring data in the local storage.
          */
         reset,
+
+        /**
+         * Fetches the current status of the task from the server and updates the internal state.
+         * If the task is already in a final state, no request will be made and the stored status will be used instead.
+         * @param options Optional parameters to control the fetch behavior.
+         */
+        checkStatus,
 
         /**
          * The task is still running.
@@ -285,14 +383,40 @@ export function usePersistentProgressTaskMonitor(
  */
 export function getStoredProgressData(request: MonitoringRequest): MonitoringData | null {
     const localStorageKey = getPersistentKey(request);
-    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+    return getStoredProgressDataByKey(localStorageKey);
+}
+
+/**
+ * Retrieves task progress data from the local storage by the provided key.
+ * @param key The key to retrieve the stored progress data.
+ * @returns The associated task progress data or null if there is no stored data.
+ */
+export function getStoredProgressDataByKey(key: string): MonitoringData | null {
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(key, null, {
         serializer: StorageSerializers.object,
     });
-
     return currentMonitoringData.value;
 }
 
-function getPersistentKey(request: MonitoringRequest) {
+/**
+ * Stores the provided monitoring data in the local storage under a persistent key
+ * derived from the monitoring request information.
+ * @param monitoringData The monitoring data to store.
+ */
+export function storeProgressData(monitoringData: MonitoringData) {
+    const localStorageKey = getPersistentKey(monitoringData.request);
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+        serializer: StorageSerializers.object,
+    });
+    currentMonitoringData.value = monitoringData;
+}
+
+/**
+ * Builds a persistent key for the monitoring request.
+ * @param request The monitoring request information.
+ * @returns A string key that uniquely identifies the monitoring request.
+ */
+export function getPersistentKey(request: MonitoringRequest) {
     return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
 }
 
