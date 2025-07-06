@@ -59,7 +59,7 @@ DEBUG_AUTH_PIPELINE = (
 )
 
 
-def wait_till_app_ready(url, timeout=30):
+def wait_till_app_ready(url, timeout=60):
     import time
 
     start = time.time()
