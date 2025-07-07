@@ -11820,6 +11820,15 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     )
 
 
+class CleanupEventUserAssociation(Base):
+    __tablename__ = "cleanup_event_user_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+
+
 class CeleryUserRateLimit(Base):
     """
     For each user stores the last time a task was scheduled for execution.
