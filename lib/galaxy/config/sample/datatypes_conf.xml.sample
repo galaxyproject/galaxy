@@ -235,6 +235,8 @@
     <datatype extension="h5mu" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="MuData is a format analogous to Anndata for multimodal datasets and is based on HDF5" description_url="https://github.com/scverse/mudata"/>
     <datatype extension="visium.tar.gz" type="galaxy.datatypes.binary:Visium" subclass="true" display_in_upload="true" description="Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file." />
     <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="mzmlb" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="mbi" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="hyphy_results.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="hivtrace" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="cool" type="galaxy.datatypes.binary:Cool" mimetype="application/octet-stream" display_in_upload="true"/>
