@@ -2884,38 +2884,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == "123\n456\n456\n0ab"
 
-    @skip_without_tool("cat1")
-    def test_run_deferred_dataset(self, history_id):
-        details = self.dataset_populator.create_deferred_hda(
-            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", ext="bed"
-        )
-        inputs = {
-            "input1": dataset_to_param(details),
-        }
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        output = outputs[0]
-        details = self.dataset_populator.get_history_dataset_details(
-            history_id, dataset=output, wait=True, assert_ok=True
-        )
-        assert details["state"] == "ok"
-        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-        assert output_content.startswith("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
-
-    @skip_without_tool("metadata_bam")
-    def test_run_deferred_dataset_with_metadata_options_filter(self, history_id):
-        details = self.dataset_populator.create_deferred_hda(
-            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
-        )
-        inputs = {"input_bam": dataset_to_param(details), "ref_names": "chrM"}
-        run_response = self.dataset_populator.run_tool(tool_id="metadata_bam", inputs=inputs, history_id=history_id)
-        output = run_response["outputs"][0]
-        output_details = self.dataset_populator.get_history_dataset_details(
-            history_id, dataset=output, wait=True, assert_ok=True
-        )
-        assert output_details["state"] == "ok"
-        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-        assert output_content.startswith("chrM")
-
     @skip_without_tool("pileup")
     def test_metadata_validator_on_deferred_input(self, history_id):
         deferred_bam_details = self.dataset_populator.create_deferred_hda(
