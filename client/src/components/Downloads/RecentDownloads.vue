@@ -8,7 +8,7 @@ import { useRoundRobinSelector } from "@/composables/roundRobinSelector";
 import { DEFAULT_POLL_DELAY } from "@/composables/shortTermStorageMonitor";
 import { useUserStore } from "@/stores/userStore";
 
-import Heading from "@/components/Common/Heading.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import DownloadItemCard from "@/components/Downloads/DownloadItemCard.vue";
 
@@ -44,10 +44,12 @@ const roundRobinSelector = useRoundRobinSelector(downloadsInProgress, DEFAULT_PO
 const taskIdToUpdate = computed(() => {
     return roundRobinSelector.currentItem.value?.taskId ?? null;
 });
+
+const breadcrumbItems = [{ title: "Recent Exports & Downloads", to: "/downloads" }];
 </script>
 <template>
     <div class="recent-downloads">
-        <Heading h1 separator inline size="lg">Recent Exports & Downloads</Heading>
+        <BreadcrumbHeading h1 separator inline :items="breadcrumbItems" />
         <ListHeader v-if="!isEmpty" list-id="recentDownloads" show-view-toggle />
 
         <p v-if="isEmpty">
