@@ -25,7 +25,7 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const fileField: Ref<HTMLInputElement | null> = ref(null);
 
 interface Props {
-    deferred?: boolean;
+    deferred?: boolean | undefined;
     extension: string;
     fileContent: string;
     fileMode: string;
@@ -44,7 +44,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    deferred: false,
+    deferred: undefined,
     info: "",
     listDbKeys: undefined,
     listExtensions: undefined,
