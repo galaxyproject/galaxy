@@ -4,8 +4,8 @@ import { useRouter } from "vue-router/composables";
 
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { useRoundRobinSelector } from "@/composables/roundRobinSelector";
 import { DEFAULT_POLL_DELAY } from "@/composables/shortTermStorageMonitor";
-import { useRoundRobinSelector } from "@/composables/useRoundRobinSelector";
 import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
