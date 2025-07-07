@@ -3,7 +3,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import type { AxiosError } from "axios";
 import { BAlert, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
@@ -14,6 +13,7 @@ import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -85,11 +85,7 @@ async function load() {
 
         fromSimple(props.id, fullWorkflow);
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        if (error.response?.data.err_msg) {
-            errorMessage.value = error.response.data.err_msg ?? "Unknown Error";
-        }
+        errorMessage.value = errorMessageAsString(e);
     } finally {
         loading.value = false;
     }
