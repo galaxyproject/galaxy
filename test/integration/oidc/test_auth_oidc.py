@@ -144,25 +144,10 @@ class AbstractTestCases:
                 return s.getsockname()[1]
 
         @classmethod
-        def wait_for_galaxy_ready(cls, server_wrapper, timeout=30):
-            url = f"http://{server_wrapper.host}:{server_wrapper.port}/api/version"
-            start = time.time()
-            while time.time() - start < timeout:
-                try:
-                    r = requests.get(url, timeout=2)
-                    if r.status_code == 200:
-                        print("[INFO] Galaxy is ready.")
-                        return
-                except requests.exceptions.RequestException:
-                    pass
-                time.sleep(1)
-            raise RuntimeError("Galaxy did not become ready in time")
-
-        @classmethod
         def generate_oidc_config_file(cls, server_wrapper, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 host = server_wrapper.host
-                port = server_wrapper.port
+                port = cls.random_port
                 prefix = server_wrapper.prefix or ""
                 galaxy_url = f"http://{host}:{port}{prefix.rstrip('/')}"
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
@@ -180,7 +165,6 @@ class AbstractTestCases:
             os.environ["GALAXY_TEST_PORT"] = str(cls.random_port)
             os.environ["GALAXY_WEB_PORT"] = str(cls.random_port)
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
-            cls.wait_for_galaxy_ready(server_wrapper)
             print(f"[INFO] Galaxy expected to run on port: {cls.random_port}")
             print(f"[INFO] Actual Galaxy server wrapper: {server_wrapper.host}:{server_wrapper.port}")
 
