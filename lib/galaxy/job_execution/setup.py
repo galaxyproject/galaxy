@@ -288,7 +288,7 @@ class JobIO(UsesDictVisibleKeys):
         job_outputs = []
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
-            if da_false_path:
+            if da_false_path and not os.path.exists(da_false_path):
                 with open(da_false_path, "wb"):
                     pass
             mutable = da.dataset.dataset.external_filename is None
