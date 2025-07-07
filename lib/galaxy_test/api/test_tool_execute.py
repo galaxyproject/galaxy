@@ -633,3 +633,15 @@ def test_deferred_with_metadata_options_filter(required_tool: RequiredTool, targ
         "ref_names": "chrM",
     }
     required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
+
+
+@requires_tool_id("cat_list")
+def test_deferred_multi_input(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict_bed = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+    has_src_dict_txt = target_history.with_deferred_dataset_for_test_file("1.txt", ext="txt")
+    inputs = {
+        "input1": [has_src_dict_bed.src_dict, has_src_dict_txt.src_dict],
+    }
+    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+    output.assert_contains("chr1    4225    19670")
