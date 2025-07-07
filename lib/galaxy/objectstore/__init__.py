@@ -1612,7 +1612,11 @@ class DistributedObjectStore(NestedObjectStore):
                     log.warning(
                         f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}"
                     )
-                    obj.object_store_id = id
+                    try:
+                        obj.object_store_id = id
+                    except AttributeError:
+                        # obj is likely a namedtuple (/scripts/cleanup_datasets/pgcleanup.py::RemovesDatasets)
+                        log.info("Unable to set object_store_id on a readonly dataset object: %s", obj)
                     return id
         return None
 
