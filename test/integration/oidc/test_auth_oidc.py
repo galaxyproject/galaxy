@@ -3,7 +3,6 @@
 import html
 import os
 import re
-import socket
 import subprocess
 import tempfile
 import time
@@ -15,6 +14,7 @@ from galaxy import model
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.driver_util import attempt_ports
 
 KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"
@@ -123,10 +123,7 @@ class AbstractTestCases:
             for var in ["GALAXY_TEST_PORT", "GALAXY_WEB_PORT", "GALAXY_TEST_PORT_RANDOM"]:
                 cls._original_env[var] = os.environ.get(var)
 
-            # Reserve a free port and fix it in env
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(("", 0))
-                fixed_port = s.getsockname()[1]
+            fixed_port = attempt_ports(port=None, set_galaxy_web_port=False)
 
             os.environ["GALAXY_TEST_PORT"] = str(fixed_port)
             os.environ["GALAXY_WEB_PORT"] = str(fixed_port)  # Optional, if referenced elsewhere
