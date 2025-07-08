@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { BLink } from "bootstrap-vue";
 import type { RawLocation } from "vue-router";
-import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
@@ -26,7 +26,7 @@ function isPathActive(path: RawLocation): boolean {
     <div class="breadcrumb-heading mb-2">
         <Heading h1 separator inline size="lg" class="breadcrumb-heading-header mr-2 mb-0">
             <template v-for="(item, index) in props.items">
-                <RouterLink
+                <BLink
                     v-if="item.to && !isPathActive(item.to)"
                     :key="index"
                     v-b-tooltip.hover.bottom.noninteractive
@@ -34,7 +34,7 @@ function isPathActive(path: RawLocation): boolean {
                     :to="item.to"
                     class="breadcrumb-heading-header-active">
                     {{ localize(item.title) }}
-                </RouterLink>
+                </BLink>
                 <span v-else :key="'else-' + index" class="breadcrumb-heading-header-inactive">
                     {{ localize(item.title) }}
                 </span>
