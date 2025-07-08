@@ -114,21 +114,30 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
-        random_port: ClassVar[int]
         saved_oauthlib_insecure_transport: ClassVar[bool]
+        _original_env: ClassVar[dict] = {}
 
         @classmethod
         def setUpClass(cls):
+            # Save original environment variables
+            for var in ["GALAXY_TEST_PORT", "GALAXY_WEB_PORT", "GALAXY_TEST_PORT_RANDOM"]:
+                cls._original_env[var] = os.environ.get(var)
+
+            # Reserve a free port and fix it in env
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                fixed_port = s.getsockname()[1]
+
+            os.environ["GALAXY_TEST_PORT"] = str(fixed_port)
+            os.environ["GALAXY_WEB_PORT"] = str(fixed_port)  # Optional, if referenced elsewhere
+            if "GALAXY_TEST_PORT_RANDOM" in os.environ:
+                os.environ["GALAXY_TEST_PORT_RANDOM"] = "0"
+
             # By default, the oidc callback must be done over a secure transport, so
             # we forcibly disable it for now
             cls.disableOauthlibHttps()
             cls.container_name = f"{cls.__name__}_container"
             start_keycloak_docker(container_name=cls.container_name)
-
-            # Dynamically find a free port
-            cls.random_port = cls._find_free_port()
-            os.environ["GALAXY_TEST_PORT"] = str(cls.random_port)
-            os.environ["GALAXY_WEB_PORT"] = str(cls.random_port)
 
             super().setUpClass()
             # For the oidc callback to work, we need to know Galaxy's hostname and port.
@@ -138,16 +147,10 @@ class AbstractTestCases:
             cls.configure_oidc_and_restart()
 
         @classmethod
-        def _find_free_port(cls):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(("", 0))
-                return s.getsockname()[1]
-
-        @classmethod
         def generate_oidc_config_file(cls, server_wrapper, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 host = server_wrapper.host
-                port = cls.random_port
+                port = server_wrapper.port
                 prefix = server_wrapper.prefix or ""
                 galaxy_url = f"http://{host}:{port}{prefix.rstrip('/')}"
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
@@ -161,18 +164,21 @@ class AbstractTestCases:
         def configure_oidc_and_restart(cls):
             server_wrapper = cls._test_driver.server_wrappers[0]
             cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper, provider_name=cls.provider_name)
-            # Explicitly assign previously chosen dynamic port
-            os.environ["GALAXY_TEST_PORT"] = str(cls.random_port)
-            os.environ["GALAXY_WEB_PORT"] = str(cls.random_port)
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
-            print(f"[INFO] Galaxy expected to run on port: {cls.random_port}")
-            print(f"[INFO] Actual Galaxy server wrapper: {server_wrapper.host}:{server_wrapper.port}")
 
         @classmethod
         def tearDownClass(cls):
             stop_keycloak_docker(cls.container_name)
             cls.restoreOauthlibHttps()
             os.remove(cls.backend_config_file)
+
+            # Restore original environment variables
+            for var, val in cls._original_env.items():
+                if val is not None:
+                    os.environ[var] = val
+                else:
+                    os.environ.pop(var, None)
+
             super().tearDownClass()
 
         @classmethod
