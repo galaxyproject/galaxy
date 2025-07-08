@@ -4,17 +4,20 @@ runners:
     workers: 4
   drmaa:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
-    # Different DRMs (SLURM, condor, SGE, univa, ...) handle successfully completed jobs differently.
-    # That is they may raise an InternalException or InvalidJobException when querying a finished job.
+    # Configuration of a Distributed Resource Manager (DRM) compatible with the
+    # Distributed Resource Management Application API (DRMAA), e.g. Slurm,
+    # HTCondor, Oracle Grid Engine (a.k.a. SGE), Altair Grid Engine (a.k.a. Univa).
+    # Different DRMs handle successfully completed jobs differently.
+    # For example they may raise an InternalException or InvalidJobException when querying a finished job.
     # The following options allow to configure if Galaxy should consider the jobs as OK or in error in such a case.
     #
-    # For setting up a DRMAA runner it may be advisable to test with the state set to error and use ok
+    # For setting up a DRMAA runner it may be advisable to test with the state set to "error" and use "ok"
     # only if all (including successfull jobs) fail with one of the two exceptions.
     # 
     # In case these exceptions may occur transiently a number of retries can be configured.
     # 
     # Defaults are shown below. 
-    # Possible values for the states are ok and error.
+    # Possible values for the states are "ok" and "error".
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
     internalexception_state: ok
