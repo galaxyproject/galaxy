@@ -233,7 +233,6 @@ function stepClicked(nodeId: number | null) {
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
-                        :workflow="props.workflow"
                         :workflow-step="props.workflow.steps[activeNodeId]"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
