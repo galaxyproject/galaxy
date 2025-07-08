@@ -8995,6 +8995,13 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     states = InvocationState
     non_terminal_states = [states.NEW, states.READY]
 
+    def get_last_workflow_invocation_step_update_time(self) -> Optional[datetime]:
+        session = required_object_session(self)
+        stmt = select(func.max(WorkflowInvocationStep.update_time)).where(
+            WorkflowInvocationStep.workflow_invocation_id == self.id
+        )
+        return session.execute(stmt).scalar_one_or_none()
+
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
         subworkflow_invocation = WorkflowInvocation()
