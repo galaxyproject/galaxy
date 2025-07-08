@@ -272,6 +272,10 @@ function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
     }
 }
 
+function updateActiveNodeId(nodeId: number | null) {
+    activeNodeId.value = nodeId;
+}
+
 async function onExecute() {
     waitingForRequest.value = true;
 
@@ -463,7 +467,7 @@ async function onExecute() {
                             @onChange="onChange"
                             @onValidation="onValidation"
                             @stop-flagging="checkInputMatching = false"
-                            @update:active-node-id="($event) => (activeNodeId = $event)" />
+                            @update:active-node-id="updateActiveNodeId" />
                     </BOverlay>
                 </div>
                 <div v-if="showRightPanel" class="h-100 w-50 d-flex flex-shrink-0">
