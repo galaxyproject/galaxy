@@ -14,6 +14,13 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
+
 const { server, http } = useServerMock();
 
 type RegexJobMessage = components["schemas"]["RegexJobMessage"];
@@ -131,10 +138,10 @@ describe("DatasetError", () => {
             })
         );
 
-        const FormAndSubmitButton = "#dataset-error-form";
+        const FormAndSubmitButton = "#email-report-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-        const submitButton = "#dataset-error-submit";
+        const submitButton = "#email-report-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
 
         await wrapper.find(submitButton).trigger("click");
