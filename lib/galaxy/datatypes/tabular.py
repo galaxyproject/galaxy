@@ -1745,7 +1745,7 @@ class MatrixMarket(TabularData):
                 if " " in line:
                     dataset.metadata.delimiter = " "
                 else:
-                    dataset.metadata.delimiter = "\t"
+                    dataset.metadata.delimiter = "\t"   
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
@@ -2028,3 +2028,147 @@ class Psl(Tabular):
                     break
         if count > 0:
             return True
+
+
+@build_sniff_from_prefix
+class FourDNPairs(Tabular):
+    """
+    `4dn_pairs` is a simple tabular format used to store DNA contact pairs detected in Hi-C experiments.
+    The format is defined and maintained by the 4DN (4D Nucleome) Consortium.
+
+    Specification: https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the column name "pair_type"
+
+    Sniffing will return False if:
+      - A non-header line (not starting with "#") is encountered before matching the criteria
+      - The file is compressed (e.g., .gz)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs' )
+    >>> FourDNPairs().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.pairsam' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs.gz' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    """
+    file_ext = "4dn_pairs"
+    compressed = False
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if line.rstrip().endswith('pair_type'):
+                    return True
+                else:
+                    break
+        return False
+
+
+@build_sniff_from_prefix
+class FourDNPairsam(Tabular):
+    """
+    The `.pairsam` format is an extension of the standard `.pairs` format, defined by the `pairtools` toolkit.
+    It builds on the pairtools-specific variant of `.pairs` by adding two additional columns—`sam1` and `sam2`—
+    which contain the alignment records from which each Hi-C contact pair was derived.
+
+    Specification: https://pairtools.readthedocs.io/en/latest/formats.html#pairsam
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the tab-separated fields: "pair_type\tsam1\tsam2"
+
+    Sniffing will return False if:
+      - A non-header line (i.e., one not starting with "#") appears before a valid header is matched
+      - The file is compressed (e.g., ends in `.gz`)
+    
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairsam' )
+    >>> FourDNPairsam().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.pairsam.gz' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    """
+    
+    file_ext = "4dn_pairsam"
+    compressed = False
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if re.search(r'pair_type[\t ]+sam1[\t ]+sam2$', line.rstrip()):
+                    return True
+                else:
+                    break
+        return False
+
+
+class FourDNPairsGz(FourDNPairs):
+    """
+    Extends `FourDNPairs` to support compressed `.pairs` format (.pairs.gz).
+    Refer to `FourDNPairs` for format documentation.
+    
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairsGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs' )
+    >>> FourDNPairsGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairsam' )
+    >>> FourDNPairsGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs.gz' )
+    >>> FourDNPairsGz().sniff( fname )
+    True
+    """
+    file_ext = "4dn_pairs.gz"
+    compressed = True
+
+
+class FourDNPairsamGz(FourDNPairsam):
+    """
+    Extends `FourDNPairsam` to support compressed `.pairsam` format (.pairsam.gz).
+    Refer to `FourDNPairsam` for format documentation.    
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairsamGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairs' )
+    >>> FourDNPairsamGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairsam' )
+    >>> FourDNPairsamGz().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.pairsam.gz' )
+    >>> FourDNPairsamGz().sniff( fname )
+    True
+    """
+    file_ext = "4dn_pairsam.gz"
+    compressed = True
