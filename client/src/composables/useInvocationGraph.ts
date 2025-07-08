@@ -78,6 +78,7 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  */
 export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
+    stepsJobsSummary: Ref<StepJobSummary[]>,
     workflowId: string | undefined,
     workflowVersion: number | undefined
 ) {
@@ -91,11 +92,6 @@ export function useInvocationGraph(
     const invocationStore = useInvocationStore();
     const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
-    /** The job summary for each step in the invocation */
-    const stepsJobsSummary = computed(() => {
-        return invocationStore.getInvocationStepJobsSummaryById(invocation.value.id);
-    });
-
     /** The full invocation mapped onto the original workflow */
     const invocationGraph = ref<InvocationGraph | null>(null);
 
@@ -106,7 +102,7 @@ export function useInvocationGraph(
 
     provideScopedWorkflowStores(storeId);
 
-    async function loadInvocationGraph(isTerminal = false) {
+    async function loadInvocationGraph() {
         loading.value = true;
 
         try {
@@ -127,10 +123,6 @@ export function useInvocationGraph(
                     id: storeId.value,
                     steps: null,
                 };
-            }
-
-            if (!isTerminal || !stepsJobsSummary.value) {
-                await invocationStore.fetchInvocationStepJobsSummaryForId({ id: invocation.value.id });
             }
 
             if (stepsJobsSummary.value) {

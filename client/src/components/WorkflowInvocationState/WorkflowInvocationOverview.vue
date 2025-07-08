@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { withPrefix } from "@/utils/redirect";
@@ -16,6 +16,7 @@ import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMe
 
 interface Props {
     invocation: WorkflowInvocationElementView;
+    stepsJobsSummary?: StepJobSummary[];
     invocationAndJobTerminal: boolean;
     isFullPage?: boolean;
     isSubworkflow?: boolean;
@@ -67,8 +68,8 @@ async function showStep(stepId: number) {
                 @view-step="showStep">
             </InvocationMessage>
         </div>
-        <!-- Once the workflow for the invocation has been loaded, display the graph -->
-        <BAlert v-if="loading" variant="info" show>
+        <!-- Once the workflow for the invocation and step job summaries are loaded, display the graph -->
+        <BAlert v-if="loading || !props.stepsJobsSummary" variant="info" show>
             <LoadingSpan message="Loading workflow..." />
         </BAlert>
         <BAlert v-else-if="error" variant="danger" show>
@@ -80,6 +81,7 @@ async function showStep(stepId: number) {
                 class="mt-1"
                 data-description="workflow invocation graph"
                 :invocation="invocation"
+                :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
                 :is-terminal="invocationAndJobTerminal"
                 :is-full-page="isFullPage"
