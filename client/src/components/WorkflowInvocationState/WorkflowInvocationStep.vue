@@ -127,7 +127,6 @@ export default {
     props: {
         invocation: Object,
         workflowStep: Object,
-        workflow: Object,
         graphStep: { type: Object, default: undefined },
         expanded: { type: Boolean, default: undefined },
         inGraphView: { type: Boolean, default: false },
@@ -202,13 +201,12 @@ export default {
         },
         titleProps(stepIndex) {
             const invocationStep = this.invocation.steps[stepIndex];
-            const workflowStep = this.workflow.steps[stepIndex];
             const rval = {
                 stepIndex: stepIndex,
                 stepLabel: invocationStep && invocationStep.workflow_step_label,
-                stepType: workflowStep.type,
-                stepToolId: workflowStep.tool_id,
-                stepSubworkflowId: workflowStep.workflow_id,
+                stepType: this.workflowStep.type,
+                stepToolId: this.workflowStep.tool_id,
+                stepSubworkflowId: this.workflowStep.workflow_id,
             };
             return rval;
         },
