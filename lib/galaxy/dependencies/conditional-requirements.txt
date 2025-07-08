@@ -15,7 +15,8 @@ galaxycloudrunner
 pkce
 total-perspective-vortex>=2.3.2,<3
 openai
-redis>=5.3.0
+# upper version constraint because of https://github.com/galaxyproject/galaxy/issues/20600
+redis>=5.3.0,<6
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
