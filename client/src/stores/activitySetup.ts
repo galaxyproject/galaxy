@@ -200,7 +200,7 @@ export const defaultActivities = [
         mutable: false,
         optional: true,
         panel: false,
-        title: "Recent Downloads",
+        title: "Recent Exports",
         to: "/downloads",
         tooltip: "Access your recent exports and downloads to check their status or download them again.",
         visible: true,

@@ -47,9 +47,11 @@ const taskIdToUpdate = computed(() => {
 
 const breadcrumbItems = [{ title: "Recent Exports & Downloads", to: "/downloads" }];
 </script>
+
 <template>
     <div class="recent-downloads">
         <BreadcrumbHeading h1 separator inline :items="breadcrumbItems" />
+
         <ListHeader v-if="!isEmpty" list-id="recentDownloads" show-view-toggle />
 
         <p v-if="isEmpty">
