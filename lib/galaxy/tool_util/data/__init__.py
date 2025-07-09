@@ -980,7 +980,11 @@ class ToolDataTableManager(Dictifiable):
             out.write(json.dumps(self.to_dict()))
 
     def load_from_config_file(
-        self, config_filename: StrPath, tool_data_path: Optional[StrPath], from_shed_config: bool = False
+        self,
+        config_filename: StrPath,
+        tool_data_path: Optional[StrPath],
+        from_shed_config: bool = False,
+        fail_on_exception=True,
     ) -> List[Element]:
         """
         This method is called under 3 conditions:
@@ -1013,10 +1017,19 @@ class ToolDataTableManager(Dictifiable):
                     table.name,
                     config_filename,
                 )
-                self.data_tables[table.name].merge_tool_data_table(
-                    table, allow_duplicates=False
-                )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
-                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                try:
+                    self.data_tables[table.name].merge_tool_data_table(
+                        table, allow_duplicates=False
+                    )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                except AssertionError:
+                    if fail_on_exception:
+                        raise
+                    log.exception(
+                        "Error merging data table '%s' from file '%s', skipping this table.",
+                        table.name,
+                        config_filename,
+                    )
         return table_elems
 
     def from_elem(
