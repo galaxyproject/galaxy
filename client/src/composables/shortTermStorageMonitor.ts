@@ -3,7 +3,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { useGenericMonitor } from "./genericTaskMonitor";
 
-const DEFAULT_POLL_DELAY = 10000;
+export const DEFAULT_POLL_DELAY = 10000;
 const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
 const READY_STATE = "READY";

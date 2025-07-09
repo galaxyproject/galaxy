@@ -24,6 +24,11 @@ interface StorageRequestResponse {
     storage_request_id: string;
 }
 
+interface PrepareDownloadResult {
+    storageRequestId: string;
+    downloadUrl: string;
+}
+
 type StartPreparingDownloadCallback = (objectId: string, params: StoreExportPayload) => Promise<StorageRequestResponse>;
 
 const DEFAULT_POLL_DELAY = 3000;
@@ -33,7 +38,7 @@ const DEFAULT_OPTIONS: Options = { exportParams: DEFAULT_EXPORT_PARAMS, pollDela
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
  */
 export function useShortTermStorage() {
-    const { waitForTask, isRunning } = useShortTermStorageMonitor();
+    const { waitForTask, isRunning, stopWaitingForTask } = useShortTermStorageMonitor();
 
     const isPreparing = ref(false);
 
@@ -93,7 +98,7 @@ export function useShortTermStorage() {
         startPreparingDownloadAsync: StartPreparingDownloadCallback,
         objectId: string,
         options = DEFAULT_OPTIONS
-    ) {
+    ): Promise<PrepareDownloadResult | undefined> {
         isPreparing.value = true;
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
         const exportParams: StoreExportPayload = {
@@ -107,9 +112,17 @@ export function useShortTermStorage() {
             const response = await startPreparingDownloadAsync(objectId, exportParams);
             const storageRequestId = response.storage_request_id;
             waitForTask(storageRequestId, finalOptions.pollDelayInMs);
+            return {
+                storageRequestId,
+                downloadUrl: getDownloadObjectUrl(storageRequestId),
+            };
         } catch (err) {
             isPreparing.value = false;
         }
+    }
+
+    function stopMonitoring() {
+        stopWaitingForTask();
     }
 
     return {
@@ -140,5 +153,9 @@ export function useShortTermStorage() {
          * @param {String} storageRequestId The storage request ID associated to the object to be downloaded
          */
         getDownloadObjectUrl,
+        /**
+         * Stops monitoring the short term storage request.
+         */
+        stopMonitoring,
     };
 }
