@@ -1745,7 +1745,7 @@ class MatrixMarket(TabularData):
                 if " " in line:
                     dataset.metadata.delimiter = " "
                 else:
-                    dataset.metadata.delimiter = "\t"   
+                    dataset.metadata.delimiter = "\t"
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
@@ -2095,7 +2095,7 @@ class FourDNPairsam(Tabular):
     Sniffing will return False if:
       - A non-header line (i.e., one not starting with "#") appears before a valid header is matched
       - The file is compressed (e.g., ends in `.gz`)
-    
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairsam().sniff( fname )
@@ -2110,7 +2110,6 @@ class FourDNPairsam(Tabular):
     >>> FourDNPairsam().sniff( fname )
     False
     """
-    
     file_ext = "4dn_pairsam"
     compressed = False
 
@@ -2132,7 +2131,7 @@ class FourDNPairsGz(FourDNPairs):
     """
     Extends `FourDNPairs` to support compressed `.pairs` format (.pairs.gz).
     Refer to `FourDNPairs` for format documentation.
-    
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairsGz().sniff( fname )
@@ -2154,7 +2153,7 @@ class FourDNPairsGz(FourDNPairs):
 class FourDNPairsamGz(FourDNPairsam):
     """
     Extends `FourDNPairsam` to support compressed `.pairsam` format (.pairsam.gz).
-    Refer to `FourDNPairsam` for format documentation.    
+    Refer to `FourDNPairsam` for format documentation.
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( '2.txt' )
