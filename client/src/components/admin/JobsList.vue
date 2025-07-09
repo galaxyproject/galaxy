@@ -246,7 +246,7 @@ export default {
             this.busy = true;
             const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.states = NON_TERMINAL_STATES;
+                params.state = NON_TERMINAL_STATES;
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();

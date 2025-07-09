@@ -51,7 +51,7 @@ export function jobsProvider(ctx, callback, extraParams = {}) {
     const { root, ...requestParams } = ctx;
     const apiUrl = `${root}api/jobs`;
     const cleanParams = cleanPaginationParameters(requestParams);
-    const promise = axios.get(apiUrl, { params: { ...cleanParams, ...extraParams } });
+    const promise = axios.get(apiUrl, { params: { ...cleanParams, ...extraParams }, paramsSerializer: { indexes: null } });
 
     // Must return a promise that resolves to an array of items
     return promise.then((data) => {
