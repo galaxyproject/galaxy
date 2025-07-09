@@ -180,15 +180,15 @@ class VisualizationPluginResponse(Model):
         title="Entry Point",
         description="The entry point of the plugin.",
     )
-    settings: List[Dict] = Field(
-        ...,
+    settings: Optional[List[Dict]] = Field(
+        None,
         title="Settings",
         description="The settings of the plugin.",
     )
-    groups: Optional[List[Dict]] = Field(
+    tracks: Optional[List[Dict]] = Field(
         None,
-        title="Groups",
-        description="The groups of the plugin.",
+        title="Tracks",
+        description="The tracks of the plugin.",
     )
     specs: Optional[Dict] = Field(
         None,
