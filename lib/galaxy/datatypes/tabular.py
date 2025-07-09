@@ -2061,6 +2061,7 @@ class FourDNPairs(Tabular):
     >>> FourDNPairs().sniff( fname )
     False
     """
+
     file_ext = "4dn_pairs"
     compressed = False
 
@@ -2071,7 +2072,7 @@ class FourDNPairs(Tabular):
             if not line.startswith("#"):
                 break
             if line.startswith("#columns:"):
-                if line.rstrip().endswith('pair_type'):
+                if line.rstrip().endswith("pair_type"):
                     return True
                 else:
                     break
@@ -2110,6 +2111,7 @@ class FourDNPairsam(Tabular):
     >>> FourDNPairsam().sniff( fname )
     False
     """
+
     file_ext = "4dn_pairsam"
     compressed = False
 
@@ -2120,7 +2122,7 @@ class FourDNPairsam(Tabular):
             if not line.startswith("#"):
                 break
             if line.startswith("#columns:"):
-                if re.search(r'pair_type[\t ]+sam1[\t ]+sam2$', line.rstrip()):
+                if re.search(r"pair_type[\t ]+sam1[\t ]+sam2$", line.rstrip()):
                     return True
                 else:
                     break
@@ -2146,6 +2148,7 @@ class FourDNPairsGz(FourDNPairs):
     >>> FourDNPairsGz().sniff( fname )
     True
     """
+
     file_ext = "4dn_pairs.gz"
     compressed = True
 
@@ -2169,5 +2172,6 @@ class FourDNPairsamGz(FourDNPairsam):
     >>> FourDNPairsamGz().sniff( fname )
     True
     """
+
     file_ext = "4dn_pairsam.gz"
     compressed = True
