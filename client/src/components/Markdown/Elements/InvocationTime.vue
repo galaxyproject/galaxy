@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import { formatGalaxyPrettyDateString } from "@/utils/dates";
+
 export default {
     props: {
         args: {
@@ -19,7 +21,7 @@ export default {
     computed: {
         content() {
             const invocation = this.invocations[this.args.invocation_id];
-            return invocation && new Date(invocation["create_time"]).toUTCString();
+            return invocation && formatGalaxyPrettyDateString(invocation["create_time"]);
         },
     },
 };
