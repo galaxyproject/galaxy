@@ -1533,6 +1533,7 @@ class Prm(Text):
         """
         return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
 
+
 class ODV(Text):
     file_ext = "odv"
 
@@ -1553,7 +1554,7 @@ class ODV(Text):
 
         section = None
         try:
-            with open(dataset.get_file_name(), "r", encoding="utf-8") as f:
+            with open(dataset.get_file_name(), encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
 
