@@ -118,6 +118,8 @@ describe("DatasetError", () => {
     it("check props without common problems", async () => {
         const wrapper = await montDatasetError(false, false, "user_email");
 
+        expect(wrapper.find("[data-description='alert for not owner/runner']").exists()).toBe(false);
+
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
         expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
@@ -127,8 +129,17 @@ describe("DatasetError", () => {
         expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
     });
 
-    it("hides form fields and button on success", async () => {
+    it("does not render email form if no email provided", async () => {
         const wrapper = await montDatasetError();
+
+        expect(wrapper.find("[data-description='alert for not owner/runner']").exists()).toBe(true);
+
+        const FormAndSubmitButton = "#email-report-form";
+        expect(wrapper.find(FormAndSubmitButton).exists()).toBe(false);
+    });
+
+    it("hides form fields and button on success", async () => {
+        const wrapper = await montDatasetError(true, true, "user_email");
 
         server.use(
             http.post("/api/jobs/{job_id}/error", ({ response }) => {

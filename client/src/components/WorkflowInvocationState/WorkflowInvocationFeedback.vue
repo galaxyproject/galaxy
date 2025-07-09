@@ -1,19 +1,24 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { isWorkflowInput } from "../Workflow/constants";
 import { errorCount } from "./util";
 
 import EmailReportForm from "../Common/EmailReportForm.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import InvocationMessageView from "./InvocationMessage.vue";
 import WorkflowInvocationStep from "./WorkflowInvocationStep.vue";
 
 const props = defineProps<{
     invocationId: string;
+    historyId: string;
     storeId: string;
     stepsJobsSummary: StepJobSummary[];
     invocation: WorkflowInvocationElementView;
@@ -23,6 +28,33 @@ const props = defineProps<{
 const { graphStepsByStoreId } = storeToRefs(useInvocationStore());
 
 const steps = computed(() => graphStepsByStoreId.value[props.storeId]);
+
+const errorMessage = ref<string>("");
+
+/** The user ID of the workflow invocation, set based on the history user ID. */
+const invocationUserId = ref<string | null>(null);
+const loadingUserId = ref<boolean>(true);
+
+fetchHistoryUserId();
+
+async function fetchHistoryUserId() {
+    // Fetch the history user ID to check if the user is the owner of the workflow run.
+    // This is used to determine if the feedback form should be shown.
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: props.historyId },
+            query: { keys: "user_id" },
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        loadingUserId.value = false;
+        return;
+    }
+    invocationUserId.value = "user_id" in data && data.user_id ? data.user_id : null;
+    loadingUserId.value = false;
+}
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
@@ -61,6 +93,11 @@ async function submit(message: string): Promise<string[][] | undefined> {
 
 <template>
     <div>
+        <BAlert v-if="errorMessage" variant="danger" show>
+            <h2 class="alert-heading h-sm">Failed to send feedback for the workflow run.</h2>
+            {{ errorMessage }}
+        </BAlert>
+
         <h3 class="h-lg mt-2">Workflow Run Feedback</h3>
 
         <p>
@@ -106,6 +143,9 @@ async function submit(message: string): Promise<string[][] | undefined> {
             </div>
         </div>
 
-        <EmailReportForm class="mt-3" :submit="submit" />
+        <BAlert v-if="loadingUserId" variant="info" show>
+            <LoadingSpan message="Loading user details" />
+        </BAlert>
+        <EmailReportForm v-else class="mt-3" :user-id="invocationUserId" :submit="submit" />
     </div>
 </template>

@@ -15,18 +15,23 @@ import GButton from "../BaseComponents/GButton.vue";
 import FormElement from "../Form/FormElement.vue";
 
 const props = defineProps<{
+    email?: String | null;
+    userId?: String | null;
     submit: (message: string) => Promise<string[][] | undefined>;
 }>();
 
 const { currentUser } = storeToRefs(useUserStore());
-const userEmail = computed<string | null>(() => {
-    const user = currentUser.value;
-    if (isRegisteredUser(user)) {
-        return user.email;
-    } else {
-        return null;
-    }
-});
+const currentUserEmail = computed<string | null>(() =>
+    isRegisteredUser(currentUser.value) ? currentUser.value.email : null
+);
+const currentUserId = computed<string | null>(() =>
+    isRegisteredUser(currentUser.value) ? currentUser.value.id : null
+);
+const isOwnerOrRunner = computed(
+    () =>
+        (props.email && currentUserEmail.value === props.email) ||
+        (props.userId && currentUserId.value === props.userId)
+);
 
 const message = ref("");
 const resultMessages = ref<string[][]>([]);
@@ -54,7 +59,11 @@ async function submitEmail() {
 </script>
 
 <template>
-    <div>
+    <BAlert v-if="!isOwnerOrRunner" variant="danger" show data-description="alert for not owner/runner">
+        {{ localize("You must be logged in as the owner/runner to submit a report.") }}
+    </BAlert>
+
+    <div v-else>
         <h4 class="mb-3 h-md">Issue Report</h4>
 
         <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
@@ -64,8 +73,7 @@ async function submitEmail() {
 
         <div v-if="showForm" id="email-report-form">
             <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
-            <span v-if="userEmail">{{ userEmail }}</span>
-            <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
+            <span>{{ currentUserEmail }}</span>
 
             <FormElement
                 id="email-report-message"

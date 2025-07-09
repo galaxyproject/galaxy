@@ -200,7 +200,7 @@ onMounted(async () => {
                 </b>
             </p>
 
-            <EmailReportForm :submit="submit" />
+            <EmailReportForm :email="jobDetails.user_email" :submit="submit" />
         </div>
     </div>
 </template>
