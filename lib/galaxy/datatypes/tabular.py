@@ -2051,19 +2051,18 @@ class FourDNPairs(Tabular):
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairs().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs' )
+    >>> fname = get_test_fname( '1.4dn_pairs' )
     >>> FourDNPairs().sniff( fname )
     True
-    >>> fname = get_test_fname( '1.pairsam' )
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
     >>> FourDNPairs().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs.gz' )
+    >>> fname = get_test_fname( '1.4dn_pairs.gz' )
     >>> FourDNPairs().sniff( fname )
     False
     """
 
     file_ext = "4dn_pairs"
-    compressed = False
 
     def sniff_prefix(self, file_prefix):
         if not file_prefix.startswith("## pairs format v1.0.0"):
@@ -2101,19 +2100,18 @@ class FourDNPairsam(Tabular):
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairsam().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs' )
+    >>> fname = get_test_fname( '1.4dn_pairs' )
     >>> FourDNPairsam().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairsam' )
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
     >>> FourDNPairsam().sniff( fname )
     True
-    >>> fname = get_test_fname( '1.pairsam.gz' )
+    >>> fname = get_test_fname( '1.4dn_pairsam.gz' )
     >>> FourDNPairsam().sniff( fname )
     False
     """
 
     file_ext = "4dn_pairsam"
-    compressed = False
 
     def sniff_prefix(self, file_prefix):
         if not file_prefix.startswith("## pairs format v1.0.0"):
@@ -2129,6 +2127,7 @@ class FourDNPairsam(Tabular):
         return False
 
 
+@build_sniff_from_prefix
 class FourDNPairsGz(FourDNPairs):
     """
     Extends `FourDNPairs` to support compressed `.pairs` format (.pairs.gz).
@@ -2138,13 +2137,13 @@ class FourDNPairsGz(FourDNPairs):
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairsGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs' )
+    >>> fname = get_test_fname( '1.4dn_pairs' )
     >>> FourDNPairsGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairsam' )
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
     >>> FourDNPairsGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs.gz' )
+    >>> fname = get_test_fname( '1.4dn_pairs.gz' )
     >>> FourDNPairsGz().sniff( fname )
     True
     """
@@ -2153,6 +2152,7 @@ class FourDNPairsGz(FourDNPairs):
     compressed = True
 
 
+@build_sniff_from_prefix
 class FourDNPairsamGz(FourDNPairsam):
     """
     Extends `FourDNPairsam` to support compressed `.pairsam` format (.pairsam.gz).
@@ -2162,13 +2162,13 @@ class FourDNPairsamGz(FourDNPairsam):
     >>> fname = get_test_fname( '2.txt' )
     >>> FourDNPairsamGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairs' )
+    >>> fname = get_test_fname( '1.4dn_pairs' )
     >>> FourDNPairsamGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairsam' )
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
     >>> FourDNPairsamGz().sniff( fname )
     False
-    >>> fname = get_test_fname( '1.pairsam.gz' )
+    >>> fname = get_test_fname( '1.4dn_pairsam.gz' )
     >>> FourDNPairsamGz().sniff( fname )
     True
     """
