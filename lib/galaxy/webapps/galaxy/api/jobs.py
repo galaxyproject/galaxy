@@ -84,7 +84,7 @@ router = Router(tags=["jobs"])
 
 StateQueryParam = Query(
     default=None,
-    alias="state",
+    alias="states[]",
     title="States",
     description="A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned.",
 )
