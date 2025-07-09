@@ -2,6 +2,7 @@ import datetime
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from typing import (
     Dict,
     Optional,
@@ -12,7 +13,7 @@ from pykwalify.core import Core
 
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
-from galaxy.jobs import JobConfiguration
+from galaxy.jobs.config import JobConfiguration
 from galaxy.util import galaxy_directory
 from galaxy.util.path import StrPath
 from galaxy.util.resources import (
@@ -27,7 +28,7 @@ from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 # there are advantages to testing the documentation/examples.
 GALAXY_SAMPLES_DIRECTORY = resource_path("galaxy.config", "sample")
 SIMPLE_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_basic"
-ADVANCED_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_advanced"
+ADVANCED_JOB_CONF = Path(os.path.join(os.path.dirname(__file__))) / "job_conf.xml.sample_advanced"
 ADVANCED_JOB_CONF_YAML = GALAXY_SAMPLES_DIRECTORY / "job_conf.sample.yml"
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
@@ -126,11 +127,10 @@ class BaseJobConfXmlParserTestCase(TestCase):
 
     def _with_advanced_config(self):
         if self.extension == "xml":
-            trav = ADVANCED_JOB_CONF
+            self._write_config_from(ADVANCED_JOB_CONF)
         else:
-            trav = ADVANCED_JOB_CONF_YAML
-        with as_file(trav) as path:
-            self._write_config_from(path)
+            with as_file(ADVANCED_JOB_CONF_YAML) as path:
+                self._write_config_from(path)
 
 
 class TestSimpleJobConfXmlParser(BaseJobConfXmlParserTestCase):

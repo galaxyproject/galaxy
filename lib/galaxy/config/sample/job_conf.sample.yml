@@ -1,7 +1,16 @@
+# A sample job config that describes all available options
 runners:
   local:
     load: galaxy.jobs.runners.local:LocalJobRunner
+    # workers is the number of threads for the runner's work queue.
+    # For all asynchronous runners (i.e. everything other than
+    # LocalJobRunner), this is the number of threads available for
+    # starting and finishing jobs. For the LocalJobRunner, this is the
+    # number of concurrent jobs that Galaxy will run.
     workers: 4
+  pbs:
+    load: galaxy.jobs.runners.pbs:PBSJobRunner
+    workers: 2
   drmaa:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
 
@@ -106,6 +115,14 @@ runners:
     # plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
     #k8s_job_api_version: batch/v1
 
+    # Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+    # If specified, the job inputs will be individually mounted from this PVC.
+    #k8s_data_volume_claim: galaxy_pvc:/mount_point
+
+    # Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+    # If specified, the job inputs will be individually mounted from this PVC.
+    #k8s_working_volume_claim: galaxy_pvc:/mount_point
+
     # Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
     # PVC:mount point
     # Typical mount paths are the file_path, job_working_directory, all paths containing tools and scripts
@@ -115,6 +132,38 @@ runners:
     # The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
     # accordingly in the PV and PVC detailed above.
     #k8s_namespace: default
+
+    # An optional priority class to be assigned to the job, which can control whether or not jobs can
+    # preempt existing pods to make room for new ones.
+    # https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+    #k8s_pod_priority_class: medium-priority-class
+
+    # An affinity to be assigned to the job, useful for preferentially placing jobs on specific nodes,
+    # or for preventing two jobs from being scheduled on the same node.
+    # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity 
+    #k8s_affinity:
+    #  nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/e2e-az-name
+    #          operator: In
+    #          values:
+    #          - e2e-az1
+    #          - e2e-az2
+
+    # An optional node selector, so that jobs are scheduled only on nodes with matching labels
+    # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector -->
+    #k8s_node_selector: 
+    #  kubernetes.io/hostname: my-large-mem-node
+
+    # An optional toleration, allowing jobs to be scheduled on tainted nodes.
+    # https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ -->
+    #k8s_tolerations:
+    #  - key: "key1"
+    #    operator: "Equal"
+    #    value: "value1"
+    #    effect: "NoSchedule"
 
     # Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
     # setter essentially, so by default it will try to take a job submitted to successful completion. A job
@@ -145,6 +194,32 @@ runners:
     # new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
     # exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue.
     #k8s_timeout_seconds_job_deletion: 30
+
+    # Sets the ttlSecondsAfterFinished, which will automatically delete the kubernetes job after a specified
+    # number of seconds since its finish. It relies on a k8s alpha feature gate, which must be enabled
+    # https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/. This property is
+    # complementary to `k8s_cleanup_job` and can be used to delete the job after a specific delay, instead of
+    # immediately, for debugging purposes and is an additional cleanup safeguard.
+    #k8s_job_ttl_secs_after_finished: 300
+
+    # Whether to delete the k8s job after it finishes. This setting is independent of the cleanup
+    # setting in the galaxy config, and determines whether the k8s job (not galaxy job) is deleted
+    # or not. Valid values are "onsuccess", "always" and "never", with the default being "always".
+    #k8s_cleanup_job: always
+
+    # Apply additional labels and annotations to the k8s job spec
+    #k8s_job_metadata:
+    #  labels:
+    #      mylabel1: myvalue1
+    #  annotations:
+    #      myannotation1: myvalue1
+    #      myannotation2: myvalue2
+
+    # Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job.
+    # This is probably possible to be set at the destination level as well, based on the source code.
+    #k8s_extra_job_envs:
+    #  - HDF5_USE_FILE_LOCKING: 'FALSE'
+    #  - MY_OTHER_ENV_VAR: its_value
 
     # If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
     # to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
@@ -199,6 +274,19 @@ runners:
     #requests_memory: 500Mi
     #limits_cpu: 2
     #limits_memory: 2Gi
+
+    # ID of user that should be used by the tool command in the job containers
+    #k8s_run_as_user_id: 10001
+    # ID of group that should be used by the tool command in the job containers
+    #k8s_run_as_group_id: 10001
+    # Whether to enabled HTTPS access in the k8s ingress spec generated for each interactive tools
+    #k8s_interactivetools_use_ssl: true
+    # Annotations to add to the metadata section in the k8s ingress generated for each interactive tools
+    #k8s_interactivetools_ingress_annotations: 
+    #  - cert-manager.io/cluster-issuer: letsencrypt-prod
+    # The amount of time (in seconds) to let a job remain in an unschedulable state before being flagged
+    # as having failed. The default is None (unlimited time).
+    #k8s_unschedulable_walltime_limit: 172800
 
   godocker:
     # Go-Docker is a batch computing/cluster management tool using Docker
@@ -408,6 +496,24 @@ execution:
       local_slots: 4
       # Embed metadata collection in local job script (defaults to true for most runners).
       embed_metadata_in_job: true
+
+      # If set, overwrites metadata_strategy (configurable in galaxy.yml).
+      # Valid values are `directory` (default), `extended` and `legacy`.
+      # Setting metadata_strategy to `extended` requires that all object stores
+      # that can be written to store datasets by uuid. In `extended` mode jobs
+      # will decide if a tool run failed, the object stores configuration
+      # is serialized and made available to the job and is used for writing output
+      # datasets to the object store as part of the job and dynamic output discovery
+      # (e.g. discovered datasets <discover_datasets>, unpopulated collections, etc)
+      # happens as part of the job.
+      metadata_strategy: directory
+
+      # If set, overwrites tool_evaluation_strategy (configurable in galaxy.yml).
+      # Valid values are `local` (default) and `remote`.
+      # Setting tool_evaluation_strategy to `remote` also requires metadata_strategy to be
+      # set to `extended`.
+      tool_evaluation_strategy: local
+
       # Can define custom job metrics plugins for this environment with a list of configuration
       # dictionaries. Alternatively {src: path, path: /path/to/metrics.(xml|yml)} can be used to
       # load job metric configuration for this destination from another file.
@@ -943,7 +1049,9 @@ execution:
       job_memory: 16000
       job_cores: 8
       job_project: BigMem
-
+      # Exclude hosts in the LSF cluster from receiving the job.
+      # Useful for avoiding nodes with temporal issues.
+      #job_excluded_hosts: /path/to/file/with/hosts/to/be/excluded/one_per_line.txt
     condor:
       runner: condor
 
@@ -1058,6 +1166,42 @@ execution:
 
       # Number of retries to attempt if a command returns a non-zero status
       max_retries: 0
+
+    aws_batch_auto:
+      runner: aws_batch
+      # docker needs to be enabled always      
+      docker_enabled: true
+      # Fargate and non-GPU EC2
+      job_queue: arn_for_Fargate_job_queue, arn_for_EC2_job_queue
+      job_role_arn: arn:aws:iam::xxxxxxxxxxxxxxxxxx
+      vcpu: 1
+      memory: 2048
+      efs_filesystem_id: fs-xxxxxxxxxxxxxx
+      # This is the location where the EFS is mounted
+      efs_mount_point: /mnt/efs/fs1
+      # `fargate_version` is required to use Fargate compute resources
+      fargate_version: 1.4.0
+      # To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions
+      auto_platform: true
+      retry_attempts: 2
+      retry_on_exit_statusReason: ...
+      retry_on_exit_reason: ...
+      retry_on_exit_exitCode: ...
+      retry_on_exit_action: exit
+
+    aws_batch_gpu:
+      runner: aws_batch
+      # always required
+      docker_enabled: true
+      job_queue: arn_for_gpu_job_queue
+      # Job queue must be built on GPU-specific compute environment
+      job_role_arn: arn:aws:iam::xxxxxxxxxxxxxxxxxx
+      vcpu: 4
+      memory: 20000
+      gpu: 1
+      efs_filesystem_id: fs-xxxxxxxxxxxxxx
+      # This is the location where the EFS is mounted
+      efs_mount_point: /mnt/efs/fs1
 
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to

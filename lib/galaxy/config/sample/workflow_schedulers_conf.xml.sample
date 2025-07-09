@@ -18,7 +18,7 @@
        in job_conf.xml).
 
        The options here are the same as is documented for <handlers> in
-       job_conf.xml.sample_advanced
+       job_conf.sample.yml
   -->
   <!--
   <handlers>
