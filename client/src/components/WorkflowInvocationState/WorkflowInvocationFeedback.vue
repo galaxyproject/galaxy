@@ -84,10 +84,24 @@ const stepsWithErrors = computed(() => {
 });
 
 async function submit(message: string): Promise<string[][] | undefined> {
-    // TODO: Implement a new backend API POST endpoint to handle the feedback submission for invocations.
-    // One factor to consider here, how to check the user email for the workflow run?
-    // For job runs we can do that via the `jobDetails.user_email` field, but for workflow runs we don't have that, I think...?
-    return;
+    const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/error", {
+        params: {
+            path: { invocation_id: props.invocation.id },
+        },
+        body: {
+            invocation_id: props.invocation.id,
+            message: message,
+            // Not including the "email" key here, the backend endpoint will automatically use the current user's email.
+            // And we confirm the current user is indeed sending the report in the child `EmailReportForm` component.
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    return data.messages;
 }
 </script>
 

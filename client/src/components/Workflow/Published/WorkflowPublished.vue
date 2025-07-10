@@ -25,6 +25,7 @@ library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
 
 interface Props {
     id: string;
+    version?: number;
     zoom?: number;
     embed?: boolean;
     initialX?: number;
@@ -38,6 +39,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    version: undefined,
     zoom: 0.75,
     embed: false,
     initialX: -20,
@@ -74,8 +76,8 @@ async function load() {
 
     try {
         const [workflowInfoData, fullWorkflow] = await Promise.all([
-            getWorkflowInfo(props.id),
-            getWorkflowFull(props.id),
+            getWorkflowInfo(props.id, props.version),
+            getWorkflowFull(props.id, props.version),
         ]);
 
         assertDefined(workflowInfoData.name);
