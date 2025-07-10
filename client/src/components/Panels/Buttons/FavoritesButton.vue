@@ -7,6 +7,7 @@ import { watchImmediate } from "@vueuse/core";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
+import localize from "@/utils/localization";
 
 import { useUserStore } from "@/stores/userStore";
 
@@ -46,7 +47,7 @@ const tooltipText = computed(() => {
         return "Log in to Favorite Tools";
     } else {
         if (toggle.value) {
-            return "Clear";
+            return localize("Clear");
         } else {
             return props.tooltip;
         }

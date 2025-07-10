@@ -46,7 +46,7 @@ defineProps({
         @click.prevent="$emit('click')">
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
-            <span class="sr-only">{{ tooltip || id }}</span>
+            <span class="sr-only">{{ localize(tooltip || id) }}</span>
             <span :class="`fa fa-fw ${icon}`" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>

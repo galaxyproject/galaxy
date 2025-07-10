@@ -28,9 +28,9 @@ const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
 
 const title = computed(() => {
     if (showAddFavorite.value) {
-        return "Add to Favorites";
+        return localize("Add to Favorites");
     } else if (showRemoveFavorite.value) {
-        return "Remove from Favorites";
+        return localize("Remove from Favorites");
     } else {
         return null;
     }

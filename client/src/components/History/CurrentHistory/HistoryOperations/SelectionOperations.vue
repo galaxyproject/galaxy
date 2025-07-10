@@ -6,11 +6,11 @@
                     All <b>{{ totalItemsInQuery }}</b> selected
                 </span>
                 <span v-else data-test-id="num-active-selected">
-                    <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
+                    <b>{{ selectionSize }}</b> localize("of") {{ totalItemsInQuery }} localize("selected")
                 </span>
             </template>
             <b-dropdown-text>
-                <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
+                <span v-localize data-description="selected count">localize("With") {{ numSelected }} localize("selected")...</span>
             </b-dropdown-text>
             <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>

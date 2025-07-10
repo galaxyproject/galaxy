@@ -14,7 +14,7 @@
         block
         no-caret
         :disabled="storeLoading"
-        :title="!storeLoading ? 'Show panel options' : 'Loading panel view'"
+        :title="!storeLoading ? localize('Show panel options') : 'Loading panel view'"
         variant="link"
         toggle-class="text-decoration-none"
         role="menu"
