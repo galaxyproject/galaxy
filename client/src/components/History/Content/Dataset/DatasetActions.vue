@@ -40,7 +40,7 @@ const showError = computed(() => {
     return props.item.state === "error" || props.item.state === "failed_metadata";
 });
 const showInfo = computed(() => {
-    return props.item.state !== "noPermission";
+    return props.item.accessible;
 });
 const showVisualizations = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
