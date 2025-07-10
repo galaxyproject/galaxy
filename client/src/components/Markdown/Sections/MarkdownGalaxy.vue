@@ -167,7 +167,7 @@ watch(
                 :footer="args.footer"
                 :show-column-headers="showColumnHeaders"
                 :title="args.title"
-                :path="path" />
+                :path="args.path" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
                 :collection-id="args.history_dataset_collection_id" />
