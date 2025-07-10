@@ -5,8 +5,6 @@ from json import (
     loads,
 )
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -633,12 +631,12 @@ class Grid:
     async_template = "legacy/grid_base_async.mako"
     use_async = False
     use_hide_message = True
-    global_actions: List[GridAction] = []
-    columns: List[GridColumn] = []
-    operations: List[GridOperation] = []
-    standard_filters: List[GridColumnFilter] = []
+    global_actions: list[GridAction] = []
+    columns: list[GridColumn] = []
+    operations: list[GridOperation] = []
+    standard_filters: list[GridColumnFilter] = []
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
-    default_filter: Dict[str, str] = {}
+    default_filter: dict[str, str] = {}
     default_sort_key: Optional[str] = None
     use_paging = False
     num_rows_per_page = 25

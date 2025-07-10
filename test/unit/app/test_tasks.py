@@ -1,5 +1,3 @@
-from typing import List
-
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.celery.tasks import clean_object_store_caches
 from galaxy.objectstore import BaseObjectStore
@@ -7,16 +5,16 @@ from galaxy.objectstore.caching import CacheTarget
 
 
 class MockObjectStore:
-    def __init__(self, cache_targets: List[CacheTarget]):
+    def __init__(self, cache_targets: list[CacheTarget]):
         self._cache_targets = cache_targets
 
-    def cache_targets(self) -> List[CacheTarget]:
+    def cache_targets(self) -> list[CacheTarget]:
         return self._cache_targets
 
 
 def test_clean_object_store_caches(tmp_path):
     container = MockApp()
-    cache_targets: List[CacheTarget] = []
+    cache_targets: list[CacheTarget] = []
     container[BaseObjectStore] = MockObjectStore(cache_targets)  # type: ignore[assignment]
 
     # similar code used in object store unit tests

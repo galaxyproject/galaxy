@@ -1,10 +1,8 @@
 from collections import UserDict
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Sequence,
     TYPE_CHECKING,
     Union,
 )
@@ -48,7 +46,7 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
     # This dict provides a fallback when dict lookup fails using those old rules
 
     def __init__(self, initialdata=None, **kwargs):
-        self._legacy_mapping: Dict[str, str] = {}
+        self._legacy_mapping: dict[str, str] = {}
         super().__init__(initialdata, **kwargs)
 
     def set_legacy_alias(self, new_key: str, old_key: str):
@@ -183,7 +181,7 @@ def make_list_copy(from_list: list):
     return new_list
 
 
-def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
+def process_key(incoming_key: str, incoming_value: Any, d: dict[str, Any]):
     key_parts = incoming_key.split("|")
     if len(key_parts) == 1:
         # Regular parameter
@@ -195,7 +193,7 @@ def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
         # Repeat
         input_name, index = split_flattened_repeat_key(key_parts[0])
         d.setdefault(input_name, [])
-        newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
+        newlist: list[dict[Any, Any]] = [{} for _ in range(index + 1)]
         d[input_name].extend(newlist[len(d[input_name]) :])
         subdict = d[input_name][index]
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
@@ -213,7 +211,7 @@ def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
     E.g. "cond|repeat_0|paramA" -> ["cond", "repeat", 0, "paramA"].
     Return value can be used with `boltons.iterutils.get_path`.
     """
-    path: List[Union[str, int]] = []
+    path: list[Union[str, int]] = []
     key_parts = key.split("|")
     if len(key_parts) == 1:
         return key_parts
@@ -227,8 +225,8 @@ def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
     return path
 
 
-def flat_to_nested_state(incoming: Dict[str, Any]):
-    nested_state: Dict[str, Any] = {}
+def flat_to_nested_state(incoming: dict[str, Any]):
+    nested_state: dict[str, Any] = {}
     for key, value in incoming.items():
         process_key(key, value, nested_state)
     return nested_state

@@ -9,7 +9,6 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -188,7 +187,7 @@ def random_name(len: int = 10) -> str:
     return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len))
 
 
-def create_category(provides_repositories: ProvidesRepositoriesContext, create: Dict[str, Any]) -> Category:
+def create_category(provides_repositories: ProvidesRepositoriesContext, create: dict[str, Any]) -> Category:
     from tool_shed.managers.categories import CategoryManager
 
     request = CreateCategoryRequest(**create)

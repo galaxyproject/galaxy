@@ -1,5 +1,5 @@
+from collections.abc import Iterator
 from typing import (
-    Iterator,
     Optional,
 )
 from unittest import SkipTest

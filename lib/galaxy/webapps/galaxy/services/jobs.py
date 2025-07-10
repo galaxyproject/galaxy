@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -65,7 +63,7 @@ class JobsService(ServiceBase):
         trans: ProvidesUserContext,
         id: DecodedDatabaseIdField,
         full: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         job = self.job_manager.get_accessible_job(
             trans,
             id,
@@ -92,7 +90,7 @@ class JobsService(ServiceBase):
             or payload.history_id is not None
         )
         jobs = self.job_manager.index_query(trans, payload)
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
             # TODO: optimize if this crucial
             if check_security_of_jobs and not security_check(trans, job.history, check_accessible=True):
@@ -146,8 +144,8 @@ class JobsService(ServiceBase):
             # Raise an exception if neither job_id nor dataset_id is provided
             raise ValueError("Either job_id or dataset_id must be provided.")
 
-    def dictify_associations(self, trans, *association_lists) -> List[JobAssociation]:
-        rval: List[JobAssociation] = []
+    def dictify_associations(self, trans, *association_lists) -> list[JobAssociation]:
+        rval: list[JobAssociation] = []
         for association_list in association_lists:
             rval.extend(self.__dictify_association(trans, a) for a in association_list)
         return rval

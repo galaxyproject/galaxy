@@ -2,7 +2,6 @@ import logging
 import os
 import shutil
 from typing import (
-    List,
     TYPE_CHECKING,
     Union,
 )
@@ -97,7 +96,7 @@ class ShedToolDataTableManager(BaseShedToolDataTableManager):
             **kwd,
         )
 
-    def get_tool_index_sample_files(self, sample_files: List[str]) -> List[str]:
+    def get_tool_index_sample_files(self, sample_files: list[str]) -> list[str]:
         """
         Try to return the list of all appropriate tool data sample files included
         in the repository.

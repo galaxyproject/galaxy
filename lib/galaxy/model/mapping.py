@@ -2,7 +2,6 @@ import logging
 from threading import local
 from typing import (
     Optional,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -27,7 +26,7 @@ metadata = mapper_registry.metadata
 
 
 class GalaxyModelMapping(SharedModelMapping):
-    User: Type["GalaxyUser"]
+    User: type["GalaxyUser"]
     security_agent: GalaxyRBACAgent
     thread_local_log: Optional[local]
 

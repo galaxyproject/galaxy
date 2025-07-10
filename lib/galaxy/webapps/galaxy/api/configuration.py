@@ -6,8 +6,6 @@ and configuration settings.
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -69,7 +67,7 @@ class FastAPIConfiguration:
         trans: ProvidesUserContext = DependsOnTrans,
         view: SerializationViewQueryParam = None,
         keys: Optional[str] = SerializationKeysQueryParam,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Return an object containing exposable configuration settings.
 
@@ -85,7 +83,7 @@ class FastAPIConfiguration:
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )
-    def version(self) -> Dict[str, Any]:
+    def version(self) -> dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
         return self.configuration_manager.version()
 
@@ -95,7 +93,7 @@ class FastAPIConfiguration:
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files",
     )
-    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+    def dynamic_tool_confs(self) -> list[dict[str, str]]:
         """Return dynamic tool configuration files."""
         return self.configuration_manager.dynamic_tool_confs()
 
@@ -105,7 +103,7 @@ class FastAPIConfiguration:
         summary="Decode a given id",
         response_description="Decoded id",
     )
-    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> Dict[str, int]:
+    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> dict[str, int]:
         """Decode a given id."""
         return self.configuration_manager.decode_id(encoded_id)
 
@@ -115,7 +113,7 @@ class FastAPIConfiguration:
         summary="Encode a given id",
         response_description="Encoded id",
     )
-    def encode_id(self, decoded_id: int = DecodedIdPathParam) -> Dict[str, str]:
+    def encode_id(self, decoded_id: int = DecodedIdPathParam) -> dict[str, str]:
         """Decode a given id."""
         return self.configuration_manager.encode_id(decoded_id)
 
@@ -125,7 +123,7 @@ class FastAPIConfiguration:
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them",
     )
-    def tool_lineages(self) -> List[Dict[str, Dict]]:
+    def tool_lineages(self) -> list[dict[str, dict]]:
         """Return tool lineages for tools that have them."""
         return self.configuration_manager.tool_lineages()
 

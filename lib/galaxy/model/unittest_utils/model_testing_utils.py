@@ -1,9 +1,9 @@
 import os
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
     Callable,
-    Iterator,
     Optional,
 )
 

@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import (
-    List,
     NoReturn,
     Optional,
-    Set,
     Union,
 )
 
@@ -186,7 +184,7 @@ class NotificationService(ServiceBase):
             self._raise_notification_not_found(notification_id)
 
     def update_user_notifications(
-        self, user_context: ProvidesUserContext, notification_ids: Set[int], request: UserNotificationUpdateRequest
+        self, user_context: ProvidesUserContext, notification_ids: set[int], request: UserNotificationUpdateRequest
     ) -> NotificationsBatchUpdateResponse:
         """Updates a batch of notifications received by the user with the requested values."""
         self.notification_manager.ensure_notifications_enabled()
@@ -242,7 +240,7 @@ class NotificationService(ServiceBase):
 
     def _get_all_broadcasted(
         self, since: Optional[datetime] = None, active_only: Optional[bool] = True
-    ) -> List[BroadcastNotificationResponse]:
+    ) -> list[BroadcastNotificationResponse]:
         notifications = self.notification_manager.get_all_broadcasted_notifications(since, active_only)
         broadcasted_notifications = [
             BroadcastNotificationResponse.model_validate(notification) for notification in notifications
@@ -255,7 +253,7 @@ class NotificationService(ServiceBase):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         since: Optional[datetime] = None,
-    ) -> List[UserNotificationResponse]:
+    ) -> list[UserNotificationResponse]:
         notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
         user_notifications = [UserNotificationResponse.model_validate(notification) for notification in notifications]
         return user_notifications

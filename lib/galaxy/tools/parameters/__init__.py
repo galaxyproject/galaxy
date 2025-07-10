@@ -5,7 +5,6 @@ Classes encapsulating Galaxy tool parameters.
 from json import dumps
 from typing import (
     cast,
-    Dict,
     Optional,
     Union,
 )
@@ -51,7 +50,7 @@ REPLACE_ON_TRUTHY = object()
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
 __all__ = ("DataCollectionToolParameter", "DataToolParameter", "SelectToolParameter")
 
-ToolInputsT = Dict[str, Union[Group, ToolParameter]]
+ToolInputsT = dict[str, Union[Group, ToolParameter]]
 
 
 def visit_input_values(
@@ -345,7 +344,7 @@ def params_to_strings(
     return rval
 
 
-def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> Dict:
+def params_from_strings(params: dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> dict:
     """
     Convert a dictionary of strings as produced by `params_to_strings`
     back into parameter values (decode the json representation and then

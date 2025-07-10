@@ -18044,8 +18044,8 @@ export interface components {
              */
             url: string;
         };
-        /** RootModel[Dict[str, int]] */
-        RootModel_Dict_str__int__: {
+        /** RootModel[dict[str, int]] */
+        RootModel_dict_str__int__: {
             [key: string]: number;
         };
         /** RulesParameterModel */
@@ -39456,7 +39456,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RootModel_Dict_str__int__"];
+                    "application/json": components["schemas"]["RootModel_dict_str__int__"];
                 };
             };
             /** @description Request Error */

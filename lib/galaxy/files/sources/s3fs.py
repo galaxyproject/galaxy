@@ -3,9 +3,7 @@ import logging
 import os
 from typing import (
     cast,
-    List,
     Optional,
-    Tuple,
 )
 
 from typing_extensions import (
@@ -79,13 +77,13 @@ class S3FsFilesSource(BaseFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         _props = self._serialization_props(user_context)
         # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function
         _bucket_name = _props.pop("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
         if recursive:
-            res: List[AnyRemoteEntry] = []
+            res: list[AnyRemoteEntry] = []
             bucket_path = self._bucket_path(_bucket_name, path)
             for p, dirs, files in fs.walk(bucket_path, detail=True):
                 to_dict = functools.partial(self._resource_info_to_dict, p)

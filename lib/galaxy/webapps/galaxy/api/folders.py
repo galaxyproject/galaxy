@@ -4,6 +4,7 @@ API operations on library folders.
 
 import logging
 from typing import (
+    Annotated,
     Optional,
     Union,
 )
@@ -12,7 +13,6 @@ from fastapi import (
     Body,
     Query,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.schema import (

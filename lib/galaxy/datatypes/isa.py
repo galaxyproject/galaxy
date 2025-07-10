@@ -12,7 +12,6 @@ import re
 import shutil
 import tempfile
 from typing import (
-    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -95,7 +94,7 @@ class _Isa(Data):
         main_file = self._get_main_file(dataset)
         return self._make_investigation_instance(main_file)
 
-    def _find_main_file_in_archive(self, files_list: List) -> str:
+    def _find_main_file_in_archive(self, files_list: list) -> str:
         """Find the main file inside the ISA archive."""
 
         found_file = None
@@ -121,7 +120,7 @@ class _Isa(Data):
 
         # Read first lines of main file
         with open(main_file, encoding="utf-8") as f:
-            data: List = []
+            data: list = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
                     data.append(line)

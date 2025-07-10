@@ -4,10 +4,9 @@ API operations on the contents of a history.
 
 import logging
 from typing import (
-    List,
+    Annotated,
     Literal,
     Optional,
-    Set,
     Union,
 )
 
@@ -24,7 +23,6 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
-from typing_extensions import Annotated
 
 from galaxy import util
 from galaxy.exceptions.utils import validation_error_to_message_exception
@@ -270,7 +268,7 @@ DryRunQueryParam = Query(
 
 def get_legacy_index_query_params(
     ids: Optional[str] = LegacyIdsQueryParam,
-    types: Optional[List[str]] = LegacyTypesQueryParam,
+    types: Optional[list[str]] = LegacyTypesQueryParam,
     details: Optional[str] = LegacyDetailsQueryParam,
     deleted: Optional[bool] = LegacyDeletedQueryParam,
     visible: Optional[bool] = LegacyVisibleQueryParam,
@@ -290,7 +288,7 @@ def get_legacy_index_query_params(
 
 def parse_legacy_index_query_params(
     ids: Optional[str] = None,
-    types: Optional[Union[List[str], str]] = None,
+    types: Optional[Union[list[str], str]] = None,
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
@@ -325,7 +323,7 @@ def parse_legacy_index_query_params(
         raise validation_error_to_message_exception(e)
 
 
-def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType]:
+def parse_content_types(types: Union[list[str], str]) -> list[HistoryContentType]:
     if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
         content_types = util.listify(types[0])
     else:  # Support ?types=dataset&types=dataset_collection
@@ -337,7 +335,7 @@ def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     if details is not None and details != "all":
-        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
+        dataset_details: Union[None, set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
         dataset_details = details
     return dataset_details
@@ -613,7 +611,7 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
-    ) -> List[AnyJobStateSummary]:
+    ) -> list[AnyJobStateSummary]:
         """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
 
         **Warning**: We allow anyone to fetch job state information about any object they
@@ -699,7 +697,7 @@ class FastAPIHistoryContents:
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -717,7 +715,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -728,7 +726,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType],
         serialization_params: SerializationParams,
         payload: CreateHistoryContentPayload,
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -1076,7 +1074,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         create_payload: CreateHistoryContentFromStore = Body(...),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> list[AnyHistoryContentItem]:
         """
         Create history contents from model store.
         Input can be a tarfile created with build_objects script distributed

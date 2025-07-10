@@ -4,7 +4,6 @@ API operations on Galaxy's object store.
 
 import logging
 from typing import (
-    List,
     Union,
 )
 
@@ -78,7 +77,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
-    ) -> List[Union[ConcreteObjectStoreModel, UserConcreteObjectStoreModel]]:
+    ) -> list[Union[ConcreteObjectStoreModel, UserConcreteObjectStoreModel]]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"
@@ -126,7 +125,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> List[UserConcreteObjectStoreModel]:
+    ) -> list[UserConcreteObjectStoreModel]:
         return self.object_store_instance_manager.index(trans)
 
     @router.get(

@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -126,7 +125,7 @@ class TestGroupRolesApi(ApiTestCase):
         delete_response = self._delete(f"groups/{encoded_group_id}/roles/{encoded_role_id}", admin=True)
         self._assert_status_code_is(delete_response, 400)
 
-    def _create_group(self, group_name: str, encoded_role_ids: Optional[List[str]] = None):
+    def _create_group(self, group_name: str, encoded_role_ids: Optional[list[str]] = None):
         if encoded_role_ids is None:
             encoded_role_ids = [self.dataset_populator.user_private_role_id()]
         role_ids = encoded_role_ids
