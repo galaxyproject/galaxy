@@ -4,6 +4,7 @@ import collections
 import logging
 import os
 
+from galaxy.exceptions import ItemOwnershipException
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
@@ -60,9 +61,11 @@ class ErrorPlugin:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
-    def _can_access_invocation(self, invocation, user):
-        # TODO: Implement a check for invocation access
-        return True
+    def _check_invocation_ownership(self, invocation, user):
+        if not user:
+            raise ItemOwnershipException("User is not logged in", type="error")
+        if invocation.history.user != user:
+            raise ItemOwnershipException("Invocation history is not owned by the reporting user", type="error")
 
     def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
@@ -82,9 +85,7 @@ class ErrorPlugin:
 
     def submit_invocation_report(self, invocation, user=None, user_submission=False, **kwargs):
         if user_submission:
-            assert self._can_access_invocation(invocation, user), Exception(
-                "You are not allowed to access this invocation."
-            )
+            self._check_invocation_ownership(invocation, user)
 
         responses = []
         for plugin in self.plugins:
