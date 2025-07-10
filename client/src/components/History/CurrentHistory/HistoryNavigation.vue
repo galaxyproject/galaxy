@@ -175,7 +175,7 @@ async function resumePausedJobs() {
                             <span>Fetching histories from server</span>
                         </div>
 
-                        <span v-else-if="!props.minimal">localize("You have") {{ totalHistoryCount }} localize('histories').</span>
+                        <span v-else-if="!props.minimal">{{ localize("You have") }} {{ totalHistoryCount }} {{ localize('histories') }}.</span>
                         <span v-else>Manage History</span>
                     </BDropdownText>
 
