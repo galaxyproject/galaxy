@@ -7,6 +7,7 @@ from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util.unittest import TestCase
+from galaxy.workflow.errors import WorkflowEmailErrorReporter
 
 # The email the user created their account with.
 TEST_USER_EMAIL = "mockgalaxyuser@galaxyproject.org"
@@ -45,6 +46,38 @@ class TestErrorReporter(TestCase, UsesApp):
         assert "cat1" in email_json["body"]
         assert "cat1" in email_json["html"]
         assert TEST_USER_EMAIL == email_json["reply_to"]
+
+    def test_workflow_error_reporting(self):
+        user, invocation = self._setup_invocation_model_objects()
+
+        email_path = self.email_path
+        assert not email_path.exists()
+        error_report = WorkflowEmailErrorReporter(invocation, self.app)
+        error_report.send_report(user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message")
+        assert email_path.exists()
+        text = email_path.read_text()
+        email_json = json.loads(text)
+        assert email_json["from"] == TEST_SERVER_EMAIL_FROM
+        assert email_json["to"] == f"{TEST_SERVER_ERROR_EMAIL_TO}, {TEST_USER_SUPPLIED_EMAIL}"
+        assert f"Galaxy workflow run error report from {TEST_USER_SUPPLIED_EMAIL}" == email_json["subject"]
+        assert "Test Workflow" in email_json["body"]
+        assert "Test Workflow" in email_json["html"]
+        assert TEST_USER_EMAIL == email_json["reply_to"]
+
+    def test_workflow_error_reporting_unowned_history(self):
+        _, invocation = self._setup_invocation_model_objects()
+        other_user = model.User(email="otheruser@galaxyproject.org", password="mockpass2")
+        self._commit_objects([other_user])
+
+        email_path = self.email_path
+        assert not email_path.exists()
+        error_report = WorkflowEmailErrorReporter(invocation, self.app)
+        error_report.send_report(other_user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message")
+        assert email_path.exists()
+        text = email_path.read_text()
+        email_json = json.loads(text)
+        assert email_json["from"] == TEST_SERVER_EMAIL_FROM
+        assert email_json["to"] == f"{TEST_SERVER_ERROR_EMAIL_TO}"
 
     def test_hda_security(self, tmp_path):
         user, hda = self._setup_model_objects()
@@ -136,6 +169,18 @@ class TestErrorReporter(TestCase, UsesApp):
         job.add_output_dataset("out1", hda)
         self._commit_objects([job, hda, user])
         return user, hda
+
+    def _setup_invocation_model_objects(self):
+        user = model.User(email=TEST_USER_EMAIL, password="mockpass")
+        invocation = model.WorkflowInvocation()
+        invocation.workflow = model.Workflow()
+        invocation.workflow.name = "Test Workflow"
+        invocation.workflow.stored_workflow = model.StoredWorkflow()
+        invocation.workflow.stored_workflow.user = user
+        invocation.history = model.History()
+        invocation.history.user = user
+        self._commit_objects([user, invocation])
+        return user, invocation
 
     def _commit_objects(self, objects):
         session = self.app.model.context
