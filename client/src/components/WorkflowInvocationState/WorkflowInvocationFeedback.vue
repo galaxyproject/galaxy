@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { isWorkflowInput } from "../Workflow/constants";
 import { errorCount } from "./util";
@@ -23,6 +25,8 @@ const props = defineProps<{
 const { graphStepsByStoreId } = storeToRefs(useInvocationStore());
 
 const steps = computed(() => graphStepsByStoreId.value[props.storeId]);
+
+const errorMessage = ref<string>("");
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
@@ -52,10 +56,23 @@ const stepsWithErrors = computed(() => {
 });
 
 async function submit(message: string): Promise<string[][] | undefined> {
-    // TODO: Implement a new backend API POST endpoint to handle the feedback submission for invocations.
-    // One factor to consider here, how to check the user email for the workflow run?
-    // For job runs we can do that via the `jobDetails.user_email` field, but for workflow runs we don't have that, I think...?
-    return;
+    const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/error", {
+        params: {
+            path: { invocation_id: props.invocation.id },
+        },
+        body: {
+            invocation_id: props.invocation.id,
+            message: message,
+            // Not including the "email" key here, the backend endpoint will automatically use the current user's email.
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    return data.messages;
 }
 </script>
 
