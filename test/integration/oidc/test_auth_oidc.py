@@ -8,13 +8,15 @@ import tempfile
 import time
 from string import Template
 from typing import ClassVar
+from unittest.mock import patch
 from urllib import parse
 
 from galaxy import model
+from galaxy.authnz.custos_authnz import OIDCAuthnzBaseKeycloak
+from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
-from galaxy_test.driver.driver_util import attempt_ports
 
 KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"
@@ -31,7 +33,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
         <oidc_endpoint>{KEYCLOAK_URL}</oidc_endpoint>
         <client_id>gxyclient</client_id>
         <client_secret>dummyclientsecret</client_secret>
-        <redirect_uri>$galaxy_url/authnz/$provider_name/callback</redirect_uri>
+        <redirect_uri>dummy_url</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
         <accepted_audiences>gxyclient</accepted_audiences>
     </provider>
@@ -115,20 +117,12 @@ class AbstractTestCases:
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
         saved_oauthlib_insecure_transport: ClassVar[bool]
-        _original_env: ClassVar[dict] = {}
 
         @classmethod
         def setUpClass(cls):
-            # Save original environment variables
-            for var in ["GALAXY_TEST_PORT", "GALAXY_WEB_PORT", "GALAXY_TEST_PORT_RANDOM"]:
-                cls._original_env[var] = os.environ.get(var)
-
-            fixed_port = attempt_ports(port=None, set_galaxy_web_port=False)
-
-            os.environ["GALAXY_TEST_PORT"] = str(fixed_port)
-            os.environ["GALAXY_WEB_PORT"] = str(fixed_port)  # Optional, if referenced elsewhere
-            if "GALAXY_TEST_PORT_RANDOM" in os.environ:
-                os.environ["GALAXY_TEST_PORT_RANDOM"] = "0"
+            cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
+            cls.patch_psa_authnz()
+            cls.patch_keycloak_authnz()
 
             # By default, the oidc callback must be done over a secure transport, so
             # we forcibly disable it for now
@@ -141,27 +135,47 @@ class AbstractTestCases:
             # However, we won't know what the host and port are until the Galaxy test driver is started.
             # So let it start, then generate the oidc_backend_config.xml with the correct host and port,
             # and finally restart Galaxy so the OIDC config takes effect.
-            cls.configure_oidc_and_restart()
+            cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
 
         @classmethod
-        def generate_oidc_config_file(cls, server_wrapper, provider_name="keycloak"):
+        def patch_psa_authnz(cls):
+            # Save a reference to the original init function
+            psa_authnz_init = PSAAuthnz.__init__
+
+            def patched_psa_authnz_init(self, *args, **kwargs):
+                server_wrapper = cls._test_driver.server_wrappers[0]
+                psa_authnz_init(self, *args, **kwargs)
+                self.config["redirect_uri"] = (
+                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+                )
+
+            cls.psa_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
+            cls.psa_patcher.start()
+
+        @classmethod
+        def patch_keycloak_authnz(cls):
+            keycloak_authnz_init = OIDCAuthnzBaseKeycloak.__init__
+
+            def patched_keycloak_authnz_init(self, *args, **kwargs):
+                server_wrapper = cls._test_driver.server_wrappers[0]
+                keycloak_authnz_init(self, *args, **kwargs)
+                self.config.redirect_uri = (
+                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+                )
+
+            cls.keycloak_patcher = patch(
+                "galaxy.authnz.custos_authnz.OIDCAuthnzBaseKeycloak.__init__", patched_keycloak_authnz_init
+            )
+            cls.keycloak_patcher.start()
+
+        @classmethod
+        def generate_oidc_config_file(cls, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
-                host = server_wrapper.host
-                port = server_wrapper.port
-                prefix = server_wrapper.prefix or ""
-                galaxy_url = f"http://{host}:{port}{prefix.rstrip('/')}"
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
-                    galaxy_url=galaxy_url,
                     provider_name=provider_name,
                 )
                 tmp_file.write(data)
                 return tmp_file.name
-
-        @classmethod
-        def configure_oidc_and_restart(cls):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper, provider_name=cls.provider_name)
-            cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
 
         @classmethod
         def tearDownClass(cls):
@@ -169,12 +183,8 @@ class AbstractTestCases:
             cls.restoreOauthlibHttps()
             os.remove(cls.backend_config_file)
 
-            # Restore original environment variables
-            for var, val in cls._original_env.items():
-                if val is not None:
-                    os.environ[var] = val
-                else:
-                    os.environ.pop(var, None)
+            cls.psa_patcher.stop()
+            cls.keycloak_patcher.stop()
 
             super().tearDownClass()
 
