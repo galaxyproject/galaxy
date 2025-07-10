@@ -93,8 +93,10 @@ class WorkflowErrorReporter:
         self.app = app
         self.report = None
 
-    def _can_access_invocation(self, user):
-        return True  # TODO: Implement a check for invocation access
+    def _user_owns_invocation(self, user):
+        if not user or self.invocation.history.user != user:
+            return False
+        return True
 
     def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         host = self.app.url_for("/", qualified=True)
@@ -183,7 +185,7 @@ class WorkflowEmailErrorReporter(WorkflowErrorReporter):
         assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
         error_msg = validate_email_str(email)
-        if not error_msg and self._can_access_invocation(user):
+        if not error_msg and self._user_owns_invocation(user):
             to += f", {email.strip()}"
         subject = f"Galaxy workflow run error report from {email}"
 
