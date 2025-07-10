@@ -63,6 +63,8 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseJobModel,
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
+    ReportInvocationErrorPayload,
+    ReportInvocationErrorResponse,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -1442,6 +1444,23 @@ class FastAPIInvocations:
         payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
+            trans,
+            invocation_id,
+            payload,
+        )
+        return rval
+
+    @router.post(
+        "/api/invocations/{invocation_id}/error",
+        summary="Submits a bug report for a workflow run via the API.",
+    )
+    def report_error(
+        self,
+        payload: ReportInvocationErrorPayload,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> ReportInvocationErrorResponse:
+        rval = self.invocations_service.report_error(
             trans,
             invocation_id,
             payload,

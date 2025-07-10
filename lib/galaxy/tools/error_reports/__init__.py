@@ -38,6 +38,10 @@ class NullErrorPlugin:
         log.warning("Bug report for dataset %s, job %s submitted to NullErrorPlugin", dataset, job)
         return [("Error reporting is not configured for this Galaxy instance", "danger")]
 
+    def submit_invocation_report(self, invocation, user, **kwargs):
+        log.warning("Bug report for invocation %s submitted to NullErrorPlugin", invocation)
+        return [("Error reporting is not configured for this Galaxy instance", "danger")]
+
 
 NULL_ERROR_PLUGIN = NullErrorPlugin()
 
@@ -56,6 +60,10 @@ class ErrorPlugin:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
+    def _can_access_invocation(self, invocation, user):
+        # TODO: Implement a check for invocation access
+        return True
+
     def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
             assert self._can_access_dataset(dataset, user), Exception("You are not allowed to access this dataset.")
@@ -70,6 +78,24 @@ class ErrorPlugin:
                         responses.append(response)
                 except Exception:
                     log.exception("Failed to generate submit_report commands for plugin %s", plugin)
+        return responses
+
+    def submit_invocation_report(self, invocation, user=None, user_submission=False, **kwargs):
+        if user_submission:
+            assert self._can_access_invocation(invocation, user), Exception(
+                "You are not allowed to access this invocation."
+            )
+
+        responses = []
+        for plugin in self.plugins:
+            if user_submission == plugin.user_submission:
+                try:
+                    response = plugin.submit_invocation_report(invocation, user, **kwargs)
+                    log.debug("Bug report plugin %s generated response %s", plugin, response)
+                    if plugin.verbose and response:
+                        responses.append(response)
+                except Exception:
+                    log.exception("Failed to generate submit_invocation_report commands for plugin %s", plugin)
         return responses
 
     def __plugins_from_source(self, plugins_source):

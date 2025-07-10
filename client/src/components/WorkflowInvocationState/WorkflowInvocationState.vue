@@ -141,9 +141,8 @@ const invocationStateSuccess = computed(() => {
     );
 });
 
-// TODO: The entire tab should only be rendered if it is the user's own workflow run.
-// But how to check the user email for the workflow run?
-// For job runs we can do that via the `jobDetails.user_email` field, but for workflow runs we don't have that, I think...?
+// TODO: Decide if the entire tab should only be rendered if it is the user's own workflow run.
+// We could check ownership by comparing the invocation history user ID in the `WorkflowInvocationFeedback` component?
 const canSubmitFeedback = computed(
     () =>
         invocationAndJobTerminal.value && (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount))
