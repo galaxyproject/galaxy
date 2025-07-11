@@ -2501,6 +2501,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         self.tag = tag
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
+        self._fields = input_source.get("fields", None)
+        self._column_definitions = input_source.get("column_definitions", None)
         self._parse_options(input_source)  # TODO: Review and test.
         self.default_object = input_source.parse_default()
         if self.optional and self.default_object is not None:
@@ -2613,6 +2615,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         other_values = other_values or {}
         d = super().to_dict(trans)
         d["collection_types"] = self.collection_types
+        d["fields"] = self._fields
+        d["column_definitions"] = self._column_definitions
         d["extensions"] = self.extensions
         d["multiple"] = self.multiple
         d["options"] = {"hda": [], "hdca": [], "dce": []}
