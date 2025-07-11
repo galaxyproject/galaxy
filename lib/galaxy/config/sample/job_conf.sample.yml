@@ -1069,7 +1069,7 @@ tools:
 - id: bowtie
   handler: handler1
 - id: bar
-  enviroment: dynamic
+  environment: dynamic
 -
   # Next example defines resource group to insert into tool interface
   # and pass to dynamic destination (as resource_params argument).
