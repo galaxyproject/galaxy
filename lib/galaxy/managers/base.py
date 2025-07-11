@@ -915,8 +915,6 @@ class ModelDeserializer(HasAModelManager[T]):
         Convert an incoming serialized dict into values that can be
         directly assigned to an item's attributes and assign them
         """
-        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
-        sa_session = self.app.model.context
         new_dict = {}
         for key, val in data.items():
             if key in self.deserializers:
@@ -925,6 +923,8 @@ class ModelDeserializer(HasAModelManager[T]):
 
         # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
+            # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
+            sa_session = self.app.model.context
             sa_session.add(item)
             sa_session.commit()
 
