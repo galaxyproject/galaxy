@@ -8,7 +8,7 @@ import tempfile
 import time
 from string import Template
 from typing import ClassVar
-from unittest.mock import patch
+from unittest.mock import patch, _patch
 from urllib import parse
 
 from galaxy import model
@@ -122,6 +122,8 @@ class AbstractTestCases:
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
         saved_oauthlib_insecure_transport: ClassVar[bool]
+        psa_patcher: ClassVar[_patch]
+        keycloak_patcher: ClassVar[_patch]
 
         @classmethod
         def setUpClass(cls):
