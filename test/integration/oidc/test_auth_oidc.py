@@ -8,7 +8,10 @@ import tempfile
 import time
 from string import Template
 from typing import ClassVar
-from unittest.mock import patch, _patch
+from unittest.mock import (
+    _patch,
+    patch,
+)
 from urllib import parse
 
 from galaxy import model
