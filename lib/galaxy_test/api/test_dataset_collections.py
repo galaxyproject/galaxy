@@ -1,7 +1,6 @@
 import json
 import zipfile
 from io import BytesIO
-from typing import List
 from urllib.parse import quote
 
 from galaxy.util.unittest_utils import skip_if_github_down
@@ -728,7 +727,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        actual: List[str] = []
+        actual: list[str] = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
         assert actual == []

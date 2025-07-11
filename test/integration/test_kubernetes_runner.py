@@ -11,7 +11,6 @@ import subprocess
 import tempfile
 import time
 from typing import (
-    List,
     Optional,
     overload,
 )
@@ -175,8 +174,8 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     dataset_populator: KubernetesDatasetPopulator
     job_config: Config
     jobs_directory: str
-    persistent_volume_claims: List[KubeSetupConfigTuple]
-    persistent_volumes: List[KubeSetupConfigTuple]
+    persistent_volume_claims: list[KubeSetupConfigTuple]
+    persistent_volumes: list[KubeSetupConfigTuple]
     container_type = "docker"
 
     def setUp(self) -> None:

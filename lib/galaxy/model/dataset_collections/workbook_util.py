@@ -8,7 +8,6 @@ import base64
 from dataclasses import dataclass
 from io import BytesIO
 from textwrap import wrap
-from typing import List
 
 from openpyxl import (
     load_workbook,
@@ -100,8 +99,8 @@ class HasHelp:
 
 @dataclass
 class HelpConfiguration:
-    instructions: List[str]
-    columns: List[HasHelp]
+    instructions: list[str]
+    columns: list[HasHelp]
     text_width: int
     column_width: int
     help_row_start: int = 3
@@ -109,12 +108,12 @@ class HelpConfiguration:
 
 @dataclass
 class ExtraColumnsHelpConfiguration:
-    instructions: List[str]
+    instructions: list[str]
     text_width: int
-    column_targets: List[ColumnTarget]
+    column_targets: list[ColumnTarget]
 
 
-def wrap_instructions(instruction: str, help_width: int) -> List[str]:
+def wrap_instructions(instruction: str, help_width: int) -> list[str]:
     return wrap(instruction, width=help_width)
 
 
@@ -179,7 +178,7 @@ def add_instructions_to_sheet(worksheet: Worksheet, help_configuration: HelpConf
 
 
 def write_instructions_to_sheet(
-    worksheet: Worksheet, instructions: List[str], start_row: int, help_label_index: int, help_width: int
+    worksheet: Worksheet, instructions: list[str], start_row: int, help_label_index: int, help_width: int
 ) -> int:
     current_row = start_row
 
@@ -193,10 +192,10 @@ def write_instructions_to_sheet(
     return current_row
 
 
-def read_column_header_titles(worksheet: Worksheet) -> List[str]:
+def read_column_header_titles(worksheet: Worksheet) -> list[str]:
     """Read the first row of the worksheet and return a list of these column titles."""
     index = 1
-    titles: List[str] = []
+    titles: list[str] = []
     while True:
         value = worksheet.cell(1, index).value
         if not value:

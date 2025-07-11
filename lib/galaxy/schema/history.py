@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import (
-    List,
     Optional,
 )
 
@@ -78,7 +77,7 @@ class HistoryQueryResult(Model):
 
 
 class HistoryQueryResultList(RootModel):
-    root: List[HistoryQueryResult] = Field(
+    root: list[HistoryQueryResult] = Field(
         default=[],
         title="List with detailed information of Histories.",
     )

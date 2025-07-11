@@ -6,7 +6,6 @@ import logging
 import re
 from typing import (
     IO,
-    List,
     Optional,
 )
 
@@ -436,7 +435,7 @@ class Dta(TabularData):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
-        data_row: List = []
+        data_row: list = []
         data_lines = 0
         if dataset.has_data():
             with open(dataset.get_file_name()) as dtafile:
@@ -482,7 +481,7 @@ class Dta2d(TabularData):
     file_ext = "dta2d"
     comment_lines = 0
 
-    def _parse_header(self, line: List) -> Optional[List]:
+    def _parse_header(self, line: list) -> Optional[list]:
         if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
             return None
         line[0] = line[0].lstrip("#")
@@ -498,7 +497,7 @@ class Dta2d(TabularData):
             return "\t"
         return None
 
-    def _parse_dataline(self, line: List) -> bool:
+    def _parse_dataline(self, line: list) -> bool:
         try:
             line = [float(_) for _ in line]
         except ValueError:
@@ -593,7 +592,7 @@ class Edta(TabularData):
             return "\t"
         return None
 
-    def _parse_type(self, line: List) -> Optional[int]:
+    def _parse_type(self, line: list) -> Optional[int]:
         """
         parse the type from the header line
         types 1-3 as in the class docs, 0: type 1 wo/wrong header
@@ -613,7 +612,7 @@ class Edta(TabularData):
         else:
             return 3
 
-    def _parse_dataline(self, line: List, tpe: Optional[int]) -> bool:
+    def _parse_dataline(self, line: list, tpe: Optional[int]) -> bool:
         if tpe == 2 or tpe == 3:
             idx = 4
         else:
@@ -626,7 +625,7 @@ class Edta(TabularData):
             return False
         return True
 
-    def _clean_header(self, line: List) -> List:
+    def _clean_header(self, line: list) -> list:
         for idx, el in enumerate(line):
             el = el.lower()
             if el.startswith("rt"):

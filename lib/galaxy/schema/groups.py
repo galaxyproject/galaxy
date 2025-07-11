@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -52,7 +51,7 @@ class GroupResponse(Model, WithModelClass):
 class GroupListResponse(RootModel):
     """Response schema for listing groups."""
 
-    root: List[GroupResponse]
+    root: list[GroupResponse]
 
 
 class GroupCreatePayload(Model):
@@ -62,11 +61,11 @@ class GroupCreatePayload(Model):
         ...,
         title="name of the group",
     )
-    user_ids: List[DecodedDatabaseIdField] = Field(
+    user_ids: list[DecodedDatabaseIdField] = Field(
         [],
         title="user IDs",
     )
-    role_ids: List[DecodedDatabaseIdField] = Field(
+    role_ids: list[DecodedDatabaseIdField] = Field(
         [],
         title="role IDs",
     )
@@ -80,11 +79,11 @@ class GroupUpdatePayload(Model):
         ...,
         title="name of the group",
     )
-    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+    user_ids: Optional[list[DecodedDatabaseIdField]] = Field(
         None,
         title="user IDs",
     )
-    role_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+    role_ids: Optional[list[DecodedDatabaseIdField]] = Field(
         None,
         title="role IDs",
     )

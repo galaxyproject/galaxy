@@ -11,7 +11,6 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Dict,
     NamedTuple,
     Optional,
 )
@@ -1377,7 +1376,7 @@ def setup_fixture_context_with_history(
 
 def perform_import_from_store_dict(
     fixture_context: StoreFixtureContextWithHistory,
-    import_dict: Dict[str, Any],
+    import_dict: dict[str, Any],
     import_options: Optional[store.ImportOptions] = None,
 ) -> None:
     import_options = import_options or store.ImportOptions()

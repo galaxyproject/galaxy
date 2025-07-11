@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -30,7 +28,7 @@ class BasePagesApiTestCase(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
-    def _create_valid_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+    def _create_valid_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         return self.dataset_populator.new_page(slug=slug, **kwd)
 
     def _create_valid_page_as(self, other_email, slug):
@@ -452,7 +450,7 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
-    def _create_published_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+    def _create_published_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         response = self.dataset_populator.new_page(slug=slug, **kwd)
         response = self._make_public(response["id"])
         return response
@@ -465,20 +463,20 @@ steps:
         response = self._put(f"pages/{page_id}/share_with_users", data, json=True)
         api_asserts.assert_status_code_is_ok(response)
 
-    def _index_raw(self, params: Optional[Dict[str, Any]] = None) -> Response:
+    def _index_raw(self, params: Optional[dict[str, Any]] = None) -> Response:
         index_response = self._get("pages", data=params or {})
         return index_response
 
-    def _index(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _index(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
         return index_response.json()
 
-    def _index_ids(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _index_ids(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         return [p["id"] for p in self._index(params)]
 
     def _users_index_has_page_with_id(
-        self, has_id: Union[Dict[str, Any], str], params: Optional[Dict[str, Any]] = None
+        self, has_id: Union[dict[str, Any], str], params: Optional[dict[str, Any]] = None
     ):
         pages = self._index(params)
         if isinstance(has_id, dict):

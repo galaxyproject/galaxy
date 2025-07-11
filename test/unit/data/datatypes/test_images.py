@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Type,
 )
 
 from galaxy.datatypes.images import (
@@ -17,7 +16,7 @@ from .util import (
 # Define test decorator
 
 
-def __test(image_cls: Type[Image], input_filename: str):
+def __test(image_cls: type[Image], input_filename: str):
 
     def decorator(test_impl):
 
@@ -36,7 +35,7 @@ def __test(image_cls: Type[Image], input_filename: str):
 # Define test factory
 
 
-def __create_test(image_cls: Type[Image], input_filename: str, metadata_key: str, expected_value: Any):
+def __create_test(image_cls: type[Image], input_filename: str, metadata_key: str, expected_value: Any):
 
     @__test(image_cls, input_filename)
     def test(metadata):

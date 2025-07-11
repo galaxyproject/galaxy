@@ -1,10 +1,7 @@
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from starlette.datastructures import URL
@@ -70,7 +67,7 @@ def service_info(app: ToolShedApp, request_url: URL):
     )
 
 
-def tool_classes() -> List[ToolClass]:
+def tool_classes() -> list[ToolClass]:
     return [ToolClass(id="galaxy_tool", name="Galaxy Tool", description="Galaxy XML Tools")]
 
 
@@ -86,11 +83,11 @@ def trs_tool_id_to_repository(trans: ProvidesRepositoriesContext, trs_tool_id: s
 
 def get_repository_metadata_by_tool_version(
     app: ToolShedApp, repository: Repository, tool_id: str
-) -> Dict[str, RepositoryMetadata]:
+) -> dict[str, RepositoryMetadata]:
     versions = {}
     for _, changeset in repository.installable_revisions(app):
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changeset)
-        tools: Optional[List[Dict[str, Any]]] = metadata.metadata.get("tools")
+        tools: Optional[list[dict[str, Any]]] = metadata.metadata.get("tools")
         if not tools:
             continue
         for tool_metadata in tools:
@@ -100,21 +97,21 @@ def get_repository_metadata_by_tool_version(
     return versions
 
 
-def get_tools_for(repository_metadata: RepositoryMetadata) -> List[Dict[str, Any]]:
-    tools: Optional[List[Dict[str, Any]]] = repository_metadata.metadata.get("tools")
+def get_tools_for(repository_metadata: RepositoryMetadata) -> list[dict[str, Any]]:
+    tools: Optional[list[dict[str, Any]]] = repository_metadata.metadata.get("tools")
     assert tools
     return tools
 
 
 def trs_tool_id_to_repository_metadata(
     trans: ProvidesRepositoriesContext, trs_tool_id: str
-) -> Tuple[Repository, Dict[str, RepositoryMetadata]]:
+) -> tuple[Repository, dict[str, RepositoryMetadata]]:
     tool_guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     tool_guid = remove_protocol_and_user_from_clone_url(tool_guid)
     _, tool_id = tool_guid.rsplit("/", 1)
     repository = guid_to_repository(trans.app, tool_guid)
     app = trans.app
-    versions: Dict[str, RepositoryMetadata] = get_repository_metadata_by_tool_version(app, repository, tool_id)
+    versions: dict[str, RepositoryMetadata] = get_repository_metadata_by_tool_version(app, repository, tool_id)
     if not versions:
         raise ObjectNotFound()
 
@@ -128,11 +125,11 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
     repository, metadata_by_version = repo_metadata
 
     repo_owner = repository.user.username
-    aliases: List[str] = [guid]
+    aliases: list[str] = [guid]
     hostname = remove_protocol_and_user_from_clone_url(trans.repositories_hostname)
     url = f"https://{hostname}/repos/{repo_owner}/{repository.name}"
 
-    versions: List[ToolVersion] = []
+    versions: list[ToolVersion] = []
     for tool_version_str, _ in metadata_by_version.items():
         version_url = url  # TODO:
         tool_version = ToolVersion(

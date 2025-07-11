@@ -4,10 +4,7 @@ import logging
 from collections import namedtuple
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from galaxy import (
@@ -171,11 +168,11 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
+ExpandedT = tuple[list[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
-def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, Any]:
-    nested_dict: Dict[str, Any] = {}
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, Any]:
+    nested_dict: dict[str, Any] = {}
     for incoming_key, incoming_value in incoming_copy.items():
         if not incoming_key.startswith("__"):
             process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
@@ -290,10 +287,10 @@ def reorder_parameters(tool, incoming, nested_dict, nested):
     return reordered_incoming
 
 
-def split_inputs_flat(inputs: Dict[str, Any], classifier):
-    single_inputs: Dict[str, Any] = {}
-    matched_multi_inputs: Dict[str, Any] = {}
-    multiplied_multi_inputs: Dict[str, Any] = {}
+def split_inputs_flat(inputs: dict[str, Any], classifier):
+    single_inputs: dict[str, Any] = {}
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
 
     for input_key in inputs:
         input_type, expanded_val = classifier(input_key)
@@ -308,9 +305,9 @@ def split_inputs_flat(inputs: Dict[str, Any], classifier):
 
 
 def split_inputs_nested(inputs, nested_dict, classifier):
-    single_inputs: Dict[str, Any] = {}
-    matched_multi_inputs: Dict[str, Any] = {}
-    multiplied_multi_inputs: Dict[str, Any] = {}
+    single_inputs: dict[str, Any] = {}
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
     unset_value = object()
 
     def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):

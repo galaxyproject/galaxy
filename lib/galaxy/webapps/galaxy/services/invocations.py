@@ -2,9 +2,6 @@ import json
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
-    Tuple,
 )
 
 from pydantic import Field
@@ -98,7 +95,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
 
     def index(
         self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
-    ) -> Tuple[List[WorkflowInvocationResponse], int]:
+    ) -> tuple[list[WorkflowInvocationResponse], int]:
         workflow_id = invocation_payload.workflow_id
         if invocation_payload.instance:
             instance = invocation_payload.instance
@@ -191,7 +188,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         wfi_step = self._workflows_manager.update_invocation_step(trans, step_id, action)
         return self.serialize_workflow_invocation_step(wfi_step)
 
-    def show_invocation_step_jobs_summary(self, trans, invocation_id) -> List[Dict[str, Any]]:
+    def show_invocation_step_jobs_summary(self, trans, invocation_id) -> list[dict[str, Any]]:
         ids = []
         types = []
         for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, invocation_id):
@@ -199,7 +196,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             types.append(job_source_type)
         return fetch_job_states(trans.sa_session, ids, types)
 
-    def show_invocation_jobs_summary(self, trans, invocation_id) -> Dict[str, Any]:
+    def show_invocation_jobs_summary(self, trans, invocation_id) -> dict[str, Any]:
         ids = [invocation_id]
         types = ["WorkflowInvocation"]
         return fetch_job_states(trans.sa_session, ids, types)[0]
@@ -317,7 +314,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         preferred_object_store_id = None
         preferred_intermediate_object_store_id = None
         preferred_outputs_object_store_id = None
-        step_param_map: Dict[str, Dict] = {}
+        step_param_map: dict[str, dict] = {}
         for parameter in invocation.input_parameters:
             parameter_type = parameter.type
 

@@ -1,5 +1,3 @@
-from typing import List
-
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -81,7 +79,7 @@ class AthenaProject(Text):
         Extract metadata from @args
         """
 
-        def extract_arg(args: List[str], arg_name: str):
+        def extract_arg(args: list[str], arg_name: str):
             try:
                 index = args.index(f"'{arg_name}'")
                 setattr(dataset.metadata, arg_name, args[index + 1].replace("'", ""))

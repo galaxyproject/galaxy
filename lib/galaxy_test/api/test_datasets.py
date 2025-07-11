@@ -2,10 +2,6 @@ import textwrap
 import urllib
 import zipfile
 from io import BytesIO
-from typing import (
-    Dict,
-    List,
-)
 from urllib.parse import quote
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -85,7 +81,7 @@ class TestDatasetsApi(ApiTestCase):
             history_id, order_by="size-asc", expected_ids_order=dataset_ids_ordered_by_size_asc
         )
 
-    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: List[str]):
+    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: list[str]):
         datasets_response = self._get(f"histories/{history_id}/contents?v=dev&keys=size&order={order_by}")
         self._assert_status_code_is(datasets_response, 200)
         datasets = datasets_response.json()
@@ -698,7 +694,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_delete_batch(self):
         num_datasets = 4
-        dataset_map: Dict[int, str] = {}
+        dataset_map: dict[int, str] = {}
         history_id = self.dataset_populator.new_history()
         for index in range(num_datasets):
             hda = self.dataset_populator.new_dataset(history_id)
@@ -747,7 +743,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_delete_batch_error(self):
         num_datasets = 4
-        dataset_map: Dict[int, str] = {}
+        dataset_map: dict[int, str] = {}
 
         with self._different_user():
             history_id = self.dataset_populator.new_history()

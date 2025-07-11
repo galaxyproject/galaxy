@@ -1,5 +1,4 @@
 import json
-from typing import List
 from unittest import SkipTest
 from uuid import uuid4
 
@@ -51,7 +50,7 @@ class TagsApiTests(ApiTestCase):
         item = item_response.json()
         return item
 
-    def _assert_tags_in_item(self, item_id, expected_tags: List[str]):
+    def _assert_tags_in_item(self, item_id, expected_tags: list[str]):
         item = self._get_item(item_id)
         assert "tags" in item
         assert item["tags"] == expected_tags

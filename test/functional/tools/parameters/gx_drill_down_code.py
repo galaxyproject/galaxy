@@ -1,5 +1,5 @@
 def collate_table(path: str) -> list:
-    with open(path, "r") as f:
+    with open(path) as f:
         contents = f.read()
     first_options = []
     second_options = []
