@@ -50,6 +50,7 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
             invocation: invocationData,
             invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
+            stepsJobsSummary: [],
             jobStatesSummary: {},
         };
         const wrapper = shallowMount(WorkflowInvocationOverview, {

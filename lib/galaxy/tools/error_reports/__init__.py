@@ -4,6 +4,7 @@ import collections
 import logging
 import os
 
+from galaxy.exceptions import ItemOwnershipException
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,10 @@ class NullErrorPlugin:
         log.warning("Bug report for dataset %s, job %s submitted to NullErrorPlugin", dataset, job)
         return [("Error reporting is not configured for this Galaxy instance", "danger")]
 
+    def submit_invocation_report(self, invocation, user, **kwargs):
+        log.warning("Bug report for invocation %s submitted to NullErrorPlugin", invocation)
+        return [("Error reporting is not configured for this Galaxy instance", "danger")]
+
 
 NULL_ERROR_PLUGIN = NullErrorPlugin()
 
@@ -56,6 +61,12 @@ class ErrorPlugin:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
+    def _check_invocation_ownership(self, invocation, user):
+        if not user:
+            raise ItemOwnershipException("User is not logged in", type="error")
+        if invocation.history.user != user:
+            raise ItemOwnershipException("Invocation history is not owned by the reporting user", type="error")
+
     def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
             assert self._can_access_dataset(dataset, user), Exception("You are not allowed to access this dataset.")
@@ -70,6 +81,22 @@ class ErrorPlugin:
                         responses.append(response)
                 except Exception:
                     log.exception("Failed to generate submit_report commands for plugin %s", plugin)
+        return responses
+
+    def submit_invocation_report(self, invocation, user=None, user_submission=False, **kwargs):
+        if user_submission:
+            self._check_invocation_ownership(invocation, user)
+
+        responses = []
+        for plugin in self.plugins:
+            if user_submission == plugin.user_submission:
+                try:
+                    response = plugin.submit_invocation_report(invocation, user, **kwargs)
+                    log.debug("Bug report plugin %s generated response %s", plugin, response)
+                    if plugin.verbose and response:
+                        responses.append(response)
+                except Exception:
+                    log.exception("Failed to generate submit_invocation_report commands for plugin %s", plugin)
         return responses
 
     def __plugins_from_source(self, plugins_source):

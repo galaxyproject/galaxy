@@ -11,7 +11,6 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
-import { GalaxyApi } from "@/api";
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -79,6 +78,7 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  */
 export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
+    stepsJobsSummary: Ref<StepJobSummary[]>,
     workflowId: string | undefined,
     workflowVersion: number | undefined
 ) {
@@ -125,19 +125,9 @@ export function useInvocationGraph(
                 };
             }
 
-            // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
-                "/api/invocations/{invocation_id}/step_jobs_summary",
-                {
-                    params: { path: { invocation_id: invocation.value.id } },
-                }
-            );
-
-            if (error) {
-                rethrowSimple(error);
+            if (stepsJobsSummary.value) {
+                await updateSteps(stepsJobsSummary.value);
             }
-
-            await updateSteps(stepsJobsSummary);
 
             // Load the invocation graph into the editor the first time
             if (!stepsPopulated.value) {

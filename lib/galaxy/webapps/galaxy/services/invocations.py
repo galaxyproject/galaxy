@@ -43,6 +43,8 @@ from galaxy.schema.invocation import (
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
+    ReportInvocationErrorPayload,
+    ReportInvocationErrorResponse,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -251,6 +253,25 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)
         return rval
+
+    def report_error(
+        self, trans, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
+    ) -> ReportInvocationErrorResponse:
+        # ensure_celery_tasks_enabled(trans.app.config) # TODO: Should this be enabled?
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=True, check_accessible=True
+        )
+        email = payload.email
+        if not email and not trans.anonymous:
+            email = trans.user.email
+        messages = trans.app.error_reports.default_error_plugin.submit_invocation_report(
+            invocation=workflow_invocation,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=payload.message,
+        )
+        return ReportInvocationErrorResponse(messages=messages)
 
     def serialize_workflow_invocation(
         self,

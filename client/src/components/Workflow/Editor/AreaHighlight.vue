@@ -8,8 +8,6 @@ const bounds = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });
 const blink = ref(false);
 
 const style = computed(() => {
-    console.log("computed");
-
     return {
         top: bounds.value.y + "px",
         left: bounds.value.x + "px",
