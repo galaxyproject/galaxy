@@ -2302,7 +2302,7 @@ class StoredWorkflowSummary(Model, WithModelClass):
     name: str = Field(
         ...,
         title="Name",
-        description="The name of the history.",
+        description="The name of the workflow.",
     )
     url: RelativeUrlField
     published: bool = Field(
@@ -2321,7 +2321,7 @@ class StoredWorkflowSummary(Model, WithModelClass):
     deleted: bool = Field(
         ...,
         title="Deleted",
-        description="Whether this item is marked as deleted.",
+        description="Whether this workflow is marked as deleted.",
     )
     hidden: bool = Field(
         ...,
