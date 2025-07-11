@@ -6,6 +6,7 @@ jest.mock("@/api/objectStores");
 
 const OBJECT_STORES = [
     {
+        id: "object_store_1",
         object_store_id: "object_store_1",
         badges: [],
         quota: { enabled: false },
@@ -13,6 +14,7 @@ const OBJECT_STORES = [
         name: "Object Store 1",
     },
     {
+        id: "object_store_2",
         object_store_id: "object_store_2",
         badges: [],
         quota: { enabled: false },
