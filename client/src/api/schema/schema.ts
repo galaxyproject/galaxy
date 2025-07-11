@@ -17933,11 +17933,6 @@ export interface components {
              */
             entry_point: Record<string, never>;
             /**
-             * Groups
-             * @description The groups of the plugin.
-             */
-            groups?: Record<string, never>[] | null;
-            /**
              * Href
              * @description The href of the plugin.
              */
@@ -17961,7 +17956,7 @@ export interface components {
              * Settings
              * @description The settings of the plugin.
              */
-            settings: Record<string, never>[];
+            settings?: Record<string, never>[] | null;
             /**
              * Specs
              * @description The specs of the plugin.
@@ -17977,6 +17972,11 @@ export interface components {
              * @description The title of the plugin.
              */
             title?: string | null;
+            /**
+             * Tracks
+             * @description The tracks of the plugin.
+             */
+            tracks?: Record<string, never>[] | null;
         };
         /** VisualizationRevisionResponse */
         VisualizationRevisionResponse: {
