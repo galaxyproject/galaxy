@@ -1,0 +1,25 @@
+class: GalaxyWorkflow
+doc: |
+  This workflow tests the behavior of optional inputs to a conditional database operation step.
+  Regression test for https://github.com/galaxyproject/galaxy/issues/20182
+inputs:
+  required_dataset:
+    type: data
+  optional_dataset:
+    type: data
+    optional: true
+  when:
+    type: boolean
+    default: false
+outputs:
+  out:
+    outputSource: build_list/output
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: required_dataset
+      datasets_1|input: optional_dataset
+      when:
+        source: when
+    when: $(inputs.when)
