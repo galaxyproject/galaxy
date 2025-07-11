@@ -101,7 +101,7 @@ function shareInvocationButtonClicked() {
     <div v-if="owned" class="d-flex">
         <GButton
             tooltip
-            title="Share Invocation"
+            :title="localize('Share Invocation')"
             size="small"
             transparent
             color="blue"
@@ -113,7 +113,7 @@ function shareInvocationButtonClicked() {
 
         <GModal
             :show.sync="modalToggle"
-            title="Share Workflow Invocation"
+            :title="localize('Share Workflow Invocation')"
             confirm
             ok-text="Share"
             size="small"

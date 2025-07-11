@@ -64,13 +64,13 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
 </script>
 <template>
     <span>
-        <BTab title="Inputs">
+        <BTab :title="localize('Inputs')">
             <div v-if="parameters.length || inputData.length">
                 <WorkflowInvocationInputs :invocation="props.invocation" />
             </div>
             <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
         </BTab>
-        <BTab title="Outputs">
+        <BTab :title="localize('Outputs')">
             <div v-if="outputs.length">
                 <div
                     v-for="([key, output], index) in outputs"
