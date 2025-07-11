@@ -4,6 +4,7 @@ import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
+import localize from "@/utils/localization";
 
 import { useUserStore } from "@/stores/userStore";
 
@@ -35,12 +36,12 @@ function navigateToOldCreate() {
             tooltip
             tooltip-placement="bottom"
             color="blue"
-            title="Create new workflow"
+            :title="localize('Create new workflow')"
             disabled-title="Log in to create workflow"
             :disabled="isAnonymous"
             @click="navigateToOldCreate">
             <FontAwesomeIcon :icon="faPlus" />
-            Create
+            <span v-localize>Create</span>
         </GButton>
 
         <GButton
@@ -49,13 +50,13 @@ function navigateToOldCreate() {
             tooltip
             tooltip-placement="bottom"
             size="small"
-            title="Import workflow from URL or file"
+            :title="localize('Import workflow from URL or file')"
             disabled-title="Log in to import workflow"
             color="blue"
             :disabled="isAnonymous"
             @click="navigateToImport">
             <FontAwesomeIcon :icon="faUpload" />
-            Import
+            <span v-localize>Import</span>
         </GButton>
     </div>
 </template>

@@ -351,7 +351,7 @@ onMounted(() => {
 
             <BNav pills justified class="mb-2">
                 <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
-                    My workflows
+                    <span v-localize>My workflows</span>
                     <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
                 </BNavItem>
 
@@ -360,12 +360,12 @@ onMounted(() => {
                     :active="sharedWithMe"
                     :disabled="userStore.isAnonymous"
                     to="/workflows/list_shared_with_me">
-                    Workflows shared with me
+                    <span v-localize>Workflows shared with me</span>
                     <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="Manage your workflows" />
                 </BNavItem>
 
                 <BNavItem id="published" :active="published" to="/workflows/list_published">
-                    Public workflows
+                    <span v-localize>Public workflows</span>
                 </BNavItem>
             </BNav>
 
@@ -377,7 +377,7 @@ onMounted(() => {
                 :loading="loading || overlay"
                 has-help
                 view="compact"
-                :placeholder="searchPlaceHolder"
+                :placeholder="localize(searchPlaceHolder)"
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
                     <div v-html="helpHtml(activeList)"></div>
@@ -396,7 +396,7 @@ onMounted(() => {
                 @select-all="onSelectAllWorkflows">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
-                        Filter:
+                        <span v-localize>Filter:</span>
                         <BButton
                             id="show-deleted"
                             v-b-tooltip.hover
@@ -406,7 +406,7 @@ onMounted(() => {
                             variant="outline-primary"
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
-                            Show deleted
+                            <span v-localize>Show deleted</span>
                         </BButton>
 
                         <BButton
@@ -418,7 +418,7 @@ onMounted(() => {
                             variant="outline-primary"
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
-                            Show bookmarked
+                            <span v-localize>Show bookmarked</span>
                         </BButton>
                     </div>
                 </template>
@@ -432,7 +432,7 @@ onMounted(() => {
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
             <BAlert id="workflow-list-empty" variant="info" show>
-                No workflows found. You may create or import new workflows using the buttons above.
+                <span v-localize>No workflows found. You may create or import new workflows using the buttons above.</span>
             </BAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">

@@ -4,6 +4,7 @@ import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
+import localize from "@/utils/localization";
 
 import type { CollectionType } from "@/api/datasetCollections";
 import {
@@ -89,7 +90,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 :key="index"
                 v-b-tooltip.hover.bottom
                 :pressed="props.currentField === index"
-                :title="v.tooltip"
+                :title="localize(v.tooltip)"
                 :style="v.icon === faFolder && v.multiple ? 'padding: 2px' : ''"
                 @click="emit('set-current-field', index)">
                 <span v-if="v.icon === faFolder && v.multiple" class="fa-stack" style="height: unset">
@@ -101,7 +102,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-if="props.canBrowse && !props.workflowRun"
                 v-b-tooltip.hover.bottom
-                title="Browse or Upload Datasets"
+                :title="localize('Browse or Upload Datasets')"
                 @click="emit('on-browse')">
                 <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin />
                 <span v-else class="font-weight-bold">...</span>

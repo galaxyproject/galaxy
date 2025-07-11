@@ -134,43 +134,43 @@ watch(
         </header>
         <BNav pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
-                title="View a preview of the dataset contents"
+                :title="localize('View a preview of the dataset contents')"
                 :active="tab === 'preview'"
                 :to="`/datasets/${datasetId}/preview`">
-                <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
+                <FontAwesomeIcon :icon="faEye" class="mr-1" /> {{ localize("Preview") }}
             </BNavItem>
             <BNavItem
                 v-if="preferredVisualization"
-                title="View raw dataset contents"
+                :title="localize('View raw dataset contents')"
                 :active="tab === 'raw'"
                 :to="`/datasets/${datasetId}/raw`">
-                <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
+                <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> {{ localize("Raw") }}
             </BNavItem>
             <BNavItem
                 v-if="!showError"
-                title="Explore available visualizations for this dataset"
+                :title="localize('Explore available visualizations for this dataset')"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
-                <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
+                <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> {{ localize("Visualize") }}
             </BNavItem>
             <BNavItem
-                title="View detailed information about this dataset"
+                :title="localize('View detailed information about this dataset')"
                 :active="tab === 'details'"
                 :to="`/datasets/${datasetId}/details`">
-                <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" /> Details
+                <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" /> {{ localize("Details") }}
             </BNavItem>
             <BNavItem
-                title="Edit dataset attributes and metadata"
+                :title="localize('Edit dataset attributes and metadata')"
                 :active="tab === 'edit'"
                 :to="`/datasets/${datasetId}/edit`">
-                <FontAwesomeIcon :icon="faPen" class="mr-1" /> Edit
+                <FontAwesomeIcon :icon="faPen" class="mr-1" /> {{ localize("Edit") }}
             </BNavItem>
             <BNavItem
                 v-if="showError"
-                title="View error information for this dataset"
+                :title="localize('View error information for this dataset')"
                 :active="tab === 'error'"
                 :to="`/datasets/${datasetId}/error`">
-                <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
+                <FontAwesomeIcon :icon="faBug" class="mr-1" /> {{ localize("Error") }}
             </BNavItem>
         </BNav>
         <div v-if="tab === 'preview'" class="h-100">

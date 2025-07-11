@@ -3,14 +3,14 @@
         <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
-                    All <b>{{ totalItemsInQuery }}</b> selected
+                    {{ localize("All") }} <b>{{ totalItemsInQuery }}</b> {{ localize("selected") }}
                 </span>
                 <span v-else data-test-id="num-active-selected">
-                    <b>{{ selectionSize }}</b> localize("of") {{ totalItemsInQuery }} localize("selected")
+                    <b>{{ selectionSize }}</b> {{ localize("of") }} {{ totalItemsInQuery }} {{ localize("selected") }}
                 </span>
             </template>
             <b-dropdown-text>
-                <span v-localize data-description="selected count">localize("With") {{ numSelected }} localize("selected")...</span>
+                <span data-description="selected count">{{ localize("With") }} {{ numSelected }} {{ localize("selected...") }}</span>
             </b-dropdown-text>
             <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
@@ -66,19 +66,19 @@
             </b-dropdown-item>
         </b-dropdown>
 
-        <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
+        <b-modal id="hide-selected-content" :title="localize('Hide Selected Content?')" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
         </b-modal>
-        <b-modal id="show-selected-content" title="Show Selected Content?" title-tag="h2" @ok="unhideSelected">
+        <b-modal id="show-selected-content" :title="localize('Show Selected Content?')" title-tag="h2" @ok="unhideSelected">
             <p v-localize>Really show {{ numSelected }} content items?</p>
         </b-modal>
-        <b-modal id="delete-selected-content" title="Delete Selected Content?" title-tag="h2" @ok="deleteSelected">
+        <b-modal id="delete-selected-content" :title="localize('Delete Selected Content?')" title-tag="h2" @ok="deleteSelected">
             <p v-localize>Really delete {{ numSelected }} content items?</p>
         </b-modal>
-        <b-modal id="restore-selected-content" title="Restore Selected Content?" title-tag="h2" @ok="undeleteSelected">
+        <b-modal id="restore-selected-content" :title="localize('Restore Selected Content?')" title-tag="h2" @ok="undeleteSelected">
             <p v-localize>Really restore {{ numSelected }} content items?</p>
         </b-modal>
-        <b-modal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
+        <b-modal id="purge-selected-content" :title="localize('Purge Selected Content?')" title-tag="h2" @ok="purgeSelected">
             <p v-localize>Permanently delete {{ numSelected }} content items?</p>
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
