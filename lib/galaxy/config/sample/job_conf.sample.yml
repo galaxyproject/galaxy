@@ -817,7 +817,7 @@ execution:
       function: map_tool_to_destination
       rules_module: tpv.rules
       tpv_config_files:
-        - https://gxy.io/tpv/db.yml
+        - https://gxy.io/tpv/db-latest.yml
         # - config/tpv_rules_local.yml
 
     docker_dispatch:
