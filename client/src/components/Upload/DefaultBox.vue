@@ -144,13 +144,19 @@ function addFileFromInput(eventTarget: EventTarget | null) {
 /** A new file has been announced to the upload queue */
 function eventAnnounce(index: string, file: UploadFile) {
     counterAnnounce.value++;
+    const mode = file.mode || "local";
+    let deferred: boolean | undefined = false;
+    if (mode === "local") {
+        deferred = undefined;
+    }
     const uploadModel = {
         ...defaultModel,
         id: index,
         dbKey: dbKey.value,
         extension: extension.value,
         fileData: file,
-        fileMode: file.mode || "local",
+        fileMode: mode,
+        deferred: deferred,
         fileName: file.name,
         filePath: file.path,
         fileSize: file.size,
