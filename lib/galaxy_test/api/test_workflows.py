@@ -975,6 +975,29 @@ steps:
         workflow_dict = self.workflow_populator.download_workflow(workflow["id"])
         assert workflow_dict["name"] == original_name
 
+    def test_update_published_flag_makes_importable(self):
+        # Setting the "published" flag to True also sets the "importable" flag to True.
+
+        # Load a workflow to publish.
+        original_name = "test publish workflow"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        assert workflow["published"] is False
+        assert workflow["importable"] is False
+
+        # Publish the workflow.
+        data = {"published": True}
+        update_response = self._update_workflow(workflow["id"], data).json()
+        assert update_response["published"] is True
+        assert update_response["importable"] is True
+
+        # Setting the "importable" flag to False makes a published workflow unpublished.
+        data = {"importable": False}
+        update_response = self._update_workflow(workflow["id"], data).json()
+        assert update_response["published"] is False
+        assert update_response["importable"] is False
+
     @skip_without_tool("select_from_dataset_in_conditional")
     def test_workflow_run_form_with_broken_dataset(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
