@@ -14,7 +14,7 @@ import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
@@ -31,6 +31,8 @@ library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faT
 interface Props {
     /** The invocation to display */
     invocation: WorkflowInvocationElementView;
+    /** The job summary for each step in the invocation */
+    stepsJobsSummary: StepJobSummary[];
     /** The workflow which was run */
     workflow: StoredWorkflowDetailed;
     /** Whether the invocation is terminal */
@@ -78,6 +80,7 @@ const workflowVersion = computed(() => props.workflow?.version);
 
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
     invocationRef,
+    computed(() => props.stepsJobsSummary),
     workflowId.value,
     workflowVersion.value
 );

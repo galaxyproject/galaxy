@@ -122,6 +122,12 @@ const jobStatesTerminal = computed(() => {
     return isTerminal(jobStatesSummary.value);
 });
 const jobStatesSummary = computed(() => invocationStore.getInvocationJobsSummaryById(props.invocationId));
+
+/** The job summary for each step in the invocation */
+const stepsJobsSummary = computed(() => {
+    return invocationStore.getInvocationStepJobsSummaryById(props.invocationId);
+});
+
 const invocationStateSuccess = computed(() => {
     return (
         invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
@@ -233,6 +239,7 @@ async function pollStepStatesUntilTerminal() {
 async function pollJobStatesUntilTerminal() {
     if (!jobStatesTerminal.value) {
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
+        await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
     }
 }
@@ -329,6 +336,7 @@ async function onCancel() {
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
+                    :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow" />
