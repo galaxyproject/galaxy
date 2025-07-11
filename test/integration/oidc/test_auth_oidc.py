@@ -26,6 +26,9 @@ KEYCLOAK_HOST_PORT = 9443
 KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 
+# NOTE: redirect_uri has to include the current Galaxy
+#   port, so we set it to a dummy value initially
+#   and patch it when the tests are running
 OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 <OIDC>
     <provider name="$provider_name">
@@ -112,6 +115,8 @@ def stop_keycloak_docker(container_name):
 class AbstractTestCases:
     @integration_util.skip_unless_docker()
     class BaseKeycloakIntegrationTestCase(integration_util.IntegrationTestCase):
+        # regex to find the action attribute on the HTML login page
+        #   returned by Keycloak
         REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*?)\"\s+")
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
@@ -121,6 +126,8 @@ class AbstractTestCases:
         @classmethod
         def setUpClass(cls):
             cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
+            # Patch the OIDC implementations so they can get the
+            #   current Galaxy port to set the redirect_uri
             cls.patch_psa_authnz()
             cls.patch_keycloak_authnz()
 
@@ -131,10 +138,7 @@ class AbstractTestCases:
             start_keycloak_docker(container_name=cls.container_name)
 
             super().setUpClass()
-            # For the oidc callback to work, we need to know Galaxy's hostname and port.
-            # However, we won't know what the host and port are until the Galaxy test driver is started.
-            # So let it start, then generate the oidc_backend_config.xml with the correct host and port,
-            # and finally restart Galaxy so the OIDC config takes effect.
+            # Restart the test driver to parse the OIDC config file
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
 
         @classmethod
