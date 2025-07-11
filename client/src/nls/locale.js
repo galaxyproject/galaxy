@@ -1,6 +1,5 @@
-/** en/main localization hash - for use with requirejs' i18n plugin */
-define({
-    root: {
+/** en/main localization hash - converted to ES module */
+export const root = {
         // ----------------------------------------------------------------------------- masthead
         "Analyze Data": false,
         Workflow: false,
@@ -459,9 +458,11 @@ define({
         "Forgot password?": false,
         "Register here.": false,
         "Click here to reset your password.": false,
-    },
+};
+
+export const supportedLanguages = {
     ja: true,
     fr: true,
     zh: true,
     es: true,
-});
+};

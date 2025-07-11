@@ -1,6 +1,6 @@
 /** zh localization */
 /* any suggestions, please contact me: ishenweiyan@foxmail.com */
-define({
+export default {
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "数据分析",
     Workflow: "工作流程",
@@ -471,4 +471,4 @@ define({
     ja: true,
     fr: true,
     zh: true,
-});
+};
