@@ -747,7 +747,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText or Markdown. Included here is only an overview of a subset of features. For more information see [the RST site](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html) or the [Markdown site](https://www.markdownguide.org/basic-syntax/).
 
 tag | details
 --- | -------
