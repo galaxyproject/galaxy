@@ -24,7 +24,10 @@ RANDOM_SECRET_LENGTH = 10
 
 
 def load_default_catalog():
-    catalog_yaml = resource_string(__name__, "landing_catalog.sample.yml")
+    name = __name__
+    if __name__ == "__main__":
+        name = "galaxy.tool_util.client.landing"
+    catalog_yaml = resource_string(name, "landing_library.catalog.yml")
     return yaml.safe_load(catalog_yaml)
 
 
@@ -32,6 +35,7 @@ def load_default_catalog():
 class Request:
     template_id: str
     catalog: str
+    public: bool
     client_secret: Optional[str]
     galaxy_url: str
 
@@ -56,9 +60,16 @@ def generate_claim_url(request: Request) -> Response:
     else:
         catalog = load_default_catalog()
     template = catalog[template_id]
-    template_type = "tool" if "tool_id" in template else "workflow"
+    if "tool_id" in template:
+        template_type = "tool"
+    elif "workflow_id" in template:
+        template_type = "workflow"
+    else:
+        template_type = "data"
     if client_secret:
         template["client_secret"] = client_secret
+    if request.public:
+        template["public"] = True
 
     landing_request_url = f"{galaxy_url}/api/{template_type}_landings"
     raw_response = requests.post(
@@ -70,7 +81,8 @@ def generate_claim_url(request: Request) -> Response:
     except Exception:
         raise Exception("Request failed: %s", raw_response.text)
     response = raw_response.json()
-    url = f"{galaxy_url}/{template_type}_landings/{response['uuid']}"
+    response_type = "workflow" if template_type == "workflow" else "tool"
+    url = f"{galaxy_url}/{response_type}_landings/{response['uuid']}"
     if client_secret:
         url = url + f"?secret={client_secret}"
     return Response(url)
@@ -100,6 +112,14 @@ def arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="An optional client secret to verify the request against, set to __GEN__ to generate one at random for this request.",
     )
+    parser.add_argument(
+        "-p",
+        "--public",
+        dest="public",
+        default=False,
+        action="store_true",
+        help="Declare the landing as public.",
+    )
     return parser
 
 
@@ -111,6 +131,7 @@ def main(argv=None) -> None:
     request = Request(
         args.template_id,
         args.catalog,
+        args.public,
         args.secret,
         args.galaxy_url,
     )
