@@ -150,7 +150,7 @@ onMounted(() => {
     <div class="history-size my-1 d-flex justify-content-between">
         <GButton
             tooltip
-            title="History Size"
+            :title="localize('History Size')"
             transparent
             size="small"
             color="blue"
@@ -166,7 +166,7 @@ onMounted(() => {
             <BButton
                 v-if="config && config.object_store_allows_id_selection && !isAnonymous"
                 :id="`history-storage-${history.id}`"
-                title="Manage Preferred History Storage"
+                :title="localize('Manage Preferred History Storage')"
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
@@ -184,7 +184,7 @@ onMounted(() => {
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
-                    title="Show active"
+                    :title="localize('Show active')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
@@ -197,7 +197,7 @@ onMounted(() => {
                 <BButton
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
-                    title="Include deleted"
+                    :title="localize('Include deleted')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
@@ -211,7 +211,7 @@ onMounted(() => {
                 <BButton
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
-                    title="Include hidden"
+                    :title="localize('Include hidden')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"

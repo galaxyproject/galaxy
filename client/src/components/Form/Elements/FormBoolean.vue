@@ -25,6 +25,6 @@ const label = computed(() => (currentValue.value ? "Yes" : "No"));
 
 <template>
     <b-form-checkbox v-model="currentValue" class="no-highlight" switch>
-        <span v-if="!props.noLabel">{{ label }}</span>
+        <span v-if="!props.noLabel" v-localize>{{ label }}</span>
     </b-form-checkbox>
 </template>

@@ -325,7 +325,7 @@ async function onCancel() {
             ref="invocationTabs"
             class="mt-1 d-flex flex-column overflow-auto"
             :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
-            <BTab key="0" title="Overview" active>
+            <BTab key="0" :title="localize('Overview')" active>
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
@@ -333,7 +333,7 @@ async function onCancel() {
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow" />
             </BTab>
-            <BTab v-if="!isSubworkflow" title="Steps" lazy>
+            <BTab v-if="!isSubworkflow" :title="localize('Steps')" lazy>
                 <WorkflowInvocationSteps
                     v-if="invocation && storeId"
                     :invocation="invocation"
@@ -343,19 +343,19 @@ async function onCancel() {
             <WorkflowInvocationInputOutputTabs :invocation="invocation" :terminal="invocationAndJobTerminal" />
             <BTab
                 v-if="!props.isSubworkflow"
-                title="Report"
+                :title="localize('Report')"
                 title-item-class="invocation-report-tab"
                 :disabled="tabsDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
+            <BTab :title="localize('Export')" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
             </BTab>
-            <BTab title="Metrics" :lazy="true">
+            <BTab :title="localize('Metrics')" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>

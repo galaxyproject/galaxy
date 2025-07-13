@@ -6,7 +6,7 @@
                 <span
                     v-if="collapsible"
                     v-b-tooltip.hover.bottom
-                    title="Collapse/Expand"
+                    :title="localize('Collapse/Expand')"
                     variant="link"
                     size="sm"
                     class="float-right">
@@ -16,8 +16,8 @@
             </div>
             <span class="portlet-title">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
-                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
-                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
+                <b class="portlet-title-text" itemprop="name">{{ localize(title) }}</b>
+                <span class="portlet-title-description" itemprop="description">{{ localize(description) }}</span>
             </span>
         </div>
         <div v-show="expanded" class="portlet-content">

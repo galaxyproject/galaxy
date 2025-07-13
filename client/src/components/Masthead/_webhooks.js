@@ -11,7 +11,7 @@ export function loadWebhookMenuItems(items) {
                         id: webhook.id,
                         icon: webhook.config.icon,
                         url: webhook.config.url,
-                        tooltip: webhook.config.tooltip,
+                        tooltip: localize(webhook.config.tooltip),
                         /*jslint evil: true */
                         onclick: webhook.config.function && new Function(webhook.config.function),
                         target: "_parent",

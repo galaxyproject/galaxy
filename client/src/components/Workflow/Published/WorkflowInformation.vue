@@ -63,7 +63,7 @@ function hasDoi() {
 <template>
     <aside class="workflow-information">
         <hgroup>
-            <Heading h2 size="lg" class="mb-0">About This Workflow</Heading>
+            <Heading h2 size="lg" class="mb-0" v-localize>About This Workflow</Heading>
             <span class="ml-2">
                 <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
                 {{ workflowInfo.version }}
@@ -72,7 +72,7 @@ function hasDoi() {
 
         <div class="workflow-info-box">
             <hgroup class="mb-2">
-                <Heading h3 size="md" class="mb-0">Author</Heading>
+                <Heading h3 size="md" class="mb-0" v-localize>Author</Heading>
                 <span class="ml-2">{{ owner }}</span>
             </hgroup>
 
@@ -87,7 +87,7 @@ function hasDoi() {
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Creators</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>Creators</Heading>
 
             <ul class="list-unstyled mb-0">
                 <li v-for="(creator, index) in workflowInfo.creator" :key="index">
@@ -99,7 +99,7 @@ function hasDoi() {
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Description</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>Description</Heading>
 
             <p v-if="workflowInfo.annotation" class="mb-0">
                 {{ workflowInfo.annotation }}
@@ -108,7 +108,7 @@ function hasDoi() {
         </div>
 
         <div v-if="workflowInfo?.tags" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Tags</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>Tags</Heading>
 
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
         </div>
@@ -119,20 +119,20 @@ function hasDoi() {
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">License</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>License</Heading>
 
             <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
             <span v-else>No License specified</span>
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Last Updated</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>Last Updated</Heading>
 
             <UtcDate :date="workflowInfo.update_time" mode="pretty" />
         </div>
 
         <div v-if="!props.embedded && (workflowInfo.published || userOwned)" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Sharing</Heading>
+            <Heading h3 size="md" class="mb-0" v-localize>Sharing</Heading>
 
             <span v-if="workflowInfo.published">
                 Use the following link to share preview of this workflow:

@@ -110,7 +110,7 @@
             v-if="hasLogout"
             id="edit-preferences-sign-out"
             icon="fa-sign-out"
-            title="Sign Out"
+            :title="localize('Sign Out')"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
         <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
@@ -123,7 +123,7 @@
         </b-modal>
         <b-modal
             v-model="showLogoutModal"
-            title="Sign out"
+            :title="localize('Sign out')"
             title-class="font-weight-bold"
             ok-title="Sign out"
             @ok="signOut">
