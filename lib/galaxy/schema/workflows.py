@@ -252,6 +252,11 @@ class UpdateWorkflowPayload(Model):
     doi: Optional[List[str]] = WorkflowDOIField
     help: Optional[str] = WorkflowHelpField
     hidden: Optional[bool] = None
+    deleted: Optional[bool] = Field(
+        default=None,
+        title="Deleted",
+        description="Indicates if the workflow is marked as deleted or not.",
+    )
     importable: Optional[bool] = WorkflowImportableField
     license: Optional[str] = WorkflowLicenseField
     logo_url: Optional[str] = Field(
