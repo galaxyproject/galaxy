@@ -25,7 +25,7 @@ const props = defineProps<Props>();
 
 function addColumn() {
     const state = stateCopy();
-    state.push({ type: "string", name: "column", optional: false, description: "" });
+    state.push({ type: "string", name: "column", optional: false, description: "", default_value: "" });
     emit("onChange", state);
 }
 
@@ -89,7 +89,7 @@ const emit = defineEmits(["onChange"]);
             <span v-b-tooltip.hover.bottom :title="saveTooltip">
                 <DownloadWorkbookButton
                     title="download example workbook"
-                    @click="downloadWorkbook(value, props.collectionType)" />
+                    @click="downloadWorkbook(value || [], props.collectionType)" />
             </span>
         </div>
         <FormCard
