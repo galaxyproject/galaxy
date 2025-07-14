@@ -320,7 +320,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None
 
     def check_bootstrap_admin_api_key(self, api_key):
-        bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
+        bootstrap_admin_api_key = self.app.config.bootstrap_admin_api_key
         if not bootstrap_admin_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
@@ -615,7 +615,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         if not self.app.config.use_remote_user:
             return None
-        if getattr(self.app.config, "normalize_remote_user_email", False):
+        if self.app.config.normalize_remote_user_email:
             remote_user_email = remote_user_email.lower()
         user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
         if user:
