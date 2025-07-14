@@ -610,6 +610,7 @@ class WorkflowDeserializer(sharable.SharableModelDeserializer, deletable.Deletab
 
     def add_deserializers(self):
         super().add_deserializers()
+        deletable.DeletableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update(
             {
