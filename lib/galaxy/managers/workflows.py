@@ -597,6 +597,79 @@ class WorkflowSerializer(sharable.SharableModelSerializer):
         self.serializers.update({})
 
 
+class WorkflowDeserializer(sharable.SharableModelDeserializer, deletable.DeletableDeserializerMixin):
+    """
+    Interface/service object for validating and deserializing dictionaries into workflows.
+    """
+
+    model_manager_class = WorkflowsManager
+
+    def __init__(self, app: MinimalManagerApp):
+        super().__init__(app)
+        self.workflow_manager = self.manager
+
+    def add_deserializers(self):
+        super().add_deserializers()
+
+        self.deserializers.update(
+            {
+                "name": self.deserialize_stored_and_latest,
+                "annotation": self.deserialize_annotation,
+                "creator_metadata": self.deserialize_stored_and_latest,
+                "doi": self.deserialize_doi,
+                "help": self.deserialize_stored_and_latest,
+                "license": self.deserialize_stored_and_latest,
+                "logo_url": self.deserialize_stored_and_latest,
+                "readme": self.deserialize_stored_and_latest,
+                "reports_config": self.deserialize_stored_and_latest,
+                "hidden": self.deserialize_bool,
+                "menu_entry": self.deserialize_menu_entry,
+            }
+        )
+
+    def deserialize_stored_and_latest(self, item, key, val, **context):
+        """Deserialize a workflow property on both stored workflow and its latest workflow."""
+        self.default_deserializer(item.latest_workflow, key, val, **context)
+        self.default_deserializer(item, key, val, **context)
+        return val
+
+    # Since `StoredWorkflow` has the `annotations` property, and `Workflow` doesn't we only set it for `StoredWorkflow`.
+    # This does have the unusual behavior that in the UI, every "version" updates with the latest annotation.
+    # As opposed to having version specific annotations. (This makes sense to work for flags like`published`
+    # etc., where you do not want a new version, but not for annotations, imo.)
+    def deserialize_annotation(self, item, key, val, user=None, **context):
+        trans = context.get("trans")
+        assert trans, "Workflow deserializer requires a transaction object in context."
+        annotation = sanitize_html(val)
+        self.app.workflow_contents_manager.add_item_annotation(trans.sa_session, trans.user, item, annotation)
+        return annotation
+
+    def deserialize_doi(self, item, key, val, **context):
+        if val:
+            for doi in val:
+                if not util.validate_doi(doi):
+                    raise exceptions.RequestParameterInvalidException(f"Invalid DOI format: {doi}")
+            self.deserialize_stored_and_latest(item, key, val, **context)
+
+    def deserialize_menu_entry(self, item, key, val, **context):
+        trans = context.get("trans")
+        assert trans, "Workflow deserializer requires a transaction object in context."
+        show_in_panel = val
+        stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
+        if show_in_panel:
+            workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
+            if item.id not in workflow_ids:
+                menu_entry = model.StoredWorkflowMenuEntry()
+                menu_entry.stored_workflow = item
+                stored_workflow_menu_entries.append(menu_entry)
+        else:
+            # remove if in list
+            entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
+            if item.id in entries:
+                stored_workflow_menu_entries.remove(entries[item.id])
+        return show_in_panel
+
+
 class WorkflowContentsManager(UsesAnnotations):
 
     def __init__(self, app: MinimalManagerApp, trs_proxy: TrsProxy):
@@ -844,6 +917,28 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
             workflow.source_metadata = source_metadata
 
+        missing_tool_tups = self._set_workflow_steps_and_comments(
+            trans,
+            workflow,
+            data,
+            workflow_state_resolution_options,
+            dry_run=dry_run,
+            is_subworkflow=is_subworkflow,
+            **kwds,
+        )
+
+        return workflow, missing_tool_tups
+
+    def _set_workflow_steps_and_comments(
+        self,
+        trans,
+        workflow,
+        data,
+        workflow_state_resolution_options,
+        dry_run: bool = False,
+        is_subworkflow: bool = False,
+        **kwds,  # TODO: Drop this if we drop the `module_kwds.update(kwds)` line below
+    ):
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
         # Create each step
@@ -922,7 +1017,35 @@ class WorkflowContentsManager(UsesAnnotations):
             # Order the steps if possible
             attach_ordered_steps(workflow)
 
-        return workflow, missing_tool_tups
+        return missing_tool_tups
+
+    def update_latest_workflow_steps_and_comments(self, trans, stored_workflow, payload, workflow_update_options):
+        # Put parameters in workflow mode # TODO: Remove this? Esp if enabled in parent service.
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
+        dry_run = workflow_update_options.dry_run
+
+        # If they are not in the payload, it will use the existing values from the `stored_workflow.latest_workflow`.
+        for attr in ["steps", "comments"]:
+            payload[attr] = payload.get(attr, getattr(stored_workflow.latest_workflow, attr))
+
+        missing_tool_tups = self._set_workflow_steps_and_comments(
+            trans,
+            stored_workflow.latest_workflow,
+            data=payload,
+            workflow_state_resolution_options=workflow_update_options,
+            dry_run=dry_run,
+        )
+
+        if missing_tool_tups and not workflow_update_options.allow_missing_tools:
+            errors = [
+                f"Step {int(missing_tool_tup[3]) + 1}: Requires tool '{missing_tool_tup[0]}'."
+                for missing_tool_tup in missing_tool_tups
+            ]
+            raise MissingToolsException(stored_workflow.latest_workflow, errors)
+
+        # Persist
+        if not dry_run:
+            trans.sa_session.commit()
 
     def workflow_to_dict(self, trans, stored, style="export", version=None, history=None, instance_id=None):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be

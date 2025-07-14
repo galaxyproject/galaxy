@@ -25,9 +25,11 @@ from galaxy.schema.schema import (
     Person,
     StoredWorkflowSummary,
     SubworkflowStep,
+    TagCollection,
     ToolStep,
     WorkflowInput,
 )
+from galaxy.schema.workflow.comments import WorkflowCommentModel
 
 TargetHistoryIdField = Field(
     None,
@@ -207,11 +209,104 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     preferred_outputs_object_store_id: Optional[str] = PreferredOutputsObjectStoreIdField
 
 
+WorkflowDOIField = Field(
+    None,
+    title="DOI",
+    description="A list of Digital Object Identifiers associated with this workflow.",
+)
+WorkflowHelpField = Field(
+    None,
+    title="Help",
+    description="A help text for how to use the workflow and debug problems with it.",
+)
+WorkflowImportableField = Field(
+    None,
+    title="Importable",
+    description="Indicates if the workflow is importable by the current user.",
+)
+WorkflowLicenseField = Field(
+    None,
+    title="License",
+    description="SPDX Identifier of the license associated with this workflow.",
+)
+WorkflowReadmeField = Field(
+    None,
+    title="Readme",
+    description="A markdown formatted readme for this workflow.",
+)
+
+
+class UpdateWorkflowPayload(Model):
+    annotation: Optional[str] = None
+    comments: Optional[List[WorkflowCommentModel]] = Field(
+        default=None,
+        title="Comments",
+        description="A list of comments to modify in the workflow.",
+    )
+    creator_metadata: Optional[List[Union[Person, Organization]]] = Field(
+        default=None,
+        alias="creator",
+        title="Creator",
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
+    )
+    doi: Optional[List[str]] = WorkflowDOIField
+    help: Optional[str] = WorkflowHelpField
+    hidden: Optional[bool] = None
+    importable: Optional[bool] = WorkflowImportableField
+    license: Optional[str] = WorkflowLicenseField
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="Logo URL",
+        description="A URL to a logo for this workflow.",
+    )
+    name: Optional[str] = None
+    published: Optional[bool] = None
+    readme: Optional[str] = WorkflowReadmeField
+    reports_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        alias="report",
+        title="Workflow Report",
+        description="The workflow report.",
+    )
+    # TODO: Type `steps` based on what the backend expects and we send from the client.
+    steps: Optional[Dict[int, Dict[str, Any]]] = Field(
+        default=None,
+        title="Steps",
+        description="A dictionary with information about all the steps of the workflow.",
+    )
+    tags: Optional[TagCollection] = None
+
+    menu_entry: Optional[bool] = Field(
+        default=None,
+        alias="show_in_tool_panel",
+        title="Bookmark Workflow",
+        description="Whether to add the workflow to the list of bookmarked workflows.",
+    )
+
+    # From `managers.workflows.WorkflowUpdateOptions`
+    fill_defaults: Optional[bool] = Field(
+        default=None, description="Fill in default tool state when updating, may change tool_state."
+    )
+    from_tool_form: Optional[bool] = Field(
+        default=None, description="True iff encoded state coming from generated form."
+    )
+    exact_tools: Optional[bool] = Field(
+        default=True, description="If False, allow running with less exact tool versions."
+    )
+
+    # TODO: In `managers.workflows.WorkflowCreateOptions`, I see this explicitly saying it's used internally,
+    # but it seems to be a potential payload key in the API, so I moved it here as well.
+    update_stored_workflow_attributes: Optional[bool] = Field(
+        default=True,
+        description="When updating the workflow's representation with name or annotation, updates the corresponding `StoredWorkflow`.",
+    )
+    allow_missing_tools: Optional[bool] = Field(default=None, description="Allow missing tools when updating workflow")
+    dry_run: Optional[bool] = None
+
+
 class StoredWorkflowDetailed(StoredWorkflowSummary):
     annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
-    license: Optional[str] = Field(
-        None, title="License", description="SPDX Identifier of the license associated with this workflow."
-    )
+    license: Optional[str] = WorkflowLicenseField
     version: int = Field(
         ..., title="Version", description="The version of the workflow represented by an incremental number."
     )
@@ -228,9 +323,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator deleted",
         description="Whether the creator of this Workflow has been deleted.",
     )
-    doi: Optional[List[str]] = Field(
-        None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
-    )
+    doi: Optional[List[str]] = WorkflowDOIField
     steps: Dict[
         int,
         Annotated[
@@ -249,26 +342,14 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Steps",
         description="A dictionary with information about all the steps of the workflow.",
     )
-    importable: Optional[bool] = Field(
-        ...,
-        title="Importable",
-        description="Indicates if the workflow is importable by the current user.",
-    )
+    importable: Optional[bool] = WorkflowImportableField
     email_hash: Optional[str] = Field(
         ...,
         title="Email Hash",
         description="The hash of the email of the creator of this workflow",
     )
-    readme: Optional[str] = Field(
-        ...,
-        title="Readme",
-        description="The detailed markdown readme of the workflow.",
-    )
-    help: Optional[str] = Field(
-        ...,
-        title="Help",
-        description="The detailed help text for how to use the workflow and debug problems with it.",
-    )
+    readme: Optional[str] = WorkflowReadmeField
+    help: Optional[str] = WorkflowHelpField
     slug: Optional[str] = Field(
         ...,
         title="Slug",

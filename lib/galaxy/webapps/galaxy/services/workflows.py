@@ -14,12 +14,17 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import (
+    MissingToolsException,
     RefactorResponse,
     WorkflowContentsManager,
+    WorkflowDeserializer,
     WorkflowSerializer,
     WorkflowsManager,
+    WorkflowUpdateOptions,
 )
 from galaxy.model import StoredWorkflow
+from galaxy.schema import SerializationParams
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -28,6 +33,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    UpdateWorkflowPayload,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -49,12 +55,14 @@ class WorkflowsService(ServiceBase):
         workflows_manager: WorkflowsManager,
         workflow_contents_manager: WorkflowContentsManager,
         serializer: WorkflowSerializer,
+        deserializer: WorkflowDeserializer,
         tool_shed_registry: Registry,
         notification_service: NotificationService,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
+        self._deserializer = deserializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
 
@@ -185,6 +193,73 @@ class WorkflowsService(ServiceBase):
         else:
             return encoded_invocations[0]
 
+    def update(
+        self,
+        trans: ProvidesUserContext,
+        workflow_id: DecodedDatabaseIdField,
+        payload: UpdateWorkflowPayload,
+        serialization_params: SerializationParams,
+        instance: bool = False,
+    ):
+        """Updates the values for the workflow with the given ``id``
+
+        :param  workflow_id:      the encoded id of the workflow to update
+        :param  payload: a dictionary containing the values to update in the workflow
+        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
+        :param  instance:         if True, the workflow_id is a `Workflow` id, otherwise it is a `StoredWorkflow` id
+
+        :returns:   For now, the workflow contents manager's `workflow_to_dict`.
+        """
+        # TODO: Ideally :returns: an error object if an error occurred or a dictionary containing
+        # any values that were different from the original and, therefore, updated
+
+        payload_dict = payload.model_dump(exclude_unset=True)
+
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        self._workflows_manager.check_security(trans, stored_workflow)
+
+        # TODO: Do we need to normalize the workflow format here?
+        # normalized_payload = self._workflow_contents_manager.normalize_workflow_format(trans, payload_dict)
+
+        workflow_update_options = WorkflowUpdateOptions(**payload_dict)
+
+        # TODO: Should we set the workflow building mode here?
+        # trans.workflow_building_mode = workflow_building_modes.ENABLED
+
+        if workflow_update_options.update_stored_workflow_attributes:
+            payload_dict = self._create_new_latest_workflow(trans, payload, stored_workflow)
+
+        self._deserializer.deserialize(
+            stored_workflow,
+            payload_dict,
+            flush=not workflow_update_options.dry_run,
+            user=trans.user,
+            trans=trans,
+            workflow_update_options=workflow_update_options,
+        )
+
+        # The deserializer doesn't handle `steps` and `comments`
+        if "steps" in payload_dict or "comments" in payload_dict:
+            try:
+                self._workflow_contents_manager.update_latest_workflow_steps_and_comments(
+                    trans,
+                    stored_workflow,
+                    payload_dict,
+                    workflow_update_options,
+                )
+            except MissingToolsException:
+                raise exceptions.MessageException(
+                    "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."
+                )
+
+        # TODO: Complete this serialization step.
+        # # Serialize the updated stored workflow.
+        # serialized_workflow = self._serializer.serialize(
+        #     trans, stored_workflow, serialization_params
+        # )
+        # For now, we will just return the workflow contents manager's workflow_to_dict method.
+        return self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
+
     def delete(self, trans, workflow_id):
         workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
         self._workflows_manager.check_security(trans, workflow_to_delete)
@@ -250,6 +325,54 @@ class WorkflowsService(ServiceBase):
             **self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
         )
         return detailed_workflow
+
+    def _create_new_latest_workflow(
+        self,
+        trans: ProvidesUserContext,
+        payload: UpdateWorkflowPayload,
+        stored_workflow: StoredWorkflow,
+    ):
+        """
+        Creates a new `latest_workflow` for the stored workflow if the payload contains keys that would create a
+        new workflow version.
+        """
+        update_keys = [
+            "name",
+            "comments",
+            "creator_metadata",
+            "doi",
+            "help",
+            "license",
+            "logo_url",
+            "readme",
+            "reports_config",
+            "steps",
+        ]
+
+        payload_dict = payload.model_dump(exclude_unset=True)
+
+        if not payload_dict.get("name", None):
+            payload_dict.pop("name", None)
+
+        # TODO: For all (as many as possible?) update_keys, pop them from the payload if their
+        # existing value is same as the new value. This will be a new enhancement/bug fix to avoid
+        # creating a new workflow version if these values are unchanged.
+
+        # Check if any of the update keys are present in the payload.
+        if not any(key in payload_dict for key in update_keys):
+            return payload_dict
+
+        # Initialize the stored old workflow.
+        old_workflow = stored_workflow.latest_workflow
+
+        # Create a latest workflow from the last one
+        latest_workflow = old_workflow.copy(user=trans.user)
+        latest_workflow.stored_workflow = stored_workflow
+
+        # Add the new workflow to the stored workflow
+        stored_workflow.latest_workflow = latest_workflow
+
+        return payload_dict
 
     def _get_workflows_list(
         self,
