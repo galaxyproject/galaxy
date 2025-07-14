@@ -221,8 +221,16 @@ function generateGridColumnDefs(columnDefinitions: SampleSheetColumnDefinitions)
         }
     }
     (columnDefinitions || []).forEach((colDef) => {
+        const headerDescription = colDef.description || colDef.name;
+        const hasCustomHeaderDescription = headerDescription != colDef.name;
+        let headerClass = "";
+        if (hasCustomHeaderDescription) {
+            headerClass = "ag-grid-column-has-custom-header-description";
+        }
         const baseDef: ColDef = {
             headerName: colDef.name,
+            headerTooltip: colDef.description || colDef.name,
+            headerClass,
             field: colDef.name,
             editable: true,
             cellEditorParams: {},
@@ -641,5 +649,14 @@ defineExpose({ attemptCreate });
 <style scoped>
 .below-grid-link {
     padding: 7px;
+}
+</style>
+
+<style>
+// doesn't work with scoped style, newer AG Grid lets specifying style directly
+// in ColDef but this deson't seem work with this older AG Grid we're using Vue 2.
+.ag-grid-column-has-custom-header-description {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
 }
 </style>
