@@ -119,7 +119,7 @@ export async function undeleteWorkflow(id: string): Promise<WorkflowSummary> {
     return data as WorkflowSummary;
 }
 
-export async function updateWorkflow(id: string, payload: UpdateWorkflowPayload): Promise<WorkflowSummary> {
+export async function updateWorkflow(id: string, payload: UpdateWorkflowPayload) {
     const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}", {
         params: {
             path: {
@@ -133,7 +133,7 @@ export async function updateWorkflow(id: string, payload: UpdateWorkflowPayload)
         rethrowSimple(error);
     }
 
-    return data as WorkflowSummary;
+    return data;
 }
 
 export function hasCreator(entry?: AnyWorkflow): entry is StoredWorkflowDetailed {

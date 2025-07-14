@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { updateWorkflow, type WorkflowSummary } from "@/api/workflows";
+import { updateWorkflow } from "@/api/workflows";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
@@ -57,16 +57,11 @@ export async function loadWorkflow({ id, version = null }: { id: string; version
     }
 }
 
-// TODO: The backend return will be typed as the update response
-type WorkflowSummaryExtended = WorkflowSummary & {
-    version: number;
-    annotation: string;
-};
 export async function saveWorkflow(workflow: Record<string, any>) {
     if (workflow.hasChanges) {
         try {
             const requestData = { ...toSimple(workflow.id, workflow as Workflow), from_tool_form: true };
-            const data = (await updateWorkflow(workflow.id, requestData)) as WorkflowSummaryExtended;
+            const data = await updateWorkflow(workflow.id, requestData);
             workflow.name = data.name;
             workflow.hasChanges = false;
             workflow.stored = true;
