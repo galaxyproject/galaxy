@@ -1,3 +1,4 @@
+import type { UpdateWorkflowPayload } from "@/api/workflows";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -134,8 +135,9 @@ export async function fromSimple(
     toolbarStore.currentTool = "pointer";
 }
 
-export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {
-    const steps = workflow.steps;
+export function toSimple(id: string, workflow: Workflow): UpdateWorkflowPayload {
+    // TODO: This is a temporary workaround; we need to use the backend types for `Steps` in the stores.
+    const steps = workflow.steps as any;
     const report = workflow.report;
     const license = workflow.license;
     const creator = workflow.creator;
@@ -146,6 +148,8 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const readme = workflow.readme;
     const help = workflow.help;
     const doi = workflow.doi;
+    const update_stored_workflow_attributes = true;
+    const exact_tools = true;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -153,5 +157,20 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments, tags, readme, help, logo_url, doi };
+    return {
+        steps,
+        report,
+        license,
+        creator,
+        annotation,
+        name,
+        comments,
+        tags,
+        readme,
+        help,
+        logo_url,
+        doi,
+        update_stored_workflow_attributes,
+        exact_tools,
+    };
 }

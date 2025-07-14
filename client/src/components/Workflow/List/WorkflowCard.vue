@@ -3,10 +3,10 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
+import { updateWorkflow } from "@/api/workflows";
 import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCardActions";
 import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCardBadges";
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";
-import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -65,7 +65,7 @@ const description = computed(() => {
 
 async function onTagsUpdate(tags: string[]) {
     workflow.value.tags = tags;
-    await updateWorkflow(workflow.value.id, { tags });
+    await updateWorkflow(workflow.value.id, { tags, update_stored_workflow_attributes: true, exact_tools: true });
     emit("refreshList", true, true);
 }
 

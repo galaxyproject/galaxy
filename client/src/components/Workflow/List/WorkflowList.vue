@@ -7,9 +7,9 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
+import { loadWorkflows, undeleteWorkflow, updateWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
-import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
+import { deleteWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
@@ -306,7 +306,11 @@ async function onBulkTagsAdd(tags: string[]) {
         for (const w of selectedWorkflowIds.value) {
             const prevTags = workflowsLoaded.value.find((workflow) => workflow.id === w.id)?.tags || [];
 
-            await updateWorkflow(w.id, { tags: [...new Set([...prevTags, ...tags])] });
+            await updateWorkflow(w.id, {
+                tags: [...new Set([...prevTags, ...tags])],
+                update_stored_workflow_attributes: true,
+                exact_tools: true,
+            });
 
             tmpSelected.splice(
                 tmpSelected.findIndex((s) => s.id === w.id),

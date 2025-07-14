@@ -16,13 +16,12 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
-import { undeleteWorkflow } from "@/api/workflows";
+import { undeleteWorkflow, updateWorkflow as updateWorkflowService } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
 import type { CardAttributes } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,
-    updateWorkflow as updateWorkflowService,
 } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
@@ -109,6 +108,8 @@ export function useWorkflowCardActions(
         try {
             await updateWorkflowService(workflow.value.id, {
                 show_in_tool_panel: checked,
+                update_stored_workflow_attributes: true,
+                exact_tools: true,
             });
 
             toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);

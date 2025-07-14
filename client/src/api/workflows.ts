@@ -5,6 +5,7 @@ import { GalaxyApi } from "./client";
 
 export type Creator = components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
+export type UpdateWorkflowPayload = components["schemas"]["UpdateWorkflowPayload"];
 
 //TODO: replace with generated schema model when available
 export type WorkflowSummary = {
@@ -109,6 +110,23 @@ export async function undeleteWorkflow(id: string): Promise<WorkflowSummary> {
                 workflow_id: id,
             },
         },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as WorkflowSummary;
+}
+
+export async function updateWorkflow(id: string, payload: UpdateWorkflowPayload): Promise<WorkflowSummary> {
+    const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}", {
+        params: {
+            path: {
+                workflow_id: id,
+            },
+        },
+        body: payload,
     });
 
     if (error) {

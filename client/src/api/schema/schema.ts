@@ -5513,7 +5513,8 @@ export interface paths {
         };
         /** Displays information needed to run a workflow. */
         get: operations["show_workflow_api_workflows__workflow_id__get"];
-        put?: never;
+        /** Updates the values for the workflow with the given ID. */
+        put: operations["update_api_workflows__workflow_id__put"];
         post?: never;
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
@@ -10934,6 +10935,97 @@ export interface components {
              */
             update_time: string;
         };
+        /** FrameComment */
+        FrameComment: {
+            /**
+             * Child Comments
+             * @description A list of ids (see `id`) of all Comments which are encompassed by this Frame
+             */
+            child_comments?: number[] | null;
+            /**
+             * Child Steps
+             * @description A list of ids of all Steps (see WorkflowStep.id) which are encompassed by this Frame
+             */
+            child_steps?: number[] | null;
+            /**
+             * Color
+             * @description Color this comment is displayed as. The exact color hex is determined by the client
+             * @enum {string}
+             */
+            color: "none" | "black" | "blue" | "turquoise" | "green" | "lime" | "orange" | "yellow" | "red" | "pink";
+            data: components["schemas"]["FrameCommentData"];
+            /**
+             * Id
+             * @description Unique identifier for this comment. Determined by the comments order
+             */
+            id: number;
+            /**
+             * Position
+             * @description [x, y] position of this comment in the Workflow
+             */
+            position: [number, number];
+            /**
+             * Size
+             * @description [width, height] size of this comment
+             */
+            size: [number, number];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "frame";
+        };
+        /** FrameCommentData */
+        FrameCommentData: {
+            /**
+             * Title
+             * @description The Frames title
+             */
+            title: string;
+        };
+        /** FreehandComment */
+        FreehandComment: {
+            /**
+             * Color
+             * @description Color this comment is displayed as. The exact color hex is determined by the client
+             * @enum {string}
+             */
+            color: "none" | "black" | "blue" | "turquoise" | "green" | "lime" | "orange" | "yellow" | "red" | "pink";
+            data: components["schemas"]["FreehandCommentData"];
+            /**
+             * Id
+             * @description Unique identifier for this comment. Determined by the comments order
+             */
+            id: number;
+            /**
+             * Position
+             * @description [x, y] position of this comment in the Workflow
+             */
+            position: [number, number];
+            /**
+             * Size
+             * @description [width, height] size of this comment
+             */
+            size: [number, number];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "freehand";
+        };
+        /** FreehandCommentData */
+        FreehandCommentData: {
+            /**
+             * Line
+             * @description List of [x, y] coordinates determining the unsmoothed line. Smoothing is done client-side using Catmull-Rom
+             */
+            line: [number, number][];
+            /**
+             * Thickness
+             * @description Width of the Line in pixels
+             */
+            thickness: number;
+        };
         /** FtpImportElement */
         FtpImportElement: {
             /** Md5 */
@@ -16146,6 +16238,44 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
+        /** MarkdownComment */
+        MarkdownComment: {
+            /**
+             * Color
+             * @description Color this comment is displayed as. The exact color hex is determined by the client
+             * @enum {string}
+             */
+            color: "none" | "black" | "blue" | "turquoise" | "green" | "lime" | "orange" | "yellow" | "red" | "pink";
+            data: components["schemas"]["MarkdownCommentData"];
+            /**
+             * Id
+             * @description Unique identifier for this comment. Determined by the comments order
+             */
+            id: number;
+            /**
+             * Position
+             * @description [x, y] position of this comment in the Workflow
+             */
+            position: [number, number];
+            /**
+             * Size
+             * @description [width, height] size of this comment
+             */
+            size: [number, number];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "markdown";
+        };
+        /** MarkdownCommentData */
+        MarkdownCommentData: {
+            /**
+             * Text
+             * @description The unrendered source Markdown for this Comment
+             */
+            text: string;
+        };
         /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
@@ -16712,6 +16842,38 @@ export interface components {
              * @default 0
              */
             version: number;
+        };
+        /** Organization */
+        "Organization-Input": {
+            /** Address */
+            address?: string | null;
+            /** Alternate Name */
+            alternateName?: string | null;
+            /**
+             * Class
+             * @default Organization
+             */
+            class: string;
+            /** Email */
+            email?: string | null;
+            /** Fax Number */
+            faxNumber?: string | null;
+            /**
+             * Identifier
+             * @description Identifier (typically an orcid.org ID)
+             */
+            identifier?: string | null;
+            /** Image URL */
+            image?: string | null;
+            /**
+             * Name
+             * @description The name of the creator.
+             */
+            name?: string | null;
+            /** Telephone */
+            telephone?: string | null;
+            /** URL */
+            url?: string | null;
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
@@ -18996,7 +19158,7 @@ export interface components {
             creator_deleted: boolean;
             /**
              * Deleted
-             * @description Whether this item is marked as deleted.
+             * @description Whether this workflow is marked as deleted.
              */
             deleted: boolean;
             /**
@@ -19011,9 +19173,9 @@ export interface components {
             email_hash: string | null;
             /**
              * Help
-             * @description The detailed help text for how to use the workflow and debug problems with it.
+             * @description A help text for how to use the workflow and debug problems with it.
              */
-            help: string | null;
+            help?: string | null;
             /**
              * Hidden
              * @description TODO
@@ -19028,7 +19190,7 @@ export interface components {
              * Importable
              * @description Indicates if the workflow is importable by the current user.
              */
-            importable: boolean | null;
+            importable?: boolean | null;
             /**
              * Inputs
              * @description A dictionary containing information about all the inputs of the workflow.
@@ -19055,7 +19217,7 @@ export interface components {
             model_class: "StoredWorkflow";
             /**
              * Name
-             * @description The name of the history.
+             * @description The name of the workflow.
              */
             name: string;
             /**
@@ -19075,9 +19237,9 @@ export interface components {
             published: boolean;
             /**
              * Readme
-             * @description The detailed markdown readme of the workflow.
+             * @description A markdown formatted readme for this workflow.
              */
-            readme: string | null;
+            readme?: string | null;
             /**
              * Show in Tool Panel
              * @description Whether to display this workflow in the Tools Panel.
@@ -19356,6 +19518,59 @@ export interface components {
             variables: {
                 [key: string]: string | boolean | number;
             };
+        };
+        /** TextComment */
+        TextComment: {
+            /**
+             * Color
+             * @description Color this comment is displayed as. The exact color hex is determined by the client
+             * @enum {string}
+             */
+            color: "none" | "black" | "blue" | "turquoise" | "green" | "lime" | "orange" | "yellow" | "red" | "pink";
+            data: components["schemas"]["TextCommentData"];
+            /**
+             * Id
+             * @description Unique identifier for this comment. Determined by the comments order
+             */
+            id: number;
+            /**
+             * Position
+             * @description [x, y] position of this comment in the Workflow
+             */
+            position: [number, number];
+            /**
+             * Size
+             * @description [width, height] size of this comment
+             */
+            size: [number, number];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+        };
+        /** TextCommentData */
+        TextCommentData: {
+            /**
+             * Bold
+             * @description If the Comments text is bold. Absent is interpreted as false
+             */
+            bold?: boolean | null;
+            /**
+             * Italic
+             * @description If the Comments text is italic. Absent is interpreted as false
+             */
+            italic?: boolean | null;
+            /**
+             * Size
+             * @description Relative size (1 -> 100%) of the text compared to the default text sitz
+             */
+            size: number;
+            /**
+             * Text
+             * @description The plaintext text of this comment
+             */
+            text: string;
         };
         /** TextParameterModel */
         TextParameterModel: {
@@ -20213,6 +20428,108 @@ export interface components {
             preferences: {
                 [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
+        };
+        /** UpdateWorkflowPayload */
+        UpdateWorkflowPayload: {
+            /**
+             * Allow Missing Tools
+             * @description Allow missing tools when updating workflow
+             */
+            allow_missing_tools?: boolean | null;
+            /** Annotation */
+            annotation?: string | null;
+            /**
+             * Comments
+             * @description A list of comments to modify in the workflow.
+             */
+            comments?: components["schemas"]["WorkflowCommentModel"][] | null;
+            /**
+             * Creator
+             * @description Additional information about the creator (or multiple creators) of this workflow.
+             */
+            creator?: (components["schemas"]["Person"] | components["schemas"]["Organization-Input"])[] | null;
+            /**
+             * DOI
+             * @description A list of Digital Object Identifiers associated with this workflow.
+             */
+            doi?: string[] | null;
+            /** Dry Run */
+            dry_run?: boolean | null;
+            /**
+             * Exact Tools
+             * @description If False, allow running with less exact tool versions.
+             * @default true
+             */
+            exact_tools: boolean | null;
+            /**
+             * Fill Defaults
+             * @description Fill in default tool state when updating, may change tool_state.
+             */
+            fill_defaults?: boolean | null;
+            /**
+             * From Tool Form
+             * @description True iff encoded state coming from generated form.
+             */
+            from_tool_form?: boolean | null;
+            /**
+             * Help
+             * @description A help text for how to use the workflow and debug problems with it.
+             */
+            help?: string | null;
+            /** Hidden */
+            hidden?: boolean | null;
+            /**
+             * Importable
+             * @description Indicates if the workflow is importable by the current user.
+             */
+            importable?: boolean | null;
+            /**
+             * License
+             * @description SPDX Identifier of the license associated with this workflow.
+             */
+            license?: string | null;
+            /**
+             * Logo URL
+             * @description A URL to a logo for this workflow.
+             */
+            logo_url?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Published */
+            published?: boolean | null;
+            /**
+             * Readme
+             * @description A markdown formatted readme for this workflow.
+             */
+            readme?: string | null;
+            /**
+             * Workflow Report
+             * @description The workflow report.
+             */
+            report?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Bookmark Workflow
+             * @description Whether to add the workflow to the list of bookmarked workflows.
+             */
+            show_in_tool_panel?: boolean | null;
+            /**
+             * Steps
+             * @description A dictionary with information about all the steps of the workflow.
+             */
+            steps?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Update Stored Workflow Attributes
+             * @description When updating the workflow's representation with name or annotation, updates the corresponding `StoredWorkflow`.
+             * @default true
+             */
+            update_stored_workflow_attributes: boolean | null;
         };
         /** UpgradeAllStepsAction */
         UpgradeAllStepsAction: {
@@ -21207,6 +21524,12 @@ export interface components {
              */
             revision: string;
         };
+        /** WorkflowCommentModel */
+        WorkflowCommentModel:
+            | components["schemas"]["TextComment"]
+            | components["schemas"]["MarkdownComment"]
+            | components["schemas"]["FrameComment"]
+            | components["schemas"]["FreehandComment"];
         /** WorkflowInput */
         WorkflowInput: {
             /**
@@ -39366,6 +39689,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoredWorkflowDetailed"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_workflows__workflow_id__put: {
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+                /** @description View to be passed to the serializer */
+                view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
+                keys?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkflowPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Request Error */

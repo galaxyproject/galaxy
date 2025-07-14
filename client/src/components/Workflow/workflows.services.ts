@@ -4,11 +4,6 @@ import type { WorkflowSummary } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
-export async function updateWorkflow(id: string, changes: object): Promise<WorkflowSummary> {
-    const { data } = await axios.put(withPrefix(`/api/workflows/${id}`), changes);
-    return data;
-}
-
 export async function copyWorkflow(id: string, currentOwner?: string, version?: string): Promise<WorkflowSummary> {
     let path = `/api/workflows/${id}/download`;
     if (version) {

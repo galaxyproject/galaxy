@@ -2,7 +2,7 @@
 import { BForm, BFormInput, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
-import { updateWorkflow } from "@/components/Workflow/workflows.services";
+import { updateWorkflow } from "@/api/workflows";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
@@ -26,7 +26,7 @@ const workflowNameInput = ref<HTMLInputElement | null>(null);
 
 async function onRename(newName: string) {
     try {
-        await updateWorkflow(props.id, { name: newName });
+        await updateWorkflow(props.id, { name: newName, update_stored_workflow_attributes: true, exact_tools: true });
         Toast.success("Workflow renamed");
     } catch (e) {
         Toast.error("Failed to rename workflow");
