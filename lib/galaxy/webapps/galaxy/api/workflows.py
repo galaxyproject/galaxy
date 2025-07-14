@@ -845,7 +845,7 @@ class FastAPIWorkflows:
         ),
         instance: InstanceQueryParam = False,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> Dict[str, Any]:
+    ) -> StoredWorkflowDetailed:
         return self.service.update(trans, workflow_id, payload, serialization_params, instance or False)
 
     @router.put(

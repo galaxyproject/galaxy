@@ -2333,6 +2333,11 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Owner",
         description="The name of the user who owns this workflow.",
     )
+    latest_workflow_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="The ID of the latest workflow",
+        description="The encoded ID of the latest version of this workflow.",
+    )
     latest_workflow_uuid: Optional[UUID4] = Field(
         None,
         title="Latest workflow UUID",

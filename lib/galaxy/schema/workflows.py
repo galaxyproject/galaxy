@@ -229,6 +229,11 @@ WorkflowLicenseField = Field(
     title="License",
     description="SPDX Identifier of the license associated with this workflow.",
 )
+WorklowLogoUrlField = Field(
+    default=None,
+    title="Logo URL",
+    description="A URL to a logo for this workflow.",
+)
 WorkflowReadmeField = Field(
     None,
     title="Readme",
@@ -259,11 +264,7 @@ class UpdateWorkflowPayload(Model):
     )
     importable: Optional[bool] = WorkflowImportableField
     license: Optional[str] = WorkflowLicenseField
-    logo_url: Optional[str] = Field(
-        default=None,
-        title="Logo URL",
-        description="A URL to a logo for this workflow.",
-    )
+    logo_url: Optional[str] = WorklowLogoUrlField
     name: Optional[str] = None
     published: Optional[bool] = None
     readme: Optional[str] = WorkflowReadmeField
@@ -355,6 +356,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     )
     readme: Optional[str] = WorkflowReadmeField
     help: Optional[str] = WorkflowHelpField
+    logo_url: Optional[str] = WorklowLogoUrlField
     slug: Optional[str] = Field(
         ...,
         title="Slug",

@@ -19200,6 +19200,11 @@ export interface components {
                 [key: string]: components["schemas"]["WorkflowInput"];
             };
             /**
+             * The ID of the latest workflow
+             * @description The encoded ID of the latest version of this workflow.
+             */
+            latest_workflow_id?: string | null;
+            /**
              * Latest workflow UUID
              * @description TODO
              */
@@ -19209,6 +19214,11 @@ export interface components {
              * @description SPDX Identifier of the license associated with this workflow.
              */
             license?: string | null;
+            /**
+             * Logo URL
+             * @description A URL to a logo for this workflow.
+             */
+            logo_url?: string | null;
             /**
              * Model class
              * @description The name of the database model class.
@@ -20448,6 +20458,11 @@ export interface components {
              * @description Additional information about the creator (or multiple creators) of this workflow.
              */
             creator?: (components["schemas"]["Person"] | components["schemas"]["Organization-Input"])[] | null;
+            /**
+             * Deleted
+             * @description Indicates if the workflow is marked as deleted or not.
+             */
+            deleted?: boolean | null;
             /**
              * DOI
              * @description A list of Digital Object Identifiers associated with this workflow.
@@ -39742,9 +39757,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Request Error */

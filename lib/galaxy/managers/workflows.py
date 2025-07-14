@@ -1858,6 +1858,10 @@ class WorkflowContentsManager(UsesAnnotations):
         item["help"] = workflow.help
         item["logo_url"] = workflow.logo_url
         item["doi"] = workflow.doi
+        item["number_of_steps"] = len(workflow.steps)
+        item["show_in_tool_panel"] = False
+        if trans.user is not None:
+            item["show_in_tool_panel"] = stored.show_in_tool_panel(user_id=trans.user.id)
 
         steps = {}
         steps_to_order_index = {}
