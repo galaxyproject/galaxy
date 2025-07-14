@@ -12,6 +12,7 @@ from urllib.parse import (
 
 import pytest
 import requests
+from tusclient import client
 from typing_extensions import Protocol
 
 from galaxy.util.properties import get_from_env
@@ -39,6 +40,8 @@ DEFAULT_CELERY_CONFIG = {
     "broker_url": CELERY_BROKER,
     "result_backend": CELERY_BACKEND,
 }
+
+TEST_TUS_CHUNK_SIZE = 1024
 
 
 @pytest.fixture(scope="session")
@@ -246,6 +249,24 @@ class ApiTestInteractor(BaseInteractor):
 
     def put(self, *args, **kwds):
         return self._put(*args, **kwds)
+
+    def tus_upload(self, path: str, endpoint: str) -> str:
+        """Upload a file to the given endpoint using TUS protocol."""
+        base_url = self.get_api_url(endpoint)
+        headers: Dict[str, str] = {}
+        if self.api_key:
+            headers["x-api-key"] = self.api_key
+        my_client = client.TusClient(base_url, headers=headers)
+        storage = None
+        metadata: Dict[str, str] = {}
+
+        uploader = my_client.uploader(path, metadata=metadata, url_storage=storage)
+        uploader.chunk_size = TEST_TUS_CHUNK_SIZE
+        uploader.upload()
+        upload_session_url = uploader.url
+        assert upload_session_url
+        tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
+        return tus_session_id
 
 
 class AnonymousGalaxyInteractor(ApiTestInteractor):

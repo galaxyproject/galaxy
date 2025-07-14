@@ -1,3 +1,4 @@
+import os
 from typing import (
     Optional,
     Union,
@@ -334,8 +335,13 @@ def create_objects_from_store(
         allow_library_creation=for_library,
     )
     user_context = ModelStoreUserContext(app, galaxy_user) if galaxy_user is not None else None
+    source = payload.store_content_uri or payload.store_dict
+    if isinstance(source, str) and source.startswith("tus://"):
+        session_id = source.split("tus://", 1)[-1]
+        upload_store = app.config.tus_upload_store or app.config.new_file_path
+        source = f"file://{os.path.abspath(os.path.join(upload_store, session_id))}"
     model_import_store = source_to_import_store(
-        payload.store_content_uri or payload.store_dict,
+        source=source,
         app=app,
         import_options=import_options,
         model_store_format=payload.model_store_format,
