@@ -25,7 +25,7 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const fileField: Ref<HTMLInputElement | null> = ref(null);
 
 interface Props {
-    deferred?: boolean | undefined;
+    deferred?: boolean;
     extension: string;
     fileContent: string;
     fileMode: string;
