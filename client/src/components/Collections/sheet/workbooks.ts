@@ -37,7 +37,10 @@ export function downloadWorkbook(
     initialRows?: string[][]
 ) {
     const url = getDownloadWorkbookUrl(columnDefinitions, collectionType, initialRows);
-    window.location.assign(url);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sample_sheet_workbook.xlsx";
+    link.click();
 }
 
 export function downloadWorkbookForCollection(columnDefinitions: SampleSheetColumnDefinitions, hdca_id: string) {
