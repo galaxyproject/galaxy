@@ -74,6 +74,10 @@ const isLoading = computed(() => invocationLoading.value || workflowLoading.valu
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
+const compact = computed(() => Boolean(args.value?.compact));
+const showColumnHeaders = computed(() => {
+    return args.value?.show_column_headers !== undefined ? Boolean(args.value.show_column_headers) : true;
+});
 
 async function fetchWorkflow() {
     if (invocation.value?.workflow_id) {
@@ -158,12 +162,12 @@ watch(
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
-                :compact="argToBoolean(args, 'compact', false)"
+                :compact="compact"
                 :dataset-id="args.history_dataset_id"
                 :footer="args.footer"
-                :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
+                :show-column-headers="showColumnHeaders"
                 :title="args.title"
-                :path="path" />
+                :path="args.path" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
                 :collection-id="args.history_dataset_collection_id" />

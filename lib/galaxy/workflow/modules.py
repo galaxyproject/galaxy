@@ -154,6 +154,8 @@ def to_cwl(
     value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
 ):
     element_identifier = None
+    if isinstance(value, NoReplacement):
+        value = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
     if isinstance(value, model.DatasetCollectionElement):

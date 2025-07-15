@@ -125,6 +125,17 @@ def get_path_key(path_tuple):
     return path_key
 
 
+def safe_label_or_none(label: str) -> Optional[str]:
+    if label and len(label) > 63:
+        return None
+    return label
+
+
+def safe_aliased(model_class, name=None):
+    """Create an aliased model class with a unique name."""
+    return aliased(model_class, name=safe_label_or_none(name))
+
+
 class JobManager:
     def __init__(self, app: StructuredApp):
         self.app = app
@@ -762,7 +773,8 @@ class JobSearch:
 
     def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v, value_index):
         a = aliased(model.JobToInputLibraryDatasetAssociation)
-        labeled_col = a.ldda_id.label(f"{k}_{value_index}")
+        label = safe_label_or_none(f"{k}_{value_index}")
+        labeled_col = a.ldda_id.label(label)
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         data_conditions.append(and_(a.name == k, a.ldda_id == v))
@@ -806,12 +818,10 @@ class JobSearch:
         )
         depth = collection_type.count(":") if collection_type else 0
 
-        a = aliased(
-            model.JobToInputDatasetCollectionAssociation, name=f"job_to_input_dataset_collection_1_{k}_{value_index}"
-        )
-        hdca_input = aliased(
+        a = safe_aliased(model.JobToInputDatasetCollectionAssociation, name=f"jtidc_1_{k}_{value_index}")
+        hdca_input = safe_aliased(
             model.HistoryDatasetCollectionAssociation,
-            name=f"history_dataset_collection_association_1_{k}_{value_index}",
+            name=f"hdca_1_{k}_{value_index}",
         )
 
         _hdca_target_cte_ref = aliased(model.HistoryDatasetCollectionAssociation, name="_hdca_target_cte_ref")
@@ -844,7 +854,9 @@ class JobSearch:
             .where(_hdca_target_cte_ref.id == v)
             .distinct()
         )
-        reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(f"ref_all_ds_ids_{k}_{value_index}")
+        reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(
+            safe_label_or_none(f"ref_all_ds_ids_{k}_{value_index}")
+        )
         # --- END NEW CTE ---
 
         # CTE 1: signature_elements_cte (for the reference HDCA)
@@ -875,7 +887,9 @@ class JobSearch:
             _hda_cte_ref, _hda_cte_ref.id == _leaf_cte_ref.hda_id
         )
         signature_elements_select = signature_elements_select.where(_hdca_target_cte_ref.id == v)
-        signature_elements_cte = signature_elements_select.cte(f"signature_elements_{k}_{value_index}")
+        signature_elements_cte = signature_elements_select.cte(
+            safe_label_or_none(f"signature_elements_{k}_{value_index}")
+        )
 
         # CTE 2: reference_full_signature_cte
         # This CTE aggregates the path signature strings of the reference HDCA into a
@@ -883,7 +897,7 @@ class JobSearch:
         reference_full_signature_cte = (
             select(self.agg_expression(signature_elements_cte.c.path_signature_string).label("signature_array"))
             .select_from(signature_elements_cte)
-            .cte(f"reference_full_signature_{k}_{value_index}")
+            .cte(safe_label_or_none(f"reference_full_signature_{k}_{value_index}"))
         )
 
         candidate_hdca = aliased(model.HistoryDatasetCollectionAssociation, name="candidate_hdca")
@@ -923,7 +937,7 @@ class JobSearch:
             .where(candidate_hda.dataset_id.in_(select(reference_all_dataset_ids_cte.c.ref_dataset_id_for_overlap)))
         )
         candidate_hdca_pre_filter_ids_cte = candidate_hdca_pre_filter_ids_select.cte(
-            f"cand_hdca_pre_filter_ids_{k}_{value_index}"
+            safe_label_or_none(f"cand_hdca_pre_filter_ids_{k}_{value_index}")
         )
         # --- END NEW CTE ---
 
@@ -959,7 +973,7 @@ class JobSearch:
             candidate_hda, candidate_hda.id == _leaf_candidate_dce.hda_id
         )
         candidate_signature_elements_cte = candidate_signature_elements_select.cte(
-            f"candidate_signature_elements_{k}_{value_index}"
+            safe_label_or_none(f"candidate_signature_elements_{k}_{value_index}")
         )
 
         # CTE 4: candidate_full_signatures_cte
@@ -974,7 +988,7 @@ class JobSearch:
             )
             .select_from(candidate_signature_elements_cte)
             .group_by(candidate_signature_elements_cte.c.candidate_hdca_id)
-            .cte(f"candidate_full_signatures_{k}_{value_index}")
+            .cte(safe_label_or_none(f"candidate_full_signatures_{k}_{value_index}"))
         )
 
         # CTE 5: equivalent_hdca_ids_cte
@@ -986,7 +1000,7 @@ class JobSearch:
                 candidate_full_signatures_cte.c.full_signature_array
                 == select(reference_full_signature_cte.c.signature_array).scalar_subquery()
             )
-            .cte(f"equivalent_hdca_ids_{k}_{value_index}")
+            .cte(safe_label_or_none(f"equivalent_hdca_ids_{k}_{value_index}"))
         )
 
         # Main query `stmt` construction
@@ -1025,18 +1039,18 @@ class JobSearch:
             depth = collection_type.count(":") if collection_type else 0
 
             # Aliases for the target DCE's collection structure
-            _dce_target_root_ref = aliased(
+            _dce_target_root_ref = safe_aliased(
                 model.DatasetCollectionElement, name=f"_dce_target_root_ref_{k}_{value_index}"
             )
-            _dce_target_child_collection_ref = aliased(
+            _dce_target_child_collection_ref = safe_aliased(
                 model.DatasetCollection, name=f"_dce_target_child_collection_ref_{k}_{value_index}"
             )
             # List of aliases for each potential nested level of DatasetCollectionElements
             _dce_target_level_list = [
-                aliased(model.DatasetCollectionElement, name=f"_dce_target_level_{k}_{value_index}_{i}")
+                safe_aliased(model.DatasetCollectionElement, name=f"_dce_target_level_{k}_{value_index}_{i}")
                 for i in range(depth + 1)
             ]
-            _hda_target_ref = aliased(model.HistoryDatasetAssociation, name=f"_hda_target_ref_{k}_{value_index}")
+            _hda_target_ref = safe_aliased(model.HistoryDatasetAssociation, name=f"_hda_target_ref_{k}_{value_index}")
 
             # --- CTE: reference_dce_all_dataset_ids_cte ---
             # This CTE (Common Table Expression) identifies all distinct dataset IDs
@@ -1069,7 +1083,9 @@ class JobSearch:
                 .where(_dce_target_root_ref.id == v)
                 .distinct()
             )
-            reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(f"ref_all_ds_ids_{k}_{value_index}")
+            reference_all_dataset_ids_cte = reference_all_dataset_ids_select.cte(
+                safe_label_or_none(f"ref_all_ds_ids_{k}_{value_index}")
+            )
 
             # --- CTE: reference_dce_signature_elements_cte ---
             # This CTE generates a "path signature string" for each individual element
@@ -1110,7 +1126,7 @@ class JobSearch:
                 _hda_target_ref, _hda_target_ref.id == _leaf_target_dce_ref.hda_id
             ).where(_dce_target_root_ref.id == v)
             reference_dce_signature_elements_cte = reference_dce_signature_elements_select.cte(
-                f"ref_dce_sig_els_{k}_{value_index}"
+                safe_label_or_none(f"ref_dce_sig_els_{k}_{value_index}")
             )
 
             # --- CTE: reference_full_signature_cte ---
@@ -1130,22 +1146,22 @@ class JobSearch:
                     ),  # Count elements based on path_signature_string
                 )
                 .select_from(reference_dce_signature_elements_cte)
-                .cte(f"ref_dce_full_sig_{k}_{value_index}")
+                .cte(safe_label_or_none(f"ref_dce_full_sig_{k}_{value_index}"))
             )
 
             # --- Aliases for Candidate Dataset Collection Structure ---
             # These aliases are used to represent potential matching dataset collections
             # in the database, which will be compared against the reference.
-            candidate_dce_root = aliased(model.DatasetCollectionElement, name=f"candidate_dce_root_{k}_{v}")
-            candidate_dce_child_collection = aliased(
+            candidate_dce_root = safe_aliased(model.DatasetCollectionElement, name=f"candidate_dce_root_{k}_{v}")
+            candidate_dce_child_collection = safe_aliased(
                 model.DatasetCollection, name=f"candidate_dce_child_collection_{k}_{value_index}"
             )
             candidate_dce_level_list = [
-                aliased(model.DatasetCollectionElement, name=f"candidate_dce_level_{k}_{value_index}_{i}")
+                safe_aliased(model.DatasetCollectionElement, name=f"candidate_dce_level_{k}_{value_index}_{i}")
                 for i in range(depth + 1)
             ]
-            candidate_hda = aliased(model.HistoryDatasetAssociation, name=f"candidate_hda_{k}_{value_index}")
-            candidate_history = aliased(model.History, name=f"candidate_history_{k}_{value_index}")
+            candidate_hda = safe_aliased(model.HistoryDatasetAssociation, name=f"candidate_hda_{k}_{value_index}")
+            candidate_history = safe_aliased(model.History, name=f"candidate_history_{k}_{value_index}")
 
             # --- CTE: candidate_dce_pre_filter_ids_cte (Initial Candidate Filtering) ---
             # This CTE performs a first pass to quickly narrow down potential candidate
@@ -1183,7 +1199,7 @@ class JobSearch:
                 .where(candidate_hda.dataset_id.in_(select(reference_all_dataset_ids_cte.c.ref_dataset_id_for_overlap)))
             )
             candidate_dce_pre_filter_ids_cte = candidate_dce_pre_filter_ids_select.cte(
-                f"cand_dce_pre_filter_ids_{k}_{value_index}"
+                safe_label_or_none(f"cand_dce_pre_filter_ids_{k}_{value_index}")
             )
 
             # --- CTE: candidate_dce_signature_elements_cte ---
@@ -1232,7 +1248,7 @@ class JobSearch:
                 .where(or_(candidate_history.published == true(), candidate_history.user_id == user_id))
             )
             candidate_dce_signature_elements_cte = candidate_dce_signature_elements_select.cte(
-                f"cand_dce_sig_els_{k}_{value_index}"
+                safe_label_or_none(f"cand_dce_sig_els_{k}_{value_index}")
             )
 
             # --- CTE: candidate_pre_signatures_cte (Candidate Aggregation for Comparison) ---
@@ -1252,7 +1268,7 @@ class JobSearch:
                 )
                 .select_from(candidate_dce_signature_elements_cte)
                 .group_by(candidate_dce_signature_elements_cte.c.candidate_dce_id)
-                .cte(f"cand_dce_pre_sig_{k}_{value_index}")
+                .cte(safe_label_or_none(f"cand_dce_pre_sig_{k}_{value_index}"))
             )
 
             # --- CTE: filtered_cand_dce_by_dataset_ids_cte (Filtering by Element Count and Dataset ID Array) ---
@@ -1272,7 +1288,7 @@ class JobSearch:
                         == reference_full_signature_cte.c.ordered_dataset_id_array,
                     )
                 )
-                .cte(f"filtered_cand_dce_{k}_{value_index}")
+                .cte(safe_label_or_none(f"filtered_cand_dce_{k}_{value_index}"))
             )
 
             # --- CTE: final_candidate_signatures_cte (Final Full Signature Calculation for Matched Candidates) ---
@@ -1293,13 +1309,13 @@ class JobSearch:
                     )
                 )
                 .group_by(candidate_dce_signature_elements_cte.c.candidate_dce_id)
-                .cte(f"final_cand_dce_full_sig_{k}_{value_index}")
+                .cte(safe_label_or_none(f"final_cand_dce_full_sig_{k}_{value_index}"))
             )
 
             # --- Main Query Construction for Dataset Collection Elements ---
             # This section joins the main `stmt` (representing jobs) with the CTEs
             # to filter jobs whose input DCE matches the reference DCE's full signature.
-            a = aliased(
+            a = safe_aliased(
                 model.JobToInputDatasetCollectionElementAssociation,
                 name=f"job_to_input_dce_association_{k}_{value_index}",
             )
@@ -1334,19 +1350,19 @@ class JobSearch:
             # This logic needs to align with how this type of DCE was previously matched.
 
             # Aliases for the "left" side (job to input DCE path)
-            a = aliased(
+            a = safe_aliased(
                 model.JobToInputDatasetCollectionElementAssociation,
                 name=f"job_to_input_dce_association_{k}_{value_index}",
             )
-            dce_left = aliased(model.DatasetCollectionElement, name=f"dce_left_{k}_{value_index}")
-            hda_left = aliased(model.HistoryDatasetAssociation, name=f"hda_left_{k}_{value_index}")
+            dce_left = safe_aliased(model.DatasetCollectionElement, name=f"dce_left_{k}_{value_index}")
+            hda_left = safe_aliased(model.HistoryDatasetAssociation, name=f"hda_left_{k}_{value_index}")
 
             # Aliases for the "right" side (target DCE path in the main query)
-            dce_right = aliased(model.DatasetCollectionElement, name=f"dce_right_{k}_{value_index}")
-            hda_right = aliased(model.HistoryDatasetAssociation, name=f"hda_right_{k}_{value_index}")
+            dce_right = safe_aliased(model.DatasetCollectionElement, name=f"dce_right_{k}_{value_index}")
+            hda_right = safe_aliased(model.HistoryDatasetAssociation, name=f"hda_right_{k}_{value_index}")
 
             # Start joins from job → input DCE association → first-level DCE (left side)
-            labeled_col = a.dataset_collection_element_id.label(f"{k}_{value_index}")
+            labeled_col = a.dataset_collection_element_id.label(safe_label_or_none(f"{k}_{value_index}"))
             stmt = stmt.add_columns(labeled_col)
             stmt = stmt.join(a, a.job_id == model.Job.id)
             stmt = stmt.join(dce_left, dce_left.id == a.dataset_collection_element_id)
