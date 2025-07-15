@@ -27,6 +27,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.exc import NoResultFound
+from webob.exc import HTTPException
 
 from galaxy import util
 from galaxy.exceptions import (
@@ -202,7 +203,9 @@ class WebApplication(base.WebApplication):
             )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
-        log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
+        if not isinstance(e, HTTPException):
+            # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
+            log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
         if isinstance(e, TypeError):
             method_signature = inspect.signature(method)
             required_parameters = {
