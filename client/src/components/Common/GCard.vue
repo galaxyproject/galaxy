@@ -9,7 +9,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
-import type { CardAttributes, CardBadge, Title, TitleIcon } from "./GCard.types";
+import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize } from "./GCard.types";
 
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
@@ -17,67 +17,159 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
-    /** Unique identifier for the card */
+    /** Unique identifier for the card
+     * @default useUid("g-card-").value
+     */
     id?: string;
-    /** Array of badges to display on the card */
+
+    /** Badges displayed in the top-right corner
+     * @default []
+     */
     badges?: CardBadge[];
-    /** Indicates if the card is bookmarked */
+
+    /** Whether the card is bookmarked
+     * @default undefined
+     */
     bookmarked?: boolean;
-    /** Indicates if the card is clickable */
+
+    /** Whether the card is clickable (emits click events)
+     * @default undefined
+     */
     clickable?: boolean;
-    /** Additional CSS classes for the card container */
+
+    /** Additional CSS classes for the card container
+     * @default ""
+     */
     containerClass?: string | string[];
-    /** Additional CSS classes for the card content */
+
+    /** Additional CSS classes for the card content
+     * @default ""
+     */
     contentClass?: string | string[];
-    /** Indicates if the card is marked as current */
+
+    /** Whether the card is marked as current/active
+     * @default false
+     */
     current?: boolean;
-    /** Description text for the card */
+
+    /** Description text (supports Markdown)
+     * @default ""
+     */
     description?: string;
-    /** Array of extra actions available for the card */
-    extraActions?: CardAttributes[];
-    /** Indicates if the card is expanded to show full description */
+
+    /** Extra actions shown in dropdown menu
+     * @default []
+     */
+    extraActions?: CardAction[];
+
+    /** Whether to show full description (no truncation)
+     * @default undefined
+     */
     fullDescription?: boolean;
-    /** Indicates if the card is displayed in grid view mode */
+
+    /** Whether displayed in grid view mode
+     * @default false
+     */
     gridView?: boolean;
-    /** Array of indicators to display on the card */
-    indicators?: CardAttributes[];
-    /** Maximum number of visible tags */
+
+    /** Indicators shown as small buttons/icons
+     * @default []
+     */
+    indicators?: CardIndicator[];
+
+    /** Max visible tags before "show more"
+     * @default 3
+     */
     maxVisibleTags?: number;
-    /** Array of primary actions available for the card */
-    primaryActions?: CardAttributes[];
-    /** Indicates if the card is published */
+
+    /** Primary actions in card footer
+     * @default []
+     */
+    primaryActions?: CardAction[];
+
+    /** Whether the card represents published content
+     * @default false
+     */
     published?: boolean;
-    /** Title for the rename action */
+
+    /** Tooltip text for rename button
+     * @default "Rename"
+     */
     renameTitle?: string;
-    /** Indicates if the card title is editable */
+
+    /** Whether the card title is editable
+     * @default false
+     */
     canRenameTitle?: boolean;
-    /** Array of secondary actions available for the card */
-    secondaryActions?: CardAttributes[];
-    /** Indicates if the card is selectable */
+
+    /** Secondary actions in card footer
+     * @default []
+     */
+    secondaryActions?: CardAction[];
+
+    /** Whether the card is selectable via checkbox
+     * @default false
+     */
     selectable?: boolean;
-    /** Indicates if the card is selected */
+
+    /** Whether the card is currently selected
+     * @default false
+     */
     selected?: boolean;
-    /** Title for the card select checkbox */
+
+    /** Tooltip text for select checkbox
+     * @default ""
+     */
     selectTitle?: string;
-    /** Indicates if the bookmark button is displayed */
+
+    /** Whether to show bookmark button
+     * @default undefined
+     */
     showBookmark?: boolean;
-    /** Array of tags associated with the card */
+
+    /** Tags displayed in card footer
+     * @default []
+     */
     tags?: string[];
-    /** Indicates if the card tags are editable */
+
+    /** Whether tags are editable/clickable
+     * @default false
+     */
     tagsEditable?: boolean;
-    /** Title of the card, can be a string or an object with label, title, and handler */
+
+    /** Card title (string or interactive object)
+     * @default ""
+     */
     title?: Title;
-    /** Array of badges to display next to the card title */
+
+    /** Badges displayed next to title
+     * @default []
+     */
     titleBadges?: CardBadge[];
-    /** Icon to display before the card title */
+
+    /** Icon displayed before title
+     * @default undefined
+     */
     titleIcon?: TitleIcon;
-    /** Size of the card title */
-    titleSize?: "xl" | "lg" | "md" | "sm" | "text";
-    /** Icon to display before the update time */
+
+    /** Size of the card title
+     * @default "sm"
+     */
+    titleSize?: TitleSize;
+
+    /** Icon for update time badge
+     * @default faEdit
+     */
     updateTimeIcon?: IconDefinition;
-    /** Timestamp of the last update to the card */
+
+    /** Last update timestamp
+     * @default ""
+     */
     updateTime?: string;
-    /** Tooltip title for the update time */
+
+    /** Tooltip for update time badge
+     * @default "Last updated"
+     */
     updateTimeTitle?: string;
 }
 
@@ -111,19 +203,56 @@ const props = withDefaults(defineProps<Props>(), {
     updateTimeTitle: "Last updated",
 });
 
+/**
+ * Events emitted by the GCard component
+ */
 const emit = defineEmits<{
+    /** Emitted when card is clicked
+     * @event click
+     */
     (e: "click"): void;
-    (e: "bookmark"): void;
+
+    /** Emitted when bookmark button is clicked
+     * @event bookmark
+     */
+    (e: "bookmark"): Promise<void>;
+
+    /** Emitted when dropdown opens/closes
+     * @event dropdown
+     */
     (e: "dropdown", open: boolean): void;
+
+    /** Emitted when rename button is clicked
+     * @event rename
+     */
     (e: "rename"): void;
+
+    /** Emitted when selection checkbox is toggled
+     * @event select
+     */
     (e: "select"): void;
+
+    /** Emitted when title is clicked
+     * @event titleClick
+     */
     (e: "titleClick"): void;
+
+    /** Emitted when tag is clicked
+     * @event tagClick
+     */
     (e: "tagClick", tag: string): void;
+
+    /** Emitted when tags are updated
+     * @event tagsUpdate
+     */
     (e: "tagsUpdate", tags: string[]): void;
 }>();
 
 const bookmarkLoading = ref(false);
 
+/**
+ * Toggles bookmark status with loading state
+ */
 async function toggleBookmark() {
     bookmarkLoading.value = true;
     await emit("bookmark");
@@ -132,6 +261,9 @@ async function toggleBookmark() {
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
+/**
+ * Helper functions for generating consistent element IDs
+ */
 const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
@@ -225,7 +357,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <slot name="titleBadges">
                                     <template v-for="badge in props.titleBadges">
                                         <BBadge
-                                            v-if="badge.visible"
+                                            v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
                                             :key="badge.id"
                                             v-b-tooltip.hover
@@ -280,7 +412,10 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
                                 <slot name="extra-actions">
                                     <BDropdown
-                                        v-if="props.extraActions?.length && props.extraActions.some((ea) => ea.visible)"
+                                        v-if="
+                                            props.extraActions?.length &&
+                                            props.extraActions.some((ea) => ea.visible ?? true)
+                                        "
                                         :id="getElementId(props.id, 'extra-actions')"
                                         v-b-tooltip.hover.noninteractive
                                         right
@@ -296,7 +431,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
                                         <template v-for="ea in props.extraActions">
                                             <BDropdownItem
-                                                v-if="ea.visible"
+                                                v-if="ea.visible ?? true"
                                                 :id="getActionId(props.id, ea.id)"
                                                 :key="ea.id"
                                                 :disabled="ea.disabled"
@@ -322,7 +457,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="badges">
                                         <template v-for="badge in props.badges">
                                             <BBadge
-                                                v-if="badge.visible"
+                                                v-if="badge.visible ?? true"
                                                 :id="getBadgeId(props.id, badge.id)"
                                                 :key="badge.id"
                                                 v-b-tooltip.hover.top.noninteractive
@@ -335,6 +470,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 :title="localize(badge.title)"
                                                 :variant="badge.variant || 'secondary'"
                                                 :to="badge.to"
+                                                :href="badge.href"
                                                 @click.stop="badge.handler">
                                                 <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
                                                 {{ localize(badge.label) }}
@@ -347,7 +483,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators">
                                             <BButton
-                                                v-if="indicator.visible && !indicator.disabled"
+                                                v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
                                                 v-b-tooltip.hover
@@ -367,7 +503,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 {{ localize(indicator.label) }}
                                             </BButton>
                                             <FontAwesomeIcon
-                                                v-else-if="indicator.visible && indicator.disabled"
+                                                v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
                                                 v-b-tooltip.hover
@@ -436,7 +572,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                     <template v-for="sa in props.secondaryActions">
                                         <BButton
-                                            v-if="sa.visible"
+                                            v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
                                             v-b-tooltip.hover
@@ -465,7 +601,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <slot name="primary-actions">
                                     <template v-for="pa in props.primaryActions">
                                         <BButton
-                                            v-if="pa.visible"
+                                            v-if="pa.visible ?? true"
                                             :id="getActionId(props.id, pa.id)"
                                             :key="pa.id"
                                             v-b-tooltip.hover
@@ -477,6 +613,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             :href="pa.href"
                                             :class="{
                                                 'inline-icon-button': pa.inline,
+                                                [String(pa.class)]: pa.class,
                                             }"
                                             @click.stop="pa.handler">
                                             <FontAwesomeIcon
