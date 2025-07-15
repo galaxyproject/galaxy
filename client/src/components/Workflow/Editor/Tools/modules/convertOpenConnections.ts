@@ -191,7 +191,7 @@ function outputConnectionsToWorkflowOutputs(
         if (!existingOutput) {
             step.workflow_outputs = step.workflow_outputs ?? [];
             step.workflow_outputs.push({
-                output_name: newOutputName,
+                output_name: connection.output_name,
                 label: newOutputName,
             });
         }
