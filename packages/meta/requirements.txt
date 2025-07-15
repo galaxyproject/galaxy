@@ -184,7 +184,7 @@ repoze-lru==0.7
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
 requests-unixsocket==0.4.1
-requests==2.32.3
+requests==2.32.4
 rich-argparse==1.7.0
 rich==13.9.4
 rocrate==0.13.0
