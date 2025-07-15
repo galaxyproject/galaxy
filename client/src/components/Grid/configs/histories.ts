@@ -333,7 +333,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         menuItem: true,
     },
     purged: {
-        placeholder: "Purged entries",
+        placeholder: "Purged",
         type: Boolean,
         boolType: "is",
         handler: equals("purged", "purged", toBool),
