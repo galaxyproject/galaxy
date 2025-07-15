@@ -45,7 +45,6 @@ const badges = [
         label: bytesToString(props.file.size, true, undefined),
         title: sizeLimitExceeded.value ? sizeLimitExceededMessage.value : "File size",
         icon: sizeLimitExceeded.value ? faExclamationTriangle : faDatabase,
-        visible: true,
         variant: sizeLimitExceeded.value ? "danger" : undefined,
     },
 ];

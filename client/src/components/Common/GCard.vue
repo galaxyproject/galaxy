@@ -225,7 +225,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <slot name="titleBadges">
                                     <template v-for="badge in props.titleBadges">
                                         <BBadge
-                                            v-if="badge.visible"
+                                            v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
                                             :key="badge.id"
                                             v-b-tooltip.hover
@@ -280,7 +280,10 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
                                 <slot name="extra-actions">
                                     <BDropdown
-                                        v-if="props.extraActions?.length && props.extraActions.some((ea) => ea.visible)"
+                                        v-if="
+                                            props.extraActions?.length &&
+                                            props.extraActions.some((ea) => ea.visible ?? true)
+                                        "
                                         :id="getElementId(props.id, 'extra-actions')"
                                         v-b-tooltip.hover.noninteractive
                                         right
@@ -296,7 +299,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 
                                         <template v-for="ea in props.extraActions">
                                             <BDropdownItem
-                                                v-if="ea.visible"
+                                                v-if="ea.visible ?? true"
                                                 :id="getActionId(props.id, ea.id)"
                                                 :key="ea.id"
                                                 :disabled="ea.disabled"
@@ -322,7 +325,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="badges">
                                         <template v-for="badge in props.badges">
                                             <BBadge
-                                                v-if="badge.visible"
+                                                v-if="badge.visible ?? true"
                                                 :id="getBadgeId(props.id, badge.id)"
                                                 :key="badge.id"
                                                 v-b-tooltip.hover.top.noninteractive
@@ -347,7 +350,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators">
                                             <BButton
-                                                v-if="indicator.visible && !indicator.disabled"
+                                                v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
                                                 v-b-tooltip.hover
@@ -367,7 +370,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 {{ localize(indicator.label) }}
                                             </BButton>
                                             <FontAwesomeIcon
-                                                v-else-if="indicator.visible && indicator.disabled"
+                                                v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
                                                 v-b-tooltip.hover
@@ -436,7 +439,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
                                     <template v-for="sa in props.secondaryActions">
                                         <BButton
-                                            v-if="sa.visible"
+                                            v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
                                             v-b-tooltip.hover
@@ -465,7 +468,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                 <slot name="primary-actions">
                                     <template v-for="pa in props.primaryActions">
                                         <BButton
-                                            v-if="pa.visible"
+                                            v-if="pa.visible ?? true"
                                             :id="getActionId(props.id, pa.id)"
                                             :key="pa.id"
                                             v-b-tooltip.hover

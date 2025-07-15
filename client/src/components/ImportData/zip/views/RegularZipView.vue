@@ -17,7 +17,6 @@ const zipFileBadges = [
         id: "file-count",
         label: `${files.value.length} file${files.value.length > 1 ? "s" : ""} available`,
         title: "Number of Files available to import",
-        visible: true,
     },
 ];
 </script>

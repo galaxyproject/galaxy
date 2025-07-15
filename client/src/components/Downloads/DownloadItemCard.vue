@@ -118,7 +118,6 @@ const primaryActions = computed(() => {
             title: `View details for ${prettyObjectType.value}`,
             variant: "outline-primary",
             handler: onGoToObject,
-            visible: true,
         },
     ];
 
@@ -130,7 +129,6 @@ const primaryActions = computed(() => {
             title: "Copy the download link to clipboard",
             variant: "outline-primary",
             handler: onCopyDownloadLink,
-            visible: true,
         });
         actions.push({
             id: "download",
@@ -139,7 +137,6 @@ const primaryActions = computed(() => {
             title: "Download the result",
             variant: "primary",
             handler: onDownload,
-            visible: true,
         });
     }
 
@@ -151,7 +148,6 @@ const primaryActions = computed(() => {
             title: "Remove this record from the list",
             variant: "outline-danger",
             handler: onRemove,
-            visible: true,
         });
     }
 
@@ -170,7 +166,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `${prettyObjectType.value} is being prepared for download`,
             label: "In Progress",
             variant: "info",
-            visible: true,
         });
     }
     if (canDownload.value) {
@@ -179,7 +174,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `Download ready for ${prettyObjectType.value}`,
             label: "Ready",
             variant: "success",
-            visible: true,
         });
     }
     if (hasFailed.value) {
@@ -188,7 +182,6 @@ const badges = computed<CardBadge[]>(() => {
             label: "Failed",
             title: `Failed to prepare ${prettyObjectType.value} for download`,
             variant: "danger",
-            visible: true,
         });
     } else if (hasExpired.value) {
         badges.push({
@@ -196,7 +189,6 @@ const badges = computed<CardBadge[]>(() => {
             label: "Expired",
             title: `Download request for ${prettyObjectType.value} has expired`,
             variant: "warning",
-            visible: true,
         });
     } else if (expirationDate.value && elapsedTimeToExpire.value) {
         badges.push({
@@ -205,7 +197,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `This download will expire on ${expirationDate.value.toLocaleString()}`,
             variant: "secondary",
             icon: faHourglassEnd,
-            visible: true,
         });
     }
     return badges;

@@ -70,7 +70,6 @@ const secondaryActions: CardAttributes[] = [
         icon: faEye,
         title: "View this history",
         handler: onViewHistoryInCenterPanel,
-        visible: true,
     },
     {
         id: "switch",
@@ -78,11 +77,10 @@ const secondaryActions: CardAttributes[] = [
         icon: faExchangeAlt,
         title: "Set as current history",
         handler: onSetAsCurrentHistory,
-        visible: true,
     },
 ];
 
-const primaryActions: CardAttributes[] = [
+const primaryActions: CardAction[] = [
     {
         id: "import-copy",
         label: "Import Copy",
@@ -100,7 +98,6 @@ const primaryActions: CardAttributes[] = [
         title: "Unarchive this history and move it back to your active histories",
         variant: !props.history.purged ? "primary" : "outline-primary",
         handler: onRestoreHistory,
-        visible: true,
     },
 ];
 </script>

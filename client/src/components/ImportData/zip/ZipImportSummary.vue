@@ -31,7 +31,6 @@ const workflowBadges = [
         id: "workflow-count",
         label: `${workflowFiles.value.length} workflow${workflowFiles.value.length > 1 ? "s" : ""}`,
         title: "Number of Workflows to import",
-        visible: true,
     },
 ];
 
@@ -40,14 +39,12 @@ const fileBadges = [
         id: "file-count",
         label: `${regularFiles.value.length} file${regularFiles.value.length > 1 ? "s" : ""}`,
         title: "Number of Files to import",
-        visible: true,
     },
     {
         id: "total-size",
         label: bytesToString(totalFileSize.value, true, undefined),
         title: "Total Size of Files to import",
         variant: "info",
-        visible: true,
     },
 ];
 </script>

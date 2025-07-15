@@ -171,7 +171,6 @@ export function useWorkflowCardActions(
         title: runButtonTitle.value,
         disabled: isAnonymous.value || workflow.value.deleted,
         to: `/workflows/run?id=${workflow.value.id}`,
-        visible: true,
     };
 
     const _workflowCommonActions: CardAttributes[] = [

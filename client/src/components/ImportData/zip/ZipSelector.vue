@@ -86,7 +86,6 @@ const localFileActions = [
         label: "Browse local archive",
         icon: faLaptop,
         handler: browseZipFile,
-        visible: true,
     },
 ];
 </script>
