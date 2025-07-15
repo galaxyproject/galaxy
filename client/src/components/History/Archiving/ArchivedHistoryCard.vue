@@ -3,7 +3,7 @@ import { faCopy, faDatabase, faExchangeAlt, faEye, faGlobe, faUndo } from "font-
 import { computed } from "vue";
 
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
-import type { CardAttributes } from "@/components/Common/GCard.types";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -39,7 +39,7 @@ async function onImportCopy() {
     emit("onImportCopy", props.history);
 }
 
-const badges: CardAttributes[] = [
+const badges: CardBadge[] = [
     {
         id: "published",
         label: "Published",
@@ -63,7 +63,7 @@ const badges: CardAttributes[] = [
     },
 ];
 
-const secondaryActions: CardAttributes[] = [
+const secondaryActions: CardAction[] = [
     {
         id: "view",
         label: "View",

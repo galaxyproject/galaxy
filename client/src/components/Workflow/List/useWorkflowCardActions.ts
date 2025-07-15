@@ -18,7 +18,7 @@ import { computed, type Ref } from "vue";
 import type { WorkflowSummary } from "@/api/workflows";
 import { undeleteWorkflow } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
-import type { CardAttributes } from "@/components/Common/GCard.types";
+import type { CardAction } from "@/components/Common/GCard.types";
 import {
     copyWorkflow as copyWorkflowService,
     deleteWorkflow as deleteWorkflowService,
@@ -164,7 +164,7 @@ export function useWorkflowCardActions(
         toast.success("Workflow imported successfully");
     }
 
-    const _workflowRunAction: CardAttributes = {
+    const _workflowRunAction: CardAction = {
         id: "workflow-run",
         label: editorView ? "Run" : "",
         icon: faPlay,
@@ -173,7 +173,7 @@ export function useWorkflowCardActions(
         to: `/workflows/run?id=${workflow.value.id}`,
     };
 
-    const _workflowCommonActions: CardAttributes[] = [
+    const _workflowCommonActions: CardAction[] = [
         {
             id: "workflow-link",
             label: "Link to Workflow",
@@ -208,7 +208,7 @@ export function useWorkflowCardActions(
         },
     ];
 
-    const workflowCardExtraActions: CardAttributes[] = [
+    const workflowCardExtraActions: CardAction[] = [
         {
             id: "workflow-delete",
             label: "Delete",
@@ -245,7 +245,7 @@ export function useWorkflowCardActions(
         },
     ];
 
-    const workflowCardSecondaryActions: CardAttributes[] = [
+    const workflowCardSecondaryActions: CardAction[] = [
         {
             id: "workflow-restore",
             label: "Restore",
@@ -274,7 +274,7 @@ export function useWorkflowCardActions(
         },
     ];
 
-    const workflowCardPrimaryActions: CardAttributes[] = [
+    const workflowCardPrimaryActions: CardAction[] = [
         {
             id: "workflow-edit",
             label: "Edit",

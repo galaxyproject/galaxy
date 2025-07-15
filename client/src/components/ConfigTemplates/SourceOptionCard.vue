@@ -6,7 +6,7 @@ import { computed } from "vue";
 import type { UserConcreteObjectStoreModel } from "@/api";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
-import type { CardAttributes } from "@/components/Common/GCard.types";
+import type { CardAction } from "@/components/Common/GCard.types";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -75,7 +75,7 @@ const quotaSourceLabel = computed(() => {
     return "";
 });
 
-const primaryActions = computed<CardAttributes[]>(() => [
+const primaryActions = computed<CardAction[]>(() => [
     {
         id: "select",
         label: buttonTitle.value,

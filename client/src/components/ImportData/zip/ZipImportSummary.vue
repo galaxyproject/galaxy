@@ -2,6 +2,7 @@
 import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
+import type { CardBadge } from "@/components/Common/GCard.types";
 import type { ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
@@ -26,7 +27,7 @@ const totalFileSize = computed(() => {
     return regularFiles.value.reduce((total, file) => total + file.size, 0);
 });
 
-const workflowBadges = [
+const workflowBadges: CardBadge[] = [
     {
         id: "workflow-count",
         label: `${workflowFiles.value.length} workflow${workflowFiles.value.length > 1 ? "s" : ""}`,
@@ -34,7 +35,7 @@ const workflowBadges = [
     },
 ];
 
-const fileBadges = [
+const fileBadges: CardBadge[] = [
     {
         id: "file-count",
         label: `${regularFiles.value.length} file${regularFiles.value.length > 1 ? "s" : ""}`,

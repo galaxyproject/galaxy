@@ -9,7 +9,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
-import type { CardAttributes, CardBadge, Title, TitleIcon } from "./GCard.types";
+import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize } from "./GCard.types";
 
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
@@ -31,31 +31,31 @@ interface Props {
     contentClass?: string | string[];
     /** Indicates if the card is marked as current */
     current?: boolean;
-    /** Description text for the card */
+    /** Description text for the card (supports Markdown) */
     description?: string;
-    /** Array of extra actions available for the card */
-    extraActions?: CardAttributes[];
+    /** Array of extra actions available for the card dropdown */
+    extraActions?: CardAction[];
     /** Indicates if the card is expanded to show full description */
     fullDescription?: boolean;
     /** Indicates if the card is displayed in grid view mode */
     gridView?: boolean;
     /** Array of indicators to display on the card */
-    indicators?: CardAttributes[];
-    /** Maximum number of visible tags */
+    indicators?: CardIndicator[];
+    /** Maximum number of visible tags before showing "show more" */
     maxVisibleTags?: number;
     /** Array of primary actions available for the card */
-    primaryActions?: CardAttributes[];
+    primaryActions?: CardAction[];
     /** Indicates if the card is published */
     published?: boolean;
-    /** Title for the rename action */
+    /** Title for the rename action button */
     renameTitle?: string;
     /** Indicates if the card title is editable */
     canRenameTitle?: boolean;
     /** Array of secondary actions available for the card */
-    secondaryActions?: CardAttributes[];
-    /** Indicates if the card is selectable */
+    secondaryActions?: CardAction[];
+    /** Indicates if the card is selectable via checkbox */
     selectable?: boolean;
-    /** Indicates if the card is selected */
+    /** Indicates if the card is currently selected */
     selected?: boolean;
     /** Title for the card select checkbox */
     selectTitle?: string;
@@ -72,7 +72,7 @@ interface Props {
     /** Icon to display before the card title */
     titleIcon?: TitleIcon;
     /** Size of the card title */
-    titleSize?: "xl" | "lg" | "md" | "sm" | "text";
+    titleSize?: TitleSize;
     /** Icon to display before the update time */
     updateTimeIcon?: IconDefinition;
     /** Timestamp of the last update to the card */
@@ -132,6 +132,7 @@ async function toggleBookmark() {
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
+// Helper functions for generating consistent element IDs
 const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
@@ -338,6 +339,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 :title="localize(badge.title)"
                                                 :variant="badge.variant || 'secondary'"
                                                 :to="badge.to"
+                                                :href="badge.href"
                                                 @click.stop="badge.handler">
                                                 <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
                                                 {{ localize(badge.label) }}
@@ -480,6 +482,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             :href="pa.href"
                                             :class="{
                                                 'inline-icon-button': pa.inline,
+                                                [String(pa.class)]: pa.class,
                                             }"
                                             @click.stop="pa.handler">
                                             <FontAwesomeIcon

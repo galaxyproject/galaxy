@@ -12,7 +12,7 @@ import { BAlert } from "bootstrap-vue";
 import { formatDistanceToNow } from "date-fns";
 import { computed, onUnmounted, watch } from "vue";
 
-import type { CardBadge } from "@/components/Common/GCard.types";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import type { MonitoringData, MonitoringRequest } from "@/composables/persistentProgressMonitor";
 import { usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
@@ -110,7 +110,7 @@ const canDownload = computed(() => {
 });
 
 const primaryActions = computed(() => {
-    const actions = [
+    const actions: CardAction[] = [
         {
             id: "go-to-object",
             label: `Go to ${prettyObjectType.value}`,
