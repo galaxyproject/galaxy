@@ -14,7 +14,7 @@ import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from "@/components/Common";
-import type { CardAttributes, CardBadge } from "@/components/Common/GCard.types";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -39,8 +39,8 @@ const emit = defineEmits<{
     (e: "onCopyDownloadLink", record: ExportRecord): void;
 }>();
 
-const primaryActions = computed<CardAttributes[]>(() => {
-    const actions = [];
+const primaryActions = computed<CardAction[]>(() => {
+    const actions: CardAction[] = [];
 
     if (props.record.canDownload) {
         actions.push({
@@ -50,7 +50,6 @@ const primaryActions = computed<CardAttributes[]>(() => {
             title: "Copy the download link to clipboard",
             variant: "outline-primary",
             handler: () => emit("onCopyDownloadLink", props.record),
-            visible: true,
         });
         actions.push({
             id: "download",
@@ -59,7 +58,6 @@ const primaryActions = computed<CardAttributes[]>(() => {
             title: "Download the result",
             variant: "primary",
             handler: () => emit("onDownload", props.record),
-            visible: true,
         });
     }
 
@@ -71,7 +69,6 @@ const primaryActions = computed<CardAttributes[]>(() => {
             title: `Reimport the ${props.objectType} from this export record`,
             variant: "primary",
             handler: () => emit("onReimport", props.record),
-            visible: true,
         });
     }
 
@@ -86,7 +83,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `${props.objectType} is being prepared for download`,
             label: "In Progress",
             variant: "info",
-            visible: true,
         });
     }
     if (props.record.canDownload) {
@@ -95,7 +91,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `${props.objectType} is ready to download`,
             label: "Ready to Download",
             variant: "success",
-            visible: true,
         });
     }
     if (props.record.hasFailed) {
@@ -104,7 +99,6 @@ const badges = computed<CardBadge[]>(() => {
             title: `Failed to prepare ${props.objectType} for download`,
             label: "Failed",
             variant: "danger",
-            visible: true,
         });
     } else if (props.record.canExpire) {
         if (props.record.hasExpired) {
@@ -114,7 +108,6 @@ const badges = computed<CardBadge[]>(() => {
                 label: "Expired",
                 variant: "warning",
                 icon: faHourglassEnd,
-                visible: true,
             });
         } else {
             badges.push({
@@ -123,7 +116,6 @@ const badges = computed<CardBadge[]>(() => {
                 title: `The ${props.objectType} was exported ${props.record.elapsedTime} and this download link will expire in ${props.record.expirationElapsedTime}`,
                 variant: "warning",
                 icon: faHourglassEnd,
-                visible: true,
             });
         }
     }
