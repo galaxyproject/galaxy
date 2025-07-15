@@ -11807,12 +11807,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string | null;
+            latest_installable_revision?: string | null;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string | null;
+            repository_deprecated?: string | null;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
@@ -11875,7 +11875,7 @@ export interface components {
              */
             tool_shed: string;
             /** Latest updated status from the tool shed */
-            tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
+            tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
         };
