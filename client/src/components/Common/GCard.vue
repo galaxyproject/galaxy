@@ -17,67 +17,159 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
-    /** Unique identifier for the card */
+    /** Unique identifier for the card
+     * @default useUid("g-card-").value
+     */
     id?: string;
-    /** Array of badges to display on the card */
+
+    /** Badges displayed in the top-right corner
+     * @default []
+     */
     badges?: CardBadge[];
-    /** Indicates if the card is bookmarked */
+
+    /** Whether the card is bookmarked
+     * @default undefined
+     */
     bookmarked?: boolean;
-    /** Indicates if the card is clickable */
+
+    /** Whether the card is clickable (emits click events)
+     * @default undefined
+     */
     clickable?: boolean;
-    /** Additional CSS classes for the card container */
+
+    /** Additional CSS classes for the card container
+     * @default ""
+     */
     containerClass?: string | string[];
-    /** Additional CSS classes for the card content */
+
+    /** Additional CSS classes for the card content
+     * @default ""
+     */
     contentClass?: string | string[];
-    /** Indicates if the card is marked as current */
+
+    /** Whether the card is marked as current/active
+     * @default false
+     */
     current?: boolean;
-    /** Description text for the card (supports Markdown) */
+
+    /** Description text (supports Markdown)
+     * @default ""
+     */
     description?: string;
-    /** Array of extra actions available for the card dropdown */
+
+    /** Extra actions shown in dropdown menu
+     * @default []
+     */
     extraActions?: CardAction[];
-    /** Indicates if the card is expanded to show full description */
+
+    /** Whether to show full description (no truncation)
+     * @default undefined
+     */
     fullDescription?: boolean;
-    /** Indicates if the card is displayed in grid view mode */
+
+    /** Whether displayed in grid view mode
+     * @default false
+     */
     gridView?: boolean;
-    /** Array of indicators to display on the card */
+
+    /** Indicators shown as small buttons/icons
+     * @default []
+     */
     indicators?: CardIndicator[];
-    /** Maximum number of visible tags before showing "show more" */
+
+    /** Max visible tags before "show more"
+     * @default 3
+     */
     maxVisibleTags?: number;
-    /** Array of primary actions available for the card */
+
+    /** Primary actions in card footer
+     * @default []
+     */
     primaryActions?: CardAction[];
-    /** Indicates if the card is published */
+
+    /** Whether the card represents published content
+     * @default false
+     */
     published?: boolean;
-    /** Title for the rename action button */
+
+    /** Tooltip text for rename button
+     * @default "Rename"
+     */
     renameTitle?: string;
-    /** Indicates if the card title is editable */
+
+    /** Whether the card title is editable
+     * @default false
+     */
     canRenameTitle?: boolean;
-    /** Array of secondary actions available for the card */
+
+    /** Secondary actions in card footer
+     * @default []
+     */
     secondaryActions?: CardAction[];
-    /** Indicates if the card is selectable via checkbox */
+
+    /** Whether the card is selectable via checkbox
+     * @default false
+     */
     selectable?: boolean;
-    /** Indicates if the card is currently selected */
+
+    /** Whether the card is currently selected
+     * @default false
+     */
     selected?: boolean;
-    /** Title for the card select checkbox */
+
+    /** Tooltip text for select checkbox
+     * @default ""
+     */
     selectTitle?: string;
-    /** Indicates if the bookmark button is displayed */
+
+    /** Whether to show bookmark button
+     * @default undefined
+     */
     showBookmark?: boolean;
-    /** Array of tags associated with the card */
+
+    /** Tags displayed in card footer
+     * @default []
+     */
     tags?: string[];
-    /** Indicates if the card tags are editable */
+
+    /** Whether tags are editable/clickable
+     * @default false
+     */
     tagsEditable?: boolean;
-    /** Title of the card, can be a string or an object with label, title, and handler */
+
+    /** Card title (string or interactive object)
+     * @default ""
+     */
     title?: Title;
-    /** Array of badges to display next to the card title */
+
+    /** Badges displayed next to title
+     * @default []
+     */
     titleBadges?: CardBadge[];
-    /** Icon to display before the card title */
+
+    /** Icon displayed before title
+     * @default undefined
+     */
     titleIcon?: TitleIcon;
-    /** Size of the card title */
+
+    /** Size of the card title
+     * @default "sm"
+     */
     titleSize?: TitleSize;
-    /** Icon to display before the update time */
+
+    /** Icon for update time badge
+     * @default faEdit
+     */
     updateTimeIcon?: IconDefinition;
-    /** Timestamp of the last update to the card */
+
+    /** Last update timestamp
+     * @default ""
+     */
     updateTime?: string;
-    /** Tooltip title for the update time */
+
+    /** Tooltip for update time badge
+     * @default "Last updated"
+     */
     updateTimeTitle?: string;
 }
 
@@ -111,19 +203,56 @@ const props = withDefaults(defineProps<Props>(), {
     updateTimeTitle: "Last updated",
 });
 
+/**
+ * Events emitted by the GCard component
+ */
 const emit = defineEmits<{
+    /** Emitted when card is clicked
+     * @event click
+     */
     (e: "click"): void;
-    (e: "bookmark"): void;
+
+    /** Emitted when bookmark button is clicked
+     * @event bookmark
+     */
+    (e: "bookmark"): Promise<void>;
+
+    /** Emitted when dropdown opens/closes
+     * @event dropdown
+     */
     (e: "dropdown", open: boolean): void;
+
+    /** Emitted when rename button is clicked
+     * @event rename
+     */
     (e: "rename"): void;
+
+    /** Emitted when selection checkbox is toggled
+     * @event select
+     */
     (e: "select"): void;
+
+    /** Emitted when title is clicked
+     * @event titleClick
+     */
     (e: "titleClick"): void;
+
+    /** Emitted when tag is clicked
+     * @event tagClick
+     */
     (e: "tagClick", tag: string): void;
+
+    /** Emitted when tags are updated
+     * @event tagsUpdate
+     */
     (e: "tagsUpdate", tags: string[]): void;
 }>();
 
 const bookmarkLoading = ref(false);
 
+/**
+ * Toggles bookmark status with loading state
+ */
 async function toggleBookmark() {
     bookmarkLoading.value = true;
     await emit("bookmark");
@@ -132,7 +261,9 @@ async function toggleBookmark() {
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-// Helper functions for generating consistent element IDs
+/**
+ * Helper functions for generating consistent element IDs
+ */
 const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
