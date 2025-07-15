@@ -20798,15 +20798,6 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * Groups
-             * @description The groups of the plugin.
-             */
-            groups?:
-                | {
-                      [key: string]: unknown;
-                  }[]
-                | null;
-            /**
              * Href
              * @description The href of the plugin.
              */
@@ -20830,9 +20821,11 @@ export interface components {
              * Settings
              * @description The settings of the plugin.
              */
-            settings: {
-                [key: string]: unknown;
-            }[];
+            settings?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Specs
              * @description The specs of the plugin.
@@ -20850,6 +20843,15 @@ export interface components {
              * @description The title of the plugin.
              */
             title?: string | null;
+            /**
+             * Tracks
+             * @description The tracks of the plugin.
+             */
+            tracks?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
         };
         /** VisualizationRevisionResponse */
         VisualizationRevisionResponse: {
