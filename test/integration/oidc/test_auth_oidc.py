@@ -73,7 +73,7 @@ def wait_till_app_ready(url, timeout=60):
     start = time.time()
     while time.time() - start < timeout:
         try:
-            response = requests.get(url, verify=False, timeout=2)
+            response = requests.get(url, verify=False, timeout=(1,5))
             if response.status_code in (200, 302):  # allow redirect to login etc.
                 return True
         except requests.exceptions.RequestException:
