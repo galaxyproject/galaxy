@@ -484,8 +484,8 @@
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <datatype extension="4dn_pairs" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true" description="The pairs format is a standard text format for pairs of genomic loci given as 1bp point positions" description_url="https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md#pairs-file"/>
-    <datatype extension="4dn_pairsam" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true" description="A simple tabular format to store the information on ligation junctions detected in sequences from Hi-C experiments." description_url="https://pairsamtools.readthedocs.io/en/latest/pairsam.html"/>
+    <datatype extension="4dn_pairs" auto_compressed_types="gz" type="galaxy.datatypes.tabular:FourDNPairs" display_in_upload="true" description="The pairs format is a standard text format for pairs of genomic loci given as 1bp point positions" description_url="https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md#pairs-file"/>
+    <datatype extension="4dn_pairsam" auto_compressed_types="gz" type="galaxy.datatypes.tabular:FourDNPairsam" display_in_upload="true" description="A simple tabular format to store the information on ligation junctions detected in sequences from Hi-C experiments." description_url="https://pairsamtools.readthedocs.io/en/latest/pairsam.html"/>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf" display_in_upload="true"/>
     <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -1362,6 +1362,8 @@
     <sniffer type="galaxy.datatypes.tabular:Psl"/>
     <sniffer type="galaxy.datatypes.text:Paf"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
+    <sniffer type="galaxy.datatypes.tabular:FourDNPairs"/>
+    <sniffer type="galaxy.datatypes.tabular:FourDNPairsam"/>
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
