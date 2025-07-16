@@ -634,7 +634,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         const partialWorkflow = {
             comments,
             steps,
-            name: this.name,
+            name: this.workflowName,
             id: this.workflowId,
             annotation: "",
         };
