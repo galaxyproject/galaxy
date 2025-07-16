@@ -250,7 +250,12 @@ onUnmounted(() => {
                     @onReimport="reimportFromRecord"
                     @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
 
-                <GButton v-if="hasPreviousExports" outline color="blue" @click="onShowOldRecords">
+                <GButton
+                    v-if="hasPreviousExports"
+                    id="show-old-records-button"
+                    outline
+                    color="blue"
+                    @click="onShowOldRecords">
                     <FontAwesomeIcon :icon="faList" class="mr-1" />
                     Show old export records
                 </GButton>
