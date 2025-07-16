@@ -2,7 +2,6 @@ import os
 from tempfile import mkdtemp
 from typing import (
     Any,
-    Dict,
 )
 
 from sqlalchemy import select
@@ -409,7 +408,7 @@ def _assert_one_library_created(sa_session):
     return new_library
 
 
-def _import_library_target(target: Dict[str, Any], work_directory: str):
+def _import_library_target(target: dict[str, Any], work_directory: str):
     app = _mock_app()
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, serialize_dataset_objects=True) as export_store:

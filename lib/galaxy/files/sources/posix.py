@@ -2,9 +2,7 @@ import functools
 import os
 import shutil
 from typing import (
-    List,
     Optional,
-    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -70,14 +68,14 @@ class PosixFilesSource(BaseFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         if not self.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
         if recursive:
-            res: List[AnyRemoteEntry] = []
+            res: list[AnyRemoteEntry] = []
             effective_root = self._effective_root(user_context)
             for p, dirs, files in safe_walk(dir_path, allowlist=self._allowlist):
                 rel_dir = os.path.relpath(p, effective_root)

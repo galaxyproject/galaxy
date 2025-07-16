@@ -30,8 +30,6 @@ import os
 import re
 import shutil
 from typing import (
-    Dict,
-    List,
     TYPE_CHECKING,
     Union,
 )
@@ -100,7 +98,7 @@ class ToolBoxSearch:
     """
 
     def __init__(self, toolbox: "ToolBox", index_dir: str, index_help: bool = True) -> None:
-        panel_searches: Dict[str, ToolPanelViewSearch] = {}
+        panel_searches: dict[str, ToolPanelViewSearch] = {}
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
@@ -122,7 +120,7 @@ class ToolBoxSearch:
         for panel_search in self.panel_searches.values():
             panel_search.build_index(tool_cache, toolbox, index_help=index_help)
 
-    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> List[str]:
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self.panel_searches:
             raise KeyError(f"Unknown panel_view specified {panel_view}")
         panel_search = self.panel_searches[panel_view]
@@ -242,7 +240,7 @@ class ToolPanelViewSearch:
 
         log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
-    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> List[str]:
+    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> list[str]:
         """Return list of tool IDs to be removed from index."""
         tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
             tool_cache._removed_tool_ids
@@ -260,9 +258,9 @@ class ToolPanelViewSearch:
 
         return list(tool_ids_to_remove)
 
-    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> List["Tool"]:
+    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> list["Tool"]:
         """Return list of tools to add and remove from index."""
-        tools_to_index: List[Tool] = []
+        tools_to_index: list[Tool] = []
 
         for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
             tool = toolbox.get_tool(tool_id)
@@ -287,7 +285,7 @@ class ToolPanelViewSearch:
         self,
         tool: "Tool",
         index_help: bool = True,
-    ) -> Dict[str, Union[str, List[str]]]:
+    ) -> dict[str, Union[str, list[str]]]:
         def clean(s: str) -> str:
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in s:
@@ -298,7 +296,7 @@ class ToolPanelViewSearch:
         if tool.tool_type == "manage_data":
             #  Do not add data managers to the public index
             return {}
-        add_doc_kwds: Dict[str, Union[str, List[str]]] = {
+        add_doc_kwds: dict[str, Union[str, list[str]]] = {
             "id": unicodify(tool.id),
             "id_exact": unicodify(tool.id),
             "name": clean(tool.name),
@@ -336,7 +334,7 @@ class ToolPanelViewSearch:
         self,
         q: str,
         config: GalaxyAppConfiguration,
-    ) -> List[str]:
+    ) -> list[str]:
         """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(

@@ -11,9 +11,7 @@ from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -315,7 +313,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: Dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -334,7 +332,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
-        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -942,8 +940,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # Look for an existing history that has the default name, is not
         # deleted, and is empty. If this exists, we associate it with the
         # current session and return it.
-        user = self.galaxy_session.user
-        if user:
+        if user := self.galaxy_session.user:
             stmt = select(History).filter_by(user=user, name=History.default_name, deleted=False)
             unnamed_histories = self.sa_session.scalars(stmt)
             for history in unnamed_histories:

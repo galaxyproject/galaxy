@@ -6,8 +6,6 @@ import wave
 from functools import lru_cache
 from typing import (
     cast,
-    List,
-    Tuple,
 )
 
 from galaxy.datatypes.binary import Binary
@@ -121,11 +119,11 @@ def _get_file_format_from_magic_number(filename: str, file_ext: str):
         if "string" in magic_number[file_ext]:
             string_check = any(
                 head.startswith(string_code.encode("iso-8859-1"))
-                for string_code in cast(List[str], magic_number[file_ext]["string"])
+                for string_code in cast(list[str], magic_number[file_ext]["string"])
             )
         if "hex" in magic_number[file_ext]:
             hex_check = any(
-                head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(List[str], magic_number[file_ext]["hex"])
+                head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(list[str], magic_number[file_ext]["hex"])
             )
         return string_check or hex_check
 
@@ -245,7 +243,7 @@ class Video(Binary):
         no_value=0,
     )
 
-    def _get_resolution(self, streams: List) -> Tuple[int, int, float]:
+    def _get_resolution(self, streams: list) -> tuple[int, int, float]:
         for stream in streams:
             if stream["codec_type"] == "video":
                 w = stream["width"]

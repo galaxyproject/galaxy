@@ -46,6 +46,10 @@ import asyncio
 import logging
 import re
 from abc import ABC
+from collections.abc import (
+    AsyncIterator,
+    Iterable,
+)
 from datetime import (
     datetime,
     timezone,
@@ -55,16 +59,11 @@ from textwrap import dedent
 from time import time
 from typing import (
     Any,
-    AsyncIterator,
     cast,
-    Dict,
     Generic,
     get_type_hints,
-    Iterable,
-    List,
     Literal,
     Optional,
-    Tuple,
     TypeVar,
 )
 from urllib.parse import (
@@ -282,7 +281,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         return urlparse(endpoint)
 
     def _serialization_props(self, user_context: OptionalUserContext = None) -> eLabFTWFilesSourceProperties:
-        effective_props: Dict[str, Any] = {}
+        effective_props: dict[str, Any] = {}
 
         for key, val in self._props.items():
             if key in {"api_key", "endpoint"} and user_context is None:
@@ -308,7 +307,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
         # from Python 3.9 on, the following would be possible, although barely readable
         # `sort_by: Optional[Literal[*(get_type_hints(RemoteDirectory) | get_type_hints(RemoteFile)).keys()]] = None,`
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List the contents of an eLabFTW endpoint.
 
@@ -350,7 +349,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         sort_by: Optional[str] = None,
         # in particular, expecting
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List remote entries in a remote directory.
 
@@ -408,7 +407,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 """
                 return [value async for value in async_iter]
 
-            fetch_entity_types_tasks: List[asyncio.Task] = (
+            fetch_entity_types_tasks: list[asyncio.Task] = (
                 # fmt: off
                 [
                     asyncio.create_task(
@@ -425,7 +424,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 if retrieve_entity_types
                 else []
             )
-            fetch_entities_tasks: List[asyncio.Task] = (
+            fetch_entities_tasks: list[asyncio.Task] = (
                 [
                     asyncio.create_task(
                         collect_async_iterator(
@@ -474,7 +473,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 if retrieve_entities
                 else []
             )
-            fetch_attachments_tasks: List[asyncio.Task] = (
+            fetch_attachments_tasks: list[asyncio.Task] = (
                 # fetching attachments is "bearable" for the user up to ~500 experiments + resources with attachments;
                 # if eLabFTW allowed listing attachments without having to send individual requests for each experiment
                 # or resource, this would not be a concern
@@ -507,17 +506,17 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 else []
             )
 
-            wrapped_entity_types: List[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
+            wrapped_entity_types: list[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
                 wrapped_entity_type
                 for wrapped_entity_types in await asyncio.gather(*fetch_entity_types_tasks)
                 for wrapped_entity_type in wrapped_entity_types
             ]
-            wrapped_entities: List[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
+            wrapped_entities: list[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
                 wrapped_entity
                 for wrapped_entities in await asyncio.gather(*fetch_entities_tasks)
                 for wrapped_entity in wrapped_entities
             ]
-            wrapped_attachments: List[eLabFTWRemoteEntryWrapper[RemoteFile]] = [
+            wrapped_attachments: list[eLabFTWRemoteEntryWrapper[RemoteFile]] = [
                 wrapped_attachment
                 for wrapped_attachments in await asyncio.gather(*fetch_attachments_tasks)
                 for wrapped_attachment in wrapped_attachments
@@ -659,10 +658,10 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         if query:
             params.update({"q": query})
 
-        content: List[dict] = [{}] * params["limit"]  # stores JSON responses (entities) from the server
+        content: list[dict] = [{}] * params["limit"]  # stores JSON responses (entities) from the server
         start, timeout = time(), False
         while len(content) >= params["limit"] and not (timeout := ((time() - start) >= PAGINATION_TIMEOUT)):
-            entities: Dict[int, dict] = {}
+            entities: dict[int, dict] = {}
 
             async with session.get(
                 url,
@@ -674,7 +673,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     status: int = response.status
                     content = await response.json()
 
-                    def validate_and_register_entity(item, mapping: Dict[int, dict]) -> Literal[True]:
+                    def validate_and_register_entity(item, mapping: dict[int, dict]) -> Literal[True]:
                         valid = isinstance(item, dict) and isinstance(item.get("id"), int)
                         if not valid:
                             raise ValidationError(err_msg="Invalid response from eLabFTW")
@@ -904,7 +903,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             raise exception
 
 
-def split_path(path: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def split_path(path: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Split and validate an eLabFTW path.
 

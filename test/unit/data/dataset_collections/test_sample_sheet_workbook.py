@@ -1,6 +1,5 @@
 import base64
 import os
-from typing import List
 
 from galaxy.model.dataset_collections.types.sample_sheet_util import (
     SampleSheetColumnDefinitionsModel,
@@ -141,7 +140,7 @@ class MockDatasetCollectionElement(DatasetCollectionElementLike):
 
 
 class MockDatasetCollection(DatasetCollectionLike):
-    elements: List[DatasetCollectionElementLike]
+    elements: list[DatasetCollectionElementLike]
     collection_type: str = "list"
 
     def __init__(self, id: int):

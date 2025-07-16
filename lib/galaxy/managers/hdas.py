@@ -10,10 +10,7 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -405,7 +402,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         offset: Optional[int],
         limit: Optional[int],
         order: Optional[StoredItemOrderBy],
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         stmt = (
             select(
                 HistoryDatasetAssociation.id,
@@ -437,11 +434,11 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         ]
         return discarded
 
-    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+    def cleanup_items(self, user: model.User, item_ids: set[int]) -> StorageItemsCleanupResult:
         success_item_count = 0
         total_free_bytes = 0
-        errors: List[StorageItemCleanupError] = []
-        dataset_ids_to_remove: Set[int] = set()
+        errors: list[StorageItemCleanupError] = []
+        dataset_ids_to_remove: set[int] = set()
 
         for hda_id in item_ids:
             try:
@@ -469,7 +466,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             errors=errors,
         )
 
-    def _request_full_delete_all(self, dataset_ids_to_remove: Set[int], user: Optional[model.User]):
+    def _request_full_delete_all(self, dataset_ids_to_remove: set[int], user: Optional[model.User]):
         use_tasks = self.dataset_manager.app.config.enable_celery_tasks
         request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
         if use_tasks:
@@ -581,7 +578,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
@@ -645,7 +642,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing new-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if hda.state == HistoryDatasetAssociation.states.OK and not hda.deleted:
             for display_app in hda.get_display_applications(trans).values():
                 app_links = []
@@ -667,7 +664,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing old-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if (
             self.app.config.enable_old_display_applications
             and hda.state == HistoryDatasetAssociation.states.OK

@@ -3,7 +3,6 @@
 from typing import (
     Any,
     cast,
-    Dict,
     Optional,
     Union,
 )
@@ -103,8 +102,8 @@ def assert_error_message_contains(response: Union[Response, dict], expected_cont
     assert expected_contains in err_msg, f"Expected error message [{err_msg}] to contain [{expected_contains}]."
 
 
-def _as_dict(response: Union[Response, dict]) -> Dict[str, Any]:
-    as_dict: Dict[str, Any]
+def _as_dict(response: Union[Response, dict]) -> dict[str, Any]:
+    as_dict: dict[str, Any]
     if isinstance(response, Response):
         as_dict = cast(dict, response.json())
     else:

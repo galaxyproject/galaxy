@@ -1,11 +1,8 @@
 from dataclasses import dataclass
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -72,7 +69,7 @@ class DatasetCollectionElementLike(Protocol):
 class DatasetCollectionLike(Protocol):
     id: int
     collection_type: str
-    elements: List[DatasetCollectionElementLike]
+    elements: list[DatasetCollectionElementLike]
 
 
 # mypy doesn't recognize "str" and "Mapped[str]" as compatible type signatures,
@@ -84,9 +81,9 @@ AnyDatasetCollection = Union["DatasetCollection", DatasetCollectionLike]
 DEFAULT_TITLE = "Sample Sheet for Galaxy"
 URI_HELP = "The URL/URI for the target file."
 
-PrefixRowValuesT = List[List[SampleSheetColumnValueT]]
+PrefixRowValuesT = list[list[SampleSheetColumnValueT]]
 InternalSampleSheetColumnValueT = Union[SampleSheetColumnValueT, "ModelObjectPrefixValue"]
-InternalPrefixRowValuesT = List[List[InternalSampleSheetColumnValueT]]
+InternalPrefixRowValuesT = list[list[InternalSampleSheetColumnValueT]]
 
 CreateTitleField = Field(
     DEFAULT_TITLE,
@@ -94,7 +91,7 @@ CreateTitleField = Field(
     description="A short title to give the workbook.",
 )
 
-ColumnDefinitionsField: List[SampleSheetColumnDefinitionModel] = Field(
+ColumnDefinitionsField: list[SampleSheetColumnDefinitionModel] = Field(
     ...,
     title="Column Descriptions",
     description="A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'",
@@ -115,12 +112,12 @@ SampleSheetCollectionType = Literal[
     "sample_sheet", "sample_sheet:paired", "sample_sheet:paired_or_unpaired", "sample_sheet:record"
 ]
 
-ParsedRow = Dict[str, SampleSheetColumnValueT]
-ParsedRows = List[ParsedRow]
+ParsedRow = dict[str, SampleSheetColumnValueT]
+ParsedRows = list[ParsedRow]
 
 AnyLogMessage = Union[InferredColumnMapping, ContentTypeMessage, CsvDialectInferenceMessage]
 
-SampleSheetParseLog = List[AnyLogMessage]
+SampleSheetParseLog = list[AnyLogMessage]
 
 
 class ParsedWorkbook(BaseModel):
@@ -128,7 +125,7 @@ class ParsedWorkbook(BaseModel):
     # extra columns contained in the supplied workbook that have relevant Galaxy metadata
     # maybe should be thought of as "suffix_columns" since they are after the prefix columns
     # and user-defined columns.
-    extra_columns: List[ParsedColumn]
+    extra_columns: list[ParsedColumn]
     parse_log: SampleSheetParseLog
 
 
@@ -136,7 +133,7 @@ class CreateWorkbookRequest(BaseModel):
     title: str = CreateTitleField
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI"] = "URI"
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     prefix_values: Optional[PrefixRowValuesT] = None
 
 
@@ -144,14 +141,14 @@ class CreateWorkbookRequest(BaseModel):
 class CreateWorkbookRequestForCollection:
     title: str
     dataset_collection: AnyDatasetCollection
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
 
 
 class CreateWorkbook(BaseModel):
     title: str = CreateTitleField
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI", "ModelObjects"] = "URI"
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     prefix_values: Optional[InternalPrefixRowValuesT] = None
 
 
@@ -159,20 +156,20 @@ class CreateWorkbook(BaseModel):
 class CreateWorkbookForCollection:
     title: str
     dataset_collection: AnyDatasetCollection
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
 
 
 class ParseWorkbook(BaseModel):
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI", "ModelObjects"] = "URI"
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     content: str = WorkbookContentField
 
 
 @dataclass
 class ParseWorkbookForCollection:
     dataset_collection: AnyDatasetCollection
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     content: str = WorkbookContentField
 
 
@@ -188,8 +185,8 @@ INSTRUCTIONS = [
 
 # the first columns are very different based on what we're creating here, TODO write instructions
 # for each collection type
-INSTRUCTIONS_BY_COLLECTION_TYPE: Dict[SampleSheetCollectionType, List[str]] = cast(
-    Dict[SampleSheetCollectionType, List[str]],
+INSTRUCTIONS_BY_COLLECTION_TYPE: dict[SampleSheetCollectionType, list[str]] = cast(
+    dict[SampleSheetCollectionType, list[str]],
     {
         "sample_sheet": INSTRUCTIONS,
         "sample_sheet:paired": INSTRUCTIONS,
@@ -273,7 +270,7 @@ def _normalize_rows(rows: ParsedRows, payload: AnyParseWorkbook) -> None:
 
 def _read_extra_column_headers(
     workbook: ReadOnlyWorkbook, payload: AnyParseWorkbook
-) -> Tuple[List[HeaderColumn], List[InferredColumnMapping]]:
+) -> tuple[list[HeaderColumn], list[InferredColumnMapping]]:
     required_prefix_columns = prefix_columns(payload)
     required_column_names = [c.name for c in required_prefix_columns] + [c.name for c in payload.column_definitions]
     num_required_columns = len(required_column_names)
@@ -345,7 +342,7 @@ def generate_workbook(payload: CreateWorkbook) -> Workbook:
     column_definitions = payload.column_definitions
     the_prefix_columns = prefix_columns(payload)
     num_initial_columns = len(the_prefix_columns)
-    headers: List[HasHelp] = [c.has_help for c in the_prefix_columns] + [
+    headers: list[HasHelp] = [c.has_help for c in the_prefix_columns] + [
         HasHelp(cd.name, cd.description or "") for cd in column_definitions
     ]
     worksheet.append([h.title for h in headers])
@@ -415,7 +412,7 @@ def generate_workbook(payload: CreateWorkbook) -> Workbook:
             worksheet.cell(row=row_index + prefix_rows_offset, column=column_index + 1, value=col_value)
 
     if prefix_column_types == "ModelObjects":
-        model_object_prefix_values = cast(List[ModelObjectPrefixValue], payload.prefix_values)
+        model_object_prefix_values = cast(list[ModelObjectPrefixValue], payload.prefix_values)
         _lock_sheet_for_existing_collection(worksheet, model_object_prefix_values, column_definitions)
 
         # Add another worksheet - is this what caused "corruption"?
@@ -433,7 +430,7 @@ def generate_workbook_for_collection(payload: CreateWorkbookForCollection) -> Wo
     input_collection_type = payload.dataset_collection.collection_type
     sample_sheet_collection_type = _list_to_sample_sheet_collection_type(input_collection_type)
 
-    prefix_values: List[List[ModelObjectPrefixValue]] = []
+    prefix_values: list[list[ModelObjectPrefixValue]] = []
     for element in payload.dataset_collection.elements:
         prefix_values.append([ModelObjectPrefixValue.from_dataset_collection_element(element)])
 
@@ -472,7 +469,7 @@ class FetchPrefixColumn:
         return HasHelp(title=self.title, help=self.title)
 
 
-def prefix_columns(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> List[FetchPrefixColumn]:
+def prefix_columns(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> list[FetchPrefixColumn]:
     if isinstance(payload, (CreateWorkbook, ParseWorkbook)):
         collection_type = payload.collection_type
         columns_type = payload.prefix_columns_type
@@ -519,7 +516,7 @@ def prefix_columns(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> List[Fet
     return columns
 
 
-def prefix_column_names(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> List[str]:
+def prefix_column_names(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> list[str]:
     return [c.title for c in prefix_columns(payload)]
 
 
@@ -548,8 +545,8 @@ def _add_prefix_column_validations(payload: CreateWorkbook, worksheet: Worksheet
 
 def _lock_sheet_for_existing_collection(
     worksheet: Worksheet,
-    prefix_values: List[ModelObjectPrefixValue],
-    column_definitions: List[SampleSheetColumnDefinitionModel],
+    prefix_values: list[ModelObjectPrefixValue],
+    column_definitions: list[SampleSheetColumnDefinitionModel],
 ) -> None:
     worksheet.protection.sheet = True
     for column_prefix_index in range(len(column_definitions)):
@@ -567,7 +564,7 @@ def _add_validation(column: str, data_validation: DataValidation, worksheet: Wor
 
 
 def _load_row_data(
-    workbook: ReadOnlyWorkbook, payload: AnyParseWorkbook, extra_columns: List[HeaderColumn]
+    workbook: ReadOnlyWorkbook, payload: AnyParseWorkbook, extra_columns: list[HeaderColumn]
 ) -> ParsedRows:
     rows: ParsedRows = []
 

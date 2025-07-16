@@ -7,16 +7,12 @@ import logging
 import math
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 from typing import (
     Any,
     cast,
-    Dict,
     get_args,
-    Iterable,
-    List,
     Optional,
-    Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -138,7 +134,7 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
-POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
+POSSIBLE_PARAMETER_TYPES: tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
 class OptionDict(TypedDict):
@@ -253,7 +249,7 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
     if not value_from_expressions and when_expression is None:
         return {}
 
-    hda_references: List[model.HistoryDatasetAssociation] = []
+    hda_references: list[model.HistoryDatasetAssociation] = []
 
     step_state = {}
     for key, value in extra_step_state.items():
@@ -400,7 +396,7 @@ class WorkflowModule:
             self.validate_state(inputs)
             self.state.inputs = inputs
 
-    def validate_state(self, inputs: Dict[str, Any]) -> None:
+    def validate_state(self, inputs: dict[str, Any]) -> None:
         """If get_inputs() return None, validate the inputs dictionary directly bypassing ToolForm stuff."""
         return None
 
@@ -559,7 +555,7 @@ class WorkflowModule:
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
-    def get_informal_replacement_parameters(self, step) -> List[str]:
+    def get_informal_replacement_parameters(self, step) -> list[str]:
         """Return a list of informal replacement parameters.
 
         If replacement is handled via formal workflow inputs - do not include it in this list.
@@ -676,12 +672,12 @@ class SubWorkflowModule(WorkflowModule):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    _modules: Optional[List[Any]] = None
+    _modules: Optional[list[Any]] = None
     subworkflow: Workflow
 
     def __init__(self, trans, content_id=None, **kwds):
         super().__init__(trans, content_id, **kwds)
-        self.post_job_actions: Optional[Dict[str, Any]] = None
+        self.post_job_actions: Optional[dict[str, Any]] = None
 
     @classmethod
     def from_dict(Class, trans, d, **kwds):
@@ -839,7 +835,7 @@ class SubWorkflowModule(WorkflowModule):
                 assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
             iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
-        when_values: List[Union[bool, None]] = []
+        when_values: list[Union[bool, None]] = []
         for iteration_elements, when_value in iteration_elements_iter:
             if when_value is False or not step.when_expression:
                 # We're skipping this step (when==False) or we keep
@@ -924,7 +920,7 @@ class SubWorkflowModule(WorkflowModule):
 
         return inputs
 
-    def get_informal_replacement_parameters(self, step) -> List[str]:
+    def get_informal_replacement_parameters(self, step) -> list[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
 
@@ -989,7 +985,7 @@ def format_param(trans, formats):
 
 class InputModuleState(TypedDict, total=False):
     optional: bool
-    format: List[str]
+    format: list[str]
     tag: str
 
 
@@ -1060,7 +1056,7 @@ class InputModule(WorkflowModule):
             optional = self.default_optional
         rval["optional"] = optional
         if "format" in inputs:
-            formats: Optional[List[str]] = listify(inputs["format"])
+            formats: Optional[list[str]] = listify(inputs["format"])
         else:
             formats = None
         if formats:
@@ -1161,7 +1157,7 @@ class InputDataCollectionModule(InputModule):
         # migrated to frontend
         return {}
 
-    def validate_state(self, state: Dict[str, Any]) -> None:
+    def validate_state(self, state: dict[str, Any]) -> None:
         collection_type = state.get("collection_type")
         fields = state.get("fields")
         if collection_type:
@@ -1364,7 +1360,7 @@ class InputParameterModule(WorkflowModule):
                     **when_this_type.inputs,
                 }
 
-                restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
+                restrict_how_source: dict[str, Union[str, list[dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
                 restrict_how_source["options"] = [
@@ -1488,13 +1484,13 @@ class InputParameterModule(WorkflowModule):
 
     def get_config_form(self, step=None):
         """Serializes input parameters of a module into input dictionaries."""
-        group_inputs: List[Dict[str, Any]] = []
+        group_inputs: list[dict[str, Any]] = []
         populate_model(self.trans, self.get_inputs(), self.state.inputs, group_inputs)
         return {"title": self.name, "inputs": group_inputs}
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
-            static_options: List[List[ParameterOption]] = []
+            static_options: list[list[ParameterOption]] = []
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
@@ -1520,7 +1516,7 @@ class InputParameterModule(WorkflowModule):
                                 ].static_options
                             )
 
-            options: Optional[List[OptionDict]] = None
+            options: Optional[list[OptionDict]] = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1558,7 +1554,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: Dict[str, Union[str, List[Dict[str, Any]]]] = {}
+        parameter_kwds: dict[str, Union[str, list[dict[str, Any]]]] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1933,10 +1929,10 @@ class ToolModule(WorkflowModule):
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
                     self.tool = None
-        self.post_job_actions: Dict[str, Any] = {}
-        self.runtime_post_job_actions: Dict[str, Any] = {}
-        self.workflow_outputs: List[Dict[str, Any]] = []
-        self.version_changes: List[str] = []
+        self.post_job_actions: dict[str, Any] = {}
+        self.runtime_post_job_actions: dict[str, Any] = {}
+        self.workflow_outputs: list[dict[str, Any]] = []
+        self.version_changes: list[str] = []
 
     # ---- Creating modules from various representations ---------------------
 
@@ -2131,7 +2127,7 @@ class ToolModule(WorkflowModule):
             for name, tool_output in self.tool.outputs.items():
                 if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
-                extra_kwds: Dict[str, Any] = {}
+                extra_kwds: dict[str, Any] = {}
                 if isinstance(tool_output, ToolExpressionOutput):
                     extra_kwds["parameter"] = True
                 if isinstance(tool_output, ToolOutputCollection):
@@ -2146,7 +2142,7 @@ class ToolModule(WorkflowModule):
                                 collection_type = rule_set.collection_type
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
-                    formats: List[Optional[str]] = ["input"]  # TODO: fix
+                    formats: list[Optional[str]] = ["input"]  # TODO: fix
                 elif (
                     isinstance(tool_output, (ToolOutput, ToolExpressionOutput, ToolOutputCollection))
                     and tool_output.format_source is not None
@@ -2179,7 +2175,7 @@ class ToolModule(WorkflowModule):
     def get_config_form(self, step=None):
         if self.tool:
             self.add_dummy_datasets(connections=step and step.input_connections)
-            incoming: Dict[str, str] = {}
+            incoming: dict[str, str] = {}
             params_to_incoming(incoming, self.tool.inputs, self.state.inputs, self.trans.app)
             return self.tool.to_json(self.trans, incoming, workflow_building_mode=True)
 
@@ -2471,7 +2467,7 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(
+        completed_jobs: dict[int, Optional[Job]] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
@@ -2512,7 +2508,7 @@ class ToolModule(WorkflowModule):
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
-        step_outputs: Dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
+        step_outputs: dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
         if collection_info:
             step_outputs.update(execution_tracker.implicit_collections)
         else:
@@ -2605,7 +2601,7 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
-    def get_informal_replacement_parameters(self, step: WorkflowStep) -> List[str]:
+    def get_informal_replacement_parameters(self, step: WorkflowStep) -> list[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
@@ -2618,7 +2614,7 @@ class ToolModule(WorkflowModule):
 
 
 class WorkflowModuleFactory:
-    def __init__(self, module_types: Dict[str, Type[WorkflowModule]]):
+    def __init__(self, module_types: dict[str, type[WorkflowModule]]):
         self.module_types = module_types
 
     def from_dict(self, trans, d, **kwargs) -> WorkflowModule:

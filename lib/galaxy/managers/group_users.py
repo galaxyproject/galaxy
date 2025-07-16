@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -25,7 +24,7 @@ class GroupUsersManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: int) -> List[model.User]:
+    def index(self, trans: ProvidesAppContext, group_id: int) -> list[model.User]:
         """
         Returns a collection (list) with some information about users associated with the given group.
         """

@@ -2,10 +2,7 @@ import logging
 import os
 from threading import Lock
 from typing import (
-    Dict,
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -28,12 +25,12 @@ class ToolCache:
 
     def __init__(self) -> None:
         self._lock = Lock()
-        self._hash_by_tool_paths: Dict[str, ToolHash] = {}
-        self._tools_by_path: Dict[str, Tool] = {}
-        self._tool_paths_by_id: Dict[str, StrPath] = {}
-        self._new_tool_ids: Set[str] = set()
-        self._removed_tool_ids: Set[str] = set()
-        self._removed_tools_by_path: Dict[str, Tool] = {}
+        self._hash_by_tool_paths: dict[str, ToolHash] = {}
+        self._tools_by_path: dict[str, Tool] = {}
+        self._tool_paths_by_id: dict[str, StrPath] = {}
+        self._new_tool_ids: set[str] = set()
+        self._removed_tool_ids: set[str] = set()
+        self._removed_tools_by_path: dict[str, Tool] = {}
         self._hashes_initialized = False
 
     def assert_hashes_initialized(self) -> None:
@@ -42,13 +39,13 @@ class ToolCache:
                 tool_hash.hash  # noqa: B018
             self._hashes_initialized = True
 
-    def cleanup(self) -> List[str]:
+    def cleanup(self) -> list[str]:
         """
         Remove uninstalled tools from tool cache if they are not on disk anymore or if their content has changed.
 
         Returns list of tool_ids that have been removed.
         """
-        removed_tool_ids: List[str] = []
+        removed_tool_ids: list[str] = []
         try:
             with self._lock:
                 paths_to_cleanup = {

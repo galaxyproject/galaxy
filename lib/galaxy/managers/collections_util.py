@@ -2,7 +2,6 @@ import logging
 import math
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy import (
@@ -174,7 +173,7 @@ def dictify_element_reference(
     """
     dictified = element.to_dict(view="element")
     if (element_object := element.element_object) is not None:
-        object_details: Dict[str, Any] = dict(
+        object_details: dict[str, Any] = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,
         )

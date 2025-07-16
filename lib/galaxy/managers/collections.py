@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -189,7 +187,7 @@ class DatasetCollectionManager:
         flush=True,
         completed_job=None,
         output_name=None,
-        fields: Optional[Union[str, List["FieldDict"]]] = None,
+        fields: Optional[Union[str, list["FieldDict"]]] = None,
         column_definitions=None,
         rows=None,
     ) -> "DatasetCollectionInstance":
@@ -309,7 +307,7 @@ class DatasetCollectionManager:
         hide_source_items: bool = False,
         copy_elements: bool = False,
         history=None,
-        fields: Optional[Union[str, List["FieldDict"]]] = None,
+        fields: Optional[Union[str, list["FieldDict"]]] = None,
         column_definitions=None,
         rows=None,
     ) -> DatasetCollection:
@@ -402,7 +400,7 @@ class DatasetCollectionManager:
         hide_source_items: bool = False,
         copy_elements: bool = False,
         history=None,
-    ) -> Dict[str, HDCAElementObjectType]:
+    ) -> dict[str, HDCAElementObjectType]:
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
             self.__recursively_create_collections_for_identifiers(
@@ -489,7 +487,7 @@ class DatasetCollectionManager:
         source: Literal[HistoryContentSource.hdca],
         encoded_source_id,
         copy_elements: bool = False,
-        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
+        dataset_instance_attributes: Optional[dict[str, Any]] = None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent occurred
@@ -627,8 +625,8 @@ class DatasetCollectionManager:
 
     def __load_elements(
         self, trans, element_identifiers, hide_source_items: bool = False, copy_elements: bool = False, history=None
-    ) -> Dict[str, HDCAElementObjectType]:
-        elements: Dict[str, HDCAElementObjectType] = {}
+    ) -> dict[str, HDCAElementObjectType]:
+        elements: dict[str, HDCAElementObjectType] = {}
         for element_identifier in element_identifiers:
             elements[element_identifier["name"]] = self.__load_element(
                 trans,
@@ -746,7 +744,7 @@ class DatasetCollectionManager:
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
         mapping_as_dict = rule_set.mapping_as_dict
-        elements: Dict[str, Any] = {}
+        elements: dict[str, Any] = {}
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
             collection_type_at_depth = collection_type_description
@@ -796,7 +794,7 @@ class DatasetCollectionManager:
 
                     if not found:
                         # Create a new collection whose elements are defined in the next loop
-                        sub_collection: Dict[str, Any] = {}
+                        sub_collection: dict[str, Any] = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
                         sub_collection["elements"] = {}
@@ -827,8 +825,8 @@ class DatasetCollectionManager:
     ):
         parent_identifiers = parent_identifiers or []
         parent_indices = parent_indices or []
-        data: List[List[str]] = []
-        sources: List[Dict[str, str]] = []
+        data: list[list[str]] = []
+        sources: list[dict[str, str]] = []
         for i, element in enumerate(elements):
             indices = parent_indices.copy()
             indices.append(i)

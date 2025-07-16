@@ -1,10 +1,7 @@
 import re
 from dataclasses import dataclass
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from pydantic import BaseModel
@@ -15,7 +12,7 @@ from galaxy.model.dataset_collections.rule_target_models import (
     target_model_by_type,
 )
 
-COLUMN_TITLE_PREFIXES: Dict[str, RuleBuilderMappingTargetKey] = {
+COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
     "name": "name",
     "listname": "collection_name",
     "collectionname": "collection_name",
@@ -136,11 +133,11 @@ class InferredColumnMapping(BaseModel):
 
 
 def column_titles_to_headers(
-    column_titles: List[str], column_offset: int = 0
-) -> Tuple[List[HeaderColumn], List[InferredColumnMapping]]:
-    headers: List[HeaderColumn] = []
-    headers_of_type_seen: Dict[RuleBuilderMappingTargetKey, int] = {}
-    inferred_columns: List[InferredColumnMapping] = []
+    column_titles: list[str], column_offset: int = 0
+) -> tuple[list[HeaderColumn], list[InferredColumnMapping]]:
+    headers: list[HeaderColumn] = []
+    headers_of_type_seen: dict[RuleBuilderMappingTargetKey, int] = {}
+    inferred_columns: list[InferredColumnMapping] = []
 
     for column_index, column_title in enumerate(column_titles):
         column_type_: Optional[RuleBuilderMappingTargetKey] = column_title_to_target_type(column_title)

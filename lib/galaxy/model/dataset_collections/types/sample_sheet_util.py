@@ -1,7 +1,5 @@
 import re
 from typing import (
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -25,7 +23,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 
-SampleSheetRows = Dict[str, SampleSheetRow]
+SampleSheetRows = dict[str, SampleSheetRow]
 OptionalSampleSheetRows = Optional[SampleSheetRows]
 
 
@@ -35,9 +33,9 @@ class SampleSheetColumnDefinitionModel(BaseModel):
     type: SampleSheetColumnType
     description: Optional[str] = None
     optional: bool
-    validators: Optional[List[AnySafeValidatorModel]] = None
-    restrictions: Optional[List[SampleSheetColumnValueT]] = None
-    suggestions: Optional[List[SampleSheetColumnValueT]] = None
+    validators: Optional[list[AnySafeValidatorModel]] = None
+    restrictions: Optional[list[SampleSheetColumnValueT]] = None
+    suggestions: Optional[list[SampleSheetColumnValueT]] = None
     default_value: Optional[SampleSheetColumnValueT] = None
 
     @model_validator(mode="after")
@@ -64,7 +62,7 @@ class SampleSheetColumnDefinitionModel(BaseModel):
         return self
 
 
-SampleSheetColumnDefinitionsModel = RootModel[List[SampleSheetColumnDefinitionModel]]
+SampleSheetColumnDefinitionsModel = RootModel[list[SampleSheetColumnDefinitionModel]]
 SampleSheetColumnDefinitionDictOrModel = Union[SampleSheetColumnDefinition, SampleSheetColumnDefinitionModel]
 
 
@@ -96,7 +94,7 @@ def _validate_column_definition(column_definition: SampleSheetColumnDefinition):
 
 
 def validate_row(
-    row: SampleSheetRow, column_definitions: Optional[SampleSheetColumnDefinitions], element_identifiers: List[str]
+    row: SampleSheetRow, column_definitions: Optional[SampleSheetColumnDefinitions], element_identifiers: list[str]
 ):
     if column_definitions is None:
         return
@@ -127,7 +125,7 @@ def validate_no_special_characters(column_value: str) -> None:
 def validate_column_value(
     column_value: SampleSheetColumnValueT,
     column_definition: SampleSheetColumnDefinitionDictOrModel,
-    element_identifiers: List[str],
+    element_identifiers: list[str],
 ):
     column_definition_model = sample_sheet_column_definition_to_model(column_definition)
     column_type = column_definition_model.type
@@ -156,8 +154,7 @@ def validate_column_value(
             )
         validate_no_special_characters(column_value)
 
-    restrictions = column_definition_model.restrictions
-    if restrictions is not None:
+    if (restrictions := column_definition_model.restrictions) is not None:
         if column_value not in restrictions:
             raise RequestParameterInvalidException(
                 f"{column_value} was not in specified list of valid values as expected"

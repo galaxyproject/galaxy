@@ -1,8 +1,7 @@
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -12,7 +11,6 @@ from pydantic import (
     Field,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -118,7 +116,7 @@ class AddStepAction(BaseAction):
 
     action_type: Literal["add_step"]
     type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
-    tool_state: Optional[Dict[str, Any]] = None
+    tool_state: Optional[dict[str, Any]] = None
     label: Optional[str] = Field(
         None,
         description="A unique label for the step being added, must be distinct from the labels already present in the workflow.",
@@ -144,9 +142,9 @@ class AddInputAction(BaseAction):
     label: Optional[str] = None
     position: Optional[Position] = None
     collection_type: Optional[str] = None
-    restrictions: Optional[List[str]] = None
+    restrictions: Optional[list[str]] = None
     restrict_on_connections: Optional[bool] = None
-    suggestions: Optional[List[str]] = None
+    suggestions: Optional[list[str]] = None
     optional: Optional[bool] = False
     default: Optional[Any] = None  # this probably needs to be revisited when we have more complex field types
 
@@ -269,7 +267,7 @@ for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
 
 
 class RefactorActions(BaseModel):
-    actions: List[Annotated[union_action_classes, Field(discriminator="action_type")]]
+    actions: list[Annotated[union_action_classes, Field(discriminator="action_type")]]
     dry_run: bool = False
 
 
@@ -328,4 +326,4 @@ side of the connection that was dropped.""",
 
 class RefactorActionExecution(BaseModel):
     action: union_action_classes
-    messages: List[RefactorActionExecutionMessage]
+    messages: list[RefactorActionExecutionMessage]

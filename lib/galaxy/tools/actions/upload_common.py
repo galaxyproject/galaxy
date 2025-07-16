@@ -8,8 +8,6 @@ from json import (
     dumps,
 )
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -82,10 +80,10 @@ def persist_uploads(params, trans):
 
 @dataclass
 class LibraryParams:
-    roles: List[Role]
-    tags: Optional[List[str]]
+    roles: list[Role]
+    tags: Optional[list[str]]
     template: Optional[FormDefinition]
-    template_field_contents: Dict[str, str]
+    template_field_contents: dict[str, str]
     folder: LibraryFolder
     message: str
     replace_dataset: Optional[LibraryDataset]
@@ -114,7 +112,7 @@ def handle_library_params(
                 if params.get(field_name, False):
                     field_value = util.restore_text(params.get(field_name, ""))
                     template_field_contents[field_name] = field_value
-    roles: List[Role] = []
+    roles: list[Role] = []
     for role_id in util.listify(params.get("roles", [])):
         role = session.get(Role, role_id)
         roles.append(role)

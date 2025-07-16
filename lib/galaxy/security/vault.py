@@ -3,7 +3,6 @@ import logging
 import os
 import re
 from typing import (
-    List,
     Optional,
 )
 
@@ -70,7 +69,7 @@ class Vault(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         """
         Lists secrets at a given path.
 
@@ -105,7 +104,7 @@ class NullVault(Vault):
             "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
         )
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -130,7 +129,7 @@ class HashicorpVault(Vault):
     def write_secret(self, key: str, value: str) -> None:
         self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -177,7 +176,7 @@ class DatabaseVault(Vault):
         self.sa_session.delete(vault_entry)
         self.sa_session.flush()
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
     def _get_vault_value(self, key):
@@ -209,7 +208,7 @@ class CustosVault(Vault):
     def write_secret(self, key: str, value: str) -> None:
         self.client.set_kv_credential(key=key, value=value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -227,7 +226,7 @@ class UserVaultWrapper(Vault):
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"user/{self.user.id}/{key}", value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -263,7 +262,7 @@ class VaultKeyValidationWrapper(Vault):
         key = self.normalize_key(key)
         return self.vault.write_secret(key, value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -282,7 +281,7 @@ class VaultKeyPrefixWrapper(Vault):
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"/{self.prefix}/{key}", value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 

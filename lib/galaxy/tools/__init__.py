@@ -15,13 +15,8 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -329,7 +324,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
-IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
+IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "deseq2": {
         "version": parse_version("2.11.40.6"),
         "required": {"includes": [{"path": "*.R", "path_type": "glob"}]},
@@ -485,7 +480,7 @@ class ToolBox(AbstractToolBox):
     app: "UniverseApplication"
 
     def __init__(
-        self, config_filenames: List[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
+        self, config_filenames: list[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
     ) -> None:
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
@@ -728,7 +723,7 @@ class ToolBox(AbstractToolBox):
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
-        options: List[Tuple[str, str]] = []
+        options: list[tuple[str, str]] = []
         for tool in tools:
             options.insert(0, (tool.version, tool.id))
         select_field = SelectField(name="tool_id")
@@ -766,7 +761,7 @@ class DefaultToolState:
         """
         Convert the data to a string
         """
-        value = cast(Dict[str, Any], params_to_strings(tool.inputs, self.inputs, app, nested=nested))
+        value = cast(dict[str, Any], params_to_strings(tool.inputs, self.inputs, app, nested=nested))
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return value
@@ -883,7 +878,7 @@ class JobContext(BaseJobContext):
     def flush(self):
         self.sa_session.commit()
 
-    def get_library_folder(self, destination: Dict[str, Any]):
+    def get_library_folder(self, destination: dict[str, Any]):
         folder_id = destination.get("library_folder_id")
         assert folder_id
         decoded_folder_id = self.app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
@@ -1016,14 +1011,14 @@ class Tool(UsesDictVisibleKeys):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.stdio_exit_codes: List = []
-        self.stdio_regexes: List = []
-        self.inputs_by_page: List[Dict] = []
-        self.display_by_page: List = []
-        self.action: Union[str, Tuple[str, str]] = "/tool_runner/index"
+        self.stdio_exit_codes: list = []
+        self.stdio_regexes: list = []
+        self.inputs_by_page: list[dict] = []
+        self.display_by_page: list = []
+        self.action: Union[str, tuple[str, str]] = "/tool_runner/index"
         self.target = "galaxy_main"
         self.method = "post"
-        self.labels: List = []
+        self.labels: list = []
         self.check_values = True
         self.nginx_upload = False
         self.input_required = False
@@ -1038,7 +1033,7 @@ class Tool(UsesDictVisibleKeys):
         # parameters like SelectField objects.  This enables us to more
         # easily ensure that parameter dependencies like index files or
         # tool_data_table_conf.xml entries exist.
-        self.input_params: List[ToolParameter] = []
+        self.input_params: list[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
         self.tool_shed: Optional[str] = None
         self.repository_name: Optional[str] = None
@@ -1053,7 +1048,7 @@ class Tool(UsesDictVisibleKeys):
         self.old_id: Optional[str] = None
         self.python_template_version: Optional[Version] = None
         self._lineage: Optional[ToolLineage] = None
-        self.dependencies: List = []
+        self.dependencies: list = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
         # add tool resource parameters
@@ -1061,13 +1056,13 @@ class Tool(UsesDictVisibleKeys):
         self.tool_errors: Optional[str] = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
-        self.outputs: Dict[str, ToolOutputBase] = {}
-        self.output_collections: Dict[str, ToolOutputCollection] = {}
+        self.outputs: dict[str, ToolOutputBase] = {}
+        self.output_collections: dict[str, ToolOutputCollection] = {}
         self.command: Optional[str] = None
-        self.base_command: Optional[List[str]] = None
-        self.arguments: Optional[List[str]] = []
+        self.base_command: Optional[list[str]] = None
+        self.arguments: Optional[list[str]] = []
         self.shell_command: Optional[str] = None
-        self.javascript_requirements: Optional[List[JavascriptRequirement]] = None
+        self.javascript_requirements: Optional[list[JavascriptRequirement]] = None
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None
@@ -1241,7 +1236,7 @@ class Tool(UsesDictVisibleKeys):
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
-    def get_panel_section(self) -> Union[Tuple[str, str], Tuple[None, None]]:
+    def get_panel_section(self) -> Union[tuple[str, str], tuple[None, None]]:
         return self.app.toolbox.get_section_for_tool(self)
 
     def allow_user_access(self, user, attempting_access=True):
@@ -1478,9 +1473,9 @@ class Tool(UsesDictVisibleKeys):
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
     def __parse_legacy_features(self, tool_source: ToolSource):
-        self.code_namespace: Dict[str, str] = {}
-        self.hook_map: Dict[str, str] = {}
-        self.uihints: Dict[str, str] = {}
+        self.code_namespace: dict[str, str] = {}
+        self.hook_map: dict[str, str] = {}
+        self.uihints: dict[str, str] = {}
 
         if not hasattr(tool_source, "root"):
             return
@@ -1662,7 +1657,7 @@ class Tool(UsesDictVisibleKeys):
         # Load parameters (optional)
         self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
-        enctypes: Set[str] = set()
+        enctypes: set[str] = set()
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
@@ -2058,9 +2053,9 @@ class Tool(UsesDictVisibleKeys):
 
     def expand_incoming(
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
-    ) -> Tuple[
-        List[ToolStateJobInstancePopulatedT],
-        List[ToolStateJobInstancePopulatedT],
+    ) -> tuple[
+        list[ToolStateJobInstancePopulatedT],
+        list[ToolStateJobInstancePopulatedT],
         Optional[int],
         Optional[MatchingCollections],
     ]:
@@ -2069,7 +2064,7 @@ class Tool(UsesDictVisibleKeys):
 
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
-        expanded_incomings: List[ToolStateJobInstanceT]
+        expanded_incomings: list[ToolStateJobInstanceT]
         collection_info: Optional[MatchingCollections]
         expanded_incomings, collection_info = expand_meta_parameters(
             request_context, self, incoming, input_format=input_format
@@ -2082,8 +2077,8 @@ class Tool(UsesDictVisibleKeys):
             "internals.galaxy.tools.validation",
             "Validated and populated state for tool request",
         )
-        all_errors: List[ParameterValidationErrorsT] = []
-        all_params: List[ToolStateJobInstancePopulatedT] = []
+        all_errors: list[ParameterValidationErrorsT] = []
+        all_params: list[ToolStateJobInstancePopulatedT] = []
 
         for expanded_incoming in expanded_incomings:
             params, errors = self._populate(request_context, expanded_incoming, input_format)
@@ -2095,7 +2090,7 @@ class Tool(UsesDictVisibleKeys):
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def _ensure_expansion_is_valid(
-        self, expanded_incomings: List[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+        self, expanded_incomings: list[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
     ) -> None:
         """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
 
@@ -2115,7 +2110,7 @@ class Tool(UsesDictVisibleKeys):
 
     def _populate(
         self, request_context, expanded_incoming: ToolStateJobInstanceT, input_format: InputFormatT
-    ) -> Tuple[ToolStateJobInstancePopulatedT, ParameterValidationErrorsT]:
+    ) -> tuple[ToolStateJobInstancePopulatedT, ParameterValidationErrorsT]:
         """Validate expanded parameters for a job to replace references with model objects.
 
         So convert a ToolStateJobInstanceT to a ToolStateJobInstancePopulatedT.
@@ -2148,8 +2143,7 @@ class Tool(UsesDictVisibleKeys):
         self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
     ):
         # If the tool provides a `validate_input` hook, call it.
-        validate_input = self.get_hook("validate_input")
-        if validate_input:
+        if validate_input := self.get_hook("validate_input"):
             # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
             legacy_non_dce_params = {
                 k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v for k, v in params.items()
@@ -2160,9 +2154,9 @@ class Tool(UsesDictVisibleKeys):
         self,
         trans,
         use_cached_job: bool,
-        all_params: List[ToolStateJobInstancePopulatedT],
-    ) -> Dict[int, Optional[Job]]:
-        completed_jobs: Dict[int, Optional[Job]] = {}
+        all_params: list[ToolStateJobInstancePopulatedT],
+    ) -> dict[int, Optional[Job]]:
+        completed_jobs: dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
             if use_cached_job and trans.user:
                 tool_id = self.id
@@ -2198,8 +2192,8 @@ class Tool(UsesDictVisibleKeys):
         """
         request_context = proxy_work_context_for_history(trans, history=history)
         expanded = self.expand_incoming(request_context, incoming=incoming, input_format=input_format)
-        all_params: List[ToolStateJobInstancePopulatedT] = expanded[0]
-        all_errors: List[ParameterValidationErrorsT] = expanded[1]
+        all_params: list[ToolStateJobInstancePopulatedT] = expanded[0]
+        all_errors: list[ParameterValidationErrorsT] = expanded[1]
         rerun_remap_job_id: Optional[int] = expanded[2]
         collection_info: Optional[MatchingCollections] = expanded[3]
 
@@ -2209,7 +2203,7 @@ class Tool(UsesDictVisibleKeys):
         mapping_params = MappingParameters(incoming, all_params)
         if use_cached_job:
             mapping_params.param_template["__use_cached_job__"] = use_cached_job
-        completed_jobs: Dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        completed_jobs: dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,
@@ -2244,7 +2238,7 @@ class Tool(UsesDictVisibleKeys):
             implicit_collections=execution_tracker.implicit_collections,
         )
 
-    def handle_incoming_errors(self, all_errors: List[ParameterValidationErrorsT]) -> None:
+    def handle_incoming_errors(self, all_errors: list[ParameterValidationErrorsT]) -> None:
         if any(all_errors):
             # simple param_key -> message string for tool form.
             err_data = {key: unicodify(value) for d in all_errors for (key, value) in d.items()}
@@ -2440,10 +2434,10 @@ class Tool(UsesDictVisibleKeys):
     def params_to_strings(self, params: ToolStateJobInstancePopulatedT, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)
 
-    def params_from_strings(self, params: Dict, ignore_errors: bool = False) -> Dict:
+    def params_from_strings(self, params: dict, ignore_errors: bool = False) -> dict:
         return params_from_strings(self.inputs, params, self.app, ignore_errors)
 
-    def get_param_values(self, job: Job, ignore_errors: bool = False) -> Dict:
+    def get_param_values(self, job: Job, ignore_errors: bool = False) -> dict:
         """
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
@@ -2894,7 +2888,7 @@ class Tool(UsesDictVisibleKeys):
 
         set_dataset_matcher_factory(request_context, self)
         # create tool state
-        state_inputs: Dict[str, str] = {}
+        state_inputs: dict[str, str] = {}
         state_errors: ParameterValidationErrorsT = {}
         populate_state(request_context, self.inputs, params.__dict__, state_inputs, state_errors)
 
@@ -2963,7 +2957,7 @@ class Tool(UsesDictVisibleKeys):
             other_values=other_values,
         )
 
-    def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: Dict) -> None:
+    def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: dict) -> None:
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
@@ -2971,13 +2965,13 @@ class Tool(UsesDictVisibleKeys):
         assert history
 
         # Create index for hdas.
-        hda_source_dict: Dict[Union[int, str], HistoryDatasetAssociation] = {}
+        hda_source_dict: dict[Union[int, str], HistoryDatasetAssociation] = {}
         for hda in history.datasets:
             key = f"{hda.hid}_{hda.dataset.id}"
             hda_source_dict[hda.dataset.id] = hda_source_dict[key] = hda
 
         # Ditto for dataset collections.
-        hdca_source_dict: Dict[Union[int, str], HistoryDatasetCollectionAssociation] = {}
+        hdca_source_dict: dict[Union[int, str], HistoryDatasetCollectionAssociation] = {}
         for hdca in history.dataset_collections:
             key = f"{hdca.hid}_{hdca.collection.id}"
             hdca_source_dict[hdca.collection.id] = hdca_source_dict[key] = hdca
@@ -2987,8 +2981,8 @@ class Tool(UsesDictVisibleKeys):
             if isinstance(value, HistoryDatasetAssociation):
                 id: int = value.dataset.id
                 source: Union[
-                    Dict[Union[int, str], HistoryDatasetAssociation],
-                    Dict[Union[int, str], HistoryDatasetCollectionAssociation],
+                    dict[Union[int, str], HistoryDatasetAssociation],
+                    dict[Union[int, str], HistoryDatasetCollectionAssociation],
                 ] = hda_source_dict
             elif isinstance(value, HistoryDatasetCollectionAssociation):
                 id = value.collection.id
@@ -3199,7 +3193,7 @@ class ExpressionTool(Tool):
         if param_dict is None:
             raise Exception("Internal error - param_dict is empty.")
 
-        job: Dict[str, str] = {}
+        job: dict[str, str] = {}
         json_wrap(self.inputs, param_dict, self.profile, job, handle_files="OBJECT")
         expression_inputs = {
             "job": job,
@@ -3753,14 +3747,14 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
                 iter_elements_a[element_identifier_b] = hda_a_copy
                 iter_elements_b[element_identifier_b] = hda_b_copy
 
-            sub_collection_a: Dict[str, Any] = {}
+            sub_collection_a: dict[str, Any] = {}
             sub_collection_a["src"] = "new_collection"
             sub_collection_a["collection_type"] = "list"
             sub_collection_a["elements"] = iter_elements_a
 
             output_a[element_identifier_a] = sub_collection_a
 
-            sub_collection_b: Dict[str, Any] = {}
+            sub_collection_b: dict[str, Any] = {}
             sub_collection_b["src"] = "new_collection"
             sub_collection_b["collection_type"] = "list"
             sub_collection_b["elements"] = iter_elements_b
@@ -3929,7 +3923,7 @@ class MergeCollectionTool(DatabaseOperationTool):
         new_element_structure = {}
 
         # Which inputs does the identifier appear in.
-        identifiers_map: Dict[str, List[int]] = {}
+        identifiers_map: dict[str, list[int]] = {}
         for input_num, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
                 element_identifier = dce.element_identifier
@@ -4503,7 +4497,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
 
 
 # Populate tool_type to ToolClass mappings
-TOOL_CLASSES: List[Type[Tool]] = [
+TOOL_CLASSES: list[type[Tool]] = [
     Tool,
     SetMetadataTool,
     OutputParameterJSONTool,

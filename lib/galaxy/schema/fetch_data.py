@@ -1,9 +1,8 @@
 import json
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -15,7 +14,6 @@ from pydantic import (
     Json,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -87,7 +85,7 @@ class LibraryFolderDestination(FetchBaseModel):
 class BaseCollectionTarget(BaseFetchDataTarget):
     destination: HdcaDestination
     collection_type: Optional[str] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[list[str]] = None
     name: Optional[str] = None
     column_definitions: Optional[SampleSheetColumnDefinitions] = None
 
@@ -123,7 +121,7 @@ class BaseDataElement(FetchBaseModel):
     space_to_tab: bool = False
     to_posix_lines: bool = False
     deferred: bool = False
-    tags: Optional[List[str]] = None
+    tags: Optional[list[str]] = None
     created_from_basename: Optional[str] = None
     extra_files: Optional[ExtraFiles] = None
     auto_decompress: bool = AutoDecompressField
@@ -133,7 +131,7 @@ class BaseDataElement(FetchBaseModel):
     SHA1: Optional[str] = Field(None, alias="SHA-1")
     SHA256: Optional[str] = Field(None, alias="SHA-256")
     SHA512: Optional[str] = Field(None, alias="SHA-512")
-    hashes: Optional[List[FetchDatasetHash]] = None
+    hashes: Optional[list[FetchDatasetHash]] = None
     description: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
     # It'd be nice to restrict this to just the top level and only if creating a collection
@@ -190,11 +188,11 @@ class PathDataElement(BaseDataElement):
 class CompositeDataElement(BaseDataElement):
     src: Literal["composite"]
     composite: "CompositeItems"
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class CompositeItems(FetchBaseModel):
-    items: List[
+    items: list[
         Union[FileDataElement, PastedDataElement, UrlDataElement, PathDataElement, ServerDirElement, FtpImportElement]
     ] = Field(..., alias="elements")
 
@@ -203,7 +201,7 @@ CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
-    items: List[Union["AnyElement", "NestedElement"]] = Field(..., alias="elements")
+    items: list[Union["AnyElement", "NestedElement"]] = Field(..., alias="elements")
 
 
 AnyElement = Annotated[
@@ -242,7 +240,7 @@ class BaseDataTarget(BaseFetchDataTarget):
 
 
 class DataElementsTarget(BaseDataTarget):
-    items: List[Union[AnyElement, NestedElement]] = Field(..., alias="elements")
+    items: list[Union[AnyElement, NestedElement]] = Field(..., alias="elements")
 
 
 class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
@@ -250,7 +248,7 @@ class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
 
 
 class HdcaDataItemsTarget(BaseCollectionTarget):
-    items: List[Union[AnyElement2, NestedElement]] = Field(..., alias="elements")
+    items: list[Union[AnyElement2, NestedElement]] = Field(..., alias="elements")
 
 
 class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
@@ -274,7 +272,7 @@ class BaseDataPayload(FetchBaseModel):
         return v
 
 
-Targets = List[
+Targets = list[
     Union[
         DataElementsTarget,
         HdcaDataItemsTarget,

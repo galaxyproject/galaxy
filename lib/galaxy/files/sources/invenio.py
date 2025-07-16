@@ -5,10 +5,7 @@ import urllib.request
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 from urllib.parse import quote
 
@@ -77,19 +74,19 @@ class RecordPersonOrOrg(TypedDict):
     given_name: str
     type: Literal["personal", "organizational"]
     name: str
-    identifiers: List[IdentifierEntry]
+    identifiers: list[IdentifierEntry]
 
 
 class Creator(TypedDict):
     person_or_org: RecordPersonOrOrg
-    affiliations: Optional[List[AffiliationEntry]]
+    affiliations: Optional[list[AffiliationEntry]]
 
 
 class RecordMetadata(TypedDict):
     title: str
     resource_type: ResourceType
     publication_date: str
-    creators: List[Creator]
+    creators: list[Creator]
 
 
 class RecordLinks(TypedDict):
@@ -195,17 +192,17 @@ class InvenioRDMFilesSource(RDMFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
             records, total_hits = self.repository.get_file_containers(
                 writeable, user_context, limit=limit, offset=offset, query=query
             )
-            return cast(List[AnyRemoteEntry], records), total_hits
+            return cast(list[AnyRemoteEntry], records), total_hits
         record_id = self.get_container_id_from_path(path)
         files = self.repository.get_files_in_container(record_id, writeable, user_context)
-        return cast(List[AnyRemoteEntry], files), len(files)
+        return cast(list[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
         self,
@@ -280,9 +277,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[RemoteDirectory], int]:
+    ) -> tuple[list[RemoteDirectory], int]:
         """Gets the records in the repository and returns the total count of records."""
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
             # Only draft records owned by the user can be written to.
@@ -298,7 +295,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         total_hits = response_data["hits"]["total"]
         return self._get_records_from_response(response_data), total_hits
 
-    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
+    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> tuple[Optional[int], Optional[int]]:
         if limit is None and offset is None:
             return None, None
         size = limit or DEFAULT_PAGE_LIMIT
@@ -311,7 +308,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         writeable: bool,
         user_context: OptionalUserContext = None,
         query: Optional[str] = None,
-    ) -> List[RemoteFile]:
+    ) -> list[RemoteFile]:
         conditionally_draft = "/draft" if writeable else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
         response_data = self._get_response(user_context, request_url)
@@ -448,9 +445,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         draft_record = self._get_response(user_context, request_url)
         return draft_record
 
-    def _get_records_from_response(self, response: dict) -> List[RemoteDirectory]:
+    def _get_records_from_response(self, response: dict) -> list[RemoteDirectory]:
         records = response["hits"]["hits"]
-        rval: List[RemoteDirectory] = []
+        rval: list[RemoteDirectory] = []
         for record in records:
             uri = self.to_plugin_uri(record_id=record["id"])
             path = self.plugin.to_relative_path(uri)
@@ -471,12 +468,12 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             title = record["metadata"].get("title")
         return title or "No title"
 
-    def _get_record_files_from_response(self, record_id: str, response: dict) -> List[RemoteFile]:
+    def _get_record_files_from_response(self, record_id: str, response: dict) -> list[RemoteFile]:
         files_enabled = response.get("enabled", False)
         if not files_enabled:
             return []
         entries = response["entries"]
-        rval: List[RemoteFile] = []
+        rval: list[RemoteFile] = []
         for entry in entries:
             if entry.get("status") == "completed":
                 uri = self.to_plugin_uri(record_id=record_id, filename=entry["key"])
@@ -518,7 +515,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         self,
         user_context: OptionalUserContext,
         request_url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         auth_required: bool = False,
     ) -> dict:
         headers = self._get_request_headers(user_context, auth_required)

@@ -20,12 +20,9 @@ from functools import (
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Literal,
     NamedTuple,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -199,7 +196,7 @@ class FileSourceInstance:
     template_id: str
     name: str
     description: Optional[str]
-    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
+    parameters: list[ConfigTemplateParameter] = field(default_factory=list)
 
 
 @dataclass
@@ -207,7 +204,7 @@ class ObjectStoreInstance:
     template_id: str
     name: str
     description: Optional[str]
-    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
+    parameters: list[ConfigTemplateParameter] = field(default_factory=list)
 
 
 @dataclass
@@ -446,7 +443,7 @@ class NavigatesGalaxy(HasDriver):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
-    def current_history(self) -> Dict[str, Any]:
+    def current_history(self) -> dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
@@ -469,12 +466,12 @@ class NavigatesGalaxy(HasDriver):
                 history_content_type=entry_dict["history_content_type"],
             )
 
-    def latest_history_item(self) -> Dict[str, Any]:
+    def latest_history_item(self) -> dict[str, Any]:
         return_value = self._latest_history_item()
         assert return_value, "Attempted to get latest history item on empty history."
         return return_value
 
-    def _latest_history_item(self) -> Optional[Dict[str, Any]]:
+    def _latest_history_item(self) -> Optional[dict[str, Any]]:
         history_contents = self.history_contents()
         if len(history_contents) > 0:
             entry_dict = history_contents[-1]
@@ -617,7 +614,7 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
-    def history_panel_wait_for_and_select(self, hids: List[int]):
+    def history_panel_wait_for_and_select(self, hids: list[int]):
         """
         Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
         depending on how fast the upload goes compared to the history polling updates, it might just
@@ -700,7 +697,7 @@ class NavigatesGalaxy(HasDriver):
             search_term,
         )
 
-    def get_logged_in_user(self) -> Optional[Dict[str, Any]]:
+    def get_logged_in_user(self) -> Optional[dict[str, Any]]:
         # for user's not logged in - this just returns a {} so lets
         # key this on an id being available?
         if "id" in (user_dict := self.api_get("users/current")):
@@ -1406,7 +1403,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def workflow_editor_enter_column_definitions(self, column_definitions: List[ColumnDefinition]):
+    def workflow_editor_enter_column_definitions(self, column_definitions: list[ColumnDefinition]):
         for index, column_definition in enumerate(column_definitions):
             self.workflow_editor_enter_column_definition(column_definition, index)
 
@@ -1812,7 +1809,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.workflows.run_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
+    def workflow_run_specify_inputs(self, inputs: dict[str, Any]):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
@@ -2726,7 +2723,7 @@ class NavigatesGalaxy(HasDriver):
         return object_store_id
 
     def _fill_configuration_template(
-        self, name: str, description: Optional[str], parameters: List[ConfigTemplateParameter]
+        self, name: str, description: Optional[str], parameters: list[ConfigTemplateParameter]
     ):
         self.components.tool_form.parameter_input(parameter="_meta_name").wait_for_and_send_keys(
             name,
@@ -2756,7 +2753,7 @@ class NavigatesGalaxy(HasDriver):
         to_element: Optional[WebElement] = None,
         from_offset=(0, 0),
         to_offset=(0, 0),
-        via_offsets: Optional[List[Tuple[int, int]]] = None,
+        via_offsets: Optional[list[tuple[int, int]]] = None,
     ):
         chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
         chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
