@@ -70,7 +70,7 @@ export function useSelectionOperations() {
         const action = new ExtractSubworkflowAction(id, name);
         undoRedoStore.applyAction(action);
 
-        await until(() => action.asyncOperationDone.value);
+        await until(() => action.asyncOperationDone.value).toBe(true);
     }
 
     return {
