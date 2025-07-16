@@ -309,7 +309,7 @@ class M4a(Audio):
     """
     Class that reads M4A audio file.
     >>> from galaxy.datatypes.sniff import sniff_with_cls
-    >>> sniff_with_cls(M4a, 'audio_1.m4a')
+    >>> sniff_with_cls(M4a, 'audio_3.m4a')
     True
     """
 
