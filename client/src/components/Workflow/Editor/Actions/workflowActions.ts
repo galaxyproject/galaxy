@@ -1,6 +1,7 @@
 import { nextTick, reactive } from "vue";
 
 import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
 import {
     convertOpenConnections,
@@ -466,6 +467,12 @@ export class DeleteSelectionAction extends UndoRedoAction {
 }
 
 export class ExtractSubworkflowAction extends UndoRedoAction {
+    // hardcoded offset to improve look of final position
+    subworkflowPositionOffset = {
+        left: 100,
+        top: 80,
+    };
+
     deleteSelectionSubAction?: DeleteSelectionAction;
     insertSubworkflowSubAction?: InsertStepAction;
 
@@ -558,9 +565,46 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         });
     }
 
+    getSelectionAABB(steps: Step[], comments: WorkflowComment[]) {
+        const aabb = new AxisAlignedBoundingBox();
+
+        steps.forEach((step) => {
+            const rect = this.stateStore.stepPosition[step.id];
+
+            if (rect && step.position) {
+                const stepRect: Rectangle = {
+                    x: step.position.left,
+                    y: step.position.top,
+                    width: rect.width,
+                    height: rect.height,
+                };
+
+                aabb.fitRectangle(stepRect);
+            }
+        });
+
+        comments.forEach((comment) => {
+            const commentRect: Rectangle = {
+                x: comment.position[0],
+                y: comment.position[1],
+                width: comment.size[0],
+                height: comment.size[1],
+            };
+
+            aabb.fitRectangle(commentRect);
+        });
+
+        return aabb;
+    }
+
     async run() {
         const stepIds = [...this.stateStore.multiSelectedStepIds];
         const commentIds = [...this.commentStore.multiSelectedCommentIds];
+
+        const aabb = this.getSelectionAABB(
+            stepIds.map((id) => ensureDefined(this.stepStore.getStep(id))),
+            commentIds.map((id) => ensureDefined(this.commentStore.commentsRecord[id]))
+        );
 
         const expandedSelection = getTraversedSelection(stepIds, this.stepStore.steps);
 
@@ -598,7 +642,10 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
             contentId: newWf.latest_workflow_id,
             name: newWf.name,
             type: "subworkflow",
-            position: { top: 0, left: 0 },
+            position: {
+                top: aabb.y - aabb.height / 2.0 + this.subworkflowPositionOffset.top,
+                left: aabb.x - aabb.width / 2.0 + this.subworkflowPositionOffset.left,
+            },
         });
 
         this.deleteSelectionSubAction.run();
