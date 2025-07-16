@@ -26,6 +26,7 @@ attribute change to a model object.
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
+import builtins
 import datetime
 import logging
 import re
@@ -402,7 +403,7 @@ class ModelManager(Generic[U]):
                 orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
 
-    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> List[U]:
+    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> builtins.list[U]:
         """
         Sends kwargs to build the query return all models found.
         """
