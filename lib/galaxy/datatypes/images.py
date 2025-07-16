@@ -5,6 +5,7 @@ Image classes
 import base64
 import json
 import logging
+import math
 import struct
 from typing import (
     Any,
@@ -368,7 +369,8 @@ class Tiff(Image):
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
             else:
-                yield from np.array_split(arr_flat, mmap_chunk_size)
+                chunks_count = math.ceil(len(arr_flat) / mmap_chunk_size)
+                yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
     def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:
