@@ -175,7 +175,7 @@ const versions = ref<{ version: number; update_time: string; steps: number }[]>(
 /** Attribute element that is highlighted in the workflow attributes panel. */
 const highlightAttribute = ref<string | undefined>();
 
-const name = ref("Unnamed Workflow");
+const { name } = storeToRefs(stateStore);
 const setNameActionHandler = new SetValueActionHandler(
     undoRedoStore,
     (value) => (name.value = value as string),
