@@ -349,7 +349,8 @@ export default {
             }
         }
 
-        const name = ref("Unnamed Workflow");
+        const { name } = storeToRefs(stateStore);
+
         const setNameActionHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (name.value = value),

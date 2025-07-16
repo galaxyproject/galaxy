@@ -49,6 +49,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const report = ref<WorkflowReport>({
         markdown: reportDefault,
     });
+    const name = ref("Unnamed Workflow");
 
     function $reset() {
         inputTerminals.value = {};
@@ -64,6 +65,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         report.value = {
             markdown: reportDefault,
         };
+        name.value = "Unnamed Workflow";
     }
 
     const getInputTerminalPosition = computed(
@@ -146,6 +148,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale,
         position,
         report,
+        name,
         hasChanges,
         stepPosition,
         stepLoadingState,
