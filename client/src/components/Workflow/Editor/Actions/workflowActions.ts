@@ -1,4 +1,4 @@
-import { reactive } from "vue";
+import { nextTick, reactive } from "vue";
 
 import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
@@ -20,6 +20,7 @@ import {
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
+import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowStoreTypes";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import type { defaultPosition } from "../composables/useDefaultStepPosition";
@@ -477,6 +478,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     stepStore;
     commentStore;
     searchStore;
+    connectionStore;
 
     inputReconnectionMap?: InputReconnectionMap;
     outputReconnectionMap?: OutputReconnectionMap;
@@ -491,6 +493,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         this.stepStore = useWorkflowStepStore(workflowId);
         this.commentStore = useWorkflowCommentStore(workflowId);
         this.searchStore = useWorkflowSearchStore(workflowId);
+        this.connectionStore = useConnectionStore(workflowId);
 
         this.asyncOperationDone = reactive({ value: false });
     }
@@ -506,36 +509,52 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
 
         // reconnect inputs
 
-        const step = this.stepStore.getStep(stepId);
+        const inputConnections = Object.entries(inputReconnectionMap).map(([inputName, outputLink]) => {
+            const input: InputTerminal = {
+                connectorType: "input",
+                name: inputName,
+                stepId,
+            };
 
-        assertDefined(step);
+            const output: OutputTerminal = {
+                connectorType: "output",
+                name: outputLink.output_name,
+                stepId: outputLink.id,
+            };
 
-        const updatedStep = {
-            ...step,
-            input_connections: inputReconnectionMap,
-        };
+            return {
+                input,
+                output,
+            } as Connection;
+        });
 
-        this.stepStore.updateStep(updatedStep);
+        inputConnections.forEach((connection) => {
+            this.connectionStore.addConnection(connection);
+        });
 
         // reconnect outputs
 
-        outputReconnectionMap.forEach(({ connection, name, nodeId }) => {
-            const step = this.stepStore.getStep(nodeId);
-
-            assertDefined(step);
-
-            const updatedInputConnections = {
-                ...step.input_connections,
+        const outputConnections = outputReconnectionMap.map(({ connection, name, nodeId }) => {
+            const input: InputTerminal = {
+                connectorType: "input",
+                name,
+                stepId: nodeId,
             };
 
-            updatedInputConnections[name] = connection;
-
-            const updatedStep = {
-                ...step,
-                input_connections: updatedInputConnections,
+            const output: OutputTerminal = {
+                connectorType: "output",
+                name: connection.output_name,
+                stepId,
             };
 
-            this.stepStore.updateStep(updatedStep);
+            return {
+                input,
+                output,
+            } as Connection;
+        });
+
+        outputConnections.forEach((connection) => {
+            this.connectionStore.addConnection(connection);
         });
     }
 
@@ -604,6 +623,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         this.insertSubworkflowSubAction.updateStepData = updatedStep;
         this.stateStore.activeNodeId = stepData.id;
 
+        await nextTick();
         this.reconnect();
 
         this.asyncOperationDone.value = true;
