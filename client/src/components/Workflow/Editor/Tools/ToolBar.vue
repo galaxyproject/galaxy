@@ -201,7 +201,10 @@ function openToWorkflowModal() {
 
 async function onClickExtract() {
     await moveSelectionToSubworkflow(newWorkflowName.value);
+    workflowCreatedModal.value?.hideModal();
 }
+
+const workflowNameValid = computed(() => newWorkflowName.value.trim() !== "");
 
 function autoLayout() {
     undoRedoStore.applyAction(new AutoLayoutAction(workflowId));
@@ -370,17 +373,17 @@ function autoLayout() {
                     <GFormLabel
                         class="mb-2"
                         title="New Workflow Name"
-                        :state="newWorkflowName.trim() === '' ? false : null"
+                        :state="workflowNameValid ? null : false"
                         invalid-feedback="please provide a name">
                         <GFormInput v-model="newWorkflowName" />
                     </GFormLabel>
 
                     <div class="d-flex flex-column flex-gapy-1">
-                        <GButton @click="onClickCopy">
+                        <GButton :disabled="!workflowNameValid" @click="onClickCopy">
                             Copy selection into new Workflow
                             <FontAwesomeIcon :icon="faPlus" />
                         </GButton>
-                        <GButton @click="onClickExtract">
+                        <GButton :disabled="!workflowNameValid" @click="onClickExtract">
                             Move selection to Sub-Workflow
                             <FontAwesomeIcon :icon="faSitemap" />
                         </GButton>
