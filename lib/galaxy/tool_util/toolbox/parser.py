@@ -48,9 +48,6 @@ class XmlToolConfSource(ToolConfSource):
     def parse_tool_path(self):
         return self.root.get("tool_path")
 
-    def parse_tool_cache_data_dir(self):
-        return self.root.get("tool_cache_data_dir")
-
     def parse_items(self):
         return [ensure_tool_conf_item(_) for _ in self.root]
 
@@ -71,9 +68,6 @@ class YamlToolConfSource(ToolConfSource):
 
     def parse_tool_path(self):
         return self.as_dict.get("tool_path")
-
-    def parse_tool_cache_data_dir(self):
-        return self.as_dict.get("tool_cache_data_dir")
 
     def parse_items(self):
         return [ToolConfItem.from_dict(_) for _ in self.as_dict.get("items")]
