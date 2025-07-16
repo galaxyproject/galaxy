@@ -1,4 +1,5 @@
 import abc
+import builtins
 import os
 import time
 from dataclasses import (
@@ -482,7 +483,7 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[builtins.list[AnyRemoteEntry], int]:
         raise NotImplementedError()
 
     def create_entry(
