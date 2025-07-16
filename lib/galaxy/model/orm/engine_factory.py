@@ -4,7 +4,6 @@ import os
 import threading
 import time
 from multiprocessing.util import register_after_fork
-from typing import Dict
 
 from sqlalchemy import (
     create_engine,
@@ -126,7 +125,7 @@ def build_engine(
     return engine
 
 
-def set_sqlite_connect_args(engine_options: Dict, url: str) -> None:
+def set_sqlite_connect_args(engine_options: dict, url: str) -> None:
     """
     Add or update `connect_args` in `engine_options` if db is sqlite.
     Set check_same_thread to False for sqlite, handled by request-specific session.

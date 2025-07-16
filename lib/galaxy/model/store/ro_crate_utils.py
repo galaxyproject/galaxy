@@ -2,8 +2,6 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -81,13 +79,13 @@ class WorkflowRunCrateProfileBuilder:
             "dbkey",
             "__input_ext",
         ]
-        self.workflow_entities: Dict[int, Any] = {}
-        self.collection_entities: Dict[int, Any] = {}
-        self.file_entities: Dict[int, Any] = {}
-        self.param_entities: Dict[int, Any] = {}
-        self.pv_entities: Dict[str, Any] = {}
+        self.workflow_entities: dict[int, Any] = {}
+        self.collection_entities: dict[int, Any] = {}
+        self.file_entities: dict[int, Any] = {}
+        self.param_entities: dict[int, Any] = {}
+        self.pv_entities: dict[str, Any] = {}
         # Cache for tools to avoid duplicating entities for the same tool
-        self.tool_cache: Dict[str, ContextEntity] = {}
+        self.tool_cache: dict[str, ContextEntity] = {}
 
     def build_crate(self):
         crate = ROCrate()
@@ -103,7 +101,7 @@ class WorkflowRunCrateProfileBuilder:
         self._add_attrs_files(crate)
         return crate
 
-    def _add_file(self, dataset: HistoryDatasetAssociation, properties: Dict[Any, Any], crate: ROCrate) -> File:
+    def _add_file(self, dataset: HistoryDatasetAssociation, properties: dict[Any, Any], crate: ROCrate) -> File:
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             description = ""
@@ -156,7 +154,7 @@ class WorkflowRunCrateProfileBuilder:
         dataset_ids = []
         for hda in hdca.dataset_instances:
             if hda.dataset:
-                properties: Dict[Any, Any] = {}
+                properties: dict[Any, Any] = {}
                 self._add_file(hda, properties, crate)
                 dataset_id = self.file_entities.get(hda.dataset.id)
                 if dataset_id:
@@ -288,7 +286,7 @@ class WorkflowRunCrateProfileBuilder:
         """
         Add workflow steps (HowToStep) to the RO-Crate. These are unique for each tool occurrence.
         """
-        step_entities: List[ContextEntity] = []
+        step_entities: list[ContextEntity] = []
         # Initialize the position as a list with a single element to keep it mutable
         position = [1]
         self._add_steps_recursive(self.workflow.steps, crate, step_entities, position)
@@ -337,7 +335,7 @@ class WorkflowRunCrateProfileBuilder:
                     self._add_steps_recursive(subworkflow.steps, crate, step_entities, position)
 
     def _add_tools(self, crate: ROCrate):
-        tool_entities: List[ContextEntity] = []
+        tool_entities: list[ContextEntity] = []
         self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
 
     def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):

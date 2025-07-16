@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Dict,
     Optional,
 )
 
@@ -204,7 +203,7 @@ def get_fastapi_instance() -> FastAPI:
     )
 
 
-def get_openapi_schema() -> Dict[str, Any]:
+def get_openapi_schema() -> dict[str, Any]:
     """
     Dumps openAPI schema without starting a full app and webserver.
     """

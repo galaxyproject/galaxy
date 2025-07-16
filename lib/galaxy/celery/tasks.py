@@ -503,8 +503,7 @@ def send_notification_to_recipients_async(
 @galaxy_task(action="dispatch pending notifications")
 def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""
-    count = notification_manager.dispatch_pending_notifications_via_channels()
-    if count:
+    if count := notification_manager.dispatch_pending_notifications_via_channels():
         log.info(f"Successfully dispatched {count} notifications.")
 
 

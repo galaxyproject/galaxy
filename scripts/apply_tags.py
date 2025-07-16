@@ -2,7 +2,6 @@
 
 import sys
 import time
-from typing import List
 
 from bioblend.galaxy import GalaxyInstance
 
@@ -109,7 +108,7 @@ class ApplyTagsHistory:
 
         recursive_parent_ids = {}
         for item in datasets_inheritance_chain:
-            recursive_parents: List = []
+            recursive_parents: list = []
 
             find_parent_recursive(item, recursive_parents)
             # take unique parents

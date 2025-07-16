@@ -8,17 +8,14 @@ import json
 import logging
 import os
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from io import StringIO
 from typing import (
     Any,
     cast,
-    Dict,
     get_args,
-    List,
     Optional,
-    Sequence,
-    Set,
 )
 
 from typing_extensions import Literal
@@ -234,7 +231,7 @@ class DataMetaFilter(Filter):
         # - for data sets: the meta data value
         # in both cases only meta data that is set (i.e. differs from the no_value)
         # is considered
-        meta_value: Set[Any] = set()
+        meta_value: set[Any] = set()
         for r in ref:
             if not r.metadata.element_is_set(self.key):
                 continue
@@ -246,7 +243,7 @@ class DataMetaFilter(Filter):
             return copy.deepcopy(options)
 
         if self.column is not None:
-            rval: List[ParameterOption] = []
+            rval: list[ParameterOption] = []
             for fields in options:
                 if compare_meta_value(fields[self.column], meta_value):
                     rval.append(fields)
@@ -639,7 +636,7 @@ class DynamicOptions:
             return self.parse_file_fields(obj)
 
         self.tool_param = tool_param
-        self.columns: Dict[str, int] = {}
+        self.columns: dict[str, int] = {}
         self.filters = []
         self.file_fields = None
         self.largest_index = 0
@@ -846,7 +843,7 @@ class DynamicOptions:
 
     @staticmethod
     def to_parameter_options(options):
-        rval: List[ParameterOption] = []
+        rval: list[ParameterOption] = []
         for option in options:
             if isinstance(option, ParameterOption):
                 rval.append(option)
@@ -937,7 +934,7 @@ class DynamicOptions:
 
     def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
 
-        rval: List[ParameterOption] = []
+        rval: list[ParameterOption] = []
 
         def to_option(values):
             if len(values) == 2:
@@ -1048,7 +1045,7 @@ def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
     return None
 
 
-def template_or_none(template: Optional[str], context: Dict[str, Any]) -> Optional[str]:
+def template_or_none(template: Optional[str], context: dict[str, Any]) -> Optional[str]:
     if template:
         return fill_template(template, context=context)
     return None

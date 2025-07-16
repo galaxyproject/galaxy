@@ -6,7 +6,6 @@ from dataclasses import (
 )
 from struct import unpack
 from typing import (
-    Dict,
     Optional,
 )
 from urllib.parse import (
@@ -110,13 +109,13 @@ class RemoteZipFilesSource(BaseFilesSource):
         return effective_props
 
 
-def extract_query_parameters(url: str) -> Dict[str, str]:
+def extract_query_parameters(url: str) -> dict[str, str]:
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
     return {key: value[0] for key, value in query_params.items()}
 
 
-def validate_params(params: Dict[str, str]) -> FileExtractParameters:
+def validate_params(params: dict[str, str]) -> FileExtractParameters:
     """Validates and converts the params dictionary to a FileExtractParameters instance."""
 
     required_fields = [field.name for field in fields(FileExtractParameters)]

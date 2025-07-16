@@ -10,11 +10,7 @@ from enum import Enum
 from typing import (
     Any,
     ClassVar,
-    List,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -310,7 +306,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
 
@@ -327,7 +323,7 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
-def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
+def file_source_type_is_browsable(target_type: type["BaseFilesSource"]) -> bool:
     # Check whether the list method has been overridden
     return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
 
@@ -457,7 +453,7 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
@@ -594,7 +590,7 @@ class BaseFilesSource(FilesSource):
             return self._evaluate_security_rules(self.requires_groups, user_context.group_names)
         return True
 
-    def _evaluate_security_rules(self, rule_expression: str, user_credentials: Set[str]) -> bool:
+    def _evaluate_security_rules(self, rule_expression: str, user_credentials: set[str]) -> bool:
         token_evaluator = TokenContainedEvaluator(user_credentials)
         evaluator = BooleanExpressionEvaluator(token_evaluator)
         return evaluator.evaluate_expression(rule_expression)

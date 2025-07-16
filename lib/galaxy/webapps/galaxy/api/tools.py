@@ -8,8 +8,6 @@ from json import loads
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
 )
 
@@ -120,9 +118,9 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
-async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
         data = await request.form()
         for value in data.values():
@@ -148,7 +146,7 @@ class FetchTools:
         self,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         trans: ProvidesHistoryContext = DependsOnTrans,
-        files: List[StarletteUploadFile] = Depends(get_files),
+        files: list[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
 
@@ -438,7 +436,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
-        test_counts_by_tool: Dict[str, Dict] = {}
+        test_counts_by_tool: dict[str, dict] = {}
         for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
@@ -453,7 +451,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> List[ToolTestDescriptionDict]:
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -739,7 +737,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self.service._create(trans, payload, **kwd)
 
 
-def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
+def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(Dict[str, Any], kwd.get("payload"))
+        kwd = cast(dict[str, Any], kwd.get("payload"))
     return kwd

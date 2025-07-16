@@ -1,8 +1,6 @@
 import json
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 import pytest
@@ -119,7 +117,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("text_repeat")
 
-        def assert_input_order(inputs: List[str]):
+        def assert_input_order(inputs: list[str]):
             for index, input in enumerate(inputs):
                 parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
                 parameter_value = parameter_input.wait_for_value()
@@ -552,7 +550,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
+    def _apply_rules_and_check(self, example: dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()

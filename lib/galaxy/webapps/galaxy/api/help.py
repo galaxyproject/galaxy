@@ -1,7 +1,7 @@
 import logging
+from typing import Annotated
 
 from fastapi import Query
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.help import HelpForumSearchResponse

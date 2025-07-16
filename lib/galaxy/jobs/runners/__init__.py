@@ -17,7 +17,6 @@ from queue import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -267,7 +266,7 @@ class BaseJobRunner:
         """
         return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
-    def parse_destination_params(self, params: Dict[str, Any]):
+    def parse_destination_params(self, params: dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 

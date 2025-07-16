@@ -1,9 +1,6 @@
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -30,8 +27,8 @@ def build_collection(
     type: "BaseDatasetCollectionType",
     dataset_instances: "DatasetInstanceMapping",
     collection: Optional[DatasetCollection] = None,
-    associated_identifiers: Optional[Set[str]] = None,
-    fields: Optional[Union[str, List["FieldDict"]]] = None,
+    associated_identifiers: Optional[set[str]] = None,
+    fields: Optional[Union[str, list["FieldDict"]]] = None,
 ) -> DatasetCollection:
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
@@ -48,8 +45,8 @@ def set_collection_elements(
     dataset_collection: DatasetCollection,
     type: "BaseDatasetCollectionType",
     dataset_instances: "DatasetInstanceMapping",
-    associated_identifiers: Set[str],
-    fields: Optional[Union[str, List["FieldDict"]]] = None,
+    associated_identifiers: set[str],
+    fields: Optional[Union[str, list["FieldDict"]]] = None,
 ) -> DatasetCollection:
     new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
     new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
@@ -72,8 +69,8 @@ def set_collection_elements(
     return dataset_collection
 
 
-def guess_fields(dataset_instances: "DatasetInstanceMapping") -> List["FieldDict"]:
-    fields: List[FieldDict] = []
+def guess_fields(dataset_instances: "DatasetInstanceMapping") -> list["FieldDict"]:
+    fields: list[FieldDict] = []
     for identifier, element in dataset_instances.items():
         if isinstance(element, DatasetCollection):
             return []
@@ -83,7 +80,7 @@ def guess_fields(dataset_instances: "DatasetInstanceMapping") -> List["FieldDict
     return fields
 
 
-ElementsDict = Dict[str, Union["CollectionBuilder", DatasetInstance]]
+ElementsDict = dict[str, Union["CollectionBuilder", DatasetInstance]]
 
 
 class CollectionBuilder:
@@ -94,12 +91,12 @@ class CollectionBuilder:
         self._current_elements: ElementsDict = {}
         # Store collection here so we don't recreate the collection all the time
         self.collection: Optional[DatasetCollection] = None
-        self.associated_identifiers: Set[str] = set()
+        self.associated_identifiers: set[str] = set()
 
     def replace_elements_in_collection(
         self,
         template_collection: Union["CollectionAdapter", DatasetCollection],
-        replacement_dict: Dict[DatasetInstance, DatasetInstance],
+        replacement_dict: dict[DatasetInstance, DatasetInstance],
     ) -> None:
         self._current_elements = self._replace_elements_in_collection(
             template_collection=template_collection,
@@ -109,7 +106,7 @@ class CollectionBuilder:
     def _replace_elements_in_collection(
         self,
         template_collection: Union["CollectionAdapter", DatasetCollection],
-        replacement_dict: Dict[DatasetInstance, DatasetInstance],
+        replacement_dict: dict[DatasetInstance, DatasetInstance],
     ) -> ElementsDict:
         elements: ElementsDict = {}
         for element in template_collection.elements:
@@ -155,7 +152,7 @@ class CollectionBuilder:
             return new_elements
         else:
             self._current_elements = {}
-            return cast(Dict[str, DatasetInstance], elements)
+            return cast(dict[str, DatasetInstance], elements)
 
     def build(self) -> DatasetCollection:
         type_plugin = self._collection_type_description.rank_type_plugin()

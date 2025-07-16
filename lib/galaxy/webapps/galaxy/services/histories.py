@@ -9,9 +9,7 @@ from tempfile import (
 )
 from typing import (
     cast,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -188,7 +186,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         ]
         return rval
 
-    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: List[Tuple[str, str, str]]):
+    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: list[tuple[str, str, str]]):
         # TODO: this should all be removed (along with the default) in v2
         # support the old default of not-returning/filtering-out deleted histories
         try:
@@ -218,7 +216,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         payload: HistoryIndexQueryPayload,
         serialization_params: SerializationParams,
         include_total_count: bool = False,
-    ) -> Tuple[List[AnyHistoryView], Union[int, None]]:
+    ) -> tuple[list[AnyHistoryView], Union[int, None]]:
         """Return a list of History accessible by the user
 
         :rtype:     list
@@ -572,7 +570,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans,
         history_id: DecodedDatabaseIdField,
         payload: Optional[ExportHistoryArchivePayload] = None,
-    ) -> Tuple[HistoryArchiveExportResult, bool]:
+    ) -> tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -783,7 +781,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         include_total_matches: bool = False,
-    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
+    ) -> tuple[list[AnyArchivedHistoryView], Optional[int]]:
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
 

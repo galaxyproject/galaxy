@@ -30,8 +30,6 @@ import os
 import re
 import shutil
 from typing import (
-    Dict,
-    List,
     Union,
 )
 
@@ -113,7 +111,7 @@ class ToolBoxSearch:
         for panel_search in self.panel_searches.values():
             panel_search.build_index(tool_cache, toolbox, index_help=index_help)
 
-    def search(self, *args, **kwd) -> List[str]:
+    def search(self, *args, **kwd) -> list[str]:
         panel_view = kwd.pop("panel_view")
         if panel_view not in self.panel_searches:
             raise KeyError(f"Unknown panel_view specified {panel_view}")
@@ -277,7 +275,7 @@ class ToolPanelViewSearch:
         self,
         tool,
         index_help: bool = True,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in string:
@@ -326,7 +324,7 @@ class ToolPanelViewSearch:
         self,
         q: str,
         config: GalaxyAppConfiguration,
-    ) -> List[str]:
+    ) -> list[str]:
         """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(

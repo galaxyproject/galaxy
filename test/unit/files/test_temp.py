@@ -1,5 +1,4 @@
 import tempfile
-from typing import List
 
 import pytest
 
@@ -202,7 +201,7 @@ def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user
         file_source.write_from(target_uri, f.name, user_context=user_context)
 
 
-def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
+def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: list[str]):
     result, count = file_source.list(uri, recursive=recursive)
     assert count == len(expected_names)
     assert sorted([entry["name"] for entry in result]) == sorted(expected_names)

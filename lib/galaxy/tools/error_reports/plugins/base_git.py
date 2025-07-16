@@ -5,7 +5,6 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from typing import Dict
 
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import (
@@ -21,12 +20,12 @@ log = logging.getLogger(__name__)
 class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
     """Base definition to send error reports to a Git repository provider"""
 
-    issue_cache: Dict[str, Dict] = {}
-    ts_urls: Dict[str, str] = {}
-    ts_repo_cache: Dict[str, Dict] = {}
-    git_project_cache: Dict[str, Dict] = {}
-    label_cache: Dict[str, Dict] = {}
-    git_username_id_cache: Dict[str, str] = {}
+    issue_cache: dict[str, dict] = {}
+    ts_urls: dict[str, str] = {}
+    ts_repo_cache: dict[str, dict] = {}
+    git_project_cache: dict[str, dict] = {}
+    label_cache: dict[str, dict] = {}
+    git_username_id_cache: dict[str, str] = {}
 
     # Git variables
     git_default_repo_owner = False

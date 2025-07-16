@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
 )
 from unittest import SkipTest
 from uuid import uuid4
@@ -63,7 +61,7 @@ class SharingApiTests(UsesApiTestCaseMixin):
         sharing_response = self._get_resource_sharing_status(resource_id)
         assert not sharing_response["users_shared_with"]
 
-        payload: Dict[str, List[str]] = {"user_ids": []}
+        payload: dict[str, list[str]] = {"user_ids": []}
         sharing_response = self._set_resource_sharing(resource_id, action="share_with_users", payload=payload)
         assert not sharing_response["users_shared_with"]
 

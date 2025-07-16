@@ -2,7 +2,6 @@
 
 from typing import (
     Any,
-    Dict,
     Literal,
 )
 from uuid import uuid4
@@ -48,7 +47,7 @@ def one_ld_library_model_store_dict():
         hash_value=TEST_HASH_VALUE,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=TEST_SOURCE_URI,
         extra_files_path=None,
@@ -90,7 +89,7 @@ def one_ld_library_model_store_dict():
         },
     }
 
-    root_folder: Dict[str, Any] = {
+    root_folder: dict[str, Any] = {
         "model_class": "LibraryFolder",
         "name": TEST_ROOT_FOLDER_NAME,
         "description": TEST_ROOT_FOLDER_DESCRIPTION,
@@ -124,7 +123,7 @@ def one_ld_library_deferred_model_store_dict():
         hash_value=TEST_HASH_VALUE,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=TEST_SOURCE_URI,
         extra_files_path=None,
@@ -167,7 +166,7 @@ def one_ld_library_deferred_model_store_dict():
         },
     }
 
-    root_folder: Dict[str, Any] = {
+    root_folder: dict[str, Any] = {
         "model_class": "LibraryFolder",
         "name": TEST_ROOT_FOLDER_NAME,
         "description": TEST_ROOT_FOLDER_DESCRIPTION,
@@ -203,7 +202,7 @@ def one_hda_model_store_dict(
         hash_value=TEST_HASH_VALUE,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=TEST_SOURCE_URI,
         extra_files_path=None,
@@ -249,7 +248,7 @@ def history_model_store_dict():
         hash_value=TEST_HASH_VALUE,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=TEST_SOURCE_URI,
         extra_files_path=None,
@@ -300,7 +299,7 @@ def deferred_hda_model_store_dict(
         hash_value=TEST_HASH_VALUE,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=source_uri,
         extra_files_path=None,
@@ -348,7 +347,7 @@ def deferred_hda_model_store_dict_space_to_tab(
     actions_type: TRANSFORM_ACTIONS_TYPE,
     apply_transform: bool = True,
 ):
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=TEST_SOURCE_URI_SIMPLE_LINE,
         extra_files_path=None,
@@ -414,7 +413,7 @@ def deferred_hda_model_store_dict_bam(
         hash_value=TEST_HASH_VALUE_BAM,
         extra_files_path=None,
     )
-    dataset_source: Dict[str, Any] = dict(
+    dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",
         source_uri=source_uri,
         extra_files_path=None,
