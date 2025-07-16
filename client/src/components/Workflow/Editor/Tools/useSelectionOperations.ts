@@ -47,7 +47,7 @@ export function useSelectionOperations() {
 
     const services = new Services();
 
-    async function copySelectionToNewWorkflow() {
+    async function copySelectionToNewWorkflow(name: string) {
         const commentIds = [...commentStore.multiSelectedCommentIds];
         const stepIds = [...stateStore.multiSelectedStepIds];
 
@@ -60,14 +60,14 @@ export function useSelectionOperations() {
 
         const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));
 
-        const partialWorkflow = { comments, steps, name: "TODO: store name", id, annotation: "" };
+        const partialWorkflow = { comments, steps, name, id, annotation: "" };
         const newWf = await services.createWorkflow(partialWorkflow);
 
         return newWf;
     }
 
-    async function moveSelectionToSubworkflow() {
-        const action = new ExtractSubworkflowAction(id);
+    async function moveSelectionToSubworkflow(name: string) {
+        const action = new ExtractSubworkflowAction(id, name);
         undoRedoStore.applyAction(action);
 
         await until(() => action.asyncOperationDone.value);

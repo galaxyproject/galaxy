@@ -480,6 +480,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     asyncOperationDone: { value: boolean };
 
     workflowId;
+    workflowName;
     services;
 
     stateStore;
@@ -491,10 +492,11 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     inputReconnectionMap?: InputReconnectionMap;
     outputReconnectionMap?: OutputReconnectionMap;
 
-    constructor(workflowId: string) {
+    constructor(workflowId: string, name: string) {
         super();
 
         this.workflowId = workflowId;
+        this.workflowName = name;
         this.services = new Services();
 
         this.stateStore = useWorkflowStateStore(workflowId);
@@ -633,7 +635,7 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         const partialWorkflow = {
             comments,
             steps,
-            name: "Extracted Subworkflow Test",
+            name: this.name,
             id: this.workflowId,
             annotation: "",
         };

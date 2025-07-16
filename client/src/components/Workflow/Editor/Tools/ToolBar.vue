@@ -33,13 +33,14 @@ import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
-const { toolbarStore, undoRedoStore, commentStore, workflowId } = useWorkflowStores();
+const { toolbarStore, undoRedoStore, commentStore, workflowId, stateStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -178,7 +179,7 @@ const newWorkflowURL = ref("about:blank");
 async function onClickCopy() {
     const newTab = window.open("about:blank", "_blank");
 
-    const newWF = await copySelectionToNewWorkflow();
+    const newWF = await copySelectionToNewWorkflow(newWorkflowName.value);
 
     toWorkflowModal.value?.hideModal();
 
@@ -193,8 +194,17 @@ async function onClickCopy() {
     }
 }
 
+const newWorkflowName = ref("");
+
+function openToWorkflowModal() {
+    const workflowName = stateStore.name;
+    newWorkflowName.value = `Extracted from ${workflowName}`;
+
+    toWorkflowModal.value?.showModal();
+}
+
 async function onClickExtract() {
-    const _newWF = await moveSelectionToSubworkflow();
+    await moveSelectionToSubworkflow(newWorkflowName.value);
 }
 
 function autoLayout() {
@@ -355,15 +365,20 @@ function autoLayout() {
                         </GButton>
                     </GButtonGroup>
 
-                    <GButton
-                        class="button"
-                        title="move or copy selected to workflow"
-                        @click="toWorkflowModal?.showModal()">
+                    <GButton class="button" title="move or copy selected to workflow" @click="openToWorkflowModal">
                         To Workflow... <FontAwesomeIcon :icon="faSitemap" />
                     </GButton>
                 </span>
 
                 <GModal ref="toWorkflowModal" title="Selection To Workflow">
+                    <GFormLabel
+                        class="mb-2"
+                        title="New Workflow Name"
+                        :state="newWorkflowName.trim() === '' ? false : null"
+                        invalid-feedback="please provide a name">
+                        <GFormInput v-model="newWorkflowName" />
+                    </GFormLabel>
+
                     <div class="d-flex flex-column flex-gapy-1">
                         <GButton @click="onClickCopy">
                             Copy selection into new Workflow
