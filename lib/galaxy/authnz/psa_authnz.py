@@ -104,6 +104,7 @@ AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
+    "galaxy.authnz.psa_authnz.decode_access_token",
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
@@ -116,10 +117,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name(key)] = value
 
         self.config[setting_name("USER_MODEL")] = "models.User"
-        # Add decode_access_token to the auth pipeline if configured
+        # Use a custom auth pipeline if configured.
         auth_pipeline = app_config.get("oidc_auth_pipeline", AUTH_PIPELINE)
-        if app_config.get("oidc_decode_access_token"):
-            auth_pipeline = (*auth_pipeline, "galaxy.authnz.psa_authnz.decode_access_token")
         self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
@@ -511,10 +510,13 @@ def disconnect(
 
 def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **kwargs):
     """
-    Auth pipeline step to decode the OIDC access token.
+    Auth pipeline step to decode the OIDC access token, if possible.
+    Note that some OIDC providers return an opaque access token, which
+    cannot be decoded.
 
     Returns the access token, making it available as a new argument
-    "access_token" that can be used in future pipeline steps
+    "access_token" that can be used in future pipeline steps. If
+    decoding the access token is not possible, access_token will be None.
 
     Depends on "access_token" being present in social.extra_data,
     which should be handled by social_core.pipeline.social_auth.load_extra_data, so
