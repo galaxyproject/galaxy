@@ -436,7 +436,6 @@ class TestGalaxyOIDCLoginPSA(AbstractTestCases.BaseKeycloakIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_oidc_config_kwds(cls, config):
-        # super().handle_galaxy_config_kwds(config)
         config["enable_oidc"] = True
         config["oidc_config_file"] = os.path.join(os.path.dirname(__file__), "oidc_config.xml")
         config["oidc_backends_config_file"] = cls.backend_config_file
