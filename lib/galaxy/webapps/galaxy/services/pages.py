@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    Tuple,
     Union,
 )
 
@@ -68,7 +67,7 @@ class PagesService(ServiceBase):
 
     def index(
         self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[PageSummaryList, Union[int, None]]:
+    ) -> tuple[PageSummaryList, Union[int, None]]:
         """Return a list of Pages viewable by the user
 
         :rtype:     list

@@ -4,7 +4,6 @@ API operations on User storage management.
 
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -71,7 +70,7 @@ class FastAPIStorageCleaner:
         offset: Optional[int] = OffsetQueryParam,
         limit: Optional[int] = LimitQueryParam,
         order: Optional[StoredItemOrderBy] = OrderQueryParam,
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "history", offset, limit, order)
 
     @router.delete(
@@ -106,7 +105,7 @@ class FastAPIStorageCleaner:
         offset: Optional[int] = OffsetQueryParam,
         limit: Optional[int] = LimitQueryParam,
         order: Optional[StoredItemOrderBy] = OrderQueryParam,
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "dataset", offset, limit, order)
 
     @router.delete(
@@ -141,5 +140,5 @@ class FastAPIStorageCleaner:
         offset: Optional[int] = OffsetQueryParam,
         limit: Optional[int] = LimitQueryParam,
         order: Optional[StoredItemOrderBy] = OrderQueryParam,
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         return self.service.get_archived(trans, "history", offset, limit, order)

@@ -1,5 +1,3 @@
-from typing import Dict
-
 import pytest
 
 from ..base import common
@@ -547,8 +545,8 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
     def test_0110_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
         self.login(email=common.admin_email, username=common.admin_username)
-        old_metadata: Dict[str, Dict] = {}
-        new_metadata: Dict[str, Dict] = {}
+        old_metadata: dict[str, dict] = {}
+        new_metadata: dict[str, dict] = {}
         repositories = self.test_db_util.get_all_repositories()
         for repository in repositories:
             old_metadata[self.security.encode_id(repository.id)] = {}

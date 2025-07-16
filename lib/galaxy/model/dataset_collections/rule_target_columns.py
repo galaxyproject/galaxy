@@ -1,8 +1,6 @@
 import re
 from dataclasses import dataclass
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -14,7 +12,7 @@ from galaxy.model.dataset_collections.rule_target_models import (
     target_model_by_type,
 )
 
-COLUMN_TITLE_PREFIXES: Dict[str, RuleBuilderMappingTargetKey] = {
+COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
     "name": "name",
     "listname": "collection_name",
     "collectionname": "collection_name",
@@ -128,9 +126,9 @@ class ParsedColumn(BaseModel):
             return f"{self.type}_{self.type_index}"
 
 
-def column_titles_to_headers(column_titles: List[str]) -> List[HeaderColumn]:
-    headers: List[HeaderColumn] = []
-    headers_of_type_seen: Dict[RuleBuilderMappingTargetKey, int] = {}
+def column_titles_to_headers(column_titles: list[str]) -> list[HeaderColumn]:
+    headers: list[HeaderColumn] = []
+    headers_of_type_seen: dict[RuleBuilderMappingTargetKey, int] = {}
 
     for column_title in column_titles:
         column_type_: Optional[RuleBuilderMappingTargetKey] = column_title_to_target_type(column_title)

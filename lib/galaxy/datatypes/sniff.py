@@ -12,12 +12,11 @@ import shutil
 import struct
 import tempfile
 import zipfile
+from collections.abc import Iterable
 from functools import partial
 from typing import (
     Callable,
-    Dict,
     IO,
-    Iterable,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -957,7 +956,7 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

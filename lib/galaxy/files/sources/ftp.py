@@ -10,7 +10,6 @@ except ImportError:
 from typing import (
     cast,
     Optional,
-    Tuple,
 )
 
 from . import (
@@ -72,7 +71,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
 
     def _get_props_and_rel_path(
         self, extra_props: FTPFilesSourceProperties, url: str
-    ) -> Tuple[str, FTPFilesSourceProperties]:
+    ) -> tuple[str, FTPFilesSourceProperties]:
         host = self._props.get("host")
         port = self._props.get("port")
         user = self._props.get("user")

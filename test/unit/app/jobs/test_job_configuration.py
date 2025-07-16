@@ -3,7 +3,6 @@ import os
 import shutil
 import tempfile
 from typing import (
-    Dict,
     Optional,
 )
 from unittest import mock
@@ -99,7 +98,7 @@ class BaseJobConfXmlParserTestCase(TestCase):
         self._job_configuration_base_pools = base_pools
         self._write_config_from(HANDLER_TEMPLATE_JOB_CONF, template=template)
 
-    def _write_config_from(self, path: StrPath, template: Optional[Dict[str, str]] = None) -> None:
+    def _write_config_from(self, path: StrPath, template: Optional[dict[str, str]] = None) -> None:
         template = template or {}
         try:
             contents = open(path).read()

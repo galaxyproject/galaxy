@@ -2,10 +2,7 @@ import os
 import tempfile
 from collections import namedtuple
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from galaxy import exceptions
@@ -39,7 +36,7 @@ from tool_shed_client.schema import ShedParsedTool
 from .repositories import get_repository_revision_metadata_model
 from .trs import trs_tool_id_to_repository_metadata
 
-STOCK_TOOL_SOURCES: Optional[Dict[str, Dict[str, ToolSource]]] = None
+STOCK_TOOL_SOURCES: Optional[dict[str, dict[str, ToolSource]]] = None
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -83,7 +80,7 @@ def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int =
 
 def get_repository_metadata_tool_dict(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
-) -> Tuple[RepositoryMetadata, RepositoryMetadataToolDict]:
+) -> tuple[RepositoryMetadata, RepositoryMetadataToolDict]:
     if trs_tool_id.count("~") < 2:
         RequestParameterInvalidException(f"Invalid TRS tool id ({trs_tool_id})")
 
@@ -93,7 +90,7 @@ def get_repository_metadata_tool_dict(
         raise ObjectNotFound()
     tool_version_repository_metadata: RepositoryMetadata = metadata_by_version[tool_version]
     raw_metadata = tool_version_repository_metadata.metadata
-    tool_dicts: List[RepositoryMetadataToolDict] = raw_metadata.get("tools", [])
+    tool_dicts: list[RepositoryMetadataToolDict] = raw_metadata.get("tools", [])
     for tool_dict in tool_dicts:
         if tool_dict["id"] != tool_id or tool_dict["version"] != tool_version:
             continue
@@ -130,7 +127,7 @@ def parsed_tool_model_for(
 
 def tool_source_for(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
-) -> Tuple[ToolSource, Optional[RepositoryMetadata]]:
+) -> tuple[ToolSource, Optional[RepositoryMetadata]]:
     if "~" in trs_tool_id:
         return _shed_tool_source_for(trans, trs_tool_id, tool_version, repository_clone_url)
     else:
@@ -142,7 +139,7 @@ def tool_source_for(
 
 def _shed_tool_source_for(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
-) -> Tuple[ToolSource, RepositoryMetadata]:
+) -> tuple[ToolSource, RepositoryMetadata]:
     rval = get_repository_metadata_tool_dict(trans, trs_tool_id, tool_version)
     repository_metadata, tool_version_metadata = rval
     tool_config = tool_version_metadata["tool_config"]

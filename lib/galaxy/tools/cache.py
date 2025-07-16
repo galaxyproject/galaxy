@@ -7,7 +7,6 @@ import tempfile
 import zlib
 from threading import Lock
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -138,7 +137,7 @@ class ToolCache:
 
     def __init__(self):
         self._lock = Lock()
-        self._hash_by_tool_paths: Dict[str, ToolHash] = {}
+        self._hash_by_tool_paths: dict[str, ToolHash] = {}
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
         self._macro_paths_by_id = {}

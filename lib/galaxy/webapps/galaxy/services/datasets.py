@@ -7,10 +7,7 @@ import os
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -145,15 +142,15 @@ class DatasetStorageDetails(Model):
     dataset_state: str = Field(
         description="The model state of the supplied dataset instance.",
     )
-    hashes: List[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
-    sources: List[dict] = Field(description="The file sources associated with the supplied dataset instance.")
+    hashes: list[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
+    sources: list[dict] = Field(description="The file sources associated with the supplied dataset instance.")
     shareable: bool = Field(
         description="Is this dataset shareable.",
     )
     quota: ConcreteObjectStoreQuotaSourceDetails = Field(
         description="Information about quota sources around dataset storage."
     )
-    badges: List[BadgeDict] = Field(
+    badges: list[BadgeDict] = Field(
         description="A list of badges describing object store properties for concrete object store dataset is stored in."
     )
     relocatable: bool = Field(
@@ -174,7 +171,7 @@ class DatasetInheritanceChainEntry(Model):
 
 
 class DatasetInheritanceChain(RootModel):
-    root: List[DatasetInheritanceChainEntry] = Field(
+    root: list[DatasetInheritanceChainEntry] = Field(
         default=[],
         title="Dataset inheritance chain",
     )
@@ -198,7 +195,7 @@ class ExtraFileEntry(Model):
 class DatasetExtraFiles(RootModel):
     """A list of extra files associated with a dataset."""
 
-    root: List[ExtraFileEntry]
+    root: list[ExtraFileEntry]
 
 
 class DatasetTextContentDetails(Model):
@@ -216,7 +213,7 @@ class DatasetTextContentDetails(Model):
 class ConvertedDatasetsMap(RootModel):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
-    root: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
+    root: dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -232,7 +229,7 @@ class DataMode(str, Enum):
 
 
 class DataResult(Model):
-    data: List[Any]
+    data: list[Any]
     dataset_type: Optional[str] = None
     message: Optional[str] = None
     extra_info: Optional[Any] = None  # Seems to be always None, deprecate?
@@ -244,7 +241,7 @@ class BamDataResult(DataResult):
 
 
 class DeleteDatasetBatchPayload(Model):
-    datasets: List[DatasetSourceId] = Field(
+    datasets: list[DatasetSourceId] = Field(
         description="The list of datasets IDs with their sources to be deleted/purged.",
     )
     purge: Optional[bool] = Field(
@@ -284,7 +281,7 @@ class DeleteDatasetBatchResult(Model):
     success_count: int = Field(
         description="The number of datasets successfully processed.",
     )
-    errors: Optional[List[DatasetErrorMessage]] = Field(
+    errors: Optional[list[DatasetErrorMessage]] = Field(
         default=None,
         description=(
             "A list of dataset IDs and the corresponding error message if something "
@@ -319,11 +316,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.dataset_manager = dataset_manager
 
     @property
-    def serializer_by_type(self) -> Dict[str, ModelSerializer]:
+    def serializer_by_type(self) -> dict[str, ModelSerializer]:
         return {"dataset": self.hda_serializer, "dataset_collection": self.hdca_serializer}
 
     @property
-    def dataset_manager_by_type(self) -> Dict[str, DatasetAssociationManager]:
+    def dataset_manager_by_type(self) -> dict[str, DatasetAssociationManager]:
         return {"hda": self.hda_manager, "ldda": self.ldda_manager}
 
     def index(
@@ -332,7 +329,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_id: Optional[DecodedDatabaseIdField],
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> Tuple[List[AnyHistoryContentItem], int]:
+    ) -> tuple[list[AnyHistoryContentItem], int]:
         """
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
@@ -527,7 +524,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             **extra_attributes,
         )
 
-    def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
+    def drs_dataset_instance(self, object_id: str) -> tuple[int, DatasetSourceType]:
         if object_id.startswith("hda-"):
             decoded_object_id = self.decode_id(object_id[len("hda-") :], kind="drs")
             hda_ldda = DatasetSourceType.hda
@@ -549,7 +546,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         # TODO: issue warning if not being served on HTTPS @ 443 - required by the spec.
         self_uri = f"drs://drs.{request_url.components.netloc}/{object_id}"
-        checksums: List[Checksum] = []
+        checksums: list[Checksum] = []
         for dataset_hash in dataset_instance.dataset.hashes:
             if dataset_hash.extra_files_path:
                 continue
@@ -772,7 +769,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Warning: only the ownership of the dataset and upload state for HDAs is checked, no other checks or restrictions are made.
         """
         success_count = 0
-        errors: List[DatasetErrorMessage] = []
+        errors: list[DatasetErrorMessage] = []
         for dataset in payload.datasets:
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
@@ -898,7 +895,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans,
         dataset: model.DatasetInstance,
         query: Optional[str],
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         """
         Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]

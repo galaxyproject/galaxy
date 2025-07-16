@@ -4,12 +4,12 @@ API Controller providing Chat functionality
 
 import logging
 from typing import (
+    Annotated,
     Optional,
     Union,
 )
 
 from fastapi import Path
-from typing_extensions import Annotated
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError

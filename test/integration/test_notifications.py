@@ -4,10 +4,7 @@ from datetime import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 from uuid import uuid4
 
@@ -381,7 +378,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
         return status
 
     def _send_test_notification_to(
-        self, user_ids: List[str], subject: Optional[str] = None, message: Optional[str] = None
+        self, user_ids: list[str], subject: Optional[str] = None, message: Optional[str] = None
     ):
         request = {
             "recipients": {"user_ids": user_ids},
@@ -398,7 +395,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
         message: Optional[str] = None,
         publication_time: Optional[datetime] = None,
         expiration_time: Optional[datetime] = None,
-        action_links: Optional[List[Tuple[str, str]]] = None,
+        action_links: Optional[list[tuple[str, str]]] = None,
     ):
         payload = notification_broadcast_test_data()
         if subject is not None:
@@ -418,7 +415,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
         notifications_status = response.json()
         return notifications_status
 
-    def _update_notification(self, notification_id: str, update_state: Dict[str, Any]):
+    def _update_notification(self, notification_id: str, update_state: dict[str, Any]):
         update_response = self._put(f"notifications/{notification_id}", data=update_state, json=True)
         self._assert_status_code_is(update_response, 204)
 
