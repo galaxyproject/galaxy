@@ -5,7 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
