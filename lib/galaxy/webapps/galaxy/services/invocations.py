@@ -255,11 +255,11 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         return rval
 
     def report_error(
-        self, trans, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
+        self, trans: ProvidesUserContext, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
     ) -> ReportInvocationErrorResponse:
         # ensure_celery_tasks_enabled(trans.app.config) # TODO: Should this be enabled?
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=True, check_accessible=True
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
         )
         email = payload.email
         if not email and not trans.anonymous:
@@ -270,6 +270,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             user=trans.user,
             email=email,
             message=payload.message,
+            trans=trans,
         )
         return ReportInvocationErrorResponse(messages=messages)
 

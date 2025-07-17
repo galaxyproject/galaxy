@@ -40,15 +40,16 @@ class EmailPlugin(ErrorPlugin):
             log.exception(msg)
             return (msg, "danger")
 
-    def submit_invocation_report(self, invocation, user, **kwargs):
+    def submit_invocation_report(self, invocation, **kwargs):
         """Send report for a workflow invocation as an email"""
         try:
             error_reporter = WorkflowEmailErrorReporter(invocation, self.app)
             error_reporter.send_report(
-                user=user,
+                user=invocation.history.user,
                 email=kwargs.get("email", None),
                 message=kwargs.get("message", None),
                 redact_user_details_in_bugreport=self.redact_user_details_in_bugreport,
+                trans=kwargs.get("trans", None),
             )
             return ("Your workflow error report has been sent", "success")
         except Exception as e:

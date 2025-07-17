@@ -93,8 +93,12 @@ class WorkflowErrorReporter:
         self.app = app
         self.report = None
 
-    def _user_owns_invocation(self, user):
-        if not user or self.invocation.history.user != user:
+    def _can_access_invocation(self, trans, user):
+        if not user:
+            return False
+        if not trans:
+            return False
+        if not self.app.workflow_manager.check_security(trans, self.invocation, check_ownership=False):
             return False
         return True
 
@@ -178,14 +182,14 @@ class WorkflowErrorReporter:
 
 
 class WorkflowEmailErrorReporter(WorkflowErrorReporter):
-    def _send_report(self, user, email=None, message=None, **kwd):
+    def _send_report(self, user, email=None, message=None, trans=None, **kwd):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
         to = self.app.config.error_email_to
         assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
         error_msg = validate_email_str(email)
-        if not error_msg and self._user_owns_invocation(user):
+        if not error_msg and self._can_access_invocation(trans, user):
             to += f", {email.strip()}"
         subject = f"Galaxy workflow run error report from {email}"
 
