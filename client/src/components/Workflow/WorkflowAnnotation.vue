@@ -57,9 +57,7 @@ const workflowTags = computed(() => {
                     <FontAwesomeIcon :icon="faHdd" />History:
 
                     <span class="history-link-wrapper">
-                        <SwitchToHistoryLink
-                            :history-id="props.historyId"
-                        />
+                        <SwitchToHistoryLink :history-id="props.historyId" />
                     </span>
 
                     <BBadge
