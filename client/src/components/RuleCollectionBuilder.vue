@@ -595,6 +595,7 @@
 
 <script>
 import HotTable from "@handsontable/vue";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
 import { fetch, fetchJobErrorMessage } from "api/tools";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
@@ -615,7 +616,6 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";

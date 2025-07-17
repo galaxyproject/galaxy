@@ -6,36 +6,6 @@ export type FetchDataPayload = components["schemas"]["FetchDataPayload"];
 export type UrlDataElement = components["schemas"]["UrlDataElement"];
 export type NestedElement = components["schemas"]["NestedElement"];
 
-export function urlDataElement(identifier: string, uri: string): UrlDataElement {
-    const element: UrlDataElement = {
-        src: "url",
-        url: uri,
-        name: identifier,
-        // these shouldn't be required but the way our model -> ts stuff works it is...
-        auto_decompress: false,
-        dbkey: "?",
-        ext: "auto",
-        to_posix_lines: false,
-        deferred: false,
-        space_to_tab: false,
-    };
-    return element;
-}
-
-export function nestedElement(identifier: string, elements: NestedElement["elements"]) {
-    const nestedElement: NestedElement = {
-        name: identifier,
-        elements: elements,
-        auto_decompress: false,
-        dbkey: "?",
-        ext: "auto",
-        to_posix_lines: false,
-        deferred: false,
-        space_to_tab: false,
-    };
-    return nestedElement;
-}
-
 export async function fetch(payload: FetchDataPayload) {
     const { data } = await GalaxyApi().POST("/api/tools/fetch", {
         body: payload,
