@@ -8,9 +8,9 @@ export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
 
-export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
-export const ERROR_STATES = ["error", "deleted"];
-export const TERMINAL_STATES = ["ok", "skipped"].concat(ERROR_STATES);
+export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paused", "resubmitted", "stop"];
+export const ERROR_STATES = ["error", "deleted", "deleting"];
+export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping", "skipped"].concat(ERROR_STATES);
 
 interface JobDef {
     tool_id: string;
