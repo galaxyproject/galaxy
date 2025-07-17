@@ -22,7 +22,7 @@ export interface FileStream {
 
 export interface UploadItem {
     dbKey: string;
-    deferred: boolean;
+    deferred?: boolean;
     enabled: boolean;
     extension: string;
     fileContent: string;
