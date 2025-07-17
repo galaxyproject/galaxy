@@ -30,11 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { workflow, owned } = useWorkflowInstance(props.workflowId);
 
 const description = computed(() => {
-    if (workflow.value?.annotation) {
-        return workflow.value.annotation?.trim();
-    } else {
-        return null;
-    }
+    return workflow.value?.annotation?.trim() || null;
 });
 
 const timeElapsed = computed(() => {
@@ -59,7 +55,11 @@ const workflowTags = computed(() => {
                 </i>
                 <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />History:
-                    <SwitchToHistoryLink :history-id="props.historyId" />
+
+                    <span class="history-link-wrapper">
+                        <SwitchToHistoryLink :history-id="props.historyId" />
+                    </span>
+
                     <BBadge
                         v-if="useHistoryStore().currentHistoryId !== props.historyId"
                         v-b-tooltip.hover.noninteractive
@@ -86,3 +86,24 @@ const workflowTags = computed(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.history-link-wrapper {
+    max-width: 300px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+::v-deep(.history-link-wrapper a),
+::v-deep(.history-link-wrapper div) {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2em;
+    max-height: 3.6em;
+}
+</style>
