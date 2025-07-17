@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { faCaretRight, faPlus, faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCaretRight, faCheck, faPlus, faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCollapse, BFormGroup } from "bootstrap-vue";
-import { faPencil, faSpinner } from "font-awesome-6";
+import { BButton, BCollapse, BFormInput } from "bootstrap-vue";
+import { faPencil, faSpinner, faX, faXmark } from "font-awesome-6";
 import { computed, ref } from "vue";
-import Multiselect from "vue-multiselect";
 
 import { isRegisteredUser } from "@/api";
 import type {
@@ -15,11 +14,13 @@ import type {
     ServiceVariableDefinition,
     UserCredentials,
 } from "@/api/users";
+import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useUserCredentialsStore } from "@/stores/userCredentials";
 import { useUserStore } from "@/stores/userStore";
 
-import FormElement from "@/components/Form/FormElement.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GCard from "@/components/Common/GCard.vue";
 
 type CredentialType = "variable" | "secret";
 
@@ -37,9 +38,9 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "update-credentials-list", userCredentials: UserCredentials[]): void;
+    (e: "update-credentials-list", userCredentials?: UserCredentials[]): void;
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
-    (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
+    (e: "update-current-set", credential: ServiceCredentialPayload, newSet?: ServiceGroupPayload): void;
     (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
 }>();
 
@@ -52,49 +53,15 @@ const userCredentialsStore = useUserCredentialsStore(
 
 const isBusy = ref(false);
 const saveButtonText = ref("Save");
-const tmpSet = ref<ServiceGroupPayload | undefined>(undefined);
-const originalName = ref<string>();
 const isNewSet = ref(false);
 
-const selectedSet = ref<ServiceGroupPayload | undefined>(
+const selectedSet = computed<ServiceGroupPayload | undefined>(() =>
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
 );
 
 const isExpanded = ref(false);
 
 const newNameError = ref<string | undefined>(undefined);
-
-// const newSetName = computed<string>({
-//     get: () => selectedSet.value?.name ?? "",
-//     set: (inputValue) => {
-//         if (
-//             inputValue.trim() !== "" &&
-//             !availableSets.value.some((set) => set.name === inputValue) &&
-//             inputValue !== defaultSet.value?.name
-//         ) {
-//             selectedSet.value!.name = inputValue;
-//             newNameError.value = undefined;
-//         } else if (inputValue.trim() === "" || inputValue === defaultSet.value?.name) {
-//             newNameError.value = "This name is not allowed.";
-//         }
-//     },
-// });
-// check tmpSet name instead of selectedSet name
-const newSetName = computed<string>({
-    get: () => tmpSet.value?.name ?? "",
-    set: (inputValue) => {
-        if (
-            inputValue.trim() !== "" &&
-            !availableSets.value.some((set) => set.name === inputValue) &&
-            inputValue !== defaultSet.value?.name
-        ) {
-            tmpSet.value!.name = inputValue;
-            newNameError.value = undefined;
-        } else {
-            newNameError.value = "This name is not allowed.";
-        }
-    },
-});
 
 const setNameHelp = computed<string>(() => {
     // if (selectedSet.value?.name === defaultSet.value?.name) {
@@ -118,7 +85,7 @@ const canCreateNewSet = computed<boolean>(
         !availableSets.value.some((set) => set.name === selectedSet.value?.name)
 );
 
-const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== defaultSet.value?.name ?? false);
+const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== defaultSet.value?.name);
 
 const defaultSet = computed<ServiceGroupPayload | undefined>(() =>
     availableSets.value.find((set) => set.name === "default")
@@ -157,34 +124,39 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
 }
 
 function onCreateNewSet() {
+    console.log("Creating new set of credentials");
     const newSet: ServiceGroupPayload = {
         name: generateUniqueName("new credential", props.credentialPayload.groups),
         variables: selectedSet.value?.variables.map((variable) => ({ ...variable, value: null })) || [],
         secrets: selectedSet.value?.secrets.map((secret) => ({ ...secret, value: null, alreadySet: false })) || [],
     };
 
-    console.log("Creating new set of credentials", newSet);
+    console.log("New set created:", newSet);
 
-    // emit("new-credentials-set", props.credentialPayload, newSet);
-    tmpSet.value = newSet;
-    // onCurrentSetChange(newSet);
+    emit("new-credentials-set", props.credentialPayload, newSet);
+    // tmpSet.value = newSet;
+    onCurrentSetChange(newSet);
+    console.log("New set emitted:", newSet);
 
     isNewSet.value = true;
 
-    toggleEditingMode(true);
+    // toggleEditingMode()
 }
 
-function onCurrentSetChange(selectedSet: ServiceGroupPayload) {
+function onCurrentSetChange(selectedSet?: ServiceGroupPayload) {
     emit("update-current-set", props.credentialPayload, selectedSet);
 }
 
-const editMode = ref(false);
+const editMode = ref<Record<string, boolean>>({});
 
-function toggleEditingMode(state: boolean) {
-    editMode.value = state;
+function toggleEditingMode(setName: string, state?: boolean) {
+    editMode.value = {
+        ...editMode.value,
+        [setName]: state !== undefined ? state : !editMode.value[setName],
+    };
 
     if (!state) {
-        tmpSet.value = undefined;
+        // tmpSet.value = undefined;
         isNewSet.value = false;
     }
 }
@@ -198,11 +170,11 @@ async function onDeleteSet() {
     });
 
     if (confirmed && selectedSet.value) {
-        const groupNameToDelete = selectedSet.value.name;
+        const groupNameToDelete = selectedSet.value?.name;
         const defaultSet = availableSets.value.find((set) => set.name === "default");
 
         if (defaultSet) {
-            selectedSet.value = defaultSet;
+            // selectedSet.value = defaultSet;
             onCurrentSetChange(defaultSet);
         }
 
@@ -210,22 +182,29 @@ async function onDeleteSet() {
     }
 }
 
-function onDiscardSet() {
-    selectedSet.value = availableSets.value.find((set) => set.name === props.credentialPayload.current_group);
-    toggleEditingMode(false);
+function onDiscardSet(setName: string) {
+    // selectedSet.value = availableSets.value.find((set) => set.name === props.credentialPayload.current_group);
+    toggleEditingMode(setName, false);
 }
 
-function onEditSet() {
-    tmpSet.value = undefined;
-    tmpSet.value = { ...selectedSet.value! };
-    originalName.value = tmpSet.value!.name;
+const editSet = ref<Record<string, { data: ServiceGroupPayload }>>({});
+
+function onEditSet(setName: string) {
+    // tmpSet.value = undefined;
+    // tmpSet.value = { ...selectedSet.value! };
+    // originalName.value = tmpSet.value!.name;
 
     isNewSet.value = false;
 
-    toggleEditingMode(true);
+    editSet.value = {
+        ...editSet.value,
+        [setName]: { data: { ...availableSets.value.find((set) => set.name === setName)! } },
+    };
+
+    toggleEditingMode(setName);
 }
 
-async function onSaveSet() {
+async function onSaveSet(setName: string) {
     // if (newNameError.value) {
     //     return;
     // }
@@ -241,24 +220,132 @@ async function onSaveSet() {
 
     try {
         isBusy.value = true;
-        console.log("Saving user credentials");
+
+        if (!editSet.value[setName]) {
+            return;
+        }
 
         const toSend = {
             source_id: props.sourceData.sourceId,
             source_type: props.sourceData.sourceType,
             source_version: props.sourceData.sourceVersion,
-            credentials: [{ ...props.credentialPayload, groups: [tmpSet.value!] }],
+            credentials: [{ ...props.credentialPayload, groups: [editSet.value[setName].data] }],
         };
 
         const newData = await userCredentialsStore.saveUserCredentialsForTool(toSend);
 
         emit("update-credentials-list", newData);
-        toggleEditingMode(false);
+        // toggleEditingMode(tmpSet.value!.name, false);
+        toggleEditingMode(setName, false);
     } catch (error) {
         // TODO: Implement error handling.
         console.error("Error saving user credentials", error);
     } finally {
         isBusy.value = false;
+        saveButtonText.value = "Save";
+    }
+}
+
+function disableSaveButton(setName: string): boolean {
+    if (!editSet.value[setName]) {
+        return true;
+    }
+
+    const data = editSet.value[setName].data;
+
+    return (
+        isBusy.value ||
+        !data.name ||
+        data.variables.some((variable) => !variable.value && !isVariableOptional(variable.name, "variable")) ||
+        data.secrets.some((secret) => !secret.value && !isVariableOptional(secret.name, "secret")) ||
+        data.name === defaultSet.value?.name ||
+        availableSets.value.some((set) => set.name === data.name)
+    );
+}
+
+function primaryActions(setData: ServiceGroupPayload): CardAction[] {
+    return [
+        {
+            id: `delete-${setData.name}`,
+            label: "",
+            title: "Delete this set",
+            icon: faTrash,
+            variant: "outline-danger",
+            handler: onDeleteSet,
+            visible:
+                setData?.name !== defaultSet.value?.name &&
+                setData.name !== selectedSet.value?.name &&
+                editMode.value[setData.name] !== true,
+        },
+        {
+            id: `edit-${setData.name}`,
+            label: "Edit",
+            title: "Edit this set",
+            icon: faPencil,
+            variant: "outline-info",
+            handler: () => onEditSet(setData.name),
+            visible: editMode.value[setData.name] !== true,
+        },
+        {
+            id: `use-${setData.name}`,
+            label: selectedSet.value?.name === setData.name ? "This set is currently used" : "Use this set",
+            title: "Use this set",
+            icon: selectedSet.value?.name === setData.name ? faX : faCheck,
+            variant: "outline-info",
+            handler: () => onCurrentSetChange(setData),
+            disabled: selectedSet.value?.name === setData.name,
+            visible: editMode.value[setData.name] !== true && selectedSet.value?.name !== setData.name,
+        },
+        {
+            id: `discard-${setData.name}`,
+            label: "Discard",
+            title: "Discard changes to this set",
+            icon: faBan,
+            variant: "outline-danger",
+            handler: () => onDiscardSet(setData.name),
+            disabled: isBusy.value,
+            visible: editMode.value[setData.name] === true,
+        },
+        {
+            id: `save-${setData.name}`,
+            label: "Save",
+            title: "Save changes to this set",
+            icon: isBusy.value ? faSpinner : faSave,
+            variant: "outline-info",
+            handler: () => onSaveSet(setData.name),
+            disabled: disableSaveButton(setData.name),
+            visible: editMode.value[setData.name] === true,
+        },
+    ];
+}
+
+function setIndicators(setName: string): CardIndicator[] {
+    return [
+        {
+            id: "current-set",
+            label: "",
+            title: "This set will be used for this tool in the workflow",
+            icon: faCheck,
+            visible: selectedSet.value?.name === setName,
+        },
+    ];
+}
+
+function onClearSelection() {
+    onCurrentSetChange(undefined);
+}
+
+function onNameInput(setName: string, value?: string) {
+    if (!availableSets.value.some((set) => set.name === value)) {
+        if (editSet.value[setName]) {
+            editSet.value = {
+                ...editSet.value,
+                [setName]: { data: { ...editSet.value[setName].data, name: value?.trim() || "" } },
+            };
+            newNameError.value = undefined;
+        }
+    } else {
+        newNameError.value = "This name is not allowed.";
     }
 }
 </script>
@@ -274,130 +361,102 @@ async function onSaveSet() {
                 </span>
 
                 <span class="text-muted selected-set-info">
-                    <span v-if="!isProvidedByUser"> No credentials set</span>
-                    <span v-else-if="selectedSet">
-                        Using: <b>{{ selectedSet.name }}</b>
+                    <span v-if="isProvidedByUser && selectedSet">
+                        Using: <b>{{ selectedSet?.name }}</b>
                     </span>
+                    <span v-else> No credentials set</span>
                 </span>
             </BButton>
         </div>
 
-        <BCollapse :id="`accordion-${credentialDefinition.name}`" v-model="isExpanded">
-            <form autocomplete="off" class="credentials-form">
-                <p>{{ credentialDefinition.description }}</p>
+        <BCollapse :id="`accordion-${credentialDefinition.name}`" v-model="isExpanded" class="px-2">
+            <div class="d-flex flex-column align-items-center mt-2">
+                <span class="text-md">{{ credentialDefinition.description }}</span>
 
-                <div class="set-actions">
-                    <BFormGroup
-                        description="This is the current set of credentials you are using for this service. You can switch between sets or create a new one.">
-                        <Multiselect
-                            v-model="selectedSet"
-                            :options="availableSets"
-                            :label="`name`"
-                            :track-by="`name`"
-                            :allow-empty="false"
-                            :show-labels="false"
-                            :disabled="editMode"
-                            :placeholder="`Select ${serviceName} set`"
-                            @input="onCurrentSetChange" />
-                    </BFormGroup>
+                <GCard
+                    v-for="avs in availableSets"
+                    :key="avs.name"
+                    :title="avs.name"
+                    :selected="selectedSet?.name === avs.name"
+                    :indicators="setIndicators(avs.name)"
+                    :primary-actions="primaryActions(avs)">
+                    <template v-if="editMode[avs.name] && editSet[avs.name]" v-slot:description>
+                        <div class="p-2">
+                            Editing set of credentials for <b>{{ avs.name }}</b>
 
-                    <BButtonGroup>
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            :disabled="!canDeleteSet"
-                            variant="outline-danger"
-                            size="sm"
-                            title="Delete selected set"
-                            @click="onDeleteSet">
-                            <FontAwesomeIcon :icon="faTrash" />
-                        </BButton>
-
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            variant="outline-info"
-                            size="sm"
-                            title="Edit selected set"
-                            @click="onEditSet">
-                            <FontAwesomeIcon :icon="faPencil" />
-                        </BButton>
-
-                        <BButton
-                            v-b-tooltip.hover.noninteractive
-                            :disabled="canCreateNewSet"
-                            variant="outline-info"
-                            size="sm"
-                            title="Create a new set of credentials"
-                            @click="onCreateNewSet">
-                            <FontAwesomeIcon :icon="faPlus" />
-                        </BButton>
-                    </BButtonGroup>
-                </div>
-
-                <BCollapse v-if="tmpSet" :visible="editMode" class="set-body">
-                    <div class="d-flex justify-content-between">
-                        <span v-if="isNewSet">
-                            New set: <b>{{ originalName }}</b>
-                        </span>
-                        <span v-else v-once>
-                            Editing set: <b>{{ tmpSet.name }}</b>
-                        </span>
-
-                        <div class="d-flex justify-content-center flex-gapx-1">
-                            <BButton
-                                v-b-tooltip.hover.noninteractive
-                                variant="outline-danger"
-                                size="sm"
-                                title="Discard changes to this set"
-                                @click="onDiscardSet">
-                                Discard
-                            </BButton>
-
-                            <BButton
-                                v-b-tooltip.hover.noninteractive
-                                variant="outline-info"
-                                size="sm"
-                                :title="saveButtonText"
-                                :disabled="!!newNameError || isBusy"
-                                @click="onSaveSet">
-                                <FontAwesomeIcon :icon="isBusy ? faSpinner : faSave" :spin="isBusy" />
-                                {{ saveButtonText }}
-                            </BButton>
-                        </div>
-                    </div>
-
-                    <div class="p-2">
-                        <FormElement
-                            v-if="tmpSet?.name !== defaultSet?.name"
-                            v-model="newSetName"
-                            type="text"
-                            title="Set name"
-                            :warning="newNameError"
-                            :optional="false"
-                            :help="setNameHelp" />
-
-                        <div v-for="variable in tmpSet.variables" :key="variable.name">
-                            <FormElement
-                                :id="`${tmpSet.name}-${variable.name}-variable`"
-                                v-model="variable.value"
+                            <BFormInput
+                                v-if="editSet[avs.name]?.data.name !== defaultSet?.name"
+                                :value="editSet[avs.name]?.data.name"
                                 type="text"
-                                :title="getVariableTitle(variable.name, 'variable')"
-                                :optional="isVariableOptional(variable.name, 'variable')"
-                                :help="getVariableDescription(variable.name, 'variable')" />
-                        </div>
+                                :state="editSet[avs.name]?.data.name ? true : false"
+                                :placeholder="setNameHelp"
+                                :title="setNameHelp"
+                                :aria-label="setNameHelp"
+                                class="mb-2"
+                                @input="(newValue) => onNameInput(avs.name, newValue)" />
 
-                        <div v-for="secret in tmpSet.secrets" :key="secret.name" class="secret-input">
-                            <FormElement
-                                :id="`${tmpSet.name}-${secret.name}-secret`"
-                                v-model="secret.value"
-                                type="password"
-                                :autocomplete="`${tmpSet.name}-${secret.name}-secret`"
-                                :title="getVariableTitle(secret.name, 'secret')"
-                                :optional="isVariableOptional(secret.name, 'secret')"
-                                :help="getVariableDescription(secret.name, 'secret')" />
+                            <div v-for="variable in editSet[avs.name]?.data.variables" :key="variable.name">
+                                <label :for="`${editSet[avs.name]?.data.name}-${variable.name}-variable`">
+                                    {{ getVariableTitle(variable.name, "variable") }}
+                                </label>
+                                <BFormInput
+                                    :id="`${editSet[avs.name]?.data.name}-${variable.name}-variable`"
+                                    v-model="variable.value"
+                                    type="text"
+                                    :state="
+                                        !variable.value
+                                            ? isVariableOptional(variable.name, 'variable')
+                                                ? null
+                                                : false
+                                            : true
+                                    "
+                                    :placeholder="getVariableTitle(variable.name, 'variable')"
+                                    :title="getVariableTitle(variable.name, 'variable')"
+                                    :aria-label="getVariableTitle(variable.name, 'variable')"
+                                    :required="!isVariableOptional(variable.name, 'variable')"
+                                    :readonly="false"
+                                    class="mb-2" />
+                            </div>
+
+                            <div v-for="secret in editSet[avs.name]?.data.secrets" :key="secret.name">
+                                <label :for="`${editSet[avs.name]?.data.name}-${secret.name}-secret`">
+                                    {{ getVariableTitle(secret.name, "secret") }}
+                                </label>
+                                <BFormInput
+                                    :id="`${editSet[avs.name]?.data.name}-${secret.name}-secret`"
+                                    v-model="secret.value"
+                                    type="password"
+                                    :autocomplete="`${editSet[avs.name]?.data.name}-${secret.name}-secret`"
+                                    :state="
+                                        !secret.value
+                                            ? isVariableOptional(secret.name, 'secret')
+                                                ? null
+                                                : false
+                                            : true
+                                    "
+                                    :placeholder="getVariableTitle(secret.name, 'secret')"
+                                    :title="getVariableTitle(secret.name, 'secret')"
+                                    :aria-label="getVariableTitle(secret.name, 'secret')"
+                                    :required="!isVariableOptional(secret.name, 'secret')"
+                                    :readonly="false"
+                                    class="mb-2" />
+                            </div>
                         </div>
-                    </div>
-                </BCollapse>
-            </form>
+                    </template>
+                </GCard>
+
+                <div class="d-flex flex-gapx-1 justify-content-center">
+                    <GButton color="blue" outline title="Create a new set of credentials" @click="onCreateNewSet">
+                        <FontAwesomeIcon :icon="faPlus" />
+                        Create New Set
+                    </GButton>
+
+                    <GButton color="grey" outline title="Clear selection" @click="onClearSelection">
+                        <FontAwesomeIcon :icon="faXmark" />
+                        Clear Selection
+                    </GButton>
+                </div>
+            </div>
         </BCollapse>
     </div>
 </template>

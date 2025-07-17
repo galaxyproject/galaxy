@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
@@ -182,8 +184,7 @@ async function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier,
     }
 }
 
-function onUpdateUserCredentials(data: UserCredentials[]) {
-    console.log("186 uing user credentials", data);
+function onUpdateUserCredentials(data?: UserCredentials[]) {
     userCredentials.value = data;
 }
 
@@ -191,8 +192,8 @@ checkUserCredentials();
 </script>
 
 <template>
-    <div>
-        <BAlert show :variant="bannerVariant" class="tool-credentials-banner">
+    <div class="mt-2">
+        <BAlert show :variant="bannerVariant">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="userStore.isAnonymous">
                 <span v-if="hasSomeRequiredCredentials">
@@ -209,7 +210,21 @@ checkUserCredentials();
                 Please <a href="/login/start">log in or register here</a>.
             </div>
             <div v-else class="d-flex justify-content-between align-items-center">
-                <div class="credentials-info">
+                <div>
+                    <FontAwesomeLayers class="mr-1">
+                        <FontAwesomeIcon :icon="faKey" fixed-width />
+                        <FontAwesomeIcon
+                            v-if="hasUserProvidedRequiredCredentials"
+                            :icon="faCheck"
+                            fixed-width
+                            transform="shrink-6 right-6 down-6" />
+                        <FontAwesomeIcon
+                            v-else-if="hasSomeRequiredCredentials"
+                            :icon="faExclamation"
+                            fixed-width
+                            transform="shrink-6 right-8 down-7" />
+                    </FontAwesomeLayers>
+
                     <span v-if="hasUserProvidedRequiredCredentials">
                         <strong>You have already provided credentials for this tool.</strong> You can update or delete
                         your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
@@ -231,7 +246,7 @@ checkUserCredentials();
                 </div>
 
                 <div>
-                    <BButton variant="primary" size="sm" class="provide-credentials-btn" @click="toggleDialog">
+                    <BButton variant="primary" size="sm" @click="toggleDialog">
                         {{ provideCredentialsButtonTitle }}
                     </BButton>
                 </div>
@@ -250,9 +265,3 @@ checkUserCredentials();
             @close="toggleDialog" />
     </div>
 </template>
-
-<style scoped>
-.tool-credentials-banner {
-    margin-bottom: 1rem;
-}
-</style>
