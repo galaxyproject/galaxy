@@ -25,7 +25,6 @@ import shutil
 import tempfile
 from typing import (
     Any,
-    Dict,
 )
 
 from requests import Response
@@ -60,13 +59,13 @@ class BaseUploadContentConfigurationIntegrationInstance(integration_util.Integra
 
     def fetch_target(
         self,
-        target: Dict[str, Any],
+        target: dict[str, Any],
         history_id: str,
         assert_ok: bool = False,
         attach_test_file: bool = False,
         wait: bool = False,
     ) -> Response:
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "history_id": history_id,
             "targets": [target],
         }
@@ -413,14 +412,14 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
         cls.handle_extra_ftp_config(config)
 
     @classmethod
-    def handle_extra_ftp_config(cls, config: Dict[str, Any]) -> None:
+    def handle_extra_ftp_config(cls, config: dict[str, Any]) -> None:
         """Overrride to specify additional FTP configuration options."""
 
     @classmethod
     def ftp_dir(cls) -> str:
         return cls.temp_config_dir("ftp")
 
-    def _check_content(self, dataset: Dict[str, Any], content: str, history_id: str, ext: str = "txt") -> None:
+    def _check_content(self, dataset: dict[str, Any], content: str, history_id: str, ext: str = "txt") -> None:
         dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset)
         assert dataset["file_ext"] == ext, dataset
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)

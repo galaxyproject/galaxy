@@ -2,7 +2,6 @@ import logging
 import re
 from typing import (
     cast,
-    Dict,
     Optional,
 )
 
@@ -23,7 +22,7 @@ log = logging.getLogger(__name__)
 class DRSFilesSourceProperties(FilesSourceProperties, total=False):
     url_regex: str
     force_http: bool
-    http_headers: Dict[str, str]
+    http_headers: dict[str, str]
 
 
 class DRSFilesSource(BaseFilesSource):

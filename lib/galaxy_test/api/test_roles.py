@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -192,7 +191,7 @@ class TestRolesApi(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
 
-    def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> Dict[str, Any]:
+    def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> dict[str, Any]:
         payload = self._build_valid_role_payload(name=name, description=description)
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
@@ -211,7 +210,7 @@ class TestRolesApi(ApiTestCase):
         return payload
 
     @staticmethod
-    def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None) -> None:
+    def check_role_dict(role_dict: dict[str, Any], assert_id: Optional[str] = None) -> None:
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

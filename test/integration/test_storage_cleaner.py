@@ -1,5 +1,4 @@
 from typing import (
-    List,
     NamedTuple,
     Optional,
 )
@@ -124,8 +123,8 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
     def _assert_monitoring_and_cleanup_for_discarded_resource(
         self,
         resource: str,
-        test_items: List[StoredItemDataForTests],
-        item_ids: List[str],
+        test_items: list[StoredItemDataForTests],
+        item_ids: list[str],
         delete_resource_uri: Optional[str] = None,
     ):
         """Tests the storage cleaner API for a particular resource (histories or datasets)"""
@@ -193,8 +192,8 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         assert not cleanup_result["errors"]
 
     def _create_histories_with(
-        self, test_histories: List[StoredItemDataForTests], wait_for_histories=True
-    ) -> List[str]:
+        self, test_histories: list[StoredItemDataForTests], wait_for_histories=True
+    ) -> list[str]:
         history_ids = []
         for history_data in test_histories:
             post_data = dict(name=history_data.name)
@@ -211,8 +210,8 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         return history_ids
 
     def _create_datasets_in_history_with(
-        self, history_id: str, test_datasets: List[StoredItemDataForTests], wait_for_history=True
-    ) -> List[str]:
+        self, history_id: str, test_datasets: list[StoredItemDataForTests], wait_for_history=True
+    ) -> list[str]:
         dataset_ids = []
         for dataset_data in test_datasets:
             dataset = self.dataset_populator.new_dataset(
@@ -223,7 +222,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
             self.dataset_populator.wait_for_history(history_id)
         return dataset_ids
 
-    def _assert_order_is_expected(self, storage_items_url: str, order_by: str, expected_ordered_names: List[str]):
+    def _assert_order_is_expected(self, storage_items_url: str, order_by: str, expected_ordered_names: list[str]):
         items_response = self._get(f"{storage_items_url}?order={order_by}")
         self._assert_status_code_is_ok(items_response)
         items = items_response.json()

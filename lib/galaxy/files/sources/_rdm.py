@@ -1,9 +1,7 @@
 import logging
 from typing import (
-    List,
     NamedTuple,
     Optional,
-    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -74,7 +72,7 @@ class RDMRepositoryInteractor:
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[RemoteDirectory], int]:
+    ) -> tuple[list[RemoteDirectory], int]:
         """Returns the list of file containers in the repository and the total count containers.
 
         If writeable is True, only containers that the user can write to will be returned.
@@ -88,7 +86,7 @@ class RDMRepositoryInteractor:
         writeable: bool,
         user_context: OptionalUserContext = None,
         query: Optional[str] = None,
-    ) -> List[RemoteFile]:
+    ) -> list[RemoteFile]:
         """Returns the list of files of a file container.
 
         If writeable is True, we are signaling that the user intends to write to the container.

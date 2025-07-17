@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import (
     Path,
@@ -109,7 +108,7 @@ class FastAPITools:
         return service_info(self.app, request.url)
 
     @router.get("/api/ga4gh/trs/v2/toolClasses", operation_id="tools__trs_tool_classes")
-    def tool_classes(self) -> List[ToolClass]:
+    def tool_classes(self) -> list[ToolClass]:
         return tool_classes()
 
     @router.get(
@@ -142,7 +141,7 @@ class FastAPITools:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
-    ) -> List[ToolVersion]:
+    ) -> list[ToolVersion]:
         return get_tool(trans, tool_id).versions
 
     @router.get(

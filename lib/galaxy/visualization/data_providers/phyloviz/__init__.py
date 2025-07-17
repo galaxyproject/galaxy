@@ -2,7 +2,6 @@
 
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
@@ -27,7 +26,7 @@ class PhylovizDataProvider(BaseDataProvider):
         file_name = self.original_dataset.get_file_name()
         parseMsg = None
         jsonDicts = []
-        rval: Dict[str, Any] = {"dataset_type": self.dataset_type}
+        rval: dict[str, Any] = {"dataset_type": self.dataset_type}
 
         if file_ext in ["newick", "nhx"]:  # parses newick files
             newickParser = Newick_Parser()

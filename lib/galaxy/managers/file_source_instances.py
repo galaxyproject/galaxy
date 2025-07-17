@@ -2,12 +2,8 @@ import logging
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Literal,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -124,8 +120,8 @@ class UserFileSourceModel(BaseModel):
     type: FileSourceTemplateType
     template_id: str
     template_version: int
-    variables: Optional[Dict[str, TemplateVariableValueType]]
-    secrets: List[str]
+    variables: Optional[dict[str, TemplateVariableValueType]]
+    secrets: list[str]
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -232,7 +228,7 @@ class FileSourceInstancesManager:
         redirect_uri = f"{galaxy_root}/oauth2_callback"
         return redirect_uri
 
-    def index(self, trans: ProvidesUserContext) -> List[UserFileSourceModel]:
+    def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
@@ -411,7 +407,7 @@ class FileSourceInstancesManager:
         trans: ProvidesUserContext,
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
-    ) -> Tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
+    ) -> tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
         template_server_configuration = self._resolver.template_server_configuration(
             trans.user, template.id, template.version
         )
@@ -434,7 +430,7 @@ class FileSourceInstancesManager:
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
         template_parameters: TemplateParameters,
-    ) -> Tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
+    ) -> tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
         configuration = None
         exception = None
         try:
@@ -445,7 +441,7 @@ class FileSourceInstancesManager:
 
     def _connection_status(
         self, trans: ProvidesUserContext, target: CanTestPluginStatus, configuration: FileSourceConfiguration
-    ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
+    ) -> tuple[Optional[BaseFilesSource], PluginAspectStatus]:
         file_source = None
         exception = None
         if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
@@ -610,19 +606,19 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         return FileSourceScore(file_source, len(url))
 
     def _file_source(self, files_source_properties: FilesSourceProperties) -> BaseFilesSource:
-        plugin_source = plugin_source_from_dict([cast(Dict[str, Any], files_source_properties)])
+        plugin_source = plugin_source_from_dict([cast(dict[str, Any], files_source_properties)])
         file_source = self._plugin_loader.load_plugins(
             plugin_source,
             self._file_sources_config,
         )[0]
         return file_source
 
-    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> List[FilesSourceProperties]:
+    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> list[FilesSourceProperties]:
         username_filter = User.__table__.c.username == user_context.username
         user: Optional[User] = self._sa_session.query(User).filter(username_filter).one_or_none()
         if user is None:
             return []
-        all_file_source_properties: List[FilesSourceProperties] = []
+        all_file_source_properties: list[FilesSourceProperties] = []
         for user_file_source in user.file_sources:
             if user_file_source.hidden:
                 continue
@@ -664,9 +660,9 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         for_serialization: bool,
         user_context: FileSourcesUserContext,
         browsable_only: Optional[bool] = False,
-        include_kind: Optional[Set[PluginKind]] = None,
-        exclude_kind: Optional[Set[PluginKind]] = None,
-    ) -> List[FilesSourceProperties]:
+        include_kind: Optional[set[PluginKind]] = None,
+        exclude_kind: Optional[set[PluginKind]] = None,
+    ) -> list[FilesSourceProperties]:
         """Write out user file sources as list of config dictionaries."""
         if user_context.anonymous:
             return []

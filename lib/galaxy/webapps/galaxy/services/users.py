@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
     Union,
 )
@@ -201,7 +200,7 @@ class UsersService(ServiceBase):
         f_email: Optional[str],
         f_name: Optional[str],
         f_any: Optional[str],
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
         if not trans.user:
             raise glx_exceptions.AuthenticationRequired("Only registered users can view the list of users")
@@ -232,7 +231,7 @@ class UsersService(ServiceBase):
             trans.app.config.expose_user_email,
             trans.app.config.expose_user_name,
         )
-        rval: List[MaybeLimitedUserModel] = []
+        rval: list[MaybeLimitedUserModel] = []
         for user in users:
             user_dict = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or

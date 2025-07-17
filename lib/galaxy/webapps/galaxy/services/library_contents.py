@@ -2,16 +2,14 @@ import logging
 import shutil
 import tempfile
 from typing import (
+    Annotated,
     cast,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
 from fastapi import Path
 from starlette.datastructures import UploadFile as StarletteUploadFile
-from typing_extensions import Annotated
 
 from galaxy import exceptions
 from galaxy.actions.library import LibraryActions
@@ -87,7 +85,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         library_id: DecodedDatabaseIdField,
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
-        rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
+        rval: list[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
         current_user_roles = trans.get_current_user_roles()
         library = trans.sa_session.get(Library, library_id)
         if not library:
@@ -132,7 +130,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
-        files: Optional[List[StarletteUploadFile]] = None,
+        files: Optional[list[StarletteUploadFile]] = None,
     ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -242,7 +240,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def _decode_library_content_id(
         self,
         content_id: MaybeLibraryFolderOrDatasetID,
-    ) -> Tuple:
+    ) -> tuple:
         if len(content_id) % 16 == 0:
             return "LibraryDataset", content_id
         elif content_id.startswith("F"):

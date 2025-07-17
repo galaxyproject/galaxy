@@ -2,7 +2,6 @@ import logging
 from typing import (
     Callable,
     cast,
-    Dict,
 )
 
 from alembic import context
@@ -76,7 +75,7 @@ def _get_url_from_config() -> str:
 
 
 def _load_url() -> str:
-    context_dict = cast(Dict, context.get_x_argument(as_dictionary=True))
+    context_dict = cast(dict, context.get_x_argument(as_dictionary=True))
     url = context_dict.get("url")
     assert url
     return url

@@ -6,8 +6,6 @@ from json import dumps
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Literal,
     Optional,
     Union,
@@ -64,7 +62,7 @@ class ToolsService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
-        files: Optional[List[UploadFile]] = None,
+        files: Optional[list[UploadFile]] = None,
     ):
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
@@ -210,7 +208,7 @@ class ToolsService(ServiceBase):
     def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
-        rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
+        rval: dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
         rval["produces_entry_points"] = tool.produces_entry_points
         if job_errors := vars.get("job_errors", []):
             # If we are here - some jobs were successfully executed but some failed.

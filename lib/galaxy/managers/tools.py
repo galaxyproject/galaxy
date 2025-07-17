@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
 
 
-def tool_payload_to_tool(app, tool_dict: Dict[str, Any]) -> Optional[Tool]:
+def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
     tool_source = YamlToolSource(tool_dict)
     tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=None)
     return tool

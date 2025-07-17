@@ -5,7 +5,6 @@ This is for use by web framework code and scripts (e.g. scripts/galaxy_main.py).
 
 import os
 from typing import (
-    List,
     NamedTuple,
     Optional,
 )
@@ -17,7 +16,7 @@ DEFAULT_INI_APP = "main"
 DEFAULT_CONFIG_SECTION = "galaxy"
 
 
-def default_relative_config_paths_for(app_name: str) -> List[str]:
+def default_relative_config_paths_for(app_name: str) -> list[str]:
     paths = [f"config/{app_name}.yml", f"config/{app_name}.ini", "universe_wsgi.ini"]
     # Do not load sample config for galaxy
     if app_name != "galaxy":

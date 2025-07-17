@@ -1,5 +1,4 @@
 import time
-from typing import List
 
 from playwright.sync_api import (
     expect,
@@ -26,7 +25,7 @@ class PlaywrightShedBrowser(ShedBrowser):
     def __init__(self, page: Page):
         self._page = page
 
-    def visit_url(self, url: str, allowed_codes: List[int]) -> str:
+    def visit_url(self, url: str, allowed_codes: list[int]) -> str:
         try:
             response = self._page.goto(url)
         except Exception as e:
@@ -146,7 +145,7 @@ class PlaywrightShedBrowser(ShedBrowser):
         if input_s.count():
             input_s.select_option(value)  # type:ignore[arg-type, unused-ignore]
 
-    def edit_repository_categories(self, categories_to_add: List[str], categories_to_remove: List[str]) -> None:
+    def edit_repository_categories(self, categories_to_add: list[str], categories_to_remove: list[str]) -> None:
         multi_select = "form[name='categories'] select[name='category_id']"
         select_locator = self._page.locator(multi_select)
         select_locator.evaluate("node => node.selectedOptions = []")
@@ -157,7 +156,7 @@ class PlaywrightShedBrowser(ShedBrowser):
         select_locator.select_option(label=categories_to_remove)
         self.submit_form_with_name("categories", "manage_categories_button")
 
-    def grant_users_access(self, usernames: List[str]):
+    def grant_users_access(self, usernames: list[str]):
         multi_select = "form[name='user_access'] select[name='allow_push']"
         select_locator = self._page.locator(multi_select)
         select_locator.evaluate("node => node.selectedOptions = []")

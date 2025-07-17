@@ -1,8 +1,6 @@
 from typing import (
     cast,
-    List,
     Optional,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -18,8 +16,8 @@ if TYPE_CHECKING:
 
 
 class FileSourcePluginsConfig:
-    symlink_allowlist: List[str]
-    fetch_url_allowlist: List[str]
+    symlink_allowlist: list[str]
+    fetch_url_allowlist: list[str]
     library_import_dir: Optional[str]
     user_library_import_dir: Optional[str]
     ftp_upload_dir: Optional[str]
@@ -108,12 +106,12 @@ class FileSourcePluginLoader:
 
         return plugins_dict(galaxy.files.sources, "plugin_type")
 
-    def get_plugin_type_class(self, plugin_type: str) -> Type["BaseFilesSource"]:
-        return cast(Type["BaseFilesSource"], self._plugin_classes[plugin_type])
+    def get_plugin_type_class(self, plugin_type: str) -> type["BaseFilesSource"]:
+        return cast(type["BaseFilesSource"], self._plugin_classes[plugin_type])
 
     def load_plugins(
         self, plugin_source: PluginConfigSource, file_source_plugin_config: FileSourcePluginsConfig
-    ) -> List["BaseFilesSource"]:
+    ) -> list["BaseFilesSource"]:
         extra_kwds = {
             "file_sources_config": file_source_plugin_config,
         }
