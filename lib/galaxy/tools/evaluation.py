@@ -405,6 +405,14 @@ class ToolEvaluator:
         visit_input_values(self.tool.inputs, incoming, find_deferred_datasets)
         visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
 
+        # now place the the inputX datasets hacked in for multiple inputs into the deferred
+        # object array also. This is so messy. I think in this case - we only need these for
+        # Pulsar staging up which uses the hackier input_datasets flat dict.
+        for key, value in input_datasets.items():
+            if key not in deferred_objects and value is not None and value.state == model.Dataset.states.DEFERRED:
+                if self._should_materialize_deferred_input(key, value):
+                    deferred_objects[key] = value
+
         return deferred_objects
 
     def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
