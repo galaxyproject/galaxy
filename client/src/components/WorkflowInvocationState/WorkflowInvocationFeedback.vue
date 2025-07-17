@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -25,8 +25,6 @@ const props = defineProps<{
 const { graphStepsByStoreId } = storeToRefs(useInvocationStore());
 
 const steps = computed(() => graphStepsByStoreId.value[props.storeId]);
-
-const errorMessage = ref<string>("");
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
@@ -68,8 +66,8 @@ async function submit(message: string): Promise<string[][] | undefined> {
     });
 
     if (error) {
-        errorMessage.value = errorMessageAsString(error);
-        return;
+        // just pass the error message to the child component which already handles that
+        return [[errorMessageAsString(error), "danger"]];
     }
 
     return data.messages;
