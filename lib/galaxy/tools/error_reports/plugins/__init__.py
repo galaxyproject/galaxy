@@ -21,6 +21,6 @@ class ErrorPlugin(metaclass=ABCMeta):
         """Submit the bug report and render a string to be displayed to the user."""
         return None
 
-    def submit_invocation_report(self, invocation, user, **kwargs):
+    def submit_invocation_report(self, invocation, **kwargs):
         """Submit the bug report for an invocation and render a string to be displayed to the user."""
         return None

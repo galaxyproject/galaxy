@@ -4,7 +4,10 @@ import collections
 import logging
 import os
 
-from galaxy.exceptions import ItemOwnershipException
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    UserRequiredException,
+)
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
@@ -61,11 +64,11 @@ class ErrorPlugin:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
-    def _check_invocation_ownership(self, invocation, user):
+    def _check_invocation_accessibility(self, trans, invocation, user):
         if not user:
-            raise ItemOwnershipException("User is not logged in", type="error")
-        if invocation.history.user != user:
-            raise ItemOwnershipException("Invocation history is not owned by the reporting user", type="error")
+            raise UserRequiredException("User is not logged in", type="error")
+        if not trans or not self.app.workflow_manager.check_security(trans, invocation, check_ownership=False):
+            raise ItemAccessibilityException("Invocation is not accessible to the reporting user", type="error")
 
     def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
@@ -85,13 +88,13 @@ class ErrorPlugin:
 
     def submit_invocation_report(self, invocation, user=None, user_submission=False, **kwargs):
         if user_submission:
-            self._check_invocation_ownership(invocation, user)
+            self._check_invocation_accessibility(trans=kwargs.get("trans", None), invocation=invocation, user=user)
 
         responses = []
         for plugin in self.plugins:
             if user_submission == plugin.user_submission:
                 try:
-                    response = plugin.submit_invocation_report(invocation, user, **kwargs)
+                    response = plugin.submit_invocation_report(invocation, **kwargs)
                     log.debug("Bug report plugin %s generated response %s", plugin, response)
                     if plugin.verbose and response:
                         responses.append(response)
