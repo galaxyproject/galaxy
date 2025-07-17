@@ -1,7 +1,7 @@
 <script setup>
-import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
+import { BAlert, BButton, BModal, BPopover } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -78,6 +78,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    editorView: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
@@ -94,6 +98,17 @@ watch(
         errorText.value = null;
     },
 );
+
+const credentialToolTip = computed(() => {
+    const credentialNames = props.options.credentials?.map((service) => service.name);
+    if (!credentialNames.value) {
+        return "";
+    }
+
+    return `This tool requires the following credentials when running the workflow: ${credentialNames.value.join(
+        ", ",
+    )}`;
+});
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
@@ -185,11 +200,35 @@ const canGenerateTours = computed(() =>
 
         <template v-slot>
             <ToolCredentials
-                v-if="props.options.credentials"
+                v-if="props.options.credentials && !props.editorView"
                 class="mt-2"
                 :tool-id="props.id"
                 :tool-version="props.version"
                 :tool-credentials-definition="props.options.credentials" />
+
+            <BAlert
+                v-else-if="props.options.credentials && props.editorView"
+                v-b-tooltip.hover
+                variant="info"
+                class="mt-2"
+                show
+                :title="credentialToolTip">
+                <FontAwesomeIcon :icon="faKey" />
+                Requires credentials to run this tool.
+
+                <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
+                <BPopover target="target" triggers="hover" boundary="window">
+                    <div class="d-flex flex-column">
+                        <span
+                            v-for="(service, index) in props.options.credentials"
+                            :key="index"
+                            class="d-flex flex-column">
+                            <b> {{ service.label }}: </b>
+                            {{ service.description }}
+                        </span>
+                    </div>
+                </BPopover>
+            </BAlert>
 
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />

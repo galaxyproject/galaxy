@@ -17,25 +17,37 @@
             <span class="portlet-title">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <span v-if="credentialInfo?.toolId" v-b-tooltip.hover title="Uses credentials">
+                    <FontAwesomeIcon :icon="faKey" fixed-width />
+                </span>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </span>
         </div>
         <div v-show="expanded" class="portlet-content">
+            <ToolCredentials
+                v-if="credentialInfo?.toolId"
+                :tool-id="credentialInfo.toolId"
+                :tool-version="credentialInfo.toolVersion"
+                :tool-credentials-definition="credentialInfo.toolCredentials" />
             <slot name="body" />
         </div>
     </div>
 </template>
+
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { IconDefinition } from "font-awesome-6";
+
+import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
 
 library.add(faChevronUp);
 library.add(faChevronDown);
 
 export default {
     components: {
+        ToolCredentials,
         FontAwesomeIcon,
     },
     props: {
@@ -59,9 +71,15 @@ export default {
             type: Boolean,
             default: true,
         },
+        credentialInfo: {
+            type: Object,
+            default: null,
+        },
     },
     data() {
-        return {};
+        return {
+            faKey,
+        };
     },
     computed: {
         portletHeaderClasses() {

@@ -1,6 +1,11 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+        <FormCard
+            :title="model.fixed_title"
+            :icon="icon"
+            :collapsible="true"
+            :expanded.sync="expanded"
+            :credential-info="credentialInfo">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
@@ -71,6 +76,17 @@ export default {
     },
     computed: {
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        credentialInfo() {
+            if (!this.model.credentials?.length) {
+                return null;
+            }
+
+            return {
+                toolId: this.model.id,
+                toolVersion: this.model.version,
+                toolCredentials: this.model.credentials,
+            };
+        },
         icon() {
             return WorkflowIcons[this.model.step_type];
         },

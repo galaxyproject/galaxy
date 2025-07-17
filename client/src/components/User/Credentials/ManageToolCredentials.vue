@@ -30,13 +30,17 @@ const props = withDefaults(defineProps<ManageToolCredentialsProps>(), {
 const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCredentials());
 
 const emit = defineEmits<{
-    (e: "onUpdateCredentialsList", data: UserCredentials[]): void;
+    (e: "onUpdateCredentialsList", data?: UserCredentials[]): void;
     (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
     (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
     (e: "close"): void;
 }>();
 
-const sourceData = computed(() => ({
+const sourceData = computed<{
+    sourceId: string;
+    sourceType: "tool";
+    sourceVersion: string;
+}>(() => ({
     sourceId: props.toolId,
     sourceType: "tool",
     sourceVersion: props.toolVersion,
@@ -44,7 +48,6 @@ const sourceData = computed(() => ({
 
 function saveCredentials() {
     // TODO: Select
-    console.log("Saving credentials", providedCredentials.value);
     emit("save-credentials", providedCredentials.value);
 }
 
@@ -132,12 +135,16 @@ function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, group
     }
 }
 
-function onCurrentSetChange(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
-    const credentialFound = providedCredentials.value.credentials.find(
-        (c) => c.name === credential.name && c.version === credential.version
-    );
-    if (credentialFound) {
-        credentialFound.current_group = newSet.name;
+function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: ServiceGroupPayload) {
+    if (!newSet) {
+        credential.current_group = null;
+    } else {
+        const credentialFound = providedCredentials.value.credentials.find(
+            (c) => c.name === credential.name && c.version === credential.version
+        );
+        if (credentialFound) {
+            credentialFound.current_group = newSet?.name;
+        }
     }
 }
 
@@ -157,8 +164,7 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
     return !!getUserCredentialsForService(getKeyFromCredentialsIdentifier(credential));
 }
 
-function onUpdateCredentialsList(data: UserCredentials[]) {
-    console.log("161 - ManageToolCredentials.vue - onUpdateCredentialsList", data);
+function onUpdateCredentialsList(data?: UserCredentials[]) {
     emit("onUpdateCredentialsList", data);
 }
 </script>
@@ -198,7 +204,7 @@ function onUpdateCredentialsList(data: UserCredentials[]) {
         <template v-slot:modal-footer>
             <div class="manage-tool-credentials-footer">
                 <BButton variant="outline-danger" @click="emit('close')">Discard</BButton>
-                <BButton class="btn-primary" @click="saveCredentials">Select Credentials</BButton>
+                <BButton class="btn-primary" @click="saveCredentials">Select Credentials1</BButton>
             </div>
         </template>
     </BModal>

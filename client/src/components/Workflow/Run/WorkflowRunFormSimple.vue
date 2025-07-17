@@ -7,6 +7,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { ServiceCredentialsDefinition } from "@/api/users";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -28,6 +29,7 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
+import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -331,6 +333,26 @@ async function onExecute() {
         waitingForRequest.value = false;
     }
 }
+
+type ToolsCredentialInfo = {
+    id: string;
+    name: string;
+    label: string;
+    version: string;
+    credentialsDefinition: ServiceCredentialsDefinition[];
+};
+
+const credentialTools = computed<ToolsCredentialInfo[]>(() => {
+    return props.model.steps
+        .filter((step: any) => step.step_type === "tool" && step.credentials?.length)
+        .map((step: any) => ({
+            id: step.id,
+            name: step.name,
+            label: step.label,
+            version: step.version,
+            credentialsDefinition: step.credentials,
+        }));
+});
 </script>
 
 <template>
@@ -450,6 +472,8 @@ async function onExecute() {
             :history-id="model.historyId"
             show-details
             :hide-hr="Boolean(showRightPanel)" />
+
+        <WorkflowCredentialsManagement v-if="credentialTools.length" :tools="credentialTools" full />
 
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">

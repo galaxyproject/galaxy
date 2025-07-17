@@ -191,6 +191,13 @@ onMounted(async () => {
                     to="/user/api_key" />
 
                 <UserPreferencesElement
+                    id="edit-preferences-credentials"
+                    :icon="faKey"
+                    title="Manage Your Credentials"
+                    description="Manage your credentials for accessing external services."
+                    to="/user/credentials" />
+
+                <UserPreferencesElement
                     id="edit-preferences-notifications"
                     :icon="faBell"
                     title="Manage Notifications"
