@@ -100,25 +100,24 @@ const workflowTags = computed(() => {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .history-link-wrapper {
     max-width: 300px;
     display: inline-block;
     vertical-align: middle;
-}
 
-::v-deep(.history-link-wrapper .history-link button) {
-    display: inline-block !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-    text-overflow: ellipsis !important;
-    max-width: 100% !important;
-    vertical-align: middle;
-}
+    &:deep(.history-link) {
+        max-width: 100%;
+        overflow: hidden;
 
-::v-deep(.history-link-wrapper .history-link) {
-    max-width: 100%;
-    overflow: hidden;
+        button {
+            display: inline-block !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+            max-width: 100% !important;
+            vertical-align: middle;
+        }
+    }
 }
-
 </style>
