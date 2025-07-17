@@ -121,6 +121,6 @@ async function submit(message: string): Promise<string[][] | undefined> {
             </div>
         </div>
 
-        <EmailReportForm class="mt-3" :submit="submit" />
+        <EmailReportForm class="mt-3" require-login :submit="submit" />
     </div>
 </template>

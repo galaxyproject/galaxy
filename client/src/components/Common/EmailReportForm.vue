@@ -12,10 +12,12 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GLink from "../BaseComponents/GLink.vue";
 import FormElement from "../Form/FormElement.vue";
 
 const props = defineProps<{
     submit: (message: string) => Promise<string[][] | undefined>;
+    requireLogin?: boolean;
 }>();
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -56,27 +58,33 @@ async function submitEmail() {
 <template>
     <div>
         <h4 class="mb-3 h-md">Issue Report</h4>
-
-        <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
+        <BAlert v-if="props.requireLogin && !userEmail" variant="info" show>
+            <span v-localize> You must be logged in to submit a report. </span>
+            <GLink to="/login/start"> Please log in to continue. </GLink>
         </BAlert>
 
-        <div v-if="showForm" id="email-report-form">
-            <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
-            <span v-if="userEmail">{{ userEmail }}</span>
-            <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
+        <div v-else>
+            <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
+            </BAlert>
 
-            <FormElement
-                id="email-report-message"
-                v-model="message"
-                :area="true"
-                title="Please provide detailed information on the activities leading to the issue(s):" />
+            <div v-if="showForm" id="email-report-form">
+                <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
+                <span v-if="userEmail">{{ userEmail }}</span>
+                <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
 
-            <GButton id="email-report-submit" color="blue" class="mt-3" @click="submitEmail">
-                <FontAwesomeIcon :icon="faBug" class="mr-1" />
-                Report
-            </GButton>
+                <FormElement
+                    id="email-report-message"
+                    v-model="message"
+                    :area="true"
+                    title="Please provide detailed information on the activities leading to the issue(s):" />
+
+                <GButton id="email-report-submit" color="blue" class="mt-3" @click="submitEmail">
+                    <FontAwesomeIcon :icon="faBug" class="mr-1" />
+                    Report
+                </GButton>
+            </div>
         </div>
     </div>
 </template>
