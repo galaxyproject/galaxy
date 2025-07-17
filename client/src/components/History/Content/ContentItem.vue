@@ -9,6 +9,7 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getGalaxyInstance } from "app";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -263,15 +264,31 @@ function onDisplay() {
         const url = entryPointsForHda[0]?.target;
         window.open(url, "_blank");
     } else {
+        const Galaxy = getGalaxyInstance();
+        const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
+
+        // Build the display URL with windowManager query param if needed
+        let displayUrl = itemUrls.value.display;
+        if (isWindowManagerActive && displayUrl) {
+            displayUrl += displayUrl.includes("?") ? "&windowManager=true" : "?windowManager=true";
+        }
+
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { force: true, preventWindowManager: true });
-        } else if (itemUrls.value.display) {
+            router.push(displayUrl, {
+                force: true,
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            });
+        } else if (displayUrl) {
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { preventWindowManager: true });
+            router.push(displayUrl, {
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            });
         }
     }
 }
