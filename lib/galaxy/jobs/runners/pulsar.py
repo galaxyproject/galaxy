@@ -247,7 +247,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
         for kwd in self.runner_params.keys():
             if kwd.startswith("amqp_") or kwd.startswith("transport_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
+
+        client_manager_kwargs.update(self._init_client_manager_extend_kwargs(**client_manager_kwargs))
+
         self.client_manager = build_client_manager(**client_manager_kwargs)
+
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        """Override this method to pass additional keyword arguments to the client manager or alter existing ones."""
+        return kwargs
 
     def __init_pulsar_app(self, conf, pulsar_conf_path):
         if conf is None and pulsar_conf_path is None and not self.default_build_pulsar_app:
@@ -1060,6 +1067,47 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
 
+
+ARC_DESTINATION_DEFAULTS: Dict[str, Any] = {
+    "arc_enabled": True,
+    "arc_url": PARAMETER_SPECIFICATION_REQUIRED,
+    **COEXECUTION_DESTINATION_DEFAULTS,
+    "default_file_action": "json_transfer",
+}
+
+class PulsarARCJobRunner(PulsarCoexecutionJobRunner):
+    runner_name = "PulsarARCJobRunner"
+
+    destination_defaults = ARC_DESTINATION_DEFAULTS
+
+    use_mq = False
+    poll = True
+
+    def get_client_from_state(self, job_state):
+        client = super().get_client_from_state(job_state)
+        client._arc_job_id = job_state.job_id  # used by the client to get the job state
+        return client
+
+    def queue_job(self, job_wrapper):
+        """
+        Inject user's own ARC endpoint and OIDC token if defined as destination parameters.
+        """
+        destination_arc_url = job_wrapper.job_destination.params.get("arc_url")
+        destination_oidc_token = job_wrapper.job_destination.params.get("oidc_token")
+        user_arc_url = job_wrapper.get_job().user.extra_preferences.get("distributed_arc_compute|remote_arc_resources")
+        user_oidc_token = job_wrapper.get_job().user.extra_preferences.get("distributed_arc_compute|remote_arc_token")
+
+        job_wrapper.job_destination.params.update({
+            "arc_url": user_arc_url or destination_arc_url,
+            "oidc_token": user_oidc_token or destination_oidc_token,
+        })
+
+        return super().queue_job(job_wrapper)
+
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        kwargs = super()._init_client_manager_extend_kwargs(**kwargs)
+        kwargs["arc_enabled"] = True
+        return kwargs
 
 KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
 
