@@ -68,7 +68,9 @@ const workflowTags = computed(() => {
                     <FontAwesomeIcon :icon="faHdd" />History:
 
                     <span class="history-link-wrapper">
-                        <SwitchToHistoryLink :history-id="props.historyId" />
+                        <SwitchToHistoryLink
+                            :history-id="props.historyId"
+                        />
                     </span>
 
                     <BBadge
@@ -105,16 +107,18 @@ const workflowTags = computed(() => {
     vertical-align: middle;
 }
 
-::v-deep(.history-link-wrapper a),
-::v-deep(.history-link-wrapper div) {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.2em;
-    max-height: 3.6em;
+::v-deep(.history-link-wrapper .history-link button) {
+    display: inline-block !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    vertical-align: middle;
 }
+
+::v-deep(.history-link-wrapper .history-link) {
+    max-width: 100%;
+    overflow: hidden;
+}
+
 </style>
