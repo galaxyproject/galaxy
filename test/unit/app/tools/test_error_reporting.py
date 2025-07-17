@@ -2,8 +2,10 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 from galaxy import model
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util.unittest import TestCase
@@ -26,6 +28,7 @@ class TestErrorReporter(TestCase, UsesApp):
         self.email_path = self.tmp_path / "email.json"
         smtp_server = f"mock_emails_to_path://{self.email_path}"
         self.app.config.smtp_server = smtp_server  # type: ignore[attr-defined]
+        self.app.workflow_manager = mock.MagicMock()
 
     def tearDown(self):
         shutil.rmtree(self.tmp_path)
@@ -48,12 +51,12 @@ class TestErrorReporter(TestCase, UsesApp):
         assert TEST_USER_EMAIL == email_json["reply_to"]
 
     def test_workflow_error_reporting(self):
-        user, invocation = self._setup_invocation_model_objects()
+        user, invocation, trans = self._setup_invocation_model_objects()
 
         email_path = self.email_path
         assert not email_path.exists()
         error_report = WorkflowEmailErrorReporter(invocation, self.app)
-        error_report.send_report(user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message")
+        error_report.send_report(user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message", trans=trans)
         assert email_path.exists()
         text = email_path.read_text()
         email_json = json.loads(text)
@@ -64,15 +67,18 @@ class TestErrorReporter(TestCase, UsesApp):
         assert "Test Workflow" in email_json["html"]
         assert TEST_USER_EMAIL == email_json["reply_to"]
 
-    def test_workflow_error_reporting_unowned_history(self):
-        _, invocation = self._setup_invocation_model_objects()
+    def test_workflow_error_reporting_inaccessible_history(self):
+        _, invocation, trans = self._setup_invocation_model_objects()
         other_user = model.User(email="otheruser@galaxyproject.org", password="mockpass2")
         self._commit_objects([other_user])
 
         email_path = self.email_path
         assert not email_path.exists()
         error_report = WorkflowEmailErrorReporter(invocation, self.app)
-        error_report.send_report(other_user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message")
+        self.app.workflow_manager.check_security.side_effect = Exception("Invocation is not accessible")  # type: ignore[attr-defined]
+        error_report.send_report(other_user, email=TEST_USER_SUPPLIED_EMAIL, message="My custom message", trans=trans)
+        # Same comment as in `test_hda_security`, but for accessibility of the invocation:
+        # Without accessibility, the email still gets sent but the supplied email is ignored
         assert email_path.exists()
         text = email_path.read_text()
         email_json = json.loads(text)
@@ -179,8 +185,9 @@ class TestErrorReporter(TestCase, UsesApp):
         invocation.workflow.stored_workflow.user = user
         invocation.history = model.History()
         invocation.history.user = user
+        trans = galaxy_mock.MockTrans(app=self.app, history=invocation.history, user=user)
         self._commit_objects([user, invocation])
-        return user, invocation
+        return user, invocation, trans
 
     def _commit_objects(self, objects):
         session = self.app.model.context

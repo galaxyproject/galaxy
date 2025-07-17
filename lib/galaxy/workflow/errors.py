@@ -98,9 +98,11 @@ class WorkflowErrorReporter:
             return False
         if not trans:
             return False
-        if not self.app.workflow_manager.check_security(trans, self.invocation, check_ownership=False):
+        try:
+            self.app.workflow_manager.check_security(trans, self.invocation, check_ownership=False)
+            return True
+        except Exception:
             return False
-        return True
 
     def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         host = self.app.url_for("/", qualified=True)
