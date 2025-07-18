@@ -20,7 +20,11 @@ from typing_extensions import (
 )
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    Model,
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from galaxy.schema.types import CoercedStringType
 
 
@@ -85,6 +89,7 @@ class BaseCollectionTarget(BaseFetchDataTarget):
     collection_type: Optional[str] = None
     tags: Optional[List[str]] = None
     name: Optional[str] = None
+    column_definitions: Optional[SampleSheetColumnDefinitions] = None
 
 
 class LibraryDestination(FetchBaseModel):
@@ -131,6 +136,8 @@ class BaseDataElement(FetchBaseModel):
     hashes: Optional[List[FetchDatasetHash]] = None
     description: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
+    # It'd be nice to restrict this to just the top level and only if creating a collection
+    row: Optional[SampleSheetRow] = None
 
 
 class FileDataElement(BaseDataElement):

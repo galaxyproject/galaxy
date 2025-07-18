@@ -44,6 +44,7 @@ from galaxy.model import (
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.query import HistoryQuery
+from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -395,7 +396,13 @@ class WorkflowModule:
         if inputs := self.get_inputs():
             self.state.decode(state, Bunch(inputs=inputs), self.trans.app)
         else:
-            self.state.inputs = safe_loads(state) or {}
+            inputs = safe_loads(state) or {}
+            self.validate_state(inputs)
+            self.state.inputs = inputs
+
+    def validate_state(self, inputs: Dict[str, Any]) -> None:
+        """If get_inputs() return None, validate the inputs dictionary directly bypassing ToolForm stuff."""
+        return None
 
     def step_state_to_tool_state(self, state):
         return state
@@ -1154,6 +1161,17 @@ class InputDataCollectionModule(InputModule):
         # migrated to frontend
         return {}
 
+    def validate_state(self, state: Dict[str, Any]) -> None:
+        collection_type = state.get("collection_type")
+        fields = state.get("fields")
+        if collection_type:
+            collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(
+                collection_type,
+                fields=fields,
+            )
+            collection_type_description.validate()
+        return None
+
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
@@ -1167,8 +1185,13 @@ class InputDataCollectionModule(InputModule):
             tag=tag,
             optional=optional,
         )
+        if "column_definitions" in parameter_def:
+            collection_param_source["column_definitions"] = parameter_def["column_definitions"]
+        if "fields" in parameter_def:
+            collection_param_source["fields"] = parameter_def["fields"]
         if formats := parameter_def.get("format"):
             collection_param_source["format"] = ",".join(listify(formats))
+        # TODO: this needs to land up part of DataCollectionToolParameter
         input_param = DataCollectionToolParameter(None, collection_param_source, self.trans)
         return dict(input=input_param)
 
@@ -1196,13 +1219,17 @@ class InputDataCollectionModule(InputModule):
             collection_type = inputs["collection_type"]
         else:
             collection_type = self.default_collection_type
-        state_as_dict["collection_type"] = collection_type
+        if "column_definitions" in inputs:
+            column_definitions = inputs["column_definitions"]
+        else:
+            column_definitions = None
         if "fields" in inputs:
             fields = inputs["fields"]
         else:
             fields = None
         state_as_dict["collection_type"] = collection_type
         state_as_dict["fields"] = fields
+        state_as_dict["column_definitions"] = column_definitions
         return state_as_dict
 
 
