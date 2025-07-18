@@ -8,6 +8,7 @@ jest.mock("@/api", () => ({
 }));
 
 jest.mock("@/stores/userCredentials", () => ({
+    SECRET_PLACEHOLDER: "***",
     useUserCredentialsStore: jest.fn(() => ({
         getAllUserCredentialsForTool: jest.fn(),
         fetchAllUserCredentialsForTool: jest.fn(),
@@ -24,13 +25,45 @@ jest.mock("@/stores/userStore", () => ({
 }));
 
 jest.mock("./toolCredentials", () => ({
-    useToolCredentials: jest.fn(() => ({
-        sourceCredentialsDefinition: { value: { sourceType: "tool", sourceId: "test-tool", services: new Map() } },
-        hasSomeOptionalCredentials: { value: false },
-        hasSomeRequiredCredentials: { value: true },
-        hasAnyCredentials: { value: true },
-        servicesCount: { value: 1 },
-    })),
+    useToolCredentials: jest.fn(() => {
+        const servicesMap = new Map();
+        servicesMap.set("test-service-1.0", {
+            name: "test-service",
+            version: "1.0",
+            label: "Test Service",
+            description: "A test service",
+            secrets: [
+                {
+                    name: "api_key",
+                    label: "API Key",
+                    description: "Your service API key",
+                    optional: false,
+                },
+            ],
+            variables: [
+                {
+                    name: "base_url",
+                    label: "Base URL",
+                    description: "Service base URL",
+                    optional: false,
+                },
+            ],
+        });
+
+        return {
+            sourceCredentialsDefinition: {
+                value: {
+                    sourceType: "tool",
+                    sourceId: "test-tool",
+                    services: servicesMap,
+                },
+            },
+            hasSomeOptionalCredentials: { value: false },
+            hasSomeRequiredCredentials: { value: true },
+            hasAnyCredentials: { value: true },
+            servicesCount: { value: 1 },
+        };
+    }),
 }));
 
 const baseUserCredentials: UserCredentials = {
@@ -113,7 +146,7 @@ describe("useUserToolCredentials", () => {
             hasSomeRequiredCredentials,
             hasAnyCredentials,
             servicesCount,
-        } = useUserToolCredentials("test-tool", mockServiceCredentialsDefinition);
+        } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
 
         expect(sourceCredentialsDefinition.value.sourceType).toBe("tool");
         expect(sourceCredentialsDefinition.value.sourceId).toBe("test-tool");
@@ -124,12 +157,14 @@ describe("useUserToolCredentials", () => {
     });
 
     it("initializes with default user credentials state", () => {
-        const { userCredentials, isBusy, busyMessage, hasUserProvidedRequiredCredentials } = useUserToolCredentials(
-            "test-tool",
-            mockServiceCredentialsDefinition
-        );
+        const { userCredentials, mutableUserCredentials, isBusy, busyMessage, hasUserProvidedRequiredCredentials } =
+            useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
 
         expect(userCredentials.value).toBeUndefined();
+        expect(mutableUserCredentials.value).toBeDefined();
+        expect(mutableUserCredentials.value.source_type).toBe("tool");
+        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
+        expect(mutableUserCredentials.value.source_version).toBe("1.0");
         expect(isBusy.value).toBe(false);
         expect(busyMessage.value).toBe("");
         expect(hasUserProvidedRequiredCredentials.value).toBe(false);
@@ -138,6 +173,7 @@ describe("useUserToolCredentials", () => {
     it("provides correct button title based on credential state", () => {
         const { provideCredentialsButtonTitle, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
+            "1.0",
             mockServiceCredentialsDefinition
         );
 
@@ -150,6 +186,7 @@ describe("useUserToolCredentials", () => {
     it("provides correct status variant based on state", () => {
         const { statusVariant, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
+            "1.0",
             mockServiceCredentialsDefinition
         );
 
@@ -162,6 +199,7 @@ describe("useUserToolCredentials", () => {
     it("detects when user has provided required credentials", () => {
         const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
+            "1.0",
             mockServiceCredentialsDefinition
         );
 
@@ -174,6 +212,7 @@ describe("useUserToolCredentials", () => {
     it("detects when user has provided all credentials", () => {
         const { hasUserProvidedAllCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
+            "1.0",
             mockServiceCredentialsDefinition
         );
 
@@ -203,7 +242,7 @@ describe("useUserToolCredentials", () => {
         ];
 
         const { hasUserProvidedRequiredCredentials, hasUserProvidedAllCredentials, updateUserCredentials } =
-            useUserToolCredentials("test-tool", mockServiceCredentialsDefinition);
+            useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
 
         updateUserCredentials(incompleteCredentials);
 
@@ -237,6 +276,7 @@ describe("useUserToolCredentials", () => {
 
         const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
+            "1.0",
             mockServiceCredentialsDefinition
         );
 
@@ -247,8 +287,88 @@ describe("useUserToolCredentials", () => {
     });
 
     it("exposes user store properties", () => {
-        const { isAnonymous } = useUserToolCredentials("test-tool", mockServiceCredentialsDefinition);
+        const { isAnonymous } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
 
         expect(isAnonymous.value).toBe(false);
+    });
+
+    it("creates mutable user credentials payload correctly", () => {
+        const { mutableUserCredentials } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
+
+        expect(mutableUserCredentials.value.source_type).toBe("tool");
+        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
+        expect(mutableUserCredentials.value.source_version).toBe("1.0");
+        expect(mutableUserCredentials.value.credentials).toHaveLength(1);
+
+        // Check the default structure when no user credentials exist
+        const credential = mutableUserCredentials.value.credentials[0];
+        expect(credential!.name).toBe("test-service");
+        expect(credential!.version).toBe("1.0");
+        expect(credential!.current_group).toBe("default");
+        expect(credential!.groups).toHaveLength(1);
+
+        const group = credential!.groups[0];
+        expect(group!.name).toBe("default");
+        expect(group!.variables).toHaveLength(1);
+        expect(group!.secrets).toHaveLength(1);
+
+        // Variables should have null values initially
+        expect(group!.variables[0]!.name).toBe("base_url");
+        expect(group!.variables[0]!.value).toBeNull();
+
+        // Secrets should have null values initially
+        expect(group!.secrets[0]!.name).toBe("api_key");
+        expect(group!.secrets[0]!.value).toBeNull();
+    });
+
+    it("handles mutable credentials with existing user credentials", () => {
+        const { updateUserCredentials, mutableUserCredentials, refreshMutableCredentials } = useUserToolCredentials(
+            "test-tool",
+            "1.0",
+            mockServiceCredentialsDefinition
+        );
+
+        // Update with user credentials
+        updateUserCredentials(mockUserCredentials);
+
+        refreshMutableCredentials();
+
+        // The mutable credentials structure should be available for editing
+        expect(mutableUserCredentials.value).toBeDefined();
+        expect(mutableUserCredentials.value.source_type).toBe("tool");
+        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
+        expect(mutableUserCredentials.value.source_version).toBe("1.0");
+
+        // Check that credentials are properly structured
+        expect(mutableUserCredentials.value.credentials).toHaveLength(1);
+
+        const credential = mutableUserCredentials.value.credentials[0];
+        expect(credential).toBeDefined();
+        expect(credential!.name).toBe("test-service");
+        expect(credential!.version).toBe("1.0");
+        expect(credential!.current_group).toBe("default");
+
+        // Check groups structure
+        expect(credential!.groups).toHaveLength(1);
+        const group = credential!.groups[0];
+        expect(group).toBeDefined();
+        expect(group!.name).toBe("default");
+
+        // Check variables are correctly mapped
+        expect(group!.variables).toHaveLength(1);
+        const variable = group!.variables[0];
+        expect(variable).toBeDefined();
+        expect(variable!.name).toBe("base_url");
+        expect(variable!.value).toBe("https://api.example.com");
+
+        // Check secrets are correctly mapped
+        expect(group!.secrets).toHaveLength(1);
+        const secret = group!.secrets[0];
+        expect(secret).toBeDefined();
+        expect(secret!.name).toBe("api_key");
+        expect(secret!.value).toBe("***"); // Should use SECRET_PLACEHOLDER when is_set is true
+        if ("alreadySet" in secret!) {
+            expect((secret as { alreadySet?: boolean }).alreadySet).toBe(true);
+        }
     });
 });
