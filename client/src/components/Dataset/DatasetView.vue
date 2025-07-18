@@ -29,12 +29,12 @@ const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistent
 interface Props {
     datasetId: string;
     tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
-    windowManager?: boolean;
+    displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: "preview",
-    windowManager: false,
+    displayOnly: false,
 });
 
 const iframeLoading = ref(true);
@@ -92,7 +92,7 @@ watch(
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
     <div v-else class="dataset-view d-flex flex-column h-100">
-        <header v-if="!windowManager" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
+        <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
                     h1
@@ -134,7 +134,7 @@ watch(
                 </div>
             </transition>
         </header>
-        <BNav v-if="!windowManager" pills class="my-2 p-2 bg-light border-bottom">
+        <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
                 title="View a preview of the dataset contents"
                 :active="tab === 'preview'"
