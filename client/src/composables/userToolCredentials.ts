@@ -1,6 +1,5 @@
 import { computed, ref, watch } from "vue";
 
-import { isRegisteredUser } from "@/api";
 import {
     type CreateSourceCredentialsPayload,
     getKeyFromCredentialsIdentifier,
@@ -11,7 +10,6 @@ import {
     type UserCredentials,
 } from "@/api/users";
 import { SECRET_PLACEHOLDER, useUserCredentialsStore } from "@/stores/userCredentials";
-import { useUserStore } from "@/stores/userStore";
 
 import { useToolCredentials } from "./toolCredentials";
 
@@ -28,10 +26,7 @@ export function useUserToolCredentials(
     toolVersion: string,
     toolCredentialsDefinition: ServiceCredentialsDefinition[]
 ) {
-    const userStore = useUserStore();
-    const userCredentialsStore = useUserCredentialsStore(
-        isRegisteredUser(userStore.currentUser) ? userStore.currentUser.id : "anonymous"
-    );
+    const userCredentialsStore = useUserCredentialsStore();
 
     // Use the tool credentials composable for credential definitions
     const {
@@ -228,10 +223,6 @@ export function useUserToolCredentials(
         busyMessage.value = "Checking your credentials...";
         isBusy.value = true;
         try {
-            if (userStore.isAnonymous) {
-                return;
-            }
-
             userCredentials.value =
                 userCredentialsStore.getAllUserCredentialsForTool(toolId) ??
                 (await userCredentialsStore.fetchAllUserCredentialsForTool(toolId));
@@ -318,9 +309,6 @@ export function useUserToolCredentials(
         hasUserProvidedRequiredCredentials,
         hasUserProvidedAllCredentials,
         provideCredentialsButtonTitle,
-
-        // User store properties
-        isAnonymous: computed(() => userStore.isAnonymous),
 
         // Methods
         checkUserCredentials,

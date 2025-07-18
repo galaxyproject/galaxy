@@ -1,13 +1,21 @@
+import { defineStore, storeToRefs } from "pinia";
 import { computed, ref, set } from "vue";
 
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, isRegisteredUser } from "@/api";
 import type { CreateSourceCredentialsPayload, ServiceCredentialsIdentifier, UserCredentials } from "@/api/users";
 
-import { defineScopedStore } from "./scopedStore";
+import { useUserStore } from "./userStore";
 
 export const SECRET_PLACEHOLDER = "********";
 
-export const useUserCredentialsStore = defineScopedStore("userCredentialsStore", (currentUserId: string) => {
+export const useUserCredentialsStore = defineStore("userCredentialsStore", () => {
+    const userStore = useUserStore();
+    const { currentUser } = storeToRefs(userStore);
+
+    const currentUserId = computed(() => {
+        return isRegisteredUser(currentUser.value) ? currentUser.value.id : "anonymous";
+    });
+
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
 
     const currentUserCredentialsForTools = computed(() => userCredentialsForTools.value);
@@ -114,10 +122,10 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
     }
 
     function ensureUserIsRegistered(): string {
-        if (currentUserId === "anonymous") {
+        if (currentUserId.value === "anonymous") {
             throw new Error("Only registered users can have tool credentials");
         }
-        return currentUserId;
+        return currentUserId.value;
     }
 
     function removeSecretPlaceholders(providedCredentials: CreateSourceCredentialsPayload) {

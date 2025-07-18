@@ -4,7 +4,6 @@ import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { isRegisteredUser } from "@/api";
 import {
     type CreateSourceCredentialsPayload,
     type ServiceCredentialsDefinition,
@@ -28,9 +27,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const userCredentialsStore = useUserCredentialsStore(
-    isRegisteredUser(userStore.currentUser) ? userStore.currentUser.id : "anonymous"
-);
+const userCredentialsStore = useUserCredentialsStore();
 
 const isBusy = ref(true);
 const busyMessage = ref<string>("");
