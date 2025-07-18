@@ -62,7 +62,7 @@ export function useUserToolCredentials(
             const userCredentialForService = getUserCredentialsForService(key);
 
             const currentGroup = userCredentialForService?.current_group_name ?? "default";
-            const definition = getServiceCredentialsDefinition(key);
+            const definition = getServiceCredentialsDefinitionByKey(key);
             const groups = buildGroupsFromUserCredentials(definition, userCredentialForService);
             const credential: ServiceCredentialPayload = {
                 name: definition.name,
@@ -86,10 +86,21 @@ export function useUserToolCredentials(
         return userCredentials.value?.find((c) => getKeyFromCredentialsIdentifier(c) === key);
     }
 
-    function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinition {
+    function getServiceCredentialsDefinitionByKey(key: string): ServiceCredentialsDefinition {
         const definition = sourceCredentialsDefinition.value.services.get(key);
         if (!definition) {
             throw new Error(`No definition found for credential service '${key}' in tool ${toolId}`);
+        }
+        return definition;
+    }
+
+    function getServiceCredentialsDefinition(
+        serviceIdentifier: ServiceCredentialsIdentifier
+    ): ServiceCredentialsDefinition {
+        const key = getKeyFromCredentialsIdentifier(serviceIdentifier);
+        const definition = sourceCredentialsDefinition.value.services.get(key);
+        if (!definition) {
+            throw new Error(`No ServiceCredentialsDefinition found for service '${key}'`);
         }
         return definition;
     }
@@ -317,5 +328,6 @@ export function useUserToolCredentials(
         deleteCredentialsGroup,
         updateUserCredentials,
         refreshMutableCredentials,
+        getServiceCredentialsDefinition,
     };
 }
