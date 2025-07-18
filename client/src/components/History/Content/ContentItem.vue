@@ -267,10 +267,10 @@ function onDisplay() {
         const Galaxy = getGalaxyInstance();
         const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
 
-        // Build the display URL with windowManager query param if needed
+        // Build the display URL with displayOnly query param if needed
         let displayUrl = itemUrls.value.display;
         if (isWindowManagerActive && displayUrl) {
-            displayUrl += displayUrl.includes("?") ? "&windowManager=true" : "?windowManager=true";
+            displayUrl += displayUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true";
         }
 
         // vue-router 4 supports a native force push with clean URLs,
