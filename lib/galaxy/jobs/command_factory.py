@@ -94,19 +94,26 @@ def build_command(
             external_command_shell = container.shell
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(
-            job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container
-        )
         if container and modify_command_for_container:
-            # Stop now and build command before handling metadata and copying
-            # working directory files back. These should always happen outside
-            # of docker container - no security implications when generating
-            # metadata and means no need for Galaxy to be available to container
-            # and not copying workdir outputs back means on can be more restrictive
-            # of where container can write to in some circumstances.
-            run_in_container_command = container.containerize_command(externalized_commands)
+            if job_wrapper.tool and not job_wrapper.tool.may_use_container_entry_point:
+                externalized_commands = __externalize_commands(
+                    job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container
+                )
+                # Stop now and build command before handling metadata and copying
+                # working directory files back. These should always happen outside
+                # of docker container - no security implications when generating
+                # metadata and means no need for Galaxy to be available to container
+                # and not copying workdir outputs back means on can be more restrictive
+                # of where container can write to in some circumstances.
+                run_in_container_command = container.containerize_command(externalized_commands)
+            else:
+                tool_commands = commands_builder.build()
+                run_in_container_command = container.containerize_command(tool_commands)
             commands_builder = CommandsBuilder(run_in_container_command)
         else:
+            externalized_commands = __externalize_commands(
+                job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container
+            )
             commands_builder = CommandsBuilder(externalized_commands)
 
     # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
