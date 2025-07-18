@@ -521,25 +521,25 @@ history_export:
 
 history_export_tasks:
   selectors:
-    direct_download: '.gen-direct-download-btn'
-    file_source_tab: '.tab-export-to-file'
-    remote_file_name_input: '#file-source-tab #name'
-    toggle_options_link: '#toggle-options-link'
-    export_format_selector: '#format-selector'
-    select_format:
-        type: xpath
-        selector: '//select[@id="format-selector"]/option[@value="${format}"]'
+    history_export_wizard: '.history-export-wizard'
+    next_button: '.go-next-btn'
+    back_button: '.go-back-btn'
+    export_button: '.go-next-btn.btn-primary'
+    select_format: '[data-history-export-format="${format}"]'
+    select_destination: '[data-history-export-destination="${destination}"]'
+    exported_file_name: '#exported-file-name'
 
 last_export_record:
   selectors:
     details: '.export-record-details'
-    preparing_export: '.export-record-details .loading-icon'
     export_format: '.record-archive-format'
     up_to_date_icon: '.record-up-to-date-icon'
     outdated_icon: '.record-outdated-icon'
-    expiration_warning_icon: '.record-expiration-warning-icon'
-    download_btn: '.record-download-btn'
-    reimport_btn: '.record-reimport-btn'
+    preparing_export_badge: '#g-card-badge-in-progress-latest-export-record'
+    download_ready_badge: '#g-card-badge-ready-to-download-latest-export-record'
+    expiration_warning_badge: '#g-card-badge-expires-soon-latest-export-record'
+    download_btn: '#g-card-action-download-latest-export-record'
+    reimport_btn: '#g-card-action-reimport-latest-export-record'
 
 history_import:
   selectors:
