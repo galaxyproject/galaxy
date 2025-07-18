@@ -41,11 +41,7 @@ const owned = computed(() => {
 });
 
 const description = computed(() => {
-    if (workflow.value?.annotation) {
-        return workflow.value.annotation?.trim();
-    } else {
-        return null;
-    }
+    return workflow.value?.annotation?.trim() || null;
 });
 
 const timeElapsed = computed(() => {
@@ -70,7 +66,11 @@ const workflowTags = computed(() => {
                 </i>
                 <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />History:
-                    <SwitchToHistoryLink :history-id="props.historyId" />
+
+                    <span class="history-link-wrapper">
+                        <SwitchToHistoryLink :history-id="props.historyId" />
+                    </span>
+
                     <BBadge
                         v-if="useHistoryStore().currentHistoryId !== props.historyId"
                         v-b-tooltip.hover.noninteractive
@@ -97,3 +97,18 @@ const workflowTags = computed(() => {
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+.history-link-wrapper {
+    max-width: 300px;
+
+    &:deep(.history-link) {
+        a {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            display: block;
+        }
+    }
+}
+</style>
