@@ -82,10 +82,10 @@ export function getKeyFromCredentialsIdentifier(
  * migrated to FastAPI.
  */
 export interface ServiceCredentialsDefinition extends ServiceCredentialsIdentifier {
-    label?: string;
-    description?: string;
-    secrets: ServiceVariableDefinition[];
-    variables: ServiceVariableDefinition[];
+    readonly label?: string;
+    readonly description?: string;
+    readonly secrets: Readonly<ServiceVariableDefinition[]>;
+    readonly variables: Readonly<ServiceVariableDefinition[]>;
 }
 
 /**
