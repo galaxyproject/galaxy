@@ -286,12 +286,6 @@ describe("useUserToolCredentials", () => {
         expect(hasUserProvidedRequiredCredentials.value).toBe(true);
     });
 
-    it("exposes user store properties", () => {
-        const { isAnonymous } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
-
-        expect(isAnonymous.value).toBe(false);
-    });
-
     it("creates mutable user credentials payload correctly", () => {
         const { mutableUserCredentials } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
 

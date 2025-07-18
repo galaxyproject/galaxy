@@ -5,7 +5,6 @@ import { BButton, BCollapse, BFormInput } from "bootstrap-vue";
 import { faPencil, faSpinner, faX, faXmark } from "font-awesome-6";
 import { computed, ref } from "vue";
 
-import { isRegisteredUser } from "@/api";
 import type {
     ServiceCredentialPayload,
     ServiceCredentialsDefinition,
@@ -17,7 +16,6 @@ import type {
 import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useUserCredentialsStore } from "@/stores/userCredentials";
-import { useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -46,10 +44,7 @@ const emit = defineEmits<{
 
 const { confirm } = useConfirmDialog();
 
-const userStore = useUserStore();
-const userCredentialsStore = useUserCredentialsStore(
-    isRegisteredUser(userStore.currentUser) ? userStore.currentUser.id : "anonymous"
-);
+const userCredentialsStore = useUserCredentialsStore();
 
 const isBusy = ref(false);
 const saveButtonText = ref("Save");
