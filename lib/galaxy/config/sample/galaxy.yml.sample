@@ -2291,6 +2291,14 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
+  # Sets a custom series of steps in the authentication pipeline
+  # for OIDC authentication. The default is
+  # galaxy.authnz.psa_authnz.AUTH_PIPELINE
+  #oidc_auth_pipeline:
+  #  - social_core.pipeline.social_auth.social_details
+  #  - social_core.pipeline.social_auth.social_uid
+
+
   # Sets the prefix for OIDC scopes specific to this Galaxy instance. If
   # an API call is made against this Galaxy instance using an OIDC
   # bearer token, any scopes must be prefixed with this value e.g.
