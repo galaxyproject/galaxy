@@ -2,7 +2,7 @@
 #    uv export --frozen --no-annotate --no-hashes --no-dev
 a2wsgi==1.10.10
 adal==1.2.7
-aiobotocore==2.23.0
+aiobotocore==2.23.1
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.14
@@ -30,11 +30,11 @@ bioblend==1.6.0
 bleach==6.2.0
 boltons==25.0.0
 boto==2.49.0
-botocore==1.38.27
+botocore==1.38.46
 bx-python==0.13.0
 cachecontrol==0.14.3
 celery==5.5.3
-certifi==2025.7.9
+certifi==2025.7.14
 cffi==1.17.1
 charset-normalizer==3.4.2
 circus==0.19.0
@@ -70,7 +70,7 @@ filelock==3.18.0
 fissix==24.4.24
 frozenlist==1.7.0
 fs==2.4.16
-fsspec==2025.5.1
+fsspec==2025.7.0
 future==1.0.0
 gravity==1.1.1
 greenlet==3.2.3 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
@@ -91,10 +91,10 @@ isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
 jmespath==1.0.1
 jsonref==1.1.0
-jsonschema==4.24.0
+jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
 kombu==5.5.4
-lagom==2.7.5
+lagom==2.7.7
 legacy-cgi==2.6.3 ; python_full_version >= '3.13'
 limits==4.2 ; python_full_version < '3.10'
 limits==5.4.0 ; python_full_version >= '3.10'
@@ -104,7 +104,7 @@ markdown==3.8.2
 markdown-it-py==3.0.0
 markupsafe==3.0.2
 mdurl==0.1.2
-mercurial==7.0.2
+mercurial==7.0.3
 mistune==3.0.2
 mrcfile==1.5.4
 msal==1.32.3
@@ -120,7 +120,7 @@ numpy==2.2.6 ; python_full_version == '3.10.*'
 numpy==2.3.1 ; python_full_version >= '3.11'
 oauthlib==3.3.1
 openpyxl==3.1.5
-orjson==3.10.18
+orjson==3.11.0
 oyaml==1.0
 packaging==24.2 ; python_full_version < '3.10'
 packaging==25.0 ; python_full_version >= '3.10'
@@ -134,7 +134,7 @@ prompt-toolkit==3.0.51
 propcache==0.3.2
 prov==1.5.1
 psutil==7.0.0
-pulsar-galaxy-lib==0.15.8
+pulsar-galaxy-lib==0.15.9
 pycparser==2.22
 pycryptodome==3.23.0
 pydantic==2.11.7
@@ -176,7 +176,7 @@ routes==2.5.1
 rpds-py==0.26.0
 ruamel-yaml==0.18.14
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
-s3fs==2025.5.1
+s3fs==2025.7.0
 schema-salad==8.9.20250408123006
 setuptools==80.9.0
 setuptools-scm==8.3.1
