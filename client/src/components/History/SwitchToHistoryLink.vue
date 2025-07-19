@@ -88,6 +88,7 @@ function viewHistoryInNewTab(history: HistorySummary) {
         <LoadingSpan v-if="!history" />
         <div v-else class="history-link" data-description="switch to history link">
             <GLink
+                class="history-link-click"
                 tooltip
                 thin
                 data-description="switch to history link"
