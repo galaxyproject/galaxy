@@ -490,7 +490,7 @@ class DatasetAssociationManager(
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been purged.")
         elif dataset.deleted and not (
             trans.user_is_admin
-            or (isinstance(dataset, HistoryDatasetAssociation) and self.is_owner(dataset, trans.get_user()))  # type: ignore[arg-type]
+            or (isinstance(dataset, HistoryDatasetAssociation) and self.is_owner(dataset, trans.get_user()))
         ):
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been deleted.")
         elif dataset.state == Dataset.states.UPLOAD:

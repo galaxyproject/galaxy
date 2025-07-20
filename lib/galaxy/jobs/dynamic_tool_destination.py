@@ -1351,10 +1351,10 @@ def map_tool_to_destination(
                             inp_db = open(inp_data[da].get_file_name())
 
                             # Try to find automatically computed sequences
-                            metadata = inp_data[da].get_metadata()
+                            metadata = inp_data[da].metadata
 
                             try:
-                                records += int(metadata.get("sequences"))
+                                records += int(metadata["sequences"])
                             except (TypeError, KeyError):
                                 for line in inp_db:
                                     if line[0] == ">":

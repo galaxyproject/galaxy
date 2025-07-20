@@ -7,7 +7,6 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -20,6 +19,7 @@ from sqlalchemy import (
     TEXT,
 )
 from sqlalchemy.orm import (
+    DeclarativeMeta,
     Mapped,
     mapped_column,
     registry,
@@ -44,16 +44,6 @@ from galaxy.util.tool_shed import common_util
 log = logging.getLogger(__name__)
 
 mapper_registry = registry()
-
-if TYPE_CHECKING:
-    # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
-
-    class DeclarativeMeta(_DeclarativeMeta, type):
-        pass
-
-else:
-    from sqlalchemy.orm import DeclarativeMeta
 
 
 class HasToolBox(common_util.HasToolShedRegistry, Protocol):
