@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { faEye } from "@fortawesome/free-regular-svg-icons";
 import { faEdit, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -144,12 +143,6 @@ function getToolSecondaryActions(tool: UnprivilegedToolResponse) {
                                 {{ tool.representation.description }}
                             </small>
                         </Heading>
-                    </template>
-
-                    <template v-slot:extra-actions>
-                        <div v-if="props.inPanel">
-                            <FontAwesomeIcon v-if="tool.uuid === currentItemId" :icon="faEye" />
-                        </div>
                     </template>
                 </GCard>
             </template>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { faEye } from "@fortawesome/free-regular-svg-icons";
 import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -119,12 +118,6 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                             {{ historyName(invocation.history_id) }}
                         </small>
                     </Heading>
-                </template>
-
-                <template v-slot:extra-actions>
-                    <div v-if="props.inPanel">
-                        <FontAwesomeIcon v-if="invocation.id === currentItemId" :icon="faEye" />
-                    </div>
                 </template>
             </GCard>
         </template>
