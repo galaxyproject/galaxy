@@ -2,9 +2,14 @@ import { type components, GalaxyApi } from "@/api";
 import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
 
 export type HdcaUploadTarget = components["schemas"]["HdcaDataItemsTarget"];
+export type HdasUploadTarget = components["schemas"]["DataElementsTarget"];
 export type FetchDataPayload = components["schemas"]["FetchDataPayload"];
 export type UrlDataElement = components["schemas"]["UrlDataElement"];
 export type NestedElement = components["schemas"]["NestedElement"];
+export type NestedElementItems = NestedElement["elements"];
+export type NestedElementItem = NestedElementItems[number];
+export type FetchTargets = FetchDataPayload["targets"];
+export type AnyFetchTarget = FetchTargets[number];
 
 export function urlDataElement(identifier: string, uri: string): UrlDataElement {
     const element: UrlDataElement = {
