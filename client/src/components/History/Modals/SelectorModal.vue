@@ -142,7 +142,7 @@ const modalBodyClasses = computed(() => {
             :loading.sync="busy"
             @selectHistory="selectHistory"
             @setFilter="setFilterValue">
-            <template v-slot:modal-button-area>
+            <template v-slot:footer-button-area>
                 <span class="d-flex align-items-center">
                     <a
                         v-if="multiple"
