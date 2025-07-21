@@ -38,6 +38,10 @@ magic_number = {
         "offset": 4,
         "string": ["ftypisom", "ftypmp42", "ftypMSNV"],
     },
+    "m4a": {
+        "offset": 4,
+        "string": ["ftypM4A "],
+    },
     "flv": {"offset": 0, "string": ["FLV"]},
     "mkv": {"offset": 0, "hex": ["1A 45 DF A3"]},
     "webm": {"offset": 0, "hex": ["1A 45 DF A3"]},
@@ -299,6 +303,23 @@ class Mp4(Video):
             metadata, streams = ffprobe(filename)
             return "mp4" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "mp4")
         return _get_file_format_from_magic_number(filename, "mp4")
+
+
+class M4a(Audio):
+    """
+    Class that reads M4A audio file.
+    >>> from galaxy.datatypes.sniff import sniff_with_cls
+    >>> sniff_with_cls(M4a, 'audio_3.m4a')
+    True
+    """
+
+    file_ext = "m4a"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "m4a" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "m4a")
+        return _get_file_format_from_magic_number(filename, "m4a")
 
 
 class Flv(Video):
