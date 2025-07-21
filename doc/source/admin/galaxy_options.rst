@@ -1217,22 +1217,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_tool_document_cache``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option is deprecated, and the tool document cache will be
-    removed in the next release. Whether to enable the tool document
-    cache. This cache stores expanded XML strings. Enabling the tool
-    cache results in slightly faster startup times. The tool cache is
-    backed by a SQLite database, which cannot be stored on certain
-    network disks. The cache location is configurable with the
-    ``tool_cache_data_dir`` tag in tool config files.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_search_index_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~~~

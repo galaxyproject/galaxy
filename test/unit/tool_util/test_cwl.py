@@ -358,8 +358,8 @@ def test_tool_reload():
     _inputs(tool_source)
 
 
-def _outputs(tool_source):
-    return tool_source.parse_outputs(object())
+def _outputs(tool_source: CwlToolSource):
+    return tool_source.parse_outputs(None)
 
 
 def _inputs(tool_source=None, path=None):

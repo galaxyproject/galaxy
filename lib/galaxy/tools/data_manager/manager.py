@@ -172,6 +172,7 @@ class DataManager:
                 tool_elem is not None
             ), f"Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n{util.xml_to_string(elem)}"
             path = tool_elem.get("file")
+            assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
             tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
             tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
@@ -187,7 +188,6 @@ class DataManager:
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
-        assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
         assert tool_path, "A tool root path is required"
         self._load_tool(
             os.path.join(tool_path, path),
@@ -221,6 +221,7 @@ class DataManager:
             tool_shed_repository=tool_shed_repository,
             use_cached=True,
         )
+        assert tool.id
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
         self.tool = tool
         return tool
