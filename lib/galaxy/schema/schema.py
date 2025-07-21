@@ -2816,12 +2816,12 @@ class InstalledRepositoryToolShedStatus(Model):
     # See https://github.com/galaxyproject/galaxy/issues/10453 , bad booleans
     # See https://github.com/galaxyproject/galaxy/issues/16135 , optional fields
     latest_installable_revision: Optional[str] = Field(
-        title="Latest installed revision", description="Most recent version available on the tool shed"
+        None, title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str] = None
     repository_deprecated: Optional[str] = Field(
-        title="Repository deprecated", description="Repository has been depreciated on the tool shed"
+        None, title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
 
 
@@ -2853,7 +2853,7 @@ class InstalledToolShedRepository(Model, WithModelClass):
         title="Changeset revision", description="Changeset revision of the repository - a mercurial commit hash"
     )
     tool_shed_status: Optional[InstalledRepositoryToolShedStatus] = Field(
-        title="Latest updated status from the tool shed"
+        None, title="Latest updated status from the tool shed"
     )
 
 
