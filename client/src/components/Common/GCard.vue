@@ -301,7 +301,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="select">
                                         <BFormCheckbox
                                             :id="getElementId(props.id, 'select')"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :checked="selected"
                                             :title="props.selectTitle || localize('Select for bulk actions')"
                                             @change="emit('select')" />
@@ -327,7 +327,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             <BLink
                                                 v-if="typeof title === 'object'"
                                                 :id="getElementId(props.id, 'title-link')"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 :title="localize(title.title)"
                                                 @click.stop.prevent="title.handler">
                                                 {{ title.label }}
@@ -360,7 +360,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
                                             :key="badge.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :pill="badge.type !== 'badge'"
                                             class="mt-1"
                                             :class="{
@@ -391,7 +391,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 props.bookmarked ? 'bookmark-remove' : 'bookmark-add'
                                             )
                                         "
-                                        v-b-tooltip.hover
+                                        v-b-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
@@ -401,7 +401,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <BButton
                                         v-else
                                         :id="getElementId(props.id, 'bookmark-loading')"
-                                        v-b-tooltip.hover
+                                        v-b-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="localize('Bookmarking...')"
@@ -486,7 +486,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
                                                 :variant="indicator.variant || 'outline-secondary'"
@@ -506,7 +506,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
                                                 :size="indicator.size || 'sm'"
@@ -575,7 +575,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
                                             :variant="sa.variant || 'outline-primary'"
@@ -604,7 +604,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="pa.visible ?? true"
                                             :id="getActionId(props.id, pa.id)"
                                             :key="pa.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :disabled="pa.disabled"
                                             :title="localize(pa.title)"
                                             :variant="pa.variant || 'primary'"
