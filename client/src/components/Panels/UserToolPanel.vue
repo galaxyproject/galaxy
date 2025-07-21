@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faInfoCircle, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -10,6 +10,8 @@ import { useRoute, useRouter } from "vue-router/composables";
 import type { UnprivilegedToolResponse } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
@@ -28,8 +30,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits(["unprivileged-tool-clicked", "onInsertTool", "onEditTool", "onCreateTool"]);
-
-library.add(faEye, faArrowDown, faInfoCircle, faPlus);
 
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const { unprivilegedTools, canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
@@ -82,27 +82,26 @@ function newTool() {
 <template>
     <ActivityPanel v-if="canUseUnprivilegedTools" title="Custom Tools">
         <template v-slot:header-buttons>
-            <BButtonGroup>
-                <BButton
-                    v-b-tooltip.bottom.hover
+            <GButtonGroup>
+                <GButton
                     data-description="create new custom tool"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    tooltip
                     title="Create a new custom tool"
+                    transparent
                     @click="newTool">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </template>
         <!-- key ScrollList on length of unprivilegedTools so that we rerender if the tools in the store change-->
         <ScrollList
             :key="unprivilegedTools?.length"
             :loader="loadUnprivilegedTools"
             :item-key="(tool) => tool.uuid"
-            :in-panel="inPanel">
-            <template v-slot:header>
-                <p>Loading...</p>
-            </template>
+            :in-panel="inPanel"
+            name="custom tool"
+            name-plural="custom tools">
             <template v-slot:item="{ item: tool }">
                 <BListGroupItem
                     button
@@ -141,14 +140,6 @@ function newTool() {
                         <FontAwesomeIcon v-if="tool.id === currentItemId" :icon="faEye" size="lg" />
                     </div>
                 </BListGroupItem>
-            </template>
-
-            <template v-slot:loading>
-                <p>Loading...</p>
-            </template>
-
-            <template v-slot:footer>
-                <p>All items loaded</p>
             </template>
         </ScrollList>
     </ActivityPanel>
