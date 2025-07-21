@@ -275,7 +275,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
         :is="'div'"
         :id="`g-card-${props.id}`"
         :role="props.clickable ? 'button' : undefined"
-        class="g-card pt-0 px-1 pb-2"
+        class="g-card pt-0 px-1 mb-2"
         :class="[
             { 'g-card-grid-view': gridView },
             { 'g-card-selected': selected },
