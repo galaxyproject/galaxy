@@ -873,24 +873,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
 
-    # Job files controllers. Only for consumption by remote job runners.
-    webapp.mapper.resource(
-        "file",
-        "files",
-        controller="job_files",
-        name_prefix="job_",
-        path_prefix="/api/jobs/{job_id}",
-        parent_resources=dict(member_name="job", collection_name="jobs"),
-    )
-
-    webapp.mapper.connect(
-        "index",
-        "/api/jobs/{job_id}/files",
-        controller="job_files",
-        action="index",
-        conditions=dict(method=["HEAD"]),
-    )
-
     webapp.mapper.resource(
         "port",
         "ports",
