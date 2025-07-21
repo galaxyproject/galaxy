@@ -248,10 +248,17 @@ export async function convertOpenConnections(
         )
     );
 
+    const unmodifiedConnections = structuredClone(openInputConnections);
+
+    // modify the connections to have the correct output name
+    openInputConnections.forEach((connection, index) => {
+        connection.output_name = ensureDefined(inputBaseSteps[index]?.outputs[0]?.name);
+    });
+
     const inputReconnectionMap: InputReconnectionMap = Object.fromEntries(
         inputBaseSteps.map((step, index) => {
             assertDefined(step.label);
-            return [step.label, structuredClone(ensureDefined(openInputConnections[index]))];
+            return [step.label, ensureDefined(unmodifiedConnections[index])];
         })
     );
 
