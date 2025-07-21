@@ -13,6 +13,7 @@ from typing import (
     List,
     Optional,
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -91,6 +92,9 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.expression import Select
 
 log = logging.getLogger(__name__)
 
@@ -715,7 +719,15 @@ class JobSearch:
         return final_ordered_stmt
 
     def _build_stmt_for_hda(
-        self, stmt, data_conditions, used_ids, k, v, identifier, value_index, require_name_match=True
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list,
+        used_ids: list,
+        k,
+        v,
+        identifier,
+        value_index: int,
+        require_name_match: bool = True,
     ):
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
@@ -761,7 +773,7 @@ class JobSearch:
                     and_(
                         or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
                         b.extension == c.extension,
-                        b.metadata == c.metadata,
+                        b.metadata == c.metadata,  # type: ignore[arg-type]
                         *name_condition,
                     ),
                     e.history_dataset_association_id.isnot(None),

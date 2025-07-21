@@ -4817,6 +4817,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     implicitly_converted_parent_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
+    _metadata_collection: "galaxy.model.metadata.MetadataCollection"
 
     def __init__(
         self,
@@ -4976,22 +4977,22 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def datatype(self) -> "Data":
         return datatype_for_extension(self.extension)
 
-    def get_metadata(self):
+    @property
+    def metadata(self) -> "galaxy.model.metadata.MetadataCollection":
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr(self, "_metadata_collection") or self._metadata_collection.parent != self:
             self._metadata_collection = galaxy.model.metadata.MetadataCollection(self)
         return self._metadata_collection
 
-    @property
-    def set_metadata_requires_flush(self):
-        return self.metadata.requires_dataset_id
-
-    def set_metadata(self, bunch):
+    @metadata.setter
+    def metadata(self, bunch) -> None:
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
 
-    metadata = property(get_metadata, set_metadata)
+    @property
+    def set_metadata_requires_flush(self):
+        return self.metadata.requires_dataset_id
 
     @property
     def has_metadata_files(self):
