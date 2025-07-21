@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BListGroupItem } from "bootstrap-vue";
+import { faListAlt } from "@fortawesome/free-regular-svg-icons";
+import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,16 +9,12 @@ import { useRouter } from "vue-router/composables";
 import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import localize from "@/utils/localization";
 
+import type { CardAction, CardBadge } from "../Common/GCard.types";
 import { HistoriesFilters } from "./HistoriesFilters";
 
-import TextSummary from "../Common/TextSummary.vue";
+import GCard from "../Common/GCard.vue";
 import ScrollList from "../ScrollList/ScrollList.vue";
-import HistoryIndicators from "./HistoryIndicators.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
-import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
@@ -186,6 +181,94 @@ async function loadMore(noScroll = false) {
         busy.value = false;
     }
 }
+
+function getHistoryBadges(history: HistorySummary) {
+    return [
+        {
+            id: "items",
+            label: `${history.count} items`,
+            title: "Amount of items in history",
+        },
+    ];
+}
+
+function getHistorySecondaryActions(history: HistorySummary) {
+    const actions: CardAction[] = [];
+    if (props.additionalOptions.includes("set-current")) {
+        actions.push({
+            id: "set-current",
+            label: "Set as current",
+            icon: faSignInAlt,
+            title: "Set this history as the current history",
+            handler: () => setCurrentHistory(history),
+        });
+    }
+    if (props.additionalOptions.includes("multi")) {
+        actions.push({
+            id: "multi",
+            label: "Open in multi-view",
+            icon: faColumns,
+            title: "Open in multi-view",
+            handler: () => openInMulti(history),
+        });
+    }
+    if (props.additionalOptions.includes("center")) {
+        actions.push({
+            id: "center",
+            label: "Open in center panel",
+            icon: faListAlt,
+            title: "Open in center panel",
+            handler: () => setCenterPanelHistory(history),
+        });
+    }
+    return actions;
+}
+
+function getHistoryTitleBadges(history: HistorySummary) {
+    const badges: CardBadge[] = [];
+    if (props.multiple && !isMultiviewPanel.value && history.id === currentHistoryId.value) {
+        badges.push({
+            id: "current",
+            label: "Current",
+            title: "This is the current history",
+            variant: "primary",
+        });
+    }
+    if (history.purged) {
+        badges.push({
+            id: "purged",
+            label: "",
+            title: "Permanently deleted",
+            icon: faBurn,
+            variant: "warning",
+        });
+    } else if (history.deleted) {
+        badges.push({
+            id: "deleted",
+            label: "",
+            title: "Deleted",
+            icon: faTrash,
+            variant: "danger",
+        });
+    }
+    if (history.archived && userOwnsHistory(currentUser.value, history)) {
+        badges.push({
+            id: "archived",
+            label: "",
+            title: "Archived",
+            icon: faArchive,
+        });
+    }
+    if (props.multiple && !isMultiviewPanel.value && isPinned(history.id)) {
+        badges.push({
+            id: "pinned",
+            label: "currently pinned",
+            title: "This history is currently pinned in the multi-history view",
+            variant: "info",
+        });
+    }
+    return badges;
+}
 </script>
 
 <template>
@@ -207,33 +290,28 @@ async function loadMore(noScroll = false) {
         </template>
 
         <template v-slot:item="{ item: history }">
-            <BListGroupItem
+            <!-- TODO: Long history names should be truncated, esp in multiview panel -->
+            <GCard
+                :id="`history-${history.id}`"
                 :data-pk="history.id"
                 button
-                :class="{
-                    current: history.id === currentHistoryId,
-                    'panel-item': isMultiviewPanel,
-                }"
+                :current="!(props.multiple && !isMultiviewPanel) && history.id === currentHistoryId"
+                clickable
                 :active="isActiveItem(history)"
+                :selectable="props.multiple"
+                :selected="isActiveItem(history)"
+                :select-title="isMultiviewPanel ? 'Pin history' : 'Add/remove history from selection'"
+                :badges="getHistoryBadges(history)"
+                :secondary-actions="getHistorySecondaryActions(history)"
+                :title="history.name"
+                title-size="text"
+                :title-badges="getHistoryTitleBadges(history)"
+                :update-time="history.update_time"
+                @select="historyClicked(history)"
+                @title-click="historyClicked(history)"
                 @click="() => historyClicked(history)">
-                <div class="overflow-auto w-100">
-                    <div :class="!isMultiviewPanel ? 'd-flex justify-content-between align-items-center' : ''">
-                        <div v-if="!isMultiviewPanel">
-                            <Heading h3 inline bold size="text">
-                                <span>{{ history.name }}</span>
-                                <i v-if="history.id === currentHistoryId">(Current)</i>
-                            </Heading>
-                            <i
-                                v-if="props.multiple && isPinned(history.id)"
-                                title="This history is currently pinned in the multi-history view">
-                                (currently pinned)
-                            </i>
-                        </div>
-                        <TextSummary v-else component="h4" :description="history.name" one-line-summary />
-                        <HistoryIndicators :history="history" include-count />
-                    </div>
-
-                    <p v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</p>
+                <template v-slot:description>
+                    <small v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</small>
 
                     <StatelessTags
                         v-if="history.tags.length > 0"
@@ -242,53 +320,8 @@ async function loadMore(noScroll = false) {
                         :disabled="true"
                         :max-visible-tags="isMultiviewPanel ? 1 : 10"
                         @tag-click="setFilterValue('tag', $event)" />
-
-                    <div
-                        v-if="props.additionalOptions.length > 0"
-                        class="d-flex justify-content-end align-items-center mt-1">
-                        <GButtonGroup>
-                            <GButton
-                                v-if="
-                                    props.additionalOptions.includes('set-current') && currentHistoryId !== history.id
-                                "
-                                tooltip
-                                :title="localize('Set as current history')"
-                                color="blue"
-                                transparent
-                                class="p-0 px-1"
-                                @click.stop="() => setCurrentHistory(history)">
-                                <FontAwesomeIcon :icon="faSignInAlt" />
-                            </GButton>
-
-                            <GButton
-                                v-if="props.additionalOptions.includes('multi')"
-                                tooltip
-                                :title="localize('Open in multi-view')"
-                                color="blue"
-                                transparent
-                                class="p-0 px-1"
-                                @click.stop="() => openInMulti(history)">
-                                <FontAwesomeIcon :icon="faColumns" />
-                            </GButton>
-
-                            <GButton
-                                v-if="props.additionalOptions.includes('center')"
-                                tooltip
-                                :title="localize('Open in center panel')"
-                                color="blue"
-                                transparent
-                                class="p-0 px-1"
-                                @click.stop="() => setCenterPanelHistory(history)">
-                                <FontAwesomeIcon :icon="faListAlt" />
-                            </GButton>
-                        </GButtonGroup>
-                    </div>
-                </div>
-                <div v-if="isMultiviewPanel">
-                    <FontAwesomeIcon v-if="isActiveItem(history)" :icon="faCheckSquare" size="lg" />
-                    <FontAwesomeIcon v-else :icon="faSquare" size="lg" />
-                </div>
-            </BListGroupItem>
+                </template>
+            </GCard>
         </template>
 
         <template v-slot:footer-button-area>
