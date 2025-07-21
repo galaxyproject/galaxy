@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { faArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import { BAlert, BListGroup } from "bootstrap-vue";
@@ -152,10 +152,11 @@ watch(
                     data-description="load more items button"
                     size="small"
                     tooltip
+                    :disabled="busy"
                     title="Load More"
                     transparent
                     @click="loadItems()">
-                    <FontAwesomeIcon :icon="faArrowDown" />
+                    <FontAwesomeIcon :icon="busy ? faSpinner : faArrowDown" :spin="busy" />
                 </GButton>
             </div>
         </div>
