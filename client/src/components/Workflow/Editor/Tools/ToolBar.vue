@@ -369,7 +369,7 @@ function autoLayout() {
                     </GButton>
                 </span>
 
-                <GModal ref="toWorkflowModal" title="Selection To Workflow">
+                <GModal id="selection-to-workflow-modal" ref="toWorkflowModal" title="Selection To Workflow">
                     <GFormLabel
                         class="mb-2"
                         title="New Workflow Name"
@@ -379,11 +379,17 @@ function autoLayout() {
                     </GFormLabel>
 
                     <div class="d-flex flex-column flex-gapy-1">
-                        <GButton :disabled="!workflowNameValid" @click="onClickCopy">
+                        <GButton
+                            title="Create a new workflow from the selected steps and comments"
+                            :disabled="!workflowNameValid"
+                            @click="onClickCopy">
                             Copy selection into new Workflow
                             <FontAwesomeIcon :icon="faPlus" />
                         </GButton>
-                        <GButton :disabled="!workflowNameValid" @click="onClickExtract">
+                        <GButton
+                            title="Move the selected steps and comments into a new sub-workflow"
+                            :disabled="!workflowNameValid"
+                            @click="onClickExtract">
                             Move selection to Sub-Workflow
                             <FontAwesomeIcon :icon="faSitemap" />
                         </GButton>
