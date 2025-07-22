@@ -162,6 +162,9 @@ class DatasetStorageDetails(Model):
 
 
 class DatasetInheritanceChainEntry(Model):
+    id: DecodedDatabaseIdField = Field(
+        description="ID of the referenced dataset",
+    )
     name: str = Field(
         description="Name of the referenced dataset",
     )
@@ -491,7 +494,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
-            result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
+            result.append(DatasetInheritanceChainEntry(id=self.encode_id(dep[0].id), name=dep[0].name, dep=dep[1]))
 
         return DatasetInheritanceChain(root=result)
 
