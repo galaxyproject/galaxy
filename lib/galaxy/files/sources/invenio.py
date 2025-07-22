@@ -419,13 +419,13 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = self._get_draft_record_url(record_id)
         headers = self._get_request_headers(user_context)
-        response = requests.get(request_url, headers=headers)
+        response = requests.head(request_url, headers=headers)
         return response.status_code == 200
 
     def _is_published_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = self._get_record_url(record_id)
         headers = self._get_request_headers(user_context)
-        response = requests.get(request_url, headers=headers)
+        response = requests.head(request_url, headers=headers)
         return response.status_code == 200
 
     def _get_record_url(self, record_id: str):
