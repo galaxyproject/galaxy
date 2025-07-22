@@ -19,6 +19,7 @@ const labels = new Map([
     ["list:paired_or_unpaired", "list"],
     ["list:list", "list"],
     ["paired", "pair"],
+    ["sample_sheet", "sample sheet"],
 ]);
 
 const jobStateSummary = computed(() => {
@@ -42,10 +43,13 @@ const pluralizedItem = computed(() => {
     if (props.hdca.collection_type === "list:list") {
         return pluralize("list");
     }
-    if (props.hdca.collection_type === "list:paired") {
+    if (props.hdca.collection_type === "list:paired" || props.hdca.collection_type === "sample_sheet:paired") {
         return pluralize("pair");
     }
-    if (props.hdca.collection_type === "list:paired_or_unpaired") {
+    if (
+        props.hdca.collection_type === "list:paired_or_unpaired" ||
+        props.hdca.collection_type === "sample_sheet:paired_or_unpaired"
+    ) {
         if (!hasSingleElement.value) {
             return "paired and unpaired datasets";
         } else {
