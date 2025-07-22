@@ -266,6 +266,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             datasetId: route.params.datasetId,
                             tab: route.params.tab,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
