@@ -18,7 +18,10 @@ from typing_extensions import (
     Unpack,
 )
 
-from galaxy.exceptions import AuthenticationRequired
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
@@ -397,17 +400,15 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
         This method is used to download files from both published and draft records that are accessible by the user.
         """
-        is_draft_record = self._is_draft_record(record_id, user_context)
-        file_details_url = f"{self.records_url}/{record_id}/files/{quote(filename)}"
-        download_file_content_url = f"{file_details_url}/content"
-        if is_draft_record:
-            file_details_url = self._to_draft_url(file_details_url)
-            download_file_content_url = self._to_draft_url(download_file_content_url)
-        # Downloading through the API is only supported for local files and depends on how
-        # the InvenioRDM instance file storage is configured.
-        # So this is the most reliable way to download files for now it.
-        download_file_content_url = f"{file_details_url.replace('/api', '')}?download=1"
-        return download_file_content_url
+        file_details_url = self._get_file_details_url(record_id, filename)
+        if self._is_published_record(record_id, user_context):
+            return self._file_url_to_download_url(file_details_url)
+        if self._is_draft_record(record_id, user_context):
+            draft_download_url = f"{self._to_draft_url(file_details_url)}/content"
+            return draft_download_url
+        raise MessageException(
+            f"Cannot download file '{filename}' from record '{record_id}'. The record is not accessible or does not exist."
+        )
 
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
@@ -421,8 +422,26 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         response = requests.get(request_url, headers=headers)
         return response.status_code == 200
 
+    def _is_published_record(self, record_id: str, user_context: OptionalUserContext = None):
+        request_url = self._get_record_url(record_id)
+        headers = self._get_request_headers(user_context)
+        response = requests.get(request_url, headers=headers)
+        return response.status_code == 200
+
+    def _get_record_url(self, record_id: str):
+        return f"{self.records_url}/{record_id}"
+
     def _get_draft_record_url(self, record_id: str):
-        return f"{self.records_url}/{record_id}/draft"
+        return f"{self._get_record_url(record_id)}/draft"
+
+    def _get_file_details_url(self, record_id: str, filename: str):
+        return f"{self._get_record_url(record_id)}/files/{quote(filename)}"
+
+    def _file_url_to_download_url(self, file_url: str) -> str:
+        # Downloading through the API is only supported for local files and depends on how
+        # the InvenioRDM instance file storage is configured.
+        # So this is the most reliable way to download files for now.
+        return f"{file_url.replace('/api', '')}?download=1"
 
     def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = self._get_draft_record_url(record_id)
