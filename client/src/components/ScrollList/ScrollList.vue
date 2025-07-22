@@ -157,13 +157,15 @@ watch(
                         <slot name="item" :item="item" :index="index" />
                     </div>
 
-                    <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
-                        <div class="text-center">No {{ props.namePlural }} found</div>
-                    </slot>
+                    <template v-if="!busy">
+                        <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
+                            <div class="list-end">- No {{ props.namePlural }} found -</div>
+                        </slot>
 
-                    <slot v-else-if="allLoaded" name="all-loaded-footer">
-                        <div class="text-center">All {{ props.namePlural }} loaded</div>
-                    </slot>
+                        <slot v-else-if="allLoaded" name="all-loaded-footer">
+                            <div class="list-end">- All {{ props.namePlural }} loaded -</div>
+                        </slot>
+                    </template>
                 </BListGroup>
             </div>
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
