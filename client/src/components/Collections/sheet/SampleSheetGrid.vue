@@ -513,11 +513,12 @@ function elementsForCreateApi() {
     if (collectionType == "sample_sheet") {
         for (const row of rowData.value) {
             const elementIdentifier = elementIdentifierFromRow(row);
-            const modelObject = row["__model_object"] as HDAObject;
+            const element = row["__model_object"] as DCESummary;
+            const hda = element.object as HDAObject;
             const identifier = {
                 name: elementIdentifier,
                 src: "hda" as "hda",
-                id: modelObject.id,
+                id: hda.id,
             };
             identifiers.push(identifier);
         }
