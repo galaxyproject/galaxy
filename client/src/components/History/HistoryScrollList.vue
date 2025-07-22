@@ -262,7 +262,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
     if (props.multiple && !isMultiviewPanel.value && isPinned(history.id)) {
         badges.push({
             id: "pinned",
-            label: "currently pinned",
+            label: isActiveItem(history) ? "currently pinned" : "will be unpinned",
             title: "This history is currently pinned in the multi-history view",
             variant: "info",
         });
