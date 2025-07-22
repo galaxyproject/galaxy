@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormGroup } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import { orderBy } from "lodash";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
@@ -10,6 +10,8 @@ import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
@@ -144,24 +146,24 @@ const modalBodyClasses = computed(() => {
             @setFilter="setFilterValue">
             <template v-slot:footer-button-area>
                 <span class="d-flex align-items-center">
-                    <a
+                    <GLink
                         v-if="multiple"
-                        v-b-tooltip.noninteractive.hover
+                        tooltip
+                        data-description="switch to history link"
                         :title="localize('Click here to reset selection')"
                         class="mr-2"
-                        href="javascript:void(0)"
                         @click="selectedHistories = []">
                         <i>{{ selectedHistories.length }} histories selected</i>
-                    </a>
-                    <BButton
+                    </GLink>
+                    <GButton
                         v-if="multiple"
                         v-localize
                         data-description="change selected histories button"
                         :disabled="pinnedSelectedEqual || showAdvanced"
-                        variant="primary"
+                        color="blue"
                         @click="selectHistories">
                         Change Selected
-                    </BButton>
+                    </GButton>
                     <span v-else v-localize> Click a history to switch to it </span>
                 </span>
             </template>
