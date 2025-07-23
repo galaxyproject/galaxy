@@ -645,8 +645,8 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
             name: newWf.name,
             type: "subworkflow",
             position: {
-                top: aabb.y - aabb.height / 2.0 + this.subworkflowPositionOffset.top,
-                left: aabb.x - aabb.width / 2.0 + this.subworkflowPositionOffset.left,
+                top: aabb.y + aabb.height / 2.0 - this.subworkflowPositionOffset.top,
+                left: aabb.x + aabb.width / 2.0 - this.subworkflowPositionOffset.left,
             },
         });
 
