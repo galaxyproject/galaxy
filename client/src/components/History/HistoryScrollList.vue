@@ -307,6 +307,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
                 :title="history.name"
                 title-size="text"
                 :title-badges="getHistoryTitleBadges(history)"
+                :title-n-lines="2"
                 :update-time="history.update_time"
                 @select="historyClicked(history)"
                 @tagClick="setFilterValue('tag', $event)"
