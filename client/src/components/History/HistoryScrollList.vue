@@ -15,7 +15,6 @@ import { HistoriesFilters } from "./HistoriesFilters";
 
 import GCard from "@/components/Common/GCard.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -303,23 +302,18 @@ function getHistoryTitleBadges(history: HistorySummary) {
                 :select-title="isMultiviewPanel ? 'Pin history' : 'Add/remove history from selection'"
                 :badges="getHistoryBadges(history)"
                 :secondary-actions="getHistorySecondaryActions(history)"
+                :tags="history.tags"
+                :max-visible-tags="isMultiviewPanel ? 1 : 10"
                 :title="history.name"
                 title-size="text"
                 :title-badges="getHistoryTitleBadges(history)"
                 :update-time="history.update_time"
                 @select="historyClicked(history)"
+                @tagClick="setFilterValue('tag', $event)"
                 @title-click="historyClicked(history)"
                 @click="() => historyClicked(history)">
                 <template v-slot:description>
                     <small v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</small>
-
-                    <StatelessTags
-                        v-if="history.tags.length > 0"
-                        class="my-1"
-                        :value="history.tags"
-                        :disabled="true"
-                        :max-visible-tags="isMultiviewPanel ? 1 : 10"
-                        @tag-click="setFilterValue('tag', $event)" />
                 </template>
             </GCard>
         </template>
