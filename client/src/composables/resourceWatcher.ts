@@ -1,3 +1,5 @@
+import { readonly, ref } from "vue";
+
 export type WatchResourceHandler<T = unknown> = (app?: T) => Promise<void>;
 
 export interface WatchOptions {
@@ -28,6 +30,7 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
  * You can also completely disable background polling by setting `enableBackgroundPolling` to false in the options.
  * @param watchHandler The handler function that watches the resource by querying the server.
  * @param options Options to customize the polling interval.
+ * @returns An object with functions to start/stop watching and check the current watching state.
  */
 export function useResourceWatcher<T = unknown>(
     watchHandler: WatchResourceHandler,
@@ -40,12 +43,14 @@ export function useResourceWatcher<T = unknown>(
     let currentPollingInterval = shortPollingInterval;
     let watchTimeout: NodeJS.Timeout | null = null;
     let isEventSetup = false;
+    const isWatchingResource = ref<boolean>(false);
 
     /**
      * Starts watching the resource by polling the server continuously.
      */
     function startWatchingResource(app?: T) {
         stopWatcher();
+        isWatchingResource.value = true;
         tryWatchResource(app);
     }
 
@@ -57,6 +62,7 @@ export function useResourceWatcher<T = unknown>(
     }
 
     function stopWatcher() {
+        isWatchingResource.value = false;
         if (watchTimeout) {
             clearTimeout(watchTimeout);
             watchTimeout = null;
@@ -69,7 +75,7 @@ export function useResourceWatcher<T = unknown>(
         } catch (error) {
             console.warn(error);
         } finally {
-            if (currentPollingInterval) {
+            if (currentPollingInterval && isWatchingResource.value) {
                 watchTimeout = setTimeout(() => {
                     tryWatchResource(app);
                 }, currentPollingInterval);
@@ -96,7 +102,18 @@ export function useResourceWatcher<T = unknown>(
     setupVisibilityListeners();
 
     return {
+        /**
+         * Starts watching the resource by polling the server continuously.
+         * @param app Optional parameter to pass to the watch handler.
+         */
         startWatchingResource,
+        /**
+         * Stops continuously watching the resource.
+         */
         stopWatchingResource,
+        /**
+         * Reactive boolean ref indicating whether the resource watcher is currently active.
+         */
+        isWatchingResource: readonly(isWatchingResource),
     };
 }
