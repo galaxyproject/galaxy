@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from io import BytesIO
 from logging import getLogger
 from typing import (
@@ -36,22 +35,21 @@ from galaxy.model.dataset_collections.types.sample_sheet_util import (
 )
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
     ColumnDefinitionsField,
-    CreateWorkbookFromBase64,
-    CreateWorkbookFromBase64ForCollection,
+    CreateWorkbookRequest,
+    CreateWorkbookRequestForCollection,
     DEFAULT_TITLE,
-    generate_workbook_from_base64,
-    generate_workbook_from_base64_for_collection,
+    generate_workbook_from_request,
+    generate_workbook_from_request_for_collection,
     parse_workbook,
     parse_workbook_for_collection,
     ParsedWorkbook,
     ParseWorkbook,
     ParseWorkbookForCollection,
+    PrefixRowsField,
+    PrefixRowValuesT,
     WorkbookContentField,
 )
-from galaxy.model.dataset_collections.workbook_util import (
-    Base64StringT,
-    workbook_to_bytes,
-)
+from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     ModelClassField,
@@ -116,11 +114,9 @@ class DatasetCollectionContentElements(RootModel):
     root: List[DCESummary]
 
 
-@dataclass
-class CreateWorkbookForCollectionApi:
-    hdca_id: DecodedDatabaseIdField
-    column_definitions: Base64StringT
-    prefix_values: Optional[Base64StringT] = None
+class CreateWorkbookForCollectionApi(BaseModel):
+    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    prefix_values: Optional[PrefixRowValuesT] = PrefixRowsField
 
 
 class ParseWorkbookForCollectionApi(BaseModel):
@@ -361,24 +357,23 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             )
             raise
 
-    def create_workbook(self, payload: CreateWorkbookFromBase64) -> BytesIO:
-        workbook = generate_workbook_from_base64(payload)
+    def create_workbook(self, payload: CreateWorkbookRequest) -> BytesIO:
+        workbook = generate_workbook_from_request(payload)
         return workbook_to_bytes(workbook)
 
     def create_workbook_for_collection(
         self,
         trans: ProvidesHistoryContext,
+        hdca_id: int,
         payload: CreateWorkbookForCollectionApi,
     ) -> BytesIO:
-        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
-            trans, "history", payload.hdca_id
-        )
-        create_object = CreateWorkbookFromBase64ForCollection(
+        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+        create_object = CreateWorkbookRequestForCollection(
             title=DEFAULT_TITLE,
             dataset_collection=dataset_collection_instance.collection,
             column_definitions=payload.column_definitions,
         )
-        workbook = generate_workbook_from_base64_for_collection(create_object)
+        workbook = generate_workbook_from_request_for_collection(create_object)
         return workbook_to_bytes(workbook)
 
     def parse_workbook(self, payload: ParseWorkbook) -> ParsedWorkbook:

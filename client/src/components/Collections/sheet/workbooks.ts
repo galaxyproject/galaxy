@@ -1,51 +1,46 @@
 import { GalaxyApi, type SampleSheetColumnDefinition, type SampleSheetColumnDefinitions } from "@/api";
-import type { SampleSheetCollectionType } from "@/api/datasetCollections";
+import { createWorkbook, createWorkbookForCollection, type SampleSheetCollectionType } from "@/api/datasetCollections";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import type { PrefixColumnsType } from "@/components/Collections/wizard/types";
-import { withPrefix } from "@/utils/redirect";
 
-export function getDownloadWorkbookUrl(
+export async function downloadWorkbook(
     columnDefinitions: SampleSheetColumnDefinitions,
     collectionType: SampleSheetCollectionType,
     initialRows?: string[][]
 ) {
-    const columnDefinitionsJson = JSON.stringify(columnDefinitions);
-    const columnDefinitionsJsonBase64 = Buffer.from(columnDefinitionsJson).toString("base64");
-    let url = withPrefix(
-        `/api/sample_sheet_workbook/generate?collection_type=${collectionType}&column_definitions=${columnDefinitionsJsonBase64}`
-    );
-    if (initialRows) {
-        const initialRowsJson = JSON.stringify(initialRows);
-        const initialRowsJsonBase64 = Buffer.from(initialRowsJson).toString("base64");
-        url = `${url}&prefix_values=${initialRowsJsonBase64}`;
+    if (!columnDefinitions) {
+        return;
     }
-    return url;
+    try {
+        const workbookBlob = await createWorkbook({
+            // why does the API schema think title is required?
+            title: "Sample Sheet Workbook",
+            prefix_columns_type: "URI",
+            column_definitions: columnDefinitions,
+            collection_type: collectionType,
+            prefix_values: initialRows,
+        });
+        createAndClickDownloadLink(workbookBlob, "sample_sheet_workbook.xlsx");
+    } catch (error) {
+        // TODO: handle error better
+        console.error("Error downloading workbook:", error);
+    }
 }
 
-export function getDownloadWorkbookUrlForCollection(column_definitions: SampleSheetColumnDefinitions, hdca_id: string) {
-    const columnDefinitionsJson = JSON.stringify(column_definitions);
-    const columnDefinitionsJsonBase64 = Buffer.from(columnDefinitionsJson).toString("base64");
-    const url = withPrefix(
-        `/api/dataset_collections/${hdca_id}/sample_sheet_workbook/generate?column_definitions=${columnDefinitionsJsonBase64}`
-    );
-    return url;
-}
+export async function downloadWorkbookForCollection(columnDefinitions: SampleSheetColumnDefinitions, hdca_id: string) {
+    if (!columnDefinitions) {
+        return;
+    }
 
-export function downloadWorkbook(
-    columnDefinitions: SampleSheetColumnDefinitions,
-    collectionType: SampleSheetCollectionType,
-    initialRows?: string[][]
-) {
-    const url = getDownloadWorkbookUrl(columnDefinitions, collectionType, initialRows);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "sample_sheet_workbook.xlsx";
-    link.click();
-}
-
-export function downloadWorkbookForCollection(columnDefinitions: SampleSheetColumnDefinitions, hdca_id: string) {
-    const url = getDownloadWorkbookUrlForCollection(columnDefinitions, hdca_id);
-    window.location.assign(url);
+    try {
+        const workbookBlob = await createWorkbookForCollection(hdca_id, {
+            column_definitions: columnDefinitions,
+        });
+        createAndClickDownloadLink(workbookBlob, "sample_sheet_workbook.xlsx");
+    } catch (error) {
+        // TODO: handle error better
+        console.error("Error downloading workbook:", error);
+    }
 }
 
 export function initialValue(columnDefinition: SampleSheetColumnDefinition) {
@@ -105,4 +100,15 @@ export function withAutoListIdentifiers(rows: string[][]): string[][] {
         }
         return row;
     });
+}
+
+function createAndClickDownloadLink(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename); // Set the desired filename for the download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link); // Clean up the temporary link
+    window.URL.revokeObjectURL(url); // Release the object URL
 }

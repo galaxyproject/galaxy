@@ -8,6 +8,7 @@ import {
     type HDCASummary,
     isHDCA,
 } from "@/api";
+import type { components } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
@@ -127,6 +128,37 @@ export async function createHistoryDatasetCollectionInstanceSimple(options: NewC
 export async function createHistoryDatasetCollectionInstanceFull(payload: CreateNewCollectionPayload) {
     const { data, error } = await GalaxyApi().POST("/api/dataset_collections", {
         body: payload,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export type CreateWorkbookForCollectionPayload = components["schemas"]["CreateWorkbookForCollectionApi"];
+export type CreateWorkbookPayload = components["schemas"]["CreateWorkbookRequest"];
+
+export async function createWorkbook(payload: CreateWorkbookPayload): Promise<Blob> {
+    const { data, error } = await GalaxyApi().POST("/api/sample_sheet_workbook", {
+        body: payload,
+        parseAs: "blob",
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function createWorkbookForCollection(
+    hdca_id: string,
+    payload: CreateWorkbookForCollectionPayload
+): Promise<Blob> {
+    const { data, error } = await GalaxyApi().POST("/api/dataset_collections/{hdca_id}/sample_sheet_workbook", {
+        params: { path: { hdca_id: hdca_id } },
+        body: payload,
+        parseAs: "blob",
     });
 
     if (error) {
