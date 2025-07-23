@@ -323,17 +323,17 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             inline
                                             class="d-inline"
                                             :size="props.titleSize">
-                                            <FontAwesomeIcon
-                                                v-if="props.titleIcon?.icon"
-                                                :icon="props.titleIcon.icon"
-                                                :class="props.titleIcon.class"
-                                                :title="props.titleIcon.title"
-                                                :size="props.titleIcon.size"
-                                                fixed-width />
-
                                             <span
                                                 class="g-card-title-with-actions"
                                                 :class="{ 'wrap-lines': props.titleNLines }">
+                                                <FontAwesomeIcon
+                                                    v-if="props.titleIcon?.icon"
+                                                    :icon="props.titleIcon.icon"
+                                                    :class="props.titleIcon.class"
+                                                    :title="props.titleIcon.title"
+                                                    :size="props.titleIcon.size"
+                                                    class="g-card-title-icon"
+                                                    fixed-width />
                                                 <BLink
                                                     v-if="typeof title === 'object'"
                                                     :id="getElementId(props.id, 'title-link')"
@@ -351,18 +351,20 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                     </span>
                                                 </template>
 
-                                                <slot name="titleActions">
-                                                    <BButton
-                                                        v-if="props.canRenameTitle"
-                                                        :id="getElementId(props.id, 'rename')"
-                                                        v-b-tooltip.hover.noninteractive
-                                                        class="inline-icon-button g-card-rename"
-                                                        variant="link"
-                                                        :title="localize(props.renameTitle)"
-                                                        @click="emit('rename')">
-                                                        <FontAwesomeIcon :icon="faPen" fixed-width />
-                                                    </BButton>
-                                                </slot>
+                                                <span class="g-card-title-actions">
+                                                    <slot name="titleActions">
+                                                        <BButton
+                                                            v-if="props.canRenameTitle"
+                                                            :id="getElementId(props.id, 'rename')"
+                                                            v-b-tooltip.hover.noninteractive
+                                                            class="inline-icon-button g-card-rename"
+                                                            variant="link"
+                                                            :title="localize(props.renameTitle)"
+                                                            @click="emit('rename')">
+                                                            <FontAwesomeIcon :icon="faPen" fixed-width />
+                                                        </BButton>
+                                                    </slot>
+                                                </span>
                                             </span>
                                         </Heading>
                                     </slot>
@@ -687,8 +689,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
     }
 
     .g-card-title-with-actions {
-        // TODO: If n === 1, this could be done differently maybe?
+        display: inline;
 
+        // If there is the prop to truncate the title to a certain number of lines
         &.wrap-lines {
             display: -webkit-box;
             -webkit-box-orient: vertical;
@@ -698,19 +701,41 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             -webkit-line-clamp: var(--title-n-lines, 3);
             line-clamp: var(--title-n-lines, 3);
             position: relative;
-            padding-right: 1.5rem;
+            vertical-align: top;
+
+            // Only add padding-right if there are any title actions present
+            // This is needed to prevent the actions appearing on top of the title text
+            &:has(.g-card-title-actions:not(:empty)) {
+                padding-right: 1.5rem;
+            }
+
+            .g-card-title-icon {
+                display: inline;
+                margin-right: 0.1rem;
+            }
 
             .g-card-title-link,
             .g-card-title-text {
-                height: inherit;
-                display: block;
+                display: inline;
+
+                // TODO: Dilemma: If we replace the current height setting with this,
+                //       the current tooltip bug with the tooltip appearing at end of
+                //       overflowing but hidden text will be fixed, but this breaks the
+                //       inline behavior of the case where we have an icon before the title.
+                // height: inherit;
+                // display: block;
             }
 
-            .g-card-rename {
+            .g-card-title-actions {
                 position: absolute;
                 right: 0;
                 bottom: 0;
                 margin-left: 0.25rem;
+                display: inline;
+            }
+
+            .g-card-rename {
+                display: inline;
             }
         }
     }

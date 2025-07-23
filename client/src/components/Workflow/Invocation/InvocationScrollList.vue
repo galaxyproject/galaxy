@@ -106,6 +106,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                 :badges="getInvocationBadges(invocation)"
                 :title="workflowName(invocation.workflow_id)"
                 :title-icon="{ icon: faSitemap }"
+                :title-n-lines="2"
                 title-size="text"
                 :update-time="invocation.create_time"
                 @title-click="workflowName(invocation.workflow_id)"
