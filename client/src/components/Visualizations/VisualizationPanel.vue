@@ -91,16 +91,20 @@ onMounted(() => {
 </script>
 
 <template>
-    <ActivityPanel
+    <component
+        :is="props.datasetId ? 'div' : ActivityPanel"
         title="Visualizations"
         :go-to-all-title="datasetId ? undefined : 'Saved Visualizations'"
         href="/visualizations/list">
         <template v-slot:header>
             <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
         </template>
+        <template v-if="props.datasetId">
+            <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
+        </template>
         <ScrollList
             :item-key="(plugin) => plugin.name"
-            in-panel
+            :in-panel="!props.datasetId"
             name="visualization"
             name-plural="visualizations"
             load-disabled
@@ -116,7 +120,7 @@ onMounted(() => {
                 </ButtonPlain>
             </template>
         </ScrollList>
-    </ActivityPanel>
+    </component>
 </template>
 
 <style lang="scss">
