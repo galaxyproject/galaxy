@@ -334,17 +334,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/generate": {
+    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Create an XLSX workbook for a sample sheet definition targeting an existing collection. */
-        get: operations["dataset_collections__workbook_download_for_collection"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Create an XLSX workbook for a sample sheet definition targeting an existing collection. */
+        post: operations["dataset_collections__workbook_download_for_collection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4250,17 +4250,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sample_sheet_workbook/generate": {
+    "/api/sample_sheet_workbook": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Create an XLSX workbook for a sample sheet definition. */
-        get: operations["dataset_collections__workbook_download"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Create an XLSX workbook for a sample sheet definition. */
+        post: operations["dataset_collections__workbook_download"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8140,6 +8140,50 @@ export interface components {
          * @enum {string}
          */
         CreateType: "file" | "folder" | "collection";
+        /** CreateWorkbookForCollectionApi */
+        CreateWorkbookForCollectionApi: {
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix sample sheet values
+             * @description An area to pre-populate URIs, etc...
+             */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+        };
+        /** CreateWorkbookRequest */
+        CreateWorkbookRequest: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type:
+                | "sample_sheet"
+                | "sample_sheet:paired"
+                | "sample_sheet:paired_or_unpaired"
+                | "sample_sheet:record";
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix Columns Type
+             * @default URI
+             * @constant
+             */
+            prefix_columns_type: "URI";
+            /** Prefix Values */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+            /**
+             * Title of the workbook to generate
+             * @description A short title to give the workbook.
+             * @default Sample Sheet for Galaxy
+             */
+            title: string;
+        };
         /** CreateWorkflowLandingRequestPayload */
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
@@ -22919,9 +22963,7 @@ export interface operations {
     };
     dataset_collections__workbook_download_for_collection: {
         parameters: {
-            query: {
-                /** @description Base64 encoding of column definitions. */
-                column_definitions: string;
+            query?: {
                 /** @description Filename of the workbook download to generate */
                 filename?: string | null;
             };
@@ -22935,7 +22977,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookForCollectionApi"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -35950,16 +35996,7 @@ export interface operations {
     };
     dataset_collections__workbook_download: {
         parameters: {
-            query: {
-                collection_type?:
-                    | "sample_sheet"
-                    | "sample_sheet:paired"
-                    | "sample_sheet:paired_or_unpaired"
-                    | "sample_sheet:record";
-                /** @description Base64 encoding of column definitions. */
-                column_definitions: string;
-                /** @description Prefix values for the seeding the workbook, base64 encoded. */
-                prefix_values?: string | null;
+            query?: {
                 /** @description Filename of the workbook download to generate */
                 filename?: string | null;
             };
@@ -35970,7 +36007,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

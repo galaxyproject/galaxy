@@ -1,6 +1,4 @@
-import base64
 from dataclasses import dataclass
-from json import loads
 from typing import (
     cast,
     Dict,
@@ -57,10 +55,7 @@ from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,
 )
-from .sample_sheet_util import (
-    SampleSheetColumnDefinitionModel,
-    SampleSheetColumnDefinitionsModel,
-)
+from .sample_sheet_util import SampleSheetColumnDefinitionModel
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -137,19 +132,19 @@ class ParsedWorkbook(BaseModel):
     parse_log: SampleSheetParseLog
 
 
-class CreateWorkbookFromBase64(BaseModel):
+class CreateWorkbookRequest(BaseModel):
     title: str = CreateTitleField
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI"] = "URI"
-    column_definitions: Base64StringT
-    prefix_values: Optional[Base64StringT] = None
+    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    prefix_values: Optional[PrefixRowValuesT] = None
 
 
 @dataclass
-class CreateWorkbookFromBase64ForCollection:
+class CreateWorkbookRequestForCollection:
     title: str
     dataset_collection: AnyDatasetCollection
-    column_definitions: Base64StringT
+    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
 
 
 class CreateWorkbook(BaseModel):
@@ -296,14 +291,12 @@ def parse_workbook_for_collection(payload: ParseWorkbookForCollection) -> Parsed
 
 
 # a base64 version of this so we can do short get URLs with real links in the API.
-def generate_workbook_from_base64(payload: CreateWorkbookFromBase64) -> Workbook:
-    decoded_column_definitions = base64.b64decode(payload.column_definitions)
-    column_definitions = SampleSheetColumnDefinitionsModel.model_validate_json(decoded_column_definitions).root
+def generate_workbook_from_request(payload: CreateWorkbookRequest) -> Workbook:
+    column_definitions = payload.column_definitions
 
     prefix_values = None
     if payload.prefix_values:
-        decoded_prefix_values = base64.b64decode(payload.prefix_values)
-        prefix_values = loads(decoded_prefix_values)
+        prefix_values = payload.prefix_values
 
     create_object = CreateWorkbook(
         collection_type=payload.collection_type,
@@ -315,9 +308,8 @@ def generate_workbook_from_base64(payload: CreateWorkbookFromBase64) -> Workbook
     return generate_workbook(create_object)
 
 
-def generate_workbook_from_base64_for_collection(payload: CreateWorkbookFromBase64ForCollection) -> Workbook:
-    decoded_bytes = base64.b64decode(payload.column_definitions)
-    column_definitions = SampleSheetColumnDefinitionsModel.model_validate_json(decoded_bytes).root
+def generate_workbook_from_request_for_collection(payload: CreateWorkbookRequestForCollection) -> Workbook:
+    column_definitions = payload.column_definitions
     create_object = CreateWorkbookForCollection(
         title=payload.title,
         dataset_collection=payload.dataset_collection,

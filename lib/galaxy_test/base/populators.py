@@ -3138,27 +3138,21 @@ class BaseDatasetCollectionPopulator:
         )
 
     def download_workbook(self, collection_type: str, column_definitions: SampleSheetColumnDefinitions) -> str:
-        url = "sample_sheet_workbook/generate"
-        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
-        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
-        query_params = {
+        url = "sample_sheet_workbook?filename=workbook.xlsx"
+        payload = {
             "collection_type": collection_type,
-            "column_definitions": column_definitions_b64,
-            "filename": "workbook.xlsx",
+            "column_definitions": column_definitions,
         }
-        download_response = self.dataset_populator._get(url, query_params)
+        download_response = self.dataset_populator._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(download_response)
         return self.dataset_populator._get_response_to_tempfile(download_response)
 
     def download_workbook_for_collection(self, hdca_id: str, column_definitions: SampleSheetColumnDefinitions) -> str:
-        url = f"dataset_collections/{hdca_id}/sample_sheet_workbook/generate"
-        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
-        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
-        query_params = {
-            "column_definitions": column_definitions_b64,
-            "filename": "workbook.xlsx",
+        url = f"dataset_collections/{hdca_id}/sample_sheet_workbook?filename=workbook.xlsx"
+        payload = {
+            "column_definitions": column_definitions,
         }
-        download_response = self.dataset_populator._get(url, query_params)
+        download_response = self.dataset_populator._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(download_response)
         return self.dataset_populator._get_response_to_tempfile(download_response)
 

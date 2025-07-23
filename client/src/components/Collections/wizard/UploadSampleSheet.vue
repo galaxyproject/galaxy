@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { BCardGroup } from "bootstrap-vue";
-import { computed } from "vue";
 
 import type { SampleSheetCollectionType } from "@/api/datasetCollections";
-import { getDownloadWorkbookUrl } from "@/components/Collections/sheet/workbooks";
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 
 import CardDownloadWorkbook from "./CardDownloadWorkbook.vue";
@@ -19,19 +17,15 @@ interface Props {
     extendedCollectionType: ExtendedCollectionType;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
-const emit = defineEmits(["workbookContents"]);
-
-const generateWorkbookHref = computed(() => {
-    return getDownloadWorkbookUrl(props.extendedCollectionType.columnDefinitions!, props.collectionType);
-});
+const emit = defineEmits(["workbookContents", "download"]);
 </script>
 
 <template>
     <div class="generate-workbook">
         <BCardGroup deck>
-            <CardDownloadWorkbook :generate-workbook-link="generateWorkbookHref" />
+            <CardDownloadWorkbook @download="emit('download')" />
             <CardEditWorkbook />
             <CardUploadWorkbook @workbookContents="handleWorkbook" />
         </BCardGroup>

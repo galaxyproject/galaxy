@@ -13,7 +13,7 @@ import { ERROR_STATES, TERMINAL_STATES } from "@/api/jobs";
 import { fetch, type FetchDataPayload, fetchJobErrorMessage, type HdcaUploadTarget } from "@/api/tools";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
-import { parseWorkbook, withAutoListIdentifiers } from "@/components/Collections/sheet/workbooks";
+import { downloadWorkbook, parseWorkbook, withAutoListIdentifiers } from "@/components/Collections/sheet/workbooks";
 import type {
     AnyParsedSampleSheetWorkbook,
     InitialElements,
@@ -395,6 +395,10 @@ const wizardIsBusy = computed(() => {
         collectionCreated.value
     );
 });
+
+async function download() {
+    downloadWorkbook(props.extendedCollectionType.columnDefinitions!, props.collectionType);
+}
 </script>
 
 <template>
@@ -448,6 +452,7 @@ const wizardIsBusy = computed(() => {
             <UploadSampleSheet
                 :collection-type="collectionType"
                 :extended-collection-type="extendedCollectionType"
+                @download="download"
                 @workbookContents="handleUploadFromWizard" />
         </div>
         <div v-else-if="wizard.isCurrent('fill-grid') && currentHistoryId" style="width: 100%">
