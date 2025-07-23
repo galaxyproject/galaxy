@@ -7,6 +7,7 @@ from galaxy.actions.library import (
 )
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.uris import validate_non_local
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
@@ -22,7 +23,7 @@ VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca", "hdas"]
 ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
 
 
-def validate_and_normalize_targets(trans, payload):
+def validate_and_normalize_targets(trans: ProvidesHistoryContext, payload):
     """Validate and normalize all src references in fetch targets.
 
     - Normalize ftp_import and server_dir src entries into simple path entries
@@ -103,6 +104,8 @@ def validate_and_normalize_targets(trans, payload):
 
             # It'd be nice if this can be de-duplicated with what is in parameters/grouping.py.
             user_ftp_dir = trans.user_ftp_dir
+            if not user_ftp_dir:
+                raise RequestParameterInvalidException("User FTP directory not available.")
             is_directory = False
 
             assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
@@ -123,6 +126,7 @@ def validate_and_normalize_targets(trans, payload):
                             break
 
             if is_directory:
+                assert full_path
                 # If the target is a directory - make sure no files under it are symbolic links
                 for dirpath, dirnames, filenames in os.walk(full_path):
                     for filename in filenames:
@@ -157,6 +161,13 @@ def validate_and_normalize_targets(trans, payload):
 
             if not looks_like_url and trans.app.file_sources.looks_like_uri(url):
                 looks_like_url = True
+                fsp = trans.app.file_sources.get_file_source_path(url)
+                hash_source = fsp.file_source._get_content_hash(fsp.path)
+                if hash_source:
+                    if not item["hashes"]:
+                        item["hashes"] = [hash_source]
+                    else:
+                        item["hashes"].append(hash_source)
 
             if not looks_like_url:
                 raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
