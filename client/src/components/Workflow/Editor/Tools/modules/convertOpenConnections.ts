@@ -126,7 +126,7 @@ async function outputConnectionToStep(
         left: position.x + OUTPUT_TO_NODE_POSITION_CORRECTION.left,
         top: position.y + OUTPUT_TO_NODE_POSITION_CORRECTION.top,
     });
-    const state = { parameter_type: subType, optional: { optional: outputConnection.optional } };
+    const state = { parameter_type: subType, optional: outputConnection.optional };
 
     const response = await getModule(
         { name: type, type, content_id: type, tool_state: state },
