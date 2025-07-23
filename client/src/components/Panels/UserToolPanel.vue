@@ -8,9 +8,9 @@ import { useRoute, useRouter } from "vue-router/composables";
 import type { UnprivilegedToolResponse } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
-import GButton from "../BaseComponents/GButton.vue";
-import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
-import GCard from "../Common/GCard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCard from "@/components/Common/GCard.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";

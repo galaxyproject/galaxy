@@ -8,8 +8,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 
-import GButton from "../BaseComponents/GButton.vue";
-import LoadingSpan from "../LoadingSpan.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 
 interface LoaderResult<T> {

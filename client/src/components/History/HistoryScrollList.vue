@@ -10,11 +10,11 @@ import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { CardAction, CardBadge } from "../Common/GCard.types";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { HistoriesFilters } from "./HistoriesFilters";
 
-import GCard from "../Common/GCard.vue";
-import ScrollList from "../ScrollList/ScrollList.vue";
+import GCard from "@/components/Common/GCard.vue";
+import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
