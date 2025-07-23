@@ -85,6 +85,19 @@ describe("useResourceWatcher", () => {
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
         });
+
+        it("should return correct value for isWatchingResource", async () => {
+            const { startWatchingResource, stopWatchingResource, isWatchingResource } =
+                useResourceWatcher(mockWatchHandler);
+
+            expect(isWatchingResource.value).toBe(false);
+
+            startWatchingResource();
+            expect(isWatchingResource.value).toBe(true);
+
+            stopWatchingResource();
+            expect(isWatchingResource.value).toBe(false);
+        });
     });
 
     describe("polling intervals", () => {
@@ -380,6 +393,32 @@ describe("useResourceWatcher", () => {
             await flushPromises();
 
             expect(slowHandler).toHaveBeenCalledTimes(1);
+        });
+
+        it("should update isWatchingResource flag correctly with slow handlers", async () => {
+            const slowHandler = jest.fn<WatchResourceHandler>().mockImplementation(async () => {
+                await new Promise((resolve) => setTimeout(resolve, 5000));
+            });
+
+            const { startWatchingResource, stopWatchingResource, isWatchingResource } = useResourceWatcher(slowHandler);
+
+            // Start watching
+            startWatchingResource();
+            expect(isWatchingResource.value).toBe(true);
+
+            // Still watching while handler is running
+            jest.advanceTimersByTime(2000);
+            await flushPromises();
+            expect(isWatchingResource.value).toBe(true);
+
+            // Stop watching while handler is still running
+            stopWatchingResource();
+            expect(isWatchingResource.value).toBe(false);
+
+            // Should remain stopped even after handler completes
+            jest.advanceTimersByTime(10000);
+            await flushPromises();
+            expect(isWatchingResource.value).toBe(false);
         });
 
         it("should not schedule new timeout if current polling interval is undefined", async () => {
