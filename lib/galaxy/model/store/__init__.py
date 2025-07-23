@@ -531,6 +531,17 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                 model_class = dataset_attrs.get("model_class", "HistoryDatasetAssociation")
                 if model_class == "HistoryDatasetAssociation":
+                    # Check if this HDA should reuse a dataset from a copied-from HDA
+                    reuse_dataset = None
+                    copied_from_chain = dataset_attrs.get("copied_from_history_dataset_association_id_chain", [])
+                    if copied_from_chain:
+                        # Look for the source HDA in the current import set
+                        copied_from_key = _copied_from_object_key(copied_from_chain, object_import_tracker.hdas_by_key)
+                        if copied_from_key and copied_from_key in object_import_tracker.hdas_by_key:
+                            source_hda = object_import_tracker.hdas_by_key[copied_from_key]
+                            # Reuse the dataset from the source HDA
+                            reuse_dataset = source_hda.dataset
+
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(
                         name=dataset_attrs["name"],
@@ -545,7 +556,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         tool_version=metadata.get("tool_version"),
                         metadata_deferred=metadata_deferred,
                         history=history,
-                        create_dataset=True,
+                        create_dataset=reuse_dataset is None,
+                        dataset=reuse_dataset,
                         flush=False,
                         sa_session=self.sa_session,
                     )
