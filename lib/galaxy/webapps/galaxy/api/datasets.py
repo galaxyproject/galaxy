@@ -12,6 +12,7 @@ from typing import (
     cast,
     List,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -27,6 +28,7 @@ from starlette.responses import (
 )
 from typing_extensions import Annotated
 
+from galaxy import model
 from galaxy.datatypes.dataproviders.base import MAX_LIMIT
 from galaxy.schema import (
     FilterQueryParams,
@@ -38,7 +40,9 @@ from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
+    DatasetConvertedDatasetsStateResponse,
     DatasetSourceType,
+    LibraryDatasetDatasetAssociation,
     ToolReportForDataset,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -58,8 +62,10 @@ from galaxy.webapps.galaxy.api.common import (
     UpdateDatasetPermissionsBody,
 )
 from galaxy.webapps.galaxy.services.datasets import (
+    BamDataResult,
     ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
+    DataResult,
     DatasetContentType,
     DatasetExtraFiles,
     DatasetInheritanceChain,
@@ -437,6 +443,7 @@ class FastAPIDatasets:
     @router.get(
         "/api/datasets/{dataset_id}",
         summary="Displays information about and/or content of a dataset.",
+        response_model_exclude_unset=True,
     )
     def show(
         self,
@@ -471,7 +478,16 @@ class FastAPIDatasets:
             ),
         ] = 0,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ):
+    ) -> Union[
+        AnyHDA,  # Default case for HDA
+        LibraryDatasetDatasetAssociation,  # Default case for LDDA
+        model.Dataset.conversion_messages,  # state return type (string enum)
+        DatasetConvertedDatasetsStateResponse,  # converted_datasets_state return type
+        bool,  # in_use_state return type
+        BamDataResult,  # data return type for BAM
+        DataResult,  # data return type for other formats
+        List[List[str]],  # features return type
+    ]:
         """
         **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
         and return different kinds of responses, the documentation here will be limited.

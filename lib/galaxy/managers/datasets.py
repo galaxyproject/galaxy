@@ -652,14 +652,14 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "file_size": lambda item, key, **context: self.serializers["size"](item, key, **context),
             "nice_size": lambda item, key, **context: item.get_size(nice_size=True, calculate_size=False),
             # common to lddas and hdas - from mapping.py
-            "copied_from_history_dataset_association_id": lambda item, key, **context: item.id,
+            "copied_from_history_dataset_association_id": self.serialize_id,
             "copied_from_library_dataset_dataset_association_id": self.serialize_id,
             "info": lambda item, key, **context: item.info.strip() if isinstance(item.info, str) else item.info,
             "blurb": lambda item, key, **context: item.blurb,
             "peek": lambda item, key, **context: item.display_peek() if item.peek and item.peek != "no peek" else None,
             "meta_files": self.serialize_meta_files,
             "metadata": self.serialize_metadata,
-            "creating_job": self.serialize_creating_job,
+            "creating_job": lambda item, key, **context: item.creating_job.id if item.creating_job else None,
             "rerunnable": self.serialize_rerunnable,
             "parent_id": self.serialize_id,
             "designation": lambda item, key, **context: item.designation,
@@ -739,17 +739,6 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             metadata[name] = val
 
         return metadata
-
-    def serialize_creating_job(self, item, key, **context):
-        """
-        Return the id of the Job that created this dataset (or its original)
-        or None if no `creating_job` is found.
-        """
-        dataset = item
-        if dataset.creating_job:
-            return self.serialize_id(dataset.creating_job, "id")
-        else:
-            return None
 
     def serialize_rerunnable(self, item, key, **context):
         """

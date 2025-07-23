@@ -796,6 +796,37 @@ class DatasetSource(Model):
     ]
 
 
+class DatasetSummary(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        description="The encoded ID of the dataset.",
+    )
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    state: DatasetStateField
+    deleted: bool = Field(
+        ...,
+        description="Whether this dataset is deleted.",
+    )
+    purged: bool = Field(
+        ...,
+        description="Whether this dataset has been purged.",
+    )
+    purgable: bool = Field(
+        ...,
+        description="Whether this dataset can be purged.",
+    )
+    file_size: int = Field(
+        ...,
+        description="The file size in bytes.",
+    )
+    total_size: int = Field(
+        ...,
+        description="The total size in bytes including metadata.",
+    )
+    uuid: UuidField
+
+
 class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
@@ -848,8 +879,8 @@ class HDADetailed(HDASummary, WithModelClass):
         title="Peek",
         description="A few lines of contents from the start of the file.",
     )
-    creating_job: str = Field(
-        ...,
+    creating_job: Optional[EncodedDatabaseIdField] = Field(
+        None,
         title="Creating Job ID",
         description="The encoded ID of the job that created this dataset.",
     )
@@ -941,6 +972,13 @@ class HDADetailed(HDASummary, WithModelClass):
     ]
     copied_from_history_dataset_association_id: Annotated[
         Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
+    ]
+    copied_from_library_dataset_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of LDDA this HDA was copied from.")
+    ]
+    dataset: Annotated[
+        DatasetSummary,
+        Field(..., description="Detailed information of the associated dataset."),
     ]
 
 
@@ -3431,6 +3469,34 @@ class HDCACustom(HDCADetailed):
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
+
+
+class DatasetConvertedDatasetsStateResponse(Model):
+    status: str = Field(
+        ...,
+        description="The status of the converted datasets",
+    )
+    valid_chroms: Optional[Any] = Field(
+        None,
+        description="Valid chromosomes for the dataset",
+    )
+
+
+class LibraryDatasetDatasetAssociation(Model):
+    model_config = ConfigDict(extra="allow")
+
+    id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        description="The encoded ID of the library dataset",
+    )
+    name: Optional[str] = Field(
+        None,
+        description="The name of the library dataset",
+    )
+    state: Optional[str] = Field(
+        None,
+        description="The current state of the library dataset",
+    )
 
 
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
