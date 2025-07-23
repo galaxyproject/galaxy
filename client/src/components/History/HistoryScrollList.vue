@@ -7,10 +7,10 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { HistoriesFilters } from "./HistoriesFilters";
 
 import GCard from "@/components/Common/GCard.vue";

@@ -6,10 +6,10 @@ import { fetchPlugins, type Plugin } from "@/api/plugins";
 
 import { getTestExtensions } from "./utilities";
 
-import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import VisualizationHeader from "@/components/Visualizations/VisualizationHeader.vue";
 
 const router = useRouter();
