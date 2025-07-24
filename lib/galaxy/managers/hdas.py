@@ -587,7 +587,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
             "type_id": self.serialize_type_id,
-            "copied_from_ldda_id": lambda item, key, **context: item.copied_from_library_dataset_dataset_association_id,
+            "copied_from_ldda_id": lambda item, key, **context: self.serialize_id(
+                item, "copied_from_library_dataset_dataset_association_id", **context
+            ),
             "history_id": self.serialize_id,
             # remapped
             "misc_info": self._remap_from("info"),
