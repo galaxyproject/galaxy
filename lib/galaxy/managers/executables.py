@@ -2,7 +2,6 @@
 
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -12,7 +11,7 @@ from galaxy import exceptions
 from galaxy.util import in_directory
 
 
-def artifact_class(trans, as_dict: Dict[str, Any], allow_in_directory: Optional[str] = None):
+def artifact_class(trans, as_dict: dict[str, Any], allow_in_directory: Optional[str] = None):
     object_id = as_dict.get("object_id", None)
     if as_dict.get("src", None) == "from_path":
         workflow_path = as_dict.get("path")

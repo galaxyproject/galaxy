@@ -11,7 +11,6 @@ import tempfile
 from typing import (
     IO,
     Optional,
-    Tuple,
 )
 
 import yaml
@@ -229,7 +228,7 @@ class Ipynb(Json):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         **kwd,
-    ) -> Tuple[IO, Headers]:
+    ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:

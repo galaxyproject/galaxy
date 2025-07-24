@@ -7,7 +7,6 @@ import shutil
 from logging import getLogger
 from typing import (
     Any,
-    Dict,
     Optional,
     TYPE_CHECKING,
 )
@@ -247,7 +246,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 json.dump(object_store_conf, f)
 
             # setup tool
-            tool_as_dict: Dict[str, Any] = {}
+            tool_as_dict: dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}

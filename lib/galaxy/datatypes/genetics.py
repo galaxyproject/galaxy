@@ -17,9 +17,7 @@ import os
 import re
 import sys
 from typing import (
-    Dict,
     IO,
-    List,
     Optional,
     Union,
 )
@@ -92,7 +90,7 @@ class GenomeGraphs(Tabular):
         """
         return open(dataset.get_file_name(), "rb")
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> list:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this
@@ -653,7 +651,7 @@ class RexpBase(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def get_phecols(self, phenolist: List, maxConc: int = 20) -> List:
+    def get_phecols(self, phenolist: list, maxConc: int = 20) -> list:
         """
         sept 2009: cannot use whitespace to split - make a more complex structure here
         and adjust the methods that rely on this structure
@@ -674,7 +672,7 @@ class RexpBase(Html):
             if nrows == 0:  # set up from header
                 head = row
                 totcols = len(row)
-                concordance: List[Dict] = [{} for x in head]
+                concordance: list[dict] = [{} for x in head]
             else:
                 for col, code in enumerate(row):  # keep column order correct
                     if col >= totcols:

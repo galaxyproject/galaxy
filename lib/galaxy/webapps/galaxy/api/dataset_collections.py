@@ -1,5 +1,8 @@
 from logging import getLogger
-from typing import Optional
+from typing import (
+    Annotated,
+    Optional,
+)
 
 from fastapi import (
     Body,
@@ -8,7 +11,6 @@ from fastapi import (
     Response,
     status,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField

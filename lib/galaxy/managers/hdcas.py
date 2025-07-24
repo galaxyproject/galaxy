@@ -7,7 +7,6 @@ history.
 
 import logging
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -106,7 +105,7 @@ class HDCAManager(
                 returned.append(processed)
         return returned
 
-    def update_attributes(self, content, payload: Dict):
+    def update_attributes(self, content, payload: dict):
         # pre-requisite checked that attributes are valid
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
@@ -315,7 +314,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "model_class": lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
             "type": lambda item, key, **context: "collection",

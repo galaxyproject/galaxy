@@ -7,9 +7,7 @@ import shutil
 import tempfile
 from collections import namedtuple
 from typing import (
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -159,7 +157,7 @@ def handle_bz2(repository: "Repository", uploaded_file_name):
     shutil.move(uncompressed.name, uploaded_file_name)
 
 
-ChangeResponseT = Tuple[Union[bool, str], str, List[str], str, int, int]
+ChangeResponseT = tuple[Union[bool, str], str, list[str], str, int, int]
 
 
 def handle_directory_changes(

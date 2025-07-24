@@ -2,7 +2,6 @@ import os
 import random
 import uuid
 from tempfile import NamedTemporaryFile
-from typing import List
 
 import pytest
 from sqlalchemy import (
@@ -113,8 +112,8 @@ class TestMappings(BaseModelTestCase):
         random.shuffle(elements)
         for item in elements:
             self.persist(item)
-        forward_hdas: List[model.HistoryDatasetAssociation] = []
-        reverse_hdas: List[model.HistoryDatasetAssociation] = []
+        forward_hdas: list[model.HistoryDatasetAssociation] = []
+        reverse_hdas: list[model.HistoryDatasetAssociation] = []
         for i, dataset_instance in enumerate(list_pair.dataset_instances):
             if i % 2:
                 reverse_hdas.append(dataset_instance)

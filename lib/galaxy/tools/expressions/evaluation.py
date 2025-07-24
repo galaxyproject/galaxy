@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 from typing import (
-    List,
     Optional,
 )
 
@@ -22,12 +21,12 @@ NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 def do_eval(
     expression: str,
     jobinput: CWLObjectType,
-    javascript_requirements: Optional[List[JavascriptRequirement]] = None,
+    javascript_requirements: Optional[list[JavascriptRequirement]] = None,
     outdir: Optional[str] = None,
     tmpdir: Optional[str] = None,
     context: Optional["CWLOutputType"] = None,
 ):
-    requirements: List[CWLObjectType] = []
+    requirements: list[CWLObjectType] = []
     if javascript_requirements:
         for req in javascript_requirements:
             if expression_lib := req.expression_lib:

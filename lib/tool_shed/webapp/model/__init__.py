@@ -3,13 +3,13 @@ import os
 import random
 import string
 import weakref
+from collections.abc import Mapping
 from datetime import (
     datetime,
     timedelta,
 )
 from typing import (
     Any,
-    Mapping,
     Optional,
     TYPE_CHECKING,
 )

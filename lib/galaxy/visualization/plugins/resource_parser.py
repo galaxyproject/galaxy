@@ -8,7 +8,6 @@ import logging
 import weakref
 from typing import (
     Callable,
-    Dict,
     Optional,
     Union,
 )
@@ -47,7 +46,7 @@ class ResourceParser:
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
 
-    primitive_parsers: Dict[str, Callable[[str], ParameterPrimitiveType]] = {
+    primitive_parsers: dict[str, Callable[[str], ParameterPrimitiveType]] = {
         "str": lambda param: galaxy.util.sanitize_html.sanitize_html(param),
         "bool": lambda param: galaxy.util.string_as_bool(param),
         "int": int,
@@ -157,20 +156,20 @@ class ResourceParser:
     # TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers(
         self, trans, param_modifiers, query_params
-    ) -> Dict[str, Dict[str, Optional[ParameterType]]]:
+    ) -> dict[str, dict[str, Optional[ParameterType]]]:
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
         """
         # only one level of modification - down that road lies madness
         # parse the modifiers out of query_params first since they modify the other params coming next
-        parsed_modifiers: Dict[str, Dict[str, Optional[ParameterType]]] = {}
+        parsed_modifiers: dict[str, dict[str, Optional[ParameterType]]] = {}
         if not param_modifiers:
             return parsed_modifiers
         # precondition: expects a two level dictionary
         # { target_param_name -> { param_modifier_name -> { param_modifier_data }}}
         for target_param_name, modifier_dict in param_modifiers.items():
-            target_modifiers: Dict[str, Optional[ParameterType]] = {}
+            target_modifiers: dict[str, Optional[ParameterType]] = {}
             parsed_modifiers[target_param_name] = target_modifiers
 
             for modifier_name, modifier_config in modifier_dict.items():

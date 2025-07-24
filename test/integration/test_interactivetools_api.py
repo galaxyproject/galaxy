@@ -4,8 +4,6 @@ import os
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -71,8 +69,8 @@ class AbstractTestCases:
             api_asserts.assert_has_key(access_json, "target")
             return access_json["target"]
 
-        def wait_on_entry_points_active(self, job_id: str, expected_num: int = 1) -> List[Dict[str, Any]]:
-            def active_entry_points() -> Optional[List[Dict[str, Any]]]:
+        def wait_on_entry_points_active(self, job_id: str, expected_num: int = 1) -> list[dict[str, Any]]:
+            def active_entry_points() -> Optional[list[dict[str, Any]]]:
                 entry_points = self.entry_points_for_job(job_id)
                 if len(entry_points) != expected_num:
                     return None
@@ -88,7 +86,7 @@ class AbstractTestCases:
             # Can be decreased when galaxy_ext/container_monitor/monitor.py changes
             return wait_on(active_entry_points, "entry points to become active", timeout=120)
 
-        def entry_points_for_job(self, job_id: str) -> List[Dict[str, Any]]:
+        def entry_points_for_job(self, job_id: str) -> list[dict[str, Any]]:
             entry_points_response = self._get(f"entry_points?job_id={job_id}")
             api_asserts.assert_status_code_is(entry_points_response, 200)
             return entry_points_response.json()

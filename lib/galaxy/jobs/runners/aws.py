@@ -9,7 +9,6 @@ import re
 import time
 from queue import Empty
 from typing import (
-    Set,
     TYPE_CHECKING,
 )
 
@@ -462,11 +461,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
     def check_watched_items(self):
-        done: Set[str] = set()
+        done: set[str] = set()
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [x for x in self.watched if x[0] not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int, done: Set[str]):
+    def check_watched_items_by_batch(self, start: int, end: int, done: set[str]):
         jobs = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return

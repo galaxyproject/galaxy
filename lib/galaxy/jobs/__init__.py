@@ -15,6 +15,7 @@ import shutil
 import sys
 import time
 import traceback
+from collections.abc import Iterable
 from dataclasses import (
     dataclass,
     field,
@@ -23,9 +24,6 @@ from json import loads
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -317,10 +315,10 @@ class JobConfigurationLimits:
     anonymous_user_concurrent_jobs: Optional[int] = None
     walltime: Optional[str] = None
     walltime_delta: Optional[datetime.timedelta] = None
-    total_walltime: Dict[str, Any] = field(default_factory=dict)
+    total_walltime: dict[str, Any] = field(default_factory=dict)
     output_size: Optional[int] = None
-    destination_user_concurrent_jobs: Dict[str, int] = field(default_factory=dict)
-    destination_total_concurrent_jobs: Dict[str, int] = field(default_factory=dict)
+    destination_user_concurrent_jobs: dict[str, int] = field(default_factory=dict)
+    destination_total_concurrent_jobs: dict[str, int] = field(default_factory=dict)
 
 
 class JobConfiguration(ConfiguresHandlers):
@@ -329,14 +327,14 @@ class JobConfiguration(ConfiguresHandlers):
     These features are configured in the job configuration, by default, ``job_conf.yml``
     """
 
-    runner_plugins: List[dict]
+    runner_plugins: list[dict]
     handlers: dict
-    handler_runner_plugins: Dict[str, str]
-    tools: Dict[str, list]
-    tool_classes: Dict[str, list]
-    resource_groups: Dict[str, list]
-    destinations: Dict[str, tuple]
-    resource_parameters: Dict[str, Any]
+    handler_runner_plugins: dict[str, str]
+    tools: dict[str, list]
+    tool_classes: dict[str, list]
+    resource_groups: dict[str, list]
+    destinations: dict[str, tuple]
+    resource_parameters: dict[str, Any]
     DEFAULT_BASE_HANDLER_POOLS = ("job-handlers",)
 
     DEFAULT_NWORKERS = 4
@@ -356,7 +354,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parse the job configuration XML."""
         self.app = app
         self.runner_plugins = []
-        self.dynamic_params: Optional[Dict[str, Any]] = None
+        self.dynamic_params: Optional[dict[str, Any]] = None
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
@@ -864,7 +862,7 @@ class JobConfiguration(ConfiguresHandlers):
 
         :returns: list of job runner plugins
         """
-        rval: Dict[str, BaseJobRunner] = {}
+        rval: dict[str, BaseJobRunner] = {}
         if handler_id in self.handler_runner_plugins:
             plugins_to_load = [rp for rp in self.runner_plugins if rp["id"] in self.handler_runner_plugins[handler_id]]
             log.info(
@@ -1028,9 +1026,9 @@ class MinimalJobWrapper(HasResourceParameters):
         self.app = app
         self.tool = tool
         self.sa_session = self.app.model.context
-        self.extra_filenames: List[str] = []
-        self.environment_variables: List[Dict[str, str]] = []
-        self.interactivetools: List[Dict[str, Any]] = []
+        self.extra_filenames: list[str] = []
+        self.environment_variables: list[dict[str, str]] = []
+        self.interactivetools: list[dict[str, Any]] = []
         self.command_line = None
         self.version_command_line = None
         self._dependency_shell_commands = None
@@ -1851,7 +1849,7 @@ class MinimalJobWrapper(HasResourceParameters):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
         split_object_stores: Optional[Callable[[str], ObjectStorePopulator]] = None
-        object_store_id_overrides: Optional[Dict[str, Optional[str]]] = None
+        object_store_id_overrides: Optional[dict[str, Optional[str]]] = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id

@@ -12,9 +12,7 @@ from functools import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -622,7 +620,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
         return name
 
-    def workflow_run_setup_inputs(self, content: Optional[str]) -> Tuple[str, Dict[str, Any]]:
+    def workflow_run_setup_inputs(self, content: Optional[str]) -> tuple[str, dict[str, Any]]:
         history_id = self.current_history_id()
         if content:
             yaml_content = yaml.safe_load(content)

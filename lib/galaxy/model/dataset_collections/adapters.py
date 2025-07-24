@@ -1,5 +1,4 @@
 from typing import (
-    List,
     TYPE_CHECKING,
 )
 
@@ -190,9 +189,9 @@ class PromoteDatasetToCollection(CollectionAdapter):
 
 class PromoteDatasetsToCollection(CollectionAdapter):
     _collection_type: str
-    _elements: List["TransientCollectionAdapterDatasetInstanceElement"]
+    _elements: list["TransientCollectionAdapterDatasetInstanceElement"]
 
-    def __init__(self, elements: List["TransientCollectionAdapterDatasetInstanceElement"], collection_type: str):
+    def __init__(self, elements: list["TransientCollectionAdapterDatasetInstanceElement"], collection_type: str):
         assert collection_type in ["paired", "paired_or_unpaired"]
         self._collection_type = collection_type
         self._elements = elements

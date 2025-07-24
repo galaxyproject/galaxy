@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import (
-    List,
     Optional,
     Union,
 )
@@ -24,8 +23,8 @@ class Requirement(str, Enum):
 class TourCore(BaseModel):
     name: str = Field(title="Name", description="Name of tour")
     description: str = Field(title="Description", description="Tour description")
-    tags: List[str] = Field(title="Tags", description="Topic topic tags")
-    requirements: List[Requirement] = Field(title="Requirements", description="Requirements to run the tour.")
+    tags: list[str] = Field(title="Tags", description="Topic topic tags")
+    requirements: list[Requirement] = Field(title="Requirements", description="Requirements to run the tour.")
     model_config = ConfigDict(use_enum_values=True)
 
 
@@ -34,7 +33,7 @@ class Tour(TourCore):
 
 
 class TourList(RootModel):
-    root: List[Tour] = Field(title="List of tours", default=[])
+    root: list[Tour] = Field(title="List of tours", default=[])
 
 
 class TourStep(BaseModel):
@@ -46,10 +45,10 @@ class TourStep(BaseModel):
     placement: Optional[str] = Field(
         None, title="Placement", description="Placement of the text box relative to the selected element"
     )
-    preclick: Optional[Union[bool, List[str]]] = Field(
+    preclick: Optional[Union[bool, list[str]]] = Field(
         None, title="Pre-click", description="Elements that receive a click() event before the step is shown"
     )
-    postclick: Optional[Union[bool, List[str]]] = Field(
+    postclick: Optional[Union[bool, list[str]]] = Field(
         None, title="Post-click", description="Elements that receive a click() event after the step is shown"
     )
     textinsert: Optional[str] = Field(
@@ -59,4 +58,4 @@ class TourStep(BaseModel):
 
 class TourDetails(TourCore):
     title_default: Optional[str] = Field(None, title="Default title", description="Default title for each step")
-    steps: List[TourStep] = Field(title="Steps", description="Tour steps")
+    steps: list[TourStep] = Field(title="Steps", description="Tour steps")
