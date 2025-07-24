@@ -40,6 +40,7 @@ from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
@@ -247,7 +248,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
         for kwd in self.runner_params.keys():
             if kwd.startswith("amqp_") or kwd.startswith("transport_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
+
+        client_manager_kwargs.update(self._init_client_manager_extend_kwargs(**client_manager_kwargs))
+
         self.client_manager = build_client_manager(**client_manager_kwargs)
+
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        """Override this method to pass additional keyword arguments to the client manager or alter existing ones."""
+        return kwargs
 
     def __init_pulsar_app(self, conf, pulsar_conf_path):
         if conf is None and pulsar_conf_path is None and not self.default_build_pulsar_app:
@@ -1059,6 +1067,96 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
+
+
+ARC_DESTINATION_DEFAULTS: Dict[str, Any] = {
+    "arc_enabled": True,
+    "arc_url": PARAMETER_SPECIFICATION_REQUIRED,
+    **COEXECUTION_DESTINATION_DEFAULTS,
+    "default_file_action": "json_transfer",
+}
+
+
+class PulsarARCJobRunner(PulsarCoexecutionJobRunner):
+    runner_name = "PulsarARCJobRunner"
+
+    destination_defaults = ARC_DESTINATION_DEFAULTS
+
+    use_mq = False
+    poll = True
+
+    def get_client_from_state(self, job_state):
+        client = super().get_client_from_state(job_state)
+        client._arc_job_id = job_state.job_id  # used by the client to get the job state
+        return client
+
+    def queue_job(self, job_wrapper):
+        """
+        Queue a job to run it using the Pulsar ARC client.
+
+        ARC supports authentication via either x509 certificates or OIDC tokens. Since Galaxy only supports the latter
+        (through OIDC providers), the Pulsar ARC client implementation is designed to work with OIDC. Thus, to run jobs,
+        the Pulsar ARC client needs an ARC endpoint URL and an OIDC access token. Those are passed as destination
+        parameters.
+
+        OIDC tokens are, for obvious reasons, not meant to be part of the job configuration file nor of TPV
+        configuration files; they have to be obtained before the job is queued. For admins, it may also be interesting
+        to have a mechanism to inject an ARC endpoint URL from the user preferences, so that users can configure their
+        own ARC endpoint URLs.
+
+        Therefore, this method provides a framework to:
+        - Obtain an ARC endpoint URL from the user's preferences (if enabled).
+        - Obtain an OIDC access token for the user running the job.
+        - Decide which OIDC provider to obtain the token from if multiple are available.
+
+        To let users configure their own settings, admins have to set the destination parameter
+        "arc_user_preferences_key". Galaxy will then read the options "arc_url" and "arc_oidc_provider" under that key
+        from the user extra preferences. Both are optional; if the user does not configure any, the destination defaults
+        will be used. If no destination default exists and the user account is associated with exactly one OIDC
+        provider, then Galaxy will use that provider.
+        """
+        job = job_wrapper.get_job()
+        user = job.user
+
+        extra_user_preferences_key = job_wrapper.job_destination.params.get("arc_user_preferences_key")
+        # for example, "distributed_compute_arc"
+
+        user_arc_url = (
+            user.extra_preferences.get(f"{extra_user_preferences_key}|arc_url") if extra_user_preferences_key else None
+        )
+        user_arc_oidc_provider = (
+            user.extra_preferences.get(f"{extra_user_preferences_key}|arc_oidc_provider")
+            if extra_user_preferences_key
+            else None
+        )
+        destination_arc_url = job_wrapper.job_destination.params.get("arc_url")
+        destination_oidc_provider = job_wrapper.job_destination.params.get("arc_oidc_provider")
+        arc_url = user_arc_url or destination_arc_url
+        arc_oidc_provider = user_arc_oidc_provider or destination_oidc_provider
+        if arc_oidc_provider is None:
+            user_oidc_providers = [auth.provider for auth in user.custos_auth + user.social_auth]
+            if len(user_oidc_providers) > 1:
+                raise Exception(
+                    f"Multiple identity providers are linked to your user account '{user.username}', please select one "
+                    f"in your user preferences to launch ARC jobs."
+                )
+            elif len(user_oidc_providers) == 0:
+                raise Exception(
+                    f"No identity provider is linked to your user account '{user.username}', please log in using an "
+                    f"identity provider to launch ARC jobs."
+                )
+            arc_oidc_provider = user_oidc_providers[0]
+        arc_oidc_provider_backend = provider_name_to_backend(arc_oidc_provider)
+        arc_oidc_token = user.get_oidc_tokens(arc_oidc_provider_backend)["access"]
+
+        job_wrapper.job_destination.params.update({"arc_url": arc_url, "arc_oidc_token": arc_oidc_token})
+
+        return super().queue_job(job_wrapper)
+
+    def _init_client_manager_extend_kwargs(self, **kwargs):
+        kwargs = super()._init_client_manager_extend_kwargs(**kwargs)
+        kwargs["arc_enabled"] = True
+        return kwargs
 
 
 KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
