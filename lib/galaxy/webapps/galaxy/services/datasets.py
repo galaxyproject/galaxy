@@ -64,13 +64,11 @@ from galaxy.schema.drs import (
     DrsObject,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.library_contents import LibraryContentsCreateDatasetResponse
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
-    DatasetConvertedDatasetsStateResponse,
     DatasetSourceId,
     DatasetSourceType,
     EncodedDatasetSourceId,
@@ -425,12 +423,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     keys=serialization_params.keys,
                     user=trans.user,
                     trans=trans,
-                    encode_id=False,
                 )
             else:
                 dataset_dict = dataset.to_dict()
-                rval = LibraryContentsCreateDatasetResponse(**dataset_dict)
-
+                rval = self.encode_all_ids(dataset_dict)
         return rval
 
     def show_storage(
@@ -863,7 +859,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset: model.DatasetInstance,
         chrom: Optional[str] = None,
         retry: bool = False,
-    ) -> Union[model.Dataset.conversion_messages, DatasetConvertedDatasetsStateResponse]:
+    ) -> Union[model.Dataset.conversion_messages, dict]:
         """
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
@@ -893,7 +889,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here
-        return DatasetConvertedDatasetsStateResponse(status=dataset.conversion_messages.DATA, valid_chroms=None)
+        return {"status": dataset.conversion_messages.DATA, "valid_chroms": None}
 
     def _search_features(
         self,

@@ -576,6 +576,15 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             ["accessible", "id", "name", "history_id", "hid", "history_content_type", "state", "deleted", "visible"],
         )
 
+    def serialize_copied_from_ldda_id(self, item, key, **context):
+        """
+        Serialize an id attribute of `item`.
+        """
+        copied_from_ldda_id = item.copied_from_library_dataset_dataset_association
+        if copied_from_ldda_id is not None:
+            return self.serialize_id(copied_from_ldda_id, "id", **context)
+        return None
+
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
@@ -587,7 +596,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
             "type_id": self.serialize_type_id,
-            "copied_from_ldda_id": lambda item, key, **context: item.copied_from_library_dataset_dataset_association_id,
+            "copied_from_ldda_id": self.serialize_copied_from_ldda_id,
             "history_id": self.serialize_id,
             # remapped
             "misc_info": self._remap_from("info"),

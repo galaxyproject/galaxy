@@ -796,37 +796,6 @@ class DatasetSource(Model):
     ]
 
 
-class DatasetSummary(Model):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        description="The encoded ID of the dataset.",
-    )
-    create_time: datetime = CreateTimeField
-    update_time: datetime = UpdateTimeField
-    state: DatasetStateField
-    deleted: bool = Field(
-        ...,
-        description="Whether this dataset is deleted.",
-    )
-    purged: bool = Field(
-        ...,
-        description="Whether this dataset has been purged.",
-    )
-    purgable: bool = Field(
-        ...,
-        description="Whether this dataset can be purged.",
-    )
-    file_size: int = Field(
-        ...,
-        description="The file size in bytes.",
-    )
-    total_size: int = Field(
-        ...,
-        description="The total size in bytes including metadata.",
-    )
-    uuid: UuidField
-
-
 class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
@@ -879,8 +848,8 @@ class HDADetailed(HDASummary, WithModelClass):
         title="Peek",
         description="A few lines of contents from the start of the file.",
     )
-    creating_job: Optional[EncodedDatabaseIdField] = Field(
-        None,
+    creating_job: str = Field(
+        ...,
         title="Creating Job ID",
         description="The encoded ID of the job that created this dataset.",
     )
@@ -975,10 +944,6 @@ class HDADetailed(HDASummary, WithModelClass):
     ]
     copied_from_library_dataset_dataset_association_id: Annotated[
         Optional[EncodedDatabaseIdField], Field(None, description="ID of LDDA this HDA was copied from.")
-    ]
-    dataset: Annotated[
-        DatasetSummary,
-        Field(..., description="Detailed information of the associated dataset."),
     ]
 
 
@@ -2854,12 +2819,12 @@ class InstalledRepositoryToolShedStatus(Model):
     # See https://github.com/galaxyproject/galaxy/issues/10453 , bad booleans
     # See https://github.com/galaxyproject/galaxy/issues/16135 , optional fields
     latest_installable_revision: Optional[str] = Field(
-        None, title="Latest installed revision", description="Most recent version available on the tool shed"
+        title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str] = None
     repository_deprecated: Optional[str] = Field(
-        None, title="Repository deprecated", description="Repository has been depreciated on the tool shed"
+        title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
 
 
@@ -2891,7 +2856,7 @@ class InstalledToolShedRepository(Model, WithModelClass):
         title="Changeset revision", description="Changeset revision of the repository - a mercurial commit hash"
     )
     tool_shed_status: Optional[InstalledRepositoryToolShedStatus] = Field(
-        None, title="Latest updated status from the tool shed"
+        title="Latest updated status from the tool shed"
     )
 
 
@@ -3469,17 +3434,6 @@ class HDCACustom(HDCADetailed):
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
-
-
-class DatasetConvertedDatasetsStateResponse(Model):
-    status: str = Field(
-        ...,
-        description="The status of the converted datasets",
-    )
-    valid_chroms: Optional[Any] = Field(
-        None,
-        description="Valid chromosomes for the dataset",
-    )
 
 
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]

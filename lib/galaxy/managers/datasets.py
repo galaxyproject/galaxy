@@ -659,7 +659,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "peek": lambda item, key, **context: item.display_peek() if item.peek and item.peek != "no peek" else None,
             "meta_files": self.serialize_meta_files,
             "metadata": self.serialize_metadata,
-            "creating_job": lambda item, key, **context: item.creating_job.id if item.creating_job else None,
+            "creating_job": self.serialize_creating_job,
             "rerunnable": self.serialize_rerunnable,
             "parent_id": self.serialize_id,
             "designation": lambda item, key, **context: item.designation,
@@ -739,6 +739,17 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             metadata[name] = val
 
         return metadata
+
+    def serialize_creating_job(self, item, key, **context):
+        """
+        Return the id of the Job that created this dataset (or its original)
+        or None if no `creating_job` is found.
+        """
+        dataset = item
+        if dataset.creating_job:
+            return self.serialize_id(dataset.creating_job, "id")
+        else:
+            return None
 
     def serialize_rerunnable(self, item, key, **context):
         """

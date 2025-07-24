@@ -513,7 +513,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ldda.visible = True
         ldda.update_parent_folder_update_times()
         trans.sa_session.commit()
-        rval = ldda.to_dict()
+        ldda_dict = ldda.to_dict()
+        rval = trans.security.encode_dict_ids(ldda_dict)
         update_time = ldda.update_time.isoformat()
         rval["update_time"] = update_time
         return rval

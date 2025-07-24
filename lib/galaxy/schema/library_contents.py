@@ -269,7 +269,10 @@ class LibraryContentsCreateFileListResponse(RootModel):
 
 
 class LibraryContentsCreateDatasetResponse(Model):
-    id: EncodedDatabaseIdField
+    # id, library_dataset_id, parent_library_id should change to EncodedDatabaseIdField latter
+    # because they are encoded ids in _copy_hda_to_library_folder and _copy_hdca_to_library_folder
+    # functions that are shared by LibraryFolderContentsService too
+    id: str
     hda_ldda: str
     model_class: Annotated[
         Literal["LibraryDatasetDatasetAssociation"], ModelClassField(Literal["LibraryDatasetDatasetAssociation"])
@@ -278,7 +281,7 @@ class LibraryContentsCreateDatasetResponse(Model):
     deleted: bool
     visible: bool
     state: str
-    library_dataset_id: EncodedDatabaseIdField
+    library_dataset_id: str
     file_size: int
     file_name: str
     update_time: str
@@ -289,7 +292,7 @@ class LibraryContentsCreateDatasetResponse(Model):
     misc_blurb: Optional[str]
     created_from_basename: Optional[str]
     uuid: str
-    parent_library_id: EncodedDatabaseIdField
+    parent_library_id: str
 
     # metadata fields
     model_config = ConfigDict(extra="allow")
