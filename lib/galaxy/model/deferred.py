@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 from typing import (
+    Dict,
     NamedTuple,
     Optional,
     Union,
@@ -88,6 +89,7 @@ class DatasetInstanceMaterializer:
         self._object_store_populator = object_store_populator
         self._file_sources = file_sources
         self._sa_session = sa_session
+        self._previously_materialized: Dict[int, HistoryDatasetAssociation] = {}
 
     def ensure_materialized(
         self,
@@ -104,6 +106,12 @@ class DatasetInstanceMaterializer:
         dataset = dataset_instance.dataset
         if dataset.state != Dataset.states.DEFERRED and isinstance(dataset_instance, HistoryDatasetAssociation):
             return dataset_instance
+
+        if dataset_instance.id in self._previously_materialized and isinstance(
+            dataset_instance, HistoryDatasetAssociation
+        ):
+            # If we have already materialized this dataset, return the previously materialized instance.
+            return self._previously_materialized[dataset_instance.id]
 
         materialized_dataset_hashes = [h.copy() for h in dataset.hashes]
         if in_place:
@@ -195,6 +203,7 @@ class DatasetInstanceMaterializer:
                 metadata_tmp_files_dir = None
             materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)
             materialized_dataset_instance.metadata_deferred = False
+        self._previously_materialized[dataset_instance.id] = materialized_dataset_instance
         return materialized_dataset_instance
 
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
