@@ -64,6 +64,7 @@ from galaxy.schema.drs import (
     DrsObject,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.library_contents import LibraryContentsCreateDatasetResponse
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -73,7 +74,6 @@ from galaxy.schema.schema import (
     DatasetSourceId,
     DatasetSourceType,
     EncodedDatasetSourceId,
-    LibraryDatasetDatasetAssociation,
     Model,
     ToolReportForDataset,
     UpdateDatasetPermissionsPayload,
@@ -429,7 +429,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
             else:
                 dataset_dict = dataset.to_dict()
-                rval = LibraryDatasetDatasetAssociation(**dataset_dict)
+                rval = LibraryContentsCreateDatasetResponse(**dataset_dict)
 
         return rval
 

@@ -3482,23 +3482,6 @@ class DatasetConvertedDatasetsStateResponse(Model):
     )
 
 
-class LibraryDatasetDatasetAssociation(Model):
-    model_config = ConfigDict(extra="allow")
-
-    id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        description="The encoded ID of the library dataset",
-    )
-    name: Optional[str] = Field(
-        None,
-        description="The name of the library dataset",
-    )
-    state: Optional[str] = Field(
-        None,
-        description="The current state of the library dataset",
-    )
-
-
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
 AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[

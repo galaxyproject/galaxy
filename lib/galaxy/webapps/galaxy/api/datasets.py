@@ -35,6 +35,7 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.library_contents import LibraryContentsCreateDatasetResponse
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -42,7 +43,6 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetConvertedDatasetsStateResponse,
     DatasetSourceType,
-    LibraryDatasetDatasetAssociation,
     ToolReportForDataset,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -480,7 +480,7 @@ class FastAPIDatasets:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> Union[
         AnyHDA,  # Default case for HDA
-        LibraryDatasetDatasetAssociation,  # Default case for LDDA
+        LibraryContentsCreateDatasetResponse,  # Default case for LDDA
         model.Dataset.conversion_messages,  # state return type (string enum)
         DatasetConvertedDatasetsStateResponse,  # converted_datasets_state return type
         bool,  # in_use_state return type
