@@ -1,5 +1,5 @@
+import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
 import axios from "axios";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
 
 export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
