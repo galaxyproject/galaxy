@@ -32,6 +32,7 @@
       </options>
     </param>
     <param name="file_count" type="hidden" value="auto" />
+    <param name="cwl_format" type="hidden" value=""/>
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
         <param name="file_data" type="file" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">
       </param>
