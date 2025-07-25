@@ -13,10 +13,12 @@ inputs:
     doc: input doc
 steps:
   - tool_id: cat1
+    label: first_cat
     doc: cat doc
     in:
       input1: the_input
   - tool_id: cat1
+    label: second_cat
     in:
       input1: 1/out_file1
   - tool_id: random_lines1

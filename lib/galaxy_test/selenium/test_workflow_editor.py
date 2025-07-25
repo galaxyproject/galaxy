@@ -13,6 +13,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
+    WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -1488,6 +1489,39 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
+
+    @selenium_test
+    def test_selection_to_workflow(self):
+        self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        self.assert_workflow_has_changes_and_save()
+
+        # select two nodes
+        editor = self.components.workflow_editor
+        cat_node_1 = editor.node.by_id(id=1).wait_for_present()
+        cat_node_2 = editor.node.by_id(id=2).wait_for_present()
+
+        self.action_chains().move_to_element(cat_node_1).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.action_chains().move_to_element(cat_node_2).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+        # make new workflow
+        new_workflow_name = "Copied from selection"
+
+        editor.tool_bar.selection_to_workflow.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(Keys.BACKSPACE * 20)
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(new_workflow_name)
+        editor.tool_bar.selection_to_workflow_copy.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
+        # check new workflow
+        self.workflow_index_open()
+        self.workflow_index_search_for(new_workflow_name)
+        self.components.workflows.edit_button.wait_for_and_click()
+
+        self.assert_connected("first_cat#out_file1", "second_cat#input1")
+
+        pass
 
     def create_and_wait_for_new_workflow_in_editor(self, annotation: Optional[str] = None) -> str:
         editor = self.components.workflow_editor
