@@ -1185,8 +1185,13 @@ class InputDataCollectionModule(InputModule):
             tag=tag,
             optional=optional,
         )
+        if "column_definitions" in parameter_def:
+            collection_param_source["column_definitions"] = parameter_def["column_definitions"]
+        if "fields" in parameter_def:
+            collection_param_source["fields"] = parameter_def["fields"]
         if formats := parameter_def.get("format"):
             collection_param_source["format"] = ",".join(listify(formats))
+        # TODO: this needs to land up part of DataCollectionToolParameter
         input_param = DataCollectionToolParameter(None, collection_param_source, self.trans)
         return dict(input=input_param)
 
@@ -1214,13 +1219,17 @@ class InputDataCollectionModule(InputModule):
             collection_type = inputs["collection_type"]
         else:
             collection_type = self.default_collection_type
-        state_as_dict["collection_type"] = collection_type
+        if "column_definitions" in inputs:
+            column_definitions = inputs["column_definitions"]
+        else:
+            column_definitions = None
         if "fields" in inputs:
             fields = inputs["fields"]
         else:
             fields = None
         state_as_dict["collection_type"] = collection_type
         state_as_dict["fields"] = fields
+        state_as_dict["column_definitions"] = column_definitions
         return state_as_dict
 
 

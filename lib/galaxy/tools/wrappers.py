@@ -34,6 +34,7 @@ from galaxy.model import (
 )
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
+from galaxy.schema.schema import SampleSheetRow
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
@@ -679,10 +680,13 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         element_instances: Dict[str, DatasetCollectionElementWrapper] = {}
 
         element_instance_list: List[DatasetCollectionElementWrapper] = []
+        rows: Dict[str, Optional[SampleSheetRow]] = {}
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
             assert element_identifier is not None
+            row = dataset_collection_element.columns
+            rows[element_identifier] = row
 
             if isinstance(element_object, DatasetCollection):
                 element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
@@ -696,8 +700,12 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
 
+        self.__rows = rows
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
+
+    def sample_sheet_row(self, element_identifier: str) -> Optional[SampleSheetRow]:
+        return self.__rows[element_identifier]
 
     def get_datasets_for_group(self, group: str) -> List[DatasetFilenameWrapper]:
         group = str(group).lower()

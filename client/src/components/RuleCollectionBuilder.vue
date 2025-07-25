@@ -91,6 +91,15 @@
                             </label>
                         </RuleComponent>
                         <RuleComponent
+                            rule-type="add_column_from_sample_sheet_index"
+                            :display-rule-type.sync="displayRuleType"
+                            @saveRule="handleRuleSave">
+                            <label>
+                                {{ l("Value") }}
+                                <input v-model="addColumnSampleSheetIndexValue" type="number" min="0" />
+                            </label>
+                        </RuleComponent>
+                        <RuleComponent
                             rule-type="add_column_group_tag_value"
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
@@ -449,6 +458,10 @@
                                         <RuleTargetComponent
                                             v-if="metadataOptions"
                                             rule-type="add_column_metadata"
+                                            @addNewRule="addNewRule" />
+                                        <RuleTargetComponent
+                                            v-if="sampleSheetMetadataAvailable"
+                                            rule-type="add_column_from_sample_sheet_index"
                                             @addNewRule="addNewRule" />
                                         <RuleTargetComponent
                                             v-if="hasTagsMetadata"
@@ -834,6 +847,7 @@ export default {
             addColumnRegexAllowUnmatched: false,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnSampleSheetIndexValue: 0,
             addColumnGroupTagValueValue: "",
             addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
@@ -1025,6 +1039,19 @@ export default {
             }
             return asDict;
         },
+        sampleSheetMetadataAvailable() {
+            if (this.elementsType !== "collection_contents") {
+                return false;
+            }
+            if (this.initialElements !== null) {
+                const collectionType = this.initialElements.collection_type;
+                const collectionTypeRanks = collectionType.split(":");
+                return collectionTypeRanks[0] == "sample_sheet";
+            } else {
+                // input type unknown right? just have to allow it
+                return true;
+            }
+        },
         metadataOptions() {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
@@ -1033,7 +1060,11 @@ export default {
                 let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
-                    if (collectionType == "list:paired" || collectionType == "list") {
+                    if (
+                        collectionType == "list:paired" ||
+                        collectionType == "list" ||
+                        collectionType.startsWith("sample_sheet")
+                    ) {
                         flatishList = true;
                     }
                 } else {
@@ -1043,7 +1074,7 @@ export default {
                 const collectionTypeRanks = collectionType.split(":");
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
-                    if (collectionTypeRank == "list") {
+                    if (collectionTypeRank == "list" || collectionTypeRank == "sample_sheet") {
                         if (flatishList) {
                             metadataOptions["identifier" + index] = _l("List Identifier");
                             metadataOptions["index" + index] = _l("List Index");
@@ -1787,7 +1818,13 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_, parentIndices_) {
+        populateElementsFromCollectionDescription(
+            elements,
+            collectionType,
+            parentIdentifiers_,
+            parentIndices_,
+            parentColumns_
+        ) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
@@ -1798,6 +1835,10 @@ export default {
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
                 const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                let columns = parentColumns_;
+                if (!columns && collectionType.startsWith("sample_sheet")) {
+                    columns = element.columns ? element.columns : [];
+                }
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
@@ -1807,6 +1848,7 @@ export default {
                         indices: indices,
                         dataset: elementObject,
                         tags: elementObject.tags,
+                        columns: columns,
                     };
                     sources.push(source);
                 } else {
@@ -1815,7 +1857,8 @@ export default {
                         elementObject.elements,
                         restCollectionType,
                         identifiers,
-                        indices
+                        indices,
+                        columns
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;

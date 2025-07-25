@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 COLLECTION_TYPE_REGEX = re.compile(
-    r"^(list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*$"
+    r"^((list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*|sample_sheet|sample_sheet:paired|sample_sheet:record|sample_sheet:paired_or_unpaired)$"
 )
 
 

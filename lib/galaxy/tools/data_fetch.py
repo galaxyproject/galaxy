@@ -133,6 +133,8 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
 
     if "collection_type" in target:
         fetched_target["collection_type"] = target["collection_type"]
+    if "column_definitions" in target:
+        fetched_target["column_definitions"] = target["column_definitions"]
     if "name" in target:
         fetched_target["name"] = target["name"]
 
@@ -151,6 +153,9 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
             target_metadata["created_from_basename"] = created_from_basename
         if "error_message" in src_item:
             target_metadata["error_message"] = src_item["error_message"]
+        row = src_item.get("row", None)
+        if row:
+            target_metadata["row"] = row
         return target_metadata
 
     def _resolve_item(item):

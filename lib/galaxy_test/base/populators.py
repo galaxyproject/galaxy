@@ -90,6 +90,7 @@ from typing_extensions import (
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
+    SampleSheetColumnDefinitions,
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
@@ -3135,6 +3136,58 @@ class BaseDatasetCollectionPopulator:
         return self.create_nested_collection(
             history_id=history_id, collection=pairs, collection_type="list:paired", name=name
         )
+
+    def download_workbook(self, collection_type: str, column_definitions: SampleSheetColumnDefinitions) -> str:
+        url = "sample_sheet_workbook/generate"
+        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
+        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
+        query_params = {
+            "collection_type": collection_type,
+            "column_definitions": column_definitions_b64,
+            "filename": "workbook.xlsx",
+        }
+        download_response = self.dataset_populator._get(url, query_params)
+        api_asserts.assert_status_code_is_ok(download_response)
+        return self.dataset_populator._get_response_to_tempfile(download_response)
+
+    def download_workbook_for_collection(self, hdca_id: str, column_definitions: SampleSheetColumnDefinitions) -> str:
+        url = f"dataset_collections/{hdca_id}/sample_sheet_workbook/generate"
+        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
+        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
+        query_params = {
+            "column_definitions": column_definitions_b64,
+            "filename": "workbook.xlsx",
+        }
+        download_response = self.dataset_populator._get(url, query_params)
+        api_asserts.assert_status_code_is_ok(download_response)
+        return self.dataset_populator._get_response_to_tempfile(download_response)
+
+    def parse_workbook(
+        self, xlsx_content: bytes, collection_type: str, column_definitions: SampleSheetColumnDefinitions
+    ):
+        url = "sample_sheet_workbook/parse"
+        content_base64 = base64.b64encode(xlsx_content).decode("utf-8")
+        payload = dict(
+            collection_type=collection_type,
+            column_definitions=column_definitions,
+            content=content_base64,
+        )
+        parse_response = self.dataset_populator._post(url, data=payload, json=True)
+        api_asserts.assert_status_code_is_ok(parse_response)
+        return parse_response.json()
+
+    def parse_workflow_for_collection(
+        self, hdca_id: str, xlsx_content: bytes, column_definitions: SampleSheetColumnDefinitions
+    ):
+        url = f"dataset_collections/{hdca_id}/sample_sheet_workbook/parse"
+        content_base64 = base64.b64encode(xlsx_content).decode("utf-8")
+        payload = dict(
+            column_definitions=column_definitions,
+            content=content_base64,
+        )
+        parse_response = self.dataset_populator._post(url, data=payload, json=True)
+        api_asserts.assert_status_code_is_ok(parse_response)
+        return parse_response.json()
 
     def nested_collection_identifiers(self, history_id: str, collection_type):
         rank_types = list(reversed(collection_type.split(":")))
