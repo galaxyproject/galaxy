@@ -8,6 +8,7 @@
         :options="configForm"
         :message-text="messageText"
         :message-variant="messageVariant"
+        editor-view
         @onChangeVersion="onChangeVersion"
         @onUpdateFavorites="onUpdateFavorites">
         <FormElement

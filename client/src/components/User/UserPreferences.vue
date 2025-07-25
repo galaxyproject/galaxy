@@ -43,6 +43,12 @@
             description="Access your current API key or create a new one."
             to="/user/api_key" />
         <UserPreferencesElement
+            id="edit-preferences-credentials"
+            icon="fa-key"
+            title="Manage Your Credentials"
+            description="Manage your credentials for accessing external services."
+            to="/user/credentials" />
+        <UserPreferencesElement
             id="edit-preferences-notifications"
             icon="fa-bell"
             title="Manage Notifications"

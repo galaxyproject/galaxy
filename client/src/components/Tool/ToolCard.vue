@@ -1,7 +1,7 @@
 <script setup>
-import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
+import { BAlert, BButton, BModal, BPopover } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -16,6 +16,7 @@ import { useUserStore } from "@/stores/userStore";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -70,6 +71,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    editorView: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
@@ -90,6 +95,17 @@ watch(
 function onSetError(e) {
     errorText.value = e;
 }
+
+const credentialToolTip = computed(() => {
+    const credentialNames = props.options.credentials?.map((service) => service.name);
+    if (!credentialNames.value) {
+        return "";
+    }
+
+    return `This tool requires the following credentials when running the workflow: ${credentialNames.value.join(
+        ", "
+    )}`;
+});
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
@@ -140,7 +156,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     :tool-uuid="props.toolUuid"
                     :sharable-url="props.options.sharable_url"
                     :options="props.options" />
-                <b-button
+                <BButton
                     v-if="allowObjectStoreSelection"
                     id="tool-storage"
                     role="button"
@@ -149,7 +165,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     class="float-right tool-storage"
                     @click="onShowObjectStoreSelect">
                     <FontAwesomeIcon :icon="faHdd" />
-                </b-button>
+                </BButton>
                 <ToolTargetPreferredObjectStorePopover
                     v-if="allowObjectStoreSelection"
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
@@ -174,6 +190,37 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
         </template>
 
         <template v-slot>
+            <ToolCredentials
+                v-if="props.options.credentials && !props.editorView"
+                class="mt-2"
+                :tool-id="props.id"
+                :tool-version="props.version"
+                :tool-credentials-definition="props.options.credentials" />
+
+            <BAlert
+                v-else-if="props.options.credentials && props.editorView"
+                v-b-tooltip.hover
+                variant="info"
+                class="mt-2"
+                show
+                :title="credentialToolTip">
+                <FontAwesomeIcon :icon="faKey" />
+                Requires credentials to run this tool.
+
+                <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
+                <BPopover target="target" triggers="hover" boundary="window">
+                    <div class="d-flex flex-column">
+                        <span
+                            v-for="(service, index) in props.options.credentials"
+                            :key="index"
+                            class="d-flex flex-column">
+                            <b> {{ service.label }}: </b>
+                            {{ service.description }}
+                        </span>
+                    </div>
+                </BPopover>
+            </BAlert>
+
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
             <slot name="default" />
