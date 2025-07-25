@@ -289,7 +289,6 @@ function getHistoryTitleBadges(history: HistorySummary) {
         </template>
 
         <template v-slot:item="{ item: history }">
-            <!-- TODO: Long history names should be truncated, esp in multiview panel -->
             <GCard
                 :id="`history-${history.id}`"
                 :data-pk="history.id"
@@ -308,15 +307,12 @@ function getHistoryTitleBadges(history: HistorySummary) {
                 title-size="text"
                 :title-badges="getHistoryTitleBadges(history)"
                 :title-n-lines="2"
+                :description="isMultiviewPanel ? undefined : history.annotation || undefined"
                 :update-time="history.update_time"
                 @select="historyClicked(history)"
                 @tagClick="setFilterValue('tag', $event)"
                 @title-click="historyClicked(history)"
-                @click="() => historyClicked(history)">
-                <template v-slot:description>
-                    <small v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</small>
-                </template>
-            </GCard>
+                @click="() => historyClicked(history)" />
         </template>
 
         <template v-slot:footer-button-area>
