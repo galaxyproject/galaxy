@@ -736,6 +736,28 @@ workflow_run:
         element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}'] [data-description='dataset hid']"
         <<: *upload_mixin
 
+    sample_sheet:
+      selectors:
+        _: '.sample-sheet-collection-creator'
+        data_import_source_from: '[data-import-source-from="${source}"]'
+        paste_table_textarea: '.paste-data textarea'
+        wizard_next_button: '.wizard-actions .go-next-btn'
+        grid_cell: '[row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"]'
+        grid_cell_input: '[row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"] input'
+        collection_created_message: '[data-description="collection created"]'
+        select_picker: '.ag-picker-field-icon'
+        select_popup:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]'
+        select_listitem:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]'
+        select_item:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[contains(text(), "${item}")]'
+        select_collection: '[data-description="selection collection card"]'
+        collection_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+
   form_element:
     selectors:
       _: 'div.workflow-run-element[id="form-element-${index}"]'
@@ -877,6 +899,10 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
+    collection_type_input:
+      type: xpath
+      selector: >
+        //div[@id='form-element-collection_type']//input
     step_when:
       type: xpath
       selector: >
@@ -932,6 +958,13 @@ workflow_editor:
     modal_button_continue: '.modal-footer .btn'
     workflow_activity: '#activity-workflow-editor-workflows'
     save_as_activity: "#activity-save-workflow-as"
+    column_definitions: '[data-description="edit column definitions"]'
+    add_column_definition: '[data-description="edit column definitions add"]'
+    column_definition_name_by_index: '#form-element-column_definition_${index}_name input'
+    column_definition_description_by_index: '#form-element-column_definition_${index}_description textarea'
+    column_definition_type_by_index: '#form-element-column_definition_${index}_type .multiselect'
+    column_definition_optional_by_index: 'input#column_definition_${index}_optional'
+    column_definition_default_value_by_index: '#form-element-column_definition_${index}_default_value input'
 
 workflow_show:
   selectors:

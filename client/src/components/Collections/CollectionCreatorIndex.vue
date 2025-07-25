@@ -5,7 +5,8 @@ import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
-import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
+import { createHistoryDatasetCollectionInstanceFull, type SampleSheetCollectionType } from "@/api/datasetCollections";
+import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -19,6 +20,7 @@ import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/use
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -27,6 +29,7 @@ interface Props {
     historyId: string;
     show: boolean;
     collectionType: CollectionBuilderType;
+    extendedCollectionType: ExtendedCollectionType;
     selectedItems?: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     extensions?: string[];
@@ -231,6 +234,13 @@ function redrawCreator() {
     }
 }
 
+const sampleSheetType = computed<SampleSheetCollectionType | null>(() => {
+    if (!props.collectionType.startsWith("sample_sheet")) {
+        return null;
+    }
+    return props.collectionType as SampleSheetCollectionType;
+});
+
 defineExpose({ redrawCreator });
 </script>
 
@@ -329,6 +339,17 @@ defineExpose({ redrawCreator });
             mode="modal"
             @on-cancel="hideCreator"
             @on-create="createHDCA" />
+        <SampleSheetCollectionCreator
+            v-else-if="sampleSheetType"
+            :history-id="props.historyId"
+            :initial-elements="creatorItems || []"
+            :default-hide-source-items="props.defaultHideSourceItems"
+            :from-selection="fromSelection"
+            :extensions="props.extensions"
+            :collection-type="sampleSheetType"
+            :extended-collection-type="extendedCollectionType"
+            @on-create="createHDCA"
+            @on-cancel="hideCreator" />
     </component>
 </template>
 

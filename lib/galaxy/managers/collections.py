@@ -190,6 +190,8 @@ class DatasetCollectionManager:
         completed_job=None,
         output_name=None,
         fields: Optional[Union[str, List["FieldDict"]]] = None,
+        column_definitions=None,
+        rows=None,
     ) -> "DatasetCollectionInstance":
         """
         PRECONDITION: security checks on ability to add to parent
@@ -215,6 +217,8 @@ class DatasetCollectionManager:
                 copy_elements=copy_elements,
                 history=history,
                 fields=fields,
+                column_definitions=column_definitions,
+                rows=rows,
             )
 
         implicit_inputs = []
@@ -306,6 +310,8 @@ class DatasetCollectionManager:
         copy_elements: bool = False,
         history=None,
         fields: Optional[Union[str, List["FieldDict"]]] = None,
+        column_definitions=None,
+        rows=None,
     ) -> DatasetCollection:
         # Make sure at least one of these is None.
         assert element_identifiers is None or elements is None
@@ -342,9 +348,12 @@ class DatasetCollectionManager:
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
-            dataset_collection = builder.build_collection(type_plugin, elements, fields=fields)
+            dataset_collection = builder.build_collection(
+                type_plugin, elements, fields=fields, column_definitions=column_definitions, rows=rows
+            )
         else:
             # TODO: Pass fields here - need test case first.
+            # TODO: same with column definitions I think.
             dataset_collection = DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
@@ -813,7 +822,9 @@ class DatasetCollectionManager:
 
         return elements
 
-    def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None, parent_indices=None):
+    def __init_rule_data(
+        self, elements, collection_type_description, parent_identifiers=None, parent_indices=None, parent_columns=None
+    ):
         parent_identifiers = parent_identifiers or []
         parent_indices = parent_indices or []
         data: List[List[str]] = []
@@ -821,6 +832,11 @@ class DatasetCollectionManager:
         for i, element in enumerate(elements):
             indices = parent_indices.copy()
             indices.append(i)
+            columns = parent_columns
+            collection_type_str = collection_type_description.collection_type
+            if columns is None and collection_type_str.startswith("sample_sheet"):
+                columns = element.columns
+                assert isinstance(columns, list)
 
             element_object = element.element_object
             identifiers = parent_identifiers + [element.element_identifier]
@@ -831,6 +847,7 @@ class DatasetCollectionManager:
                     "dataset": element_object,
                     "tags": element_object.make_tag_string_list(),
                     "indices": indices,
+                    "columns": columns,
                 }
                 sources.append(source)
             else:
@@ -840,6 +857,7 @@ class DatasetCollectionManager:
                     child_collection_type_description,
                     identifiers,
                     parent_indices=indices,
+                    parent_columns=columns,
                 )
                 data.extend(element_data)
                 sources.extend(element_sources)

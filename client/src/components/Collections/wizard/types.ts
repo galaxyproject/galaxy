@@ -1,3 +1,4 @@
+import type { HDCADetailed } from "@/api";
 import type { components } from "@/api/schema";
 import type { MAPPING_TARGETS } from "@/components/RuleBuilder/rule-definitions";
 
@@ -15,6 +16,11 @@ export type ParsedFetchWorkbookForCollectionCollectionType =
     components["schemas"]["ParsedFetchWorkbookForCollections"]["collection_type"];
 
 export type RawRowData = string[][];
+export type ParsedSampleSheetWorkbook = components["schemas"]["ParsedWorkbook"];
+export type ParsedWorkbookForCollection = components["schemas"]["ParsedWorkbookForCollection"];
+export type AnyParsedSampleSheetWorkbook = ParsedSampleSheetWorkbook | ParsedWorkbookForCollection;
+export type InitialElements = RawRowData | HDCADetailed | ParsedSampleSheetWorkbook | ParsedWorkbookForCollection;
+export type PrefixColumnsType = "URI" | "ModelObjects";
 
 // types and helpers around initializing the rule builder with data
 export type RuleSelectionType = "raw" | "remote_files";
