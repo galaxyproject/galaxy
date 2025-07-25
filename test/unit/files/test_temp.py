@@ -34,6 +34,7 @@ def file_sources() -> TestConfiguredFileSources:
 def temp_file_source(file_sources: TestConfiguredFileSources) -> BaseFilesSource:
     file_source_pair = file_sources.get_file_source_path(ROOT_URI)
     file_source = file_source_pair.file_source
+    assert isinstance(file_source, TempFilesSource)
     return file_source
 
 
@@ -215,5 +216,9 @@ def _configured_file_sources() -> TestConfiguredFileSources:
     plugin = TEMP_PLUGIN
     plugin["root_path"] = root
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={TEMP_PLUGIN["id"]: plugin}, test_root=root)
-    _populate_test_scenario(file_sources.get_file_source_path(ROOT_URI).file_source)
+    file_source_pair = file_sources.get_file_source_path(ROOT_URI)
+    temp_source = file_source_pair.file_source
+    assert isinstance(temp_source, TempFilesSource)
+    _populate_test_scenario(temp_source)
+
     return file_sources
