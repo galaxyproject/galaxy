@@ -920,3 +920,33 @@ class TestDatasetsApi(ApiTestCase):
         response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
         self._assert_status_code_is(response, 200)
         assert quote(name, safe="") in response.headers["Content-Disposition"]
+
+    def test_copy_dataset_from_history_with_copied_from_fields(self, history_id):
+        original_hda = self.dataset_populator.new_dataset(history_id, content="original data", wait=True)
+        self._assert_copied_from_fields(history_id, original_hda["id"], None, None, None)
+
+        copy_payload = {"content": original_hda["id"], "source": "hda", "type": "dataset"}
+        copied_hda_id = self._post(f"histories/{history_id}/contents", data=copy_payload, json=True).json()["id"]
+        self._assert_copied_from_fields(history_id, copied_hda_id, original_hda["id"], None, None)
+
+    @requires_new_library
+    def test_copy_dataset_from_library_with_copied_from_fields(self, history_id):
+        library_dataset = self.library_populator.new_library_dataset("test_library_dataset")
+        copy_payload = {"content": library_dataset["id"], "source": "library", "type": "dataset"}
+        copied_hda_id = self._post(f"histories/{history_id}/contents", data=copy_payload, json=True).json()["id"]
+        self._assert_copied_from_fields(
+            history_id, copied_hda_id, None, library_dataset["ldda_id"], library_dataset["ldda_id"]
+        )
+
+    def _assert_copied_from_fields(
+        self, history_id, hda_id, expected_history_id, expected_ldda_id, expected_library_id
+    ):
+        keys = "copied_from_history_dataset_association_id,copied_from_ldda_id,copied_from_library_dataset_dataset_association_id"
+        for url in [
+            f"datasets/{hda_id}?keys={keys}",
+            f"histories/{history_id}/contents/datasets/{hda_id}?keys={keys}",
+        ]:
+            data = self._get(url).json()
+            assert data["copied_from_history_dataset_association_id"] == expected_history_id
+            assert data["copied_from_ldda_id"] == expected_ldda_id
+            assert data["copied_from_library_dataset_dataset_association_id"] == expected_library_id
