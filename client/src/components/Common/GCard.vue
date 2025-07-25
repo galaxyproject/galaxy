@@ -3,7 +3,7 @@ import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
@@ -274,6 +274,11 @@ const getElementId = (cardId: string, element: string) => `g-card-${element}-${c
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
+
+/**
+ * Number of lines before title truncation (undefined = no truncation)
+ */
+const allowedTitleLines = computed(() => props.titleNLines);
 </script>
 
 <template>
@@ -289,7 +294,6 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
             { 'g-card-published': published },
             containerClass,
         ]"
-        :style="{ '--title-n-lines': props.titleNLines }"
         :tabindex="props.clickable ? 0 : undefined"
         @click="props.clickable ? emit('click') : undefined"
         @keydown.enter="props.clickable ? emit('click') : undefined">
@@ -702,8 +706,8 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
         .g-card-title-truncate {
             display: -webkit-box;
             -webkit-box-orient: vertical;
-            -webkit-line-clamp: var(--title-n-lines);
-            line-clamp: var(--title-n-lines);
+            -webkit-line-clamp: v-bind(allowedTitleLines);
+            line-clamp: v-bind(allowedTitleLines);
             overflow: hidden;
             line-height: 1.2;
             white-space: normal;
