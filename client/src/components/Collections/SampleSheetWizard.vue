@@ -9,8 +9,7 @@ import {
     fetchCollectionDetails,
     type SampleSheetCollectionType,
 } from "@/api/datasetCollections";
-import { ERROR_STATES, TERMINAL_STATES } from "@/api/jobs";
-import { fetch, type FetchDataPayload, fetchJobErrorMessage, type HdcaUploadTarget } from "@/api/tools";
+import type { FetchDataPayload, HdcaUploadTarget } from "@/api/tools";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
 import { downloadWorkbook, parseWorkbook, withAutoListIdentifiers } from "@/components/Collections/sheet/workbooks";
@@ -21,8 +20,8 @@ import type {
 } from "@/components/Collections/wizard/types";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
+import { useFetchJobMonitor } from "@/composables/fetch";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useJobStore } from "@/stores/jobStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { attemptCreate, type CollectionCreatorComponent } from "./common/useCollectionCreator";
@@ -332,46 +331,29 @@ const isSimpleSampleSheet = computed(() => {
     return props.collectionType === "sample_sheet";
 });
 
-const fetchJobId = ref<string | undefined>(undefined);
 const waitingOnCollectionCreateApi = ref<boolean>(false);
 const collectionCreateError = ref<string | undefined>(undefined);
 const collectionCreated = ref<boolean>(false);
-const { getJob, pollJobUntilTerminal } = useJobStore();
 
-const job = computed(() => {
-    if (fetchJobId.value) {
-        const jobId = fetchJobId.value;
-        const job = getJob(jobId);
-        if (job) {
-            return job;
-        }
-    }
-    return undefined;
-});
+const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJobMonitor();
 
 async function onFetchTarget(fetchTarget: HdcaUploadTarget) {
     const fetchPayload: FetchDataPayload = {
         history_id: currentHistoryId.value as string,
         targets: [fetchTarget],
     };
-    try {
-        const jobId = await fetch(fetchPayload);
-        fetchJobId.value = jobId;
-        pollJobUntilTerminal({ id: jobId });
-        // we monitor the job with the watch below and update the state when needed.
-    } catch (e) {
-        console.log(e);
-    }
+    fetchAndWatch(fetchPayload);
 }
 
-watch(job, (newValue) => {
-    const state = newValue?.state ?? "new";
-    if (TERMINAL_STATES.indexOf(state) !== -1) {
-        if (ERROR_STATES.indexOf(state) !== -1) {
-            collectionCreateError.value = fetchJobErrorMessage(newValue!);
-        } else {
-            collectionCreated.value = true;
-        }
+watch(fetchComplete, (newValue) => {
+    if (newValue) {
+        collectionCreated.value = true;
+    }
+});
+
+watch(fetchError, (newValue) => {
+    if (newValue) {
+        collectionCreateError.value = newValue;
     }
 });
 
@@ -391,7 +373,7 @@ const wizardIsBusy = computed(() => {
         sourceIsBusy.value ||
         fetchingCollection.value ||
         waitingOnCollectionCreateApi.value ||
-        !!job.value ||
+        waitingOnFetch.value ||
         collectionCreated.value
     );
 });
@@ -464,7 +446,7 @@ async function download() {
                     >Sample sheet collection successfully created!</BAlert
                 >
             </div>
-            <div v-else-if="job">
+            <div v-else-if="waitingOnFetch">
                 <LoadingSpan message="Waiting on data import job for sample sheet collection" />
             </div>
             <div v-else-if="waitingOnCollectionCreateApi">
