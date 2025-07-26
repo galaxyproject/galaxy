@@ -356,7 +356,7 @@ defineExpose({
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" />
+            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"

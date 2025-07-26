@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -9,8 +8,8 @@ import { getTestExtensions } from "./utilities";
 
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import VisualizationHeader from "@/components/Visualizations/VisualizationHeader.vue";
 
 const router = useRouter();
@@ -92,28 +91,36 @@ onMounted(() => {
 </script>
 
 <template>
-    <ActivityPanel
+    <component
+        :is="props.datasetId ? 'div' : ActivityPanel"
         title="Visualizations"
         :go-to-all-title="datasetId ? undefined : 'Saved Visualizations'"
         href="/visualizations/list">
         <template v-slot:header>
             <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
         </template>
-        <div>
-            <LoadingSpan v-if="isLoading" message="Loading visualizations" />
-            <div v-else-if="filteredPlugins.length > 0">
-                <div v-for="plugin in filteredPlugins" :key="plugin.name">
-                    <ButtonPlain
-                        class="plugin-item rounded p-2"
-                        :data-plugin-name="plugin.name"
-                        @click="selectVisualization(plugin)">
-                        <VisualizationHeader :plugin="plugin" />
-                    </ButtonPlain>
-                </div>
-            </div>
-            <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
-        </div>
-    </ActivityPanel>
+        <template v-if="props.datasetId">
+            <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />
+        </template>
+        <ScrollList
+            :item-key="(plugin) => plugin.name"
+            :in-panel="!props.datasetId"
+            name="visualization"
+            name-plural="visualizations"
+            load-disabled
+            :prop-items="filteredPlugins"
+            :prop-total-count="plugins.length"
+            :prop-busy="isLoading">
+            <template v-slot:item="{ item: plugin }">
+                <ButtonPlain
+                    class="plugin-item rounded p-2"
+                    :data-plugin-name="plugin.name"
+                    @click="selectVisualization(plugin)">
+                    <VisualizationHeader :plugin="plugin" />
+                </ButtonPlain>
+            </template>
+        </ScrollList>
+    </component>
 </template>
 
 <style lang="scss">

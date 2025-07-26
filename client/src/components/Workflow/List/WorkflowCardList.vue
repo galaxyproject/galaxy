@@ -18,6 +18,7 @@ interface Props {
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
+    compact?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
 }
@@ -28,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: true,
     publishedView: false,
     editorView: false,
+    compact: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
 });
@@ -95,6 +97,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :filterable="props.filterable"
             :published-view="props.publishedView"
             :editor-view="props.editorView"
+            :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
