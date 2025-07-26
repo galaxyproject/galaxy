@@ -206,7 +206,7 @@ sqlalchemy==2.0.40
 sqlitedict==2.1.0
 sqlparse==0.5.3
 starlette-context==0.4.0
-starlette==0.46.2
+starlette==0.47.2
 supervisor==4.2.5
 svgwrite==1.4.3
 tenacity==9.1.2
