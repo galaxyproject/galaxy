@@ -8,8 +8,8 @@ ase==3.25.0
 async-timeout==5.0.1 ; python_full_version < '3.11'
 attrs==25.3.0
 axe-selenium-python==2.1.6
-boto3==1.38.46
-botocore==1.38.46
+boto3==1.39.8
+botocore==1.39.8
 cachecontrol==0.14.3
 cattrs==25.1.1
 certifi==2025.7.14
@@ -21,7 +21,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
 colorlog==6.9.0
 contourpy==1.3.0 ; python_full_version < '3.10'
 contourpy==1.3.2 ; python_full_version >= '3.10'
-coverage==7.9.2
+coverage==7.10.0
 cwltest==2.6.20250314152537
 cycler==0.12.1
 decorator==5.2.1
@@ -65,7 +65,7 @@ multidict==6.6.3
 mypy-extensions==1.1.0
 numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'
-numpy==2.3.1 ; python_full_version >= '3.11'
+numpy==2.3.2 ; python_full_version >= '3.11'
 onedatafilerestclient==21.2.5.2
 outcome==1.3.0.post0
 owlrl==6.0.2 ; python_full_version < '3.10'
@@ -77,7 +77,7 @@ pfzy==0.3.4
 pillow==11.3.0
 pkce==1.0.3
 platformdirs==4.3.8
-playwright==1.53.0
+playwright==1.54.0
 pluggy==1.6.0
 port-for==0.7.4
 prettytable==3.16.0
@@ -121,9 +121,9 @@ roc-validator==0.7.3 ; python_full_version >= '3.10'
 rpds-py==0.26.0
 ruamel-yaml==0.18.14
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
-rucio-clients==37.7.0
+rucio-clients==37.7.1
 s3transfer==0.13.1
-schema-salad==8.9.20250408123006
+schema-salad==8.9.20250723145140
 scipy==1.13.1 ; python_full_version < '3.10'
 scipy==1.15.3 ; python_full_version == '3.10.*'
 scipy==1.16.0 ; python_full_version >= '3.11'
