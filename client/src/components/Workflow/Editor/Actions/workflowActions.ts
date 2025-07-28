@@ -1,15 +1,15 @@
 import { nextTick, reactive } from "vue";
 
 import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
-import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
-import { getModule } from "@/components/Workflow/Editor/modules/services";
 import {
     convertOpenConnections,
     type InputReconnectionMap,
     type OutputReconnectionMap,
-} from "@/components/Workflow/Editor/Tools/modules/convertOpenConnections";
-import { removeOpenConnections } from "@/components/Workflow/Editor/Tools/modules/removeOpenConnections";
-import { getTraversedSelection } from "@/components/Workflow/Editor/Tools/modules/traversedSelection";
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
+import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
+import { getModule } from "@/components/Workflow/Editor/modules/services";
+import { getTraversedSelection } from "@/components/Workflow/Editor/modules/traversedSelection";
 import { Services } from "@/components/Workflow/services";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
