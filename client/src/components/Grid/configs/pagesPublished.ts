@@ -97,6 +97,7 @@ const fields: FieldArray = [
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
     slug: { handler: contains("slug"), menuItem: false },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**
