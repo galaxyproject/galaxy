@@ -109,6 +109,7 @@
                 <UserToolPanel
                     v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
                     :in-workflow-editor="true"
+                    in-panel
                     @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>

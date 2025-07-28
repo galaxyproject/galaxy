@@ -3,7 +3,7 @@ import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
@@ -152,6 +152,11 @@ interface Props {
      */
     titleIcon?: TitleIcon;
 
+    /** Whether the title should be truncated to a certain number of lines
+     * @default undefined
+     */
+    titleNLines?: number;
+
     /** Size of the card title
      * @default "sm"
      */
@@ -197,6 +202,7 @@ const props = withDefaults(defineProps<Props>(), {
     title: "",
     titleBadges: () => [],
     titleIcon: undefined,
+    titleNLines: undefined,
     titleSize: "sm",
     updateTime: "",
     updateTimeIcon: () => faEdit,
@@ -268,6 +274,11 @@ const getElementId = (cardId: string, element: string) => `g-card-${element}-${c
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
+
+/**
+ * Number of lines before title truncation (undefined = no truncation)
+ */
+const allowedTitleLines = computed(() => props.titleNLines);
 </script>
 
 <template>
@@ -275,7 +286,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
         :is="'div'"
         :id="`g-card-${props.id}`"
         :role="props.clickable ? 'button' : undefined"
-        class="g-card pt-0 px-1 pb-2"
+        class="g-card pt-0 px-1 mb-2"
         :class="[
             { 'g-card-grid-view': gridView },
             { 'g-card-selected': selected },
@@ -301,7 +312,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <slot name="select">
                                         <BFormCheckbox
                                             :id="getElementId(props.id, 'select')"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :checked="selected"
                                             :title="props.selectTitle || localize('Select for bulk actions')"
                                             @change="emit('select')" />
@@ -314,7 +325,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             :id="getElementId(props.id, 'title')"
                                             bold
                                             inline
-                                            class="d-inline"
+                                            class="align-items-baseline"
                                             :size="props.titleSize">
                                             <FontAwesomeIcon
                                                 v-if="props.titleIcon?.icon"
@@ -323,17 +334,23 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 :title="props.titleIcon.title"
                                                 :size="props.titleIcon.size"
                                                 fixed-width />
-
                                             <BLink
                                                 v-if="typeof title === 'object'"
                                                 :id="getElementId(props.id, 'title-link')"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 :title="localize(title.title)"
+                                                :class="{ 'g-card-title-truncate': props.titleNLines }"
                                                 @click.stop.prevent="title.handler">
                                                 {{ title.label }}
                                             </BLink>
                                             <template v-else>
-                                                <span :id="getElementId(props.id, 'title-text')">{{ title }}</span>
+                                                <span
+                                                    :id="getElementId(props.id, 'title-text')"
+                                                    v-b-tooltip.hover.noninteractive
+                                                    :title="localize(title)"
+                                                    :class="{ 'g-card-title-truncate': props.titleNLines }">
+                                                    {{ title }}
+                                                </span>
                                             </template>
 
                                             <slot name="titleActions">
@@ -360,7 +377,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
                                             :key="badge.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :pill="badge.type !== 'badge'"
                                             class="mt-1"
                                             :class="{
@@ -391,7 +408,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 props.bookmarked ? 'bookmark-remove' : 'bookmark-add'
                                             )
                                         "
-                                        v-b-tooltip.hover
+                                        v-b-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
@@ -401,7 +418,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                     <BButton
                                         v-else
                                         :id="getElementId(props.id, 'bookmark-loading')"
-                                        v-b-tooltip.hover
+                                        v-b-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="localize('Bookmarking...')"
@@ -486,7 +503,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
                                                 :variant="indicator.variant || 'outline-secondary'"
@@ -506,7 +523,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="indicator.id"
-                                                v-b-tooltip.hover
+                                                v-b-tooltip.hover.noninteractive
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
                                                 :size="indicator.size || 'sm'"
@@ -575,7 +592,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
                                             :variant="sa.variant || 'outline-primary'"
@@ -604,7 +621,7 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
                                             v-if="pa.visible ?? true"
                                             :id="getActionId(props.id, pa.id)"
                                             :key="pa.id"
-                                            v-b-tooltip.hover
+                                            v-b-tooltip.hover.noninteractive
                                             :disabled="pa.disabled"
                                             :title="localize(pa.title)"
                                             :variant="pa.variant || 'primary'"
@@ -685,6 +702,17 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
         background-color: $body-bg;
         border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
+
+        .g-card-title-truncate {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: v-bind(allowedTitleLines);
+            line-clamp: v-bind(allowedTitleLines);
+            overflow: hidden;
+            line-height: 1.2;
+            white-space: normal;
+            text-overflow: unset;
+        }
 
         .g-card-secondary-action-label {
             @container g-card (max-width: #{$breakpoint-sm}) {
