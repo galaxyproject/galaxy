@@ -44,7 +44,7 @@
 
 <script>
 import { faFileImport } from "@fortawesome/free-solid-svg-icons";
-import FontAwesomeIcon from "@fortawesome/vue-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapActions, mapState } from "pinia";
 
 import { isAnonymousUser } from "@/api";
