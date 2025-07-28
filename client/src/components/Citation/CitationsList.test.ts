@@ -1,11 +1,14 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import VueRouter from "vue-router";
 
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
 
 const localVue = getLocalVue(true);
+localVue.use(VueRouter);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -38,12 +41,19 @@ describe("CitationsList", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(async () => {
+        const pinia = createTestingPinia();
+
+        const router = new VueRouter();
+        router.push("/histories/citations?id=test-id");
+
         wrapper = mount(MountTarget as object, {
             propsData: {
                 id: "test-id",
                 source: "histories",
             },
             localVue,
+            pinia,
+            router,
         });
 
         await flushPromises();
