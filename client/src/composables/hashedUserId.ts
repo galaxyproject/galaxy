@@ -11,7 +11,7 @@ async function hash32(value: string): Promise<string> {
     return bufferToString(hashBuffer);
 }
 
-function bufferToString(buffer: ArrayBuffer): string {
+function bufferToString(buffer: Uint8Array<ArrayBuffer> | ArrayBuffer): string {
     const u8Array = new Uint8Array(buffer);
     const hashString = window.btoa(String.fromCharCode(...u8Array));
 
