@@ -2,16 +2,16 @@
 import { faExclamation, faLock, faShareAlt, faUserLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BTab, BTabs } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
-import Heading from "../Common/Heading.vue";
 import PortletSection from "../Common/PortletSection.vue";
 import SharingPage from "../Sharing/SharingPage.vue";
 import HistoryDatasetPermissions from "./HistoryDatasetPermissions.vue";
 import HistoryMakePrivate from "./HistoryMakePrivate.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -24,6 +24,16 @@ const historyPrivacyChanged = ref(false);
 
 /** Once the history is made private, this boolean is used to notify the user if sharing status has also changed or not. */
 const sharingStatusChanged = ref(false);
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: historyStore.getHistoryNameById(props.historyId),
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Share & Manage Access" },
+]);
 
 function historyMadePrivate(hasSharingStatusChanged: boolean) {
     sharingStatusChanged.value = hasSharingStatusChanged;
@@ -38,10 +48,7 @@ function openSharingTab() {
 
 <template>
     <div aria-labelledby="history-sharing-heading">
-        <Heading id="history-sharing-heading" h1 separator inline truncate size="lg">
-            {{ localize("Manage History") }}
-            "{{ historyStore.getHistoryNameById(props.historyId) }}"
-        </Heading>
+        <BreadcrumbHeading :items="breadcrumbItems" />
 
         <BTabs class="mt-3">
             <BTab :lazy="historyPrivacyChanged" @click="openSharingTab">
