@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -32,6 +32,10 @@ function inputDialog() {
 
 watch(targetCollection, () => {
     emit("onChange", targetCollection.value);
+});
+
+onMounted(() => {
+    inputDialog();
 });
 </script>
 

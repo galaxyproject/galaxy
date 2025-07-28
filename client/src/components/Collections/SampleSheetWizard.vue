@@ -386,14 +386,19 @@ async function download() {
 <template>
     <GenericWizard :use="wizard" :is-busy="wizardIsBusy" :submit-button-label="importButtonLabel" @submit="submit">
         <div v-if="wizard.isCurrent('select-source')">
-            <BCardGroup deck>
+            <BCardGroup columns>
                 <SourceFromRemoteFiles
                     v-if="isSimpleSampleSheet"
                     :selected="sourceFrom === 'remote_files'"
+                    for-what="sample_sheet"
                     @select="setSourceForm" />
-                <SourceFromPastedData :selected="sourceFrom === 'pasted_table'" @select="setSourceForm" />
+                <SourceFromPastedData
+                    :selected="sourceFrom === 'pasted_table'"
+                    for-what="sample_sheet"
+                    @select="setSourceForm" />
                 <SourceFromDatasetAsTable
                     v-if="isSimpleSampleSheet"
+                    for-what="sample_sheet"
                     :selected="sourceFrom === 'dataset_as_table'"
                     @select="setSourceForm" />
                 <SourceFromWorkbook
