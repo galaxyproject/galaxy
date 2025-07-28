@@ -1,7 +1,7 @@
 import { until } from "@vueuse/core";
 import { computed, inject, type Ref, unref } from "vue";
 
-import { removeOpenConnections } from "@/components/Workflow/Editor/Tools/modules/removeOpenConnections";
+import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
 import { Services } from "@/components/Workflow/services";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";

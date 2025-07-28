@@ -1,5 +1,5 @@
+import { onAllInputs } from "@/components/Workflow/Editor/modules/onAllInputs";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
-import { onAllInputs } from "@/components/Workflow/Editor/Tools/modules/onAllInputs";
 import type { WorkflowSearchStore } from "@/stores/workflowSearchStore";
 import {
     type CollectionOutput,

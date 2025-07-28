@@ -1,4 +1,4 @@
-import { onAllInputs } from "@/components/Workflow/Editor/Tools/modules/onAllInputs";
+import { onAllInputs } from "@/components/Workflow/Editor/modules/onAllInputs";
 import type { Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
