@@ -9,11 +9,11 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -22,6 +22,7 @@ import { clearDrag } from "@/utils/setDrag";
 
 import { JobStateSummary } from "./Collection/JobStateSummary";
 import { getContentItemState, type StateMap, STATES } from "./model/states";
+import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentOptions from "./ContentOptions.vue";
@@ -277,18 +278,20 @@ function onDisplay() {
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
-            // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(displayUrl, {
+            const options: RouterPushOptions = {
                 force: true,
                 preventWindowManager: !isWindowManagerActive,
                 title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
-            });
-        } else if (displayUrl) {
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(displayUrl, {
+            router.push(displayUrl, options);
+        } else if (displayUrl) {
+            const options: RouterPushOptions = {
                 preventWindowManager: !isWindowManagerActive,
                 title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
-            });
+            };
+            // @ts-ignore - monkeypatched router, drop with migration.
+            router.push(displayUrl, options);
         }
     }
 }
