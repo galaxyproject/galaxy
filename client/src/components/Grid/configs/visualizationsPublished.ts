@@ -76,7 +76,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: VisualizationEntry) => {
+            emit(`/visualizations/list_published?f-username=${data.username}`);
+        },
     },
     {
         key: "tags",

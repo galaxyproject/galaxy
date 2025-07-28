@@ -87,7 +87,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: PageEntry) => {
+            emit(`/pages/list_published?f-username=${data.username}`);
+        },
     },
 ];
 
