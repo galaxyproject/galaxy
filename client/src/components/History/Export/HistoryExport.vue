@@ -30,7 +30,6 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
 import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
     isRunning: isExportTaskRunning,
