@@ -9308,10 +9308,21 @@ export interface components {
              */
             dep: string;
             /**
+             * Id
+             * @description ID of the referenced dataset
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
              * Name
              * @description Name of the referenced dataset
              */
             name: string;
+            /**
+             * Same User
+             * @description Whether the referenced dataset belongs to the same user.
+             */
+            same_user: boolean;
         };
         /**
          * DatasetPermissionAction
