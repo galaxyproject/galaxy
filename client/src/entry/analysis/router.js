@@ -662,9 +662,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "visualizations/list_published",
                         component: GridVisualization,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "visualizations/list_shared",

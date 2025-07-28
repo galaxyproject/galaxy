@@ -103,6 +103,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**
