@@ -6,13 +6,14 @@ import { computed, onMounted, onUpdated, ref } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
+import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
 
 import type { Citation } from ".";
 import { Cite } from "./cite";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
-import Heading from "@/components/Common/Heading.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { config } = useConfig(true);
+const historyStore = useHistoryStore();
 
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
@@ -52,6 +54,16 @@ onMounted(async () => {
         isLoading.value = false;
     }
 });
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: historyStore.getHistoryNameById(props.id),
+        to: `/histories/view?id=${props.id}`,
+        superText: historyStore.currentHistoryId === props.id ? "current" : undefined,
+    },
+    { title: "Tool References" },
+]);
 
 /** The fetched Citations in addition to the Galaxy citation from config */
 const citations = computed<Citation[]>(() => {
@@ -120,7 +132,8 @@ function citationsToBibtexAsText() {
 
 <template>
     <div>
-        <Heading h1 separator inline size="lg">History Tool References</Heading>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
         <div v-if="isLoading" class="text-center">
             <BSpinner />
             <p class="ml-2">Loading references...</p>
