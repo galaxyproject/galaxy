@@ -6,6 +6,7 @@ import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+import Filtering, { compare, toDate, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -29,6 +30,7 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>
 ) {
+    const filterQueryParams = extraProps?.filterQueryParams || {};
     const params = {
         limit,
         offset,
@@ -36,6 +38,10 @@ export async function getData(
         sort_desc,
         include_nested_invocations: false,
     } as Record<string, unknown>;
+
+    if (Object.keys(filterQueryParams).length > 0) {
+        Object.assign(params, filterQueryParams);
+    }
 
     if (extraProps && "include_terminal" in extraProps) {
         params["include_terminal"] = extraProps["include_terminal"];
@@ -151,12 +157,26 @@ const fields: FieldArray = [
 ];
 
 /**
+ * Declare filter options
+ */
+const validFilters: Record<string, ValidFilter<number>> = {
+    create_time: {
+        placeholder: "creation time",
+        type: Date,
+        handler: compare("create_time", "le", toDate),
+        isRangeInput: true,
+        menuItem: true,
+    },
+};
+
+/**
  * Grid configuration
  */
 const gridConfig: GridConfig = {
     id: "invocations-grid",
     actions: actions,
     fields: fields,
+    filtering: new Filtering(validFilters, undefined, true, false),
     getData: getData,
     plural: "Workflow Invocations",
     sortBy: "create_time",

@@ -110,6 +110,7 @@ function refreshTable() {
             :grid-message="props.headerMessage"
             :no-data-message="effectiveNoInvocationsMessage"
             :extra-props="extraProps"
+            standalone
             :embedded="forStoredWorkflow || forHistory || forBatch">
             <template v-slot:expanded="{ rowData }">
                 <span class="mb-2" :data-invocation-id="rowData.id">

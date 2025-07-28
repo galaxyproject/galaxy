@@ -47,6 +47,8 @@ interface Props {
     usernameSearch?: string;
     // any extra props to be passed to `getData`
     extraProps?: Record<string, unknown>;
+    /** Whether the filter menu should be standalone or not */
+    standalone?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -168,6 +170,11 @@ async function getGridData() {
             return;
         }
         try {
+            // TODO: Feels a little hacky, better to type `getData` to accept `filterQueryParams` as an argument
+            const extraProps = {
+                ...props.extraProps,
+                filterQueryParams: validatedFilterQueryParamDict(),
+            };
             const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
             const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
@@ -175,7 +182,7 @@ async function getGridData() {
                 validatedFilterText(),
                 sortBy.value,
                 sortDesc.value,
-                props.extraProps
+                extraProps
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
@@ -250,6 +257,14 @@ function onFilter(filter?: string) {
     }
 }
 
+function onSearch(filters: Record<string, string | boolean>, text?: string) {
+    if (props.standalone) {
+        filterText.value = text || "";
+    }
+
+    // TODO: We can handle other on-search variables here if needed
+}
+
 // Select multiple rows
 function onSelect(rowData: RowData) {
     if (selected.value.has(rowData)) {
@@ -293,6 +308,21 @@ function validatedFilterText() {
     }
     // there are valid filters derived from the `filterText`
     return filterClass?.getFilterText(validFilters.value || {}, false) || "";
+}
+
+/**
+ * Returns an object with filter keys ("q") and values ("qv") for backend queries.
+ * Example: { q: ["name", "create_time"], qv: ["test", "2023-01-01"] }
+ */
+function validatedFilterQueryParamDict() {
+    const initDict = filterClass?.getQueryDict(filterText.value) || {};
+    if (Object.keys(initDict).length === 0) {
+        return {};
+    }
+    return {
+        q: Object.keys(initDict),
+        qv: Object.values(initDict),
+    };
 }
 
 /**
@@ -355,9 +385,11 @@ watch(operationMessage, () => {
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
                 :filter-text.sync="filterText"
+                :menu-type="props.standalone ? 'standalone' : undefined"
                 :loading="initDataLoading || resultsLoading"
                 :show-advanced.sync="showAdvanced"
-                view="compact" />
+                view="compact"
+                @on-search="onSearch" />
         </div>
         <LoadingSpan v-if="initDataLoading" />
         <span v-else-if="!isAvailable || hasInvalidFilters">

@@ -55,6 +55,7 @@ from galaxy import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import (
+    base,
     deletable,
     sharable,
 )
@@ -517,6 +518,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         sort_desc=None,
         include_nested_invocations=True,
         check_ownership=True,
+        filters=[],
     ) -> Tuple[List, int]:
         """Get invocations owned by the current user."""
 
@@ -544,6 +546,11 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 .exists()
             )
             stmt = stmt.where(~subquery)
+
+        # Apply any filters from the filters array
+        for filter_item in filters:
+            if hasattr(filter_item, "filter_type") and filter_item.filter_type == "orm":
+                stmt = stmt.where(filter_item.filter)
 
         total_matches = get_count(trans.sa_session, stmt)
 
@@ -2140,6 +2147,19 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
         return sa_session.execute(stmnt.order_by(model.StoredWorkflow.id.desc()).limit(1)).scalar()
+
+
+class InvocationFilters(base.ModelFilterParser):
+    model_class = model.WorkflowInvocation
+    model_manager_class = WorkflowsManager
+
+    def _add_parsers(self):
+        super()._add_parsers()
+        self.orm_filter_parsers.update(
+            {
+                "create_time": {"op": ("le", "ge", "gt", "lt"), "val": self.parse_date},
+            }
+        )
 
 
 class RefactorRequest(RefactorActions):

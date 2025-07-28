@@ -16,6 +16,7 @@ from typing import (
 
 from fastapi import (
     Body,
+    Depends,
     Path,
     Query,
     Response,
@@ -51,6 +52,7 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
@@ -112,7 +114,10 @@ from galaxy.webapps.galaxy.api import (
     Router,
     search_query_param,
 )
-from galaxy.webapps.galaxy.api.common import SerializationViewQueryParam
+from galaxy.webapps.galaxy.api.common import (
+    get_filter_query_params,
+    SerializationViewQueryParam,
+)
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
@@ -1335,6 +1340,7 @@ class FastAPIInvocations:
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
         sort_desc: InvocationsSortDescQueryParam = False,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         include_terminal: InvocationsIncludeTerminalQueryParam = True,
         limit: InvocationsLimitQueryParam = 20,
         offset: InvocationsOffsetQueryParam = None,
@@ -1365,7 +1371,12 @@ class FastAPIInvocations:
             view=view,
             step_details=step_details,
         )
-        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
+        invocations, total_matches = self.invocations_service.index(
+            trans,
+            invocation_payload,
+            serialization_params,
+            filter_query_params=filter_query_params,
+        )
         response.headers["total_matches"] = str(total_matches)
         return invocations
 
