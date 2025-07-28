@@ -518,7 +518,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         sort_desc=None,
         include_nested_invocations=True,
         check_ownership=True,
-        filters=[],
+        filters=None,
     ) -> Tuple[List, int]:
         """Get invocations owned by the current user."""
 
@@ -547,10 +547,11 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             )
             stmt = stmt.where(~subquery)
 
-        # Apply any filters from the filters array
-        for filter_item in filters:
-            if hasattr(filter_item, "filter_type") and filter_item.filter_type == "orm":
-                stmt = stmt.where(filter_item.filter)
+        if filters is not None:
+            # Apply any filters from the filters array
+            for filter_item in filters:
+                if hasattr(filter_item, "filter_type") and filter_item.filter_type == "orm":
+                    stmt = stmt.where(filter_item.filter)
 
         total_matches = get_count(trans.sa_session, stmt)
 
