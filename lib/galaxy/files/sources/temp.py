@@ -4,6 +4,7 @@ from typing import (
 )
 
 from fs.osfs import OSFS
+from typing_extensions import Unpack
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -28,9 +29,12 @@ class TempFileSourceConfiguration(BaseFileSourceConfiguration):
 class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, TempFileSourceConfiguration]):
     """A FilesSource plugin for temporary file systems.
 
-    Used for testing and other temporary file system needs.
+    Since fsspec does not have temporary file system implementation, this plugin
+    uses a local file system with a specified root path (ideally a temporary directory)
+    to simulate a temporary file system. Files created in this source are not
+    guaranteed to be deleted automatically, so users should manage cleanup as needed.
 
-    Note: This plugin is not intended for production use.
+    **Note: This plugin is not intended for production use. It is primarily for testing and development purposes.**
     """
 
     plugin_type = "temp"
@@ -56,16 +60,21 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
             raise ValueError("The config value for 'root_path' must be set for TempFilesSource.")
 
     def _to_temp_path(self, path: str) -> str:
-        """Convert a virtual temp path to an actual filesystem path."""
-        self._ensure_root_path()
+        """Convert a virtual temp path to an actual filesystem path.
 
+        i.e. /a/b/c -> /{root_path}/a/b/c
+        """
+        self._ensure_root_path()
         relative_path = path.lstrip(os.sep)
         if not relative_path:
             return self._root_path
         return os.path.join(self._root_path, relative_path)
 
     def _from_temp_path(self, native_path: str) -> str:
-        """Convert an actual filesystem path back to virtual temp path."""
+        """Convert an actual filesystem path back to virtual temp path.
+
+        i.e. /{root_path}/a/b/c -> /a/b/c
+        """
         self._ensure_root_path()
         native_path = native_path.replace(self._root_path, os.sep, 1)
         return native_path
