@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import type { RawLocation } from "vue-router";
 import { useRouter } from "vue-router/composables";
@@ -33,9 +34,11 @@ function isPathActive(path: RawLocation): boolean {
                     :title="`Go back to ${localize(item.title)}`"
                     :to="item.to"
                     class="breadcrumb-heading-header-active">
+                    <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
                 </BLink>
                 <span v-else :key="'else-' + index" class="breadcrumb-heading-header-inactive">
+                    <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
                 </span>
 
