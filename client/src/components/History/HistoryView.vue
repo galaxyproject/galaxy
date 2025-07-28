@@ -43,6 +43,7 @@
 </template>
 
 <script>
+import { faFileImport } from "@fortawesome/free-solid-svg-icons";
 import FontAwesomeIcon from "@fortawesome/vue-fontawesome";
 import { mapActions, mapState } from "pinia";
 
@@ -76,6 +77,7 @@ export default {
     },
     data() {
         return {
+            faFileImport,
             selectedCollections: [],
             copySuccess: false,
         };
