@@ -26,6 +26,7 @@ import type { HistoryExportData } from "./types";
 import HistoryExportWizard from "./HistoryExportWizard.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -221,16 +222,31 @@ onUnmounted(() => {
     stopWaitingForTask();
     stopMonitoringShortTermStorage();
 });
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: historyName.value,
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Export", icon: faFileExport },
+]);
 </script>
+
 <template>
     <div class="history-export-component">
-        <Heading h1 separator inline>
-            <FontAwesomeIcon :icon="faFileExport" class="text-primary float-left mr-2" />
-            Export
-            <b v-if="isFatalError" class="text-danger">Error</b>
-            <LoadingSpan v-else-if="!history" spinner-only />
-            <b v-else id="history-name">{{ historyName }}</b>
-        </Heading>
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <GButton
+                v-if="hasPreviousExports"
+                id="show-old-records-button"
+                outline
+                color="blue"
+                @click="onShowOldRecords">
+                <FontAwesomeIcon :icon="faList" class="mr-1" />
+                Show old export records
+            </GButton>
+        </BreadcrumbHeading>
 
         <BAlert v-if="isFatalError" id="fatal-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
@@ -238,7 +254,6 @@ onUnmounted(() => {
 
         <div v-if="history">
             <div v-if="latestExportRecord">
-                <Heading h2 size="md">Latest Export Record</Heading>
                 <ExportRecordDetails
                     v-if="latestExportRecord"
                     :record="latestExportRecord"
@@ -249,16 +264,6 @@ onUnmounted(() => {
                     @onCopyDownloadLink="copyDownloadLinkFromRecord"
                     @onReimport="reimportFromRecord"
                     @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-
-                <GButton
-                    v-if="hasPreviousExports"
-                    id="show-old-records-button"
-                    outline
-                    color="blue"
-                    @click="onShowOldRecords">
-                    <FontAwesomeIcon :icon="faList" class="mr-1" />
-                    Show old export records
-                </GButton>
 
                 <Heading h2 size="md" class="mt-3">Export your history again</Heading>
             </div>
