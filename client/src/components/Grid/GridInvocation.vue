@@ -22,6 +22,7 @@ interface Props {
     ownerGrid?: boolean;
     filteredFor?: { type: "History" | "StoredWorkflow"; id: string; name: string };
     invocationsList?: WorkflowInvocation[];
+    hideHeading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     ownerGrid: true,
     filteredFor: undefined,
     invocationsList: undefined,
+    hideHeading: false,
 });
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -100,7 +102,7 @@ function refreshTable() {
 
 <template>
     <div class="d-flex flex-column">
-        <div v-if="forStoredWorkflow || forHistory" class="d-flex">
+        <div v-if="!hideHeading && (forStoredWorkflow || forHistory)" class="d-flex">
             <Heading h1 separator inline truncate size="lg" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
         </div>
         <GridList
