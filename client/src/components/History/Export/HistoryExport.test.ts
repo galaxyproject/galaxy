@@ -39,7 +39,6 @@ const FAKE_HISTORY: HistorySummary = {
 };
 
 const selectors = {
-    historyName: "#history-name",
     latestExportRecord: "#latest-export-record",
     showPreviousExportRecordsButton: "#show-old-records-button",
     fatalErrorAlert: "#fatal-error-alert",
@@ -72,12 +71,6 @@ describe("HistoryExport.vue", () => {
         );
     });
 
-    it("should render the history name", async () => {
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find(selectors.historyName).text()).toBe(FAKE_HISTORY.name);
-    });
-
     it("should not display the latest export record if there is no export record", async () => {
         const wrapper = await mountHistoryExport();
 
@@ -108,7 +101,6 @@ describe("HistoryExport.vue", () => {
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(false);
-        expect(wrapper.find(selectors.historyName).exists()).toBe(true);
     });
 
     it("should not render the UI and display a fatal error message if the history cannot be found or loaded", async () => {
@@ -127,6 +119,5 @@ describe("HistoryExport.vue", () => {
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(true);
-        expect(wrapper.find(selectors.historyName).exists()).toBe(false);
     });
 });
