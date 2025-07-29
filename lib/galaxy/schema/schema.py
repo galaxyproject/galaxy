@@ -942,6 +942,9 @@ class HDADetailed(HDASummary, WithModelClass):
     copied_from_history_dataset_association_id: Annotated[
         Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
     ]
+    copied_from_library_dataset_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of LDDA this HDA was copied from.")
+    ]
 
 
 class HDAExtended(HDADetailed):
