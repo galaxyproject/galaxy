@@ -43,10 +43,7 @@ class SampleSheetColumnDefinitionModel(BaseModel):
     @model_validator(mode="after")
     def check_nature_of_default(self) -> Self:
         default_val = self.default_value
-        # string types default to "", no null values allowed.
-        if self.type == "string" and default_val is None:
-            raise ValueError("string types must specify a default value, perhaps specify the empty string as a default")
-        elif default_val is None:
+        if default_val is None:
             return self
         # otherwise just check the types line up between type and default_value
         elif self.type == "string" and not isinstance(default_val, str):
