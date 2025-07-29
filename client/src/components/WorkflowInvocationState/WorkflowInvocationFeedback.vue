@@ -76,7 +76,7 @@ async function submit(message: string): Promise<string[][] | undefined> {
 
 <template>
     <div>
-        <h3 class="h-lg mt-2">Workflow Run Feedback</h3>
+        <h3 class="h-lg mt-2">Debug Workflow Run</h3>
 
         <p>
             <span v-localize>

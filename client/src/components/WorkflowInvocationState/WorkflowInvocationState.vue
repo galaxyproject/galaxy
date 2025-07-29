@@ -379,7 +379,7 @@ async function onCancel() {
             <BTab title="Metrics" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
-            <BTab v-if="canSubmitFeedback && stepsJobsSummary && storeId" title="Feedback">
+            <BTab v-if="canSubmitFeedback && stepsJobsSummary && storeId" title="Debug">
                 <WorkflowInvocationFeedback
                     :invocation-id="invocation.id"
                     :steps-jobs-summary="stepsJobsSummary"
