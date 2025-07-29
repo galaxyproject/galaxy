@@ -127,7 +127,6 @@ from galaxy.tools.actions import (
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
@@ -173,7 +172,6 @@ from galaxy.util import (
     listify,
     Params,
     parse_xml_string,
-    parse_xml_string_to_etree,
     rst_to_html,
     string_as_bool,
     unicodify,
@@ -235,7 +233,9 @@ if TYPE_CHECKING:
     from galaxy.model import (
         DynamicTool,
         LibraryFolder,
+        Workflow,
     )
+    from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
     from galaxy.tool_util.parser.output_objects import (
@@ -243,6 +243,7 @@ if TYPE_CHECKING:
         ToolOutputCollection,
     )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
+    from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
     from galaxy.tools.actions.metadata import SetMetadataToolAction
     from galaxy.tools.parameters import ToolInputsT
 
@@ -483,10 +484,11 @@ class ToolBox(AbstractToolBox):
 
     app: "UniverseApplication"
 
-    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
+    def __init__(
+        self, config_filenames: List[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
+    ) -> None:
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
-        self.cache_regions: Dict[str, ToolDocumentCache] = {}
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -542,21 +544,6 @@ class ToolBox(AbstractToolBox):
             tool.hidden = False
             section.elems.append_tool(tool)
 
-    def persist_cache(self, register_postfork: bool = False):
-        """
-        Persists any modified tool cache files to disk.
-
-        Set ``register_postfork`` to stop database thread queue,
-        close database connection and register re-open function
-        that re-opens the database after forking.
-        """
-        for region in self.cache_regions.values():
-            if not region.disabled:
-                region.persist()
-                if register_postfork:
-                    region.close()
-                    self.app.application_stack.register_postfork_function(region.reopen_ro)
-
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set(
             "shed_tool_config_file"
@@ -586,36 +573,16 @@ class ToolBox(AbstractToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def get_cache_region(self, tool_cache_data_dir: Optional[str]):
-        if self.app.config.enable_tool_document_cache and tool_cache_data_dir:
-            if tool_cache_data_dir not in self.cache_regions:
-                self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
-            return self.cache_regions[tool_cache_data_dir]
-
-    def create_tool(self, config_file: str, tool_cache_data_dir: Optional[str] = None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir)
-        if config_file.endswith(".xml") and cache and not cache.disabled:
-            tool_document = cache.get(config_file)
-            if tool_document:
-                tool_source = self.get_expanded_tool_source(
-                    config_file=config_file,
-                    xml_tree=parse_xml_string_to_etree(tool_document["document"]),
-                    macro_paths=tool_document["macro_paths"],
-                )
-            else:
-                tool_source = self.get_expanded_tool_source(config_file)
-                cache.set(config_file, tool_source)
-        else:
-            tool_source = self.get_expanded_tool_source(config_file)
+    def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
+        tool_source = self.get_expanded_tool_source(config_file)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file, **kwargs):
+    def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
         try:
             return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
-                **kwargs,
             )
         except Exception as e:
             # capture and log parsing errors
@@ -636,7 +603,13 @@ class ToolBox(AbstractToolBox):
             return None
 
     def dynamic_tool_to_tool(self, dynamic_tool: Optional["DynamicTool"]) -> Optional["Tool"]:
-        if not dynamic_tool or not dynamic_tool.active or (tool_representation := dynamic_tool.value) is None:
+        if not dynamic_tool:
+            return None
+        if not dynamic_tool.active:
+            log.debug("Tool %s is not active", dynamic_tool.uuid)
+            return None
+        if (tool_representation := dynamic_tool.value) is None:
+            log.debug("Tool %s has empty representation", dynamic_tool.uuid)
             return None
         if "name" not in tool_representation:
             tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
@@ -709,7 +682,9 @@ class ToolBox(AbstractToolBox):
             "model_tools_path": MODEL_TOOLS_PATH,
         }
 
-    def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
+    def _get_tool_shed_repository(
+        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: Optional[str]
+    ) -> "ToolShedRepository":
         # Abstract toolbox doesn't have a dependency on the database, so
         # override _get_tool_shed_repository here to provide this information.
 
@@ -741,7 +716,7 @@ class ToolBox(AbstractToolBox):
             default_tool_dependency_dir=default_tool_dependency_dir,
         )
 
-    def _load_workflow(self, workflow_id):
+    def _load_workflow(self, workflow_id: str) -> "Workflow":
         """
         Return an instance of 'Workflow' identified by `id`,
         which is encoded in the tool panel.
@@ -1077,13 +1052,13 @@ class Tool(UsesDictVisibleKeys):
         self.guid = guid
         self.old_id: Optional[str] = None
         self.python_template_version: Optional[Version] = None
-        self._lineage = None
+        self._lineage: Optional[ToolLineage] = None
         self.dependencies: List = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
         # add tool resource parameters
         self.populate_resource_parameters(tool_source)
-        self.tool_errors = None
+        self.tool_errors: Optional[str] = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
         self.outputs: Dict[str, ToolOutputBase] = {}
@@ -1108,11 +1083,6 @@ class Tool(UsesDictVisibleKeys):
         # loading tools into the toolshed for validation.
         if self.app.name == "galaxy":
             self.job_search = self.app.job_search
-
-    def remove_from_cache(self):
-        if source_path := self.tool_source.source_path:
-            for region in self.app.toolbox.cache_regions.values():
-                region.delete(source_path)
 
     @property
     def history_manager(self):
@@ -1271,7 +1241,7 @@ class Tool(UsesDictVisibleKeys):
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
-    def get_panel_section(self):
+    def get_panel_section(self) -> Union[Tuple[str, str], Tuple[None, None]]:
         return self.app.toolbox.get_section_for_tool(self)
 
     def allow_user_access(self, user, attempting_access=True):

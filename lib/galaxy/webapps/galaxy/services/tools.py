@@ -264,7 +264,7 @@ class ToolsService(ServiceBase):
         trans.security.encode_all_ids(rval, recursive=True)
         return rval
 
-    def _search(self, q, view):
+    def _search(self, q: str, view: Optional[str]) -> List[str]:
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.

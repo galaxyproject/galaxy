@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -148,13 +150,15 @@ class DynamicToolApi:
         return dynamic_tool.to_dict()
 
     @router.delete("/api/dynamic_tools/{dynamic_tool_id}", require_admin=True)
-    def delete(self, dynamic_tool_id: DatabaseIdOrUUID):
+    def delete(self, dynamic_tool_id: DatabaseIdOrUUID) -> Dict[str, Any]:
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
 
         Deactivate the specified dynamic tool. Deactivated tools will not
         be loaded into the toolbox.
         """
-        dynamic_tool = dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
+        dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
+        if dynamic_tool is None:
+            raise ObjectNotFound()
         updated_dynamic_tool = self.dynamic_tools_manager.deactivate(dynamic_tool)
         return updated_dynamic_tool.to_dict()

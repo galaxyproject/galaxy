@@ -341,7 +341,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
         return uuid
     if not uuid:
         return uuid4()
-    return UUID(str(uuid))
+    return UUID(uuid)
 
 
 def to_json(sa_session, column, keys: List[str]):

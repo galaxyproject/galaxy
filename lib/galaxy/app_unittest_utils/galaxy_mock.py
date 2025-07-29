@@ -267,8 +267,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.version_major = "19.09"
 
         # set by MockDir
-        self.enable_tool_document_cache = False
-        self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.external_chown_script = None
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0

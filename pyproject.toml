@@ -95,7 +95,6 @@ dependencies = [
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
-    "sqlitedict",
     "sqlparse",
     "starlette",
     "starlette-context",

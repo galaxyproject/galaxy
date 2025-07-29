@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -94,6 +95,9 @@ from galaxy.webapps.galaxy.api import (
 from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.users import UsersService
 
+if TYPE_CHECKING:
+    from galaxy.work.context import SessionRequestContext
+
 log = logging.getLogger(__name__)
 
 router = Router(tags=["users"])
@@ -169,7 +173,7 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: "SessionRequestContext" = DependsOnTrans,
     ):
         """This route will be removed in a future version.
 
@@ -191,7 +195,7 @@ class FastAPIUsers:
     def recalculate_disk_usage_by_user_id(
         self,
         user_id: UserIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: "SessionRequestContext" = DependsOnTrans,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result

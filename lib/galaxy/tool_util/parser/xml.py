@@ -90,6 +90,7 @@ from .stdio import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.util.path import StrPath
     from .output_objects import ToolOutputBase
 
 log = logging.getLogger(__name__)
@@ -158,7 +159,9 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
-    def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
+    def __init__(
+        self, xml_tree: ElementTree, source_path: Optional["StrPath"] = None, macro_paths: Optional[List[str]] = None
+    ) -> None:
         self.xml_tree = xml_tree
         self.root = self.xml_tree.getroot()
         self._source_path = source_path
@@ -683,7 +686,7 @@ class XmlToolSource(ToolSource):
         return HelpContent(format=help_format, content=content)
 
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> List[str]:
         return self._macro_paths
 
     @property
