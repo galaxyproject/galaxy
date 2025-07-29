@@ -26,6 +26,7 @@
                     @onClick="onExecute" />
             </div>
         </div>
+
         <BAlert v-if="disableSimpleFormReason" show variant="warning">
             This is the legacy workflow run form.
             <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
@@ -41,6 +42,9 @@
                 workflows with resource options.
             </span>
         </BAlert>
+
+        <WorkflowCredentialsManagement v-if="credentialTools.length" :tools="credentialTools" />
+
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
@@ -92,6 +96,7 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
+import { transformToSourceCredentials } from "@/api/users";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -100,6 +105,8 @@ import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 
+import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
+
 export default {
     components: {
         BAlert,
@@ -107,6 +114,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
+        WorkflowCredentialsManagement,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -173,6 +181,17 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        credentialTools() {
+            return this.model.steps
+                .filter((step) => step.step_type === "tool" && step.credentials?.length)
+                .map((step) => ({
+                    id: step.id,
+                    name: step.name,
+                    label: step.label,
+                    version: step.version,
+                    credentialsDefinition: transformToSourceCredentials(step.tool_id, step.credentials),
+                }));
+        },
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },
