@@ -23,11 +23,16 @@ import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, toRefs, watch } from "vue";
 
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
-import { extractSubworkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import { extractSubworkflow, type PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getAppRoot } from "@/onload/loadConfig";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
 import { AutoLayoutAction } from "../Actions/stepActions";
@@ -41,6 +46,7 @@ import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
+import SelectionToWorkflowReviewModal from "@/components/Workflow/Editor/Tools/SelectionToWorkflowReviewModal.vue";
 
 library.add(
     faMarkdown,
@@ -200,15 +206,43 @@ function openToWorkflowModal() {
     toWorkflowModal.value?.showModal();
 }
 
+const reviewModal = ref<InstanceType<typeof SelectionToWorkflowReviewModal>>();
+
+const workflowExtractionData = ref<{
+    partialWorkflow: PartialWorkflow;
+    inputReconnectionMap: InputReconnectionMap;
+    outputReconnectionMap: OutputReconnectionMap;
+    expandedSteps: Set<number>;
+} | null>(null);
+
 async function onClickExtract() {
-    const {
-        partialWorkflow,
-        inputReconnectionMap,
-        outputReconnectionMap,
-        expandedSteps: _s,
-    } = await extractSubworkflow(workflowId, newWorkflowName.value);
-    await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
+    workflowExtractionData.value = await extractSubworkflow(workflowId, newWorkflowName.value);
+
+    await nextTick();
+
+    toWorkflowModal.value?.hideModal();
     workflowCreatedModal.value?.hideModal();
+
+    reviewModal.value?.showModal();
+}
+
+function onRenameExtract(name: string) {
+    assertDefined(workflowExtractionData.value);
+    workflowExtractionData.value.partialWorkflow.name = name;
+    newWorkflowName.value = name;
+}
+
+function onCancelExtract() {
+    workflowExtractionData.value = null;
+}
+
+async function onOkExtract() {
+    const { partialWorkflow, inputReconnectionMap, outputReconnectionMap } = ensureDefined(
+        workflowExtractionData.value
+    );
+
+    await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
+    workflowExtractionData.value = null;
 }
 
 const workflowNameValid = computed(() => newWorkflowName.value.trim() !== "");
@@ -406,6 +440,19 @@ function autoLayout() {
                 <GModal ref="workflowCreatedModal" title="New Workflow Created">
                     <span> Open the new workflow <GLink :href="newWorkflowURL">here</GLink>. </span>
                 </GModal>
+
+                <SelectionToWorkflowReviewModal
+                    v-if="workflowExtractionData"
+                    ref="reviewModal"
+                    :workflow="workflowExtractionData.partialWorkflow"
+                    :workflow-name="newWorkflowName"
+                    :workflow-name-valid="workflowNameValid"
+                    :input-map="workflowExtractionData.inputReconnectionMap"
+                    :output-map="workflowExtractionData.outputReconnectionMap"
+                    :expanded-steps="workflowExtractionData.expandedSteps"
+                    @ok="onOkExtract"
+                    @rename="onRenameExtract"
+                    @cancel="onCancelExtract" />
             </div>
 
             <div
