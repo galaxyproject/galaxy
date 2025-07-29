@@ -508,15 +508,6 @@ class InvocationReport(Model, WithModelClass):
     )
 
 
-class ReportInvocationErrorResponse(Model):
-    # messages: List[Union[Tuple[str, str], List[str]]]
-    messages: List[List[str]] = Field(
-        default=...,
-        title="Invocation error report response",
-        description="The messages returned for the state of the invocation error report.",
-    )
-
-
 class ReportInvocationErrorPayload(Model):
     invocation_id: DecodedDatabaseIdField = Field(
         default=...,

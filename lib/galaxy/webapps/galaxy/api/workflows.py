@@ -64,7 +64,6 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
     ReportInvocationErrorPayload,
-    ReportInvocationErrorResponse,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -1453,19 +1452,20 @@ class FastAPIInvocations:
     @router.post(
         "/api/invocations/{invocation_id}/error",
         summary="Submits a bug report for a workflow run via the API.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def report_error(
         self,
         payload: ReportInvocationErrorPayload,
         invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> ReportInvocationErrorResponse:
-        rval = self.invocations_service.report_error(
+    ):
+        self.invocations_service.report_error(
             trans,
             invocation_id,
             payload,
         )
-        return rval
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get("/api/invocations/{invocation_id}", summary="Get detailed description of a workflow invocation.")
     def show_invocation(

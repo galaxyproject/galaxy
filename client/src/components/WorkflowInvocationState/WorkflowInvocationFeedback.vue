@@ -54,7 +54,7 @@ const stepsWithErrors = computed(() => {
 });
 
 async function submit(message: string): Promise<string[][] | undefined> {
-    const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/error", {
+    const { error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/error", {
         params: {
             path: { invocation_id: props.invocation.id },
         },
@@ -70,7 +70,7 @@ async function submit(message: string): Promise<string[][] | undefined> {
         return [[errorMessageAsString(error), "danger"]];
     }
 
-    return data.messages;
+    return [["Your email has been sent successfully. Thank you for your report.", "success"]];
 }
 </script>
 

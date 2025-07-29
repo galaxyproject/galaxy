@@ -18270,14 +18270,6 @@ export interface components {
              */
             message?: string | null;
         };
-        /** ReportInvocationErrorResponse */
-        ReportInvocationErrorResponse: {
-            /**
-             * Invocation error report response
-             * @description The messages returned for the state of the invocation error report.
-             */
-            messages: string[][];
-        };
         /** ReportJobErrorPayload */
         ReportJobErrorPayload: {
             /**
@@ -31257,13 +31249,11 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ReportInvocationErrorResponse"];
-                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
