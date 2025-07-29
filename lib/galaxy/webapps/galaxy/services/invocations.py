@@ -257,7 +257,6 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     def report_error(
         self, trans: ProvidesUserContext, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
     ) -> ReportInvocationErrorResponse:
-        # ensure_celery_tasks_enabled(trans.app.config) # TODO: Should this be enabled?
         workflow_invocation = self._workflows_manager.get_invocation(
             trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
         )
