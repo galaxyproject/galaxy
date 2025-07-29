@@ -345,7 +345,8 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         sample_sheet.data_import_source_from(source="collection").wait_for_and_click()
         sample_sheet.wizard_next_button.wait_for_and_click()
         self.screenshot("workflow_run_sample_sheet_from_collection")
-        sample_sheet.select_collection.wait_for_and_click()
+        # no longer needed since the collection dialog just pops up when navigates to form
+        # sample_sheet.select_collection.wait_for_and_click()
         collection_id = self.hid_to_history_item(33)["id"]
         sample_sheet.collection_selection(id=collection_id).wait_for_present()
         self.screenshot("workflow_run_sample_sheet_from_collection_select_collection")
