@@ -1,15 +1,13 @@
 import { nextTick, reactive } from "vue";
 
 import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
-import {
-    convertOpenConnections,
-    type InputReconnectionMap,
-    type OutputReconnectionMap,
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
-import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
-import { getTraversedSelection } from "@/components/Workflow/Editor/modules/traversedSelection";
 import { Services } from "@/components/Workflow/services";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
@@ -19,7 +17,6 @@ import {
     type WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowStoreTypes";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
@@ -478,31 +475,34 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
 
     asyncOperationDone: { value: boolean };
 
-    workflowId;
-    workflowName;
     services;
 
     stateStore;
     stepStore;
     commentStore;
-    searchStore;
     connectionStore;
 
-    inputReconnectionMap?: InputReconnectionMap;
-    outputReconnectionMap?: OutputReconnectionMap;
+    inputReconnectionMap: InputReconnectionMap;
+    outputReconnectionMap: OutputReconnectionMap;
+    partialWorkflow: PartialWorkflow;
 
-    constructor(workflowId: string, name: string) {
+    constructor(
+        partialWorkflow: PartialWorkflow,
+        inputReconnectionMap: InputReconnectionMap,
+        outputReconnectionMap: OutputReconnectionMap
+    ) {
         super();
 
-        this.workflowId = workflowId;
-        this.workflowName = name;
+        this.partialWorkflow = partialWorkflow;
         this.services = new Services();
 
-        this.stateStore = useWorkflowStateStore(workflowId);
-        this.stepStore = useWorkflowStepStore(workflowId);
-        this.commentStore = useWorkflowCommentStore(workflowId);
-        this.searchStore = useWorkflowSearchStore(workflowId);
-        this.connectionStore = useConnectionStore(workflowId);
+        this.inputReconnectionMap = inputReconnectionMap;
+        this.outputReconnectionMap = outputReconnectionMap;
+
+        this.stateStore = useWorkflowStateStore(partialWorkflow.id);
+        this.stepStore = useWorkflowStepStore(partialWorkflow.id);
+        this.commentStore = useWorkflowCommentStore(partialWorkflow.id);
+        this.connectionStore = useConnectionStore(partialWorkflow.id);
 
         this.asyncOperationDone = reactive({ value: false });
     }
@@ -513,8 +513,8 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         const outputReconnectionMap = this.outputReconnectionMap;
 
         assertDefined(stepId);
-        assertDefined(inputReconnectionMap);
-        assertDefined(outputReconnectionMap);
+        inputReconnectionMap;
+        outputReconnectionMap;
 
         // reconnect inputs
 
@@ -608,37 +608,9 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
             commentIds.map((id) => ensureDefined(this.commentStore.commentsRecord[id]))
         );
 
-        const expandedSelection = getTraversedSelection(stepIds, this.stepStore.steps);
+        this.deleteSelectionSubAction = new DeleteSelectionAction(this.partialWorkflow.id);
 
-        expandedSelection.forEach((stepId) => this.stateStore.setStepMultiSelected(stepId, true));
-
-        this.deleteSelectionSubAction = new DeleteSelectionAction(this.workflowId);
-
-        const comments = commentIds.map((id) =>
-            structuredClone(ensureDefined(this.commentStore.commentsRecord[id]))
-        ) as WorkflowComment[];
-
-        const { stepArray, inputReconnectionMap, outputReconnectionMap } = await convertOpenConnections(
-            expandedSelection,
-            this.stepStore.steps,
-            this.searchStore
-        );
-
-        this.inputReconnectionMap = inputReconnectionMap;
-        this.outputReconnectionMap = outputReconnectionMap;
-
-        const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
-
-        const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));
-
-        const partialWorkflow = {
-            comments,
-            steps,
-            name: this.workflowName,
-            id: this.workflowId,
-            annotation: "",
-        };
-        const newWf = await this.services.createWorkflow(partialWorkflow);
+        const newWf = await this.services.createWorkflow(this.partialWorkflow);
 
         this.insertSubworkflowSubAction = new InsertStepAction(this.stepStore, this.stateStore, {
             contentId: newWf.latest_workflow_id,

@@ -23,6 +23,7 @@ import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, toRefs, watch } from "vue";
 
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
+import { extractSubworkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -200,7 +201,13 @@ function openToWorkflowModal() {
 }
 
 async function onClickExtract() {
-    await moveSelectionToSubworkflow(newWorkflowName.value);
+    const {
+        partialWorkflow,
+        inputReconnectionMap,
+        outputReconnectionMap,
+        expandedSteps: _s,
+    } = await extractSubworkflow(workflowId, newWorkflowName.value);
+    await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
     workflowCreatedModal.value?.hideModal();
 }
 

@@ -1,6 +1,11 @@
 import { until } from "@vueuse/core";
 import { computed, inject, type Ref, unref } from "vue";
 
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
 import { Services } from "@/components/Workflow/services";
 import { useWorkflowStores } from "@/composables/workflowStores";
@@ -66,8 +71,12 @@ export function useSelectionOperations() {
         return newWf;
     }
 
-    async function moveSelectionToSubworkflow(name: string) {
-        const action = new ExtractSubworkflowAction(id, name);
+    async function moveSelectionToSubworkflow(
+        partialWorkflow: PartialWorkflow,
+        inputReconnectionMap: InputReconnectionMap,
+        outputReconnectionMap: OutputReconnectionMap
+    ) {
+        const action = new ExtractSubworkflowAction(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
         undoRedoStore.applyAction(action);
 
         await until(() => action.asyncOperationDone.value).toBe(true);
