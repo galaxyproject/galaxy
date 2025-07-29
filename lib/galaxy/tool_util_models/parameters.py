@@ -921,14 +921,14 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type
-        initialize: Any = ...
+        requires_value = self.request_requires_value
+        initialize = ... if requires_value else None
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
             validators = {
                 "color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_or_connected_value)
             }
         elif state_representation == "workflow_step":
-            initialize = None
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_if_value)}
         else:
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str)}
