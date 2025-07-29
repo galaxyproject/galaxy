@@ -13,6 +13,7 @@
 import type { Ref } from "vue";
 import { computed, ref } from "vue";
 
+import type { FormParameterValue } from "@/components/Form/parameterTypes";
 import { useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step } from "@/stores/workflowStepStore";
@@ -49,7 +50,7 @@ const label = computed(() => {
 
 const { setOutputLabel } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
-function onInput(newLabel: string | undefined | null) {
+function onInput(newLabel: FormParameterValue) {
     if (newLabel === undefined || newLabel === null) {
         // form got activated or we set a workflow output through the checkbox
         // shouldn't change status of error label or result in deleting the label
@@ -68,17 +69,17 @@ function onInput(newLabel: string | undefined | null) {
         return;
     }
 
-    const existingWorkflowOutput = stepStore.workflowOutputs[newLabel];
+    const existingWorkflowOutput = stepStore.workflowOutputs[newLabel as string];
     if (!existingWorkflowOutput) {
         // got a new label that isn't in use yet
         const newWorkflowOutputs = [...(props.step.workflow_outputs || [])].filter(
             (workflowOutput) => workflowOutput.output_name !== props.name
         );
         newWorkflowOutputs.push({
-            label: newLabel,
+            label: newLabel as string,
             output_name: props.name,
         });
-        setOutputLabel(props.step, newWorkflowOutputs, oldLabel, newLabel);
+        setOutputLabel(props.step, newWorkflowOutputs, oldLabel, newLabel as string);
         error.value = undefined;
     } else if (existingWorkflowOutput.stepId !== props.step.id) {
         error.value = `Duplicate output label '${newLabel}' will be ignored.`;
