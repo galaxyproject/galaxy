@@ -53,10 +53,59 @@ defineExpose({
             <GFormInput :value="props.workflowName" @input="(v) => emit('rename', v ?? '')" />
         </GFormLabel>
 
-        <Heading h3 size="sm"> Inputs </Heading>
-        <Heading h3 size="sm"> Outputs </Heading>
-        <Heading h3 size="sm"> Steps </Heading>
+        <div class="workflow-info-grid">
+            <div class="inputs">
+                <Heading h3 size="sm" class="mb-0"> Inputs </Heading>
+
+                <span> Converted from connections </span>
+
+                <div v-for="(inputLink, label) in props.inputMap" :key="`${inputLink.id}-${inputLink.output_name}`">
+                    {{ label }}
+                </div>
+            </div>
+
+            <div class="outputs">
+                <Heading h3 size="sm" class="mb-0"> Outputs </Heading>
+
+                <span> Converted from connections </span>
+
+                <div
+                    v-for="outputReconnection in props.outputMap"
+                    :key="`${outputReconnection.connection.id}-${outputReconnection.connection.output_name}`">
+                    {{ outputReconnection.connection.output_name }}
+                </div>
+            </div>
+
+            <div class="steps">
+                <Heading h3 size="sm" class="mb-0"> Steps </Heading>
+
+                <div v-for="(step, key) in props.workflow.steps" :key="key">
+                    {{ step.name }}
+                </div>
+            </div>
+        </div>
     </GModal>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.workflow-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "i o"
+        "s s";
+    gap: var(--spacing-2);
+
+    .inputs {
+        grid-area: i;
+    }
+
+    .outputs {
+        grid-area: o;
+    }
+
+    .steps {
+        grid-area: s;
+    }
+}
+</style>
