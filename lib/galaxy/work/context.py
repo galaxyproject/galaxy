@@ -1,6 +1,7 @@
 import abc
 from typing import (
     Any,
+    AsyncGenerator,
     Dict,
     List,
     Optional,
@@ -90,10 +91,19 @@ class GalaxyAbstractRequest:
     def base(self) -> str:
         """Base URL of the request."""
 
+    @abc.abstractmethod
+    def stream(self) -> AsyncGenerator:
+        """Request body split in parts."""
+
     @property
     @abc.abstractmethod
     def url_path(self) -> str:
         """Base with optional prefix added."""
+
+    @property
+    @abc.abstractmethod
+    def url(self):
+        """URL of the request."""
 
     @property
     @abc.abstractmethod
