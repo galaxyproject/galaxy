@@ -17,8 +17,14 @@ API has gone too far.
 
 import io
 import os
+import shutil
 import tempfile
-from typing import Dict
+from typing import (
+    Any,
+    Dict,
+    IO,
+    Optional,
+)
 
 import requests
 from sqlalchemy import select
@@ -42,26 +48,36 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
 
+    hist_id: int  # cannot use `history_id` as name, it collides with a pytest fixture
+    input_hda: model.HistoryDatasetAssociation
+    input_hda_dict: Dict[str, Any]
+    _nginx_upload_job_files_store: str
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
+
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
         config["server_name"] = "files"
-        cls.initialized = False
+        config["nginx_upload_job_files_store"] = tempfile.mkdtemp()
+        cls._nginx_upload_job_files_store = config["nginx_upload_job_files_store"]
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls._nginx_upload_job_files_store)
+        super().tearDownClass()
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        if not TestJobFilesIntegration.initialized:
-            history_id = self.dataset_populator.new_history()
-            sa_session = self.sa_session
-            stmt = select(model.HistoryDatasetAssociation)
-            assert len(sa_session.scalars(stmt).all()) == 0
-            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
-            assert len(sa_session.scalars(stmt).all()) == 1
-            self.input_hda = sa_session.scalars(stmt).all()[0]
-            TestJobFilesIntegration.initialized = True
+        history_id_encoded = self.dataset_populator.new_history()
+        self.hist_id = self._app.security.decode_id(history_id_encoded)
+        self.input_hda_dict = self.dataset_populator.new_dataset(history_id_encoded, content=TEST_INPUT_TEXT, wait=True)
+        sa_session = self.sa_session
+        stmt = select(model.HistoryDatasetAssociation).where(model.HistoryDatasetAssociation.history_id == self.hist_id)
+        assert len(sa_session.scalars(stmt).all()) == 1
+        self.input_hda = sa_session.scalars(stmt).first()
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
@@ -96,9 +112,57 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             self.input_hda_dict["history_id"], content_id=self.input_hda_dict["id"], purge=True, wait_for_purge=True
         )
         assert delete_response.status_code == 200
-        head_response = requests.get(get_url, params=data)
+        response = requests.get(get_url, params=data)
+        assert response.status_code == 400
+        assert response.json()["err_msg"] == "Input dataset(s) for job have been purged."
+
+    def test_read_missing_file(self):
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        data = {"path": self.input_hda.get_file_name() + "_missing", "job_key": job_key}
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        head_response = requests.head(get_url, params=data)
+        assert head_response.status_code == 404
+
+        response = requests.get(get_url, params=data)
+        assert response.status_code == 404
+
+    def test_read_folder(self):
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        data = {"path": os.path.dirname(self.input_hda.get_file_name()), "job_key": job_key}
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        head_response = requests.head(get_url, params=data)
         assert head_response.status_code == 400
-        assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
+
+        response = requests.get(get_url, params=data)
+        assert response.status_code == 400
+
+    def test_write_no_file(self):
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data)
+        assert response.status_code == 400
+
+    def test_propfind(self):
+        # remove this test when ALL Galaxy endpoints have been migrated to FastAPI; it will then be FastAPI's
+        # responsibility to return a status code other than 404
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        propfind_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.request("PROPFIND", propfind_url, params=data)
+        assert response.status_code == 501
 
     def test_write_by_state(self):
         job, output_hda, working_directory = self.create_static_job_with_state("running")
@@ -160,6 +224,78 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert open(path).read() == "some initial text data"
 
+    def test_write_with_nginx_upload_module(self):
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        file: Optional[IO[bytes]] = None
+        try:
+            with open(os.path.join(self._app.config.nginx_upload_job_files_store, "nginx_upload"), "wb") as file:
+                file.write(b"some initial text data")
+
+            post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+            response = requests.post(post_url, data=dict(**data, __file_path=file.name))
+
+            api_asserts.assert_status_code_is_ok(response)
+            assert not os.path.exists(file.name)
+            assert os.path.exists(path)
+            with open(path) as uploaded_file:
+                assert uploaded_file.read() == "some initial text data"
+        finally:
+            # remove `file.name`
+            try:
+                if file is not None:
+                    os.remove(file.name)
+            except FileNotFoundError:
+                pass
+
+    def test_write_with_session_id(self):
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        upload_store = (
+            self._app.config.tus_upload_store_job_files
+            or self._app.config.tus_upload_store
+            or self._app.config.new_file_path
+        )
+        upload_id = "35a7c8d3-e659-430e-8579-8d085e7e569d"
+        upload_path = os.path.join(upload_store, "35a7c8d3-e659-430e-8579-8d085e7e569d")
+        try:
+            with open(upload_path, "w") as upload_file:
+                upload_file.write("some initial text data")
+
+            post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+            response = requests.post(post_url, data=dict(**data, session_id=upload_id))
+            api_asserts.assert_status_code_is_ok(response)
+            assert not os.path.exists(upload_path)
+            assert os.path.exists(path)
+            with open(path) as uploaded_file:
+                assert uploaded_file.read() == "some initial text data"
+        finally:
+            # remove `upload_path`
+            try:
+                os.remove(upload_path)
+            except FileNotFoundError:
+                pass
+
+    def test_write_with_underscored_file_param(self):
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data, files={"__file": io.StringIO("some initial text data")})
+        api_asserts.assert_status_code_is_ok(response)
+        assert open(path).read() == "some initial text data"
+
     def test_write_protection(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
@@ -178,9 +314,13 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def create_static_job_with_state(self, state):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
-        hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
+        stmt_hda = select(model.HistoryDatasetAssociation).where(
+            model.HistoryDatasetAssociation.history_id == self.hist_id
+        )
+        hda = sa_session.scalars(stmt_hda).first()
         assert hda
-        history = sa_session.scalars(select(model.History)).all()[0]
+        stmt_history = select(model.History).where(model.History.id == self.hist_id)
+        history = sa_session.scalars(stmt_history).first()
         assert history
         user = sa_session.scalars(select(model.User)).all()[0]
         assert user
