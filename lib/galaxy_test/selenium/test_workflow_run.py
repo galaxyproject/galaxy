@@ -282,12 +282,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_run_sample_sheet_chipseq_pasted_data")
         sample_sheet.wizard_next_button.wait_for_and_click()
 
-        # TODO: remove this line before merge
-        # self.sleep_for(self.wait_types.UX_TRANSITION)
-        # self.screenshot("workflow_run_sample_sheet_chipseq_auto_paired")
-        # sample_sheet.wizard_next_button.wait_for_and_click()
-
-        # TODO: remove this line before merge
         self.screenshot("workflow_run_sample_sheet_chipseq_table_empty")
         self._chipseq_data_entry(element_identifier_mutable=True)
         self.screenshot("workflow_run_sample_sheet_chipseq_table_full")
@@ -299,14 +293,29 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_run_sample_sheet_chipseq_sheet_created")
         sample_sheet.collection_created_message.wait_for_present()
         self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 18)
 
-        self.history_panel_wait_for_hid_ok(18)
-        self.dataset_populator.get_history_dataset_content(history_id, hid=18)
-        # TODO: check content...
+    def _expect_chipseq_table(self, history_id: str, hid: int):
+        self.history_panel_wait_for_hid_ok(hid)
+        contents = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
+        expected_contents = """SRR5680995\tinput\t\t
+SRR5680996\tH3K4me3\t1\tSRR5680995
+SRR5680997\tH3K27me3\t1\tSRR5680995
+SRR5681007\tH3K27me3\t2\tSRR5681005
+SRR5681006\tH3K4me3\t2\tSRR5681005
+SRR5680998\tCTCF\t1\tSRR5680995
+SRR5681008\tCTCF\t2\tSRR5681005
+SRR5681005\tinput\t\t
+"""
+        assert (
+            contents == expected_contents
+        ), f"Expected chipseq sample sheet table:\n{expected_contents}\nGot:\n{contents}"
 
     @selenium_test
     @managed_history
     def test_collection_input_sample_sheet_chipseq_example_from_list_pairs(self):
+        history_id = self.current_history_id()
+
         base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
         urls = [
             f"{base_url}/SRR5680995_R1.fastq.gz",
@@ -355,6 +364,14 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_run_sample_sheet_from_collection_grid")
         self._chipseq_data_entry(element_identifier_mutable=False)
         self.screenshot("workflow_run_sample_sheet_from_collection_grid_full")
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        self.history_panel_wait_for_hid_ok(50)
+        sample_sheet.collection_created_message.wait_for_present()
+        self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 51)
 
     @selenium_test
     @managed_history

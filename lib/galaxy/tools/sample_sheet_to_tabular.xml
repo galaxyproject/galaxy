@@ -6,11 +6,12 @@
     <edam_operation>operation_3359</edam_operation>
   </edam_operations>
   <configfiles>
-    <configfile name="out_config">#for $key in $input.keys()#
-#set $row = $input.sample_sheet_row($key)#
-#set $row_as_string = '&#009;'.join(map(lambda x: str($none_replace) if x is None else (str($empty_replace) if x == "" else (str($bool_true_replace) if x is True else (str($bool_false_replace) if x is False else str(x)))), $row))#
-$key&#009;$row_as_string
-#end for#</configfile>
+    <configfile name="out_config"><![CDATA[#for $key in $input.keys()
+#set $row = $input.sample_sheet_row($key)
+#set $row_as_string = '\t'.join(map(lambda x: str($none_replace) if x is None else (str($empty_replace) if x == "" else (str($bool_true_replace) if x is True else (str($bool_false_replace) if x is False else str(x)))), $row))
+#set $tab = '\t'
+$key$tab$row_as_string
+#end for#]]></configfile>
   </configfiles>
     <command><![CDATA[
 cp '$out_config' '$output'
