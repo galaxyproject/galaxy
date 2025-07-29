@@ -9,8 +9,8 @@ import { computed, ref } from "vue";
 import { useExtendedHistory } from "@/composables/detailedHistory";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import HistoryNavigation from "../CurrentHistory/HistoryNavigation.vue";
 import CollectionPanel from "@/components/History/CurrentCollection/CollectionPanel.vue";
+import HistoryNavigation from "@/components/History/CurrentHistory/HistoryNavigation.vue";
 import HistoryPanel from "@/components/History/CurrentHistory/HistoryPanel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -26,7 +26,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, histories, historiesLoading, pinnedHistories } = storeToRefs(historyStore);
+const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
 
 const { history } = useExtendedHistory(props.source.id);
 
@@ -71,11 +71,8 @@ function onViewCollection(collection: object) {
                     Hide
                 </BButton>
             </div>
-            <HistoryNavigation
-                :history="history"
-                :histories="histories"
-                :histories-loading="historiesLoading"
-                minimal />
+
+            <HistoryNavigation :history="history" minimal />
         </div>
 
         <hr class="w-100 m-1" />
