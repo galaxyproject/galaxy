@@ -122,15 +122,6 @@ class WorkflowErrorReporter:
             f"/published/workflow?id={stored_workflow_id_encoded}&version={workflow_version}", qualified=True
         )
 
-        # TODO: We could maybe also include the invocation messages, but I believe they often link steps
-        # which aren't neccessarily the ones where the first jobs fail.
-        # invocation_messages = self.invocation.messages
-        # # Format messages for display
-        # if invocation_messages:
-        #     messages_str = "\n".join([f"- {msg[0].reason}" for msg in invocation_messages])
-        # else:
-        #     messages_str = "No messages"
-
         # Build the email message
         if redact_user_details_in_bugreport:
             email_str = "redacted"

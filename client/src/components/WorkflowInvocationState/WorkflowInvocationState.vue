@@ -141,8 +141,6 @@ const invocationStateSuccess = computed(() => {
     );
 });
 
-// TODO: Decide if the entire tab should only be rendered if it is the user's own workflow run.
-// We could check ownership by comparing the invocation history user ID in the `WorkflowInvocationFeedback` component?
 const canSubmitFeedback = computed(
     () =>
         invocationAndJobTerminal.value && (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount))
