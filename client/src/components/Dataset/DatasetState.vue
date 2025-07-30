@@ -27,26 +27,17 @@ const contentCls = computed(() => {
     }
 });
 
-// Compute short display text - capitalize the state name
 const displayText = computed(() => {
-    if (!dataset.value) {
-        return "n/a";
-    }
-    const state = dataset.value.state;
-    if (!state) {
-        return "n/a";
+    if (contentState.value?.displayName) {
+        return contentState.value.displayName;
     }
 
-    // Capitalize first letter and replace underscores with spaces
-    return state.charAt(0).toUpperCase() + state.slice(1).replace(/_/g, " ");
+    const state = dataset.value?.state;
+    return state ? state.replace(/_/g, " ") : "n/a";
 });
 
-// Get the full descriptive text for tooltip
-const tooltipText = computed(() => {
-    return contentState.value?.text || null;
-});
+const tooltipText = computed(() => contentState.value?.text || null);
 
-// Ref for the state badge element
 const stateBadgeRef = ref<HTMLElement | null>(null);
 </script>
 

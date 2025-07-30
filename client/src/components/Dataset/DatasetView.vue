@@ -291,8 +291,8 @@ watch(
 .dataset-title-row {
     display: flex;
     align-items: baseline;
-    min-width: 0; // Allow to shrink below content
-    flex: 1 1 auto; // Allow to grow and shrink
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .dataset-hid {
@@ -302,13 +302,13 @@ watch(
 
 .dataset-name {
     word-break: break-word;
-    min-width: 0; // Allow text to wrap
+    min-width: 0;
 }
 
 .dataset-state-header {
     font-size: $h5-font-size;
-    flex: 0 0 auto; // Don't grow or shrink
-    white-space: nowrap; // Prevent state badge from wrapping internally
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .tab-content-panel {
