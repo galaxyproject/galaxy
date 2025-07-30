@@ -9,6 +9,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,9 @@ def api_payload_to_create_params(payload):
         message = f"Missing required parameters {missing_parameters}"
         raise exceptions.ObjectAttributeMissingException(message)
 
+    column_definitions = payload.get("column_definitions", None)
+    validate_column_definitions(column_definitions)
+
     params = dict(
         collection_type=payload.get("collection_type"),
         element_identifiers=payload.get("element_identifiers"),
@@ -40,6 +44,8 @@ def api_payload_to_create_params(payload):
         hide_source_items=string_as_bool(payload.get("hide_source_items", False)),
         copy_elements=string_as_bool(payload.get("copy_elements", False)),
         fields=payload.get("fields", None),
+        column_definitions=column_definitions,
+        rows=payload.get("rows", None),
     )
     return params
 

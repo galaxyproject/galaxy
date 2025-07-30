@@ -1,8 +1,8 @@
 import type { InvocationJobsSummary } from "@/api/invocations";
+import { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
-export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
-export const ERROR_STATES = ["error", "deleted"];
-export const TERMINAL_STATES = ["ok", "skipped"].concat(ERROR_STATES);
+export { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
+
 export const POPULATED_STATE_FAILED = "failed";
 
 function countStates(jobSummary: InvocationJobsSummary | null, queryStates: string[]): number {

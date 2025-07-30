@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BCard, BCardTitle } from "bootstrap-vue";
-import { computed } from "vue";
 
 import { borderVariant } from "@/components/Common/Wizard/utils";
 
@@ -11,17 +10,9 @@ interface Props {
     creatingWhat: RulesCreatingWhat;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const emit = defineEmits(["select"]);
-
-const whatText = computed(() => {
-    if (props.creatingWhat == "datasets") {
-        return "dataset and metadata";
-    } else {
-        return "collection element metadata and structure";
-    }
-});
 </script>
 
 <template>
@@ -34,8 +25,7 @@ const whatText = computed(() => {
             <b>External Workbook</b>
         </BCardTitle>
         <div>
-            This option lets you fill in URLs/URIs in an external workbook using tools like Excel or Google Sheets and
-            specify {{ whatText }} in the workbook also.
+            Fill in URLs/URIs as well as sample sheet in an external workbook using tools like Excel or Google Sheets.
         </div>
     </BCard>
 </template>

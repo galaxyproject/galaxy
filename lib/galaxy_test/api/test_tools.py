@@ -958,6 +958,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_apply_rules_flatten_with_indices(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
 
+    def test_apply_rules_nested_list_from_sample_sheet(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_SAMPLE_SHEET_SIMPLE_TO_NESTED_LIST)
+
+    def test_apply_rules_nested_list_of_pairs_from_sample_sheet(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_SAMPLE_SHEET_SIMPLE_TO_NESTED_LIST_OF_PAIRS)
+
     @skip_without_tool("galaxy_json_sleep")
     def test_dataset_hidden_after_job_finish(self):
         with self.dataset_populator.test_history() as history_id:

@@ -77,3 +77,60 @@ function buildInitialMapping(parsedWorkbook: ParsedFetchWorkbook): RuleBuilderMa
     }
     return columnMappings;
 }
+
+const COLUMN_TITLE_PREFIXES: Record<string, ColumnMappingType> = {
+    name: "name",
+    listname: "collection_name",
+    collectionname: "collection_name",
+    uri: "url",
+    url: "url",
+    urldeferred: "url_deferred",
+    deferredurl: "url_deferred",
+    genome: "dbkey",
+    dbkey: "dbkey",
+    filetype: "file_type",
+    extension: "file_type",
+    info: "info",
+    tag: "tags",
+    grouptag: "group_tags",
+    nametag: "name_tag",
+    listidentifier: "list_identifiers",
+    pairedidentifier: "paired_identifier",
+    hashmd5sum: "hash_md5",
+    hashmd5: "hash_md5",
+    md5sum: "hash_md5",
+    md5: "hash_md5",
+    sha1hash: "hash_sha1",
+    hashsha1sum: "hash_sha1",
+    hashsha1: "hash_sha1",
+    sha1sum: "hash_sha1",
+    sha1: "hash_sha1",
+    sha256hash: "hash_sha256",
+    hashsha256sum: "hash_sha256",
+    hashsha256: "hash_sha256",
+    sha256sum: "hash_sha256",
+    sha256: "hash_sha256",
+    sha512hash: "hash_sha512",
+    hashsha512sum: "hash_sha512",
+    hashsha512: "hash_sha512",
+    sha512sum: "hash_sha512",
+    sha512: "hash_sha512",
+};
+
+export function columnTitleToTargetType(columnTitle: string): ColumnMappingType | undefined {
+    let normalizedTitle = columnTitle.toLowerCase().replace(/[\s()\-_]|optional/g, "");
+    if (!(normalizedTitle in COLUMN_TITLE_PREFIXES)) {
+        for (const key of Object.keys(COLUMN_TITLE_PREFIXES)) {
+            if (normalizedTitle.startsWith(key) || normalizedTitle.endsWith(key)) {
+                normalizedTitle = key;
+                break;
+            }
+        }
+    }
+
+    if (!(normalizedTitle in COLUMN_TITLE_PREFIXES)) {
+        return undefined;
+    }
+
+    return COLUMN_TITLE_PREFIXES[normalizedTitle] as string;
+}

@@ -33,6 +33,8 @@ from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
+    NotRequired,
+    TypedDict,
 )
 
 from galaxy.schema import partial_model
@@ -357,6 +359,33 @@ class LimitedUserModel(Model):
 
 
 MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
+
+# named in compatibility with CWL - trying to keep CWL fields in mind with
+# this implementation. https://www.commonwl.org/user_guide/topics/inputs.html#inputs
+# element_identifier is not like CWL - it is used to specify the value in the row should
+# be the element_identifier for another element if present. It is a way to specify relationships
+# between elements in the collection - specifically implemented for the "control" use case.
+SampleSheetColumnType = Literal[
+    "string", "int", "float", "boolean", "element_identifier"
+]  # excluding "long" and "double" and composite types from CWL for now - we don't think at this level of abstraction in Galaxy generally
+NoneType = type(None)
+SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
+
+
+class SampleSheetColumnDefinition(TypedDict):
+    name: str
+    description: NotRequired[Optional[str]]
+    type: SampleSheetColumnType
+    optional: bool
+    default_value: NotRequired[Optional[SampleSheetColumnValueT]]
+    validators: NotRequired[Optional[List[Dict[str, Any]]]]
+    restrictions: NotRequired[Optional[List[SampleSheetColumnValueT]]]
+    suggestions: NotRequired[Optional[List[SampleSheetColumnValueT]]]
+
+
+SampleSheetColumnDefinitions = List[SampleSheetColumnDefinition]
+SampleSheetRow = List[SampleSheetColumnValueT]
+SampleSheetRows = Dict[str, SampleSheetRow]
 
 
 class DiskUsageUserModel(Model):
@@ -1031,6 +1060,11 @@ class DCESummary(Model, WithModelClass):
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
+    columns: Optional[SampleSheetRow] = Field(
+        None,
+        title="Columns",
+        description="A row (or list of columns) of data associated with this element",
+    )
 
 
 DCObject.model_rebuild()
@@ -1174,6 +1208,10 @@ class HDCADetailed(HDCASummary):
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
+    )
+    column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
+        None,
+        description="Column data associated with each element of this collection.",
     )
 
 
@@ -1687,6 +1725,16 @@ class CreateNewCollectionPayload(Model):
         default=None,
         title="Element Identifiers",
         description="List of elements that should be in the new collection.",
+    )
+    column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
+        default=None,
+        title="Column Definitions",
+        description="Specify definitions for row data if collection_type if sample_sheet",
+    )
+    rows: Optional[SampleSheetRows] = Field(
+        default=None,
+        title="Row data",
+        description="Specify rows of metadata data corresponding to an identifier if collection_type is sample_sheet",
     )
     name: Optional[str] = Field(
         default=None,

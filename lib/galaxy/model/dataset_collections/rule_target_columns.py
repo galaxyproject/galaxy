@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from pydantic import BaseModel
@@ -128,11 +129,20 @@ class ParsedColumn(BaseModel):
             return f"{self.type}_{self.type_index}"
 
 
-def column_titles_to_headers(column_titles: List[str]) -> List[HeaderColumn]:
+class InferredColumnMapping(BaseModel):
+    column_index: int
+    column_title: str
+    parsed_column: ParsedColumn
+
+
+def column_titles_to_headers(
+    column_titles: List[str], column_offset: int = 0
+) -> Tuple[List[HeaderColumn], List[InferredColumnMapping]]:
     headers: List[HeaderColumn] = []
     headers_of_type_seen: Dict[RuleBuilderMappingTargetKey, int] = {}
+    inferred_columns: List[InferredColumnMapping] = []
 
-    for column_title in column_titles:
+    for column_index, column_title in enumerate(column_titles):
         column_type_: Optional[RuleBuilderMappingTargetKey] = column_title_to_target_type(column_title)
         if not column_type_:
             # make a note in parse log that this column was skipped
@@ -152,8 +162,14 @@ def column_titles_to_headers(column_titles: List[str]) -> List[HeaderColumn]:
         if header_column.type == "paired_identifier" and implied_paired_or_unpaired_column_header(header_column):
             header_column.type = "paired_or_unpaired_identifier"
         headers.append(header_column)
-
-    return headers
+        inferred_columns.append(
+            InferredColumnMapping(
+                column_index=column_index + column_offset,
+                column_title=column_title,
+                parsed_column=header_column.parsed_column,
+            )
+        )
+    return headers, inferred_columns
 
 
 def implied_paired_or_unpaired_column_header(column_header: HeaderColumn) -> bool:

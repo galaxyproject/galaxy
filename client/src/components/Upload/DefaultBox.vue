@@ -554,6 +554,7 @@ defineExpose({
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
+            :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
             :show.sync="collectionModalShow"
             default-hide-source-items />

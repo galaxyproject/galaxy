@@ -1,3 +1,4 @@
+import re
 from typing import (
     List,
     Optional,
@@ -5,10 +6,16 @@ from typing import (
     Union,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
 
 if TYPE_CHECKING:
     from galaxy.tool_util_models.tool_source import FieldDict
+
+
+COLLECTION_TYPE_REGEX = re.compile(
+    r"^((list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*|sample_sheet|sample_sheet:paired|sample_sheet:record|sample_sheet:paired_or_unpaired)$"
+)
 
 
 class CollectionTypeDescriptionFactory:
@@ -146,6 +153,11 @@ class CollectionTypeDescription:
 
     def __str__(self):
         return f"CollectionTypeDescription[{self.collection_type}]"
+
+    def validate(self):
+        """Validate that this collection type is a valid Galaxy collection type."""
+        if COLLECTION_TYPE_REGEX.match(self.collection_type) is None:
+            raise RequestParameterInvalidException(f"Invalid collection type: [{self.collection_type}]")
 
 
 def map_over_collection_type(mapped_over_collection_type, target_collection_type):

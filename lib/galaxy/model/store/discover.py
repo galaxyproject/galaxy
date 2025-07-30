@@ -375,6 +375,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             "tag_lists": [],
             "paths": [],
             "extra_files": [],
+            "rows": [],
         }
         ext_override = change_datatype_actions.get(name)
         for discovered_file in chunk:
@@ -431,13 +432,18 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             element_datasets["datasets"].append(dataset)
             element_datasets["tag_lists"].append(discovered_file.match.tag_list)
             element_datasets["paths"].append(filename)
+            element_datasets["rows"].append(discovered_file.match.row)
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
-        for element_identifiers, dataset in zip(element_datasets["element_identifiers"], element_datasets["datasets"]):
+        for element_identifiers, dataset, row in zip(
+            element_datasets["element_identifiers"], element_datasets["datasets"], element_datasets["rows"]
+        ):
             current_builder: CollectionBuilder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
-                current_builder = current_builder.get_level(element_identifier)
-            current_builder.add_dataset(element_identifiers[-1], dataset)
+                current_builder = current_builder.get_level(element_identifier, row=row)
+                if row:
+                    row = None
+            current_builder.add_dataset(element_identifiers[-1], dataset, row=row)
 
             # Associate new dataset with job
             element_identifier_str = ":".join(element_identifiers)
@@ -794,11 +800,25 @@ def persist_elements_to_hdca(
 ):
     discovered_files: List[DiscoveredResult] = []
 
-    def add_to_discovered_files(elements, parent_identifiers=None):
+    collection = hdca.collection
+    root_collection_builder = BoundCollectionBuilder(collection)
+
+    def add_to_discovered_files(elements, parent_identifiers=None, collection_builder=None):
+        if collection_builder is None:
+            collection_builder = root_collection_builder
+
         parent_identifiers = parent_identifiers or []
         for element in elements:
             if "elements" in element:
-                add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
+                element_collection_builder = collection_builder.get_level(
+                    element["name"],
+                    row=element.get("row"),
+                )
+                add_to_discovered_files(
+                    element["elements"],
+                    parent_identifiers + [element["name"]],
+                    collection_builder=element_collection_builder,
+                )
             else:
                 discovered_file = discovered_file_for_element(
                     element, model_persistence_context, parent_identifiers, collector=collector
@@ -807,14 +827,12 @@ def persist_elements_to_hdca(
 
     add_to_discovered_files(elements)
 
-    collection = hdca.collection
-    collection_builder = BoundCollectionBuilder(collection)
     model_persistence_context.populate_collection_elements(
         collection,
-        collection_builder,
+        root_collection_builder,
         discovered_files,
     )
-    collection_builder.populate()
+    root_collection_builder.populate()
 
 
 def persist_elements_to_folder(
@@ -1158,6 +1176,10 @@ class JsonCollectedDatasetMatch:
     @property
     def effective_state(self):
         return self.as_dict.get("state") or "ok"
+
+    @property
+    def row(self):
+        return self.as_dict.get("row") or None
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

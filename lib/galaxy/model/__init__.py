@@ -185,6 +185,8 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -277,6 +279,7 @@ CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
 CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = Dict[str, CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE]
 CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = List[str]
 CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
+DATA_COLLECTION_FIELDS = List[Dict[str, Any]]
 
 
 class TransformAction(TypedDict):
@@ -6678,7 +6681,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     element_count: Mapped[Optional[int]]
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    fields: Mapped[Optional[bytes]] = mapped_column(JSONType, nullable=True)
+    # if collection_type is 'record' (heterogenous collection)
+    fields: Mapped[Optional[DATA_COLLECTION_FIELDS]] = mapped_column(JSONType)
+    # if collection_type is 'sample_sheet' (collection of rows that datasets with extra column metadata)
+    column_definitions: Mapped[Optional[SampleSheetColumnDefinitions]] = mapped_column(JSONType)
 
     elements: Mapped[List["DatasetCollectionElement"]] = relationship(
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),
@@ -6698,14 +6704,15 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         populated=True,
         element_count=None,
         fields=None,
+        column_definitions=None,
     ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
-        # TODO: persist fields...
         self.fields = fields
+        self.column_definitions = column_definitions
 
     def _build_nested_collection_attributes_stmt(
         self,
@@ -7149,6 +7156,7 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             name=self.name,
             collection_id=self.collection_id,
             collection_type=self.collection.collection_type,
+            column_definitions=self.collection.column_definitions,
             populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
@@ -7632,6 +7640,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     # Element index and identifier to define this parent-child relationship.
     element_index: Mapped[Optional[int]]
     element_identifier: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    columns: Mapped[Optional[SampleSheetRow]] = mapped_column(JSONType)
 
     hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         "HistoryDatasetAssociation",
@@ -7652,7 +7661,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
     # actionable dataset id needs to be available via API...
     dict_collection_visible_keys = ["id", "element_type", "element_index", "element_identifier"]
-    dict_element_visible_keys = ["id", "element_type", "element_index", "element_identifier"]
+    dict_element_visible_keys = ["id", "element_type", "element_index", "element_identifier", "columns"]
 
     UNINITIALIZED_ELEMENT = object()
 
@@ -7663,6 +7672,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         element=None,
         element_index=None,
         element_identifier=None,
+        columns: Optional[SampleSheetRow] = None,
     ):
         if isinstance(element, HistoryDatasetAssociation):
             self.hda = element
@@ -7681,6 +7691,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
                 self.dataset_collection_id = collection.id
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
+        self.columns = columns
 
     def __strict_check_before_flush__(self):
         if self.collection.populated_optimized:
@@ -7829,6 +7840,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             element_type=self.element_type,
             element_index=self.element_index,
             element_identifier=self.element_identifier,
+            columns=self.columns,
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         element_obj = self.element_object
