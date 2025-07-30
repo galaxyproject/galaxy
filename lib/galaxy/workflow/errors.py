@@ -20,7 +20,7 @@ GALAXY WORKFLOW RUN ERROR REPORT
 This error report was sent from the Galaxy instance hosted on the server
 "${host}"
 -----------------------------------------------------------------------------
-This is in reference to workflow invocation id ${invocation_id} (${invocation_id_encoded}) from history id ${history_id} (${history_id_encoded})
+This is in reference to workflow invocation id ${invocation_id_encoded} from history id ${history_id_encoded}
 -----------------------------------------------------------------------------
 You should be able to view the history associated with the workflow invocation (${invocation_id_encoded}) for workflow
 
@@ -47,9 +47,9 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Workflow</td><td><a href="${workflow_view_link}">${workflow_name} (${workflow_id}) (${workflow_id_encoded})</a></td></tr>
-        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
-        <tr><td>Workflow Invocation</td><td><a href="${invocation_view_link}">${invocation_id} (${invocation_id_encoded})</a></td></tr>
+        <tr><td>Workflow</td><td><a href="${workflow_view_link}">${workflow_name} (${workflow_id_encoded})</a></td></tr>
+        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id_encoded}</a></td></tr>
+        <tr><td>Workflow Invocation</td><td><a href="${invocation_view_link}">${invocation_id_encoded}</a></td></tr>
     </tbody>
 </table>
 
@@ -67,12 +67,12 @@ More information about the workflow invocation is available at the <a href="${in
 
 <table style="margin:1em">
     <tbody>
-        <tr><td>Invocation ID</td><td>${invocation_id} (${invocation_id_encoded})</td></tr>
+        <tr><td>Invocation ID</td><td>${invocation_id_encoded}</td></tr>
         <tr style="background-color: #f2f2f2"><td>Last Update</td><td>${invocation_update_time}</td></tr>
         <tr><td>Scheduling State</td><td>${invocation_scheduling_state}</td></tr>
-        <tr style="background-color: #f2f2f2"><td>Workflow ID</td><td>${workflow_id} (${workflow_id_encoded})</td></tr>
+        <tr style="background-color: #f2f2f2"><td>Workflow ID</td><td>${workflow_id_encoded}</td></tr>
         <tr><td>Workflow Version</td><td>${workflow_version}</td></tr>
-        <tr style="background-color: #f2f2f2"><td>Stored Workflow ID</td><td>${stored_workflow_id} (${stored_workflow_id_encoded})</td></tr>
+        <tr style="background-color: #f2f2f2"><td>Stored Workflow ID</td><td>${stored_workflow_id_encoded}</td></tr>
     </tbody>
 </table>
 
@@ -137,17 +137,13 @@ class WorkflowErrorReporter:
 
         report_variables = dict(
             host=host,
-            invocation_id=self.invocation.id,
             invocation_id_encoded=invocation_id_encoded,
             invocation_view_link=invocation_view_link,
             invocation_update_time=invocation_update_time,
             invocation_scheduling_state=invocation_scheduling_state,
             history_id_encoded=history_id_encoded,
-            history_id=self.history.id,
             history_view_link=history_view_link,
-            stored_workflow_id=self.workflow.stored_workflow.id,
             stored_workflow_id_encoded=stored_workflow_id_encoded,
-            workflow_id=self.workflow.id,
             workflow_id_encoded=workflow_id_encoded,
             workflow_version=workflow_version,
             workflow_view_link=workflow_view_link,
