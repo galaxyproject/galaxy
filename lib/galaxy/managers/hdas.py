@@ -527,6 +527,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 # why include if model_class is there?
                 "hda_ldda",
                 "copied_from_ldda_id",
+                "copied_from_hda_id",
                 # TODO: accessible needs to go away
                 "accessible",
                 # remapped
@@ -578,10 +579,18 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
     def serialize_copied_from_ldda_id(self, item, key, **context):
         """
-        Serialize an id attribute of `item`.
+        Serialize the copied from ldda id attribute of `item`.
         """
         if item.copied_from_library_dataset_dataset_association is not None:
             return self.app.security.encode_id(item.copied_from_library_dataset_dataset_association.id)
+        return None
+
+    def serialize_copied_from_hda_id(self, item, key, **context):
+        """
+        Serialize the copied from hda id attribute of `item`.
+        """
+        if item.copied_from_history_dataset_association is not None:
+            return self.app.security.encode_id(item.copied_from_history_dataset_association.id)
         return None
 
     def add_serializers(self):
@@ -596,6 +605,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "hda_ldda": lambda item, key, **context: "hda",
             "type_id": self.serialize_type_id,
             "copied_from_ldda_id": self.serialize_copied_from_ldda_id,
+            "copied_from_hda_id": self.serialize_copied_from_hda_id,
             "history_id": self.serialize_id,
             # remapped
             "misc_info": self._remap_from("info"),
