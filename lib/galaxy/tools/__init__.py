@@ -33,9 +33,11 @@ from mako.template import Template
 from packaging.version import Version
 from sqlalchemy import (
     delete,
+    false,
     func,
     select,
 )
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -882,6 +884,50 @@ class JobContext(BaseJobContext):
 
     def flush(self):
         self.sa_session.commit()
+
+    def get_replacement_dataset(
+        self,
+        dataset_sources: List[model.DatasetSource],
+        dataset_hashes: List[Union[model.DatasetHash, model.DatasetSourceHash]],
+        extension: str,
+        output_name: Optional[str],
+    ) -> Optional[model.Dataset]:
+        """
+        Get a replacement dataset for the given source URI and dataset hash.
+        If we already have such a dataset we don't need to create a new one.
+        """
+        if not self.user:
+            return None
+
+        # TODO: generalize
+        dataset_hash = dataset_hashes[0]
+        dataset_source = dataset_sources[0]
+        assert dataset_source.dataset
+
+        object_store_id = self.override_object_store_id(output_name=output_name)
+
+        existing_hash = aliased(model.DatasetHash, name="existing_hash")
+        existing_source = aliased(model.DatasetSource, name="existing_source")
+        existing_dataset_select = (
+            select(model.Dataset)
+            .join(existing_hash, existing_hash.dataset_id == model.Dataset.id)
+            .join(existing_source, existing_source.dataset_id == model.Dataset.id)
+            .join(model.HistoryDatasetAssociation, model.Dataset.id == model.HistoryDatasetAssociation.dataset_id)
+            .join(model.History, model.HistoryDatasetAssociation.history_id == model.History.id)
+            .where(
+                existing_hash.hash_function == dataset_hash.hash_function,
+                existing_hash.hash_value == dataset_hash.hash_value,
+                existing_source.transform == dataset_source.transform,
+                model.Dataset.deleted == false(),
+                model.Dataset.purged == false(),
+                model.Dataset.state == model.Dataset.states.OK,
+                model.Dataset.object_store_id == object_store_id,
+                model.HistoryDatasetAssociation.extension == extension,
+                model.History.user_id == self.user.id,
+            )
+        ).limit(1)
+        existing_dataset = self.sa_session.scalars(existing_dataset_select).first()
+        return existing_dataset
 
     def get_library_folder(self, destination: Dict[str, Any]):
         folder_id = destination.get("library_folder_id")

@@ -24,7 +24,13 @@ from typing import (
 import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model import LibraryFolder
+from galaxy.model import (
+    Dataset,
+    DatasetHash,
+    DatasetSource,
+    DatasetSourceHash,
+    LibraryFolder,
+)
 from galaxy.model.dataset_collections.builder import BoundCollectionBuilder
 from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.objectstore import (
@@ -79,6 +85,16 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def get_job(self) -> Optional[galaxy.model.Job]:
         return getattr(self, "job", None)
+
+    def get_replacement_dataset(
+        self,
+        dataset_sources: List[DatasetSource],
+        dataset_hashes: List[Union[DatasetSourceHash, DatasetHash]],
+        extension: str,
+        output_name: Optional[str],
+    ) -> Optional[Dataset]:
+        """Return a replacement dataset for the given source and hash, if available."""
+        return None
 
     def create_dataset(
         self,
@@ -168,6 +184,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 if metadata_element and metadata_element.set_in_upload:
                     setattr(primary_data.metadata, key, value)
 
+        assert primary_data.dataset
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
             source.source_uri = source_dict["source_uri"]
@@ -180,6 +197,17 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             hash_object.hash_function = hash_dict["hash_function"]
             hash_object.hash_value = hash_dict["hash_value"]
             primary_data.dataset.hashes.append(hash_object)
+
+        replacement_dataset = None
+        if primary_data.dataset.hashes and primary_data.dataset.sources and not purged:
+            replacement_dataset = self.get_replacement_dataset(
+                primary_data.dataset.sources,
+                primary_data.dataset.hashes,
+                extension=primary_data.extension,
+                output_name=output_name,
+            )
+            if replacement_dataset:
+                primary_data.dataset = replacement_dataset
 
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
@@ -211,7 +239,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if purged:
             primary_data.dataset.purged = True
             primary_data.purged = True
-        if filename and not purged:
+        if filename and not purged and not replacement_dataset:
             if storage_callbacks is None:
                 self.finalize_storage(
                     primary_data=primary_data,

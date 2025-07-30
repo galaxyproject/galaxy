@@ -72,7 +72,7 @@ class DatasetProtocol(
     blurb: str
     dataset: Any
     dbkey: Any
-    extension: str
+    extension: "Mapped[str]"
     peek: Any
     state: Any
     states: Any

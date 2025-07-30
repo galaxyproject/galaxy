@@ -109,7 +109,7 @@ class ExtraFiles(FetchBaseModel):
 
 
 class FetchDatasetHash(Model):
-    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
+    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512", "DROPBOX"]
     hash_value: str
 
     model_config = ConfigDict(extra="forbid")

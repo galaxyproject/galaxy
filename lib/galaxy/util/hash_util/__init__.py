@@ -17,14 +17,15 @@ from typing import (
     Union,
 )
 
-from . import smart_str
-from .path import StrPath
+from galaxy.util import smart_str
+from galaxy.util.path import StrPath
+from .dropbox_content_hasher import DropboxContentHasher
 
 log = logging.getLogger(__name__)
 
 BLOCK_SIZE = 1024 * 1024
 
-HashFunctionT = Callable[[], "hashlib._Hash"]
+HashFunctionT = Callable[[], Union["hashlib._Hash", DropboxContentHasher]]
 
 sha1 = hashlib.sha1
 sha256 = hashlib.sha256
@@ -40,6 +41,7 @@ class HashFunctionNameEnum(str, Enum):
     sha1 = "SHA-1"
     sha256 = "SHA-256"
     sha512 = "SHA-512"
+    dropbox = "DROPBOX"  # Special case for Dropbox content hash
 
 
 HASH_NAME_ALIAS: Dict[str, str] = {
@@ -53,6 +55,7 @@ HASH_NAME_MAP: Dict[HashFunctionNameEnum, HashFunctionT] = {
     HashFunctionNameEnum.sha1: sha1,
     HashFunctionNameEnum.sha256: sha256,
     HashFunctionNameEnum.sha512: sha512,
+    HashFunctionNameEnum.dropbox: DropboxContentHasher,
 }
 HASH_NAMES: List[HashFunctionNameEnum] = list(HASH_NAME_MAP.keys())
 
