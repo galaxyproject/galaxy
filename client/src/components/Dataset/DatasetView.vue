@@ -97,7 +97,7 @@ watch(
                     separator
                     inline
                     size="lg"
-                    class="flex-grow-1"
+                    class="flex-grow-1 d-flex flex-wrap align-items-center"
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
                     <span class="dataset-hid">{{ dataset?.hid }}:</span>
@@ -277,23 +277,21 @@ watch(
     opacity: 0;
 }
 
-.dataset-hid,
-.dataset-state-header {
-    white-space: nowrap;
-}
-
 .dataset-hid {
+    white-space: nowrap;
     margin-right: 0.25rem;
 }
 
 .dataset-name {
     word-break: break-word;
+    min-width: 0; // Allow flex item to shrink below content size
 }
 
 .dataset-state-header {
     font-size: $h5-font-size;
     vertical-align: middle;
     margin-left: 0.5rem;
+    flex-shrink: 0; // Prevent state badge from shrinking
 }
 
 .tab-content-panel {
