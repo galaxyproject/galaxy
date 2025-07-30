@@ -20,7 +20,7 @@ GALAXY TOOL ERROR REPORT
 This error report was sent from the Galaxy instance hosted on the server
 "${host}"
 -----------------------------------------------------------------------------
-This is in reference to dataset id ${dataset_id} (${dataset_id_encoded}) from history id ${history_id} (${history_id_encoded})
+This is in reference to dataset id ${dataset_id_encoded} from history id ${history_id_encoded}
 -----------------------------------------------------------------------------
 You should be able to view the history containing the related history item (${hda_id_encoded})
 
@@ -36,7 +36,7 @@ The user ${email_str} provided the following information:
 ${message}
 -----------------------------------------------------------------------------
 info url: ${hda_show_params_link}
-job id: ${job_id} (${job_id_encoded})
+job id: ${job_id_encoded}
 tool id: ${job_tool_id}
 tool version: ${tool_version}
 job pid or drm id: ${job_runner_external_id}
@@ -69,8 +69,8 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
-        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
+        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id_encoded}</a></td></tr>
+        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id_encoded}</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
 </table>
@@ -90,7 +90,7 @@ Job environment and execution information is available at the job <a href="${hda
 
 <table style="margin:1em">
     <tbody>
-        <tr><td>Job ID</td><td>${job_id} (${job_id_encoded})</td></tr>
+        <tr><td>Job ID</td><td>${job_id_encoded}</td></tr>
         <tr style="background-color: #f2f2f2"><td>Tool ID</td><td>${job_tool_id}</td></tr>
         <tr><td>Tool Version</td><td>${tool_version}</td></tr>
         <tr style="background-color: #f2f2f2"><td>Job PID or DRM id</td><td>${job_runner_external_id}</td></tr>
@@ -195,16 +195,13 @@ class ErrorReporter:
         report_variables = dict(
             host=host,
             dataset_id_encoded=self.app.security.encode_id(hda.dataset_id),
-            dataset_id=hda.dataset_id,
             history_id_encoded=history_id_encoded,
-            history_id=hda.history_id,
             hda_id_encoded=hda_id_encoded,
             hid=hda.hid,
             history_item_name=hda.get_display_name(),
             history_view_link=history_view_link,
             hda_show_params_link=hda_show_params_link,
             job_id_encoded=self.app.security.encode_id(job.id),
-            job_id=job.id,
             tool_version=job.tool_version,
             job_tool_id=job.tool_id,
             job_tool_version=hda.tool_version,
