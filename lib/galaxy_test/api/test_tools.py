@@ -1121,6 +1121,42 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert len(filenames) == 3, filenames
             assert len(set(filenames)) <= 2, filenames
 
+    @skip_without_tool("cat1")
+    @requires_new_history
+    def test_run_cat1_use_cached_job_build_list(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            inputs = self._get_cat1_inputs(history_id)
+            outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run_cat1(
+                history_id, inputs=inputs, use_cached_job=False, assert_ok=True, wait_for_job=True
+            )
+            # Rename inputs. Job should still be cached since cat1 doesn't look at name attribute
+            self.dataset_populator.rename_dataset(inputs["input1"]["id"])
+            outputs_three = self._run_cat1(
+                history_id, inputs=inputs, use_cached_job=True, assert_ok=False, wait_for_job=False
+            ).json()
+            outputs_four = self._run(
+                "__BUILD_LIST__",
+                history_id=history_id,
+                inputs={"datasets_0|input": {"src": "hda", "id": outputs_three["outputs"][0]["id"]}},
+            ).json()
+            self.dataset_populator.wait_for_job(outputs_three["jobs"][0]["id"])
+            dataset_details = []
+            for output in [outputs_one, outputs_two, outputs_three]:
+                output_id = output["outputs"][0]["id"]
+                dataset_details.append(self._get(f"datasets/{output_id}").json())
+                assert self._get(f"jobs/{output['jobs'][0]['id']}/metrics").json()
+            filenames = [dd["file_name"] for dd in dataset_details]
+            assert len(filenames) == 3, filenames
+            assert len(set(filenames)) <= 2, filenames
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=outputs_four["output_collections"][0]["id"]
+            )
+            assert self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=hdca["elements"][0]["object"]["id"]
+            )
+
     @skip_without_tool("cat_list")
     @skip_without_tool("__SORTLIST__")
     def test_run_cat_list_hdca_sort_order_respecrted_use_cached_job(self):

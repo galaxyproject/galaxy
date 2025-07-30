@@ -11501,6 +11501,11 @@ export interface components {
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
+            /**
              * Create Time
              * @description The time and date this item was created.
              */
@@ -11749,6 +11754,11 @@ export interface components {
             copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
+            /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
             /**
              * Create Time
              * Format: date-time
@@ -13811,12 +13821,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string | null;
+            latest_installable_revision?: string | null;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string | null;
+            repository_deprecated?: string | null;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
@@ -13878,7 +13888,7 @@ export interface components {
              */
             tool_shed: string;
             /** Latest updated status from the tool shed */
-            tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
+            tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
         };

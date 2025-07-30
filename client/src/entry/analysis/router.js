@@ -267,6 +267,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             datasetId: route.params.datasetId,
                             tab: route.params.tab,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
@@ -663,9 +664,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "visualizations/list_published",
                         component: GridVisualization,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "visualizations/list_shared",

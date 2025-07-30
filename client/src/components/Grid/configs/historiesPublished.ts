@@ -88,7 +88,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Username",
-        type: "text",
+        type: "link",
+        handler: (data: HistoryEntry) => {
+            emit(`/histories/list_published?f-username=${data.username}`);
+        },
     },
 ];
 

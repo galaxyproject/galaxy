@@ -5,6 +5,7 @@ Image classes
 import base64
 import json
 import logging
+import math
 import struct
 from typing import (
     Any,
@@ -79,6 +80,14 @@ class Image(data.Data):
     MetadataElement(
         name="dtype",
         desc="Data type of the image pixels or voxels",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="num_unique_values",
+        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
         readonly=True,
         visible=True,
         optional=True,
@@ -263,6 +272,7 @@ class Tiff(Image):
                         "channels",
                         "depth",
                         "frames",
+                        "num_unique_values",
                     ]
                 }
 
@@ -279,6 +289,9 @@ class Tiff(Image):
                     metadata["channels"].append(Tiff._get_axis_size(series.shape, axes, "C"))
                     metadata["depth"].append(Tiff._get_axis_size(series.shape, axes, "Z"))
                     metadata["frames"].append(Tiff._get_axis_size(series.shape, axes, "T"))
+
+                    # Determine the metadata values that require reading the image data
+                    metadata["num_unique_values"].append(Tiff._get_num_unique_values(series))
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
@@ -356,7 +369,8 @@ class Tiff(Image):
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
             else:
-                yield from np.array_split(arr_flat, mmap_chunk_size)
+                chunks_count = math.ceil(len(arr_flat) / mmap_chunk_size)
+                yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
     def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:

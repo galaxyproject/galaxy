@@ -105,6 +105,7 @@ const linkClass = computed(() => {
         <LoadingSpan v-if="!history" />
         <component :is="tag" v-else :class="linkClass" data-description="switch to history link">
             <GLink
+                class="history-link-click"
                 tooltip
                 :thin="thin"
                 data-description="switch to history link"

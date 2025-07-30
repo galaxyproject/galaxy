@@ -13,6 +13,7 @@ import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -20,6 +21,7 @@ import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type StateMap, STATES } from "./model/states";
+import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentOptions from "./ContentOptions.vue";
@@ -258,15 +260,33 @@ function onDisplay() {
         const url = entryPointsForHda[0]?.target;
         window.open(url, "_blank");
     } else {
+        const Galaxy = getGalaxyInstance();
+        const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
+
+        // Build the display URL with displayOnly query param if needed
+        let displayUrl = itemUrls.value.display;
+        if (isWindowManagerActive && displayUrl) {
+            displayUrl += displayUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true";
+        }
+
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
+            const options: RouterPushOptions = {
+                force: true,
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { force: true, preventWindowManager: true });
-        } else if (itemUrls.value.display) {
+            router.push(displayUrl, options);
+        } else if (displayUrl) {
+            const options: RouterPushOptions = {
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { preventWindowManager: true });
+            router.push(displayUrl, options);
         }
     }
 }
