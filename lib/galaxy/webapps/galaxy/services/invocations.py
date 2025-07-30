@@ -29,7 +29,10 @@ from galaxy.managers.jobs import (
     invocation_job_source_iter,
     summarize_metrics,
 )
-from galaxy.managers.workflows import WorkflowsManager
+from galaxy.managers.workflows import (
+    InvocationFilters,
+    WorkflowsManager,
+)
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -37,6 +40,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
     WorkflowRequestInputParameter,
 )
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
@@ -89,15 +93,21 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         security: IdEncodingHelper,
         histories_manager: HistoryManager,
         workflows_manager: WorkflowsManager,
+        filters: InvocationFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
     ):
         super().__init__(security=security)
         self._histories_manager = histories_manager
         self._workflows_manager = workflows_manager
+        self.filters = filters
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
-        self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
+        self,
+        trans,
+        invocation_payload: InvocationIndexPayload,
+        serialization_params: InvocationSerializationParams,
+        filter_query_params: FilterQueryParams,
     ) -> Tuple[List[WorkflowInvocationResponse], int]:
         workflow_id = invocation_payload.workflow_id
         if invocation_payload.instance:
@@ -121,6 +131,10 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             # Get all invocations if user is admin (and user_id is None).
             # xref https://github.com/galaxyproject/galaxy/pull/13862#discussion_r865732297
             user_id = invocation_payload.user_id
+
+        filter_params = self.filters.build_filter_params(filter_query_params)
+        filters = self.filters.parse_filters(filter_params)
+
         invocations, total_matches = self._workflows_manager.build_invocations_query(
             trans,
             stored_workflow_id=invocation_payload.workflow_id,
@@ -134,6 +148,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             sort_desc=invocation_payload.sort_desc,
             include_nested_invocations=invocation_payload.include_nested_invocations,
             check_ownership=False,
+            filters=filters,
         )
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
