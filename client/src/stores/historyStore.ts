@@ -305,7 +305,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param reduction Whether it is a reduction or addition (default)
      */
     async function handleTotalCountChange(count = 0, reduction = false) {
-        historiesOffset.value += !reduction ? count : -count;
+        const adjustment = !reduction ? count : -count;
+        historiesOffset.value = Math.max(0, historiesOffset.value + adjustment);
         await loadTotalHistoryCount();
     }
 
