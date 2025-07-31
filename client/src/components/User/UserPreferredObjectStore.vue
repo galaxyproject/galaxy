@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BModal, BRow } from "bootstrap-vue";
-import { faHdd } from "font-awesome-6";
+import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -55,21 +53,20 @@ async function handleSubmit(preferred: string | null) {
 <template>
     <BModal
         id="modal-select-preferred-object-store"
-        ref="modal"
         centered
         :title="title"
-        :title-tag="titleTag"
+        title-tag="h3"
         hide-footer
         static
         visible
-        :size="modalSize"
+        size="lg"
         @hidden="resetModal">
         <SelectObjectStore
             :parent-error="error"
-            :for-what="newDatasetsDescription"
             :selected-object-store-id="selectedObjectStoreId"
-            :default-option-title="galaxySelectionDefaultTitle"
-            :default-option-description="galaxySelectionDefaultDescription"
+            for-what="New dataset outputs from tools and workflows"
+            default-option-title="Galaxy Defaults"
+            default-option-description="Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator."
             @onSubmit="handleSubmit" />
     </BModal>
 </template>
