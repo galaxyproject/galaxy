@@ -310,14 +310,7 @@ onMounted(async () => {
                 @reset="toggleBeaconModal" />
 
             <UserPreferredObjectStore
-                v-if="
-                    isConfigLoaded &&
-                    config.object_store_allows_id_selection &&
-                    currentUser &&
-                    showPreferredStorageModal
-                "
-                :preferred-object-store-id="currentUser?.preferred_object_store_id"
-                :user-id="currentUser?.id"
+                v-if="isConfigLoaded && config.object_store_allows_id_selection && showPreferredStorageModal"
                 @reset="togglePreferredStorageModal" />
 
             <UserDeletion v-if="showDeleteAccountModal" @reset="toggleUserDeletion" />
