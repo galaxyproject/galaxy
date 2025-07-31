@@ -174,7 +174,9 @@ class DatasetInheritanceChainEntry(Model):
     dep: str = Field(
         description="Name of the source of the referenced dataset at this point of the inheritance chain.",
     )
-    same_user: bool = Field(description="Whether the referenced dataset belongs to the same user.")
+    user_id: EncodedDatabaseIdField = Field(
+        description="ID of the user who owns the referenced dataset.",
+    )
 
 
 class DatasetInheritanceChain(RootModel):
@@ -503,7 +505,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     id=dep[0].id,
                     name=dep[0].name,
                     dep=dep[1],
-                    same_user=dep[0].user.id == dataset_instance.user.id,
+                    user_id=dep[0].user.id,
                 )
             )
 

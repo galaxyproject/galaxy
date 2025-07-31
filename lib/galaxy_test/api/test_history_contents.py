@@ -375,6 +375,55 @@ class TestHistoryContentsApi(ApiTestCase):
         assert len(inheritance_chain) == 1
 
     @requires_new_library
+    def test_inheritance_chain_library_to_histories(self, history_id):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            different_user_id = self.dataset_populator.user_id()
+        combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
+
+        ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
+        self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
+
+        with self._different_user():
+            create_data_from_library = dict(
+                source="library",
+                content=ld["id"],
+            )
+            first_history_name = "different_user_history"
+            first_history_id = self.dataset_populator.new_history(name=first_history_name)
+            create_response_from_library = self._post(
+                f"histories/{first_history_id}/contents", create_data_from_library, json=True
+            )
+            self._assert_status_code_is_ok(create_response_from_library)
+            first_hda = create_response_from_library.json()
+
+            update_access_response = self._put(f"histories/{first_history_id}/enable_link_access")
+            self._assert_status_code_is_ok(update_access_response)
+
+        create_data_from_hda = dict(
+            source="hda",
+            content=first_hda["id"],
+        )
+        create_response_from_hda = self._post(f"histories/{history_id}/contents", create_data_from_hda, json=True)
+        self._assert_status_code_is_ok(create_response_from_hda)
+        second_hda_id = create_response_from_hda.json()["id"]
+
+        inheritance_chain_response = self._get(f"datasets/{second_hda_id}/inheritance_chain")
+        self._assert_status_code_is_ok(inheritance_chain_response)
+        inheritance_chain = inheritance_chain_response.json()
+        assert len(inheritance_chain) == 2
+
+        assert inheritance_chain[0]["id"] == first_hda["id"]
+        assert inheritance_chain[0]["name"] == first_hda["name"]
+        assert inheritance_chain[0]["dep"] == first_history_name
+        assert inheritance_chain[0]["user_id"] == different_user_id
+
+        assert inheritance_chain[1]["id"] == ld["id"]
+        assert inheritance_chain[1]["name"] == ld["name"]
+        assert inheritance_chain[1]["dep"] == "(Data Library)"
+        assert inheritance_chain[1]["user_id"] == user_id
+
+    @requires_new_library
     def test_library_copy(self, history_id):
         ld = self.library_populator.new_library_dataset("lda_test_library")
         create_data = dict(
