@@ -30,6 +30,7 @@ from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
 )
+from galaxy.util.plugin_config import PluginInstance
 from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
@@ -452,7 +453,7 @@ def file_source_type_is_browsable(target_type: type["BaseFilesSource"]) -> bool:
     return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
 
 
-class BaseFilesSource(FilesSource):
+class BaseFilesSource(FilesSource, PluginInstance):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False

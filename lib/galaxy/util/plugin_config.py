@@ -2,18 +2,21 @@ from types import ModuleType
 from typing import (
     Any,
     cast,
+    ClassVar,
     Dict,
     Generator,
     Iterable,
     List,
     NamedTuple,
     Optional,
+    Protocol,
     Type,
     TypeVar,
     Union,
 )
 
 import yaml
+from pydantic import BaseModel
 
 from galaxy.util import parse_xml
 from galaxy.util.path import StrPath
@@ -26,6 +29,12 @@ PluginConfigsT = Union[PluginDictConfigT, List[PluginDictConfigT]]
 class PluginConfigSource(NamedTuple):
     type: str
     source: Any
+
+
+class PluginInstance(Protocol):
+    config_class: ClassVar[Type[BaseModel]]
+
+    def __init__(self, config: BaseModel) -> None: ...
 
 
 def plugins_dict(module: ModuleType, plugin_type_identifier: str) -> Dict[str, Type]:
@@ -44,7 +53,7 @@ def plugins_dict(module: ModuleType, plugin_type_identifier: str) -> Dict[str, T
     return plugin_dict
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=PluginInstance)
 
 
 def load_plugins(
@@ -92,8 +101,8 @@ def __load_plugins_from_element(
             template = "Failed to find plugin of type [%s] in available plugin types %s"
             message = template % (plugin_type, str(plugins_dict.keys()))
             raise Exception(message)
-
-        plugin = plugin_klazz(**plugin_kwds)
+        plugin_config = plugin_klazz.config_class(**plugin_kwds)
+        plugin = plugin_klazz(config=plugin_config)
         plugins.append(plugin)
 
     return plugins
@@ -129,7 +138,9 @@ def __load_plugins_from_dicts(
         if extra_kwds:
             plugin_kwds = plugin_kwds.copy()
             plugin_kwds.update(extra_kwds)
-        plugin = plugins_dict[plugin_type](**plugin_kwds)
+        plugin_class = plugins_dict[plugin_type]
+        plugin_config = plugin_class.config_class(**plugin_kwds)
+        plugin = plugin_class(config=plugin_config)
         plugins.append(plugin)
 
     return plugins
