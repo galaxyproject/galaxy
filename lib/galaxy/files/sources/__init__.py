@@ -93,7 +93,7 @@ class FileSourceSupports(StrictModel):
     sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
 
 
-class FileSourceConfiguration(StrictModel):
+class FilesSourceProperties(StrictModel):
     """Initial set of properties used to initialize a file source.
 
     File sources can extend this model to define any additional
@@ -245,7 +245,7 @@ class FilesSourceOptions(StrictModel):
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
     extra_props: Annotated[
-        Optional[FileSourceConfiguration],
+        Optional[FilesSourceProperties],
         Field(
             description="Additional properties to override the initial properties defined in the constructor.",
         ),
@@ -457,10 +457,10 @@ class BaseFilesSource(FilesSource):
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
-    config_class: ClassVar[Type[FileSourceConfiguration]]
+    config_class: ClassVar[Type[FilesSourceProperties]]
 
-    def __init__(self, config: FileSourceConfiguration):
-        self._parse_common_config_opts(config)
+    def __init__(self, config: FilesSourceProperties):
+        self._parse_common_props(config)
         self.config = config
 
     def get_browsable(self) -> bool:
@@ -514,7 +514,7 @@ class BaseFilesSource(FilesSource):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
-    def _parse_common_config_opts(self, config: FileSourceConfiguration):
+    def _parse_common_props(self, config: FilesSourceProperties):
         """Initialize common configuration from a Pydantic model.
 
         This method extracts common file source properties from a Pydantic model
