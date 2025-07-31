@@ -185,7 +185,7 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
                     # Try to find out the reason for exiting - this needs to happen before change_state
                     # otherwise jobs depending on resubmission outputs see that job as failed and pause.
-                    self.__handle_out_of_memory(ajs, external_job_id)
+                    self.__handle_job_failure_reasons(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
                     # Don't add the job to the watched items once it fails, deals with https://github.com/galaxyproject/galaxy/issues/7820
                     continue
@@ -211,17 +211,30 @@ class ShellJobRunner(AsynchronousJobRunner):
     def handle_metadata_externally(self, ajs):
         self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
 
-    def __handle_out_of_memory(self, ajs, external_job_id):
+    def __handle_job_failure_reasons(self, ajs, external_job_id):
         shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
         shell, job_interface = self.get_cli_plugins(shell_params, job_params)
         cmd_out = shell.execute(job_interface.get_failure_reason(external_job_id))
         if cmd_out is not None:
-            if (
-                job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
-                == JobState.runner_states.MEMORY_LIMIT_REACHED
-            ):
-                ajs.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-                ajs.fail_message = "Tool failed due to insufficient memory. Try with more memory."
+            jobstate_map = {
+              JobState.runner_states.MEMORY_LIMIT_REACHED: (
+                "Tool failed due to insufficient memory. Try with more memory.",
+                "(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+              ),
+              JobState.runner_states.WALLTIME_REACHED: (
+                "This job was terminated because it ran longer than the maximum allowed job run time.",
+                "(%s/%s) Job hit walltime" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+              ),
+              JobState.runner_states.UNKNOWN_ERROR: (
+                "This job ran into an unknown error.",
+                "(%s/%s) Job hit unknown error" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+              )
+            }
+            reported_jobstate = job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
+            if reported_jobstate in jobstate_map:
+                (ajs.fail_message, logmsg) = jobstate_map.get(reported_jobstate)
+                ajs.runner_state = reported_jobstate
+                log.info(logmsg)
 
     def __get_job_states(self):
         job_destinations = {}
