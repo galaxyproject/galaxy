@@ -292,6 +292,7 @@ const allowedTitleLines = computed(() => props.titleNLines);
             { 'g-card-selected': selected },
             { 'g-card-current': current },
             { 'g-card-published': published },
+            { 'g-card-clickable': props.clickable },
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
@@ -685,6 +686,19 @@ const allowedTitleLines = computed(() => props.titleNLines);
 
     &.g-card-published .g-card-content {
         border-left: 0.25rem solid $brand-primary;
+    }
+
+    &.g-card-clickable {
+        cursor: pointer;
+
+        &:hover,
+        &:focus-within {
+            .g-card-content {
+                border-color: $brand-secondary;
+                box-shadow: 0 0 0 0.5px;
+                background-color: lighten($brand-light, 0.5);
+            }
+        }
     }
 
     .g-card-rename {
