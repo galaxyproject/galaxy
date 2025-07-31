@@ -306,7 +306,6 @@ onMounted(async () => {
 
             <UserBeaconSettings
                 v-if="isConfigLoaded && config.enable_beacon_integration && showBeaconModal"
-                :user-id="currentUser?.id"
                 @reset="toggleBeaconModal" />
 
             <UserPreferredObjectStore
