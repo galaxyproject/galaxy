@@ -242,6 +242,9 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     def base(self) -> str:
         return str(self.__request.base_url)
 
+    def stream(self) -> AsyncGenerator:
+        return self.__request.stream()
+
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
@@ -249,6 +252,10 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
+
+    @property
+    def url(self) -> str:
+        return str(self.__request.url)
 
     @property
     def host(self) -> str:
@@ -264,6 +271,10 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         if self.__environ is None:
             self.__environ = build_environ(self.__request.scope, None)  # type: ignore[arg-type]
         return self.__environ
+
+    @property
+    def method(self):
+        return self.__request.method
 
     @property
     def headers(self):
