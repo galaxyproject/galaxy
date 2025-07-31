@@ -72,6 +72,23 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
+    async function fetchInvocationCount(params: FetchParams): Promise<number> {
+        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
+            params: { path: { workflow_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        let allCounts = 0;
+        for (const stateCount of Object.values(data)) {
+            if (stateCount) {
+                allCounts += stateCount;
+            }
+        }
+        return allCounts;
+    }
+
     async function cancelWorkflowScheduling(invocationId: string) {
         const { data, error } = await GalaxyApi().DELETE("/api/invocations/{invocation_id}", {
             params: {
@@ -104,6 +121,8 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     const { getItemById: getInvocationRequestById } = useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
 
+    const { getItemById: getInvocationCountByWorkflowId } = useKeyedCache<number>(fetchInvocationCount);
+
     return {
         cancelWorkflowScheduling,
         fetchInvocationById,
@@ -116,6 +135,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationLoadError,
         getInvocationStepById,
         getInvocationRequestById,
+        getInvocationCountByWorkflowId,
         graphStepsByStoreId,
         isLoadingInvocation,
     };
