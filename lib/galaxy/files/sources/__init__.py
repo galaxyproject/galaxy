@@ -2,24 +2,23 @@ import abc
 import builtins
 import os
 import time
-from dataclasses import (
-    dataclass,
-    field,
-)
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
     ClassVar,
     Optional,
+    Type,
     TYPE_CHECKING,
     Union,
 )
 
-from typing_extensions import (
-    Literal,
-    NotRequired,
-    TypedDict,
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
 )
+from typing_extensions import Literal
 
 from galaxy.exceptions import (
     ConfigurationError,
@@ -42,6 +41,14 @@ if TYPE_CHECKING:
         FileSourcesUserContext,
         OptionalUserContext,
     )
+
+
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class FlexibleModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
 
 
 class PluginKind(str, Enum):
@@ -78,90 +85,207 @@ class PluginKind(str, Enum):
     """
 
 
-class FileSourceSupports(TypedDict):
+class FileSourceSupports(StrictModel):
     """Feature support flags for a file source plugin"""
 
-    # Indicates whether the file source supports pagination for listing files
-    pagination: NotRequired[bool]
-    # Indicates whether the file source supports server-side search for listing files
-    search: NotRequired[bool]
-    # Indicates whether the file source supports server-side sorting for listing files
-    sorting: NotRequired[bool]
+    pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
+    search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
+    sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
 
 
-class FilesSourceProperties(TypedDict):
-    """Initial set of properties used to initialize a filesource.
+class FileSourceConfiguration(StrictModel):
+    """Initial set of properties used to initialize a file source.
 
-    Filesources can extend this typed dict to define any additional
+    File sources can extend this model to define any additional
     filesource specific properties.
     """
 
-    file_sources_config: NotRequired[FileSourcePluginsConfig]
-    id: NotRequired[str]
-    label: NotRequired[str]
-    doc: NotRequired[Optional[str]]
-    scheme: NotRequired[str]
-    writable: NotRequired[bool]
-    requires_roles: NotRequired[Optional[str]]
-    requires_groups: NotRequired[Optional[str]]
-    disable_templating: NotRequired[Optional[bool]]
-    # API helper values
-    uri_root: NotRequired[str]
-    type: NotRequired[str]
-    browsable: NotRequired[bool]
-    url: NotRequired[Optional[str]]
-    supports: NotRequired[FileSourceSupports]
+    id: Annotated[
+        str,
+        Field(
+            ...,
+            description="The `FilesSource` plugin identifier",
+        ),
+    ]
+    type: Annotated[
+        str,
+        Field(
+            ...,
+            description="The type of the plugin.",
+        ),
+    ]
+    label: Annotated[
+        Optional[str],
+        Field(
+            ...,
+            description="The display label for this plugin.",
+        ),
+    ] = "Unlabeled File Source"
+    doc: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="Documentation",
+            description="Documentation or extended description for this plugin.",
+        ),
+    ] = None
+    browsable: Annotated[
+        bool,
+        Field(
+            ...,
+            title="Browsable",
+            description="Whether this file source plugin can list items.",
+        ),
+    ] = False
+    writable: Annotated[
+        bool,
+        Field(
+            ...,
+            title="Writeable",
+            description="Whether this files source plugin allows write access.",
+        ),
+    ] = DEFAULT_WRITABLE
+    requires_roles: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="Requires roles",
+            description=(
+                "Only users with the roles specified here can access this source."
+                " This is a boolean expression that can be evaluated by the server."
+                " It can be a simple role name or a complex expression."
+                " For example, 'role1 and (role2 or role3)' will allow access if the user has role1 and either role2 or role3."
+            ),
+        ),
+    ] = None
+    requires_groups: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="Requires groups",
+            description=(
+                "Only users belonging to the groups specified here can access this source."
+                " This is a boolean expression that can be evaluated by the server."
+                " It can be a simple group name or a complex expression."
+                " For example, 'group1 and (group2 or group3)' will allow access if the user belongs to group1 and either group2 or group3."
+            ),
+        ),
+    ] = None
+    disable_templating: Annotated[
+        Optional[bool],
+        Field(
+            False,
+            title="Disable Templating",
+            description=(
+                "Whether to disable templating for this file source. If set to True, "
+                "the file source will not support templating in paths or other properties."
+            ),
+        ),
+    ] = False
+    scheme: Annotated[
+        Optional[str],
+        Field(
+            DEFAULT_SCHEME,
+            title="Scheme",
+            description="The URI scheme used by this file source plugin.",
+        ),
+    ] = DEFAULT_SCHEME
+    uri_root: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="URI root",
+            description=(
+                "The URI root used by this type of plugin. This is used to identify the file source and "
+                "should be unique across all file sources."
+            ),
+        ),
+    ] = None
+    url: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="URL",
+            description="Optional URL that might be provided by some plugins to link to the remote source.",
+        ),
+    ] = None
+    supports: Annotated[
+        FileSourceSupports,
+        Field(
+            default_factory=FileSourceSupports,
+            description="Features supported by this file source.",
+        ),
+    ] = FileSourceSupports()
+    file_sources_config: Annotated[
+        FileSourcePluginsConfig,
+        Field(
+            ...,
+            description="Configuration for the file sources, used to validate and initialize the file source.",
+        ),
+    ]
 
 
-@dataclass
-class FilesSourceOptions:
+class FilesSourceOptions(StrictModel):
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
-    # Indicates access to the FS operation with intent to write.
-    # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
-    # so those should be skipped while browsing with writeable=True.
-    writeable: Optional[bool] = False
+    writeable: Annotated[
+        bool,
+        Field(
+            False,
+            description=(
+                "Whether the query is made with the intention of writing to the source."
+                " If set to True, only entries (directories) that can be written to will be returned."
+                " This is used to filter out read-only locations within the file source when listing entries."
+            ),
+        ),
+    ] = False
 
     # Property overrides for values initially configured through the constructor. For example
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
+    extra_props: Annotated[
+        Optional[FileSourceConfiguration],
+        Field(
+            description="Additional properties to override the initial properties defined in the constructor.",
+        ),
+    ] = None
 
 
-class EntryData(TypedDict):
+class EntryData(FlexibleModel):
     """Provides data to create a new entry in a file source."""
 
     name: str
     # May contain additional properties depending on the file source
 
 
-class Entry(TypedDict):
+class Entry(FlexibleModel):
     """Represents the result of creating a new entry in a file source."""
 
     name: str
     uri: str
     # May contain additional properties depending on the file source
-    external_link: NotRequired[str]
+    external_link: Optional[str]
 
 
-class RemoteEntry(TypedDict):
+class RemoteEntry(StrictModel):
+    """Represents a remote entry in a file source, either a directory or a file."""
+
     name: str
     uri: str
     path: str
 
 
-TDirectoryClass = TypedDict("TDirectoryClass", {"class": Literal["Directory"]})
-TFileClass = TypedDict("TFileClass", {"class": Literal["File"]})
+class RemoteDirectory(RemoteEntry):
+    class_: Annotated[Literal["Directory"], Field(..., serialization_alias="class")] = "Directory"
 
 
-class RemoteDirectory(RemoteEntry, TDirectoryClass):
-    pass
-
-
-class RemoteFile(RemoteEntry, TFileClass):
-    size: int
-    ctime: str
+class RemoteFile(RemoteEntry):
+    class_: Annotated[Literal["File"], Field(..., serialization_alias="class")] = "File"
+    size: Annotated[int, Field(..., title="Size", description="The size of the file in bytes.")] = 0
+    ctime: Annotated[
+        Optional[str], Field(default="Unknown", title="Creation time", description="The creation time of the file.")
+    ]
 
 
 AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
@@ -172,14 +296,14 @@ class SingleFileSource(metaclass=abc.ABCMeta):
     Represents a protocol handler for a single remote file that can be read by or written to by Galaxy.
     A remote file source can typically handle a url like `https://galaxyproject.org/myfile.txt` or
     `drs://myserver/123456`. The filesource abstraction allows programmatic control over the specific source
-    to access, injection of credentials and access control. Filesources are typically listed and configured
+    to access, injection of credentials and access control. File sources are typically listed and configured
     through `file_sources_conf.yml` or programmatically, as required.
 
-    Filesources can be contextualized with a `user_context`, which contains information related to the current
+    File sources can be contextualized with a `user_context`, which contains information related to the current
     user attempting to access that filesource such as the username, preferences, roles etc., which can then
     be used by the filesource to make authorization decisions or inject credentials.
 
-    Filesources are loaded through Galaxy's plugin system in `galaxy.util.plugin_config`.
+    File sources are loaded through Galaxy's plugin system in `galaxy.util.plugin_config`.
     """
 
     @abc.abstractmethod
@@ -270,7 +394,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         returned unchanged."""
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -285,7 +409,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
 class SupportsBrowsing(metaclass=abc.ABCMeta):
     """An interface indicating that this filesource is browsable.
 
-    Browsable filesources will typically have a root uri from which to start browsing.
+    Browsable file sources will typically have a root uri from which to start browsing.
     e.g. In an s3 bucket, the root uri may be gxfiles://bucket1/
 
     They will also have a list method to list files in a specific path within the filesource.
@@ -311,7 +435,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
-    """Represents a combined interface for single or browsable filesources.
+    """Represents a combined interface for single or browsable file sources.
     The `get_browsable` method can be used to determine whether the filesource is browsable and
     implements the `SupportsBrowsing` interface.
     """
@@ -333,6 +457,11 @@ class BaseFilesSource(FilesSource):
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
+    config_class: ClassVar[Type[FileSourceConfiguration]]
+
+    def __init__(self, config: FileSourceConfiguration):
+        self._parse_common_config_opts(config)
+        self.config = config
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -385,26 +514,25 @@ class BaseFilesSource(FilesSource):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
-    def _parse_common_config_opts(self, kwd: FilesSourceProperties):
-        self._file_sources_config = kwd.pop("file_sources_config")
-        self.id = kwd.pop("id")
-        self.label = kwd.pop("label", self.id)
-        self.doc = kwd.pop("doc", None)
-        self.scheme = kwd.pop("scheme", DEFAULT_SCHEME)
-        self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
-        self.requires_roles = kwd.pop("requires_roles", None)
-        self.requires_groups = kwd.pop("requires_groups", None)
-        self.disable_templating = kwd.pop("disable_templating", False)
-        self._validate_security_rules()
-        # If coming from to_dict, strip API helper values
-        kwd.pop("uri_root", None)
-        kwd.pop("type", None)
-        kwd.pop("browsable", None)
-        kwd.pop("supports", None)
-        return kwd
+    def _parse_common_config_opts(self, config: FileSourceConfiguration):
+        """Initialize common configuration from a Pydantic model.
 
-    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
-        rval: FilesSourceProperties = {
+        This method extracts common file source properties from a Pydantic model
+        and returns the remaining properties for plugin-specific use.
+        """
+        self._file_sources_config = config.file_sources_config
+        self.id = config.id
+        self.label = config.label
+        self.doc = config.doc
+        self.scheme = config.scheme
+        self.writable = config.writable
+        self.requires_roles = config.requires_roles
+        self.requires_groups = config.requires_groups
+        self.disable_templating = config.disable_templating
+        self._validate_security_rules()
+
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
+        rval: dict[str, Any] = {
             "id": self.id,
             "type": self.plugin_type,
             "label": self.label,
@@ -429,7 +557,7 @@ class BaseFilesSource(FilesSource):
             rval.update(self._serialization_props(user_context=user_context))
         return rval
 
-    def to_dict_time(self, ctime):
+    def to_dict_time(self, ctime) -> Optional[str]:
         if ctime is None:
             return None
         elif isinstance(ctime, (int, float)):
@@ -437,11 +565,33 @@ class BaseFilesSource(FilesSource):
         else:
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
-    @abc.abstractmethod
-    def _serialization_props(self, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
+    def _evaluate_config_props(self, user_context: "OptionalUserContext") -> dict[str, Any]:
+        """Evaluate properties that may contain templated values."""
+        effective_props = {}
+        for key, val in self.config.model_dump(exclude_unset=True, exclude_none=True).items():
+            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
+        return effective_props
+
+    def _serialization_props(self, user_context: "OptionalUserContext") -> dict[str, Any]:
         """Serialize properties needed to recover plugin configuration.
         Used in to_dict method if for_serialization is True.
         """
+        return self._evaluate_config_props(user_context)
+
+    def update_config_from_options(
+        self,
+        opts: Optional[FilesSourceOptions] = None,
+        user_context: "OptionalUserContext" = None,
+    ):
+        """
+        Ensures that the configuration is updated with any extra properties provided in the options and
+        evaluates any properties that need to be computed based on the user context from template variables.
+        """
+        if opts and opts.extra_props:
+            extra_props = opts.extra_props
+            self.config = self.config.model_copy(update=extra_props.model_dump(exclude_unset=True), deep=True)
+        evaluated_props = self._evaluate_config_props(user_context)
+        self.config = self.config.model_copy(update=evaluated_props, deep=True)
 
     def list(
         self,
