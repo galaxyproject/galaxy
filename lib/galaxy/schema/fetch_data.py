@@ -293,3 +293,19 @@ class FetchDataPayload(BaseDataPayload):
 
 class FetchDataFormPayload(BaseDataPayload):
     targets: Union[Json[Targets], Targets]
+
+
+class DataLandingRequestState(Model):
+    targets: Targets
+
+
+# Vaguely matches the schema.schema.ToolLandingState but we don't allow data_fetch to be called directly
+# via the tool API so we have a more specific model here.
+class DataLandingPayload(Model):
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: DataLandingRequestState = None
+    client_secret: Optional[str] = None
+    public: bool = False
+
+    model_config = ConfigDict(extra="forbid")
