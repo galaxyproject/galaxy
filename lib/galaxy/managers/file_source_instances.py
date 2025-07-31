@@ -692,7 +692,7 @@ def configuration_to_file_source_properties(
     doc: Optional[str],
     id: str,
 ) -> FilesSourceProperties:
-    file_source_properties = cast(FilesSourceProperties, file_source_configuration.model_dump())
+    file_source_properties = file_source_configuration.model_dump()
     file_source_properties["label"] = label
     file_source_properties["doc"] = doc
     file_source_properties["id"] = id
@@ -706,7 +706,7 @@ def configuration_to_file_source_properties(
     # these plugins. I can't imagine a use case for that and I would hate to templating
     # languages having odd interactions.
     file_source_properties["disable_templating"] = True
-    return file_source_properties
+    return FilesSourceProperties(**file_source_properties)
 
 
 __all__ = (
