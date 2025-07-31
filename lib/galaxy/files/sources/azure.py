@@ -1,44 +1,54 @@
-from typing import Union
+from typing_extensions import Literal
 
 try:
-    from fs.azblob import (
-        BlobFS,
-        BlobFSV2,
-    )
+    from fs.azblob.blob_fs import BlobFS
+    from fs.azblob.blob_fs_v2 import BlobFSV2
 except ImportError:
-    BlobFS = None
+    BlobFS = None  # type: ignore[misc,assignment]
+    BlobFSV2 = None  # type: ignore[misc,assignment]
 
-from typing import Optional
-
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from typing import (
+    ClassVar,
+    Optional,
 )
+
+from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+
+class AzureFileSourceConfiguration(FilesSourceProperties):
+    account_name: str
+    container_name: str
+    account_key: str
+    namespace_type: Optional[Literal["hierarchical", "flat"]] = "hierarchical"
 
 
 class AzureFileSource(PyFilesystem2FilesSource):
     plugin_type = "azure"
     required_module = BlobFS
     required_package = "fs-azureblob"
+    config_class: ClassVar[type[AzureFileSourceConfiguration]] = AzureFileSourceConfiguration
+    config: AzureFileSourceConfiguration
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        all_props = {**props, **extra_props}
-        namespace_type = all_props.get("namespace_type", "hierarchical")
-        if namespace_type not in ["hierarchical", "flat"]:
-            raise Exception("Misconfigured azure file source")
-        account_name = all_props["account_name"]
-        account_key = all_props["account_key"]
-        container = all_props["container_name"]
-        handle: Union[BlobFSV2, BlobFS]
-        if namespace_type == "flat":
-            handle = BlobFS(account_name, container, account_key)
+    def __init__(self, config: AzureFileSourceConfiguration):
+        super().__init__(config)
+
+    def _open_fs(self):
+        if BlobFS is None or BlobFSV2 is None:
+            raise self.required_package_exception
+
+        if self.config.namespace_type == "flat":
+            return BlobFS(
+                account_name=self.config.account_name,
+                container=self.config.container_name,
+                account_key=self.config.account_key,
+            )
         else:
-            handle = BlobFSV2(account_name, container, account_key)
-
-        return handle
+            return BlobFSV2(
+                account_name=self.config.account_name,
+                container=self.config.container_name,
+                account_key=self.config.account_key,
+            )
 
 
 __all__ = ("AzureFileSource",)
