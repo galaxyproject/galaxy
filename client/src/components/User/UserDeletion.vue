@@ -16,14 +16,13 @@ const emit = defineEmits<{
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
-const modal = ref();
 const touched = ref(false);
 const userInput = ref("");
 const deleteError = ref("");
 
 const userId = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value?.id) || "");
 const userEmail = computed(() => isRegisteredUser(currentUser.value) && currentUser.value?.email);
-const inputState = computed(() => (touched.value ? nameState : null));
+const inputState = computed(() => (touched.value ? nameState.value : null));
 const nameState = computed(() => userInput.value === userEmail.value);
 const showDeleteError = computed(() => {
     return deleteError.value !== "";
@@ -59,12 +58,12 @@ async function handleSubmit() {
 
 <template>
     <BModal
-        id="modal-prevent-closing"
-        ref="modal"
+        id="modal-user-deletion"
         centered
         title="Account Deletion"
         title-tag="h2"
         visible
+        static
         ok-variant="danger"
         ok-title="Delete Account Permanently"
         cancel-variant="outline-primary"
