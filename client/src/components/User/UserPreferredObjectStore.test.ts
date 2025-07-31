@@ -17,7 +17,7 @@ const localVue = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
-function mountComponent() {
+async function mountComponent() {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
@@ -27,33 +27,15 @@ function mountComponent() {
     const wrapper = mount(UserPreferredObjectStore as object, {
         localVue,
     });
+
+    await flushPromises();
+
     return wrapper;
 }
 
 describe("UserPreferredObjectStore.vue", () => {
-    it("contains a localized link", async () => {
-        const wrapper = mountComponent();
-
-        expect(
-            wrapper.find(ROOT_COMPONENT.preferences.object_store_selection.modal.selector).attributes("aria-hidden")
-        ).toBeTruthy();
-
-        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-        (expect(el.text()) as any).toBeLocalizationOf("Preferred Galaxy Storage");
-
-        await el.trigger("click");
-
-        expect(
-            wrapper.find(ROOT_COMPONENT.preferences.object_store_selection.modal.selector).attributes("aria-hidden")
-        ).toBeFalsy();
-    });
-
     it("updates object store to default on selection null", async () => {
-        const wrapper = mountComponent();
-        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-
-        await el.trigger("click");
-        await flushPromises();
+        const wrapper = await mountComponent();
 
         const els = wrapper.findAll(ROOT_COMPONENT.preferences.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
@@ -78,10 +60,7 @@ describe("UserPreferredObjectStore.vue", () => {
     });
 
     it("updates object store to default on actual selection", async () => {
-        const wrapper = mountComponent();
-        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-
-        await el.trigger("click");
+        const wrapper = await mountComponent();
 
         const objectStore2Option = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_2" })
@@ -104,10 +83,7 @@ describe("UserPreferredObjectStore.vue", () => {
     });
 
     it("displayed error if user update fails", async () => {
-        const wrapper = mountComponent();
-        const el = wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
-
-        await el.trigger("click");
+        const wrapper = await mountComponent();
 
         const galaxyDefaultOption = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
