@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
-import type { IconDefinition } from "font-awesome-6";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRouter } from "vue-router/composables";
+
+import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
     id: string;
@@ -32,62 +32,45 @@ function onClick() {
 </script>
 
 <template>
-    <div class="user-preference-element" :class="{ 'danger-zone': !!dangerZone }" @click="onClick">
-        <div class="user-preference-element-title">
-            <FontAwesomeIcon :icon="props.icon" />
-
-            <b v-localize>{{ title }}</b>
-
-            <BBadge v-if="!!badge" variant="danger">
-                {{ badge }}
-            </BBadge>
-        </div>
-
-        <div>
-            {{ description }}
-        </div>
-
-        <slot />
-    </div>
+    <GCard
+        :id="props.id"
+        class="user-preference-element"
+        :class="{ 'danger-zone': !!dangerZone }"
+        :container-class="[dangerZone ? 'danger-zone' : '']"
+        :title-icon="{ icon: props.icon }"
+        :title="props.title"
+        :description="props.description"
+        full-description
+        :to="props.to"
+        clickable
+        grid-view
+        @click="onClick" />
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
 
 .user-preference-element {
-    display: flex;
-    cursor: pointer;
-    gap: 0.5rem;
-    flex-direction: column;
-    border: 1px solid $brand-secondary;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-
-    .user-preference-element-title {
+    :deep(.g-card-content h1) {
         color: $brand-primary;
     }
 
-    width: calc(100% / 3 - 1rem);
-
-    @container user-preferences (max-width: #{$breakpoint-xl}) {
-        width: calc(100% / 2 - 1rem);
+    :deep(.g-card-content [id*="title-link"]) {
+        color: $brand-primary;
     }
+}
 
-    @container user-preferences (max-width: #{$breakpoint-lg}) {
-        width: 100%;
-    }
-
-    &:hover {
-        background-color: $brand-secondary;
-    }
-
-    &.danger-zone {
+.danger-zone {
+    :deep(.g-card-content) {
         border-color: $brand-danger;
+    }
 
-        .user-preference-element-title {
-            color: $brand-danger;
-        }
+    :deep(.g-card-content h1) {
+        color: $brand-danger;
+    }
+
+    :deep(.g-card-content [id*="title-link"]) {
+        color: $brand-danger;
     }
 }
 </style>
