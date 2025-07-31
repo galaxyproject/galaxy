@@ -35,10 +35,13 @@ from galaxy.model import (
     User,
 )
 from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
     FetchDataFormPayload,
     FetchDataPayload,
     FilesPayload,
+    TargetsAdapter,
 )
+from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
@@ -96,6 +99,28 @@ class ToolsService(ServiceBase):
         self.config = config
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
+
+    def data_landing_to_tool_landing(
+        self,
+        trans: ProvidesUserContext,
+        data_landing_payload: CreateDataLandingPayload,
+    ) -> CreateToolLandingRequestPayload:
+        request_version = "1"
+        payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        validate_and_normalize_targets(trans, payload, set_internal_fields=False)
+        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
+        request_state = {
+            "request_version": request_version,
+            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
+            "file_count": "0",
+        }
+        return CreateToolLandingRequestPayload(
+            tool_id="__DATA_FETCH__",
+            tool_version=None,
+            request_state=request_state,
+            client_secret=data_landing_payload.client_secret,
+            public=data_landing_payload.public,
+        )
 
     def create_fetch(
         self,

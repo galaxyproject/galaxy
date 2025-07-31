@@ -985,10 +985,10 @@ def replace_request_syntax_sugar(obj):
             # item...
             new_hashes = []
             for key in HASH_NAME_MAP.keys():
-                if key in obj:
+                if key in obj and obj[key] is not None:
                     new_hashes.append({"hash_function": key, "hash_value": obj[key]})
                     del obj[key]
-                if key.lower() in obj:
+                if key.lower() in obj and obj[key.lower()] is not None:
                     new_hashes.append({"hash_function": key, "hash_value": obj[key.lower()]})
                     del obj[key.lower()]
             # hack around pydantic stick a None in here for data fetch models.

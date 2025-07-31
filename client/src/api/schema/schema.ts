@@ -7849,7 +7849,7 @@ export interface components {
              * @default false
              */
             public: boolean;
-            request_state?: components["schemas"]["DataLandingRequestState"];
+            request_state: components["schemas"]["DataLandingRequestState"];
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
