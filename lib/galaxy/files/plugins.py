@@ -4,7 +4,12 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.util.config_parsers import parse_allowlist_ips
+from pydantic import BaseModel
+
+from galaxy.util.config_parsers import (
+    IpAllowedListEntryT,
+    parse_allowlist_ips,
+)
 from galaxy.util.plugin_config import (
     load_plugins,
     PluginConfigSource,
@@ -15,40 +20,16 @@ if TYPE_CHECKING:
     from galaxy.files.sources import BaseFilesSource
 
 
-class FileSourcePluginsConfig:
-    symlink_allowlist: list[str]
-    fetch_url_allowlist: list[str]
-    library_import_dir: Optional[str]
-    user_library_import_dir: Optional[str]
-    ftp_upload_dir: Optional[str]
-    ftp_upload_purge: bool
-    tmp_dir: Optional[str]
-    webdav_use_temp_files: Optional[bool]
-    listings_expiry_time: Optional[int]
-
-    def __init__(
-        self,
-        symlink_allowlist=None,
-        fetch_url_allowlist=None,
-        library_import_dir=None,
-        user_library_import_dir=None,
-        ftp_upload_dir=None,
-        ftp_upload_purge=True,
-        tmp_dir=None,
-        webdav_use_temp_files=None,
-        listings_expiry_time=None,
-    ):
-        symlink_allowlist = symlink_allowlist or []
-        fetch_url_allowlist = fetch_url_allowlist or []
-        self.symlink_allowlist = symlink_allowlist
-        self.fetch_url_allowlist = fetch_url_allowlist
-        self.library_import_dir = library_import_dir
-        self.user_library_import_dir = user_library_import_dir
-        self.ftp_upload_dir = ftp_upload_dir
-        self.ftp_upload_purge = ftp_upload_purge
-        self.tmp_dir = tmp_dir
-        self.webdav_use_temp_files = webdav_use_temp_files
-        self.listings_expiry_time = listings_expiry_time
+class FileSourcePluginsConfig(BaseModel):
+    symlink_allowlist: list[str] = []
+    fetch_url_allowlist: list[IpAllowedListEntryT] = []
+    library_import_dir: Optional[str] = None
+    user_library_import_dir: Optional[str] = None
+    ftp_upload_dir: Optional[str] = None
+    ftp_upload_purge: bool = True
+    tmp_dir: Optional[str] = None
+    webdav_use_temp_files: Optional[bool] = None
+    listings_expiry_time: Optional[int] = None
 
     @staticmethod
     def from_app_config(config):
