@@ -93,6 +93,9 @@ class AbstractTestCases:
         backend_config_file: ClassVar[str]
         saved_oauthlib_insecure_transport: ClassVar[bool]
 
+        REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*)\"\s+")
+        REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
+
         @classmethod
         def setUpClass(cls):
             # By default, the oidc callback must be done over a secure transport, so
@@ -158,40 +161,38 @@ class AbstractTestCases:
         def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
+        def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
+            if expected_codes is None:
+                expected_codes = [200, 404]
+            session = session or requests.Session()
+            response = session.get(f"{self.url}authnz/keycloak/login")
+            provider_url = response.json()["redirect_uri"]
+            response = session.get(provider_url, verify=False)
+            matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
+            assert matches
+            auth_url = html.unescape(str(matches.groups(1)[0]))
+            response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
+            assert response.status_code in expected_codes, response
+            if save_cookies:
+                self.galaxy_interactor.cookies = session.cookies
+            return session, response
+
+        def _get_keycloak_access_token(
+            self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
+        ):
+            data = {
+                "client_id": client_id,
+                "client_secret": "dummyclientsecret",
+                "grant_type": "password",
+                "username": username,
+                "password": password,
+                "scope": scopes or [],
+            }
+            response = requests.post(f"{KEYCLOAK_URL}/protocol/openid-connect/token", data=data, verify=False)
+            return response.json()["access_token"]
+
 
 class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
-    REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*)\"\s+")
-    REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
-
-    def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
-        if expected_codes is None:
-            expected_codes = [200, 404]
-        session = session or requests.Session()
-        response = session.get(f"{self.url}authnz/keycloak/login")
-        provider_url = response.json()["redirect_uri"]
-        response = session.get(provider_url, verify=False)
-        matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
-        assert matches
-        auth_url = html.unescape(str(matches.groups(1)[0]))
-        response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
-        assert response.status_code in expected_codes, response
-        if save_cookies:
-            self.galaxy_interactor.cookies = session.cookies
-        return session, response
-
-    def _get_keycloak_access_token(
-        self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
-    ):
-        data = {
-            "client_id": client_id,
-            "client_secret": "dummyclientsecret",
-            "grant_type": "password",
-            "username": username,
-            "password": password,
-            "scope": scopes or [],
-        }
-        response = requests.post(f"{KEYCLOAK_URL}/protocol/openid-connect/token", data=data, verify=False)
-        return response.json()["access_token"]
 
     def test_oidc_login_new_user(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
