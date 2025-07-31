@@ -111,18 +111,18 @@
 <script>
 import axios from "axios";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
-import { mapActions } from "pinia";
+import { mapActions, storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: { BButton, BModal, BAlert },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
+    setup() {
+        const userStore = useUserStore();
+        const { currentUser } = storeToRefs(userStore);
+        return { userId: currentUser.value?.id };
     },
     data() {
         return {
