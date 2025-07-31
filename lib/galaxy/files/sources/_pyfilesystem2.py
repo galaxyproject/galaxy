@@ -20,8 +20,8 @@ from . import (
     AnyRemoteEntry,
     BaseFilesSource,
     DEFAULT_PAGE_LIMIT,
-    FileSourceConfiguration,
     FilesSourceOptions,
+    FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
 )
@@ -38,7 +38,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     supports_search = True
     allow_key_error_on_empty_directories = False  # work around a bug in webdav
 
-    def __init__(self, config: FileSourceConfiguration):
+    def __init__(self, config: FilesSourceProperties):
         if self.required_module is None:
             raise self.required_package_exception
         super().__init__(config)
