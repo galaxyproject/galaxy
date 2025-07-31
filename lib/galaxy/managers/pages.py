@@ -374,8 +374,9 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             content = unicodify(processor.output(), "utf-8")
             as_dict["content"] = content
         elif content_format == PageContentFormat.markdown.value:
-            content, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
-            as_dict["content"] = content
+            content, content_embed_expanded, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
+            as_dict["content"] = content_embed_expanded
+            as_dict["content_editor"] = content
             as_dict.update(extra_attributes)
         else:
             raise exceptions.RequestParameterInvalidException(
