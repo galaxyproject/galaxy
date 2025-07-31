@@ -9302,10 +9302,11 @@ export interface components {
              */
             name: string;
             /**
-             * Same User
-             * @description Whether the referenced dataset belongs to the same user.
+             * User Id
+             * @description ID of the user who owns the referenced dataset.
+             * @example 0123456789ABCDEF
              */
-            same_user: boolean;
+            user_id: string;
         };
         /**
          * DatasetPermissionAction
