@@ -1,81 +1,105 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faAt, faCloud, faHdd, faUser } from "font-awesome-6";
+import { faAt, faHdd, faUser } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
-import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
-const { config } = useConfig(true);
+import GCard from "@/components/Common/GCard.vue";
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const userUsername = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value?.username) || "");
 const userEmail = computed(() => isRegisteredUser(currentUser.value) && currentUser.value?.email);
-const userDiskUsagePercentage = computed(() => currentUser.value?.quota_percent);
+const userDiskUsagePercentage = computed(() => currentUser.value?.quota_percent || 0);
 const userQuota = computed(() => !currentUser.value?.isAnonymous && currentUser.value?.quota);
 const diskUsage = computed(() => currentUser.value?.nice_total_disk_usage);
+
+const getStoragePercentageClass = (percentage: number) => {
+    if (percentage >= 90) {
+        return "text-danger";
+    } else if (percentage >= 75) {
+        return "text-warning";
+    } else {
+        return "text-primary";
+    }
+};
 </script>
 
 <template>
-    <div class="user-details-element">
-        <div class="user-details-element-icon">
-            <FontAwesomeIcon :icon="faUser" />
-        </div>
+    <GCard content-class="user-details-element">
+        <div class="user-details d-flex flex-gapx-1 flex-gapy-1 w-100 justify-content-between">
+            <div class="d-flex align-items-center flex-gapx-1">
+                <div class="d-flex align-items-center flex-gapx-1 mr-5">
+                    <FontAwesomeIcon :icon="faUser" class="user-details-icon" />
+                    <span v-b-tooltip.hover.noninteractive title="Your username (public name)">
+                        {{ userUsername }}
+                    </span>
+                </div>
 
-        <div class="user-details-element-content">
-            <div class="user-details-item">
-                <FontAwesomeIcon :icon="faUser" />
-                <span>{{ userUsername }}</span>
+                <div class="d-flex align-items-center flex-gapx-1">
+                    <FontAwesomeIcon :icon="faAt" class="user-details-icon" />
+                    <span
+                        id="user-preferences-current-email"
+                        v-b-tooltip.hover.noninteractive
+                        title="Your email address">
+                        {{ userEmail }}
+                    </span>
+                </div>
             </div>
-            <div class="user-details-item">
-                <FontAwesomeIcon :icon="faAt" />
-                <span>{{ userEmail }}</span>
-            </div>
-            <div class="user-details-item">
-                <FontAwesomeIcon :icon="faHdd" />
-                <span>{{ diskUsage }}</span>
-            </div>
-            <div v-if="config?.enable_quotas" class="user-details-item">
-                <FontAwesomeIcon :icon="faCloud" />
-                <span>{{ userQuota }}</span>
+
+            <div class="flex flex-gapy-1">
+                <div>
+                    You are using
+                    <b :class="getStoragePercentageClass(userDiskUsagePercentage)">
+                        {{ diskUsage }} of {{ userQuota }} ({{ userDiskUsagePercentage }}%)
+                    </b>
+                    of your storage quota.
+                </div>
+
+                <div>
+                    Visit
+                    <RouterLink
+                        v-b-tooltip.hover.noninteractive
+                        to="/storage/dashboard"
+                        title="View and manage your storage usage"
+                        data-description="storage dashboard link">
+                        <FontAwesomeIcon :icon="faHdd" />
+                        Storage Dashboard
+                    </RouterLink>
+                    to manage your storage.
+                </div>
             </div>
         </div>
-    </div>
+    </GCard>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+@import "_breakpoints.scss";
 
 .user-details-element {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border: 1px solid $brand-secondary;
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-    width: 100%;
-    margin-bottom: 1rem;
+    container: user-details-element;
 
-    .user-details-element-icon {
-        display: flex;
+    .user-details {
         align-items: center;
-        gap: 0.5rem;
-        font-size: 2rem;
-        border: 1px solid $brand-secondary;
-        border-radius: 50%;
-        padding: 0.5rem;
-        color: $brand-secondary;
-        width: 3rem;
-        height: 3rem;
-    }
 
-    .user-details-element-content {
-        display: flex;
-        gap: 0.5rem;
+        @container (max-width: #{$breakpoint-md}) {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .user-details-icon {
+            color: $brand-primary;
+            font-size: 1rem;
+            border: 1px solid $brand-primary;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+        }
     }
 }
 </style>
