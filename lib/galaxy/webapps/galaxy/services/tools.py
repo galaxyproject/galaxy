@@ -25,6 +25,10 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.tools import (
+    get_tool_from_trans,
+    ToolRunReference,
+)
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
@@ -43,6 +47,38 @@ from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_ta
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+
+def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    tool: Optional[Tool] = None
+    if tool_ref.tool_uuid and trans.user:
+        tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
+    if not tool:
+        tool_id = tool_ref.tool_id
+        tool_uuid = tool_ref.tool_uuid
+        tool_version = tool_ref.tool_version
+        tool = trans.app.toolbox.get_tool(
+            tool_id=tool_id,
+            tool_uuid=tool_uuid,
+            tool_version=tool_version,
+        )
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
+    return tool
+
+
+def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    if trans.user_is_bootstrap_admin:
+        raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
+
+    if tool_ref.tool_id is None and tool_ref.tool_uuid is None:
+        raise exceptions.RequestParameterMissingException("Must specify a valid tool_id to use this endpoint.")
+
+    tool = get_tool_from_trans(trans, tool_ref)
+    if not tool.allow_user_access(trans.user):
+        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+    return tool
 
 
 class ToolsService(ServiceBase):
@@ -103,41 +139,14 @@ class ToolsService(ServiceBase):
         return self._create(trans, create_payload)
 
     def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
-        if trans.user_is_bootstrap_admin:
-            raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
         if action == "rerun":
             raise Exception("'rerun' action has been deprecated")
 
-        # Get tool.
-        tool_version = payload.get("tool_version")
-        tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        get_kwds = dict(
-            tool_id=tool_id,
-            tool_uuid=tool_uuid,
-            tool_version=tool_version,
+        tool_run_reference = ToolRunReference(
+            payload.get("tool_id"), payload.get("tool_uuid"), payload.get("tool_version")
         )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
-
-        tool: Optional[Tool] = None
-        if tool_uuid and trans.user:
-            tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-        if not tool:
-            tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool:
-            log.debug(f"Not found tool with kwds [{get_kwds}]")
-            raise exceptions.ToolMissingException("Tool not found.")
-        if not tool.allow_user_access(trans.user):
-            raise exceptions.ItemAccessibilityException("Tool not accessible.")
-        if self.config.user_activation_on:
-            if not trans.user:
-                log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
-            elif not trans.user.active:
-                log.warning(
-                    f'User "{trans.user.email}" attempts to execute tool, but account activation is turned on and user account is not active.'
-                )
+        tool = validate_tool_for_running(trans, tool_run_reference)
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
