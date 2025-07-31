@@ -100,6 +100,7 @@ async function makeDataPrivate() {
             okTitle: "Yes, make all data private",
             cancelTitle: "No, do not make data private",
             cancelVariant: "outline-primary",
+            centered: true,
         }
     );
     if (confirmed) {
@@ -113,9 +114,10 @@ async function signOut() {
     const confirmed = await confirm(localize("Do you want to continue and sign out of all active sessions?"), {
         title: "Sign out of all sessions",
         okTitle: "Yes, sign out",
-        okVariant: "outline-danger",
+        okVariant: "danger",
         cancelTitle: "Cancel",
         cancelVariant: "outline-primary",
+        centered: true,
     });
 
     if (confirmed) {
@@ -154,7 +156,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="user-preferences">
+    <div class="d-flex flex-column">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <Heading h2 size="md">
@@ -168,120 +170,124 @@ onMounted(async () => {
 
         <UserDetailsElement />
 
-        <div class="user-preferences-cards">
-            <UserPreferencesElement
-                v-for="(link, index) in activePreferences"
-                :id="link.id"
-                :key="index"
-                :icon="link.icon"
-                :title="link.title"
-                :description="link.description"
-                :to="`/user/${index}`" />
+        <div class="d-flex flex-gapy-1 flex-column">
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    v-for="(link, index) in activePreferences"
+                    :id="link.id"
+                    :key="index"
+                    :icon="link.icon"
+                    :title="link.title"
+                    :description="link.description"
+                    :to="`/user/${index}`" />
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && !config.single_user"
-                id="edit-preferences-permissions"
-                :icon="faUsers"
-                title="Set Dataset Permissions for New Histories"
-                description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
-                to="/user/permissions" />
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user"
+                    id="edit-preferences-permissions"
+                    :icon="faUsers"
+                    title="Set Dataset Permissions for New Histories"
+                    description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+                    to="/user/permissions" />
 
-            <UserPreferencesElement
-                id="edit-preferences-api-key"
-                :icon="faKey"
-                title="Manage Galaxy API Key"
-                description="Access your current Galaxy API key or create a new one."
-                to="/user/api_key" />
+                <UserPreferencesElement
+                    id="edit-preferences-api-key"
+                    :icon="faKey"
+                    title="Manage Galaxy API Key"
+                    description="Access your current Galaxy API key or create a new one."
+                    to="/user/api_key" />
 
-            <UserPreferencesElement
-                id="edit-preferences-notifications"
-                :icon="faBell"
-                title="Manage Notifications"
-                description="Manage your notification settings."
-                to="/user/notifications/preferences" />
+                <UserPreferencesElement
+                    id="edit-preferences-notifications"
+                    :icon="faBell"
+                    title="Manage Notifications"
+                    description="Manage your notification settings."
+                    to="/user/notifications/preferences" />
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
-                id="manage-third-party-identities"
-                :icon="faIdCard"
-                title="Manage Third-Party Identities"
-                description="Connect or disconnect access to your third-party identities."
-                to="/user/external_ids" />
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
+                    id="manage-third-party-identities"
+                    :icon="faIdCard"
+                    title="Manage Third-Party Identities"
+                    description="Connect or disconnect access to your third-party identities."
+                    to="/user/external_ids" />
 
-            <UserPreferencesElement
-                id="edit-preferences-custom-builds"
-                :icon="faCubes"
-                title="Manage Custom Builds"
-                description="Add or remove custom builds using history datasets."
-                to="/custom_builds" />
+                <UserPreferencesElement
+                    id="edit-preferences-custom-builds"
+                    :icon="faCubes"
+                    title="Manage Custom Builds"
+                    description="Add or remove custom builds using history datasets."
+                    to="/custom_builds" />
 
-            <UserPreferencesElement
-                v-if="hasThemes"
-                id="edit-preferences-theme"
-                :icon="faPalette"
-                title="Pick a Color Theme"
-                description="Click here to change the user interface color theme."
-                @click="toggleThemeModal" />
+                <UserPreferencesElement
+                    v-if="hasThemes"
+                    id="edit-preferences-theme"
+                    :icon="faPalette"
+                    title="Pick a Color Theme"
+                    description="Click here to change the user interface color theme."
+                    @click="toggleThemeModal" />
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && !config.single_user"
-                id="edit-preferences-make-data-private"
-                :icon="faLock"
-                title="Make All Data Private"
-                description="Click here to make all data private."
-                @click="makeDataPrivate" />
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user"
+                    id="edit-preferences-make-data-private"
+                    :icon="faLock"
+                    title="Make All Data Private"
+                    description="Click here to make all data private."
+                    @click="makeDataPrivate" />
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && config.enable_beacon_integration"
-                id="edit-preferences-beacon"
-                :icon="faBroadcastTower"
-                title="Manage Beacon"
-                description="Contribute variants to Beacon"
-                @click="toggleBeaconModal" />
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.enable_beacon_integration"
+                    id="edit-preferences-beacon"
+                    :icon="faBroadcastTower"
+                    title="Manage Beacon"
+                    description="Contribute variants to Beacon"
+                    @click="toggleBeaconModal" />
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && config.object_store_allows_id_selection && currentUser"
-                id="manage-preferred-object-store"
-                :icon="faHdd"
-                title="Manage Your Preferred Galaxy Storage"
-                description="Select a Preferred Galaxy storage for the outputs of new jobs."
-                @click="togglePreferredStorageModal" />
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.object_store_allows_id_selection && currentUser"
+                    id="manage-preferred-object-store"
+                    :icon="faHdd"
+                    title="Manage Your Preferred Galaxy Storage"
+                    description="Select a Preferred Galaxy storage for the outputs of new jobs."
+                    @click="togglePreferredStorageModal" />
 
-            <UserPreferencesElement
-                v-if="objectStoreTemplatesStore.hasTemplates"
-                id="manage-object-stores"
-                class="manage-object-stores"
-                :icon="faHdd"
-                title="Manage Your Galaxy Storage"
-                description="Add, remove, or update your personally configured Galaxy storage."
-                to="/object_store_instances/index" />
+                <UserPreferencesElement
+                    v-if="objectStoreTemplatesStore.hasTemplates"
+                    id="manage-object-stores"
+                    class="manage-object-stores"
+                    :icon="faHdd"
+                    title="Manage Your Galaxy Storage"
+                    description="Add, remove, or update your personally configured Galaxy storage."
+                    to="/object_store_instances/index" />
 
-            <UserPreferencesElement
-                v-if="fileSourceTemplatesStore.hasTemplates"
-                id="manage-file-sources"
-                class="manage-file-sources"
-                :icon="faFile"
-                title="Manage Your Repositories"
-                description="Add, remove, or update your personally configured location to find files from and write files to."
-                to="/file_source_instances/index" />
+                <UserPreferencesElement
+                    v-if="fileSourceTemplatesStore.hasTemplates"
+                    id="manage-file-sources"
+                    class="manage-file-sources"
+                    :icon="faFile"
+                    title="Manage Your Repositories"
+                    description="Add, remove, or update your personally configured location to find files from and write files to."
+                    to="/file_source_instances/index" />
+            </div>
 
-            <UserPreferencesElement
-                v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
-                id="delete-account"
-                danger-zone
-                :icon="faRadiation"
-                title="Delete Account"
-                description="Click here to delete your account."
-                @click="toggleUserDeletion" />
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
+                    id="delete-account"
+                    danger-zone
+                    :icon="faRadiation"
+                    title="Delete Account"
+                    description="Click here to delete your account."
+                    @click="toggleUserDeletion" />
 
-            <UserPreferencesElement
-                v-if="hasLogout"
-                id="edit-preferences-sign-out"
-                danger-zone
-                :icon="faSignOut"
-                title="Sign Out of All Sessions"
-                description="Click here to sign out of all sessions."
-                @click="signOut" />
+                <UserPreferencesElement
+                    v-if="hasLogout"
+                    id="edit-preferences-sign-out"
+                    danger-zone
+                    :icon="faSignOut"
+                    title="Sign Out of All Sessions"
+                    description="Click here to sign out of all sessions."
+                    @click="signOut" />
+            </div>
 
             <BModal
                 v-model="showDataPrivateModal"
@@ -320,24 +326,7 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-
-.user-preferences {
-    container: user-preferences / inline-size;
-
-    display: flex;
-    flex-direction: column;
-
-    .user-preferences-header {
-        display: flex;
-        width: 100%;
-    }
-
-    .user-preferences-cards {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        padding-bottom: 1rem;
-    }
+.user-preferences-cards {
+    container: cards-list / inline-size;
 }
 </style>
