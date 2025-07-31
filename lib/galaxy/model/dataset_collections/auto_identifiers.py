@@ -2,10 +2,7 @@
 
 import os.path
 from typing import (
-    List,
     Optional,
-    Set,
-    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -29,13 +26,13 @@ def filename_to_element_identifier(filename_or_uri: str):
 
 
 def fill_in_identifiers(
-    uris_to_identifiers: List[Tuple[str, Optional[str]]], config: Optional[FillIdentifiers]
-) -> List[Optional[str]]:
+    uris_to_identifiers: list[tuple[str, Optional[str]]], config: Optional[FillIdentifiers]
+) -> list[Optional[str]]:
     if config is None:
         config = FillIdentifiers()
 
-    new_identifiers: List[Optional[str]] = []
-    seen_identifiers: Set[Optional[str]] = set()
+    new_identifiers: list[Optional[str]] = []
+    seen_identifiers: set[Optional[str]] = set()
     for uri, identifier in uris_to_identifiers:
         if identifier is None and config.fill_inner_list_identifiers:
             basename = filename_to_element_identifier(uri)

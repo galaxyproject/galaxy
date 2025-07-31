@@ -10,11 +10,13 @@ import sys
 import tempfile
 import weakref
 from collections import OrderedDict
-from collections.abc import Mapping
+from collections.abc import (
+    Iterator,
+    Mapping,
+)
 from os.path import abspath
 from typing import (
     Any,
-    Iterator,
     Optional,
     TYPE_CHECKING,
     Union,

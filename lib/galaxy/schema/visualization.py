@@ -1,7 +1,5 @@
 from datetime import datetime
 from typing import (
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -104,7 +102,7 @@ class VisualizationSummary(Model):
 
 
 class VisualizationSummaryList(RootModel):
-    root: List[VisualizationSummary] = Field(
+    root: list[VisualizationSummary] = Field(
         default=[],
         title="List with detailed information of Visualizations.",
     )
@@ -132,7 +130,7 @@ class VisualizationRevisionResponse(Model, WithModelClass):
         title="DbKey",
         description="The database key of the visualization.",
     )
-    config: Dict = Field(
+    config: dict = Field(
         ...,
         title="Config",
         description="The config of the visualization revision.",
@@ -175,22 +173,22 @@ class VisualizationPluginResponse(Model):
         title="Embeddable",
         description="Whether the plugin is embeddable.",
     )
-    entry_point: Dict = Field(
+    entry_point: dict = Field(
         ...,
         title="Entry Point",
         description="The entry point of the plugin.",
     )
-    settings: Optional[List[Dict]] = Field(
+    settings: Optional[list[dict]] = Field(
         None,
         title="Settings",
         description="The settings of the plugin.",
     )
-    tracks: Optional[List[Dict]] = Field(
+    tracks: Optional[list[dict]] = Field(
         None,
         title="Tracks",
         description="The tracks of the plugin.",
     )
-    specs: Optional[Dict] = Field(
+    specs: Optional[dict] = Field(
         None,
         title="Specs",
         description="The specs of the plugin.",
@@ -239,7 +237,7 @@ class VisualizationShowResponse(Model, WithModelClass):
         title="Latest Revision",
         description="The latest revision of this Visualization.",
     )
-    revisions: List[EncodedDatabaseIdField] = Field(
+    revisions: list[EncodedDatabaseIdField] = Field(
         ...,
         title="Revisions",
         description="A list of encoded IDs of the revisions of this Visualization.",

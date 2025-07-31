@@ -3,9 +3,9 @@ API operations on Group objects.
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import Body
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager

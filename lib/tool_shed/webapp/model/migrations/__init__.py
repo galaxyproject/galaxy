@@ -1,8 +1,8 @@
 import logging
 import os
+from collections.abc import Iterable
 from typing import (
     cast,
-    Iterable,
     Optional,
 )
 

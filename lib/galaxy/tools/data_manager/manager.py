@@ -2,8 +2,6 @@ import errno
 import logging
 import os
 from typing import (
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -27,8 +25,8 @@ log = logging.getLogger(__name__)
 
 
 class DataManagers(DataManagersInterface):
-    data_managers: Dict[str, "DataManager"]
-    managed_data_tables: Dict[str, "DataManager"]
+    data_managers: dict[str, "DataManager"]
+    managed_data_tables: dict[str, "DataManager"]
     __reload_count: int
 
     def __init__(self, app: StructuredApp, xml_filename=None, reload_count: Optional[int] = None):
@@ -110,7 +108,7 @@ class DataManagers(DataManagersInterface):
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
+    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -226,7 +224,7 @@ class DataManager:
         self.tool = tool
         return tool
 
-    def process_result(self, out_data: Dict[str, OutputDataset]) -> None:
+    def process_result(self, out_data: dict[str, OutputDataset]) -> None:
         tool_data_tables = self.data_managers.app.tool_data_tables
         options = BundleProcessingOptions(
             what=f"data manager '{self.id}'",
@@ -244,8 +242,8 @@ class DataManager:
 
     def write_bundle(
         self,
-        out_data: Dict[str, OutputDataset],
-    ) -> Dict[str, OutputDataset]:
+        out_data: dict[str, OutputDataset],
+    ) -> dict[str, OutputDataset]:
         tool_data_tables = self.data_managers.app.tool_data_tables
         return tool_data_tables.write_bundle(
             out_data,

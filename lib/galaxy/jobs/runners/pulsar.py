@@ -12,7 +12,6 @@ import subprocess
 from time import sleep
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -931,7 +930,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         remote_job_config,
         compute_environment: Optional["PulsarComputeEnvironment"] = None,
     ):
-        metadata_kwds: Dict[str, Any] = {}
+        metadata_kwds: dict[str, Any] = {}
         if remote_metadata:
             working_directory = remote_job_config["working_directory"]
             metadata_directory = remote_job_config["metadata_directory"]
@@ -1061,7 +1060,7 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
 
 
-KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
+KUBERNETES_DESTINATION_DEFAULTS: dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
 
 
 class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
@@ -1069,7 +1068,7 @@ class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
     poll = True  # Poll so we can check API for pod IP for ITs.
 
 
-TES_DESTINATION_DEFAULTS: Dict[str, Any] = {
+TES_DESTINATION_DEFAULTS: dict[str, Any] = {
     "tes_url": PARAMETER_SPECIFICATION_REQUIRED,
     **COEXECUTION_DESTINATION_DEFAULTS,
 }

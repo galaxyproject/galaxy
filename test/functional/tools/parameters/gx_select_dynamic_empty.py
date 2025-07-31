@@ -1,8 +1,2 @@
-from typing import (
-    List,
-    Tuple,
-)
-
-
-def empty_list() -> List[Tuple[str, str, bool]]:
+def empty_list() -> list[tuple[str, str, bool]]:
     return []

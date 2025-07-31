@@ -1,9 +1,7 @@
 from io import BytesIO
 from logging import getLogger
 from typing import (
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -90,8 +88,8 @@ class DatasetCollectionAttributesResult(Model):
     # Are the following fields really used/needed?
     extension: str = Field(..., description="The dataset file extension.", examples=["txt"])
     model_class: Literal["HistoryDatasetCollectionAssociation"] = ModelClassField("HistoryDatasetCollectionAssociation")
-    dbkeys: Optional[Set[str]]
-    extensions: Optional[Set[str]]
+    dbkeys: Optional[set[str]]
+    extensions: Optional[set[str]]
     tags: TagCollection
 
 
@@ -105,22 +103,22 @@ class SuitableConverter(Model):
 class SuitableConverters(RootModel):
     """Collection of converters that can be used on a particular dataset collection."""
 
-    root: List[SuitableConverter]
+    root: list[SuitableConverter]
 
 
 class DatasetCollectionContentElements(RootModel):
     """Represents a collection of elements contained in the dataset collection."""
 
-    root: List[DCESummary]
+    root: list[DCESummary]
 
 
 class CreateWorkbookForCollectionApi(BaseModel):
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     prefix_values: Optional[PrefixRowValuesT] = PrefixRowsField
 
 
 class ParseWorkbookForCollectionApi(BaseModel):
-    column_definitions: List[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
     content: str = WorkbookContentField
 
     model_config = ConfigDict(extra="forbid")
@@ -150,7 +148,7 @@ class ParsedWorkbookElement(BaseModel):
 
 
 class ParsedWorkbookForCollection(ParsedWorkbook):
-    elements: List[ParsedWorkbookElement]
+    elements: list[ParsedWorkbookElement]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -398,7 +396,7 @@ def _attach_elements_to_parsed_workbook(
     dataset_collection_instance: "HistoryDatasetCollectionAssociation",
     workbook: ParsedWorkbook,
 ) -> ParsedWorkbookForCollection:
-    elements: List[ParsedWorkbookElement] = []
+    elements: list[ParsedWorkbookElement] = []
     for element in dataset_collection_instance.collection.elements:
         object: ParsedWorkbookElementObject
         if element.is_collection:

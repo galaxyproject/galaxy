@@ -1,5 +1,8 @@
 from logging import getLogger
-from typing import Optional
+from typing import (
+    Annotated,
+    Optional,
+)
 
 from fastapi import (
     Body,
@@ -9,7 +12,6 @@ from fastapi import (
     status,
 )
 from starlette.responses import StreamingResponse
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import (

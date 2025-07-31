@@ -9,12 +9,10 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
+from collections.abc import Iterable
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -369,7 +367,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         final_job_state,
         change_datatype_actions,
     ):
-        element_datasets: Dict[str, List[Any]] = {
+        element_datasets: dict[str, list[Any]] = {
             "element_identifiers": [],
             "datasets": [],
             "tag_lists": [],
@@ -567,7 +565,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def add_datasets_to_history(
-        self, datasets: List["DatasetInstance"], for_output_dataset: Optional["DatasetInstance"] = None
+        self, datasets: list["DatasetInstance"], for_output_dataset: Optional["DatasetInstance"] = None
     ):
         """Add datasets to the history this context points at."""
 
@@ -746,7 +744,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
 
 def persist_target_to_export_store(
-    target_dict: Dict[str, Any],
+    target_dict: dict[str, Any],
     export_store: "DirectoryModelExportStore",
     object_store: ObjectStore,
     work_directory: str,
@@ -798,7 +796,7 @@ def persist_elements_to_hdca(
     hdca,
     collector=None,
 ):
-    discovered_files: List[DiscoveredResult] = []
+    discovered_files: list[DiscoveredResult] = []
 
     collection = hdca.collection
     root_collection_builder = BoundCollectionBuilder(collection)
@@ -882,7 +880,7 @@ def persist_elements_to_folder(
 def persist_hdas(elements, model_persistence_context: ModelPersistenceContext, final_job_state="ok"):
     # discover files as individual datasets for the target history
     datasets = []
-    storage_callbacks: List[Callable] = []
+    storage_callbacks: list[Callable] = []
 
     def collect_elements_for_history(elements):
         for element in elements:
@@ -1002,7 +1000,7 @@ class DiscoveredFile(NamedTuple):
     collector: Optional[CollectorT]
     match: "JsonCollectedDatasetMatch"
 
-    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> "DiscoveredResultState":
+    def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> "DiscoveredResultState":
         info = element.get("info", None)
         return DiscoveredResultState(info, final_job_state)
 
@@ -1016,7 +1014,7 @@ class DiscoveredDeferredFile(NamedTuple):
     collector: Optional[CollectorT]
     match: "JsonCollectedDatasetMatch"
 
-    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
+    def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
         info = element.get("info", None)
         state = "deferred" if final_job_state == "ok" else final_job_state
         return DiscoveredResultState(info, state)
@@ -1193,6 +1191,6 @@ class DiscoveredFileError(NamedTuple):
     match: JsonCollectedDatasetMatch
     path: Optional[str] = None
 
-    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
+    def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
         info = self.error_message
         return DiscoveredResultState(info, "error")

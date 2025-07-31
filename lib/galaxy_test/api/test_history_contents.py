@@ -1,9 +1,7 @@
 import urllib.parse
 from typing import (
     Any,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -339,7 +337,7 @@ class TestHistoryContentsApi(ApiTestCase):
         content_id: str,
         item_type: str,
         expected_view: Optional[str] = None,
-        expected_keys: Optional[List[str]] = None,
+        expected_keys: Optional[list[str]] = None,
     ):
         view = f"&view={expected_view}" if expected_view else ""
         keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
@@ -980,7 +978,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self._upload_collection_list_with_elements(history_id, collection_name, elements)
         self._assert_collection_has_expected_elements_datatypes(history_id, collection_name, expected_datatypes)
 
-    def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: List[Any]):
+    def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: list[Any]):
         create_homogeneous_response = self.dataset_collection_populator.upload_collection(
             history_id, "list", elements=elements, name=collection_name, wait=True
         )
@@ -1605,7 +1603,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         assert response["stats"]["total_matches"]
         assert response["stats"]["total_matches"] == expected_total_matches
 
-    def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
+    def _create_test_history_contents(self, history_id) -> tuple[list[str], list[str], list[Any]]:
         """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
 
         Returns a tuple with the list of ids for the datasets and the collections and the
@@ -1627,7 +1625,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             assert item["visible"]
         return datasets_ids, collection_ids, history_contents
 
-    def _create_collection_in_history(self, history_id, num_collections=1) -> List[str]:
+    def _create_collection_in_history(self, history_id, num_collections=1) -> list[str]:
         collection_ids = []
         for _ in range(num_collections):
             collection_id = self.dataset_collection_populator.create_pair_in_history(
@@ -1639,7 +1637,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
     def _get_history_contents(self, history_id: str, query: str = ""):
         return self._get(f"histories/{history_id}/contents{query}").json()
 
-    def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
+    def _get_hidden_items_from_history_contents(self, history_contents) -> list[Any]:
         return [content for content in history_contents if not content["visible"]]
 
     def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Optional[Any]:

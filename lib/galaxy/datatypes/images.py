@@ -7,13 +7,10 @@ import json
 import logging
 import math
 import struct
+from collections.abc import Iterator
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -221,7 +218,7 @@ class Png(Image):
             reader = png.Reader(filename=dataset.get_file_name())
             width, height, pixels, metadata = reader.asDirect()
 
-            unique_values: List[Any] = []
+            unique_values: list[Any] = []
             for row in pixels:
                 values = np.array(row, dtype="uint8")
                 unique_values = list(np.unique(unique_values + list(values)))
@@ -262,7 +259,7 @@ class Tiff(Image):
                 offsets = [page.offset for page in tif.pages]
 
                 # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
-                metadata: Dict[str, List[Any]] = {
+                metadata: dict[str, list[Any]] = {
                     key: []
                     for key in [
                         "axes",
@@ -325,7 +322,7 @@ class Tiff(Image):
             pass
 
     @staticmethod
-    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
+    def _get_axis_size(shape: tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
 
@@ -334,7 +331,7 @@ class Tiff(Image):
         """
         Determines the number of unique values in a TIFF series of pages.
         """
-        unique_values: List[Any] = []
+        unique_values: list[Any] = []
         try:
             for page in series.pages:
 

@@ -1,10 +1,8 @@
 import json
 import logging
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
-    Sequence,
     TYPE_CHECKING,
 )
 
@@ -48,7 +46,7 @@ def data_collection_input_to_path(v):
 
 def data_collection_input_to_staging_path_and_source_path(
     v: "DatasetCollectionWrapper", invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     staging_paths = v.get_all_staging_paths(
         invalid_chars=invalid_chars, include_collection_name=include_collection_name
     )
@@ -76,7 +74,7 @@ def data_collection_input_to_staging_path_and_source_path(
 
 def data_input_to_staging_path_and_source_path(
     v: "DatasetFilenameWrapper", invalid_chars: Sequence[str] = ("/",)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     staging_path = v.get_staging_path(invalid_chars=invalid_chars)
     return {
         "element_identifier": v.element_identifier,

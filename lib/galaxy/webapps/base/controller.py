@@ -659,8 +659,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                unencoded_id = track_dict.get("dataset_id")
-                if unencoded_id:
+                if unencoded_id := track_dict.get("dataset_id"):
                     encoded_id = trans.security.encode_id(unencoded_id)
                 else:
                     encoded_id = track_dict["dataset"]["id"]

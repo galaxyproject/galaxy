@@ -3,13 +3,8 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     cast,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Set,
-    Tuple,
-    Type,
 )
 from urllib.parse import urlparse
 
@@ -81,7 +76,7 @@ class CleanupResultSummary(NamedTuple):
 
 
 class NotificationRecipientResolverStrategy(Protocol):
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
         pass
 
 
@@ -102,7 +97,7 @@ class NotificationManager:
         self.sa_session = sa_session
         self.config = config
         self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
-        self.user_notification_columns: List[InstrumentedAttribute] = [
+        self.user_notification_columns: list[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -115,7 +110,7 @@ class NotificationManager:
             UserNotificationAssociation.seen_time,
             UserNotificationAssociation.deleted,
         ]
-        self.broadcast_notification_columns: List[InstrumentedAttribute] = [
+        self.broadcast_notification_columns: list[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -152,7 +147,7 @@ class NotificationManager:
     def can_send_notifications_async(self):
         return self.config.enable_celery_tasks
 
-    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
 
@@ -170,7 +165,7 @@ class NotificationManager:
 
         return notification, notifications_sent
 
-    def _create_associations(self, notification: Notification, users: List[User]) -> int:
+    def _create_associations(self, notification: Notification, users: list[User]) -> int:
         success_count = 0
         for user in users:
             try:
@@ -361,7 +356,7 @@ class NotificationManager:
         return result
 
     def update_user_notifications(
-        self, user: User, notification_ids: Set[int], request: UserNotificationUpdateRequest
+        self, user: User, notification_ids: set[int], request: UserNotificationUpdateRequest
     ) -> int:
         """Updates a batch of notifications associated with the user using the requested values."""
         updated_row_count = 0
@@ -426,9 +421,9 @@ class NotificationManager:
         self.sa_session.commit()
         return preferences
 
-    def _register_supported_channels(self) -> Dict[str, NotificationChannelPlugin]:
+    def _register_supported_channels(self) -> dict[str, NotificationChannelPlugin]:
         """Registers the supported notification channels in this server."""
-        supported_channels: Dict[str, NotificationChannelPlugin] = {
+        supported_channels: dict[str, NotificationChannelPlugin] = {
             # Push notifications are handled client-side so no real plugin is needed
             "push": NoOpNotificationChannelPlugin(self.config),
         }
@@ -440,7 +435,7 @@ class NotificationManager:
 
         return supported_channels
 
-    def get_supported_channels(self) -> Set[str]:
+    def get_supported_channels(self) -> set[str]:
         """Returns the set of supported notification channels in this server."""
         return set(self.channel_plugins.keys())
 
@@ -532,7 +527,7 @@ class NotificationRecipientResolver:
     def __init__(self, strategy: NotificationRecipientResolverStrategy):
         self.strategy = strategy
 
-    def resolve(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve(self, recipients: NotificationRecipients) -> list[User]:
         """Given individual user, group and roles ids as recipients, obtains the unique list of users.
 
         The resulting list will contain only unique users even if the same user id might have been provided more
@@ -547,8 +542,8 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
 
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
-        unique_user_ids: Set[int] = set(recipients.user_ids)
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
+        unique_user_ids: set[int] = set(recipients.user_ids)
 
         all_group_ids, all_role_ids = self._expand_group_and_roles_ids(
             set(recipients.group_ids), set(recipients.role_ids)
@@ -564,7 +559,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         stmt = select(User).where(User.id.in_(unique_user_ids))
         return self.sa_session.scalars(stmt).all()  # type:ignore[return-value]
 
-    def _get_all_user_ids_from_roles_query(self, role_ids: Set[int]) -> Select:
+    def _get_all_user_ids_from_roles_query(self, role_ids: set[int]) -> Select:
         stmt = (
             select(UserRoleAssociation.user_id)
             .select_from(UserRoleAssociation)
@@ -573,7 +568,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         )
         return stmt
 
-    def _get_all_user_ids_from_groups_query(self, group_ids: Set[int]) -> Select:
+    def _get_all_user_ids_from_groups_query(self, group_ids: set[int]) -> Select:
         stmt = (
             select(UserGroupAssociation.user_id)
             .select_from(UserGroupAssociation)
@@ -582,12 +577,12 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         )
         return stmt
 
-    def _expand_group_and_roles_ids(self, group_ids: Set[int], role_ids: Set[int]) -> Tuple[Set[int], Set[int]]:
+    def _expand_group_and_roles_ids(self, group_ids: set[int], role_ids: set[int]) -> tuple[set[int], set[int]]:
         """Given a set of group and roles IDs, it expands those sets (non-recursively) by including sub-groups or sub-roles
         indirectly associated with them.
         """
-        processed_group_ids: Set[int] = set()
-        processed_role_ids: Set[int] = set()
+        processed_group_ids: set[int] = set()
+        processed_role_ids: set[int] = set()
 
         while True:
             # Get group IDs associated with any of the given role IDs
@@ -626,7 +621,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
 
 
 class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
         # TODO Implement resolver using recursive CTEs?
         return []
 
@@ -749,7 +744,7 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):
 
     # Register the supported email templates here
-    email_templates_by_category: Dict[PersonalNotificationCategory, Type[EmailNotificationTemplateBuilder]] = {
+    email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
     }

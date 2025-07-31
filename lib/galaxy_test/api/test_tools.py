@@ -6,8 +6,6 @@ import zipfile
 from io import BytesIO
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 from uuid import uuid4
@@ -869,7 +867,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
         return filtered_hdca
 
-    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
+    def _apply_rules_and_check(self, example: dict[str, Any]) -> None:
         with self.dataset_populator.test_history(require_new=False) as history_id:
             inputs = stage_rules_example(self.galaxy_interactor, history_id, example)
             hdca = inputs["input"]
@@ -990,7 +988,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # tool test framework filling in a default. Creating a raw request here
         # verifies that currently select parameters don't require a selection.
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            inputs: Dict[str, Any] = {}
+            inputs: dict[str, Any] = {}
             response = self._run("gx_drill_down_exact", history_id, inputs, assert_ok=False)
             self._assert_status_code_is(response, 400)
             assert "an invalid option" in response.text
@@ -1976,7 +1974,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         def register_job_data(job_data):
             job_data_list.append(job_data)
 
-        def tool_test_case_list(inputs, required_files) -> List[ValidToolTestDict]:
+        def tool_test_case_list(inputs, required_files) -> list[ValidToolTestDict]:
             return [
                 {
                     "inputs": inputs,

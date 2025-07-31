@@ -3,7 +3,6 @@ import re
 from typing import (
     Callable,
     cast,
-    Dict,
 )
 
 from alembic import context
@@ -75,7 +74,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     run_migrations(url)
 
 
-def _process_cmd_current(urls: Dict[ModelId, str]) -> bool:
+def _process_cmd_current(urls: dict[ModelId, str]) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
         # Run command for each url only if urls are different; otherwise run once.
         are_urls_equal = len(set(urls.values())) == 1
@@ -141,8 +140,8 @@ def _get_url_from_config() -> str:
     return cast(str, url)
 
 
-def _load_urls() -> Dict[ModelId, str]:
-    context_dict = cast(Dict, context.get_x_argument(as_dictionary=True))
+def _load_urls() -> dict[ModelId, str]:
+    context_dict = cast(dict, context.get_x_argument(as_dictionary=True))
     gxy_url = context_dict.get(f"{GXY}_url")
     tsi_url = context_dict.get(f"{TSI}_url")
     assert gxy_url and tsi_url

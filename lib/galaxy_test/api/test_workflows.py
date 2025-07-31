@@ -9,9 +9,7 @@ from tempfile import mkdtemp
 from typing import (
     Any,
     cast,
-    Dict,
     Optional,
-    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -201,11 +199,11 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
 
     def _setup_workflow_run(
         self,
-        workflow: Optional[Dict[str, Any]] = None,
+        workflow: Optional[dict[str, Any]] = None,
         inputs_by: str = "step_id",
         history_id: Optional[str] = None,
         workflow_id: Optional[str] = None,
-    ) -> Tuple[Dict[str, Any], str, str]:
+    ) -> tuple[dict[str, Any], str, str]:
         return self.workflow_populator.setup_workflow_run(workflow, inputs_by, history_id, workflow_id)
 
     def _ds_entry(self, history_content):
@@ -217,7 +215,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[Dict[str, Any], RunJobsSummary]:
+    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[dict[str, Any], RunJobsSummary]:
         return self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
 
     def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:

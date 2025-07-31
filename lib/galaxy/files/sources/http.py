@@ -3,8 +3,6 @@ import re
 import urllib.request
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
 )
 
@@ -30,8 +28,8 @@ log = logging.getLogger(__name__)
 
 class HTTPFilesSourceProperties(FilesSourceProperties, total=False):
     url_regex: str
-    http_headers: Dict[str, str]
-    fetch_url_allowlist: List[IpAllowedListEntryT]
+    http_headers: dict[str, str]
+    fetch_url_allowlist: list[IpAllowedListEntryT]
 
 
 class HTTPFilesSource(BaseFilesSource):

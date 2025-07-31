@@ -3,8 +3,6 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -69,7 +67,7 @@ EMPTY_TOOL_DATA_TABLE_CONFIG = """<?xml version="1.0"?>
 class Config:
     tool_data_path: str
     install_database_connection: str
-    install_database_engine_options: Dict[str, Any] = {}
+    install_database_engine_options: dict[str, Any] = {}
     update_integrated_tool_panel: bool = True
     integrated_tool_panel_config: str
     shed_tool_config_file: str
@@ -86,7 +84,7 @@ class Config:
 
 
 class TestTool:
-    _macro_paths: List[str] = []
+    _macro_paths: list[str] = []
     params_with_missing_data_table_entry: list = []
     params_with_missing_index_file: list = []
 
@@ -148,7 +146,7 @@ class DummyDataManager(DataManagerInterface):
     def process_result(self, out_data):
         return None
 
-    def write_bundle(self, out) -> Dict[str, OutputDataset]:
+    def write_bundle(self, out) -> dict[str, OutputDataset]:
         return {}
 
 
@@ -163,7 +161,7 @@ class StandaloneDataManagers(DataManagersInterface):
     def get_manager(self, data_manager_id: str) -> Optional[DataManagerInterface]:
         return None
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
+    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
         return None
 
     @property

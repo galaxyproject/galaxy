@@ -4,10 +4,6 @@ immediate_actions listed below.
 """
 
 import datetime
-from typing import (
-    Dict,
-    Type,
-)
 
 from markupsafe import escape
 
@@ -506,7 +502,7 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
 
 class ActionBox:
-    actions: Dict[str, Type[DefaultJobAction]] = {
+    actions: dict[str, type[DefaultJobAction]] = {
         "RenameDatasetAction": RenameDatasetAction,
         "HideDatasetAction": HideDatasetAction,
         "ChangeDatatypeAction": ChangeDatatypeAction,

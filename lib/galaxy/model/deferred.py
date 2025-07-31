@@ -364,6 +364,5 @@ def materializer_factory(
 
 
 def _validate_hash(path: str, describes_hash: DescribesHash, what: str) -> None:
-    hash_value = describes_hash.hash_value
-    if hash_value is not None:
+    if (hash_value := describes_hash.hash_value) is not None:
         verify_hash(path, hash_func_name=describes_hash.hash_func_name, hash_value=hash_value)

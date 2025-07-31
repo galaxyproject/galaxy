@@ -2,8 +2,6 @@ import logging
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -68,7 +66,7 @@ class UnprivilegedToolsApi:
     dynamic_tools_manager: DynamicToolManager = depends(DynamicToolManager)
 
     @router.get("/api/unprivileged_tools", response_model_exclude_defaults=True)
-    def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans) -> List[UnprivilegedToolResponse]:
+    def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans) -> list[UnprivilegedToolResponse]:
         if not trans.user:
             return []
         return [t.to_dict() for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)]
@@ -150,7 +148,7 @@ class DynamicToolApi:
         return dynamic_tool.to_dict()
 
     @router.delete("/api/dynamic_tools/{dynamic_tool_id}", require_admin=True)
-    def delete(self, dynamic_tool_id: DatabaseIdOrUUID) -> Dict[str, Any]:
+    def delete(self, dynamic_tool_id: DatabaseIdOrUUID) -> dict[str, Any]:
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
 

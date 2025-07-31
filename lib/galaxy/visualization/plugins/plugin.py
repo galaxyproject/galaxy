@@ -8,7 +8,6 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
 )
 
 import mako.lookup
@@ -93,7 +92,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         Render and return the text of the plugin webpage/fragment using the
         config/data of a saved visualization.
         """
-        config: Dict[str, Any] = self._get_saved_visualization_config(visualization, **kwargs)
+        config: dict[str, Any] = self._get_saved_visualization_config(visualization, **kwargs)
         # pass the saved visualization config for parsing into render vars
         render_vars = self._build_render_vars(config, trans=trans, **kwargs)
         # update any values that were loaded from the saved Visualization
@@ -131,7 +130,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             return url_for(controller="visualization", action=self.name)
         return url_for("visualization_plugin", visualization_name=self.name)
 
-    def _get_saved_visualization_config(self, visualization, revision=None, **kwargs) -> Dict[str, Any]:
+    def _get_saved_visualization_config(self, visualization, revision=None, **kwargs) -> dict[str, Any]:
         """
         Return the config of a saved visualization and revision.
 
@@ -141,11 +140,11 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         return copy.copy(visualization.latest_revision.config)
 
     # ---- non-public
-    def _build_render_vars(self, config: Dict[str, Any], trans=None, **kwargs) -> Dict[str, Any]:
+    def _build_render_vars(self, config: dict[str, Any], trans=None, **kwargs) -> dict[str, Any]:
         """
         Build all the variables that will be passed into the renderer.
         """
-        render_vars: Dict[str, Any] = {}
+        render_vars: dict[str, Any] = {}
         # Meta variables passed to the template/renderer to describe the visualization being rendered.
         render_vars.update(
             visualization_name=self.name,

@@ -3,8 +3,6 @@ import os
 from contextlib import contextmanager
 from typing import (
     cast,
-    Dict,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -54,7 +52,7 @@ class AbstractTestCases:
             job.tool_id = TEST_TOOL_ID
             job.user = User()
             job.object_store_id = "foo"
-            self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
+            self.model_objects: dict[type[Base], dict[int, Base]] = {Job: {345: job}}
             self.app.model.session = cast("scoped_session", MockContext(self.model_objects))
 
             self.app._toolbox = cast(ToolBox, MockToolbox(MockTool(self)))

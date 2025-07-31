@@ -1,10 +1,7 @@
 import copy
 import logging
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -227,8 +224,8 @@ class ToolDependencyAttributeHandler:
 
 def _create_element(
     tag: str,
-    attributes: Optional[Dict[str, str]] = None,
-    sub_elements: Optional[Dict[str, List[Tuple[str, str]]]] = None,
+    attributes: Optional[dict[str, str]] = None,
+    sub_elements: Optional[dict[str, list[tuple[str, str]]]] = None,
 ) -> Optional[Element]:
     """
     Create a new element whose tag is the value of the received tag, and whose attributes are all

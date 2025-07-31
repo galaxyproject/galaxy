@@ -1,8 +1,4 @@
 from dataclasses import dataclass
-from typing import (
-    Dict,
-    List,
-)
 
 import yaml
 from pydantic import (
@@ -26,11 +22,11 @@ class PairedItem(BaseModel):
 
 class AutoPairingSpecItem(BaseModel):
     doc: str
-    inputs: List[str]
-    paired: Dict[str, PairedItem]
+    inputs: list[str]
+    paired: dict[str, PairedItem]
 
 
-AutoPairingSpecification = RootModel[List[AutoPairingSpecItem]]
+AutoPairingSpecification = RootModel[list[AutoPairingSpecItem]]
 
 
 def test_auto_pairing_specification():

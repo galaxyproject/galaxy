@@ -9,10 +9,7 @@ import re
 import sys
 from functools import reduce
 from typing import (
-    Dict,
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -42,7 +39,7 @@ verbose = True
 list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
-priority_list: Set[str] = set()
+priority_list: set[str] = set()
 
 """
 Instantiated to a list of all valid destinations in the job configuration file
@@ -50,7 +47,7 @@ if run directly to validate configs. Otherwise, remains None. We often check
 to see if app is None, because if it is then we'll try using the
 destination_list instead.
 -"""
-destination_list: Set[str] = set()
+destination_list: set[str] = set()
 
 """
 The largest the edit distance can be for a word to be considered
@@ -81,7 +78,7 @@ class ScannerError(Exception):
     pass
 
 
-def get_keys_from_dict(dl: Union[Dict, List], keys_list: List) -> None:
+def get_keys_from_dict(dl: Union[dict, list], keys_list: list) -> None:
     """
     This function builds a list using the keys from nest dictionaries
     """
@@ -1313,7 +1310,7 @@ def map_tool_to_destination(
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets}
+    inp_data: dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets}
     inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
 
     if config is not None and str(tool.old_id) in config["tools"]:
@@ -1503,7 +1500,7 @@ def map_tool_to_destination(
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
                                     arg_dict = {arg: rule["arguments"][arg]}
-                                    arg_keys_list: List = []
+                                    arg_keys_list: list = []
                                     get_keys_from_dict(arg_dict, arg_keys_list)
                                     try:
                                         options_value = reduce(dict.__getitem__, arg_keys_list, options)

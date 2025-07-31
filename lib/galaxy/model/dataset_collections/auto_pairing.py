@@ -1,12 +1,9 @@
 import re
 from dataclasses import dataclass
 from typing import (
-    Dict,
     Generic,
-    List,
     Optional,
     Protocol,
-    Tuple,
     TypeVar,
 )
 
@@ -20,7 +17,7 @@ class HasName(Protocol):
 T = TypeVar("T", bound=HasName)
 
 # matches pairing.ts in the client
-COMMON_FILTERS: Dict[str, Tuple[str, str]] = {
+COMMON_FILTERS: dict[str, tuple[str, str]] = {
     "illumina": ("_1", "_2"),
     "Rs": ("_R1", "_R2"),
     "dot12s": (".1.fastq", ".2.fastq"),
@@ -73,16 +70,15 @@ class PartialPair(Generic[T]):
 
 @dataclass
 class AutoPairResponse(Generic[T]):
-    paired: List[Pair[T]]
-    unpaired: List[T]
+    paired: list[Pair[T]]
+    unpaired: list[T]
 
 
-def auto_pair(elements: List[T]) -> AutoPairResponse[T]:
-    filter_type = guess_initial_filter_type(elements)
-    if filter_type:
+def auto_pair(elements: list[T]) -> AutoPairResponse[T]:
+    if filter_type := guess_initial_filter_type(elements):
         forward_filter, reverse_filter = COMMON_FILTERS[filter_type]
         forward_elements, reverse_elements = split_elements_by_filter(elements, forward_filter, reverse_filter)
-        partial_pairs: Dict[str, PartialPair[T]] = {}
+        partial_pairs: dict[str, PartialPair[T]] = {}
         for forward_element in forward_elements:
             forward_base = filename_to_element_identifier(re.sub(f"{forward_filter}", "", forward_element.name))
 
@@ -95,13 +91,13 @@ def auto_pair(elements: List[T]) -> AutoPairResponse[T]:
             else:
                 partial_pairs[reverse_base].reverse = reverse_element
 
-        unpaired: List[T] = elements.copy()
+        unpaired: list[T] = elements.copy()
         for forward_element in forward_elements:
             unpaired.remove(forward_element)
         for reverse_element in reverse_elements:
             unpaired.remove(reverse_element)
 
-        full_pairs: List[Pair[T]] = []
+        full_pairs: list[Pair[T]] = []
         for partial_pair in partial_pairs.values():
             if partial_pair.forward is None:
                 assert partial_pair.reverse
@@ -116,7 +112,7 @@ def auto_pair(elements: List[T]) -> AutoPairResponse[T]:
         return AutoPairResponse(paired=[], unpaired=elements)
 
 
-def guess_initial_filter_type(elements: List[T]) -> Optional[str]:
+def guess_initial_filter_type(elements: list[T]) -> Optional[str]:
     illumina = 0
     dot12s = 0
     Rs = 0
@@ -143,9 +139,9 @@ def guess_initial_filter_type(elements: List[T]) -> Optional[str]:
         return "illumina"
 
 
-def split_elements_by_filter(elements: List[T], forward_filter: str, reverse_filter: str) -> Tuple[List[T], List[T]]:
+def split_elements_by_filter(elements: list[T], forward_filter: str, reverse_filter: str) -> tuple[list[T], list[T]]:
     filters = [re.compile(forward_filter), re.compile(reverse_filter)]
-    split: Tuple[List[T], List[T]] = ([], [])
+    split: tuple[list[T], list[T]] = ([], [])
     for element in elements:
         for i, filter in enumerate(filters):
             if element.name and filter.search(element.name):

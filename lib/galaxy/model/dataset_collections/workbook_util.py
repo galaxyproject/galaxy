@@ -5,6 +5,7 @@ workbooks.
 """
 
 import base64
+from collections.abc import Generator
 from csv import (
     Dialect,
     reader,
@@ -18,12 +19,9 @@ from io import (
 from textwrap import wrap
 from typing import (
     Any,
-    Generator,
-    List,
     Literal,
     Optional,
     Protocol,
-    Type,
     Union,
 )
 
@@ -103,7 +101,7 @@ class ReadOnlyWorkbook(Protocol):
     typed: bool
     content_type: KnownContentTypes
 
-    def column_titles(self) -> List[str]:
+    def column_titles(self) -> list[str]:
         """Return the column titles from the first (or only) worksheet."""
 
     def iter_rows(self, num_columns: int) -> Generator[tuple[Any, ...], None, None]:
@@ -122,7 +120,7 @@ class ExcelReadOnlyWorkbook(ReadOnlyWorkbook):
         """Initialize the read-only workbook."""
         self._workbook = workbook
 
-    def column_titles(self) -> List[str]:
+    def column_titles(self) -> list[str]:
         """Return the column titles from the first worksheet."""
         return read_column_header_titles(self._workbook.active)
 
@@ -140,7 +138,7 @@ class CsvDialect(BaseModel):
     escape_character: Optional[str]
 
     @staticmethod
-    def from_csv_dialect(dialect: Type[Dialect]) -> "CsvDialect":
+    def from_csv_dialect(dialect: type[Dialect]) -> "CsvDialect":
         """Create a CsvDialect from a csv.Sniffer dialect."""
         return CsvDialect(
             delimiter=dialect.delimiter,
@@ -185,7 +183,7 @@ class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
         """Return the CSV dialect used by this workbook."""
         return CsvDialect.from_csv_dialect(self._dialect)
 
-    def column_titles(self) -> List[str]:
+    def column_titles(self) -> list[str]:
         titles = next(reader(self._file_like, self._dialect))
         self._file_like.seek(0)  # Reset the file pointer after reading
         return titles
@@ -201,9 +199,9 @@ class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
 
 def parse_format_messages(
     workbook: ReadOnlyWorkbook,
-) -> List[Union[ContentTypeMessage, CsvDialectInferenceMessage]]:
+) -> list[Union[ContentTypeMessage, CsvDialectInferenceMessage]]:
     """Parse and return client-facing messages about parsing the target workbook."""
-    messages: List[Union[ContentTypeMessage, CsvDialectInferenceMessage]] = []
+    messages: list[Union[ContentTypeMessage, CsvDialectInferenceMessage]] = []
 
     if isinstance(workbook, ExcelReadOnlyWorkbook):
         excel_content_type = workbook.content_type
@@ -266,8 +264,8 @@ class HasHelp:
 
 @dataclass
 class HelpConfiguration:
-    instructions: List[str]
-    columns: List[HasHelp]
+    instructions: list[str]
+    columns: list[HasHelp]
     text_width: int
     column_width: int
     help_row_start: int = 3
@@ -275,12 +273,12 @@ class HelpConfiguration:
 
 @dataclass
 class ExtraColumnsHelpConfiguration:
-    instructions: List[str]
+    instructions: list[str]
     text_width: int
-    column_targets: List[ColumnTarget]
+    column_targets: list[ColumnTarget]
 
 
-def wrap_instructions(instruction: str, help_width: int) -> List[str]:
+def wrap_instructions(instruction: str, help_width: int) -> list[str]:
     return wrap(instruction, width=help_width)
 
 
@@ -345,7 +343,7 @@ def add_instructions_to_sheet(worksheet: Worksheet, help_configuration: HelpConf
 
 
 def write_instructions_to_sheet(
-    worksheet: Worksheet, instructions: List[str], start_row: int, help_label_index: int, help_width: int
+    worksheet: Worksheet, instructions: list[str], start_row: int, help_label_index: int, help_width: int
 ) -> int:
     current_row = start_row
 
@@ -359,10 +357,10 @@ def write_instructions_to_sheet(
     return current_row
 
 
-def read_column_header_titles(worksheet: Worksheet) -> List[str]:
+def read_column_header_titles(worksheet: Worksheet) -> list[str]:
     """Read the first row of the worksheet and return a list of these column titles."""
     index = 1
-    titles: List[str] = []
+    titles: list[str] = []
     while True:
         value = worksheet.cell(1, index).value
         if not value:
