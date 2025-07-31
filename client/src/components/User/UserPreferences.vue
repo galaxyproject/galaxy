@@ -15,7 +15,6 @@ import {
     faSignOut,
     faUsers,
 } from "font-awesome-6";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
@@ -24,7 +23,6 @@ import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
-import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { userLogoutAll } from "@/utils/logout";
 import QueryStringParsing from "@/utils/query-string-parsing";
@@ -44,9 +42,6 @@ const breadcrumbItems = [{ title: "User Preferences" }];
 const { confirm } = useConfirmDialog();
 
 const { config, isConfigLoaded } = useConfig(true);
-
-const userStore = useUserStore();
-const { currentUser } = storeToRefs(userStore);
 
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
@@ -243,7 +238,7 @@ onMounted(async () => {
                     @click="toggleBeaconModal" />
 
                 <UserPreferencesElement
-                    v-if="isConfigLoaded && config.object_store_allows_id_selection && currentUser"
+                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
                     id="manage-preferred-object-store"
                     :icon="faHdd"
                     title="Manage Your Preferred Galaxy Storage"
