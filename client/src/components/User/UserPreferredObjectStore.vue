@@ -4,22 +4,23 @@ import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { isRegisteredUser } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useUserStore } from "@/stores/userStore";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
-interface Props {
-    preferredObjectStoreId?: string;
-}
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
 
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 
-const props = defineProps<Props>();
-
 const error = ref();
-const selectedObjectStoreId = ref(props.preferredObjectStoreId as string | null);
+const selectedObjectStoreId = ref(
+    isRegisteredUser(currentUser.value) ? currentUser.value?.preferred_object_store_id ?? null : null
+);
 
 const title = computed(() => {
     return `${preferredOrEmptyString.value} Galaxy Storage`;
