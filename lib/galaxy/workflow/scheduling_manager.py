@@ -305,7 +305,12 @@ class WorkflowRequestMonitor(Monitors):
         )
         self.invocation_grabber = None
         self.update_time_tracking_dict: Dict[int, datetime] = {}
-        self.timedelta = timedelta(seconds=DEFAULT_SCHEDULER_BACKFILL_SECONDS)
+        backfill_seconds = (
+            min(app.config.maximum_workflow_invocation_duration, DEFAULT_SCHEDULER_BACKFILL_SECONDS)
+            if app.config.maximum_workflow_invocation_duration > 0
+            else DEFAULT_SCHEDULER_BACKFILL_SECONDS
+        )
+        self.timedelta = timedelta(seconds=backfill_seconds)
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
         handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
