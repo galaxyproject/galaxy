@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -55,6 +55,7 @@ const jobStatesInterval = ref<any>(undefined);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
+const isPolling = ref(false);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = computed({
@@ -234,10 +235,13 @@ async function pollStepStatesUntilTerminal() {
     }
 }
 async function pollJobStatesUntilTerminal() {
-    if (!jobStatesTerminal.value) {
+    if (!jobStatesTerminal.value && invocation.value) {
+        isPolling.value = true;
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
         await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
+    } else {
+        isPolling.value = false;
     }
 }
 function onError(e: any) {
@@ -380,6 +384,14 @@ async function onCancel() {
                     :title="disabledTabTooltip"
                     variant="primary">
                     <FontAwesomeIcon :icon="faExclamation" />
+                </BBadge>
+                <BBadge
+                    v-if="isPolling"
+                    v-b-tooltip.hover.noninteractive
+                    class="mr-1"
+                    title="Polling for updates"
+                    variant="link">
+                    <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton
                     v-if="!props.isFullPage && !invocationAndJobTerminal"
