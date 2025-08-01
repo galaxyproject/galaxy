@@ -3619,7 +3619,7 @@ class DatabaseOperationTool(Tool):
                 if not input_dataset_collection.collection.populated_optimized:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            states, _ = input_dataset_collection.collection.dataset_states_and_extensions_summary
+            states, *_ = input_dataset_collection.collection.dataset_states_and_extensions_summary
             for state in states:
                 check_dataset_state(input_key, state)
 
