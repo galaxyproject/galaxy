@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type {
@@ -10,14 +9,9 @@ import type {
     WorkflowInvocationRequest,
 } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
-import type { GraphStep } from "@/composables/useInvocationGraph";
 import { rethrowSimple } from "@/utils/simple-error";
 
-type GraphSteps = { [index: string]: GraphStep };
-
 export const useInvocationStore = defineStore("invocationStore", () => {
-    const graphStepsByStoreId = ref<{ [index: string]: GraphSteps }>({});
-
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
             params: { path: { invocation_id: params.id } },
@@ -136,7 +130,6 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationStepById,
         getInvocationRequestById,
         getInvocationCountByWorkflowId,
-        graphStepsByStoreId,
         isLoadingInvocation,
     };
 });
