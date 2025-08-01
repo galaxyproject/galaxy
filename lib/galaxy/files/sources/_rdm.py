@@ -1,10 +1,9 @@
 import logging
 from typing import (
+    Any,
     NamedTuple,
     Optional,
 )
-
-from typing_extensions import Unpack
 
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
@@ -18,7 +17,7 @@ from galaxy.files.sources import (
 log = logging.getLogger(__name__)
 
 
-class RDMFilesSourceProperties(FilesSourceProperties):
+class RDMFileSourceConfiguration(FilesSourceProperties):
     token: str
     public_name: str
 
@@ -67,7 +66,6 @@ class RDMRepositoryInteractor:
     def get_file_containers(
         self,
         writeable: bool,
-        user_context: OptionalUserContext = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -76,16 +74,11 @@ class RDMRepositoryInteractor:
         """Returns the list of file containers in the repository and the total count containers.
 
         If writeable is True, only containers that the user can write to will be returned.
-        The user_context might be required to authenticate the user in the repository.
         """
         raise NotImplementedError()
 
     def get_files_in_container(
-        self,
-        container_id: str,
-        writeable: bool,
-        user_context: OptionalUserContext = None,
-        query: Optional[str] = None,
+        self, container_id: str, writeable: bool, query: Optional[str] = None
     ) -> list[RemoteFile]:
         """Returns the list of files of a file container.
 
@@ -93,7 +86,7 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_file_container(self, title: str, public_name: str, user_context: OptionalUserContext = None):
+    def create_draft_file_container(self, title: str, public_name: str) -> dict[str, Any]:
         """Creates a draft file container in the repository with basic metadata.
 
         The metadata is usually just the title of the container and the user that created it.
@@ -105,14 +98,12 @@ class RDMRepositoryInteractor:
         container_id: str,
         filename: str,
         file_path: str,
-        user_context: OptionalUserContext = None,
     ) -> None:
         """Uploads a file with the provided filename (from file_path) to a draft container with the given container_id.
 
         The draft container must have been created in advance with the `create_draft_file_container` method.
 
         The file must exist in the file system at the given file_path.
-        The user_context might be required to authenticate the user in the repository.
         """
         raise NotImplementedError()
 
@@ -121,13 +112,10 @@ class RDMRepositoryInteractor:
         container_id: str,
         file_identifier: str,
         file_path: str,
-        user_context: OptionalUserContext = None,
     ) -> None:
         """Downloads a file with the provided filename from the container with the given container_id.
 
         The file will be downloaded to the file system at the given file_path.
-        The user_context might be required to authenticate the user in the repository if the
-        file is not publicly available.
         """
         raise NotImplementedError()
 
@@ -147,21 +135,21 @@ class RDMFilesSource(BaseFilesSource):
     """
 
     plugin_kind = PluginKind.rdm
+    config_class = RDMFileSourceConfiguration
+    config: RDMFileSourceConfiguration
 
-    def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
-        props = self._parse_common_config_opts(kwd)
-        self.url = props.get("url")
-        if not self.url:
+    def __init__(self, config: RDMFileSourceConfiguration):
+        super().__init__(config)
+        if not self.config.url:
             raise Exception("URL for RDM repository must be provided in configuration")
-        self._props = props
-        self._repository_interactor = self.get_repository_interactor(self.url)
+        self._repository_interactor = self.get_repository_interactor(self.config.url)
 
     @property
     def repository(self) -> RDMRepositoryInteractor:
         return self._repository_interactor
 
     def get_url(self) -> Optional[str]:
-        return self.url
+        return self.config.url
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         """Returns an interactor compatible with the given repository URL.
@@ -180,16 +168,8 @@ class RDMFilesSource(BaseFilesSource):
     def get_container_id_from_path(self, source_path: str) -> str:
         raise NotImplementedError()
 
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
+    def get_authorization_token(self) -> Optional[str]:
+        return self.config.token
 
-    def get_authorization_token(self, user_context: OptionalUserContext) -> Optional[str]:
-        effective_props = self._serialization_props(user_context)
-        return effective_props.get("token")
-
-    def get_public_name(self, user_context: OptionalUserContext) -> Optional[str]:
-        effective_props = self._serialization_props(user_context)
-        return effective_props.get("public_name")
+    def get_public_name(self) -> str:
+        return self.config.public_name or "Anonymous Galaxy User"

@@ -52,6 +52,15 @@ class FlexibleModel(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class UserData(BaseModel):
+    """Minimal user data to expose to file sources."""
+
+    username: Optional[str] = None
+    email: Optional[str] = None
+    is_admin: bool
+    is_anonymous: bool
+
+
 class PluginKind(str, Enum):
     """Enum to distinguish between different kinds or categories of plugins."""
 
@@ -515,6 +524,18 @@ class BaseFilesSource(FilesSource, PluginInstance):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
+    def _update_user_data(self, user_context: "OptionalUserContext"):
+        """Update user data based on the user context."""
+        user_data = None
+        if user_context is not None:
+            user_data = UserData(
+                username=user_context.username,
+                email=user_context.email,
+                is_admin=user_context.is_admin,
+                is_anonymous=user_context.anonymous,
+            )
+        self.user_data = user_data
+
     def _parse_common_props(self, config: FilesSourceProperties):
         """Initialize common configuration from a Pydantic model.
 
@@ -531,6 +552,7 @@ class BaseFilesSource(FilesSource, PluginInstance):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
+        self.user_data = None
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         rval: dict[str, Any] = {
@@ -593,6 +615,7 @@ class BaseFilesSource(FilesSource, PluginInstance):
             self.config = self.config.model_copy(update=extra_props.model_dump(exclude_unset=True), deep=True)
         evaluated_props = self._evaluate_config_props(user_context)
         self.config = self.config.model_copy(update=evaluated_props, deep=True)
+        self._update_user_data(user_context)
 
     def list(
         self,
