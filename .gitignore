@@ -164,6 +164,7 @@ client/webpack-stats.json
 packages/*/build
 packages/*/dist
 packages/*/*.egg-info
+packages/meta/requirements.txt
 
 # Standalone script + main, or build into dist
 config/plugins/**/static/dist
