@@ -44,7 +44,7 @@ filelock==3.18.0
 fluent-logger==0.11.1
 fonttools==4.57.0
 frozenlist==1.6.0
-galaxy-release-util==0.2.0
+galaxy-release-util==0.3.1
 graylint==1.1.1
 greenlet==3.2.1
 h11==0.16.0
