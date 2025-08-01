@@ -40,6 +40,7 @@ from galaxy.schema.invocation import (
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
+    ReportInvocationErrorPayload,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -248,6 +249,24 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)
         return rval
+
+    def report_error(
+        self, trans: ProvidesUserContext, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
+    ):
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+        )
+        email = payload.email
+        if not email and not trans.anonymous:
+            email = trans.user.email
+        trans.app.error_reports.default_error_plugin.submit_invocation_report(
+            invocation=workflow_invocation,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=payload.message,
+            trans=trans,
+        )
 
     def serialize_workflow_invocation(
         self,
