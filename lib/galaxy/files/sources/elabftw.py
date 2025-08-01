@@ -58,7 +58,6 @@ from pathlib import Path
 from textwrap import dedent
 from time import time
 from typing import (
-    Any,
     cast,
     Generic,
     get_type_hints,
@@ -77,7 +76,6 @@ from requests import Session as RequestsSession
 from typing_extensions import (
     NotRequired,
     TypedDict,
-    Unpack,
 )
 
 from galaxy import exceptions as galaxy_exceptions
@@ -148,12 +146,12 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
         """
         Get the entity type, entity id or attachment id for the wrapped entry.
         """
-        path = self.entry["path"]
+        path = self.entry.path
         entity_type, entity_id, attachment_id = split_path(path)
         return locals()[part]
 
 
-class eLabFTWFilesSourceProperties(FilesSourceProperties, total=False):  # noqa
+class eLabFTWFileSourceConfiguration(FilesSourceProperties):
     endpoint: str
     api_key: str
 
@@ -167,18 +165,18 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
     # https://github.com/galaxyproject/galaxy/pull/19319#discussion_r1928753352
     supports_search = True
     supports_sorting = True
+    config_class = eLabFTWFileSourceConfiguration
+    config: eLabFTWFileSourceConfiguration
 
-    def __init__(self, *args, **kwargs: Unpack[eLabFTWFilesSourceProperties]):
+    def __init__(self, config: eLabFTWFileSourceConfiguration):
         """Initialize the eLabFTW files source with an API key and an endpoint URL."""
-        super().__init__()
-        props = self._parse_common_config_opts(kwargs)
-        self._props = props
+        super().__init__(config)
 
-        self._endpoint = kwargs["endpoint"]  # meant to be accessed only from `_get_endpoint()`
-        self._api_key = kwargs["api_key"]  # meant to be accessed only from `_create_session()`
+        self._endpoint = self.config.endpoint  # meant to be accessed only from `_get_endpoint()`
+        self._api_key = self.config.api_key  # meant to be accessed only from `_create_session()`
 
-    def get_prefix(self, user_context: OptionalUserContext = None) -> Optional[str]:
-        endpoint: ParseResult = self._get_endpoint(user_context=user_context)
+    def get_prefix(self) -> Optional[str]:
+        endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)
         # it would make better sense to return
         # `self.id if self.scheme == USER_FILE_SOURCES_SCHEME else (endpoint.netloc or None)`, where
@@ -208,23 +206,15 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             path = f"/{path}"
         return path
 
-    def _create_session(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> RequestsSession:
+    def _create_session(self) -> RequestsSession:
         """
         Create a Galaxy ``requests`` session, overriding initial settings via a :class:`FileSourceOptions` object.
         """
         return requests.Session(
-            headers=self._get_session_headers(options=options, user_context=user_context),  # type: ignore[call-arg]
+            headers=self._get_session_headers(),  # type: ignore[call-arg]
         )
 
-    def _create_session_async(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> aiohttp.ClientSession:
+    def _create_session_async(self) -> aiohttp.ClientSession:
         """
         Create an ``aiohttp`` session, overriding initial settings via a :class:`FileSourceOptions` object.
         """
@@ -232,14 +222,10 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,
-            headers=self._get_session_headers(options=options, user_context=user_context),
+            headers=self._get_session_headers(),
         )
 
-    def _get_session_headers(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> dict:
+    def _get_session_headers(self) -> dict:
         """
         Construct a dictionary of HTTP client session headers.
 
@@ -248,50 +234,18 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
         Meant to be used only by `_create_session()` and `_create_session_async()`.
         """
-        props = {}
-        props.update(self._props)
-        props.update(options.extra_props if options and options.extra_props else {})
-        props.update(
-            {key: value for key, value in self._serialization_props(user_context).items() if value is not None}
-        )
+
         headers = {
-            "Authorization": props.get("api_key", self._api_key),
+            "Authorization": self.config.api_key,
             "Accept": "application/json",
         }
         return headers
 
-    def _get_endpoint(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> ParseResult:
+    def _get_endpoint(self) -> ParseResult:
         """
         Retrieve the endpoint from the constructor, or override it via a :class:`FileSourceOptions` object.
         """
-        props = {}
-        props.update(self._props)
-        props.update(options.extra_props if options and options.extra_props else {})
-        props.update(
-            {key: value for key, value in self._serialization_props(user_context).items() if value is not None}
-        )
-        endpoint = props.get("endpoint", self._endpoint)
-        # given that `options.extra_props` is of `eLabFTWFilesSourceProperties` type, it should be a string
-        endpoint = cast(str, endpoint)
-
-        return urlparse(endpoint)
-
-    def _serialization_props(self, user_context: OptionalUserContext = None) -> eLabFTWFilesSourceProperties:
-        effective_props: dict[str, Any] = {}
-
-        for key, val in self._props.items():
-            if key in {"api_key", "endpoint"} and user_context is None:
-                # prevent exception while expanding `${user.user_vault.read_secret('preferences/elabftw/api_key')}` or
-                # `${user.preferences['elabftw|endpoint']}` without `user_context`
-                effective_props[key] = None
-                continue
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-
-        return cast(eLabFTWFilesSourceProperties, effective_props)
+        return urlparse(self.config.endpoint)
 
     def _list(
         self,
@@ -319,6 +273,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         the sync route's thread so that the eLabFTW plugin can still send concurrent requests without blocking the main
         thread.
         """
+        self.update_config_from_options(opts, user_context)
         event_loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(event_loop)
@@ -383,8 +338,8 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :raises InvalidPath: Path constraints described in the docstring of :class:`InvalidPath` are not satisfied.
         :raises ResourceNotFound: If the path refers to a non-existing experiment, resource, or attachment.
         """
-        session = self._create_session_async(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        session = self._create_session_async()
+        endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(path)
 
@@ -543,18 +498,16 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             wrapped_entries,
             key=lambda x: (
                 (
-                    x.entry.get(sort_by, constructors[sort_by]())  # fall back to the default object for this key type
+                    getattr(x.entry, sort_by, constructors[sort_by]())  # fall back to the default object for this key type
                     if sort_by is not None else None  # fmt: skip
                 ),
-                x.entry["uri"],  # ensure deterministic ordering (URIs are unique)
+                x.entry.uri,  # ensure deterministic ordering (URIs are unique)
             ),
         )
 
         # filter out remaining items locally; by `query`, `offset` and `limit`
         if query is not None:
-            wrapped_entries = [
-                wrapped_entry for wrapped_entry in wrapped_entries if query in wrapped_entry.entry.get("name", "")
-            ]
+            wrapped_entries = [wrapped_entry for wrapped_entry in wrapped_entries if query in wrapped_entry.entry.name]
         if offset is not None:
             wrapped_entries = wrapped_entries[offset - (retrieve_entities_server_side_offset or 0) :]
         if limit is not None:
@@ -598,22 +551,16 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
         experiments = eLabFTWRemoteEntryWrapper(
             RemoteDirectory(
-                **{
-                    "name": "Experiments",
-                    "uri": f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}/experiments",
-                    "path": "/experiments",
-                    "class": "Directory",
-                }
+                name="Experiments",
+                uri=f"{self.get_scheme()}://{self.get_prefix()}/experiments",
+                path="/experiments",
             )
         )
         resources = eLabFTWRemoteEntryWrapper(
             RemoteDirectory(
-                **{
-                    "name": "Resources",
-                    "uri": f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}/resources",
-                    "path": "/resources",
-                    "class": "Directory",
-                }
+                name="Resources",
+                uri=f"{self.get_scheme()}://{self.get_prefix()}/resources",
+                path="/resources",
             )
         )
 
@@ -697,10 +644,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     RemoteDirectory(
                         **{
                             "name": entity["title"],
-                            "uri": (
-                                f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}"
-                                f"/{entity_type}/{entity['id']}"
-                            ),
+                            "uri": (f"{self.get_scheme()}://{self.get_prefix()}" f"/{entity_type}/{entity['id']}"),
                             "path": f"/{entity_type}/{entity['id']}",
                             "class": "Directory",
                         }
@@ -755,8 +699,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     **{
                         "name": upload["real_name"],
                         "uri": (
-                            f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}"
-                            f"/{entity_type}/{entity_id}/{upload['id']}"
+                            f"{self.get_scheme()}://{self.get_prefix()}" f"/{entity_type}/{entity_id}/{upload['id']}"
                         ),
                         "path": f"/{entity_type}/{entity_id}/{upload['id']}",
                         "class": "File",
@@ -800,8 +743,9 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                              three components.
         :raises EntityExpected: When attempting to attach the file to the root "/" or an entity type.
         """
-        session = self._create_session(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        self.update_config_from_options(opts, user_context)
+        session = self._create_session()
+        endpoint = self._get_endpoint()
 
         target_path_obj = Path(target_path)
         attachment_name = target_path_obj.name
@@ -873,8 +817,9 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :raises ValidationError: If the HTTP response from the eLabFTW server is invalid.
         :raises AttachmentExpected: When referencing an entity type, an entity or the root rather than an attachment.
         """
-        session = self._create_session(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        self.update_config_from_options(opts, user_context)
+        session = self._create_session()
+        endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(source_path)
         if not all((entity_type, entity_id, attachment_id)):
