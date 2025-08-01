@@ -7164,6 +7164,8 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             populated_state_message=self.collection.populated_state_message,
             element_count=self.collection.element_count,
             elements_datatypes=list(self.dataset_dbkeys_and_extensions_summary[1]),
+            elements_deleted=self.dataset_dbkeys_and_extensions_summary[3],
+            elements_states=self.dataset_dbkeys_and_extensions_summary[2],
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -7369,11 +7371,15 @@ class HistoryDatasetCollectionAssociation(
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
-            stmt = self.collection._build_nested_collection_attributes_stmt(hda_attributes=("_metadata", "extension"))
+            stmt = self.collection._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7384,7 +7390,11 @@ class HistoryDatasetCollectionAssociation(
                         dbkeys.add(dbkey_field)
                     if row.extension:
                         extensions.add(row.extension)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -7458,7 +7468,7 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
+            (dbkeys, extensions, *_) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",
