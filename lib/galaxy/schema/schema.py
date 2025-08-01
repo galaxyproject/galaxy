@@ -97,6 +97,9 @@ class DatasetState(str, Enum):
         return self.__members__.values()
 
 
+ElementsStatesDict = TypedDict("ElementsStatesDict", {state.value: NotRequired[int] for state in DatasetState})
+
+
 class JobState(str, Enum):
     NEW = "new"
     RESUBMITTED = "resubmitted"
@@ -1179,6 +1182,14 @@ class HDCASummary(HDCACommon, WithModelClass):
     element_count: ElementCountField
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
+    )
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
     )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,

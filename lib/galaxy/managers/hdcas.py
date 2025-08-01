@@ -286,6 +286,8 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "populated_state",
                 "populated_state_message",
                 "element_count",
+                "elements_deleted",
+                "elements_states",
                 "job_source_id",
                 "job_source_type",
                 "job_state_summary",
@@ -333,6 +335,8 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
+            "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
+            "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
             "collection_id": self.serialize_id,
         }
         self.serializers.update(serializers)

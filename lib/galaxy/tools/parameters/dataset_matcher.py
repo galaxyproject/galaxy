@@ -213,7 +213,7 @@ class SummaryDatasetCollectionMatcher:
         if not dataset_collection.populated_optimized:
             return False
 
-        (states, extensions) = dataset_collection.dataset_states_and_extensions_summary
+        (states, extensions, *_) = dataset_collection.dataset_states_and_extensions_summary
         for state in states:
             if state not in self.dataset_matcher_factory.valid_input_states:
                 return False
