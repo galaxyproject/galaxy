@@ -69,7 +69,11 @@ jest.mock("@/stores/workflowStore", () => {
  * @param terminal Whether the invocation is terminal
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvocationElementView, terminal = true) {
+async function mountWorkflowInvocationInputOutputTabs(
+    invocation: WorkflowInvocationElementView,
+    tab: "inputs" | "outputs" = "inputs",
+    terminal = true
+) {
     server.use(
         http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
             // We need to use untyped here because this endpoint is not
@@ -95,6 +99,7 @@ async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvoca
         propsData: {
             invocation,
             terminal,
+            tab,
         },
         stubs: {
             ContentItem: true,
@@ -142,7 +147,10 @@ describe("WorkflowInvocationInputOutputTabs", () => {
     });
 
     it("shows invocation outputs when invocation is terminal", async () => {
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(invocationData as WorkflowInvocationElementView);
+        const wrapper = await mountWorkflowInvocationInputOutputTabs(
+            invocationData as WorkflowInvocationElementView,
+            "outputs"
+        );
 
         testOutputsDisplayed(wrapper);
     });
@@ -153,7 +161,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
             outputs: {},
             output_collections: {},
         } as WorkflowInvocationElementView;
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(nonTerminalInvocation, false);
+        const wrapper = await mountWorkflowInvocationInputOutputTabs(nonTerminalInvocation, "outputs", false);
 
         testOutputsDisplayed(wrapper, false);
     });
