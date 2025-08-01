@@ -10,13 +10,9 @@ import type {
     WorkflowInvocationRequest,
 } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
-import type { GraphStep } from "@/composables/useInvocationGraph";
 import { rethrowSimple } from "@/utils/simple-error";
 
-type GraphSteps = { [index: string]: GraphStep };
-
 export const useInvocationStore = defineStore("invocationStore", () => {
-    const graphStepsByStoreId = ref<{ [index: string]: GraphSteps }>({});
     const scrollListScrollTop = ref(0);
 
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
@@ -156,7 +152,6 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationStepById,
         getInvocationRequestById,
         getInvocationCountByWorkflowId,
-        graphStepsByStoreId,
         isLoadingInvocation,
         sortedStoredInvocations,
         totalInvocationCount,
