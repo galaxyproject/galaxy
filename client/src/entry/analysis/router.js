@@ -569,10 +569,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "user",
                         component: UserPreferences,
-                        props: {
-                            enableQuotas: Galaxy.config.enable_quotas,
-                            userId: Galaxy.user.id,
-                        },
                         redirect: redirectAnon(),
                     },
                     {
