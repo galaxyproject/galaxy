@@ -30,6 +30,7 @@ from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
 )
+from galaxy.util.config_templates import partial_model
 from galaxy.util.plugin_config import PluginInstance
 from galaxy.util.template import fill_template
 
@@ -249,6 +250,13 @@ class FilesSourceProperties(StrictModel):
     ]
 
 
+@partial_model()
+class PartialFilesSourceProperties(FilesSourceProperties):
+    """Partial model for FilesSourceProperties to allow partial updates."""
+
+    pass
+
+
 class FilesSourceOptions(StrictModel):
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
@@ -269,7 +277,7 @@ class FilesSourceOptions(StrictModel):
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
     extra_props: Annotated[
-        Optional[FilesSourceProperties],
+        Optional[PartialFilesSourceProperties],
         Field(
             description="Additional properties to override the initial properties defined in the constructor.",
         ),
