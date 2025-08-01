@@ -611,7 +611,7 @@ class BaseFilesSource(FilesSource, PluginInstance):
         """
         return self._evaluate_config_props(user_context)
 
-    def update_config_from_options(
+    def _update_config_with_user_context(
         self,
         opts: Optional[FilesSourceOptions] = None,
         user_context: "OptionalUserContext" = None,
@@ -651,14 +651,15 @@ class BaseFilesSource(FilesSource, PluginInstance):
             if offset is not None and offset < 0:
                 raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
-        return self._list(path, recursive, user_context, opts, limit, offset, query)
+        self._update_config_with_user_context(opts, user_context)
+        write_intent = opts.writeable if opts else False
+        return self._list(path, recursive, write_intent, limit, offset, query)
 
     def _list(
         self,
         path="/",
         recursive=False,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -674,14 +675,10 @@ class BaseFilesSource(FilesSource, PluginInstance):
     ) -> Entry:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        return self._create_entry(entry_data, user_context, opts)
+        self._update_config_with_user_context(opts, user_context)
+        return self._create_entry(entry_data)
 
-    def _create_entry(
-        self,
-        entry_data: EntryData,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> Entry:
+    def _create_entry(self, entry_data: EntryData) -> Entry:
         """Create a new entry (directory) in the file source.
 
         The file source must be writeable.
@@ -698,16 +695,11 @@ class BaseFilesSource(FilesSource, PluginInstance):
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        return self._write_from(target_path, native_path, user_context=user_context, opts=opts) or target_path
+        self._update_config_with_user_context(opts, user_context)
+        return self._write_from(target_path, native_path) or target_path
 
     @abc.abstractmethod
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> Optional[str]:
+    def _write_from(self, target_path: str, native_path: str) -> Optional[str]:
         pass
 
     def realize_to(
@@ -718,16 +710,11 @@ class BaseFilesSource(FilesSource, PluginInstance):
         opts: Optional[FilesSourceOptions] = None,
     ):
         self._check_user_access(user_context)
-        self._realize_to(source_path, native_path, user_context, opts=opts)
+        self._update_config_with_user_context(opts, user_context)
+        self._realize_to(source_path, native_path)
 
     @abc.abstractmethod
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         pass
 
     def _ensure_writeable(self):

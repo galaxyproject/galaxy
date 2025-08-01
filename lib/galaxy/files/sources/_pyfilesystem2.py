@@ -15,12 +15,10 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
     DEFAULT_PAGE_LIMIT,
-    FilesSourceOptions,
     FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
@@ -58,8 +56,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self,
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -67,7 +64,6 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
-            self.update_config_from_options(opts, user_context)
             with self._open_fs() as h:
                 if recursive:
                     recursive_result: list[AnyRemoteEntry] = []
@@ -110,25 +106,11 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             return None
         return [f"*{query}*"]
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _realize_to(self, source_path: str, native_path: str):
         with open(native_path, "wb") as write_file:
             self._open_fs().download(source_path, write_file)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _write_from(self, target_path: str, native_path: str):
         with open(native_path, "rb") as read_file:
             openfs = self._open_fs()
             dirname = fs.path.dirname(target_path)
