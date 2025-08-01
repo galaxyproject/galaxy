@@ -135,7 +135,7 @@ class Slurm(BaseJobExec):
         except KeyError:
             raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
 
-        def get_failure_reason(self, job_id):
+    def get_failure_reason(self, job_id):
         return f"sacct -o JobIDRaw,State -P -n -j {job_id}"
 
     def parse_failure_reason(self, reason, job_id):
