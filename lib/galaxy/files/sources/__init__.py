@@ -587,6 +587,7 @@ class BaseFilesSource(FilesSource, PluginInstance):
         if self.get_url() is not None:
             rval["url"] = self.get_url()
         if for_serialization:
+            self.user_data = UserData(context=user_context)
             rval.update(self._serialization_props(user_context=user_context))
         return rval
 
