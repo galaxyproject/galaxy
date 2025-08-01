@@ -26,6 +26,11 @@ function rewriteGxUris(ref: Ref<HTMLDivElement | undefined>, internalHelpReferen
                 const rest = img.src.substr("gxstatic://".length);
                 img.src = `${getAppRoot()}static/${rest}`;
             }
+            if (img.src.startsWith("gxdatasetasimage://")) {
+                const historyDatasetId = img.src.substr("gxdatasetasimage://".length);
+                const imageUrl = `${getAppRoot()}dataset/display?dataset_id=${historyDatasetId}`;
+                img.src = imageUrl;
+            }
         });
     }
 }

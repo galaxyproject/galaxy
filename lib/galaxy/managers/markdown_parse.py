@@ -68,6 +68,7 @@ VALID_ARGUMENTS: dict[str, Union[list[str], DynamicArguments]] = {
     "workflow_license": ["invocation_id", "workflow_id"],
 }
 EMBED_CAPABLE_DIRECTIVES = [
+    "history_dataset_as_image",
     "history_dataset_name",
     "history_dataset_type",
     "workflow_license",

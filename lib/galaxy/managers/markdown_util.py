@@ -343,6 +343,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 title = trans.app.config.organization_name
                 url = trans.app.config.organization_url
                 return _link_to_markdown(url, title)
+            elif container == "history_dataset_as_image":
+                _check_object(object_id, match.group(0))
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                return f"![{hda.name}](gxdatasetasimage://{encoded_id})"
             else:
                 raise MalformedContents(f"Unknown embedded Galaxy Markdown directive encountered [{container}].")
 
