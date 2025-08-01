@@ -201,8 +201,6 @@ watch(
     { immediate: true }
 );
 
-const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
-
 watch(
     () => invocationSchedulingTerminal.value,
     async (newVal, oldVal) => {
@@ -412,9 +410,9 @@ async function onCancel() {
                     <span v-localize>Subworkflow steps are not available.</span>
                 </BAlert>
                 <WorkflowInvocationSteps
-                    v-else-if="invocation && storeId"
+                    v-else-if="invocation && stepsJobsSummary"
                     :invocation="invocation"
-                    :store-id="storeId"
+                    :steps-jobs-summary="stepsJobsSummary"
                     :is-full-page="props.isFullPage" />
             </div>
             <WorkflowInvocationInputOutputTabs
