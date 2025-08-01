@@ -18,6 +18,7 @@ class Base64FilesSource(BaseFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, config: FilesSourceProperties):
+        super().__init__(config)
         overrides = dict(
             id="_base64",
             label="Base64 encoded string",
@@ -25,7 +26,6 @@ class Base64FilesSource(BaseFilesSource):
             writable=False,
         )
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
 
     def _realize_to(
         self,
