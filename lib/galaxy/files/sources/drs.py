@@ -27,6 +27,7 @@ class DRSFilesSource(BaseFilesSource):
     config: DRSFileSourceConfiguration
 
     def __init__(self, config: FilesSourceProperties):
+        super().__init__(config)
         overrides = dict(
             id="_drs",
             label="DRS file",
@@ -34,7 +35,6 @@ class DRSFilesSource(BaseFilesSource):
             writable=False,
         )
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
         assert self.config.url_regex, "DRSFilesSource requires a url_regex to be set in the configuration"
         self._url_regex = re.compile(self.config.url_regex)
 

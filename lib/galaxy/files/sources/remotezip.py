@@ -53,6 +53,7 @@ class RemoteZipFilesSource(BaseFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, config: FilesSourceProperties):
+        super().__init__(config)
         overrides = {
             "id": "extract",
             "label": "Remote ZIP extractor",
@@ -61,7 +62,6 @@ class RemoteZipFilesSource(BaseFilesSource):
             "browsable": False,
         }
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
 
     @property
     def _allowlist(self):

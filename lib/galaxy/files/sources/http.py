@@ -34,6 +34,7 @@ class HTTPFilesSource(BaseFilesSource):
     config: HTTPFileSourceConfiguration
 
     def __init__(self, config: HTTPFileSourceConfiguration):
+        super().__init__(config)
         overrides = dict(
             id="_http",
             label="HTTP File",
@@ -41,7 +42,6 @@ class HTTPFilesSource(BaseFilesSource):
             writable=False,
         )
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
 
         assert self.config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
         self._compiled_url_regex = re.compile(self.config.url_regex)
