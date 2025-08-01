@@ -669,7 +669,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 
         as_dicts = []
         for files_source_properties in self._all_user_file_source_properties(user_context):
-            files_source_type = files_source_properties["type"]
+            files_source_type = files_source_properties.type
             plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
             plugin_kind = plugin_type_class.plugin_kind
             if include_kind and plugin_kind not in include_kind:
