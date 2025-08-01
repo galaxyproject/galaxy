@@ -41,4 +41,5 @@ def upgrade():
 
 
 def downgrade():
-    drop_table(TABLE_NAME)
+    if table_exists(TABLE_NAME, True):
+        drop_table(TABLE_NAME)
