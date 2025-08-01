@@ -5,7 +5,7 @@
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"
-        :content="content"
+        :content="contentEditor"
         :content-data="contentData" />
 </template>
 
@@ -34,6 +34,7 @@ const props = defineProps<{
 
 const title = ref("");
 const content = ref<string>("");
+const contentEditor = ref<string>("");
 const contentFormat = ref<string>("");
 const contentData = ref<PageData>();
 const publicUrl = ref<string>("");
@@ -60,6 +61,7 @@ const loadPage = async () => {
         if (data) {
             publicUrl.value = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
             content.value = data.content;
+            contentEditor.value = data.content_editor;
             contentFormat.value = data.content_format;
             contentData.value = data || {};
             title.value = data.title;
