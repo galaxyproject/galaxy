@@ -192,9 +192,9 @@ watch(
         const storedInvocation = invocationStore.getInvocationById(id);
         if (storedInvocation) {
             invocationLoaded.value = true;
-            return;
+        } else {
+            invocationLoaded.value = false;
         }
-        invocationLoaded.value = false;
         try {
             await invocationStore.fetchInvocationById({ id });
             invocationLoaded.value = true;
