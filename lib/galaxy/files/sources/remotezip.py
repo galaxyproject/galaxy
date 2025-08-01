@@ -5,9 +5,7 @@ from dataclasses import (
     fields,
 )
 from struct import unpack
-from typing import (
-    Optional,
-)
+from typing import Optional
 from urllib.parse import (
     parse_qs,
     unquote,
@@ -15,7 +13,6 @@ from urllib.parse import (
 )
 
 import requests
-from typing_extensions import Unpack
 
 from galaxy.files import OptionalUserContext
 from galaxy.files.uris import validate_uri_access
@@ -55,17 +52,16 @@ class RemoteZipFilesSource(BaseFilesSource):
     plugin_type = "remoteZip"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
-        kwds: FilesSourceProperties = {
+    def __init__(self, config: FilesSourceProperties):
+        overrides = {
             "id": "extract",
             "label": "Remote ZIP extractor",
             "doc": DOC_TEMPLATE,
             "writable": False,
             "browsable": False,
         }
-        kwds.update(kwd)
-        props = self._parse_common_config_opts(kwds)
-        self._props = props
+        self.config = self.config.model_copy(update=overrides)
+        super().__init__(config)
 
     @property
     def _allowlist(self):
@@ -101,12 +97,6 @@ class RemoteZipFilesSource(BaseFilesSource):
             return len("zip://")
         else:
             return 0
-
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
 
 
 def extract_query_parameters(url: str) -> dict[str, str]:
