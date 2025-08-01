@@ -20,7 +20,7 @@ import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
-import PageDisplay from "components/PageDisplay/PageDisplay";
+import PagePublished from "components/Page/PagePublished";
 import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolReport from "components/Tool/ToolReport";
@@ -169,8 +169,12 @@ export function getRouter(Galaxy) {
             },
             {
                 path: "/published/page",
-                component: PageDisplay,
-                props: (route) => ({ pageId: route.query.id }),
+                component: PagePublished,
+                props: (route) => ({
+                    pageId: route.query.id,
+                    embed: route.query.embed ? parseBool(route.query.embed) : undefined,
+                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                }),
             },
             {
                 path: "/published/visualization",
