@@ -64,16 +64,6 @@ const uniqueMessages = computed(() => {
     return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
 });
 
-// after the report tab is first activated, no longer lazy-render it from then on
-const reportActive = computed({
-    get: () => props.tab === "report",
-    set: () => {
-        // TODO: router handle here..
-        reportLazy.value = false;
-    },
-});
-const reportLazy = ref(true);
-
 const workflowStore = useWorkflowStore();
 const tabsDisabled = computed(
     () =>
