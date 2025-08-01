@@ -1,18 +1,12 @@
 import urllib.parse
 
-from galaxy.files import OptionalUserContext
-
 try:
     from fs.ftpfs import FTPFS
 except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
-from typing import Optional
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
@@ -44,27 +38,13 @@ class FtpFilesSource(PyFilesystem2FilesSource):
             passwd=self.config.passwd,
         )
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _realize_to(self, source_path: str, native_path: str):
         path = self._parse_url_and_get_path(source_path)
-        super()._realize_to(path, native_path, user_context=user_context, opts=opts)
+        super()._realize_to(path, native_path)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _write_from(self, target_path: str, native_path: str):
         path = self._parse_url_and_get_path(target_path)
-        super()._write_from(path, native_path, user_context=user_context, opts=opts)
+        super()._write_from(path, native_path)
 
     def _parse_url_and_get_path(self, url: str) -> str:
         host = self.config.host

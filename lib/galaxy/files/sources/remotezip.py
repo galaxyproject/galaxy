@@ -5,7 +5,6 @@ from dataclasses import (
     fields,
 )
 from struct import unpack
-from typing import Optional
 from urllib.parse import (
     parse_qs,
     unquote,
@@ -14,11 +13,9 @@ from urllib.parse import (
 
 import requests
 
-from galaxy.files import OptionalUserContext
 from galaxy.files.uris import validate_uri_access
 from . import (
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
@@ -67,29 +64,17 @@ class RemoteZipFilesSource(BaseFilesSource):
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         params = extract_query_parameters(source_path)
         file_extract_params = validate_params(params)
         validate_uri_access(
             file_extract_params.source,
-            user_context.is_admin if user_context else False,
+            self.user_data.is_admin if self.user_data else False,
             self._allowlist or [],
         )
         stream_and_decompress(file_extract_params, native_path)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

@@ -12,14 +12,12 @@ from urllib.parse import quote
 from typing_extensions import TypedDict
 
 from galaxy.exceptions import AuthenticationRequired
-from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
     DEFAULT_PAGE_LIMIT,
     DEFAULT_SCHEME,
     Entry,
     EntryData,
-    FilesSourceOptions,
     RemoteDirectory,
     RemoteFile,
 )
@@ -126,35 +124,26 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def _list(
         self,
         path="/",
-        recursive=True,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        recursive=False,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """This method lists the datasets or files from dataverse."""
-        self.update_config_from_options(opts, user_context)
-        writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
             datasets, total_hits = self.repository.get_file_containers(
-                writeable, limit=limit, offset=offset, query=query
+                write_intent, limit=limit, offset=offset, query=query
             )
             return cast(list[AnyRemoteEntry], datasets), total_hits
         dataset_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_container(dataset_id, writeable, query)
+        files = self.repository.get_files_in_container(dataset_id, write_intent, query)
         return cast(list[AnyRemoteEntry], files), len(files)
 
-    def _create_entry(
-        self,
-        entry_data: EntryData,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> Entry:
+    def _create_entry(self, entry_data: EntryData) -> Entry:
         """Creates a draft dataset in the repository."""
-        self.update_config_from_options(opts, user_context)
         public_name = self.get_public_name()
         title = entry_data.name or "No title"
         dataset = self.repository.create_draft_file_container(title, public_name)
@@ -165,18 +154,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
             external_link=self.repository.public_dataset_url(datasetId),
         )
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         """Used when downloading files from dataverse."""
-        self.update_config_from_options(opts, user_context)
-        # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
-        # This prevents downloading files that require authentication even if the user provided a token.
-
         dataset_id, file_id = self.parse_path(source_path)
         try:
             self.repository.download_file_from_container(dataset_id, file_id, native_path)
@@ -194,13 +173,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def _is_zip_archive(self, file_name: str) -> bool:
         return file_name.endswith(".zip")
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         """Used when uploading files to dataverse."""
         dataset_id, file_id = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path)

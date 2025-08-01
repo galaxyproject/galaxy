@@ -1,9 +1,7 @@
 import logging
 import re
 import urllib.request
-from typing import Optional
 
-from galaxy.files import OptionalUserContext
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -13,7 +11,6 @@ from galaxy.util import (
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from . import (
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
@@ -50,14 +47,7 @@ class HTTPFilesSource(BaseFilesSource):
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _realize_to(self, source_path: str, native_path: str):
         req = urllib.request.Request(source_path, headers=self.config.http_headers)
 
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -68,13 +58,7 @@ class HTTPFilesSource(BaseFilesSource):
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

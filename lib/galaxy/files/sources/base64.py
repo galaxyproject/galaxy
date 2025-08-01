@@ -1,11 +1,8 @@
 import base64
 import logging
-from typing import Optional
 
-from galaxy.files import OptionalUserContext
 from . import (
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
@@ -27,24 +24,12 @@ class Base64FilesSource(BaseFilesSource):
         )
         self.config = self.config.model_copy(update=overrides)
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):
