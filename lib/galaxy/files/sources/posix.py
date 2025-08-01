@@ -8,6 +8,7 @@ from typing import (
 )
 
 from galaxy import exceptions
+from galaxy.files import OptionalUserContext
 from galaxy.util.path import (
     safe_contains,
     safe_path,
@@ -130,7 +131,8 @@ class PosixFilesSource(BaseFilesSource):
         return os.path.join(self._effective_root(), source_path)
 
     def _effective_root(self) -> str:
-        return self.config.root or "/"
+        user_context = self.user_data.context if self.user_data else None
+        return str(self._evaluate_prop(self.config.root or "/", user_context=user_context))
 
     def _resource_info_to_dict(self, dir: str, name: str) -> AnyRemoteEntry:
         rel_path = os.path.normpath(os.path.join(dir, name))
@@ -159,7 +161,7 @@ class PosixFilesSource(BaseFilesSource):
             return False
         return True
 
-    def _serialization_props(self) -> dict[str, Any]:
+    def _serialization_props(self, user_context: OptionalUserContext) -> dict[str, Any]:
         return {
             # abspath needed because will be used by external Python from
             # a job working directory
