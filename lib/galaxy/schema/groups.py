@@ -1,6 +1,4 @@
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from pydantic import (
     Field,
@@ -8,7 +6,6 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-from galaxy.schema import partial_model
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -18,6 +15,7 @@ from galaxy.schema.schema import (
     Model,
     WithModelClass,
 )
+from galaxy.util.config_templates import partial_model
 
 GROUP_MODEL_CLASS = Literal["Group"]
 
