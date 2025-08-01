@@ -102,11 +102,15 @@ watch(
                     class="flex-grow-1"
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
-                    <span class="dataset-hid">{{ dataset?.hid }}:</span>
-                    <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
-                    <span class="dataset-state-header">
-                        <DatasetState :dataset-id="datasetId" />
-                    </span>
+                    <div class="dataset-header-content">
+                        <div class="dataset-title-row">
+                            <span class="dataset-hid">{{ dataset?.hid }}:</span>
+                            <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
+                        </div>
+                        <span class="dataset-state-header">
+                            <DatasetState :dataset-id="datasetId" />
+                        </span>
+                    </div>
                 </Heading>
             </div>
             <transition v-if="dataset" name="header">
@@ -279,23 +283,34 @@ watch(
     opacity: 0;
 }
 
-.dataset-hid,
-.dataset-state-header {
-    white-space: nowrap;
+.dataset-header-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.dataset-title-row {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .dataset-hid {
+    white-space: nowrap;
     margin-right: 0.25rem;
 }
 
 .dataset-name {
     word-break: break-word;
+    min-width: 0;
 }
 
 .dataset-state-header {
     font-size: $h5-font-size;
-    vertical-align: middle;
-    margin-left: 0.5rem;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .tab-content-panel {
