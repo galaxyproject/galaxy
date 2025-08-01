@@ -627,7 +627,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     RemoteDirectory(
                         **{
                             "name": entity["title"],
-                            "uri": (f"{self.get_scheme()}://{self.get_prefix()}" f"/{entity_type}/{entity['id']}"),
+                            "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity['id']}",
                             "path": f"/{entity_type}/{entity['id']}",
                             "class": "Directory",
                         }
@@ -680,9 +680,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 RemoteFile(
                     **{
                         "name": upload["real_name"],
-                        "uri": (
-                            f"{self.get_scheme()}://{self.get_prefix()}" f"/{entity_type}/{entity_id}/{upload['id']}"
-                        ),
+                        "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity_id}/{upload['id']}",
                         "path": f"/{entity_type}/{entity_id}/{upload['id']}",
                         "class": "File",
                         "size": upload["filesize"],

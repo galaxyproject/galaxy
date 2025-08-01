@@ -5,7 +5,6 @@ from typing import (
     Optional,
 )
 
-from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
     FilesSourceProperties,
