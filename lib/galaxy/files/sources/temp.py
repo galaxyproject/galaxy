@@ -1,9 +1,11 @@
-from typing import Optional
-
 from fs.osfs import OSFS
 
-from . import FilesSourceOptions
+from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+
+class TempFileSourceConfiguration(FilesSourceProperties):
+    root_path: str
 
 
 class TempFilesSource(PyFilesystem2FilesSource):
@@ -16,14 +18,18 @@ class TempFilesSource(PyFilesystem2FilesSource):
 
     plugin_type = "temp"
     required_module = OSFS
+    required_package = "fs.osfs"
+    configuration_class = TempFileSourceConfiguration
+    config: TempFileSourceConfiguration
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props = opts.extra_props or {} if opts else {}
-        # We use OSFS here because using TempFS or MemoryFS would wipe out the files
-        # every time we instantiate a new handle, which happens on every request.
-        handle = OSFS(**{**props, **extra_props})
-        return handle
+    def __init__(self, config: TempFileSourceConfiguration):
+        super().__init__(config)
+
+    def _open_fs(self):
+        if OSFS is None:
+            raise self.required_package_exception
+
+        return OSFS(root_path=self.config.root_path)
 
     def get_scheme(self) -> str:
         return "temp"
