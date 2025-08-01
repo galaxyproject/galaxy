@@ -13,17 +13,20 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 import PageHtml from "@/components/PageDisplay/PageHtml.vue";
 
+// PageData extends the Item interface from PublishedItem
 interface PageData {
     id: string;
-    title: string;
-    name?: string;
+    title?: string;
+    name: string; // Required by Item interface
     content: string;
     content_format: string;
-    username: string;
+    username?: string | null;
+    owner?: string;
     slug: string;
     email_hash?: string;
     tags?: string[];
     model_class?: string;
+    author_deleted?: boolean;
 }
 
 interface Props {
@@ -48,20 +51,32 @@ const errorMessage = ref("");
 const hasError = computed(() => !!errorMessage.value);
 const dataUrl = computed(() => `/api/pages/${props.pageId}`);
 const exportUrl = computed(() => `${dataUrl.value}.pdf`);
-const userOwnsPage = computed(() => currentUser.value?.username === page.value?.username);
+const userOwnsPage = computed(() => {
+    if (!currentUser.value || !page.value) {
+        return false;
+    }
+    // Check if the user is anonymous first
+    if ("isAnonymous" in currentUser.value && currentUser.value.isAnonymous) {
+        return false;
+    }
+    // Check username if available
+    return currentUser.value.username === page.value.username;
+});
 
 async function load() {
     loading.value = true;
     errorMessage.value = "";
 
     try {
-        const data = await urlData({ url: dataUrl.value });
+        const data = await urlData<any>({ url: dataUrl.value });
         // Ensure data has the expected shape for PublishedItem
         page.value = {
             ...data,
-            name: data.title || data.name,
+            name: data.title || data.name || "Untitled Page",
+            title: data.title,
             model_class: "Page",
-        };
+            username: data.username || data.owner,
+        } as PageData;
     } catch (error) {
         errorMessage.value = `Failed to load page: ${error}`;
     } finally {
@@ -94,20 +109,22 @@ function stsUrl(config: any) {
                     {{ errorMessage }}
                 </BAlert>
             </div>
-            <div v-else-if="page" class="published-page">
+            <div v-else-if="page && isConfigLoaded" class="published-page">
                 <Heading v-if="props.showHeading" h1 separator size="lg" class="page-title">
-                    {{ page.title }}
+                    {{ page.title || page.name }}
                 </Heading>
 
                 <div class="page-content">
                     <Markdown
                         v-if="page.content_format === 'markdown'"
                         :markdown-config="page"
+                        :download-endpoint="stsUrl(config)"
                         :read-only="true"
                         class="page-markdown" />
                     <PageHtml v-else :page="page" />
                 </div>
             </div>
+            <LoadingSpan v-else-if="page && !isConfigLoaded" message="Loading Galaxy configuration" />
         </div>
     </div>
     <PublishedItem v-else :item="page">
