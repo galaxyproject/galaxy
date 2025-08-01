@@ -57,16 +57,6 @@ const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
 
-// after the report tab is first activated, no longer lazy-render it from then on
-const reportActive = computed({
-    get: () => props.tab === "report",
-    set: () => {
-        // TODO: router handle here..
-        reportLazy.value = false;
-    },
-});
-const reportLazy = ref(true);
-
 const workflowStore = useWorkflowStore();
 const tabsDisabled = computed(
     () =>
