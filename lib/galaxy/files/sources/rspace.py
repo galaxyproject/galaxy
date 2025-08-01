@@ -38,7 +38,6 @@ from typing import (
     cast,
     IO,
     Optional,
-    Union,
 )
 
 from galaxy.files import OptionalUserContext
@@ -122,28 +121,34 @@ if RSpaceGalleryFilesystem is not None:
             self.upload_global_id = self._upload_response["globalId"]
 
 
+class RSpaceFileSourceConfiguration(FilesSourceProperties):
+    endpoint: str
+    api_key: str
+
+
 class RSpaceFilesSource(PyFilesystem2FilesSource):
     plugin_type = "rspace"
     required_module = RSpaceGalleryFilesystem
     required_package = "rspace_client.eln.fs"
+    config_class: RSpaceFileSourceConfiguration
+    config: RSpaceFileSourceConfiguration
 
     _upload_global_id: str
     # The RSpace global id of the most recently uploaded file.
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None) -> RSpaceGalleryFilesystem:
+    def __init__(self, config: RSpaceFileSourceConfiguration):
+        super().__init__(config)
+
+    def _open_fs(self):
         """
         Instantiate a PyFilesystem2 FS object for RSpace's Gallery.
         """
-        props = self._serialization_props(user_context)
-        extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        all_props: dict = {**props, **extra_props}
-
-        endpoint = all_props["endpoint"]
-        api_key = all_props["api_key"]
+        if RSpaceGalleryFilesystem is None:
+            raise self.required_package_exception
 
         # patch the `upload()` method to keep track of the global id of the most recently uploaded file, change the
         # target path and fake the name of the file
-        gallery_fs = PatchedRSpaceGalleryFilesystem(endpoint, api_key)
+        gallery_fs = PatchedRSpaceGalleryFilesystem(self.config.endpoint, self.config.api_key)
         gallery_fs_upload_method = gallery_fs.upload
 
         def upload(self_, path: str, file: BinaryIO, chunk_size: Optional[int] = None, **options: Any) -> None:
@@ -194,16 +199,10 @@ class RSpaceFilesSource(PyFilesystem2FilesSource):
 
         entry: AnyRemoteEntry
         if resource_info.is_dir:
-            dict_.update(
-                {
-                    "class": "Directory",
-                }
-            )
-            entry = RemoteDirectory(**cast(RemoteDirectory, dict_))
+            entry = RemoteDirectory(name=dict_["name"], uri=dict_["uri"], path=dict_["path"])
         else:
             dict_.update(
                 {
-                    "class": "File",
                     "size": resource_info.size,
                     "ctime": self.to_dict_time(
                         datetime.datetime.fromisoformat(resource_info.get("rspace", "created")).astimezone(
@@ -212,6 +211,12 @@ class RSpaceFilesSource(PyFilesystem2FilesSource):
                     ),
                 }
             )
-            entry = RemoteFile(**cast(RemoteFile, dict_))
+            entry = RemoteFile(
+                name=dict_["name"],
+                size=dict_["size"],
+                ctime=dict_["ctime"],
+                uri=dict_["uri"],
+                path=dict_["path"],
+            )
 
         return entry
