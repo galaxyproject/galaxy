@@ -397,6 +397,28 @@ async function onCancel() {
                 :to="`/workflows/invocations/${props.invocationId}/debug`">
                 Debug
             </BNavItem>
+
+            <div class="ml-auto d-flex align-items-center">
+                <BBadge
+                    v-if="tabsDisabled"
+                    v-b-tooltip.hover.noninteractive
+                    class="mr-1"
+                    :title="disabledTabTooltip"
+                    variant="primary">
+                    <FontAwesomeIcon :icon="faExclamation" />
+                </BBadge>
+                <GButton
+                    v-if="!props.isFullPage && !invocationAndJobTerminal"
+                    tooltip
+                    class="my-1"
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="cancel invocation button"
+                    size="small"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                    Cancel Workflow
+                </GButton>
+            </div>
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto">
@@ -426,12 +448,18 @@ async function onCancel() {
                 :tab="props.tab" />
             <div v-if="props.tab === 'report'">
                 <BAlert v-if="isSubworkflow" variant="info" show>
-                    <span v-localize>Subworkflow steps are not available.</span>
+                    <span v-localize>Report is not available for subworkflow.</span>
                 </BAlert>
-                <InvocationReport v-else-if="invocationStateSuccess" :invocation-id="invocation.id" />
+                <BAlert v-else-if="!invocationStateSuccess" variant="info" show>
+                    <span v-localize>{{ disabledTabTooltip }}</span>
+                </BAlert>
+                <InvocationReport v-else :invocation-id="invocation.id" />
             </div>
             <div v-if="props.tab === 'export'">
-                <div v-if="invocationAndJobTerminal">
+                <BAlert v-if="!invocationAndJobTerminal" variant="info" show>
+                    <span v-localize>{{ disabledTabTooltip }}</span>
+                </BAlert>
+                <div v-else>
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
             </div>
@@ -450,32 +478,6 @@ async function onCancel() {
                     :invocation="invocation"
                     :invocation-messages="uniqueMessages" />
             </div>
-
-            <!-- TODO: Deal with the nav end section -->
-
-            <!-- <template v-slot:tabs-end>
-                <div class="ml-auto d-flex align-items-center">
-                    <BBadge
-                        v-if="tabsDisabled"
-                        v-b-tooltip.hover.noninteractive
-                        class="mr-1"
-                        :title="disabledTabTooltip"
-                        variant="primary">
-                        <FontAwesomeIcon :icon="faExclamation" />
-                    </BBadge>
-                    <GButton
-                        v-if="!props.isFullPage && !invocationAndJobTerminal"
-                        tooltip
-                        class="my-1"
-                        title="Cancel scheduling of workflow invocation"
-                        data-description="cancel invocation button"
-                        size="small"
-                        @click="onCancel">
-                        <FontAwesomeIcon :icon="faTimes" fixed-width />
-                        Cancel Workflow
-                    </GButton>
-                </div>
-            </template> -->
         </div>
     </div>
     <BAlert v-else-if="errorMessage" variant="danger" show>
