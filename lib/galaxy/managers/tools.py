@@ -1,6 +1,7 @@
 import logging
 from typing import (
     Any,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -20,6 +21,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     DynamicTool,
     UserDynamicToolAssociation,
@@ -49,6 +51,30 @@ if TYPE_CHECKING:
 def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
     tool_source = YamlToolSource(tool_dict)
     tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=None)
+    return tool
+
+
+class ToolRunReference(NamedTuple):
+    tool_id: Optional[str]
+    tool_uuid: Optional[str]
+    tool_version: Optional[str]
+
+
+def get_tool_from_trans(trans: ProvidesUserContext, tool_ref: ToolRunReference) -> Tool:
+    return get_tool_from_toolbox(trans.app.toolbox, tool_ref)
+
+
+def get_tool_from_toolbox(toolbox, tool_ref: ToolRunReference) -> Tool:
+    get_kwds = dict(
+        tool_id=tool_ref.tool_id,
+        tool_uuid=tool_ref.tool_uuid,
+        tool_version=tool_ref.tool_version,
+    )
+
+    tool = toolbox.get_tool(**get_kwds)
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
     return tool
 
 
