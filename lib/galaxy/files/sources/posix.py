@@ -30,7 +30,7 @@ DEFAULT_PREFER_LINKS = False
 
 
 class PosixFileSourceConfiguration(FilesSourceProperties):
-    root: str
+    root: Optional[str] = None
     enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
     delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
     allow_subdir_creation: bool = DEFAULT_ALLOW_SUBDIR_CREATION
