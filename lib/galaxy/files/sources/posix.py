@@ -2,13 +2,12 @@ import functools
 import os
 import shutil
 from typing import (
+    Any,
+    ClassVar,
     Optional,
 )
 
-from typing_extensions import Unpack
-
 from galaxy import exceptions
-from galaxy.files import OptionalUserContext
 from galaxy.util.path import (
     safe_contains,
     safe_path,
@@ -17,8 +16,9 @@ from galaxy.util.path import (
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
+    RemoteDirectory,
+    RemoteFile,
 )
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
@@ -27,16 +27,18 @@ DEFAULT_ALLOW_SUBDIR_CREATION = True
 DEFAULT_PREFER_LINKS = False
 
 
-class PosixFilesSourceProperties(FilesSourceProperties, total=False):
-    root: str
-    enforce_symlink_security: bool
-    delete_on_realize: bool
-    allow_subdir_creation: bool
-    prefer_links: bool
+class PosixFileSourceConfiguration(FilesSourceProperties):
+    root: Optional[str] = None
+    enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
+    delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
+    allow_subdir_creation: bool = DEFAULT_ALLOW_SUBDIR_CREATION
+    prefer_links: bool = DEFAULT_PREFER_LINKS
 
 
 class PosixFilesSource(BaseFilesSource):
     plugin_type = "posix"
+    config_class: ClassVar[type[PosixFileSourceConfiguration]] = PosixFileSourceConfiguration
+    config: PosixFileSourceConfiguration
 
     # If this were a PyFilesystem2FilesSource all that would be needed would be,
     # but we couldn't enforce security our way I suspect.
@@ -45,83 +47,63 @@ class PosixFilesSource(BaseFilesSource):
     #    handle = OSFS(**self._props)
     #    return handle
 
-    def __init__(self, **kwd: Unpack[PosixFilesSourceProperties]):
-        props = self._parse_common_config_opts(kwd)
-        self.root = props.get("root")
-        if not self.root:
-            self.writable = False
-        self.enforce_symlink_security = props.get("enforce_symlink_security", DEFAULT_ENFORCE_SYMLINK_SECURITY)
-        self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
-        self.allow_subdir_creation = props.get("allow_subdir_creation", DEFAULT_ALLOW_SUBDIR_CREATION)
-        self._prefer_links = props.get("prefer_links", DEFAULT_PREFER_LINKS)
+    def __init__(self, config: PosixFileSourceConfiguration):
+        super().__init__(config)
 
-    def prefer_links(self) -> bool:
-        return self._prefer_links
+        if not self.config.root:
+            self.config.writable = False
 
     def _list(
         self,
         path="/",
-        recursive=True,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        recursive=False,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        if not self.root:
+        if not self.config.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
-        dir_path = self._to_native_path(path, user_context=user_context)
+        dir_path = self._to_native_path(path)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
         if recursive:
             res: list[AnyRemoteEntry] = []
-            effective_root = self._effective_root(user_context)
+            effective_root = self._effective_root()
             for p, dirs, files in safe_walk(dir_path, allowlist=self._allowlist):
                 rel_dir = os.path.relpath(p, effective_root)
-                to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
+                to_dict = functools.partial(self._resource_info_to_dict, rel_dir)
                 res.extend(map(to_dict, dirs))
                 res.extend(map(to_dict, files))
             return res, len(res)
         else:
-            res = os.listdir(dir_path)
-            to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
-            return list(map(to_dict, res)), len(res)
+            entry_names = os.listdir(dir_path)
+            to_dict = functools.partial(self._resource_info_to_dict, path)
+            return list(map(to_dict, entry_names)), len(entry_names)
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        if not self.root and (not user_context or not user_context.is_admin):
+    def _realize_to(self, source_path: str, native_path: str):
+        if not self.config.root and (not self.user_data or not self.user_data.is_admin):
             raise exceptions.ItemAccessibilityException("Writing to file:// URLs has been disabled.")
 
-        effective_root = self._effective_root(user_context)
-        source_native_path = self._to_native_path(source_path, user_context=user_context)
-        if self.enforce_symlink_security:
+        effective_root = self._effective_root()
+        source_native_path = self._to_native_path(source_path)
+        if self.config.enforce_symlink_security:
             if not safe_contains(effective_root, source_native_path, allowlist=self._allowlist):
                 raise Exception("Operation not allowed.")
         else:
             source_native_path = os.path.normpath(source_native_path)
             assert source_native_path.startswith(os.path.normpath(effective_root))
 
-        if not self.delete_on_realize:
+        if not self.config.delete_on_realize:
             shutil.copyfile(source_native_path, native_path)
         else:
             shutil.move(source_native_path, native_path)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        effective_root = self._effective_root(user_context)
-        target_native_path = self._to_native_path(target_path, user_context=user_context)
-        if self.enforce_symlink_security:
+    def _write_from(self, target_path: str, native_path: str):
+        effective_root = self._effective_root()
+        target_native_path = self._to_native_path(target_path)
+        if self.config.enforce_symlink_security:
             if not safe_contains(effective_root, target_native_path, allowlist=self._allowlist):
                 raise Exception("Operation not allowed.")
         else:
@@ -130,7 +112,7 @@ class PosixFilesSource(BaseFilesSource):
 
         target_native_path_parent, target_native_path_name = os.path.split(target_native_path)
         if not os.path.exists(target_native_path_parent):
-            if self.allow_subdir_creation:
+            if self.config.allow_subdir_creation:
                 os.makedirs(target_native_path_parent)
             else:
                 raise Exception("Parent directory does not exist.")
@@ -141,34 +123,33 @@ class PosixFilesSource(BaseFilesSource):
         shutil.copyfile(native_path, target_native_path_part)
         os.rename(target_native_path_part, target_native_path)
 
-    def _to_native_path(self, source_path: str, user_context: OptionalUserContext = None):
+    def _to_native_path(self, source_path: str):
         source_path = os.path.normpath(source_path)
         if source_path.startswith("/"):
             source_path = source_path[1:]
-        return os.path.join(self._effective_root(user_context), source_path)
+        return os.path.join(self._effective_root(), source_path)
 
-    def _effective_root(self, user_context: OptionalUserContext = None):
-        return self._evaluate_prop(self.root or "/", user_context=user_context)
+    def _effective_root(self) -> str:
+        return self.config.root or "/"
 
-    def _resource_info_to_dict(self, dir: str, name: str, user_context: OptionalUserContext = None) -> AnyRemoteEntry:
+    def _resource_info_to_dict(self, dir: str, name: str) -> AnyRemoteEntry:
         rel_path = os.path.normpath(os.path.join(dir, name))
-        full_path = self._to_native_path(rel_path, user_context=user_context)
+        full_path = self._to_native_path(rel_path)
         uri = self.uri_from_path(rel_path)
         if os.path.isdir(full_path):
-            return {"class": "Directory", "name": name, "uri": uri, "path": rel_path}
+            return RemoteDirectory(name=name, uri=uri, path=rel_path)
         else:
-            statinfo = os.lstat(full_path)
-            return {
-                "class": "File",
-                "name": name,
-                "size": statinfo.st_size,
-                "ctime": self.to_dict_time(statinfo.st_ctime),
-                "uri": uri,
-                "path": rel_path,
-            }
+            file_stat_info = os.lstat(full_path)
+            return RemoteFile(
+                name=name,
+                size=file_stat_info.st_size,
+                ctime=self.to_dict_time(file_stat_info.st_ctime),
+                uri=uri,
+                path=rel_path,
+            )
 
-    def _safe_directory(self, directory):
-        if self.enforce_symlink_security:
+    def _safe_directory(self, directory: str) -> bool:
+        if self.config.enforce_symlink_security:
             if not safe_path(directory, allowlist=self._allowlist):
                 raise exceptions.ConfigDoesNotAllowException(
                     f"directory ({directory}) is a symlink to a location not on the allowlist"
@@ -178,15 +159,15 @@ class PosixFilesSource(BaseFilesSource):
             return False
         return True
 
-    def _serialization_props(self, user_context: OptionalUserContext = None) -> PosixFilesSourceProperties:
+    def _serialization_props(self) -> dict[str, Any]:
         return {
             # abspath needed because will be used by external Python from
             # a job working directory
-            "root": os.path.abspath(self._effective_root(user_context)),
-            "enforce_symlink_security": self.enforce_symlink_security,
-            "delete_on_realize": self.delete_on_realize,
-            "allow_subdir_creation": self.allow_subdir_creation,
-            "prefer_links": self._prefer_links,
+            "root": os.path.abspath(self._effective_root()),
+            "enforce_symlink_security": self.config.enforce_symlink_security,
+            "delete_on_realize": self.config.delete_on_realize,
+            "allow_subdir_creation": self.config.allow_subdir_creation,
+            "prefer_links": self.config.prefer_links,
         }
 
     @property
@@ -195,20 +176,23 @@ class PosixFilesSource(BaseFilesSource):
 
     def score_url_match(self, url: str):
         # For security, we need to ensure that a partial match doesn't work. e.g. file://{root}something/myfiles
-        if self.root and (
-            url.startswith(f"{self.get_uri_root()}://{self.root}/") or url == f"self.get_uri_root()://{self.root}"
+        if self.config.root and (
+            url.startswith(f"{self.get_uri_root()}://{self.config.root}/")
+            or url == f"self.get_uri_root()://{self.config.root}"
         ):
-            return len(f"self.get_uri_root()://{self.root}")
-        elif self.root and (url.startswith(f"file://{self.root}/") or url == f"file://{self.root}"):
-            return len(f"file://{self.root}")
-        elif not self.root and url.startswith("file://"):
+            return len(f"self.get_uri_root()://{self.config.root}")
+        elif self.config.root and (
+            url.startswith(f"file://{self.config.root}/") or url == f"file://{self.config.root}"
+        ):
+            return len(f"file://{self.config.root}")
+        elif not self.config.root and url.startswith("file://"):
             return len("file://")
         else:
             return super().score_url_match(url)
 
     def to_relative_path(self, url: str) -> str:
-        if url.startswith(f"file://{self.root}"):
-            return url[len(f"file://{self.root}") :]
+        if url.startswith(f"file://{self.config.root}"):
+            return url[len(f"file://{self.config.root}") :]
         elif url.startswith("file://"):
             return url[7:]
         else:

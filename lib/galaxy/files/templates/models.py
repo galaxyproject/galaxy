@@ -9,9 +9,7 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import (
-    Literal,
-)
+from typing_extensions import Literal
 
 from galaxy.util.config_templates import (
     ConfiguredOAuth2Sources,

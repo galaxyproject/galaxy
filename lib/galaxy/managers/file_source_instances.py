@@ -669,7 +669,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 
         as_dicts = []
         for files_source_properties in self._all_user_file_source_properties(user_context):
-            files_source_type = files_source_properties["type"]
+            files_source_type = files_source_properties.type
             plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
             plugin_kind = plugin_type_class.plugin_kind
             if include_kind and plugin_kind not in include_kind:
@@ -692,7 +692,7 @@ def configuration_to_file_source_properties(
     doc: Optional[str],
     id: str,
 ) -> FilesSourceProperties:
-    file_source_properties = cast(FilesSourceProperties, file_source_configuration.model_dump())
+    file_source_properties = file_source_configuration.model_dump()
     file_source_properties["label"] = label
     file_source_properties["doc"] = doc
     file_source_properties["id"] = id
@@ -706,7 +706,7 @@ def configuration_to_file_source_properties(
     # these plugins. I can't imagine a use case for that and I would hate to templating
     # languages having odd interactions.
     file_source_properties["disable_templating"] = True
-    return file_source_properties
+    return FilesSourceProperties(**file_source_properties)
 
 
 __all__ = (

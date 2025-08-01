@@ -10,19 +10,18 @@ from typing import (
 import fs
 import fs.errors
 from fs.base import FS
-from typing_extensions import Unpack
 
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
     DEFAULT_PAGE_LIMIT,
-    FilesSourceOptions,
     FilesSourceProperties,
+    RemoteDirectory,
+    RemoteFile,
 )
 
 log = logging.getLogger(__name__)
@@ -37,22 +36,27 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     supports_search = True
     allow_key_error_on_empty_directories = False  # work around a bug in webdav
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+    def __init__(self, config: FilesSourceProperties):
         if self.required_module is None:
-            raise Exception(PACKAGE_MESSAGE % self.required_package)
-        props = self._parse_common_config_opts(kwd)
-        self._props = props
+            raise self.required_package_exception
+        super().__init__(config)
+
+    @property
+    def required_package_exception(self) -> Exception:
+        return Exception(PACKAGE_MESSAGE % self.required_package)
 
     @abc.abstractmethod
-    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None) -> FS:
-        """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
+    def _open_fs(self) -> FS:
+        """Subclasses must instantiate a PyFilesystem2 handle for this file system.
+
+        All the required properties should be already set in the config.
+        """
 
     def _list(
         self,
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -60,7 +64,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
-            with self._open_fs(user_context=user_context, opts=opts) as h:
+            with self._open_fs() as h:
                 if recursive:
                     recursive_result: list[AnyRemoteEntry] = []
                     try:
@@ -102,49 +106,30 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             return None
         return [f"*{query}*"]
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         with open(native_path, "wb") as write_file:
-            self._open_fs(user_context=user_context, opts=opts).download(source_path, write_file)
+            self._open_fs().download(source_path, write_file)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(user_context=user_context, opts=opts)
+            openfs = self._open_fs()
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)
             openfs.upload(target_path, read_file)
 
     def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:
-        name = resource_info.name
+        name = str(resource_info.name)
         path = os.path.join(dir_path, name)
         uri = self.uri_from_path(path)
         if resource_info.is_dir:
-            return {"class": "Directory", "name": name, "uri": uri, "path": path}
+            return RemoteDirectory(name=name, uri=uri, path=path)
         else:
             created = resource_info.created
-            return {
-                "class": "File",
-                "name": name,
-                "size": resource_info.size,
-                "ctime": self.to_dict_time(created),
-                "uri": uri,
-                "path": path,
-            }
-
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
+            return RemoteFile(
+                name=name,
+                size=resource_info.size,
+                ctime=self.to_dict_time(created),
+                uri=uri,
+                path=path,
+            )
