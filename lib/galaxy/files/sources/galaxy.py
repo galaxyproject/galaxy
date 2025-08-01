@@ -14,6 +14,7 @@ class UserFtpFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, config: PosixFileSourceConfiguration):
+        super().__init__(config)
         overrides = dict(
             id="_ftp",
             root="${user.ftp_dir}",
@@ -24,7 +25,6 @@ class UserFtpFilesSource(PosixFilesSource):
         self.config = self.config.model_copy(update=overrides)
         if not self.config.delete_on_realize:
             self.config.delete_on_realize = self.config.file_sources_config.ftp_upload_purge
-        super().__init__(config)
 
     def get_prefix(self) -> Optional[str]:
         return None
@@ -38,6 +38,7 @@ class LibraryImportFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, config: PosixFileSourceConfiguration):
+        super().__init__(config)
         overrides = dict(
             id="_import",
             root="${config.library_import_dir}",
@@ -45,7 +46,6 @@ class LibraryImportFilesSource(PosixFilesSource):
             doc="Galaxy's library import directory",
         )
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
 
     def get_prefix(self) -> Optional[str]:
         return None
@@ -59,6 +59,7 @@ class UserLibraryImportFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, config: PosixFileSourceConfiguration):
+        super().__init__(config)
         overrides = dict(
             id="_userimport",
             root="${config.user_library_import_dir}/${user.email}",
@@ -66,7 +67,6 @@ class UserLibraryImportFilesSource(PosixFilesSource):
             doc="Galaxy's user library import directory",
         )
         self.config = self.config.model_copy(update=overrides)
-        super().__init__(config)
 
     def get_prefix(self) -> Optional[str]:
         return None
