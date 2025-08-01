@@ -54,13 +54,16 @@ async function handleSubmit(preferred: string | null) {
 <template>
     <BModal
         id="modal-select-preferred-object-store"
+        scrollable
         centered
         :title="title"
         title-tag="h3"
-        hide-footer
         static
         visible
         size="lg"
+        dialog-class="modal-select-preferred-object-store"
+        ok-only
+        ok-title="Close"
         @hidden="resetModal">
         <SelectObjectStore
             :parent-error="error"
