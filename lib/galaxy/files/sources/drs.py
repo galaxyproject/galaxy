@@ -1,11 +1,8 @@
 import logging
 import re
-from typing import Optional
 
-from galaxy.files import OptionalUserContext
 from . import (
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
@@ -42,31 +39,17 @@ class DRSFilesSource(BaseFilesSource):
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
-
+    def _realize_to(self, source_path: str, native_path: str):
         fetch_drs_to_file(
             source_path,
             native_path,
-            user_context,
+            user_context=self.user_data.context if self.user_data else None,
             fetch_url_allowlist=self._allowlist,
             headers=self.config.http_headers,
             force_http=self.config.force_http,
         )
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _write_from(self, target_path: str, native_path: str):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

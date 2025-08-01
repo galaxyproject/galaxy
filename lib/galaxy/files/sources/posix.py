@@ -8,7 +8,6 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.files import OptionalUserContext
 from galaxy.util.path import (
     safe_contains,
     safe_path,
@@ -17,7 +16,6 @@ from galaxy.util.path import (
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
-    FilesSourceOptions,
     FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
@@ -58,47 +56,38 @@ class PosixFilesSource(BaseFilesSource):
     def _list(
         self,
         path="/",
-        recursive=True,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        recursive=False,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        self.update_config_from_options(opts, user_context)
         if not self.config.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
-        dir_path = self._to_native_path(path, user_context=user_context)
+        dir_path = self._to_native_path(path)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
         if recursive:
             res: list[AnyRemoteEntry] = []
-            effective_root = self._effective_root(user_context)
+            effective_root = self._effective_root()
             for p, dirs, files in safe_walk(dir_path, allowlist=self._allowlist):
                 rel_dir = os.path.relpath(p, effective_root)
-                to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
+                to_dict = functools.partial(self._resource_info_to_dict, rel_dir)
                 res.extend(map(to_dict, dirs))
                 res.extend(map(to_dict, files))
             return res, len(res)
         else:
             entry_names = os.listdir(dir_path)
-            to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
+            to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, entry_names)), len(entry_names)
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
-        if not self.config.root and (not user_context or not user_context.is_admin):
+    def _realize_to(self, source_path: str, native_path: str):
+        if not self.config.root and (not self.user_data or not self.user_data.is_admin):
             raise exceptions.ItemAccessibilityException("Writing to file:// URLs has been disabled.")
 
-        effective_root = self._effective_root(user_context)
-        source_native_path = self._to_native_path(source_path, user_context=user_context)
+        effective_root = self._effective_root()
+        source_native_path = self._to_native_path(source_path)
         if self.config.enforce_symlink_security:
             if not safe_contains(effective_root, source_native_path, allowlist=self._allowlist):
                 raise Exception("Operation not allowed.")
@@ -111,16 +100,9 @@ class PosixFilesSource(BaseFilesSource):
         else:
             shutil.move(source_native_path, native_path)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
-        effective_root = self._effective_root(user_context)
-        target_native_path = self._to_native_path(target_path, user_context=user_context)
+    def _write_from(self, target_path: str, native_path: str):
+        effective_root = self._effective_root()
+        target_native_path = self._to_native_path(target_path)
         if self.config.enforce_symlink_security:
             if not safe_contains(effective_root, target_native_path, allowlist=self._allowlist):
                 raise Exception("Operation not allowed.")
@@ -141,18 +123,18 @@ class PosixFilesSource(BaseFilesSource):
         shutil.copyfile(native_path, target_native_path_part)
         os.rename(target_native_path_part, target_native_path)
 
-    def _to_native_path(self, source_path: str, user_context: OptionalUserContext = None):
+    def _to_native_path(self, source_path: str):
         source_path = os.path.normpath(source_path)
         if source_path.startswith("/"):
             source_path = source_path[1:]
-        return os.path.join(self._effective_root(user_context), source_path)
+        return os.path.join(self._effective_root(), source_path)
 
-    def _effective_root(self, user_context: OptionalUserContext = None) -> str:
-        return str(self._evaluate_prop(self.config.root or "/", user_context=user_context))
+    def _effective_root(self) -> str:
+        return self.config.root or "/"
 
-    def _resource_info_to_dict(self, dir: str, name: str, user_context: OptionalUserContext = None) -> AnyRemoteEntry:
+    def _resource_info_to_dict(self, dir: str, name: str) -> AnyRemoteEntry:
         rel_path = os.path.normpath(os.path.join(dir, name))
-        full_path = self._to_native_path(rel_path, user_context=user_context)
+        full_path = self._to_native_path(rel_path)
         uri = self.uri_from_path(rel_path)
         if os.path.isdir(full_path):
             return RemoteDirectory(name=name, uri=uri, path=rel_path)
@@ -177,11 +159,11 @@ class PosixFilesSource(BaseFilesSource):
             return False
         return True
 
-    def _serialization_props(self, user_context: OptionalUserContext = None) -> dict[str, Any]:
+    def _serialization_props(self) -> dict[str, Any]:
         return {
             # abspath needed because will be used by external Python from
             # a job working directory
-            "root": os.path.abspath(self._effective_root(user_context)),
+            "root": os.path.abspath(self._effective_root()),
             "enforce_symlink_security": self.config.enforce_symlink_security,
             "delete_on_realize": self.config.delete_on_realize,
             "allow_subdir_creation": self.config.allow_subdir_creation,

@@ -19,14 +19,12 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
     DEFAULT_PAGE_LIMIT,
     DEFAULT_SCHEME,
     Entry,
     EntryData,
-    FilesSourceOptions,
     RemoteDirectory,
     RemoteFile,
 )
@@ -185,33 +183,24 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def _list(
         self,
         path="/",
-        recursive=True,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        recursive=False,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        self.update_config_from_options(opts, user_context)
-        writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
             records, total_hits = self.repository.get_file_containers(
-                writeable, limit=limit, offset=offset, query=query
+                write_intent, limit=limit, offset=offset, query=query
             )
             return cast(list[AnyRemoteEntry], records), total_hits
         record_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_container(record_id, writeable)
+        files = self.repository.get_files_in_container(record_id, write_intent, query)
         return cast(list[AnyRemoteEntry], files), len(files)
 
-    def _create_entry(
-        self,
-        entry_data: EntryData,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> Entry:
-        self.update_config_from_options(opts, user_context)
+    def _create_entry(self, entry_data: EntryData) -> Entry:
         public_name = self.get_public_name()
         record = self.repository.create_draft_file_container(entry_data.name, public_name)
         record_id = record.get("id")
@@ -234,27 +223,11 @@ class InvenioRDMFilesSource(RDMFilesSource):
             external_link=external_link,
         )
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
-        # TODO: user_context is always None here when called from a data fetch.
-        # This prevents downloading files that require authentication even if the user provided a token.
+    def _realize_to(self, source_path: str, native_path: str):
         record_id, filename = self.parse_path(source_path)
         self.repository.download_file_from_container(record_id, filename, native_path)
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _write_from(self, target_path: str, native_path: str):
         record_id, filename = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(record_id, filename, native_path)
 

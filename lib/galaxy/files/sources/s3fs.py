@@ -4,10 +4,8 @@ import os
 from typing import Optional
 
 from galaxy import exceptions
-from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
-    FilesSourceOptions,
     FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
@@ -64,15 +62,13 @@ class S3FsFilesSource(BaseFilesSource):
     def _list(
         self,
         path="/",
-        recursive=True,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        recursive=False,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        self.update_config_from_options(opts, user_context)
         _bucket_name = self.config.bucket or ""
         fs = self._open_fs()
         if recursive:
@@ -92,27 +88,13 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res)), len(res)
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _realize_to(self, source_path: str, native_path: str):
         _bucket_name = self.config.bucket or ""
         fs = self._open_fs()
         bucket_path = self._bucket_path(_bucket_name, source_path)
         fs.download(bucket_path, native_path)
 
-    def _write_from(
-        self,
-        target_path,
-        native_path,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
-        self.update_config_from_options(opts, user_context)
+    def _write_from(self, target_path, native_path):
         _bucket_name = self.config.bucket or ""
         fs = self._open_fs()
         bucket_path = self._bucket_path(_bucket_name, target_path)

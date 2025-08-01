@@ -79,12 +79,10 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions as galaxy_exceptions
-from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
     BaseFilesSource,
     DEFAULT_SCHEME,
-    FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
     RemoteDirectory,
@@ -251,8 +249,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         self,
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -273,7 +270,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         the sync route's thread so that the eLabFTW plugin can still send concurrent requests without blocking the main
         thread.
         """
-        self.update_config_from_options(opts, user_context)
         event_loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(event_loop)
@@ -281,8 +277,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 self._list_async(
                     path=path,
                     recursive=recursive,
-                    user_context=user_context,
-                    opts=opts,
                     limit=limit,
                     offset=offset,
                     query=query,
@@ -296,8 +290,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         self,
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -318,10 +310,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :param recursive: List recursively, including all entity types for the root, all entities for each entity type
                           and all attachments for each entity.
         :type recursive: bool
-        :param user_context: Alter behavior using information from a user context (e.g. override the API key).
-        :type user_context: OptionalUserContext
-        :param opts: Alter behavior using information from a file source options object (e.g. ignore locked resources).
-        :type opts: Optional[FilesSourceOptions]
         :param limit: Show at most this amount of results, defaults to unlimited.
         :type limit: Optional[int]
         :param offset: Filter out this amount of results from the beginning of the sequence, defaults to zero.
@@ -370,7 +358,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                             self._yield_entity_types(
                                 endpoint,
                                 session,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -411,7 +398,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                                     else None
                                 ),
                                 writable=self.writable,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -442,7 +428,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                                 cast(str, wrapped_entity.entity_id) if retrieve_entities else cast(str, entity_id),
                                 endpoint,
                                 session,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -522,7 +507,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         self,
         endpoint: ParseResult,
         session: aiohttp.ClientSession,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """
         List the root directory, i.e. "/".
@@ -577,7 +561,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         query: Optional[str] = None,
         order: Optional[str] = None,
         writable: bool = False,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """List an entity type, i.e. either "/experiments" or "/resources"."""
         url = urljoin(
@@ -663,7 +646,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         entity_id: str,
         endpoint: ParseResult,
         session: aiohttp.ClientSession,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteFile]]:
         """List attachments of a specific entity, e.g. "/resources/48"."""
         url = urljoin(
@@ -710,13 +692,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 upload,
             )
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    def _write_from(self, target_path: str, native_path: str) -> str:
         """
         Attach the file located at ``native_path`` on the filesystem to an eLabFTW resource or experiment with URI
         ``target_path``.
@@ -726,10 +702,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :type target_path: str
         :param native_path: The local file to upload, e.g. ``/tmp/myfile.txt``
         :type native_path: str
-        :param user_context: A user context, defaults to ``None``
-        :type user_context: OptionalUserContext
-        :param opts: A set of options to exercise additional control over this method. Defaults to ``None``
-        :type opts: Optional[FilesSourceOptions], optional
         :return: Path *assigned by eLabFTW* to the uploaded file.
         :rtype: str
 
@@ -743,7 +715,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                              three components.
         :raises EntityExpected: When attempting to attach the file to the root "/" or an entity type.
         """
-        self.update_config_from_options(opts, user_context)
         session = self._create_session()
         endpoint = self._get_endpoint()
 
@@ -795,13 +766,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
         return f"/{entity_type}/{entity_id}/{attachment_id}"
 
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ):
+    def _realize_to(self, source_path: str, native_path: str):
         """
         Save the file attachment from an eLabFTW resource or experiment located at ``source_path`` to ``native_path``.
 
@@ -809,15 +774,11 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :type source_path: str
         :param native_path: The path on the filesystem to save the file to, e.g. ``/tmp/myfile.txt``
         :type native_path: str
-        :param user_context: A user context, defaults to ``None``
-        :type user_context: OptionalUserContext
-        :param opts: A set of options to exercise additional control over this method. Defaults to ``None``
 
         :raises requests.RequestException: When there is a connection error.
         :raises ValidationError: If the HTTP response from the eLabFTW server is invalid.
         :raises AttachmentExpected: When referencing an entity type, an entity or the root rather than an attachment.
         """
-        self.update_config_from_options(opts, user_context)
         session = self._create_session()
         endpoint = self._get_endpoint()
 

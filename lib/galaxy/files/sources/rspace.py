@@ -40,10 +40,8 @@ from typing import (
     Optional,
 )
 
-from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
-    FilesSourceOptions,
     FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
@@ -164,18 +162,12 @@ class RSpaceFilesSource(PyFilesystem2FilesSource):
 
         return gallery_fs
 
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    def _write_from(self, target_path: str, native_path: str) -> str:
         """
         Save a file to the RSpace Gallery.
         """
         target_directory = os.path.dirname(target_path)
-        super()._write_from(target_path, native_path, user_context=user_context, opts=opts)
+        super()._write_from(target_path, native_path)
         return os.path.join(target_directory, self._upload_global_id)
 
     def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:
