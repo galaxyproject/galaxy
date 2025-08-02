@@ -101,21 +101,12 @@ function onCopy() {
 .page-embed {
     display: flex;
     gap: 2rem;
-    container-type: inline-size;
-}
 
-@container (max-width: 1200px) {
-    .page-embed {
-        flex-direction: column;
-    }
-}
-
-.page-embed {
     .settings {
-        flex: 0 0 300px;
         padding: 1rem;
         background-color: #f8f9fa;
         border-radius: 0.5rem;
+        min-width: 250px;
 
         h4 {
             margin-bottom: 1rem;
@@ -149,7 +140,18 @@ function onCopy() {
             border: 1px solid $border-color;
             border-radius: 0.5rem;
             overflow: hidden;
-            height: 600px;
+            height: 500px;
+            min-height: 300px;
+        }
+    }
+}
+
+@media (max-width: 1200px) {
+    .page-embed {
+        flex-direction: column;
+
+        .settings {
+            min-width: unset;
         }
     }
 }
