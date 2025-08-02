@@ -1,9 +1,27 @@
+import logging
 import os.path
-from typing import Union
+from typing import (
+    List,
+    Optional,
+    Sequence,
+    Union,
+)
+
+from sqlalchemy import (
+    false,
+    null,
+    select,
+)
+from sqlalchemy.orm import (
+    aliased,
+    Session,
+)
 
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetHash,
     DatasetSource,
     DatasetSourceHash,
     History,
@@ -20,6 +38,8 @@ from galaxy.tool_util_models.parameters import (
     DataRequestUri,
     FileRequestUri,
 )
+
+log = logging.getLogger(__name__)
 
 
 def dereference_to_model(
@@ -144,3 +164,86 @@ def derefence_collection_to_model(
     dc.element_count = len(data_request_uri.elements)
     history.stage_addition(hdca)
     return hdca
+
+
+def get_replacement_dataset(
+    session: Session,
+    user: Optional[User],
+    dataset_sources: List[DatasetSource],
+    dataset_hashes: Sequence[Union[DatasetHash, DatasetSourceHash]],
+    extension: str,
+    object_store_id: str,
+    created_from_basename: Optional[str] = None,
+) -> Optional[HistoryDatasetAssociation]:
+    """
+    Get a replacement dataset for the given source URI and dataset hash.
+    If we already have such a dataset we don't need to create a new one.
+    """
+    if not user or not dataset_sources:
+        return None
+    # TODO: this all picks just the first source and hash.
+    if not dataset_hashes:
+        dataset_hashes = dataset_sources[0].hashes
+    if not dataset_hashes:
+        # If no hashes are provided, we can't find an existing dataset.
+        return None
+
+    dataset_hash = dataset_hashes[0]
+    dataset_source = dataset_sources[0]
+
+    existing_source = aliased(DatasetSource, name="existing_source")
+    existing_dataset_select = (
+        select(HistoryDatasetAssociation)
+        .join(Dataset, Dataset.id == HistoryDatasetAssociation.dataset_id)
+        .join(existing_source, existing_source.dataset_id == Dataset.id)
+        .join(History, HistoryDatasetAssociation.history_id == History.id)
+        .where(
+            Dataset.deleted == false(),
+            Dataset.purged == false(),
+            Dataset.created_from_basename == created_from_basename,
+            Dataset.object_store_id == object_store_id,
+            Dataset.state == Dataset.states.OK,
+            HistoryDatasetAssociation.extension == extension,
+            HistoryDatasetAssociation._state == null(),
+            History.user_id == user.id,
+        )
+    )
+    existing_hash = aliased(DatasetHash, name="existing_hash")
+    existing_source_hash = aliased(DatasetSourceHash, name="existing_source_hash")
+    if isinstance(dataset_hash, DatasetSourceHash):
+        # This is the hash of the source, prior to any transformations.
+        # We need to ensure that the source uri matches and that the hash was validated (what happens on hash mismatch? needs test).
+        existing_dataset_select = existing_dataset_select.join(
+            existing_source_hash, existing_source_hash.dataset_source_id == existing_source.id
+        )
+        existing_dataset_select = existing_dataset_select.where(
+            # we have the prospectice hash and transform, if the dataset is then also coming from the same source, we can use it.
+            # if the hash is provided we verify it matches (see test_run_workflow_with_invalid_url_hashes)
+            # Note that the requester has included the source hash, so we don't care that the source might have changed since the original request.
+            existing_source.requested_transform == dataset_source.requested_transform,
+            existing_source.source_uri == dataset_source.source_uri,
+            existing_source_hash.hash_function == dataset_hash.hash_function,
+            existing_source_hash.hash_value == dataset_hash.hash_value,
+        )
+    else:
+        # We have the actual calculated hash on disk, we don't need to care about the source
+        existing_dataset_select = existing_dataset_select.join(existing_hash, existing_hash.dataset_id == Dataset.id)
+        existing_dataset_select = existing_dataset_select.where(
+            existing_hash.hash_function == dataset_hash.hash_function,
+            existing_hash.hash_value == dataset_hash.hash_value,
+        )
+    log.debug(
+        "Searching for existing dataset query: %s",
+        str(existing_dataset_select.compile(compile_kwargs={"literal_binds": True})),
+    )
+    existing_dataset = session.scalars(existing_dataset_select.limit(1)).first()
+    if existing_dataset and existing_dataset.extra_files_path_exists():
+        # Can't deal with this (yet)
+        return None
+
+    datatype = existing_dataset.datatype if existing_dataset else None
+    if not datatype:
+        return None
+    if datatype.composite_files:
+        return None
+    return existing_dataset
