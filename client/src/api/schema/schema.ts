@@ -10195,6 +10195,33 @@ export interface components {
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /** ElementsStatesDict */
+        ElementsStatesDict: {
+            /** Deferred */
+            deferred?: number;
+            /** Discarded */
+            discarded?: number;
+            /** Empty */
+            empty?: number;
+            /** Error */
+            error?: number;
+            /** Failed Metadata */
+            failed_metadata?: number;
+            /** New */
+            new?: number;
+            /** Ok */
+            ok?: number;
+            /** Paused */
+            paused?: number;
+            /** Queued */
+            queued?: number;
+            /** Running */
+            running?: number;
+            /** Setting Metadata */
+            setting_metadata?: number;
+            /** Upload */
+            upload?: number;
+        };
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
             /**
@@ -12253,6 +12280,13 @@ export interface components {
              */
             elements_datatypes?: string[] | null;
             /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted?: number | null;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states?: components["schemas"]["ElementsStatesDict"] | null;
+            /**
              * HID
              * @description The index position of this item in the History.
              */
@@ -12399,6 +12433,13 @@ export interface components {
              */
             elements_datatypes: string[];
             /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
+            /**
              * HID
              * @description The index position of this item in the History.
              */
@@ -12536,6 +12577,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
             /**
              * HID
              * @description The index position of this item in the History.
