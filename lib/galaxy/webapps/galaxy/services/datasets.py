@@ -60,7 +60,10 @@ from galaxy.schema.drs import (
     Checksum,
     DrsObject,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -162,11 +165,17 @@ class DatasetStorageDetails(Model):
 
 
 class DatasetInheritanceChainEntry(Model):
+    id: EncodedDatabaseIdField = Field(
+        description="ID of the referenced dataset",
+    )
     name: str = Field(
         description="Name of the referenced dataset",
     )
     dep: str = Field(
         description="Name of the source of the referenced dataset at this point of the inheritance chain.",
+    )
+    user_id: EncodedDatabaseIdField = Field(
+        description="ID of the user who owns the referenced dataset.",
     )
 
 
@@ -491,7 +500,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
-            result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
+            result.append(
+                DatasetInheritanceChainEntry(
+                    id=dep[0].id,
+                    name=dep[0].name,
+                    dep=dep[1],
+                    user_id=dep[0].user.id,
+                )
+            )
 
         return DatasetInheritanceChain(root=result)
 
