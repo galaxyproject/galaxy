@@ -234,7 +234,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self._collect_default_extra()
         assert len(self.job.output_datasets) == 2
         extra_job_assoc = [job_assoc for job_assoc in self.job.output_datasets if job_assoc.name.startswith("__")][0]
-        assert extra_job_assoc.name == "__new_primary_file_out1|test1__"
+        assert extra_job_assoc.name == "__new_primary_file_out1|0__"
 
     def test_pattern_override_designation(self):
         self._replace_output_collectors(

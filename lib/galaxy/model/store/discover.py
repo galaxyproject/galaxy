@@ -369,15 +369,16 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             element_datasets["paths"].append(filename)
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
-        for element_identifiers, dataset in zip(element_datasets["element_identifiers"], element_datasets["datasets"]):
+        for i, (element_identifiers, dataset) in enumerate(
+            zip(element_datasets["element_identifiers"], element_datasets["datasets"])
+        ):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
                 current_builder = current_builder.get_level(element_identifier)
             current_builder.add_dataset(element_identifiers[-1], dataset)
 
             # Associate new dataset with job
-            element_identifier_str = ":".join(element_identifiers)
-            association_name = f"__new_primary_file_{name}|{element_identifier_str}__"
+            association_name = f"__new_primary_file_{name}|{i}__"
             self.add_output_dataset_association(association_name, dataset)
 
         add_datasets_timer = ExecutionTimer()
