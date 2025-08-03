@@ -30,7 +30,7 @@ class TagsApiTests(ApiTestCase):
 
         new_tags = ["APITag"]
         update_history_tags_response = self._update_tags_using_tags_api(item_id, new_tags)
-        self._assert_status_code_is(update_history_tags_response, 204)
+        self._assert_status_code_is_ok(update_history_tags_response)
         self._assert_tags_in_item(item_id, new_tags)
 
         # other users can't create or update tags

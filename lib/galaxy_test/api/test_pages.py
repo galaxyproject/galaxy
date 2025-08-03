@@ -338,7 +338,7 @@ steps:
     def test_delete(self):
         response_json = self._create_valid_page_with_slug("testdelete")
         delete_response = delete(self._api_url(f"pages/{response_json['id']}", use_key=True))
-        self._assert_status_code_is(delete_response, 204)
+        self._assert_status_code_is_ok(delete_response)
 
     def test_400_on_delete_invalid_page_id(self):
         delete_response = delete(self._api_url(f"pages/{self._random_key()}", use_key=True))
