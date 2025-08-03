@@ -1,6 +1,14 @@
 import collections
 import errno
 import logging
+
+# This needs to be done before any other galaxy imports to ensure all logging is
+# captured. There is no harm in calling addTraceLoggingLevel multiple times, but
+# it is only needed once provided we do it early enough in the code loading
+# process.
+from galaxy.util.logging import addTraceLoggingLevel
+addTraceLoggingLevel()
+
 import os
 import signal
 import sys
