@@ -15,7 +15,7 @@ execution:
     initial_destination:
       runner: dynamic
       type: python
-      function: initial_destination
+      function: initial_target_environment
 
     fail_first_try:
       runner: first_failure_runner
