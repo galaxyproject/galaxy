@@ -106,6 +106,7 @@ class BaseJobRunner:
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
         self._should_stop = False
+        self.work_queue = Queue()
 
     def start(self):
         for start_method in self.start_methods:
@@ -113,7 +114,6 @@ class BaseJobRunner:
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads."""
-        self.work_queue = Queue()
         self.work_threads = []
         log.debug(f"Starting {self.nworkers} {self.runner_name} workers")
         for i in range(self.nworkers):
