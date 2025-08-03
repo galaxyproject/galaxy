@@ -54,7 +54,7 @@ def validate_and_normalize_targets(trans, payload):
     # in_place and purge_source are set on the individual upload fetch sources as needed based
     # on this.
     run_as_real_user = trans.app.config.external_chown_script is not None  # See comment in upload.py
-    purge_ftp_source = getattr(trans.app.config, "ftp_upload_purge", True) and not run_as_real_user
+    purge_ftp_source = trans.app.config.ftp_upload_purge and not run_as_real_user
 
     payload["check_content"] = trans.app.config.check_upload_content
 
