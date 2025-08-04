@@ -4,6 +4,7 @@ import pytest
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.sources import BaseFilesSource
 from galaxy.files.sources.temp import TempFilesSource
 from galaxy.files.unittest_utils import (
     setup_root,
@@ -30,7 +31,7 @@ def file_sources() -> TestConfiguredFileSources:
 
 
 @pytest.fixture(scope="session")
-def temp_file_source(file_sources: TestConfiguredFileSources) -> TempFilesSource:
+def temp_file_source(file_sources: TestConfiguredFileSources) -> BaseFilesSource:
     file_source_pair = file_sources.get_file_source_path(ROOT_URI)
     file_source = file_source_pair.file_source
     return file_source
@@ -45,17 +46,17 @@ def test_file_source(file_sources: TestConfiguredFileSources):
     assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/sub1/f", "f")
 
 
-def test_list(temp_file_source: TempFilesSource):
+def test_list(temp_file_source: BaseFilesSource):
     assert_list_names(temp_file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
     assert_list_names(temp_file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
 
 
-def test_list_recursive(temp_file_source: TempFilesSource):
+def test_list_recursive(temp_file_source: BaseFilesSource):
     expected_names = ["a", "b", "c", "dir1", "d", "e", "sub1", "f"]
     assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
 
 
-def test_pagination(temp_file_source: TempFilesSource):
+def test_pagination(temp_file_source: BaseFilesSource):
     # Pagination is only supported for non-recursive listings.
     recursive = False
     root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
@@ -90,7 +91,7 @@ def test_pagination(temp_file_source: TempFilesSource):
     assert result[2] == root_lvl_entries[3]
 
 
-def test_search(temp_file_source: TempFilesSource):
+def test_search(temp_file_source: BaseFilesSource):
     # Search is only supported for non-recursive listings.
     recursive = False
     root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
@@ -100,24 +101,24 @@ def test_search(temp_file_source: TempFilesSource):
     result, count = temp_file_source.list("/", recursive=recursive, query="a")
     assert count == 1
     assert len(result) == 1
-    assert result[0]["name"] == "a"
+    assert result[0].name == "a"
 
     result, count = temp_file_source.list("/", recursive=recursive, query="b")
     assert count == 1
     assert len(result) == 1
-    assert result[0]["name"] == "b"
+    assert result[0].name == "b"
 
     result, count = temp_file_source.list("/", recursive=recursive, query="c")
     assert count == 1
     assert len(result) == 1
-    assert result[0]["name"] == "c"
+    assert result[0].name == "c"
 
     # Searching for 'd' at root level should return the directory 'dir1' but not the file 'd'
     # as it is not a direct child of the root.
     result, count = temp_file_source.list("/", recursive=recursive, query="d")
     assert count == 1
     assert len(result) == 1
-    assert result[0]["name"] == "dir1"
+    assert result[0].name == "dir1"
 
     # Searching for 'e' at root level should not return anything.
     result, count = temp_file_source.list("/", recursive=recursive, query="e")
@@ -127,10 +128,10 @@ def test_search(temp_file_source: TempFilesSource):
     result, count = temp_file_source.list("/dir1", recursive=recursive, query="e")
     assert count == 1
     assert len(result) == 1
-    assert result[0]["name"] == "e"
+    assert result[0].name == "e"
 
 
-def test_query_with_empty_string(temp_file_source: TempFilesSource):
+def test_query_with_empty_string(temp_file_source: BaseFilesSource):
     recursive = False
     root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
     assert count == 4
@@ -142,7 +143,7 @@ def test_query_with_empty_string(temp_file_source: TempFilesSource):
     assert result == root_lvl_entries
 
 
-def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
+def test_pagination_not_supported_raises(temp_file_source: BaseFilesSource):
     TempFilesSource.supports_pagination = False
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
@@ -151,7 +152,7 @@ def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
     TempFilesSource.supports_pagination = True
 
 
-def test_pagination_parameters_non_negative(temp_file_source: TempFilesSource):
+def test_pagination_parameters_non_negative(temp_file_source: BaseFilesSource):
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
         temp_file_source.list("/", recursive=recursive, limit=-1, offset=0)
@@ -166,7 +167,7 @@ def test_pagination_parameters_non_negative(temp_file_source: TempFilesSource):
     assert "Offset must be greater than or equal to 0" in str(exc_info.value)
 
 
-def test_search_not_supported_raises(temp_file_source: TempFilesSource):
+def test_search_not_supported_raises(temp_file_source: BaseFilesSource):
     TempFilesSource.supports_search = False
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
@@ -175,14 +176,14 @@ def test_search_not_supported_raises(temp_file_source: TempFilesSource):
     TempFilesSource.supports_search = True
 
 
-def test_sorting_not_supported_raises(temp_file_source: TempFilesSource):
+def test_sorting_not_supported_raises(temp_file_source: BaseFilesSource):
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
         temp_file_source.list("/", recursive=recursive, sort_by="name")
     assert "Server-side sorting is not supported by this file source" in str(exc_info.value)
 
 
-def _populate_test_scenario(file_source: TempFilesSource):
+def _populate_test_scenario(file_source: BaseFilesSource):
     """Create a directory structure in the file source."""
     user_context = user_context_fixture()
 
@@ -194,17 +195,17 @@ def _populate_test_scenario(file_source: TempFilesSource):
     _upload_to(file_source, "/dir1/sub1/f", content="f", user_context=user_context)
 
 
-def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user_context=None):
+def _upload_to(file_source: BaseFilesSource, target_uri: str, content: str, user_context=None):
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
         file_source.write_from(target_uri, f.name, user_context=user_context)
 
 
-def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: list[str]):
+def assert_list_names(file_source: BaseFilesSource, uri: str, recursive: bool, expected_names: list[str]):
     result, count = file_source.list(uri, recursive=recursive)
     assert count == len(expected_names)
-    assert sorted([entry["name"] for entry in result]) == sorted(expected_names)
+    assert sorted([entry.name for entry in result]) == sorted(expected_names)
     return result
 
 
