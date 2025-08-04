@@ -2350,9 +2350,22 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
         sa_session = required_object_session(self)
         update_time = now()
+
+        # Update job-specific collection associations (legacy logic)
         self.update_hdca_update_time_for_job(
             update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked
         )
+
+        # Update general collection associations for all datasets in this job
+        # This handles collections that contain datasets from this job but aren't directly job-associated
+        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
+        for dataset in job_datasets:
+            try:
+                dataset.touch_collection_update_time()
+            except Exception:
+                # Don't let collection update failures prevent job completion
+                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
             sa_session.execute(statement, params)
