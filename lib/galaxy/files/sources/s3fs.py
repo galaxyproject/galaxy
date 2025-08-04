@@ -26,8 +26,8 @@ log = logging.getLogger(__name__)
 
 
 class S3FSFileSourceConfiguration(FilesSourceProperties):
-    endpoint_url: str
     anon: bool = False
+    endpoint_url: Optional[str] = None
     bucket: Optional[str] = None
     secret: Optional[str] = None
     key: Optional[str] = None
