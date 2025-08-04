@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import type { InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -94,11 +94,14 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.height >= clientSize.height + 1;
 });
 
-const invocation = computed(() =>
-    invocationLoaded.value
-        ? (invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView)
-        : null
-);
+const invocation = computed(() => {
+    const storedInvocation = invocationStore.getInvocationById(props.invocationId);
+    if (invocationLoaded.value && isWorkflowInvocationElementView(storedInvocation)) {
+        return storedInvocation;
+    } else {
+        return null;
+    }
+});
 const invocationState = computed(() => invocation.value?.state || "new");
 const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
 const invocationSchedulingTerminal = computed(() => {

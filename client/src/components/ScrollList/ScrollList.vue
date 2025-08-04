@@ -28,6 +28,11 @@ interface Props<T> {
     propItems?: T[];
     propTotalCount?: number;
     propBusy?: boolean;
+    /**
+     * If true, the component will adjust the total item count based on changes in propItems.
+     * This is useful when propItems can change independently of the loader.
+     */
+    adjustForTotalCountChanges?: boolean;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -42,6 +47,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     propItems: undefined,
     propTotalCount: undefined,
     propBusy: undefined,
+    adjustForTotalCountChanges: false,
 });
 
 const emit = defineEmits(["load-more"]);
@@ -53,15 +59,33 @@ const scrollableDiv = ref<HTMLElement | null>(null);
 const localItems = ref<T[]>([]);
 
 const localTotalItemCount = ref<number | undefined>(undefined);
-const currentPage = ref(0);
 const localBusy = ref(false);
 const errorMessage = ref("");
 
 // Computed properties, which check whether the props are provided or local state is to be used
 const items = computed(() => (props.propItems !== undefined ? props.propItems : localItems.value));
-const totalItemCount = computed(() =>
-    props.propTotalCount !== undefined ? props.propTotalCount : localTotalItemCount.value
-);
+const totalItemCount = computed(() => {
+    // We are using local state entirely
+    if (props.propTotalCount === undefined && props.propItems === undefined) {
+        return localTotalItemCount.value;
+    }
+
+    const givenTotalCount: number | undefined =
+        props.propTotalCount !== undefined ? props.propTotalCount : localTotalItemCount.value;
+
+    // We are using a loader which means that the local state updates.
+    // We also have prop items which might be more or less than local items (e.g.: store updates like new invocation/deleted history).
+    // Note: We treat the prop items as the source of truth for the items to display.
+    if (props.adjustForTotalCountChanges && props.propItems !== undefined && props.loader !== undefined) {
+        // Here, we consider the case that prop items are updated via some external mechanism, and hence the total count might change
+        // and then the given total count will not reflect that difference.
+        return givenTotalCount !== undefined && props.propItems.length !== localItems.value.length
+            ? Math.max(0, givenTotalCount + (props.propItems.length - localItems.value.length))
+            : givenTotalCount;
+    }
+
+    return givenTotalCount;
+});
 const busy = computed(() => (props.propBusy !== undefined ? props.propBusy : localBusy.value));
 
 // check if we have scrolled to the top or bottom of the scrollable div
@@ -88,12 +112,11 @@ async function loadItems() {
             }
 
             localBusy.value = true;
-            const offset = props.limit * currentPage.value;
+            const offset = items.value.length;
             const { items: newItems, total } = await props.loader(offset, props.limit);
             // @ts-ignore - Vue 2.7 generic type compatibility issue, fix in Vue 3
-            localItems.value = localItems.value.concat(newItems);
+            localItems.value = props.propItems ? props.propItems : localItems.value.concat(newItems);
             localTotalItemCount.value = total;
-            currentPage.value += 1;
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = `Failed to load items: ${e}`;

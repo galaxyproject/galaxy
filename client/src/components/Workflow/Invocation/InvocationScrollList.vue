@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { getData } from "@/components/Grid/configs/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -15,6 +17,9 @@ import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const currentUser = computed(() => useUserStore().currentUser);
+
+const invocationStore = useInvocationStore();
+const { storedInvocations } = storeToRefs(invocationStore);
 
 interface Props {
     inPanel?: boolean;
@@ -40,8 +45,25 @@ async function loadInvocations(offset: number, limit: number) {
     }
     const extraProps = { user_id: currentUser.value.id };
     const [data, totalMatches] = await getData(offset, limit, "", "create_time", true, extraProps);
+
+    for (const item of data) {
+        invocationStore.updateInvocation(item.id, item);
+    }
     return { items: data, total: totalMatches! };
 }
+
+/** Invocations from the store, sorted by update time (to ensure when a new one is added, it appears at the top) */
+const sortedStoreInvocations = ref<WorkflowInvocation[]>([]);
+// This was the best way to ensure reactivity. Using a computed property instead was not reactive.
+watch(
+    () => storedInvocations.value,
+    (updatedInvocations) => {
+        sortedStoreInvocations.value = Object.values(updatedInvocations).sort(
+            (a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
+        );
+    },
+    { deep: true }
+);
 
 function historyName(historyId: string) {
     const historyStore = useHistoryStore();
@@ -93,9 +115,12 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
     <ScrollList
         :loader="loadInvocations"
         :item-key="(invocation) => invocation.id"
-        :in-panel="inPanel"
+        :in-panel="props.inPanel"
+        :prop-items="sortedStoreInvocations"
+        adjust-for-total-count-changes
         name="invocation"
-        name-plural="invocations">
+        name-plural="invocations"
+        :load-disabled="!currentUser || currentUser.isAnonymous">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"

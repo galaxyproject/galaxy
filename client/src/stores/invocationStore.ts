@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type {
@@ -85,6 +85,17 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
+    function updateInvocation(id: string, updatedData: Partial<WorkflowInvocation>) {
+        if (storedInvocations.value[id]) {
+            set(storedInvocations.value, id, {
+                ...storedInvocations.value[id],
+                ...updatedData,
+            });
+        } else {
+            set(storedInvocations.value, id, updatedData);
+        }
+    }
+
     const {
         fetchItemById: fetchInvocationById,
         getItemById: getInvocationById,
@@ -118,5 +129,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationRequestById,
         graphStepsByStoreId,
         isLoadingInvocation,
+        storedInvocations,
+        updateInvocation,
     };
 });
