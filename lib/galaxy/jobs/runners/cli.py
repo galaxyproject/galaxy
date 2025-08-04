@@ -219,15 +219,15 @@ class ShellJobRunner(AsynchronousJobRunner):
             jobstate_map = {
               JobState.runner_states.MEMORY_LIMIT_REACHED: (
                 "Tool failed due to insufficient memory. Try with more memory.",
-                "(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit memory limit (SLURM state: OUT_OF_MEMORY)"
               ),
               JobState.runner_states.WALLTIME_REACHED: (
                 "This job was terminated because it ran longer than the maximum allowed job run time.",
-                "(%s/%s) Job hit walltime" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit walltime"
               ),
               JobState.runner_states.UNKNOWN_ERROR: (
                 "This job ran into an unknown error.",
-                "(%s/%s) Job hit unknown error" % (ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit unknown error"
               )
             }
             reported_jobstate = job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
