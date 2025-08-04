@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faTags } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { BAlert, BModal } from "bootstrap-vue";
 import {
@@ -212,6 +213,13 @@ onMounted(async () => {
                     title="Manage Custom Builds"
                     description="Add or remove custom builds using history datasets."
                     to="/custom_builds" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-tags"
+                    :icon="faTags"
+                    title="Manage Tags"
+                    description="View and manage your tags."
+                    to="/user/tags" />
 
                 <UserPreferencesElement
                     v-if="hasThemes"
