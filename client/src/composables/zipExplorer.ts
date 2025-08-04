@@ -152,7 +152,7 @@ export function useZipExplorer() {
                     // workflows are usually relatively small.
                     const fileData = await entry.data();
                     const formData = new FormData();
-                    formData.append("archive_file", new Blob([fileData]), file.name);
+                    formData.append("archive_file", new Blob([new Uint8Array(fileData)]), file.name);
 
                     await axios.post(getFullAppUrl("api/workflows"), formData);
                 } catch (e) {
