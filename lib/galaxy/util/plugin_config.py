@@ -2,14 +2,12 @@ from types import ModuleType
 from typing import (
     Any,
     cast,
-    ClassVar,
     Dict,
     Generator,
     Iterable,
     List,
     NamedTuple,
     Optional,
-    Protocol,
     Type,
     TypeVar,
     Union,
@@ -31,12 +29,6 @@ class PluginConfigSource(NamedTuple):
     source: Any
 
 
-class PluginInstance(Protocol):
-    config_class: ClassVar[Type[BaseModel]]
-
-    def __init__(self, config: BaseModel) -> None: ...
-
-
 def plugins_dict(module: ModuleType, plugin_type_identifier: str) -> Dict[str, Type]:
     """Walk through all classes in submodules of module and find ones labelled
     with specified plugin_type_identifier and throw in a dictionary to allow
@@ -53,7 +45,7 @@ def plugins_dict(module: ModuleType, plugin_type_identifier: str) -> Dict[str, T
     return plugin_dict
 
 
-T = TypeVar("T", bound=PluginInstance)
+T = TypeVar("T")
 
 
 def load_plugins(
@@ -101,11 +93,30 @@ def __load_plugins_from_element(
             template = "Failed to find plugin of type [%s] in available plugin types %s"
             message = template % (plugin_type, str(plugins_dict.keys()))
             raise Exception(message)
-        plugin_config = plugin_klazz.config_class(**plugin_kwds)
-        plugin = plugin_klazz(config=plugin_config)
+        plugin = __create_plugin_instance(plugin_klazz, plugin_kwds)
         plugins.append(plugin)
 
     return plugins
+
+
+def __as_configurable_plugin_instance(obj: Any) -> Optional[Type]:
+    """Check if the class implements the configurable plugin pattern."""
+    try:
+        if isinstance(obj, type) and hasattr(obj, "config_class") and issubclass(obj.config_class, BaseModel):
+            return obj
+    except TypeError:
+        pass
+    return None
+
+
+def __create_plugin_instance(plugin_class: Type[T], plugin_kwds: dict[str, Any]) -> T:
+    """Create an instance of the plugin class with the provided keyword arguments."""
+    configurable_instance = __as_configurable_plugin_instance(plugin_class)
+    if configurable_instance:
+        plugin_config = configurable_instance.config_class(**plugin_kwds)
+        return configurable_instance(config=plugin_config)
+    else:
+        return plugin_class(**plugin_kwds)
 
 
 def __load_plugins_from_dicts(
@@ -139,8 +150,7 @@ def __load_plugins_from_dicts(
             plugin_kwds = plugin_kwds.copy()
             plugin_kwds.update(extra_kwds)
         plugin_class = plugins_dict[plugin_type]
-        plugin_config = plugin_class.config_class(**plugin_kwds)
-        plugin = plugin_class(config=plugin_config)
+        plugin = __create_plugin_instance(plugin_class, plugin_kwds)
         plugins.append(plugin)
 
     return plugins
