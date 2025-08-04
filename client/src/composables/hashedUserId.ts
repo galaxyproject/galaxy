@@ -22,7 +22,7 @@ function createSalt(): string {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
 
-    return bufferToString(bytes);
+    return bufferToString(bytes.buffer);
 }
 
 const currentHash = ref<string | null>(null);
