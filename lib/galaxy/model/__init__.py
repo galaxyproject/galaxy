@@ -4675,56 +4675,173 @@ class Dataset(Base, StorableObject, Serializable):
         Update time is important to determine for what history items we need to fetch
         updated data. This method updates all collection associations that reference
         this dataset through any of its dataset instances (HDAs, LDDAs, etc.).
+
+        Uses database-specific recursive CTEs for optimal performance.
         """
         session = object_session(self)
         if not session:
             return
         dialect_name = session.bind.dialect.name
 
-        def find_parent_hdcas(collection_id):
-            """Recursively find all HDCAs that reference this collection or its parents"""
-            # Find all HDCAs that directly reference this collection
+        try:
+            if dialect_name == "postgresql":
+                self._touch_collection_update_time_postgresql(session)
+            elif dialect_name == "sqlite":
+                self._touch_collection_update_time_sqlite(session)
+            else:
+                # Fallback for other databases
+                self._touch_collection_update_time_fallback(session)
+        except Exception as e:
+            # If CTE approach fails, fall back to Python implementation
+            import logging
+
+            log = logging.getLogger(__name__)
+            log.warning(f"CTE approach failed for {dialect_name}: {e}, falling back to Python implementation")
+            self._touch_collection_update_time_fallback(session)
+
+    def _touch_collection_update_time_postgresql(self, session):
+        """PostgreSQL-optimized version with cycle detection"""
+
+        update_stmt = text(
+            """
+            WITH RECURSIVE collection_hierarchy AS (
+                -- Base case: Collections directly containing this dataset (HDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level,
+                    ARRAY[dce.dataset_collection_id] as path
+                FROM dataset_collection_element dce
+                JOIN history_dataset_association hda ON dce.hda_id = hda.id
+                WHERE hda.dataset_id = :dataset_id
+
+                UNION
+
+                -- Base case: Collections directly containing this dataset (LDDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level,
+                    ARRAY[dce.dataset_collection_id] as path
+                FROM dataset_collection_element dce
+                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
+                WHERE ldda.dataset_id = :dataset_id
+
+                UNION ALL
+
+                -- Recursive case: Parent collections
+                SELECT
+                    parent_dce.dataset_collection_id,
+                    ch.depth_level + 1,
+                    ch.path || parent_dce.dataset_collection_id
+                FROM collection_hierarchy ch
+                JOIN dataset_collection_element parent_dce
+                    ON parent_dce.child_collection_id = ch.collection_id
+                WHERE ch.depth_level < :max_depth
+                    AND NOT (parent_dce.dataset_collection_id = ANY(ch.path))
+            )
+            UPDATE history_dataset_collection_association
+            SET update_time = :now_time
+            WHERE collection_id IN (SELECT DISTINCT collection_id FROM collection_hierarchy)
+        """
+        )
+
+        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+
+    def _touch_collection_update_time_sqlite(self, session):
+        """SQLite-compatible version with depth limiting"""
+
+        update_stmt = text(
+            """
+            WITH RECURSIVE collection_hierarchy(collection_id, depth_level) AS (
+                -- Base case: Collections directly containing this dataset (HDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level
+                FROM dataset_collection_element dce
+                JOIN history_dataset_association hda ON dce.hda_id = hda.id
+                WHERE hda.dataset_id = :dataset_id
+
+                UNION
+
+                -- Base case: Collections directly containing this dataset (LDDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level
+                FROM dataset_collection_element dce
+                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
+                WHERE ldda.dataset_id = :dataset_id
+
+                UNION ALL
+
+                -- Recursive case: Parent collections
+                SELECT
+                    parent_dce.dataset_collection_id,
+                    ch.depth_level + 1
+                FROM collection_hierarchy ch
+                JOIN dataset_collection_element parent_dce
+                    ON parent_dce.child_collection_id = ch.collection_id
+                WHERE ch.depth_level < :max_depth
+            )
+            UPDATE history_dataset_collection_association
+            SET update_time = :now_time
+            WHERE collection_id IN (
+                SELECT DISTINCT collection_id FROM collection_hierarchy
+            )
+        """
+        )
+
+        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+
+    def _touch_collection_update_time_fallback(self, session):
+        """Python-based fallback for databases without good CTE support"""
+        visited_collections = set()
+        hdcas_to_update = []
+
+        def collect_parent_hdcas(collection_id, depth=0):
+            if collection_id in visited_collections or depth > 50:
+                return
+
+            visited_collections.add(collection_id)
+
+            # Find HDCAs for this collection
             hdca_stmt = select(HistoryDatasetCollectionAssociation).where(
                 HistoryDatasetCollectionAssociation.collection_id == collection_id
             )
             hdcas = session.scalars(hdca_stmt).all()
+            hdcas_to_update.extend(hdcas)
 
-            for hdca in hdcas:
-                hdca.update_time = now()
-                session.add(hdca)
-
-            # Find parent collections that contain this collection as a child element
-            parent_dce_stmt = select(DatasetCollectionElement).where(
+            # Find parent collections
+            parent_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
                 DatasetCollectionElement.child_collection_id == collection_id
             )
-            parent_dces = session.scalars(parent_dce_stmt).all()
+            parent_collection_ids = session.scalars(parent_stmt).all()
 
-            # Recursively check parent collections
-            for parent_dce in parent_dces:
-                find_parent_hdcas(parent_dce.dataset_collection_id)
+            for parent_id in parent_collection_ids:
+                collect_parent_hdcas(parent_id, depth + 1)
 
-        # Find all dataset collection elements that reference HDAs of this dataset
-        hda_dce_stmt = (
-            select(DatasetCollectionElement)
-            .join(HistoryDatasetAssociation, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
-            .where(HistoryDatasetAssociation.dataset_id == self.id)
-        )
-        hda_dces = session.scalars(hda_dce_stmt).all()
-
-        # Find all dataset collection elements that reference LDDAs of this dataset
-        ldda_dce_stmt = (
-            select(DatasetCollectionElement)
-            .join(
-                LibraryDatasetDatasetAssociation,
-                DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
+        # Start with collections containing this dataset
+        initial_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
+            or_(
+                DatasetCollectionElement.hda_id.in_(
+                    select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.dataset_id == self.id)
+                ),
+                DatasetCollectionElement.ldda_id.in_(
+                    select(LibraryDatasetDatasetAssociation.id).where(
+                        LibraryDatasetDatasetAssociation.dataset_id == self.id
+                    )
+                ),
             )
-            .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
         )
-        ldda_dces = session.scalars(ldda_dce_stmt).all()
 
-        # Find and update HDCAs for each collection containing this dataset
-        for dce in hda_dces + ldda_dces:
-            find_parent_hdcas(dce.dataset_collection_id)
+        initial_collection_ids = session.scalars(initial_stmt).all()
+
+        for collection_id in initial_collection_ids:
+            collect_parent_hdcas(collection_id)
+
+        # Update all collected HDCAs
+        update_time = now()
+        for hdca in hdcas_to_update:
+            hdca.update_time = update_time
+            session.add(hdca)
 
 
 class DatasetSource(Base, Dictifiable, Serializable):
