@@ -98,7 +98,7 @@ function stsUrl(config: any) {
 </script>
 
 <template>
-    <div v-if="props.embed" id="columns" class="page-published embed">
+    <div v-if="props.embed" id="columns" class="page-view embed">
         <div id="center" class="container-root">
             <div v-if="loading">
                 <LoadingSpan message="Loading Page" />
@@ -109,7 +109,7 @@ function stsUrl(config: any) {
                     {{ errorMessage }}
                 </BAlert>
             </div>
-            <div v-else-if="page && isConfigLoaded" class="published-page">
+            <div v-else-if="page && isConfigLoaded" class="page-container">
                 <Heading v-if="props.showHeading" h1 separator size="lg" class="page-title">
                     {{ page.title || page.name }}
                 </Heading>
@@ -146,9 +146,8 @@ function stsUrl(config: any) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-
-.page-published {
+// Embedded mode styles
+.page-view.embed {
     display: flex;
     height: 100%;
 
@@ -157,50 +156,18 @@ function stsUrl(config: any) {
         overflow: auto;
     }
 
-    .published-page {
+    .page-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 1rem;
-
-        .page-title {
-            margin-bottom: 2rem;
-        }
-
-        .page-content {
-            background-color: white;
-            border-radius: 0.5rem;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-            :deep(.page-markdown) {
-                max-width: none;
-            }
-        }
-
-        .page-metadata {
-            margin-top: 2rem;
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-
-            .page-author,
-            .page-tags {
-                margin-bottom: 0.5rem;
-            }
-        }
     }
-}
 
-// Embedded mode styles
-.page-published.embed {
-    .published-page {
-        padding: 0;
+    .page-title {
+        padding: 0 1rem;
+        margin-bottom: 2rem;
+    }
 
-        .page-content {
-            box-shadow: none;
-            border-radius: 0;
-        }
+    .page-content :deep(.page-markdown) {
+        max-width: none;
     }
 }
 </style>

@@ -6,7 +6,7 @@ import { computed, ref } from "vue";
 import { getFullAppUrl } from "@/app/utils";
 import { copy } from "@/utils/clipboard";
 
-import PagePublished from "@/components/Page/PagePublished.vue";
+import PageView from "@/components/Page/PageView.vue";
 
 interface Props {
     id: string;
@@ -85,10 +85,10 @@ function onCopy() {
             </label>
 
             <BFormCheckbox v-model="showEmbed" switch>Show embed Preview</BFormCheckbox>
-            <PagePublished
+            <PageView
                 v-if="showEmbedDebounced"
                 :page-id="props.id"
-                class="published-preview"
+                class="page-preview"
                 embed
                 :show-heading="settings.showHeading" />
         </div>
@@ -104,7 +104,7 @@ function onCopy() {
 
     .settings {
         padding: 1rem;
-        background-color: #f8f9fa;
+        background-color: $brand-light;
         border-radius: 0.5rem;
         min-width: 250px;
 
@@ -136,12 +136,13 @@ function onCopy() {
             font-size: 0.875rem;
         }
 
-        .published-preview {
-            border: 1px solid $border-color;
-            border-radius: 0.5rem;
+        .page-preview {
+            border: 2px solid $border-color;
+            border-radius: 4px;
             overflow: hidden;
             height: 500px;
             min-height: 300px;
+            padding: 0.5rem;
         }
     }
 }
