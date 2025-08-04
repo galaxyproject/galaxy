@@ -35,6 +35,7 @@ from galaxy.model import (
     LibraryFolder,
     Role,
 )
+from galaxy.schema.schema import DatasetState
 from galaxy.util import is_url
 from galaxy.util.path import external_chown
 
@@ -143,7 +144,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     if state:
         hda.state = state
     else:
-        hda.state = hda.states.QUEUED
+        hda.state = DatasetState.QUEUED
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
@@ -204,7 +205,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     if state:
         ldda.state = state
     else:
-        ldda.state = ldda.states.QUEUED
+        ldda.state = DatasetState.QUEUED
     ldda.message = library_bunch.message
     trans.sa_session.commit()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset

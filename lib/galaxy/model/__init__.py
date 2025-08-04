@@ -180,6 +180,7 @@ from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetSourceTransformActionTypeLiteral,
     DatasetState,
+    DatasetStateLiteral,
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
@@ -4355,10 +4356,8 @@ class Dataset(Base, StorableObject, Serializable):
     states = DatasetState
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
-    ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(
-        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
-    )
+    ready_states = tuple(set(states.values()) - set(non_ready_states))
+    valid_input_states = tuple(set(states.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA})
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4911,14 +4910,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return None
 
     @property
-    def state(self):
+    def state(self) -> Optional["DatasetStateLiteral"]:
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
             return self._state
-        return self.dataset.state
+        return self.dataset.state if self.dataset else None
 
     @state.setter
-    def state(self, state: Optional[DatasetState]):
+    def state(self, state: Optional["DatasetStateLiteral"]):
         if state != self.state:
             if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
                 self._state = state
@@ -4946,7 +4945,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         assert self.dataset
         object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
-        self.state = self.states.OK
+        self.state = DatasetState.OK
         self.blurb = "skipped"
         self.visible = False
         null = json.dumps(None)

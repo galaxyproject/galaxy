@@ -97,6 +97,7 @@ from galaxy.schema.bco.util import (
     write_to_file,
 )
 from galaxy.schema.schema import (
+    DatasetState,
     DatasetStateField,
     ModelStoreFormat,
 )
@@ -656,9 +657,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 has_good_source = True
 
                     discarded_data = self.import_options.discarded_data
-                    dataset_state = dataset_attrs.get("state", dataset_instance.states.OK)
-                    if dataset_state == dataset_instance.states.DEFERRED:
-                        dataset_instance.state = dataset_instance.states.DEFERRED
+                    dataset_state = dataset_attrs.get("state", DatasetState.OK)
+                    if dataset_state == DatasetState.DEFERRED:
+                        dataset_instance.state = DatasetState.DEFERRED
                         dataset_instance.deleted = False
                         dataset_instance.purged = False
                         dataset_instance.dataset.deleted = False
@@ -669,9 +670,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         or discarded_data is ImportDiscardedDataType.FORCE
                     ):
                         is_discarded = not has_good_source
-                        target_state = (
-                            dataset_instance.states.DISCARDED if is_discarded else dataset_instance.states.DEFERRED
-                        )
+                        target_state = DatasetState.DISCARDED if is_discarded else DatasetState.DEFERRED
                         dataset_instance.state = target_state
                         deleted = is_discarded and (discarded_data == ImportDiscardedDataType.FORBID)
                         dataset_instance.deleted = deleted
@@ -746,7 +745,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                         dataset_instance.datatype.set_meta(dataset_instance)
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
-                                    dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
+                                    dataset_instance.state = DatasetState.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if not isinstance(dataset_instance, model.HistoryDatasetAssociation):

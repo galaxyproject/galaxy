@@ -18,6 +18,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.schema import DatasetState
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -201,7 +202,7 @@ class SetMetadataToolAction(ToolAction):
             job.add_input_library_dataset(dataset_name, dataset)
         # Need a special state here to show that metadata is being set and also allow the job to run
         # i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
-        dataset.state = dataset.states.SETTING_METADATA
+        dataset.state = DatasetState.SETTING_METADATA
         job.state = start_job_state  # job inputs have been configured, restore initial job state
         sa_session.commit()
 

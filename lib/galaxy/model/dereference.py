@@ -13,6 +13,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import DatasetState
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -45,7 +46,7 @@ def dereference_to_model(
         visible=visible,
         flush=False,
     )
-    hda.state = hda.states.DEFERRED
+    hda.state = DatasetState.DEFERRED
     dataset_source = DatasetSource()
     dataset_source.source_uri = data_request_uri.url
     hashes = []

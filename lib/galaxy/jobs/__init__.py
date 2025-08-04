@@ -84,6 +84,7 @@ from galaxy.objectstore import (
     ObjectStorePopulator,
     serialize_static_object_store_config,
 )
+from galaxy.schema.schema import DatasetState
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
@@ -1998,7 +1999,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # call datatype.set_meta directly for the initial set_meta call during dataset creation
                     dataset.datatype.set_meta(dataset, overwrite=False)
                 else:
-                    dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
+                    dataset.state = DatasetState.FAILED_METADATA
             else:
                 self.external_output_metadata.load_metadata(
                     dataset,

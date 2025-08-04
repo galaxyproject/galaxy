@@ -5,10 +5,14 @@ from datetime import (
     date,
     datetime,
 )
-from enum import Enum
+from enum import (
+    Enum,
+    StrEnum,
+)
 from typing import (
     Annotated,
     Any,
+    get_args,
     Optional,
     Union,
 )
@@ -72,7 +76,8 @@ OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
-class DatasetState(str, Enum):
+# Dataset state constants
+class DatasetState:
     NEW = "new"
     UPLOAD = "upload"
     QUEUED = "queued"
@@ -83,21 +88,63 @@ class DatasetState(str, Enum):
     PAUSED = "paused"
     SETTING_METADATA = "setting_metadata"
     FAILED_METADATA = "failed_metadata"
-    # Non-deleted, non-purged datasets that don't have physical files.
-    # These shouldn't have objectstores attached -
-    # 'deferred' can be materialized for jobs using
-    # attached DatasetSource objects but 'discarded'
-    # cannot (e.g. imported histories). These should still
-    # be able to have history contents associated (normal HDAs?)
     DEFERRED = "deferred"
     DISCARDED = "discarded"
 
     @classmethod
-    def values(self):
-        return self.__members__.values()
+    def values(cls):
+        return [
+            cls.NEW,
+            cls.UPLOAD,
+            cls.QUEUED,
+            cls.RUNNING,
+            cls.OK,
+            cls.EMPTY,
+            cls.ERROR,
+            cls.PAUSED,
+            cls.SETTING_METADATA,
+            cls.FAILED_METADATA,
+            cls.DEFERRED,
+            cls.DISCARDED,
+        ]
 
 
-ElementsStatesDict = TypedDict("ElementsStatesDict", {state.value: NotRequired[int] for state in DatasetState})
+# Dataset state as Literal type for type hints
+DatasetStateLiteral = Literal[
+    DatasetState.NEW,
+    DatasetState.UPLOAD,
+    DatasetState.QUEUED,
+    DatasetState.RUNNING,
+    DatasetState.OK,
+    DatasetState.EMPTY,
+    DatasetState.ERROR,
+    DatasetState.PAUSED,
+    DatasetState.SETTING_METADATA,
+    DatasetState.FAILED_METADATA,
+    DatasetState.DEFERRED,
+    DatasetState.DISCARDED,
+]
+
+state_literal_values = get_args(DatasetStateLiteral)
+state_enum_members = {value.upper(): value for value in state_literal_values}
+DatasetStateEnum = StrEnum("DatasetState", state_enum_members)
+
+
+# Create dictionary for ElementsStatesDict using class syntax
+class ElementsStatesDict(TypedDict, total=False):
+    # Add fields for each DatasetState value
+    new: NotRequired[int]
+    upload: NotRequired[int]
+    queued: NotRequired[int]
+    running: NotRequired[int]
+    ok: NotRequired[int]
+    empty: NotRequired[int]
+    error: NotRequired[int]
+    paused: NotRequired[int]
+    setting_metadata: NotRequired[int]
+    failed_metadata: NotRequired[int]
+    deferred: NotRequired[int]
+    discarded: NotRequired[int]
 
 
 class JobState(str, Enum):
@@ -174,7 +221,7 @@ JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
 DatasetStateField = Annotated[
-    DatasetState,
+    DatasetStateEnum,
     BeforeValidator(lambda v: "discarded" if v == "deleted" else v),
     Field(..., title="State", description="The current state of this dataset."),
 ]
@@ -1424,10 +1471,10 @@ class HistoryActiveContentCounts(Model):
 
 
 # TODO: https://github.com/galaxyproject/galaxy/issues/17785
-HistoryStateCounts = dict[DatasetState, int]
-HistoryStateIds = dict[DatasetState, list[DecodedDatabaseIdField]]
+HistoryStateCounts = dict[DatasetStateEnum, int]
+HistoryStateIds = dict[DatasetStateEnum, list[DecodedDatabaseIdField]]
 
-HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
+HistoryContentStates = Union[DatasetStateEnum, DatasetCollectionPopulatedState]
 HistoryContentStateCounts = dict[HistoryContentStates, int]
 
 
@@ -1467,7 +1514,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         description="The relative URL in the form of /u/{username}/h/{slug}",
     )
     genome_build: Optional[str] = GenomeBuildField
-    state: DatasetState = Field(
+    state: DatasetStateEnum = Field(
         ...,
         title="State",
         description="The current state of the History based on the states of the datasets it contains.",
