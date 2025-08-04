@@ -4670,6 +4670,62 @@ class Dataset(Base, StorableObject, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def touch_collection_update_time(self):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data. This method updates all collection associations that reference
+        this dataset through any of its dataset instances (HDAs, LDDAs, etc.).
+        """
+        session = object_session(self)
+        if not session:
+            return
+        dialect_name = session.bind.dialect.name
+
+        def find_parent_hdcas(collection_id):
+            """Recursively find all HDCAs that reference this collection or its parents"""
+            # Find all HDCAs that directly reference this collection
+            hdca_stmt = select(HistoryDatasetCollectionAssociation).where(
+                HistoryDatasetCollectionAssociation.collection_id == collection_id
+            )
+            hdcas = session.scalars(hdca_stmt).all()
+
+            for hdca in hdcas:
+                hdca.update_time = now()
+                session.add(hdca)
+
+            # Find parent collections that contain this collection as a child element
+            parent_dce_stmt = select(DatasetCollectionElement).where(
+                DatasetCollectionElement.child_collection_id == collection_id
+            )
+            parent_dces = session.scalars(parent_dce_stmt).all()
+
+            # Recursively check parent collections
+            for parent_dce in parent_dces:
+                find_parent_hdcas(parent_dce.dataset_collection_id)
+
+        # Find all dataset collection elements that reference HDAs of this dataset
+        hda_dce_stmt = (
+            select(DatasetCollectionElement)
+            .join(HistoryDatasetAssociation, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
+            .where(HistoryDatasetAssociation.dataset_id == self.id)
+        )
+        hda_dces = session.scalars(hda_dce_stmt).all()
+
+        # Find all dataset collection elements that reference LDDAs of this dataset
+        ldda_dce_stmt = (
+            select(DatasetCollectionElement)
+            .join(
+                LibraryDatasetDatasetAssociation,
+                DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
+            )
+            .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+        )
+        ldda_dces = session.scalars(ldda_dce_stmt).all()
+
+        # Find and update HDCAs for each collection containing this dataset
+        for dce in hda_dces + ldda_dces:
+            find_parent_hdcas(dce.dataset_collection_id)
+
 
 class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
@@ -4929,6 +4985,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     sa_session.add(self.dataset)
                 assert self.dataset, "Dataset must be set before setting state"
                 self.dataset.state = state
+
+    def touch_collection_update_time(self):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data.
+        """
+        if self.dataset:
+            self.dataset.touch_collection_update_time()
 
     def set_metadata_success_state(self):
         self._state = None
