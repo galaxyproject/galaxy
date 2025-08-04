@@ -1,13 +1,11 @@
 import type { InvocationJobsSummary, StepJobSummary } from "@/api/invocations";
 import { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
-import type { ReasonToLevel } from "./types";
-
 export { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
 export const POPULATED_STATE_FAILED = "failed";
 
-export const INVOCATION_MSG_LEVEL: ReasonToLevel = {
+export const INVOCATION_MSG_LEVEL = {
     history_deleted: "cancel",
     user_request: "cancel",
     cancelled_on_review: "cancel",
@@ -20,7 +18,7 @@ export const INVOCATION_MSG_LEVEL: ReasonToLevel = {
     unexpected_failure: "error",
     workflow_output_not_found: "warning",
     workflow_parameter_invalid: "error",
-};
+} as const satisfies Readonly<Record<string, "cancel" | "error" | "warning">>;
 
 function countStates(jobSummary: InvocationJobsSummary | StepJobSummary | null, queryStates: string[]): number {
     let count = 0;
