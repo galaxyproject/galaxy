@@ -7,7 +7,8 @@ import type {
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
 import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { onAllInputs } from "@/components/Workflow/Editor/modules/onAllInputs";
-import type { NewStep } from "@/stores/workflowStepStore";
+import type { NewStep, Step } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
@@ -98,8 +99,36 @@ const outputs = computed(() => {
 
 const allOutputLabels = computed(() => outputs.value.map((output) => output.label));
 
-function _outputLabelValid(label: string) {
+function outputLabelValid(label: string) {
     return label.trim() !== "" && allOutputLabels.value.indexOf(label) === allOutputLabels.value.lastIndexOf(label);
+}
+
+function getOutputTypePretty(step: Step, name: string) {
+    const output = step.outputs.find((output) => output.name === name);
+
+    assertDefined(output);
+
+    if ("collection" in output && output.collection) {
+        return "collection";
+    }
+
+    if ("type" in output) {
+        return output.type;
+    }
+
+    return "unknown";
+}
+
+function isStepGenerated(step: Step) {
+    const input = inputs.value.find((input) => input.step.id === step.id);
+
+    if (input && input.generated) {
+        return true;
+    }
+}
+
+function isStepExpanded(step: Step) {
+    return props.expandedSteps.has(step.id);
 }
 
 const modal = ref<InstanceType<typeof GModal>>();
@@ -170,20 +199,51 @@ defineExpose({
             <div class="outputs list">
                 <Heading h3 size="sm" class="mb-0"> Outputs </Heading>
 
-                <span> Converted from connections </span>
+                <div v-for="(output, index) in outputs" :key="index" class="box">
+                    <div class="box-heading">
+                        <span> {{ getOutputTypePretty(output.step, output.name) }} output </span>
+                        <GLink
+                            v-if="output.generated"
+                            class="generated-notice"
+                            tooltip
+                            title="converted from output connections from selection">
+                            generated
+                        </GLink>
+                    </div>
 
-                <div
-                    v-for="outputReconnection in props.outputMap"
-                    :key="`${outputReconnection.connection.id}-${outputReconnection.connection.output_name}`">
-                    {{ outputReconnection.connection.output_name }}
+                    <GFormLabel
+                        :state="outputLabelValid(output.label) ? null : false"
+                        invalid-feedback="provide a unique output label">
+                        <GFormInput
+                            :value="output.label"
+                            @input="(value) => emit('renameOutput', output.step.id, output.name, value ?? '')" />
+                    </GFormLabel>
                 </div>
             </div>
 
-            <div class="steps list">
+            <div class="steps">
                 <Heading h3 size="sm" class="mb-0"> Steps </Heading>
 
-                <div v-for="(step, key) in props.workflow.steps" :key="key">
-                    {{ step.name }}
+                <div class="step-grid">
+                    <div v-for="(step, key) in props.workflow.steps" :key="key" class="box step">
+                        {{ step.id + 1 }}: {{ step.name }}
+
+                        <GLink
+                            v-if="isStepGenerated(step)"
+                            class="generated-notice"
+                            tooltip
+                            title="converted from input connections from selection">
+                            generated
+                        </GLink>
+
+                        <GLink
+                            v-if="isStepExpanded(step)"
+                            class="expanded-notice"
+                            tooltip
+                            title="needs top be included for sub-workflow to function, despite not being part of the initial selection">
+                            automatically included
+                        </GLink>
+                    </div>
                 </div>
             </div>
         </div>
@@ -218,6 +278,12 @@ defineExpose({
     gap: var(--spacing-2);
 }
 
+.step-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--spacing-2);
+}
+
 .box {
     border: 1px solid var(--color-grey-400);
     border-radius: var(--spacing-2);
@@ -226,8 +292,17 @@ defineExpose({
     flex-direction: column;
     gap: var(--spacing-1);
 
+    &.step {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
     &:has(.generated-notice) {
         border: 1px solid var(--color-green-500);
+    }
+
+    &:has(.expanded-notice) {
+        border: 1px solid var(--color-orange-500);
     }
 
     .box-heading {
