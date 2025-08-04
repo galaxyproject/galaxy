@@ -2205,7 +2205,7 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert "Invalid format (auto or input) in tool or tool test inputs" in lint_ctx.error_messages  # 2x
     assert len(lint_ctx.error_messages) == 8
 
 
