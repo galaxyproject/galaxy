@@ -615,7 +615,7 @@ class ImplicitConfigurationParameters(TypedDict):
     oauth2_access_token: NotRequired[str]
 
 
-T = TypeVar("T", bound="BaseModel")
+M = TypeVar("M", bound="BaseModel")
 
 
 # TODO: This is a workaround to make all fields optional.
@@ -623,13 +623,13 @@ T = TypeVar("T", bound="BaseModel")
 # https://github.com/pydantic/pydantic/issues/1673
 def partial_model(
     include: Optional[list[str]] = None, exclude: Optional[list[str]] = None
-) -> Callable[[type[T]], type[T]]:
+) -> Callable[[type[M]], type[M]]:
     """Decorator to make all model fields optional"""
 
     if exclude is None:
         exclude = []
 
-    def decorator(model: type[T]) -> type[T]:
+    def decorator(model: type[M]) -> type[M]:
         def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
             new = deepcopy(field)
             new.default = default
