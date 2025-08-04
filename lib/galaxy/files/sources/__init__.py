@@ -253,7 +253,8 @@ class FilesSourceProperties(StrictModel):
 class PartialFilesSourceProperties(FilesSourceProperties):
     """Partial model for FilesSourceProperties to allow partial updates."""
 
-    pass
+    # We allow extra properties to be set in the model because each file source may have its own specific properties.
+    model_config = ConfigDict(extra="allow")
 
 
 class FilesSourceOptions(StrictModel):
@@ -601,7 +602,12 @@ class BaseFilesSource(FilesSource):
     def _evaluate_config_props(self, user_context: "OptionalUserContext") -> dict[str, Any]:
         """Evaluate properties that may contain templated values."""
         effective_props = {}
-        for key, val in self.config.model_dump(exclude_unset=True, exclude_none=True).items():
+        if self.disable_templating:
+            return effective_props
+
+        for key, val in self.config.model_dump(
+            exclude_unset=True, exclude_none=True, exclude={"file_sources_config"}
+        ).items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         return effective_props
 
