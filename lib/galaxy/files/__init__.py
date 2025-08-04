@@ -156,7 +156,7 @@ class ConfiguredFileSources:
                 for file_source in file_sources:
                     if file_source.plugin_type == plugin_type:
                         return
-                stock_file_source_conf_dict.append({"type": plugin_type})
+                stock_file_source_conf_dict.append({"type": plugin_type, "id": f"stock_{plugin_type}"})
 
             _ensure_loaded("http")
             _ensure_loaded("base64")
