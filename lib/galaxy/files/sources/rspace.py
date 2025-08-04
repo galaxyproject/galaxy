@@ -36,6 +36,7 @@ from typing import (
     Any,
     BinaryIO,
     cast,
+    ClassVar,
     IO,
     Optional,
 )
@@ -128,7 +129,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource):
     plugin_type = "rspace"
     required_module = RSpaceGalleryFilesystem
     required_package = "rspace_client.eln.fs"
-    config_class: RSpaceFileSourceConfiguration
+    config_class: ClassVar[type[RSpaceFileSourceConfiguration]] = RSpaceFileSourceConfiguration
     config: RSpaceFileSourceConfiguration
 
     _upload_global_id: str

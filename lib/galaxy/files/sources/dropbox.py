@@ -1,10 +1,13 @@
 try:
     from fs.dropboxfs.dropboxfs import DropboxFS
 except ImportError:
-    DropboxFS = None  # type: ignore[misc,assignment]
+    DropboxFS = None
 
 
-from typing import Annotated
+from typing import (
+    Annotated,
+    ClassVar,
+)
 
 from pydantic import (
     AliasChoices,
@@ -35,7 +38,7 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
     plugin_type = "dropbox"
     required_module = DropboxFS
     required_package = "fs.dropboxfs"
-    config_class: DropboxFilesSourceConfiguration
+    config_class: ClassVar[type[DropboxFilesSourceConfiguration]] = DropboxFilesSourceConfiguration
     config: DropboxFilesSourceConfiguration
 
     def __init__(self, config: DropboxFilesSourceConfiguration):

@@ -3,7 +3,10 @@ try:
 except ImportError:
     BASESPACEFS = None
 
-from typing import Optional
+from typing import (
+    ClassVar,
+    Optional,
+)
 
 from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -21,7 +24,7 @@ class BaseSpaceFilesSource(PyFilesystem2FilesSource):
     plugin_type = "basespace"
     required_module = BASESPACEFS
     required_package = "fs-basespace"
-    config_class: BaseSpaceFileSourceConfiguration
+    config_class: ClassVar[type[BaseSpaceFileSourceConfiguration]] = BaseSpaceFileSourceConfiguration
     config: BaseSpaceFileSourceConfiguration
 
     def __init__(self, config: BaseSpaceFileSourceConfiguration):

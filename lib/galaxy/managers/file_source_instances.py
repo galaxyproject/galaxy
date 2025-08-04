@@ -662,7 +662,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         browsable_only: Optional[bool] = False,
         include_kind: Optional[set[PluginKind]] = None,
         exclude_kind: Optional[set[PluginKind]] = None,
-    ) -> list[FilesSourceProperties]:
+    ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         if user_context.anonymous:
             return []

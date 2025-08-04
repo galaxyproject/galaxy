@@ -1,4 +1,5 @@
 import urllib.parse
+from typing import ClassVar
 
 try:
     from fs.ftpfs import FTPFS
@@ -21,7 +22,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
     plugin_type = "ftp"
     required_module = FTPFS
     required_package = "fs.ftpfs"
-    config_class: FTPFileSourcePropertiesConfiguration
+    config_class: ClassVar[type[FTPFileSourcePropertiesConfiguration]] = FTPFileSourcePropertiesConfiguration
     config: FTPFileSourcePropertiesConfiguration
 
     def __init__(self, config: FTPFileSourcePropertiesConfiguration):
