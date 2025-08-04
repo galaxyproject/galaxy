@@ -1,8 +1,6 @@
 import os
 import tempfile
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -25,7 +23,7 @@ class TestPosixConfiguredFileSources(TestConfiguredFileSources):
             "type": "posix",
             "root": root,
         }
-        file_sources_config = FileSourcePluginsConfig({})
+        file_sources_config = FileSourcePluginsConfig()
         super().__init__(file_sources_config, {"test1": plugin}, root)
 
 

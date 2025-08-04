@@ -4,6 +4,8 @@ except ImportError:
     OnedataRESTFS = None
 
 
+from typing import ClassVar
+
 from galaxy.util import mapped_chars
 from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -25,7 +27,7 @@ class OnedataFilesSource(PyFilesystem2FilesSource):
     plugin_type = "onedata"
     required_module = OnedataRESTFS
     required_package = "fs.onedatarestfs"
-    config_class: OnedataFileSourceConfiguration
+    config_class: ClassVar[type[OnedataFileSourceConfiguration]] = OnedataFileSourceConfiguration
     config: OnedataFileSourceConfiguration
 
     def __init__(self, config: OnedataFileSourceConfiguration):

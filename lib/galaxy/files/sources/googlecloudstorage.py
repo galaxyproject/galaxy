@@ -5,7 +5,10 @@ try:
 except ImportError:
     GCSFS = None
 
-from typing import Optional
+from typing import (
+    ClassVar,
+    Optional,
+)
 
 from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -23,7 +26,7 @@ class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
     plugin_type = "googlecloudstorage"
     required_module = GCSFS
     required_package = "fs-gcsfs"
-    config_class: GoogleCloudStorageFileSourceConfiguration
+    config_class: ClassVar[type[GoogleCloudStorageFileSourceConfiguration]] = GoogleCloudStorageFileSourceConfiguration
     config: GoogleCloudStorageFileSourceConfiguration
 
     def __init__(self, config: GoogleCloudStorageFileSourceConfiguration):

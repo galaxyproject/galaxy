@@ -4,8 +4,8 @@ try:
     from fs.azblob.blob_fs import BlobFS
     from fs.azblob.blob_fs_v2 import BlobFSV2
 except ImportError:
-    BlobFS = None  # type: ignore[misc,assignment]
-    BlobFSV2 = None  # type: ignore[misc,assignment]
+    BlobFS = None
+    BlobFSV2 = None
 
 from typing import (
     ClassVar,

@@ -5,7 +5,10 @@ except ImportError:
     GoogleDriveFS = None
 
 
-from typing import Annotated
+from typing import (
+    Annotated,
+    ClassVar,
+)
 
 from pydantic import (
     AliasChoices,
@@ -30,7 +33,7 @@ class GoogleDriveFilesSource(PyFilesystem2FilesSource):
     plugin_type = "googledrive"
     required_module = GoogleDriveFS
     required_package = "fs.googledrivefs"
-    config_class: GoogleDriveFilesSourceConfiguration
+    config_class: ClassVar[type[GoogleDriveFilesSourceConfiguration]] = GoogleDriveFilesSourceConfiguration
     config: GoogleDriveFilesSourceConfiguration
 
     def __init__(self, config: GoogleDriveFilesSourceConfiguration):

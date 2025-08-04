@@ -561,7 +561,7 @@ class BaseFilesSource(FilesSource):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
-        self.user_data = None
+        self.user_data: Optional[UserData] = None
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         rval: dict[str, Any] = {
