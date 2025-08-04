@@ -3,6 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
@@ -13,20 +14,11 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 import PageHtml from "@/components/PageDisplay/PageHtml.vue";
 
-// PageData extends the Item interface from PublishedItem
-interface PageData {
+interface PageData extends PublishedItemType {
     id: string;
-    title?: string;
-    name: string; // Required by Item interface
     content: string;
     content_format: string;
-    username?: string | null;
-    owner?: string;
     slug: string;
-    email_hash?: string;
-    tags?: string[];
-    model_class?: string;
-    author_deleted?: boolean;
 }
 
 interface Props {
