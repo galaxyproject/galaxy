@@ -1,6 +1,7 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
 from logging import getLogger
+import subprocess
 
 from . import (
     BaseJobExec,
