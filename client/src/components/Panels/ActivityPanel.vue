@@ -6,8 +6,6 @@ interface Props {
     title: string;
     goToAllTitle?: string;
     href?: string;
-    /** Show GoTo button when on `href`? */
-    goToOnHref?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -24,7 +22,11 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
     <div class="activity-panel" :data-description="props.title" aria-labelledby="activity-panel-heading">
         <div class="activity-panel-header">
             <nav unselectable="on" class="activity-panel-header-top">
-                <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">{{ props.title }}</h2>
+                <slot name="activity-panel-header-top">
+                    <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">
+                        {{ props.title }}
+                    </h2>
+                </slot>
 
                 <BButtonGroup>
                     <slot name="header-buttons" />

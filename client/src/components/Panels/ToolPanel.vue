@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -12,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { types_to_icons } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
+import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
@@ -139,46 +141,51 @@ initializePanel();
 </script>
 
 <template>
-    <div v-if="panelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
-        <div unselectable="on">
-            <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
-                <PanelViewMenu
-                    v-if="panels && Object.keys(panels).length > 1"
-                    :panel-views="panels"
-                    :current-panel-view="currentPanelView"
-                    :show-advanced.sync="showAdvanced"
-                    :store-loading="loading"
-                    @updatePanelView="updatePanelView">
-                    <template v-slot:panel-view-selector>
-                        <div class="d-flex justify-content-between panel-view-selector">
-                            <div>
-                                <span
-                                    v-if="panelIcon && !loading"
-                                    :class="['fas', `fa-${panelIcon}`, 'mr-1']"
-                                    data-description="panel view header icon" />
-                                <Heading
-                                    id="toolbox-heading"
-                                    :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
-                                    h2
-                                    inline
-                                    size="sm">
-                                    <span v-if="loading && panelName">
-                                        <LoadingSpan :message="toolPanelHeader" />
-                                    </span>
-                                    <span v-else>{{ toolPanelHeader }}</span>
-                                </Heading>
-                            </div>
-                            <div v-if="!showAdvanced" class="panel-header-buttons">
-                                <FontAwesomeIcon :icon="faCaretDown" />
-                            </div>
+    <ActivityPanel
+        v-if="panelsFetched"
+        id="toolbox-panel"
+        title="Tools"
+        aria-labelledby="toolbox-heading"
+        class="toolbox-panel"
+        go-to-all-title="Discover Tools"
+        href="/tools/list">
+        <template v-slot:activity-panel-header-top>
+            <PanelViewMenu
+                v-if="panels && Object.keys(panels).length > 1"
+                :panel-views="panels"
+                :current-panel-view="currentPanelView"
+                :show-advanced.sync="showAdvanced"
+                :store-loading="loading"
+                @updatePanelView="updatePanelView">
+                <template v-slot:panel-view-selector>
+                    <div class="d-flex justify-content-between panel-view-selector">
+                        <div>
+                            <span
+                                v-if="panelIcon && !loading"
+                                :class="['fas', `fa-${panelIcon}`, 'mr-1']"
+                                data-description="panel view header icon" />
+                            <Heading
+                                id="toolbox-heading"
+                                :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
+                                h2
+                                inline
+                                size="sm">
+                                <span v-if="loading && panelName">
+                                    <LoadingSpan :message="toolPanelHeader" />
+                                </span>
+                                <span v-else>{{ toolPanelHeader }}</span>
+                            </Heading>
                         </div>
-                    </template>
-                </PanelViewMenu>
-                <div v-if="!showAdvanced" class="panel-header-buttons">
-                    <FavoritesButton v-model="showFavorites" />
-                </div>
-            </div>
-        </div>
+                        <div v-if="!showAdvanced" class="panel-header-buttons">
+                            <FontAwesomeIcon :icon="faCaretDown" />
+                        </div>
+                    </div>
+                </template>
+            </PanelViewMenu>
+        </template>
+        <template v-if="!showAdvanced" v-slot:header-buttons>
+            <FavoritesButton v-model="showFavorites" />
+        </template>
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
@@ -189,19 +196,19 @@ initializePanel();
             @onInsertWorkflow="onInsertWorkflow"
             @onInsertWorkflowSteps="onInsertWorkflowSteps" />
         <div v-else-if="errorMessage" data-description="tool panel error message">
-            <b-alert class="m-2" variant="danger" show>
+            <BAlert class="m-2" variant="danger" show>
                 {{ errorMessage }}
-            </b-alert>
+            </BAlert>
         </div>
         <div v-else>
-            <b-badge class="alert-info w-100">
+            <BBadge class="alert-info w-100">
                 <LoadingSpan message="Loading Toolbox" />
-            </b-badge>
+            </BBadge>
         </div>
-    </div>
-    <b-alert v-else-if="currentToolSections" class="m-2" variant="info" show>
+    </ActivityPanel>
+    <BAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
         <LoadingSpan message="Loading Toolbox" />
-    </b-alert>
+    </BAlert>
 </template>
 
 <style lang="scss" scoped>
@@ -209,5 +216,14 @@ initializePanel();
 
 .panel-view-selector {
     color: $panel-header-text-color;
+}
+
+.toolbox-panel {
+    padding: 0.5rem 0rem !important;
+
+    :deep(.activity-panel-header) {
+        margin-right: 1rem;
+        margin-left: 1rem;
+    }
 }
 </style>
