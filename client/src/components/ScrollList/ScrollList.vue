@@ -33,6 +33,8 @@ interface Props<T> {
      * This is useful when propItems can change independently of the loader.
      */
     adjustForTotalCountChanges?: boolean;
+    /** The current scroll position of the list (used to track where the user has scrolled to). */
+    propScrollTop?: number;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -48,9 +50,13 @@ const props = withDefaults(defineProps<Props<T>>(), {
     propTotalCount: undefined,
     propBusy: undefined,
     adjustForTotalCountChanges: false,
+    propScrollTop: 0,
 });
 
-const emit = defineEmits(["load-more"]);
+const emit = defineEmits<{
+    (e: "load-more"): void;
+    (e: "update:prop-scroll-top", value: number): void;
+}>();
 
 const scrollableDiv = ref<HTMLElement | null>(null);
 
@@ -139,11 +145,27 @@ onUnmounted(() => {
     useInfiniteScroll(scrollableDiv.value, () => {});
 });
 
+/** If `true`, we have a `props.scrollTop` with which the local `scrollTop` has been synced. */
+const syncedWithPropScroll = ref(false);
 watch(
     () => isScrollable.value,
     (scrollable: boolean) => {
         if (!scrollable && !allLoaded.value) {
             loadItems();
+        }
+        // If we were tracking where the list was scrolled to, return to that position
+        if (props.propScrollTop !== undefined) {
+            scrollableDiv.value?.scrollTo({ top: props.propScrollTop, behavior: "instant" });
+            syncedWithPropScroll.value = true;
+        }
+    }
+);
+watch(
+    () => scrollTop.value,
+    (newScrollTop: number) => {
+        // Once we have synced with the prop scroll, emit updates when the user scrolls to track the position
+        if (syncedWithPropScroll.value) {
+            emit("update:prop-scroll-top", newScrollTop);
         }
     }
 );

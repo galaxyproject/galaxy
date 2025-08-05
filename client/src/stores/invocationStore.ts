@@ -17,6 +17,7 @@ type GraphSteps = { [index: string]: GraphStep };
 
 export const useInvocationStore = defineStore("invocationStore", () => {
     const graphStepsByStoreId = ref<{ [index: string]: GraphSteps }>({});
+    const scrollListScrollTop = ref(0);
 
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
@@ -131,5 +132,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         isLoadingInvocation,
         storedInvocations,
         updateInvocation,
+        /** The current scroll position of the list (used to track where the user has scrolled to). */
+        scrollListScrollTop,
     };
 });

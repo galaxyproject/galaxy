@@ -19,7 +19,7 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 const currentUser = computed(() => useUserStore().currentUser);
 
 const invocationStore = useInvocationStore();
-const { storedInvocations } = storeToRefs(invocationStore);
+const { storedInvocations, scrollListScrollTop } = storeToRefs(invocationStore);
 
 interface Props {
     inPanel?: boolean;
@@ -120,7 +120,8 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         adjust-for-total-count-changes
         name="invocation"
         name-plural="invocations"
-        :load-disabled="!currentUser || currentUser.isAnonymous">
+        :load-disabled="!currentUser || currentUser.isAnonymous"
+        :prop-scroll-top.sync="scrollListScrollTop">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"
