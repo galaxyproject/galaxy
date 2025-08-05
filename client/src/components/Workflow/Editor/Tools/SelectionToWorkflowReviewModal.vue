@@ -77,7 +77,7 @@ function inputLabelValid(label: string) {
 const outputs = computed(() => {
     const steps = Object.values(props.workflow.steps);
 
-    const outputLabels = new Set(props.outputMap.map((output) => output.name));
+    const outputLabels = new Set(props.outputMap.map((output) => output.connection.output_name));
 
     const outputSummaries = steps.flatMap((step) => {
         if (!step.workflow_outputs || step.workflow_outputs.length === 0) {
@@ -121,6 +121,22 @@ function getOutputTypePretty(step: Step, name: string) {
     return "unknown";
 }
 
+function getInputTypePretty(step: Step) {
+    if (step.type === "data_input") {
+        return "data";
+    }
+
+    if (step.type === "data_collection_input") {
+        return "collection";
+    }
+
+    if (step.type === "parameter_input") {
+        return "parameter";
+    }
+
+    return "unknown";
+}
+
 function isStepGenerated(step: Step) {
     const input = inputs.value.find((input) => input.step.id === step.id);
 
@@ -150,6 +166,8 @@ defineExpose({
         title="Review extracted Sub-Workflow"
         confirm
         ok-text="Create Subworkflow"
+        fixed-height
+        size="medium"
         @ok="emit('ok')"
         @cancel="emit('cancel')">
         <p>
@@ -171,7 +189,7 @@ defineExpose({
 
                 <div v-for="(input, index) in inputs" :key="index" class="box">
                     <div class="box-heading">
-                        <span> Input Step {{ input.step.id + 1 }} </span>
+                        <span> {{ getInputTypePretty(input.step) }} input with label: </span>
                         <GLink
                             v-if="input.generated"
                             class="generated-notice"
@@ -209,7 +227,7 @@ defineExpose({
 
                 <div v-for="(output, index) in outputs" :key="index" class="box">
                     <div class="box-heading">
-                        <span> {{ getOutputTypePretty(output.step, output.name) }} output </span>
+                        <span> {{ getOutputTypePretty(output.step, output.name) }} output with label: </span>
                         <GLink
                             v-if="output.generated"
                             class="generated-notice"
@@ -234,7 +252,7 @@ defineExpose({
 
                 <div class="step-grid">
                     <div v-for="(step, key) in props.workflow.steps" :key="key" class="box step">
-                        {{ step.id + 1 }}: {{ step.name }}
+                        {{ step.id + 1 }}: {{ step.label ?? step.name }}
 
                         <GLink
                             v-if="isStepGenerated(step)"
