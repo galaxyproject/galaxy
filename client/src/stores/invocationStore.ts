@@ -82,7 +82,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         if (error) {
             rethrowSimple(error);
         }
-        storedInvocations.value[invocationId] = data;
+        updateInvocation(invocationId, data);
         return data;
     }
 
