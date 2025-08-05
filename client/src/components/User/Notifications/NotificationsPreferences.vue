@@ -18,7 +18,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
-import Heading from "@/components/Common/Heading.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faCheckCircle, faExclamationCircle, faSave);
@@ -32,6 +32,8 @@ const props = withDefaults(defineProps<NotificationsPreferencesProps>(), {
     embedded: true,
     headerSize: "h-lg",
 });
+
+const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Notifications Preferences" }];
 
 const { config } = useConfig(true);
 
@@ -107,15 +109,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 
 <template>
     <section class="notifications-preferences">
-        <Heading
-            h1
-            :separator="props.embedded"
-            inline
-            size="lg"
-            class="notifications-preferences-header"
-            :class="headerSize">
-            Manage notifications preferences
-        </Heading>
+        <BreadcrumbHeading v-if="props.embedded" :items="breadcrumbItems" />
 
         <div v-if="config.enable_notification_system" v-localize class="notifications-preferences-description">
             You can manage notifications channels and preferences here.
@@ -182,10 +176,6 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 
 <style scoped lang="scss">
 .notifications-preferences {
-    .notifications-preferences-header {
-        flex-grow: 1;
-    }
-
     .notifications-preferences-description {
         margin-bottom: 1rem;
     }

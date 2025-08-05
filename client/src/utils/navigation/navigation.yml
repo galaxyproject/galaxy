@@ -64,24 +64,24 @@ preferences:
   selectors:
     activity: "#activity-settings"
     activity_expand: ".activity-panel-footer"
-    sign_out: "#edit-preferences-sign-out"
-    change_password: "#edit-preferences-password"
-    manage_information: '#edit-preferences-information'
-    toolbox_filters: '#edit-preferences-toolbox-filters'
-    manage_api_key: '#edit-preferences-api-key'
-    custom_builds: '#edit-preferences-custom-builds'
+    sign_out: "#g-card-edit-preferences-sign-out"
+    change_password: "#g-card-edit-preferences-password"
+    manage_information: '#g-card-edit-preferences-information'
+    toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
+    manage_api_key: '#g-card-edit-preferences-api-key'
+    custom_builds: '#g-card-edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
     object_store: '#select-preferred-object-store'
-    delete_account: '#delete-account'
+    delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
-    delete_account_ok_btn: '.g-modal-confirm-buttons button.g-blue'
+    delete_account_ok_btn: '.modal-footer .btn-danger'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
-    preferred_storage: '.preferred-storage'
-    manage_object_stores: '#manage-object-stores'
-    manage_file_sources: '#manage-file-sources'
+    preferred_storage: '#g-card-manage-preferred-object-store'
+    manage_object_stores: '#g-card-manage-object-stores'
+    manage_file_sources: '#g-card-manage-file-sources'
 
   object_store_selection:
     selectors:
@@ -138,8 +138,8 @@ change_user_address:
 
 sign_out:
   selectors:
-    cancel_button: '.modal-footer .btn-secondary'
-    sign_out_button: '.modal-footer .btn-primary'
+    cancel_button: '.modal-footer .btn-outline-primary'
+    sign_out_button: '.modal-footer .btn-danger'
 
 dataset_details:
   selectors:
