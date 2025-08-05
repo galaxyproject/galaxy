@@ -612,3 +612,35 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute.with_inputs(tool_input_format.when.any({})).assert_fails()
     required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
     required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
+
+
+@requires_tool_id("cat|cat1")
+def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+    inputs = {
+        "input1": has_src_dict.src_dict,
+    }
+    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+
+
+@requires_tool_id("metadata_bam")
+def test_deferred_with_metadata_options_filter(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bam", ext="bam")
+    inputs = {
+        "input_bam": has_src_dict.src_dict,
+        "ref_names": "chrM",
+    }
+    required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
+
+
+@requires_tool_id("cat_list")
+def test_deferred_multi_input(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict_bed = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+    has_src_dict_txt = target_history.with_deferred_dataset_for_test_file("1.txt", ext="txt")
+    inputs = {
+        "input1": [has_src_dict_bed.src_dict, has_src_dict_txt.src_dict],
+    }
+    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+    output.assert_contains("chr1    4225    19670")

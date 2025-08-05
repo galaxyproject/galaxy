@@ -15,7 +15,14 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
 )
 
-DeferrableObjectsT = Union[DatasetInstance, HistoryDatasetCollectionAssociation, DatasetCollectionElement]
+DeferrableObjectsT = Union[
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
+    DatasetCollectionElement,
+    list[DatasetInstance],
+    list[Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]],
+    list[Union[DatasetInstance, HistoryDatasetCollectionAssociation, DatasetCollectionElement]],
+]
 
 
 def dataset_path_rewrites(dataset_paths):
