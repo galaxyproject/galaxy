@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { PublishedItem } from "./models/PublishedItem";
+
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-interface Item {
-    name: string;
-    model_class?: string;
-    owner?: string;
-    username?: string | null;
-    email_hash?: string;
-    author_deleted?: boolean;
-    tags?: string[];
-    title?: string;
-}
-
 interface Props {
-    item?: Item;
+    item?: PublishedItem;
 }
 
 const props = defineProps<Props>();
