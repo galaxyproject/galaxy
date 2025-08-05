@@ -1,6 +1,7 @@
 import logging
 import re
 import urllib.request
+from typing import ClassVar
 
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
@@ -27,7 +28,7 @@ class HTTPFileSourceConfiguration(FilesSourceProperties):
 class HTTPFilesSource(BaseFilesSource):
     plugin_type = "http"
     plugin_kind = PluginKind.stock
-    config_class = HTTPFileSourceConfiguration
+    config_class: ClassVar[type[HTTPFileSourceConfiguration]] = HTTPFileSourceConfiguration
     config: HTTPFileSourceConfiguration
 
     def __init__(self, config: HTTPFileSourceConfiguration):

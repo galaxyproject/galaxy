@@ -8,7 +8,6 @@ from typing import (
     Any,
     ClassVar,
     Optional,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -489,7 +488,7 @@ class BaseFilesSource(FilesSource):
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
-    config_class: ClassVar[Type[FilesSourceProperties]] = FilesSourceProperties
+    config_class: ClassVar[type[FilesSourceProperties]] = FilesSourceProperties
 
     def __init__(self, config: FilesSourceProperties):
         self._parse_common_props(config)

@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from fs.osfs import OSFS
 
 from . import FilesSourceProperties
@@ -19,7 +21,7 @@ class TempFilesSource(PyFilesystem2FilesSource):
     plugin_type = "temp"
     required_module = OSFS
     required_package = "fs.osfs"
-    configuration_class = TempFileSourceConfiguration
+    config_class: ClassVar[type[TempFileSourceConfiguration]] = TempFileSourceConfiguration
     config: TempFileSourceConfiguration
 
     def __init__(self, config: TempFileSourceConfiguration):

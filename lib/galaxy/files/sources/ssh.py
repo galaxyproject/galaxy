@@ -3,7 +3,10 @@ try:
 except ImportError:
     SSHFS = None
 
-from typing import Optional
+from typing import (
+    ClassVar,
+    Optional,
+)
 
 from . import FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -25,7 +28,7 @@ class SshFilesSource(PyFilesystem2FilesSource):
     plugin_type = "ssh"
     required_module = SSHFS
     required_package = "fs.sshfs"
-    configuration_class = SshFileSourceConfiguration
+    config_class: ClassVar[type[SshFileSourceConfiguration]] = SshFileSourceConfiguration
     config: SshFileSourceConfiguration
 
     def __init__(self, config: SshFileSourceConfiguration):

@@ -6,6 +6,7 @@ except ImportError:
 import tempfile
 from typing import (
     Annotated,
+    ClassVar,
     Optional,
 )
 
@@ -47,7 +48,7 @@ class WebDavFilesSource(PyFilesystem2FilesSource):
     required_module = WebDAVFS
     required_package = "fs.webdavfs"
     allow_key_error_on_empty_directories = True
-    config_class = WebDavFileSourceConfiguration
+    config_class: ClassVar[type[WebDavFileSourceConfiguration]] = WebDavFileSourceConfiguration
     config: WebDavFileSourceConfiguration
 
     def __init__(self, config: WebDavFileSourceConfiguration):
