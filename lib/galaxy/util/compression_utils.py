@@ -440,10 +440,6 @@ def make_fast_zipfile(
             if root_dir is not None:
                 base_dir = os.path.join(root_dir, base_dir)
             base_dir = os.path.normpath(base_dir)
-            if arcname != os.curdir:
-                zf.write(base_dir, arcname)
-                if logger is not None:
-                    logger.info("adding '%s'", base_dir)
             for dirpath, dirnames, filenames in os.walk(base_dir):
                 arcdirpath = dirpath
                 if root_dir is not None:
