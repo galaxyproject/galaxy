@@ -1,4 +1,4 @@
-import type { HDADetailed, HDCADetailed } from "@/api";
+import type { DCESummary, HDADetailed, HDCADetailed } from "@/api";
 import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
 import type { HistoryContentsResult } from "@/api/histories";
 import type { components } from "@/api/schema";
@@ -7,13 +7,17 @@ import { DatasetStateSummary } from "../Collection/DatasetStateSummary";
 
 type HistoryContentItem = HistoryContentsResult[number];
 
-function isHDCAItem(item: HistoryContentItem | HDADetailed | HDCADetailed): boolean {
+function isHDCAItem(item: HistoryContentItem | HDADetailed | HDCADetailed | DCESummary): boolean {
     return (
         item &&
         typeof item === "object" &&
         "history_content_type" in item &&
         item.history_content_type === "dataset_collection"
     );
+}
+
+function isDCEWithCollection(item: HistoryContentItem | HDADetailed | HDCADetailed | DCESummary): boolean {
+    return item && typeof item === "object" && "collection_type" in item && item.collection_type !== undefined;
 }
 
 type DatasetState = components["schemas"]["DatasetState"];
@@ -190,7 +194,7 @@ export const HIERARCHICAL_COLLECTION_DATASET_STATES = [
 ] as const satisfies readonly DatasetState[];
 
 export function getContentItemState(item: HistoryContentItem | HDADetailed | HDCADetailed): State {
-    if (isHDCAItem(item)) {
+    if (isHDCAItem(item) || isDCEWithCollection(item)) {
         if ("populated_state" in item && item.populated_state === "failed") {
             return "failed_populated_state";
         }

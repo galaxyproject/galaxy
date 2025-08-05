@@ -1049,6 +1049,17 @@ class DCObject(Model, WithModelClass):
     element_count: ElementCountField
     contents_url: Optional[ContentsUrlField] = None
     elements: list["DCESummary"] = ElementsField
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
+    )
+    elements_datatypes: set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class DCESummary(Model, WithModelClass):

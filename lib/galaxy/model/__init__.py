@@ -7018,24 +7018,36 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     @property
     def dataset_states_and_extensions_summary(self):
+        """
+        Calculate dataset states and extensions for this collection.
+        Returns (dbkeys, extensions, states, deleted) similar to HDCA method.
+        """
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
-            stmt = self._build_nested_collection_attributes_stmt(
-                hda_attributes=("extension",), dataset_attributes=("state",)
-            )
-            # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
-            stmt = stmt.add_columns(*stmt._order_by_clauses)
-            stmt = stmt.distinct()
 
+            stmt = self._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
-            states = set()
-            for extension, state, *_ in tuples:  # we discard the added columns from the order-by clause
-                states.add(state)
-                extensions.add(extension)
-
-            self._dataset_states_and_extensions_summary = (states, extensions)
-
+            dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
+            for row in tuples:
+                if row is not None:
+                    dbkey_field = row._metadata.get("dbkey")
+                    if isinstance(dbkey_field, list):
+                        for dbkey in dbkey_field:
+                            dbkeys.add(dbkey)
+                    else:
+                        dbkeys.add(dbkey_field)
+                    if row.extension:
+                        extensions.add(row.extension)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            self._dataset_states_and_extensions_summary = (dbkeys, extensions, states, deleted)
         return self._dataset_states_and_extensions_summary
 
     @property
