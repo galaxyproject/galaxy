@@ -2,7 +2,7 @@
 import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { WorkflowInvocation } from "@/api/invocations";
@@ -19,7 +19,7 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 const currentUser = computed(() => useUserStore().currentUser);
 
 const invocationStore = useInvocationStore();
-const { storedInvocations, scrollListScrollTop } = storeToRefs(invocationStore);
+const { sortedStoredInvocations, scrollListScrollTop, totalInvocationCount } = storeToRefs(invocationStore);
 
 interface Props {
     inPanel?: boolean;
@@ -49,21 +49,9 @@ async function loadInvocations(offset: number, limit: number) {
     for (const item of data) {
         invocationStore.updateInvocation(item.id, item);
     }
+    totalInvocationCount.value = totalMatches ?? 0;
     return { items: data, total: totalMatches! };
 }
-
-/** Invocations from the store, sorted by update time (to ensure when a new one is added, it appears at the top) */
-const sortedStoreInvocations = ref<WorkflowInvocation[]>([]);
-// This was the best way to ensure reactivity. Using a computed property instead was not reactive.
-watch(
-    () => storedInvocations.value,
-    (updatedInvocations) => {
-        sortedStoreInvocations.value = Object.values(updatedInvocations).sort(
-            (a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime()
-        );
-    },
-    { deep: true }
-);
 
 function historyName(historyId: string) {
     const historyStore = useHistoryStore();
@@ -116,7 +104,8 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         :loader="loadInvocations"
         :item-key="(invocation) => invocation.id"
         :in-panel="props.inPanel"
-        :prop-items="sortedStoreInvocations"
+        :prop-items="sortedStoredInvocations"
+        :prop-total-count="totalInvocationCount"
         adjust-for-total-count-changes
         name="invocation"
         name-plural="invocations"

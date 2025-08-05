@@ -62,9 +62,9 @@ const scrollableDiv = ref<HTMLElement | null>(null);
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
 // eslint-disable-next-line no-undef
-const localItems = ref<T[]>([]);
+const localItems = ref<T[]>(props.propItems || []);
 
-const localTotalItemCount = ref<number | undefined>(undefined);
+const localTotalItemCount = ref<number | undefined>(props.propTotalCount);
 const localBusy = ref(false);
 const errorMessage = ref("");
 
