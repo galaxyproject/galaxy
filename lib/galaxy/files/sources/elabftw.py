@@ -59,6 +59,7 @@ from textwrap import dedent
 from time import time
 from typing import (
     cast,
+    ClassVar,
     Generic,
     get_type_hints,
     Literal,
@@ -163,7 +164,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
     # https://github.com/galaxyproject/galaxy/pull/19319#discussion_r1928753352
     supports_search = True
     supports_sorting = True
-    config_class = eLabFTWFileSourceConfiguration
+    config_class: ClassVar[type[eLabFTWFileSourceConfiguration]] = eLabFTWFileSourceConfiguration
     config: eLabFTWFileSourceConfiguration
 
     def __init__(self, config: eLabFTWFileSourceConfiguration):

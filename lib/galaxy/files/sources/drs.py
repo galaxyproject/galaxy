@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import ClassVar
 
 from . import (
     BaseFilesSource,
@@ -20,7 +21,7 @@ class DRSFileSourceConfiguration(FilesSourceProperties):
 class DRSFilesSource(BaseFilesSource):
     plugin_type = "drs"
     plugin_kind = PluginKind.drs
-    config_class = DRSFileSourceConfiguration
+    config_class: ClassVar[type[DRSFileSourceConfiguration]] = DRSFileSourceConfiguration
     config: DRSFileSourceConfiguration
 
     def __init__(self, config: FilesSourceProperties):

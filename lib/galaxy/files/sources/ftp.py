@@ -12,10 +12,10 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class FTPFileSourcePropertiesConfiguration(FilesSourceProperties):
-    host: str
-    port: int
-    user: str
-    passwd: str
+    host: str = ""
+    port: int = 21
+    user: str = "anonymous"
+    passwd: str = ""
 
 
 class FtpFilesSource(PyFilesystem2FilesSource):

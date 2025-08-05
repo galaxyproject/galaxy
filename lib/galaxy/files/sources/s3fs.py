@@ -1,7 +1,10 @@
 import functools
 import logging
 import os
-from typing import Optional
+from typing import (
+    ClassVar,
+    Optional,
+)
 
 from galaxy import exceptions
 from . import (
@@ -35,7 +38,7 @@ class S3FSFileSourceConfiguration(FilesSourceProperties):
 
 class S3FsFilesSource(BaseFilesSource):
     plugin_type = FS_PLUGIN_TYPE
-    config_class = S3FSFileSourceConfiguration
+    config_class: ClassVar[type[S3FSFileSourceConfiguration]] = S3FSFileSourceConfiguration
     config: S3FSFileSourceConfiguration
 
     def __init__(self, config: S3FSFileSourceConfiguration):

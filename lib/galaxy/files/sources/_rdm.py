@@ -1,6 +1,7 @@
 import logging
 from typing import (
     Any,
+    ClassVar,
     NamedTuple,
     Optional,
 )
@@ -134,7 +135,7 @@ class RDMFilesSource(BaseFilesSource):
     """
 
     plugin_kind = PluginKind.rdm
-    config_class = RDMFileSourceConfiguration
+    config_class: ClassVar[type[RDMFileSourceConfiguration]] = RDMFileSourceConfiguration
     config: RDMFileSourceConfiguration
 
     def __init__(self, config: RDMFileSourceConfiguration):
