@@ -2,6 +2,7 @@ import { getGalaxyInstance } from "app";
 import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
+import DisplayCollectionAsSheet from "components/Collections/common/DisplayCollectionAsSheet";
 import DatasetList from "components/Dataset/DatasetList";
 import DatasetView from "components/Dataset/DatasetView";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
@@ -246,6 +247,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "collection/:collectionId/edit",
                         component: CollectionEditView,
+                        props: true,
+                    },
+                    {
+                        path: "collection/:collectionId/sheet",
+                        component: DisplayCollectionAsSheet,
                         props: true,
                     },
                     {

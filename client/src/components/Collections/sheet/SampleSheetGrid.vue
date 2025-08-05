@@ -36,10 +36,10 @@ import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useAgGrid } from "@/composables/useAgGrid";
 import localize from "@/utils/localization";
 
+import { type AgRowData, buildsSampleSheetGrid, toAgGridColumnDefinition } from "./useSampleSheetGrid";
+
 import UploadSelect from "@/components/Upload//UploadSelect.vue";
 import UploadSelectExtension from "@/components/Upload/UploadSelectExtension.vue";
-
-type AgRowData = Record<string, unknown>;
 
 interface Props {
     currentHistoryId: string;
@@ -120,14 +120,7 @@ function initializeRowData(rowData: AgRowData[]) {
     }
 }
 
-// Example Row Data
-// const rowData = ref([{ "replicate number": 1, treatment: "treatment1", "is control?": true }]);
-const rowData = ref<AgRowData[]>([]);
-
-function initialize() {
-    rowData.value.splice(0, rowData.value.length);
-    initializeRowData(rowData.value);
-}
+const { rowData, initialize, sampleSheetStyle } = buildsSampleSheetGrid(initializeRowData);
 
 const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
 
@@ -232,22 +225,10 @@ function generateGridColumnDefs(columnDefinitions: SampleSheetColumnDefinitions)
         }
     }
     (columnDefinitions || []).forEach((colDef) => {
-        const headerDescription = colDef.description || colDef.name;
-        const hasCustomHeaderDescription = headerDescription != colDef.name;
-        let headerClass = "";
-        if (hasCustomHeaderDescription) {
-            headerClass = "ag-grid-column-has-custom-header-description";
-        }
-        const baseDef: ColDef = {
-            headerName: colDef.name,
-            headerTooltip: colDef.description || colDef.name,
-            headerClass,
-            field: colDef.name,
-            editable: true,
-            cellEditorParams: {},
-            valueSetter: (params) => {
-                return valueSetter(params, colDef);
-            },
+        const baseDef = toAgGridColumnDefinition(colDef);
+        baseDef.editable = true;
+        baseDef.valueSetter = (params) => {
+            return valueSetter(params, colDef);
         };
 
         // Restrictions: Add dropdown editor for string type with restrictions
@@ -342,10 +323,6 @@ const defaultColDef = ref<ColDef>({
     sortable: true,
     filter: true,
     resizable: true,
-});
-
-const style = computed(() => {
-    return { width: "100%", height: "500px" };
 });
 
 const emit = defineEmits<{
@@ -615,7 +592,7 @@ defineExpose({ attemptCreate });
             :row-data="rowData"
             :column-defs="columnDefs"
             :default-col-def="defaultColDef"
-            :style="style"
+            :style="sampleSheetStyle"
             @gridReady="onGridReady" />
         <BRow align-h="center" style="margin-top: 10px">
             <BCol v-if="showExtension" cols="4">

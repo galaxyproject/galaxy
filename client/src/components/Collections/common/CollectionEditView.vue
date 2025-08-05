@@ -11,8 +11,8 @@ import { GalaxyApi } from "@/api";
 import { updateContentFields } from "@/components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
+import { useDetailedCollection } from "@/composables/datasetCollections";
 import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
-import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
@@ -40,7 +40,7 @@ const collectionAttributesStore = useCollectionAttributesStore();
 const historyStore = useHistoryStore();
 const { currentHistoryId } = storeToRefs(historyStore);
 
-const collectionStore = useCollectionElementsStore();
+const { collection, collectionLoadError } = useDetailedCollection(props);
 
 const jobError = ref(null);
 const errorMessage = ref("");
@@ -63,18 +63,6 @@ const attributesLoadError = computed(() => {
     return undefined;
 });
 
-const collection = computed(() => {
-    return collectionStore.getCollectionById(props.collectionId);
-});
-const collectionLoadError = computed(() => {
-    if (collection.value) {
-        const collectionElementLoadError = collectionStore.getLoadingCollectionElementsError(collection.value);
-        if (collectionElementLoadError) {
-            return errorMessageAsString(collectionElementLoadError);
-        }
-    }
-    return undefined;
-});
 watch([attributesLoadError, collectionLoadError], () => {
     if (attributesLoadError.value) {
         errorMessage.value = attributesLoadError.value;
