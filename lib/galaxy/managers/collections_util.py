@@ -182,6 +182,13 @@ def dictify_element_reference(
             object_details["element_count"] = element_object.element_count
             object_details["populated"] = element_object.populated_optimized
 
+            # Add hierarchical state information for intermediate collections
+            # Add elements_states and intermediate_states from DatasetCollection
+            dataset_summary = element_object.dataset_states_and_extensions_summary
+            object_details["elements_states"] = dataset_summary[2]  # states
+            object_details["elements_deleted"] = dataset_summary[3]  # deleted count
+            object_details["elements_datatypes"] = dataset_summary[1]  # extensions
+
             # Recursively yield elements for each nested collection...
             if recursive:
                 elements, rest_fuzzy_counts = get_fuzzy_count_elements(element_object, rank_fuzzy_counts)

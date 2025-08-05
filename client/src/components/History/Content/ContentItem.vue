@@ -97,7 +97,7 @@ const itemIsRunningInteractiveTool = computed(() => {
 });
 
 const contentId = computed(() => {
-    return `dataset-${props.item.id}`;
+    return isCollection.value ? `collection-${props.item.id}` : `dataset-${props.item.id}`;
 });
 
 const contentCls = computed(() => {
@@ -159,7 +159,7 @@ const tagsDisabled = computed(() => {
 });
 
 const isCollection = computed(() => {
-    return "collection_type" in props.item;
+    return "collection_type" in props.item || props.item.element_type === "dataset_collection";
 });
 
 const itemUrls = computed<ItemUrls>(() => {

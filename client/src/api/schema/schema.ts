@@ -8942,6 +8942,18 @@ export interface components {
              */
             elements: components["schemas"]["DCESummary"][];
             /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
+            /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
              */
