@@ -236,6 +236,43 @@ function onCancelExtract() {
     workflowExtractionData.value = null;
 }
 
+function onRenameInputExtract(id: number, to: string) {
+    assertDefined(workflowExtractionData.value);
+
+    const step = workflowExtractionData.value.partialWorkflow.steps[id];
+    assertDefined(step);
+
+    step.label = to;
+
+    const connection = workflowExtractionData.value.inputReconnectionMap.find(
+        ({ label: _, connection }) => connection.id === id
+    );
+
+    if (connection) {
+        connection.label = to;
+    }
+}
+
+function onRenameOutputExtract(id: number, name: string, to: string) {
+    assertDefined(workflowExtractionData.value);
+
+    const step = workflowExtractionData.value.partialWorkflow.steps[id];
+    assertDefined(step);
+
+    const output = step.workflow_outputs?.find((o) => o.output_name === name);
+    assertDefined(output);
+
+    output.label = to;
+
+    const mappedConnection = workflowExtractionData.value.outputReconnectionMap.find(
+        ({ connection, internalOutputName }) => connection.id === id && internalOutputName === name
+    );
+
+    if (mappedConnection) {
+        mappedConnection.connection.output_name = to;
+    }
+}
+
 async function onOkExtract() {
     const { partialWorkflow, inputReconnectionMap, outputReconnectionMap } = ensureDefined(
         workflowExtractionData.value
@@ -452,7 +489,9 @@ function autoLayout() {
                     :expanded-steps="workflowExtractionData.expandedSteps"
                     @ok="onOkExtract"
                     @rename="onRenameExtract"
-                    @cancel="onCancelExtract" />
+                    @cancel="onCancelExtract"
+                    @renameInput="onRenameInputExtract"
+                    @renameOutput="onRenameOutputExtract" />
             </div>
 
             <div

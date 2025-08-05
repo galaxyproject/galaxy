@@ -29,6 +29,8 @@ const emit = defineEmits<{
     (e: "rename", name: string): void;
     (e: "renameInput", id: number, to: string): void;
     (e: "renameOutput", id: number, name: string, to: string): void;
+    (e: "ok"): void;
+    (e: "cancel"): void;
 }>();
 
 const connections = computed(() => {
@@ -52,7 +54,7 @@ const inputs = computed(() => {
         (["parameter_input", "data_input", "data_collection_input"] as Array<NewStep["type"]>).includes(step.type)
     );
 
-    const inputLabels = new Set(Object.keys(props.inputMap));
+    const inputLabels = new Set(props.inputMap.map((input) => input.label));
 
     const inputStepSummaries = inputSteps.map((step) => {
         return {
@@ -143,7 +145,13 @@ defineExpose({
 </script>
 
 <template>
-    <GModal ref="modal" title="Review extracted Sub-Workflow" confirm ok-text="Create Subworkflow">
+    <GModal
+        ref="modal"
+        title="Review extracted Sub-Workflow"
+        confirm
+        ok-text="Create Subworkflow"
+        @ok="emit('ok')"
+        @cancel="emit('cancel')">
         <p>
             A new sub-workflow will be created from the selection. Review the new workflow below and make any changes as
             required.

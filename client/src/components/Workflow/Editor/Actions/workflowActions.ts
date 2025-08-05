@@ -518,17 +518,17 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
 
         // reconnect inputs
 
-        const inputConnections = Object.entries(inputReconnectionMap).map(([inputName, outputLink]) => {
+        const inputConnections = inputReconnectionMap.map(({ label, connection }) => {
             const input: InputTerminal = {
                 connectorType: "input",
-                name: inputName,
+                name: label,
                 stepId,
             };
 
             const output: OutputTerminal = {
                 connectorType: "output",
-                name: outputLink.output_name,
-                stepId: outputLink.id,
+                name: connection.output_name,
+                stepId: connection.id,
             };
 
             return {

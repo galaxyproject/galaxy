@@ -93,7 +93,7 @@ function prettifyInputName(
 const OUTPUT_TO_NODE_POSITION_CORRECTION = { top: -73, left: -3 };
 
 /** converts an output connection link at the beginning of a workflow subset into an input step */
-async function outputConnectionToStep(
+async function inputConnectionToStep(
     link: ConnectionOutputLink,
     allSteps: Record<number, Step>,
     searchStore: WorkflowSearchStore,
@@ -169,7 +169,7 @@ function outputConnectionsToWorkflowOutputs(
     indexOffset = 0
 ) {
     const newSteps = structuredClone(steps);
-    const newConnections: { connection: ConnectionOutputLink; name: string; nodeId: number }[] = [];
+    const newConnections: OutputReconnectionMap = [];
 
     const allOutputLabels = new Set(
         steps.flatMap((step) => {
@@ -203,6 +203,7 @@ function outputConnectionsToWorkflowOutputs(
             },
             name,
             nodeId,
+            internalOutputName: connection.output_name,
         };
 
         newConnections.push(newConnection);
@@ -212,13 +213,15 @@ function outputConnectionsToWorkflowOutputs(
 }
 
 export type InputReconnectionMap = {
-    [label: string]: ConnectionOutputLink;
-};
+    label: string;
+    connection: ConnectionOutputLink;
+}[];
 
 export type OutputReconnectionMap = {
     connection: ConnectionOutputLink;
     name: string;
     nodeId: number;
+    internalOutputName: string;
 }[];
 
 export async function convertOpenConnections(
@@ -244,7 +247,7 @@ export async function convertOpenConnections(
 
     const inputBaseSteps = await Promise.all(
         openInputConnections.map((connection, index) =>
-            outputConnectionToStep(connection, allSteps, searchStore, index, allLabelsInSelection)
+            inputConnectionToStep(connection, allSteps, searchStore, index, allLabelsInSelection)
         )
     );
 
@@ -255,12 +258,10 @@ export async function convertOpenConnections(
         connection.output_name = ensureDefined(inputBaseSteps[index]?.outputs[0]?.name);
     });
 
-    const inputReconnectionMap: InputReconnectionMap = Object.fromEntries(
-        inputBaseSteps.map((step, index) => {
-            assertDefined(step.label);
-            return [step.label, ensureDefined(unmodifiedConnections[index])];
-        })
-    );
+    const inputReconnectionMap: InputReconnectionMap = inputBaseSteps.map((step, index) => {
+        assertDefined(step.label);
+        return { label: step.label, connection: ensureDefined(unmodifiedConnections[index]) };
+    });
 
     // convert output connections to outputs
 
