@@ -245,8 +245,16 @@ export async function convertOpenConnections(
         })
     );
 
+    const uniqueOpenConnections = openInputConnections.reduce<ConnectionOutputLink[]>((accumulator, connection) => {
+        if (!accumulator.find((c) => c.id === connection.id)) {
+            accumulator.push(connection);
+        }
+
+        return accumulator;
+    }, []);
+
     const inputBaseSteps = await Promise.all(
-        openInputConnections.map((connection, index) =>
+        uniqueOpenConnections.map((connection, index) =>
             inputConnectionToStep(connection, allSteps, searchStore, index, allLabelsInSelection)
         )
     );
@@ -254,8 +262,10 @@ export async function convertOpenConnections(
     const unmodifiedConnections = structuredClone(openInputConnections);
 
     // modify the connections to have the correct output name
-    openInputConnections.forEach((connection, index) => {
-        connection.output_name = ensureDefined(inputBaseSteps[index]?.outputs[0]?.name);
+    openInputConnections.forEach((connection) => {
+        const step = inputBaseSteps.find((s) => s.id === connection.id);
+        const name = step?.outputs[0]?.name;
+        connection.output_name = ensureDefined(name);
     });
 
     const inputReconnectionMap: InputReconnectionMap = inputBaseSteps.map((step, index) => {
