@@ -96,7 +96,7 @@ watch(
     async (newQuery) => {
         await toolStore.fetchTools(newQuery);
     },
-    { deep: true, immediate: true }
+    { deep: true, immediate: true },
 );
 </script>
 
