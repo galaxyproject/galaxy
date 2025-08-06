@@ -4,36 +4,38 @@ import os
 import time
 from enum import Enum
 from typing import (
-    Annotated,
     Any,
     ClassVar,
+    Generic,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
-
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-)
-from typing_extensions import Literal
 
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
-from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    COMMON_FILE_SOURCE_PROP_NAMES,
+    Entry,
+    EntryData,
+    FilesSourceOptions,
+    FilesSourceProperties,
+    resolve_file_source_template,
+    RuntimeContext,
+    TResolvedConfig,
+    TTemplateConfig,
+    UserData,
+)
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
 )
-from galaxy.util.config_templates import partial_model
-from galaxy.util.template import fill_template
 
-DEFAULT_SCHEME = "gxfiles"
-DEFAULT_WRITABLE = False
 DEFAULT_PAGE_LIMIT = 25
 
 if TYPE_CHECKING:
@@ -41,37 +43,6 @@ if TYPE_CHECKING:
         FileSourcesUserContext,
         OptionalUserContext,
     )
-
-
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class FlexibleModel(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-
-class UserData:
-    """User data exposed to file sources."""
-
-    def __init__(self, context: "OptionalUserContext" = None):
-        self.context = context
-
-    @property
-    def email(self) -> Optional[str]:
-        return self.context.email if self.context else None
-
-    @property
-    def username(self) -> Optional[str]:
-        return self.context.username if self.context else None
-
-    @property
-    def is_admin(self) -> bool:
-        return self.context.is_admin if self.context else False
-
-    @property
-    def is_anonymous(self) -> bool:
-        return self.context.anonymous if self.context else True
 
 
 class PluginKind(str, Enum):
@@ -106,220 +77,6 @@ class PluginKind(str, Enum):
     A stock plugin is a file source that is shipped with Galaxy and covers common
     use cases. Examples include the UserFTP, LibraryImport, UserLibraryImport, etc.
     """
-
-
-class FileSourceSupports(StrictModel):
-    """Feature support flags for a file source plugin"""
-
-    pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
-    search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
-    sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
-
-
-class FilesSourceProperties(StrictModel):
-    """Initial set of properties used to initialize a file source.
-
-    File sources can extend this model to define any additional
-    filesource specific properties.
-    """
-
-    id: Annotated[
-        str,
-        Field(
-            ...,
-            description="The `FilesSource` plugin identifier",
-        ),
-    ]
-    type: Annotated[
-        str,
-        Field(
-            ...,
-            description="The type of the plugin.",
-        ),
-    ]
-    label: Annotated[
-        Optional[str],
-        Field(
-            ...,
-            description="The display label for this plugin.",
-        ),
-    ] = "Unlabeled File Source"
-    doc: Annotated[
-        Optional[str],
-        Field(
-            None,
-            title="Documentation",
-            description="Documentation or extended description for this plugin.",
-        ),
-    ] = None
-    browsable: Annotated[
-        bool,
-        Field(
-            ...,
-            title="Browsable",
-            description="Whether this file source plugin can list items.",
-        ),
-    ] = False
-    writable: Annotated[
-        bool,
-        Field(
-            ...,
-            title="Writeable",
-            description="Whether this files source plugin allows write access.",
-        ),
-    ] = DEFAULT_WRITABLE
-    requires_roles: Annotated[
-        Optional[str],
-        Field(
-            None,
-            title="Requires roles",
-            description=(
-                "Only users with the roles specified here can access this source."
-                " This is a boolean expression that can be evaluated by the server."
-                " It can be a simple role name or a complex expression."
-                " For example, 'role1 and (role2 or role3)' will allow access if the user has role1 and either role2 or role3."
-            ),
-        ),
-    ] = None
-    requires_groups: Annotated[
-        Optional[str],
-        Field(
-            None,
-            title="Requires groups",
-            description=(
-                "Only users belonging to the groups specified here can access this source."
-                " This is a boolean expression that can be evaluated by the server."
-                " It can be a simple group name or a complex expression."
-                " For example, 'group1 and (group2 or group3)' will allow access if the user belongs to group1 and either group2 or group3."
-            ),
-        ),
-    ] = None
-    disable_templating: Annotated[
-        Optional[bool],
-        Field(
-            False,
-            title="Disable Templating",
-            description=(
-                "Whether to disable templating for this file source. If set to True, "
-                "the file source will not support templating in paths or other properties."
-            ),
-        ),
-    ] = False
-    scheme: Annotated[
-        Optional[str],
-        Field(
-            DEFAULT_SCHEME,
-            title="Scheme",
-            description="The URI scheme used by this file source plugin.",
-        ),
-    ] = DEFAULT_SCHEME
-    uri_root: Annotated[
-        Optional[str],
-        Field(
-            None,
-            title="URI root",
-            description=(
-                "The URI root used by this type of plugin. This is used to identify the file source and "
-                "should be unique across all file sources."
-            ),
-        ),
-    ] = None
-    url: Annotated[
-        Optional[str],
-        Field(
-            None,
-            title="URL",
-            description="Optional URL that might be provided by some plugins to link to the remote source.",
-        ),
-    ] = None
-    supports: Annotated[
-        FileSourceSupports,
-        Field(
-            default_factory=FileSourceSupports,
-            description="Features supported by this file source.",
-        ),
-    ] = FileSourceSupports()
-    file_sources_config: Annotated[
-        FileSourcePluginsConfig,
-        Field(
-            ...,
-            description="Configuration for the file sources, used to validate and initialize the file source.",
-        ),
-    ]
-
-
-@partial_model()
-class PartialFilesSourceProperties(FilesSourceProperties):
-    """Partial model for FilesSourceProperties to allow partial updates."""
-
-    # We allow extra properties to be set in the model because each file source may have its own specific properties.
-    model_config = ConfigDict(extra="allow")
-
-
-class FilesSourceOptions(StrictModel):
-    """Options to control behavior of file source operations, such as realize_to, write_from and list."""
-
-    writeable: Annotated[
-        bool,
-        Field(
-            False,
-            description=(
-                "Whether the query is made with the intention of writing to the source."
-                " If set to True, only entries (directories) that can be written to will be returned."
-                " This is used to filter out read-only locations within the file source when listing entries."
-            ),
-        ),
-    ] = False
-
-    # Property overrides for values initially configured through the constructor. For example
-    # the HTTPFilesSource passes in additional http_headers through these properties, which
-    # are merged with constructor defined http_headers. The interpretation of these properties
-    # are filesystem specific.
-    extra_props: Annotated[
-        Optional[PartialFilesSourceProperties],
-        Field(
-            description="Additional properties to override the initial properties defined in the constructor.",
-        ),
-    ] = None
-
-
-class EntryData(FlexibleModel):
-    """Provides data to create a new entry in a file source."""
-
-    name: str
-    # May contain additional properties depending on the file source
-
-
-class Entry(FlexibleModel):
-    """Represents the result of creating a new entry in a file source."""
-
-    name: str
-    uri: str
-    # May contain additional properties depending on the file source
-    external_link: Optional[str]
-
-
-class RemoteEntry(StrictModel):
-    """Represents a remote entry in a file source, either a directory or a file."""
-
-    name: str
-    uri: str
-    path: str
-
-
-class RemoteDirectory(RemoteEntry):
-    class_: Annotated[Literal["Directory"], Field(..., serialization_alias="class")] = "Directory"
-
-
-class RemoteFile(RemoteEntry):
-    class_: Annotated[Literal["File"], Field(..., serialization_alias="class")] = "File"
-    size: Annotated[int, Field(..., title="Size", description="The size of the file in bytes.")] = 0
-    ctime: Annotated[
-        Optional[str], Field(default="Unknown", title="Creation time", description="The creation time of the file.")
-    ]
-
-
-AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):

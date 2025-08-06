@@ -14,7 +14,6 @@ from typing import (
 )
 
 import yaml
-from pydantic import BaseModel
 
 from galaxy.util import parse_xml
 from galaxy.util.path import StrPath
@@ -102,7 +101,7 @@ def __load_plugins_from_element(
 def __as_configurable_plugin_instance(obj: Any) -> Optional[Type]:
     """Check if the class implements the configurable plugin pattern."""
     try:
-        if isinstance(obj, type) and hasattr(obj, "config_class") and issubclass(obj.config_class, BaseModel):
+        if isinstance(obj, type) and hasattr(obj, "build_template_config"):
             return obj
     except TypeError:
         pass
@@ -113,8 +112,8 @@ def __create_plugin_instance(plugin_class: Type[T], plugin_kwds: dict[str, Any])
     """Create an instance of the plugin class with the provided keyword arguments."""
     configurable_instance = __as_configurable_plugin_instance(plugin_class)
     if configurable_instance:
-        plugin_config = configurable_instance.config_class(**plugin_kwds)
-        return configurable_instance(config=plugin_config)
+        plugin_template_config = configurable_instance.build_template_config(**plugin_kwds)
+        return configurable_instance(template_config=plugin_template_config)
     else:
         return plugin_class(**plugin_kwds)
 
