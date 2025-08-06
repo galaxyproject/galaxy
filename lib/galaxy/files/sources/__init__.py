@@ -265,7 +265,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def __init__(self, template_config: TTemplateConfig):
         self.template_config = template_config
-        self.user_data: Optional[UserData] = None
+        self.user_data = UserData(context=None)
         self._parse_common_props(self.template_config)
         self._resolved_config: Optional[TResolvedConfig] = None
 
@@ -391,7 +391,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         if self.get_url() is not None:
             rval["url"] = self.get_url()
         if for_serialization:
-            self.user_data = UserData(context=user_context)
+            self._update_config_with_user_context(user_context=user_context)
             rval.update(
                 self.config.model_dump(
                     exclude_unset=True,
@@ -434,7 +434,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self.template_config = self.template_config.model_copy(update=overrides)
 
     def _resolve_config_with_templates(self) -> TResolvedConfig:
-        if self.disable_templating or self.user_data is None:
+        if self.disable_templating or self.user_data.context is None:
             # Convert template config to resolved config without template evaluation
             config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
             return self.resolved_config_class(**config_dict)
