@@ -19,18 +19,18 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from galaxy.files.sources import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    DEFAULT_PAGE_LIMIT,
-    DEFAULT_SCHEME,
     Entry,
     EntryData,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.files.sources import DEFAULT_PAGE_LIMIT
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._rdm import (
     ContainerAndFileIdentifier,
-    RDMFileSourceConfiguration,
+    RDMFileSourceTemplateConfiguration,
     RDMFilesSource,
     RDMRepositoryInteractor,
 )
@@ -126,8 +126,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
     supports_search = True
     rdm_scheme = "invenio"
 
-    def __init__(self, config: RDMFileSourceConfiguration):
-        super().__init__(config)
+    def __init__(self, template_config: RDMFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
         self.repository: InvenioRepositoryInteractor
 

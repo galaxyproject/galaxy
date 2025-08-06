@@ -13,19 +13,17 @@ from typing_extensions import TypedDict
 
 from galaxy.exceptions import AuthenticationRequired
 from galaxy.files.models import (
+    AnyRemoteEntry,
+    Entry,
+    EntryData,
     RemoteDirectory,
     RemoteFile,
 )
-from galaxy.files.sources import (
-    AnyRemoteEntry,
-    DEFAULT_PAGE_LIMIT,
-    Entry,
-    EntryData,
-)
+from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._rdm import (
     ContainerAndFileIdentifier,
-    RDMFileSourceConfiguration,
+    RDMFileSourceTemplateConfiguration,
     RDMFilesSource,
     RDMRepositoryInteractor,
 )
@@ -67,8 +65,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
     supports_pagination = True
     supports_search = True
 
-    def __init__(self, config: RDMFileSourceConfiguration):
-        super().__init__(config)
+    def __init__(self, template_config: RDMFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
         self.repository: DataverseRepositoryInteractor
 
