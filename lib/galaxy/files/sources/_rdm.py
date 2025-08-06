@@ -1,23 +1,32 @@
 import logging
 from typing import (
     Any,
-    ClassVar,
     NamedTuple,
     Optional,
+    Union,
 )
 
-from galaxy.files.sources import (
-    BaseFilesSource,
-    FilesSourceProperties,
-    PluginKind,
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
+from galaxy.util.config_templates import TemplateExpansion
 
 log = logging.getLogger(__name__)
 
 
-class RDMFileSourceConfiguration(FilesSourceProperties):
+class RDMFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    token: Union[str, TemplateExpansion]
+    public_name: Union[str, TemplateExpansion]
+
+
+class RDMFileSourceConfiguration(BaseFileSourceConfiguration):
     token: str
     public_name: str
 
@@ -120,7 +129,7 @@ class RDMRepositoryInteractor:
         raise NotImplementedError()
 
 
-class RDMFilesSource(BaseFilesSource):
+class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFileSourceConfiguration]):
     """Base class for Research Data Management (RDM) file sources.
 
     This class is not intended to be used directly, but rather to be subclassed
@@ -135,11 +144,12 @@ class RDMFilesSource(BaseFilesSource):
     """
 
     plugin_kind = PluginKind.rdm
-    config_class: ClassVar[type[RDMFileSourceConfiguration]] = RDMFileSourceConfiguration
-    config: RDMFileSourceConfiguration
 
-    def __init__(self, config: RDMFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = RDMFileSourceTemplateConfiguration
+    resolved_config_class = RDMFileSourceConfiguration
+
+    def __init__(self, template_config: RDMFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         if not self.config.url:
             raise Exception("URL for RDM repository must be provided in configuration")
         self._repository_interactor = self.get_repository_interactor(self.config.url)
