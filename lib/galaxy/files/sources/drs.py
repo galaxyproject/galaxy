@@ -1,10 +1,14 @@
 import logging
 import re
-from typing import ClassVar
+from typing import Union
 
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from . import (
     BaseFilesSource,
-    FilesSourceProperties,
     PluginKind,
 )
 from .util import fetch_drs_to_file
@@ -12,27 +16,34 @@ from .util import fetch_drs_to_file
 log = logging.getLogger(__name__)
 
 
-class DRSFileSourceConfiguration(FilesSourceProperties):
+class DRSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    url_regex: Union[str, TemplateExpansion] = r"^drs://"
+    force_http: Union[bool, TemplateExpansion] = False
+    http_headers: Union[dict[str, str], TemplateExpansion] = {}
+
+
+class DRSFileSourceConfiguration(BaseFileSourceConfiguration):
     url_regex: str = r"^drs://"
     force_http: bool = False
     http_headers: dict[str, str] = {}
 
 
-class DRSFilesSource(BaseFilesSource):
+class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFileSourceConfiguration]):
     plugin_type = "drs"
     plugin_kind = PluginKind.drs
-    config_class: ClassVar[type[DRSFileSourceConfiguration]] = DRSFileSourceConfiguration
-    config: DRSFileSourceConfiguration
 
-    def __init__(self, config: FilesSourceProperties):
-        super().__init__(config)
+    template_config_class = DRSFileSourceTemplateConfiguration
+    resolved_config_class = DRSFileSourceConfiguration
+
+    def __init__(self, template_config: DRSFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_drs",
             label="DRS file",
             doc="DRS file handler",
             writable=False,
         )
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
         assert self.config.url_regex, "DRSFilesSource requires a url_regex to be set in the configuration"
         self._url_regex = re.compile(self.config.url_regex)
 
