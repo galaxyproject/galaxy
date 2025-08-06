@@ -4,8 +4,8 @@ from typing import Optional
 
 from galaxy.files.sources import PluginKind
 from .posix import (
-    PosixFileSourceConfiguration,
     PosixFilesSource,
+    PosixTemplateConfiguration,
 )
 
 
@@ -13,8 +13,8 @@ class UserFtpFilesSource(PosixFilesSource):
     plugin_type = "gxftp"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, config: PosixFileSourceConfiguration):
-        super().__init__(config)
+    def __init__(self, template_config: PosixTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_ftp",
             root="${user.ftp_dir}",
@@ -22,7 +22,7 @@ class UserFtpFilesSource(PosixFilesSource):
             doc="Galaxy User's FTP Directory",
             writable=True,
         )
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
         if not self.config.delete_on_realize:
             self.config.delete_on_realize = self.config.file_sources_config.ftp_upload_purge
 
@@ -37,15 +37,15 @@ class LibraryImportFilesSource(PosixFilesSource):
     plugin_type = "gximport"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, config: PosixFileSourceConfiguration):
-        super().__init__(config)
+    def __init__(self, template_config: PosixTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_import",
             root="${config.library_import_dir}",
             label="Library Import Directory",
             doc="Galaxy's library import directory",
         )
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
 
     def get_prefix(self) -> Optional[str]:
         return None
@@ -58,15 +58,15 @@ class UserLibraryImportFilesSource(PosixFilesSource):
     plugin_type = "gxuserimport"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, config: PosixFileSourceConfiguration):
-        super().__init__(config)
+    def __init__(self, template_config: PosixTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_userimport",
             root="${config.user_library_import_dir}/${user.email}",
             label="Library User Import Directory",
             doc="Galaxy's user library import directory",
         )
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
 
     def get_prefix(self) -> Optional[str]:
         return None
