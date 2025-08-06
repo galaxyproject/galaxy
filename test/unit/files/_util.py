@@ -10,8 +10,8 @@ from galaxy.files import (
     DictFileSourcesUserContext,
     OptionalUserContext,
 )
+from galaxy.files.models import AnyRemoteEntry
 from galaxy.files.plugins import FileSourcePluginsConfig
-from galaxy.files.sources import AnyRemoteEntry
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"

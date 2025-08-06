@@ -27,6 +27,7 @@ from galaxy.files import (
     ProvidesFileSourcesUserContext,
     UserDefinedFileSources,
 )
+from galaxy.files.models import FilesSourceProperties
 from galaxy.files.plugins import (
     FileSourcePluginLoader,
     FileSourcePluginsConfig,
@@ -34,7 +35,6 @@ from galaxy.files.plugins import (
 from galaxy.files.sources import (
     BaseFilesSource,
     file_source_type_is_browsable,
-    FilesSourceProperties,
     PluginKind,
     SupportsBrowsing,
 )
