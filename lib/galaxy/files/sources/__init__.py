@@ -240,16 +240,65 @@ def file_source_type_is_browsable(target_type: type["BaseFilesSource"]) -> bool:
     return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
 
 
-class BaseFilesSource(FilesSource):
+class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
+    """A base class for file sources that can resolve a template configuration to a specific configuration.
+
+    Implementations of this class should define 2 configuration models and assing them to the
+    `template_config_class` and `resolved_config_class` class variables.
+
+    The `template_config_class` should be a subclass of `BaseFileSourceTemplateConfiguration` and
+    the `resolved_config_class` should be a subclass of `BaseFileSourceConfiguration`.
+
+    Assuming a File Source named `MyFileSource`:
+    - `MyFileSourceTemplateConfiguration`: A template configuration class that defines the template variables.
+    - `MyFileSourceConfiguration`: A resolved configuration class that defines the final configuration after template resolution.
+    """
+
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
-    config_class: ClassVar[type[FilesSourceProperties]] = FilesSourceProperties
 
-    def __init__(self, config: FilesSourceProperties):
-        self._parse_common_props(config)
-        self.config = config
+    # Implementations must define these classes with their specific configuration models.
+    template_config_class: type[TTemplateConfig]
+    resolved_config_class: type[TResolvedConfig]
+
+    def __init__(self, template_config: TTemplateConfig):
+        self.template_config = template_config
+        self.user_data: Optional[UserData] = None
+        self._parse_common_props(self.template_config)
+        self._resolved_config: Optional[TResolvedConfig] = None
+
+    @classmethod
+    def build_template_config(cls, **kwargs) -> TTemplateConfig:
+        """Build a template configuration instance from the provided keyword arguments."""
+        cls._ensure_config_models_defined()
+        return cls.template_config_class(**kwargs)
+
+    @classmethod
+    def _ensure_config_models_defined(cls):
+        try:
+            _ = cls.resolved_config_class
+        except AttributeError:
+            raise NotImplementedError(
+                f"Resolved configuration class not defined for plugin type '{cls.plugin_type}'. "
+                "Subclasses of BaseFilesSource must set 'resolved_config_class'."
+            )
+
+        try:
+            _ = cls.template_config_class
+        except AttributeError:
+            raise NotImplementedError(
+                f"Template configuration class not defined for plugin type '{cls.plugin_type}'. "
+                "Subclasses of BaseFilesSource must set 'template_config_class'."
+            )
+
+    @property
+    def config(self) -> TResolvedConfig:
+        if self._resolved_config is None:
+            # Fall back to resolving the configuration without user context
+            self._resolved_config = self._resolve_config_with_templates()
+        return self._resolved_config
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -318,7 +367,6 @@ class BaseFilesSource(FilesSource):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
-        self.user_data: Optional[UserData] = None
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         rval: dict[str, Any] = {
@@ -344,7 +392,13 @@ class BaseFilesSource(FilesSource):
             rval["url"] = self.get_url()
         if for_serialization:
             self.user_data = UserData(context=user_context)
-            rval.update(self._serialization_props(user_context=user_context))
+            rval.update(
+                self.config.model_dump(
+                    exclude_unset=True,
+                    exclude_none=True,
+                    exclude=COMMON_FILE_SOURCE_PROP_NAMES,
+                )
+            )
         return rval
 
     def to_dict_time(self, ctime) -> Optional[str]:
@@ -355,24 +409,6 @@ class BaseFilesSource(FilesSource):
         else:
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
-    def _evaluate_config_props(self, user_context: "OptionalUserContext") -> dict[str, Any]:
-        """Evaluate properties that may contain templated values."""
-        effective_props = {}
-        if self.disable_templating:
-            return effective_props
-
-        for key, val in self.config.model_dump(
-            exclude_unset=True, exclude_none=True, exclude={"file_sources_config"}
-        ).items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
-
-    def _serialization_props(self, user_context: "OptionalUserContext") -> dict[str, Any]:
-        """Serialize properties needed to recover plugin configuration.
-        Used in to_dict method if for_serialization is True.
-        """
-        return self._evaluate_config_props(user_context)
-
     def _update_config_with_user_context(
         self,
         opts: Optional[FilesSourceOptions] = None,
@@ -382,12 +418,33 @@ class BaseFilesSource(FilesSource):
         Ensures that the configuration is updated with any extra properties provided in the options and
         evaluates any properties that need to be computed based on the user context from template variables.
         """
-        if opts and opts.extra_props:
-            extra_props = opts.extra_props
-            self.config = self.config.model_copy(update=extra_props.model_dump(exclude_unset=True), deep=True)
-        evaluated_props = self._evaluate_config_props(user_context)
-        self.config = self.config.model_copy(update=evaluated_props, deep=True)
+        # Ensure user context is updated
         self.user_data = UserData(context=user_context)
+
+        # Update template config with extra properties if provided
+        if opts and opts.extra_props:
+            extra_props = opts.extra_props.model_dump(exclude_unset=True)
+            self._override_template_config(extra_props)
+
+        # Resolve the configuration with templates and user context
+        self._resolved_config = self._resolve_config_with_templates()
+
+    def _override_template_config(self, overrides: dict[str, Any]) -> None:
+        """Override the template configuration with the provided overrides."""
+        self.template_config = self.template_config.model_copy(update=overrides)
+
+    def _resolve_config_with_templates(self) -> TResolvedConfig:
+        if self.disable_templating or self.user_data is None:
+            # Convert template config to resolved config without template evaluation
+            config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
+            return self.resolved_config_class(**config_dict)
+
+        runtime_context = RuntimeContext(
+            user_data=self.user_data,
+            environment=dict(os.environ),
+            file_sources_config=self._file_sources_config,
+        )
+        return resolve_file_source_template(self.template_config, self.resolved_config_class, runtime_context)
 
     def list(
         self,
@@ -492,27 +549,6 @@ class BaseFilesSource(FilesSource):
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
-    def _evaluate_prop(self, prop_val: Any, user_context: "OptionalUserContext"):
-        rval = prop_val
-
-        # just return if we've disabled templating for this plugin
-        if self.disable_templating:
-            return rval
-
-        if isinstance(prop_val, str) and "$" in prop_val:
-            template_context = dict(
-                user=user_context,
-                environ=os.environ,
-                config=self._file_sources_config,
-            )
-            rval = fill_template(prop_val, context=template_context, futurized=True)
-        elif isinstance(prop_val, dict):
-            rval = {key: self._evaluate_prop(childprop, user_context) for key, childprop in prop_val.items()}
-        elif isinstance(prop_val, list):
-            rval = [self._evaluate_prop(childprop, user_context) for childprop in prop_val]
-
-        return rval
-
     def _user_has_required_roles(self, user_context: "FileSourcesUserContext") -> bool:
         if self.requires_roles:
             return self._evaluate_security_rules(self.requires_roles, user_context.role_names)
@@ -554,3 +590,10 @@ def uri_join(*args: str) -> str:
 def slash_join(*args: str) -> str:
     # https://codereview.stackexchange.com/questions/175421/joining-strings-to-form-a-url
     return "/".join(arg.strip("/") for arg in args)
+
+
+class DefaultBaseFilesSource(BaseFilesSource[BaseFileSourceTemplateConfiguration, BaseFileSourceConfiguration]):
+    """A default implementation of BaseFilesSource that uses the base configuration models without any custom configuration."""
+
+    template_config_class = BaseFileSourceTemplateConfiguration
+    resolved_config_class = BaseFileSourceConfiguration
