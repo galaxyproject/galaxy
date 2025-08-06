@@ -1,8 +1,12 @@
 import logging
 import re
 import urllib.request
-from typing import ClassVar
+from typing import Union
 
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -10,37 +14,43 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
+from galaxy.util.config_templates import TemplateExpansion
 from . import (
     BaseFilesSource,
-    FilesSourceProperties,
     PluginKind,
 )
 
 log = logging.getLogger(__name__)
 
 
-class HTTPFileSourceConfiguration(FilesSourceProperties):
+class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    url_regex: Union[str, TemplateExpansion] = r"^https?://|^ftp://"
+    http_headers: Union[dict[str, str], TemplateExpansion] = {}
+    fetch_url_allowlist: Union[list[IpAllowedListEntryT], TemplateExpansion] = []
+
+
+class HTTPFileSourceConfiguration(BaseFileSourceConfiguration):
     url_regex: str = r"^https?://|^ftp://"
     http_headers: dict[str, str] = {}
     fetch_url_allowlist: list[IpAllowedListEntryT] = []
 
 
-class HTTPFilesSource(BaseFilesSource):
+class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPFileSourceConfiguration]):
     plugin_type = "http"
     plugin_kind = PluginKind.stock
-    config_class: ClassVar[type[HTTPFileSourceConfiguration]] = HTTPFileSourceConfiguration
-    config: HTTPFileSourceConfiguration
 
-    def __init__(self, config: HTTPFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = HTTPFileSourceTemplateConfiguration
+    resolved_config_class = HTTPFileSourceConfiguration
+
+    def __init__(self, template_config: HTTPFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_http",
             label="HTTP File",
             doc="Default HTTP file handler",
             writable=False,
         )
-        self.config = self.config.model_copy(update=overrides)
-
+        self._override_template_config(overrides)
         assert self.config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
         self._compiled_url_regex = re.compile(self.config.url_regex)
 
