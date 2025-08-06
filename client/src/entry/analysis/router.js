@@ -61,7 +61,6 @@ import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance";
-import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
 import { requireAuth } from "@/router/guards";
@@ -82,6 +81,7 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
+import HistoryList from "@/components/History/HistoryList.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
@@ -328,7 +328,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_published",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: (route) => ({
                             activeList: "published",
                             username: route.query["f-username"],
@@ -336,7 +336,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/archived",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "archived",
                         },
@@ -344,7 +344,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "my",
                         },
@@ -352,7 +352,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_shared",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "shared",
                         },
