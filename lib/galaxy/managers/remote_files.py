@@ -8,10 +8,8 @@ from galaxy.files import (
     FileSourcePath,
     ProvidesFileSourcesUserContext,
 )
-from galaxy.files.sources import (
-    FilesSourceOptions,
-    PluginKind,
-)
+from galaxy.files.models import FilesSourceOptions
+from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,

@@ -6,8 +6,10 @@ from galaxy.files import (
     ConfiguredFileSources,
     FileSourcesUserContext,
 )
-from galaxy.files.models import PartialFilesSourceProperties
-from galaxy.files.sources import FilesSourceOptions
+from galaxy.files.models import (
+    FilesSourceOptions,
+    PartialFilesSourceProperties,
+)
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
