@@ -344,6 +344,13 @@ class TestDatasetCollectionsApi(ApiTestCase):
         assert len(columns) == 1
         assert columns[0] == 42
 
+        hdca_id = dataset_collection["id"]
+        dataset_collection_url = f"/api/dataset_collections/{hdca_id}"
+        dataset_collection = self._get(dataset_collection_url).json()
+        assert dataset_collection["id"] == hdca_id
+        assert dataset_collection["collection_type"] == "sample_sheet:paired"
+        assert dataset_collection["column_definitions"] is not None
+
     def test_sample_sheet_validating_against_column_definition(self, history_id):
         contents = [
             ("sample1", "1\t2\t3"),
@@ -815,6 +822,14 @@ class TestDatasetCollectionsApi(ApiTestCase):
             assert element0["columns"][0] == 42
             object0 = element0["object"]
             assert object0["state"] == "ok"
+            assert hdca["column_definitions"] is not None
+
+            hdca_id = hdca["id"]
+            dataset_collection_response = self._get(f"dataset_collections/{hdca_id}")
+            self._assert_status_code_is(dataset_collection_response, 200)
+            collection = dataset_collection_response.json()
+            assert collection["collection_type"] == "sample_sheet"
+            assert collection["column_definitions"] is not None
 
     def test_upload_sample_sheet_paired(self):
         column_definitions = [{"type": "int", "name": "replicate", "optional": False, "default_value": 0}]
