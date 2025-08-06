@@ -1,14 +1,22 @@
 <template>
-    <b-dropdown-item class="ml-1" :title="title" :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
-        <span :class="['fa', `fa-${icon}`]" fixed-width />
+    <BDropdownItem class="ml-1" :title="title" :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
+        <FontAwesomeIcon :icon="icon" data-description="panel view item icon" fixed-width />
         <span v-localize>{{ name }}</span>
-    </b-dropdown-item>
+    </BDropdownItem>
 </template>
 
 <script>
+import { faCheck, faEye } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdownItem } from "bootstrap-vue";
+
 import { types_to_icons } from "../utilities";
 
 export default {
+    components: {
+        BDropdownItem,
+        FontAwesomeIcon,
+    },
     props: {
         currentPanelView: {
             type: String,
@@ -19,6 +27,12 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            faCheck,
+            faEye,
+        };
+    },
     computed: {
         title() {
             return this.panelView.description;
@@ -26,9 +40,9 @@ export default {
         icon() {
             const viewType = this.panelView.view_type;
             if (this.isSelected) {
-                return "check";
+                return this.faCheck;
             } else {
-                return types_to_icons[viewType] || "eye";
+                return types_to_icons[viewType] || this.faEye;
             }
         },
         isSelected() {
