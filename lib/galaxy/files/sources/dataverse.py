@@ -12,15 +12,17 @@ from urllib.parse import quote
 from typing_extensions import TypedDict
 
 from galaxy.exceptions import AuthenticationRequired
-from galaxy.files.sources import (
-    AnyRemoteEntry,
-    DEFAULT_PAGE_LIMIT,
-    DEFAULT_SCHEME,
-    Entry,
-    EntryData,
+from galaxy.files.models import (
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.files.sources import (
+    AnyRemoteEntry,
+    DEFAULT_PAGE_LIMIT,
+    Entry,
+    EntryData,
+)
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._rdm import (
     ContainerAndFileIdentifier,
     RDMFileSourceConfiguration,
