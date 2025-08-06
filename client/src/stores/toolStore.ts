@@ -6,7 +6,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { createWhooshQuery, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import { filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -90,11 +90,10 @@ export const useToolStore = defineStore("toolStore", () => {
     });
 
     const getToolsById = computed(() => {
-        return (filterSettings: FilterSettings) => {
-            if (Object.keys(filterSettings).length === 0) {
+        return (q?: string) => {
+            if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                const q = createWhooshQuery(filterSettings);
                 return filterTools(toolsById.value, toolResults.value[q] || []);
             }
         };
@@ -184,11 +183,10 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    async function fetchTools(filterSettings?: FilterSettings) {
+    async function fetchTools(q?: string) {
         try {
             // Backend search
-            if (filterSettings && Object.keys(filterSettings).length !== 0) {
-                const q = createWhooshQuery(filterSettings);
+            if (q?.trim()) {
                 if (!toolResults.value[q]) {
                     const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
                     saveToolResults(q, data);
