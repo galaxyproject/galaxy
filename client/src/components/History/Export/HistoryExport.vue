@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFileExport } from "@fortawesome/free-solid-svg-icons";
+import { faFileExport, faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
@@ -13,8 +12,6 @@ import localize from "@/utils/localization";
 import FormColumnDefinition from "./FormColumnDefinition.vue";
 import DownloadWorkbookButton from "@/components/Collections/sheet/DownloadWorkbookButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
-
-library.add(faPlus, faTrashAlt, faCaretUp, faCaretDown);
 
 interface Props {
     value: SampleSheetColumnDefinitions;
@@ -111,7 +108,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => swap(index, index - 1, 'up')">
-                            <FontAwesomeIcon icon="caret-up" />
+                            <FontAwesomeIcon :icon="faCaretUp" />
                         </b-button>
                         <b-button
                             :id="getButtonId(index, 'down')"
@@ -122,7 +119,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => swap(index, index + 1, 'down')">
-                            <FontAwesomeIcon icon="caret-down" />
+                            <FontAwesomeIcon :icon="faCaretDown" />
                         </b-button>
                     </b-button-group>
 
@@ -134,7 +131,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => onRemove(index)">
-                            <FontAwesomeIcon icon="trash-alt" />
+                            <FontAwesomeIcon :icon="faTrashAlt" />
                         </b-button>
                     </span>
                 </span>

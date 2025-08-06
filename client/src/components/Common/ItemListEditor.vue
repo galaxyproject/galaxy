@@ -2,6 +2,7 @@
 /**
  * Editable list of items: add/edit/remove (no duplictes/empty values)
  */
+import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
@@ -136,7 +137,7 @@ function resetForm() {
                         size="sm"
                         :title="`Edit ${props.itemName}`"
                         @click="onEdit(index)">
-                        <FontAwesomeIcon icon="edit" />
+                        <FontAwesomeIcon :icon="faEdit" />
                     </b-button>
                     <b-button
                         v-b-tooltip.hover
@@ -145,7 +146,7 @@ function resetForm() {
                         size="sm"
                         :title="`Remove ${props.itemName}`"
                         @click="onRemove(index)">
-                        <FontAwesomeIcon icon="times" />
+                        <FontAwesomeIcon :icon="faTimes" />
                     </b-button>
                 </div>
             </div>

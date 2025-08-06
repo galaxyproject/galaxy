@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faBug, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
