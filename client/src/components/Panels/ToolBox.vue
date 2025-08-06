@@ -22,14 +22,12 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
-    (e: "update:show-advanced", showAdvanced: boolean): void;
     (e: "update:panel-query", query: string): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
 }>();
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
     useSearchWorker: { type: Boolean, default: true },
 });
@@ -45,14 +43,6 @@ const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
 
-const propShowAdvanced = computed({
-    get: () => {
-        return props.showAdvanced;
-    },
-    set: (val: boolean) => {
-        emit("update:show-advanced", val);
-    },
-});
 const query = computed({
     get: () => {
         return props.panelQuery.trim();
@@ -174,10 +164,8 @@ function onToggle() {
     <div class="unified-panel" data-description="panel toolbox">
         <div class="unified-panel-controls">
             <ToolSearch
-                :enable-advanced="!props.workflow"
                 :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
-                :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
                 :query="query"
@@ -185,7 +173,7 @@ function onToggle() {
                 :use-worker="useSearchWorker"
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
-            <section v-if="!propShowAdvanced">
+            <section>
                 <div v-if="hasResults && resultPanel" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />
@@ -209,7 +197,7 @@ function onToggle() {
                 </div>
             </section>
         </div>
-        <div v-if="!propShowAdvanced" class="unified-panel-body">
+        <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div v-if="localPanel" class="toolMenu">
                     <div v-for="(panel, key) in localPanel" :key="key">

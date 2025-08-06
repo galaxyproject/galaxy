@@ -1,119 +1,177 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, ref, watch } from "vue";
 
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
+import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
+import { createWhooshQuery } from "../Panels/utilities";
+
+import FilterMenu from "../Common/FilterMenu.vue";
+import Heading from "../Common/Heading.vue";
 import ScrollToTopButton from "./ScrollToTopButton.vue";
 import ToolsListTable from "./ToolsListTable.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faTimes);
+interface Props {
+    name?: string;
+    section?: string;
+    ontology?: string;
+    id?: string;
+    owner?: string;
+    help?: string;
+}
 
-const props = defineProps({
-    name: {
-        type: String,
-        default: "",
-    },
-    section: {
-        type: String,
-        default: "",
-    },
-    ontology: {
-        type: String,
-        default: "",
-    },
-    id: {
-        type: String,
-        default: "",
-    },
-    owner: {
-        type: String,
-        default: "",
-    },
-    help: {
-        type: String,
-        default: "",
-    },
+const props = withDefaults(defineProps<Props>(), {
+    name: "",
+    section: "",
+    ontology: "",
+    id: "",
+    owner: "",
+    help: "",
 });
-
-const router = useRouter();
-
-const scrollContainer: Ref<HTMLElement | null> = ref(null);
-const { scrollTop } = useAnimationFrameScroll(scrollContainer);
 
 const toolStore = useToolStore();
 const { loading } = storeToRefs(toolStore);
 
-const filterSettings = computed(() => {
-    const newFilterSettings: FilterSettings = {};
-    Object.entries(props).forEach(([filter, value]) => {
-        if (value && value !== "") {
-            newFilterSettings[filter] = value as string;
-        }
-    });
-    return newFilterSettings;
+// Filtering Classes and Definitions
+const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
+const ontologyList = computed(() =>
+    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
+);
+const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
+    return {
+        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        section: {
+            placeholder: "section",
+            type: String,
+            handler: contains("section"),
+            datalist: sectionNames,
+            menuItem: true,
+        },
+        ontology: {
+            placeholder: "EDAM ontology",
+            type: String,
+            handler: contains("ontology"),
+            datalist: ontologyList.value,
+            menuItem: true,
+        },
+        id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
+        owner: { placeholder: "repository owner", type: String, handler: contains("owner"), menuItem: true },
+        help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
+    };
 });
+const ToolFilters = computed<Filtering<string>>(() => new Filtering(validFilters.value, undefined, true, false));
 
-onMounted(async () => {
-    await toolStore.fetchTools(filterSettings.value);
-});
+// Scroll Variables
+const scrollContainer = ref<HTMLElement | null>(null);
+const { scrollTop } = useAnimationFrameScroll(scrollContainer);
 
-const filterCount = computed(() => Object.keys(filterSettings.value).length);
+/** The filters derived from the `filterText` via the `Filtering` class. */
+const filterSettings = computed<FilterSettings>(() =>
+    Object.fromEntries(ToolFilters.value.getFiltersForText(filterText.value)),
+);
 
-const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(filterSettings.value)));
+// `FilterMenu` Component Props
+const showAdvanced = ref(false);
+const filterText = ref(ToolFilters.value.applyFiltersToText(props, ""));
+
+/** The backend whoosh query based on the current filters (if they can be derived from the text;
+ * otherwise the raw search text itself). */
+const whooshQuery = computed(() =>
+    Object.keys(filterSettings.value).length ? createWhooshQuery(filterSettings.value) : filterText.value.trim(),
+);
+
+/** The tools loaded from the store based on the `whooshQuery`. */
+const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 
 function scrollToTop() {
     scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function showAllTools() {
-    router.push({ path: "/tools/list" });
-}
+watch(
+    () => whooshQuery.value,
+    async (newQuery) => {
+        await toolStore.fetchTools(newQuery);
+    },
+    { deep: true, immediate: true }
+);
 </script>
 
 <template>
     <section class="tools-list">
         <div class="mb-2">
-            <h1 class="h-lg">Search Results</h1>
-            <template v-if="itemsLoaded.length !== 0">
-                <span v-if="filterCount" class="d-flex align-items-center flex-gapx-1">
-                    Found {{ itemsLoaded.length }} tools for
-                    <GLink id="popover-filters">
-                        {{ filterCount }}
-                        {{ filterCount === 1 ? "filter" : "filters" }}.
-                    </GLink>
-                    <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
-                        <template v-slot:title>Filters</template>
-                        <div v-for="(value, filter) in filterSettings" :key="filter">
-                            <b>{{ filter }}</b
-                            >: {{ value }}
-                        </div>
-                    </b-popover>
-                    <GButton color="blue" size="small" transparent @click.stop="showAllTools">
-                        <FontAwesomeIcon icon="fa-times" />
-                        Clear filters
-                    </GButton>
-                </span>
-                <span v-else class="d-inline-block">
-                    No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
-                </span>
-            </template>
+            <div class="d-flex align-items-center">
+                <Heading h1 separator inline size="lg" class="flex-grow-1 m-0">
+                    <span v-localize>Discover Tools in this Galaxy</span>
+                </Heading>
+                <i class="ml-1"> Found {{ itemsLoaded.length }} tools </i>
+            </div>
+
+            <FilterMenu
+                class="py-2"
+                name="Tools"
+                placeholder="search tools"
+                :debounce-delay="200"
+                :filter-text.sync="filterText"
+                :filter-class="ToolFilters"
+                has-help
+                :loading="loading"
+                :show-advanced.sync="showAdvanced">
+                <template v-slot:menu-help-text>
+                    <div>
+                        <p>
+                            You can use this Advanced Tool Search Panel to find tools by applying search filters, with
+                            the results showing up in the center panel.
+                        </p>
+
+                        <p>
+                            <i>
+                                (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
+                                according filter)
+                            </i>
+                        </p>
+
+                        <p>The available tool search filters are:</p>
+                        <dl>
+                            <dt><code>name</code></dt>
+                            <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
+                            <dt><code>section</code></dt>
+                            <dd>The tool section is based on the default tool panel view</dd>
+                            <dt><code>ontology</code></dt>
+                            <dd>
+                                This is the EDAM ontology term that is associated with the tool. Example inputs:
+                                <i>"topic_3174"</i> or <i>"operation_0324"</i>
+                            </dd>
+                            <dt><code>id</code></dt>
+                            <dd>The tool id (taken from its XML)</dd>
+                            <dt><code>owner</code></dt>
+                            <dd>
+                                For the tools that have been installed from the
+                                <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
+                                , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
+                                repository <b>owner</b>.
+                            </dd>
+                            <dt><code>help text</code></dt>
+                            <dd>
+                                This is like a keyword search: you can search for keywords that might exist in a tool's
+                                help text. An example input:
+                                <i>"genome, RNA, minimap"</i>
+                            </dd>
+                        </dl>
+                    </div>
+                </template>
+            </FilterMenu>
         </div>
         <div ref="scrollContainer" class="overflow-auto">
-            <b-alert v-if="loading" class="m-2" variant="info" show>
-                <LoadingSpan message="Loading Advanced Search Results" />
-            </b-alert>
-            <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
+            <BAlert v-if="loading" class="m-2" variant="info" show>
+                <LoadingSpan message="Loading Tools" />
+            </BAlert>
+            <BAlert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
                 No tools found for the entered filters.
-            </b-alert>
+            </BAlert>
             <div v-else>
                 <ToolsListTable :tools="itemsLoaded" />
             </div>

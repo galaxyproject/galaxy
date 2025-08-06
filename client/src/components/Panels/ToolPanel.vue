@@ -40,12 +40,9 @@ const errorMessage = ref("");
 const panelName = ref("");
 const panelsFetched = ref(false);
 const query = ref("");
-const showAdvanced = ref(false);
 
 const panelIcon = computed(() => {
-    if (showAdvanced.value) {
-        return "search";
-    } else if (
+    if (
         currentPanelView.value !== "default" &&
         panels.value &&
         typeof panels.value[currentPanelView.value]?.view_type === "string"
@@ -73,9 +70,7 @@ const showFavorites = computed({
 });
 
 const toolPanelHeader = computed(() => {
-    if (showAdvanced.value) {
-        return localize("Advanced Tool Search");
-    } else if (loading.value && panelName.value) {
+    if (loading.value && panelName.value) {
         return localize(panelName.value);
     } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
         return localize(panels.value[currentPanelView.value]?.name);
@@ -154,7 +149,6 @@ initializePanel();
                 v-if="panels && Object.keys(panels).length > 1"
                 :panel-views="panels"
                 :current-panel-view="currentPanelView"
-                :show-advanced.sync="showAdvanced"
                 :store-loading="loading"
                 @updatePanelView="updatePanelView">
                 <template v-slot:panel-view-selector>
@@ -166,7 +160,7 @@ initializePanel();
                                 data-description="panel view header icon" />
                             <Heading
                                 id="toolbox-heading"
-                                :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
+                                :class="toolPanelHeader !== 'Tools' && 'font-italic'"
                                 h2
                                 inline
                                 size="sm">
@@ -176,21 +170,20 @@ initializePanel();
                                 <span v-else>{{ toolPanelHeader }}</span>
                             </Heading>
                         </div>
-                        <div v-if="!showAdvanced" class="panel-header-buttons">
+                        <div class="panel-header-buttons">
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </div>
                     </div>
                 </template>
             </PanelViewMenu>
         </template>
-        <template v-if="!showAdvanced" v-slot:header-buttons>
+        <template v-slot:header-buttons>
             <FavoritesButton v-model="showFavorites" />
         </template>
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
             :panel-query.sync="query"
-            :show-advanced.sync="showAdvanced"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool"
             @onInsertWorkflow="onInsertWorkflow"
