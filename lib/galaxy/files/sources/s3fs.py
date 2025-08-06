@@ -2,17 +2,19 @@ import functools
 import logging
 import os
 from typing import (
-    ClassVar,
     Optional,
+    Union,
 )
 
 from galaxy import exceptions
-from . import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    FilesSourceProperties,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.util.config_templates import TemplateExpansion
 
 try:
     import s3fs
@@ -28,7 +30,15 @@ FS_PLUGIN_TYPE = "s3fs"
 log = logging.getLogger(__name__)
 
 
-class S3FSFileSourceConfiguration(FilesSourceProperties):
+class S3FSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    anon: Union[bool, TemplateExpansion] = False
+    endpoint_url: Union[str, TemplateExpansion, None] = None
+    bucket: Union[str, TemplateExpansion, None] = None
+    secret: Union[str, TemplateExpansion, None] = None
+    key: Union[str, TemplateExpansion, None] = None
+
+
+class S3FSFileSourceConfiguration(BaseFileSourceConfiguration):
     anon: bool = False
     endpoint_url: Optional[str] = None
     bucket: Optional[str] = None
@@ -36,13 +46,11 @@ class S3FSFileSourceConfiguration(FilesSourceProperties):
     key: Optional[str] = None
 
 
-class S3FsFilesSource(BaseFilesSource):
+class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
     plugin_type = FS_PLUGIN_TYPE
-    config_class: ClassVar[type[S3FSFileSourceConfiguration]] = S3FSFileSourceConfiguration
-    config: S3FSFileSourceConfiguration
 
-    def __init__(self, config: S3FSFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = S3FSFileSourceTemplateConfiguration
+    resolved_config_class = S3FSFileSourceConfiguration
 
     def _open_fs(self):
         if s3fs is None:
