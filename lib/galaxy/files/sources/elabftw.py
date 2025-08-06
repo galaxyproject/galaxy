@@ -59,12 +59,12 @@ from textwrap import dedent
 from time import time
 from typing import (
     cast,
-    ClassVar,
     Generic,
     get_type_hints,
     Literal,
     Optional,
     TypeVar,
+    Union,
 )
 from urllib.parse import (
     ParseResult,
@@ -80,16 +80,20 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions as galaxy_exceptions
-from galaxy.files.sources import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    BaseFilesSource,
-    DEFAULT_SCHEME,
-    FilesSourceProperties,
-    PluginKind,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.util import requests
+from galaxy.util.config_templates import TemplateExpansion
 
 __all__ = ("eLabFTWFilesSource",)
 
@@ -150,12 +154,17 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
         return locals()[part]
 
 
-class eLabFTWFileSourceConfiguration(FilesSourceProperties):
+class eLabFTWFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    endpoint: Union[str, TemplateExpansion]
+    api_key: Union[str, TemplateExpansion]
+
+
+class eLabFTWFileSourceConfiguration(BaseFileSourceConfiguration):
     endpoint: str
     api_key: str
 
 
-class eLabFTWFilesSource(BaseFilesSource):  # noqa
+class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration, eLabFTWFileSourceConfiguration]):
 
     plugin_type = "elabftw"
     plugin_kind = PluginKind.rfs
@@ -164,12 +173,13 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
     # https://github.com/galaxyproject/galaxy/pull/19319#discussion_r1928753352
     supports_search = True
     supports_sorting = True
-    config_class: ClassVar[type[eLabFTWFileSourceConfiguration]] = eLabFTWFileSourceConfiguration
-    config: eLabFTWFileSourceConfiguration
 
-    def __init__(self, config: eLabFTWFileSourceConfiguration):
+    template_config_class = eLabFTWFileSourceTemplateConfiguration
+    resolved_config_class = eLabFTWFileSourceConfiguration
+
+    def __init__(self, template_config: eLabFTWFileSourceTemplateConfiguration):
         """Initialize the eLabFTW files source with an API key and an endpoint URL."""
-        super().__init__(config)
+        super().__init__(template_config)
 
         self._endpoint = self.config.endpoint  # meant to be accessed only from `_get_endpoint()`
         self._api_key = self.config.api_key  # meant to be accessed only from `_create_session()`
