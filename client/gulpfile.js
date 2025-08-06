@@ -20,6 +20,9 @@ const PATHS = {
     },
 };
 
+// Check if visualization steps should be skipped
+const SKIP_VIZ = process.env.SKIP_VIZ === "true" || process.env.SKIP_VIZ === "1";
+
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
         ? process.env.GALAXY_PLUGIN_PATH
@@ -54,6 +57,11 @@ async function icons() {
 }
 
 function stagePlugins(callback) {
+    if (SKIP_VIZ) {
+        console.log("Skipping plugin staging (SKIP_VIZ is set)");
+        return callback();
+    }
+
     fs.ensureDirSync(path.join(staticPluginDir));
 
     // Get visualization directories
@@ -103,6 +111,11 @@ function stagePlugins(callback) {
  * Produce plugins from fully self-contained npm packages
  */
 async function installVisualizations(callback, forceReinstall = false) {
+    if (SKIP_VIZ) {
+        console.log("Skipping visualization installation (SKIP_VIZ is set)");
+        return callback();
+    }
+
     const visualizationsDir = path.join(staticPluginDir, "visualizations");
     fs.ensureDirSync(visualizationsDir);
     for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
