@@ -63,7 +63,9 @@ export type SearchResult = {
     weightedScore: number;
 };
 
-export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (workflowId) => {
+export type WorkflowSearchStore = ReturnType<typeof useWorkflowSearchStore>;
+
+export const useWorkflowSearchStore = defineScopedStore("workflowSearchStore", (workflowId) => {
     const stateStore = useWorkflowStateStore(workflowId);
     const stepStore = useWorkflowStepStore(workflowId);
     const commentStore = useWorkflowCommentStore(workflowId);
@@ -258,10 +260,20 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
         return filteredResults;
     }
 
+    function findOutputPosition(outputParentNodeId: string | number, outputName: string) {
+        const data = collectSearchDataCached();
+        const id = `node-${outputParentNodeId}-output-${outputName}`;
+
+        const outputSearchData = data.find((searchData) => searchData.id === id);
+
+        return outputSearchData?.bounds;
+    }
+
     return {
         $reset,
         searchWorkflow,
         searchDataCacheId,
         searchDataCacheData,
+        findOutputPosition,
     };
 });

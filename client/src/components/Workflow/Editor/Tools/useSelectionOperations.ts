@@ -1,12 +1,22 @@
+import { until } from "@vueuse/core";
 import { computed, inject, type Ref, unref } from "vue";
 
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
+import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
+import { Services } from "@/components/Workflow/services";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { ensureDefined } from "@/utils/assertions";
 
-import { DeleteSelectionAction, DuplicateSelectionAction } from "../Actions/workflowActions";
+import { DeleteSelectionAction, DuplicateSelectionAction, ExtractSubworkflowAction } from "../Actions/workflowActions";
 import { useMultiSelect } from "../composables/multiSelect";
 
 export function useSelectionOperations() {
-    const { undoRedoStore } = useWorkflowStores();
+    const { undoRedoStore, stateStore, commentStore, stepStore } = useWorkflowStores();
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
@@ -40,11 +50,45 @@ export function useSelectionOperations() {
         undoRedoStore.applyAction(new DuplicateSelectionAction(id));
     }
 
+    const services = new Services();
+
+    async function copySelectionToNewWorkflow(name: string) {
+        const commentIds = [...commentStore.multiSelectedCommentIds];
+        const stepIds = [...stateStore.multiSelectedStepIds];
+
+        const comments = commentIds.map((id) =>
+            structuredClone(ensureDefined(commentStore.commentsRecord[id]))
+        ) as WorkflowComment[];
+
+        const stepArray = stepIds.map((id) => ensureDefined(stepStore.steps[id]));
+        const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
+
+        const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));
+
+        const partialWorkflow = { comments, steps, name, id, annotation: "" };
+        const newWf = await services.createWorkflow(partialWorkflow);
+
+        return newWf;
+    }
+
+    async function moveSelectionToSubworkflow(
+        partialWorkflow: PartialWorkflow,
+        inputReconnectionMap: InputReconnectionMap,
+        outputReconnectionMap: OutputReconnectionMap
+    ) {
+        const action = new ExtractSubworkflowAction(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
+        undoRedoStore.applyAction(action);
+
+        await until(() => action.asyncOperationDone.value).toBe(true);
+    }
+
     return {
         anySelected,
         deselectAll,
         selectedCountText,
         deleteSelection,
         duplicateSelection,
+        copySelectionToNewWorkflow,
+        moveSelectionToSubworkflow,
     };
 }

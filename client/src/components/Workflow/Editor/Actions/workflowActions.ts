@@ -1,3 +1,14 @@
+import { nextTick, reactive } from "vue";
+
+import { InsertStepAction } from "@/components/Workflow/Editor/Actions/stepActions";
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
+import { getModule } from "@/components/Workflow/Editor/modules/services";
+import { Services } from "@/components/Workflow/services";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import {
@@ -7,7 +18,8 @@ import {
 } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
-import { ensureDefined } from "@/utils/assertions";
+import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowStoreTypes";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
@@ -448,5 +460,211 @@ export class DeleteSelectionAction extends UndoRedoAction {
     undo() {
         this.storedSelectionAction.redo();
         this.storedConnections.forEach((connection) => this.connectionStore.addConnection(structuredClone(connection)));
+    }
+}
+
+export class ExtractSubworkflowAction extends UndoRedoAction {
+    // hardcoded offset to improve look of final position
+    subworkflowPositionOffset = {
+        left: 100,
+        top: 80,
+    };
+
+    deleteSelectionSubAction?: DeleteSelectionAction;
+    insertSubworkflowSubAction?: InsertStepAction;
+
+    asyncOperationDone: { value: boolean };
+
+    services;
+
+    stateStore;
+    stepStore;
+    commentStore;
+    connectionStore;
+
+    inputReconnectionMap: InputReconnectionMap;
+    outputReconnectionMap: OutputReconnectionMap;
+    partialWorkflow: PartialWorkflow;
+
+    constructor(
+        partialWorkflow: PartialWorkflow,
+        inputReconnectionMap: InputReconnectionMap,
+        outputReconnectionMap: OutputReconnectionMap
+    ) {
+        super();
+
+        this.partialWorkflow = partialWorkflow;
+        this.services = new Services();
+
+        this.inputReconnectionMap = inputReconnectionMap;
+        this.outputReconnectionMap = outputReconnectionMap;
+
+        this.stateStore = useWorkflowStateStore(partialWorkflow.id);
+        this.stepStore = useWorkflowStepStore(partialWorkflow.id);
+        this.commentStore = useWorkflowCommentStore(partialWorkflow.id);
+        this.connectionStore = useConnectionStore(partialWorkflow.id);
+
+        this.asyncOperationDone = reactive({ value: false });
+    }
+
+    reconnect() {
+        const stepId = this.insertSubworkflowSubAction?.stepId;
+        const inputReconnectionMap = this.inputReconnectionMap;
+        const outputReconnectionMap = this.outputReconnectionMap;
+
+        assertDefined(stepId);
+        inputReconnectionMap;
+        outputReconnectionMap;
+
+        // reconnect inputs
+
+        const inputConnections = inputReconnectionMap.map(({ label, connection }) => {
+            const input: InputTerminal = {
+                connectorType: "input",
+                name: label,
+                stepId,
+            };
+
+            const output: OutputTerminal = {
+                connectorType: "output",
+                name: connection.output_name,
+                stepId: connection.id,
+            };
+
+            return {
+                input,
+                output,
+            } as Connection;
+        });
+
+        inputConnections.forEach((connection) => {
+            this.connectionStore.addConnection(connection);
+        });
+
+        // reconnect outputs
+
+        const outputConnections = outputReconnectionMap.map(({ connection, name, nodeId }) => {
+            const input: InputTerminal = {
+                connectorType: "input",
+                name,
+                stepId: nodeId,
+            };
+
+            const output: OutputTerminal = {
+                connectorType: "output",
+                name: connection.output_name,
+                stepId,
+            };
+
+            return {
+                input,
+                output,
+            } as Connection;
+        });
+
+        outputConnections.forEach((connection) => {
+            this.connectionStore.addConnection(connection);
+        });
+    }
+
+    getSelectionAABB(steps: Step[], comments: WorkflowComment[]) {
+        const aabb = new AxisAlignedBoundingBox();
+
+        steps.forEach((step) => {
+            const rect = this.stateStore.stepPosition[step.id];
+
+            if (rect && step.position) {
+                const stepRect: Rectangle = {
+                    x: step.position.left,
+                    y: step.position.top,
+                    width: rect.width,
+                    height: rect.height,
+                };
+
+                aabb.fitRectangle(stepRect);
+            }
+        });
+
+        comments.forEach((comment) => {
+            const commentRect: Rectangle = {
+                x: comment.position[0],
+                y: comment.position[1],
+                width: comment.size[0],
+                height: comment.size[1],
+            };
+
+            aabb.fitRectangle(commentRect);
+        });
+
+        return aabb;
+    }
+
+    async run() {
+        const stepIds = [...this.stateStore.multiSelectedStepIds];
+        const commentIds = [...this.commentStore.multiSelectedCommentIds];
+
+        const aabb = this.getSelectionAABB(
+            stepIds.map((id) => ensureDefined(this.stepStore.getStep(id))),
+            commentIds.map((id) => ensureDefined(this.commentStore.commentsRecord[id]))
+        );
+
+        this.deleteSelectionSubAction = new DeleteSelectionAction(this.partialWorkflow.id);
+
+        const newWf = await this.services.createWorkflow(this.partialWorkflow);
+
+        this.insertSubworkflowSubAction = new InsertStepAction(this.stepStore, this.stateStore, {
+            contentId: newWf.latest_workflow_id,
+            name: newWf.name,
+            type: "subworkflow",
+            position: {
+                top: aabb.y + aabb.height / 2.0 - this.subworkflowPositionOffset.top,
+                left: aabb.x + aabb.width / 2.0 - this.subworkflowPositionOffset.left,
+            },
+        });
+
+        this.deleteSelectionSubAction.run();
+        this.insertSubworkflowSubAction.run();
+        const stepData = this.insertSubworkflowSubAction.getNewStepData();
+
+        const response = await getModule(
+            { name: newWf.name, type: "subworkflow", content_id: newWf.latest_workflow_id },
+            stepData.id,
+            this.stateStore.setLoadingState
+        );
+
+        const updatedStep = {
+            ...stepData,
+            tool_state: response.tool_state,
+            inputs: response.inputs,
+            outputs: response.outputs,
+            config_form: response.config_form,
+        };
+
+        this.stepStore.updateStep(updatedStep);
+        this.insertSubworkflowSubAction.updateStepData = updatedStep;
+        this.stateStore.activeNodeId = stepData.id;
+
+        await nextTick();
+        this.reconnect();
+
+        this.asyncOperationDone.value = true;
+    }
+
+    undo() {
+        assertDefined(this.insertSubworkflowSubAction);
+        assertDefined(this.deleteSelectionSubAction);
+
+        this.insertSubworkflowSubAction.undo();
+        this.deleteSelectionSubAction.undo();
+    }
+
+    redo() {
+        assertDefined(this.insertSubworkflowSubAction);
+        assertDefined(this.deleteSelectionSubAction);
+
+        this.insertSubworkflowSubAction.redo();
+        this.deleteSelectionSubAction.redo();
+
+        this.reconnect();
     }
 }

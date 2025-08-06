@@ -16,7 +16,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import { watchImmediate } from "@vueuse/core";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useUid } from "@/composables/utils/uid";
@@ -25,7 +25,9 @@ const props = defineProps<{
     /** Optional id override. Will auto generate an id if none is provided */
     id?: string;
     /** Element to listen to on hover state. Will also set "aria-describedby" attribute of linked element to this tooltip */
-    reference: HTMLElement | null;
+    reference?: HTMLElement | null;
+    /** Element Reference by id */
+    referenceId?: string;
     /** Optional text. Alternative to using the elements slot */
     text?: string;
     /** Position of the tooltip relative to reference element */
@@ -40,23 +42,39 @@ const elementId = computed(() => props.id ?? uid.value);
 
 let previousReference: HTMLElement | null = null;
 
+const referenceElement = ref<HTMLElement | null>(null);
+
 watchImmediate(
-    () => [props.reference, elementId.value],
+    () => [props.referenceId, props.reference],
+    async () => {
+        if (props.referenceId) {
+            await nextTick();
+            referenceElement.value = document.getElementById(props.referenceId);
+        } else if (props.reference !== undefined) {
+            referenceElement.value = props.reference;
+        } else {
+            throw new Error("GTooltip needs either the reference of referenceId prop to be set");
+        }
+    }
+);
+
+watchImmediate(
+    () => [referenceElement.value, elementId.value],
     () => {
         if (previousReference !== null) {
             previousReference.removeAttribute("aria-describedby");
         }
 
-        if (props.reference !== null) {
-            props.reference.setAttribute("aria-describedby", elementId.value);
+        if (referenceElement.value !== null) {
+            referenceElement.value.setAttribute("aria-describedby", elementId.value);
         }
 
-        previousReference = props.reference;
+        previousReference = referenceElement.value;
     }
 );
 
 onBeforeUnmount(() => {
-    props.reference?.removeAttribute("aria-describedby");
+    referenceElement.value?.removeAttribute("aria-describedby");
 });
 
 function show() {
@@ -93,12 +111,12 @@ function getComputePositionConfig(arrowElement: HTMLDivElement): Partial<Compute
 const finalPlacement = ref<Placement>("bottom");
 
 async function updateTooltipPosition() {
-    if (!props.reference || !tooltip.value || !tooltipArrow.value) {
+    if (!referenceElement.value || !tooltip.value || !tooltipArrow.value) {
         return;
     }
 
     const { x, y, middlewareData, placement } = await computePosition(
-        props.reference,
+        referenceElement.value,
         tooltip.value,
         getComputePositionConfig(tooltipArrow.value)
     );
@@ -120,13 +138,13 @@ watch(
     () => {
         cleanupFunction?.();
 
-        if (isShowing.value && props.reference && tooltip.value) {
-            cleanupFunction = autoUpdate(props.reference, tooltip.value, updateTooltipPosition);
+        if (isShowing.value && referenceElement.value && tooltip.value) {
+            cleanupFunction = autoUpdate(referenceElement.value, tooltip.value, updateTooltipPosition);
         }
     }
 );
 
-useAccessibleHover(() => props.reference, show, hide);
+useAccessibleHover(() => referenceElement.value, show, hide);
 
 defineExpose({
     show,

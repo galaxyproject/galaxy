@@ -100,6 +100,7 @@ const linkElementRef = useResolveElement(linkRef);
     user-select: text;
     font-weight: bold;
     text-decoration: none;
+    text-align: start;
 
     &:hover,
     &:focus,
