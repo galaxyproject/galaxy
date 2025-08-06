@@ -4,15 +4,31 @@ except ImportError:
     SSHFS = None
 
 from typing import (
-    ClassVar,
     Optional,
+    Union,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class SshFileSourceConfiguration(FilesSourceProperties):
+class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    host: Union[str, TemplateExpansion]
+    user: Optional[Union[str, TemplateExpansion]] = None
+    passwd: Optional[Union[str, TemplateExpansion]] = None
+    pkey: Optional[Union[str, TemplateExpansion]] = None
+    timeout: Union[int, TemplateExpansion] = 10
+    port: Union[int, TemplateExpansion] = 22
+    compress: Union[bool, TemplateExpansion] = False
+    config_path: Union[str, TemplateExpansion] = "~/.ssh/config"
+    path: Union[str, TemplateExpansion]
+
+
+class SshFileSourceConfiguration(BaseFileSourceConfiguration):
     host: str
     user: Optional[str] = None
     passwd: Optional[str] = None
@@ -24,15 +40,13 @@ class SshFileSourceConfiguration(FilesSourceProperties):
     path: str
 
 
-class SshFilesSource(PyFilesystem2FilesSource):
+class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration, SshFileSourceConfiguration]):
     plugin_type = "ssh"
     required_module = SSHFS
     required_package = "fs.sshfs"
-    config_class: ClassVar[type[SshFileSourceConfiguration]] = SshFileSourceConfiguration
-    config: SshFileSourceConfiguration
 
-    def __init__(self, config: SshFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = SshFileSourceTemplateConfiguration
+    resolved_config_class = SshFileSourceConfiguration
 
     def _open_fs(self):
         if SSHFS is None:

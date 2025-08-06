@@ -36,17 +36,19 @@ from typing import (
     Any,
     BinaryIO,
     cast,
-    ClassVar,
     IO,
     Optional,
+    Union,
 )
 
-from . import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    FilesSourceProperties,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 try:
@@ -120,23 +122,26 @@ if RSpaceGalleryFilesystem is not None:
             self.upload_global_id = self._upload_response["globalId"]
 
 
-class RSpaceFileSourceConfiguration(FilesSourceProperties):
+class RSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    endpoint: Union[str, TemplateExpansion]
+    api_key: Union[str, TemplateExpansion]
+
+
+class RSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
     endpoint: str
     api_key: str
 
 
-class RSpaceFilesSource(PyFilesystem2FilesSource):
+class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfiguration, RSpaceFileSourceConfiguration]):
     plugin_type = "rspace"
     required_module = RSpaceGalleryFilesystem
     required_package = "rspace_client.eln.fs"
-    config_class: ClassVar[type[RSpaceFileSourceConfiguration]] = RSpaceFileSourceConfiguration
-    config: RSpaceFileSourceConfiguration
+
+    template_config_class = RSpaceFileSourceTemplateConfiguration
+    resolved_config_class = RSpaceFileSourceConfiguration
 
     _upload_global_id: str
     # The RSpace global id of the most recently uploaded file.
-
-    def __init__(self, config: RSpaceFileSourceConfiguration):
-        super().__init__(config)
 
     def _open_fs(self):
         """

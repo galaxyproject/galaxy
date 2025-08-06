@@ -4,15 +4,27 @@ except ImportError:
     BASESPACEFS = None
 
 from typing import (
-    ClassVar,
     Optional,
+    Union,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class BaseSpaceFileSourceConfiguration(FilesSourceProperties):
+class BaseSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    dir_path: Union[str, TemplateExpansion, None] = "/"
+    client_id: Union[str, TemplateExpansion, None] = None
+    client_secret: Union[str, TemplateExpansion, None] = None
+    access_token: Union[str, TemplateExpansion, None] = None
+    basespace_server: Union[str, TemplateExpansion, None] = None
+
+
+class BaseSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
     dir_path: Optional[str] = "/"
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
@@ -20,15 +32,15 @@ class BaseSpaceFileSourceConfiguration(FilesSourceProperties):
     basespace_server: Optional[str] = None
 
 
-class BaseSpaceFilesSource(PyFilesystem2FilesSource):
+class BaseSpaceFilesSource(
+    PyFilesystem2FilesSource[BaseSpaceFileSourceTemplateConfiguration, BaseSpaceFileSourceConfiguration]
+):
     plugin_type = "basespace"
     required_module = BASESPACEFS
     required_package = "fs-basespace"
-    config_class: ClassVar[type[BaseSpaceFileSourceConfiguration]] = BaseSpaceFileSourceConfiguration
-    config: BaseSpaceFileSourceConfiguration
 
-    def __init__(self, config: BaseSpaceFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = BaseSpaceFileSourceTemplateConfiguration
+    resolved_config_class = BaseSpaceFileSourceConfiguration
 
     def _open_fs(self):
         if BASESPACEFS is None:

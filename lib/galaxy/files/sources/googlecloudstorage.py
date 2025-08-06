@@ -6,15 +6,27 @@ except ImportError:
     GCSFS = None
 
 from typing import (
-    ClassVar,
     Optional,
+    Union,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class GoogleCloudStorageFileSourceConfiguration(FilesSourceProperties):
+class GoogleCloudStorageFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    bucket_name: Union[str, TemplateExpansion]
+    root_path: Union[str, TemplateExpansion]
+    project: Optional[Union[str, TemplateExpansion]] = None
+    anonymous: Optional[Union[bool, TemplateExpansion]] = True
+    token: Optional[Union[str, TemplateExpansion]] = None
+
+
+class GoogleCloudStorageFileSourceConfiguration(BaseFileSourceConfiguration):
     bucket_name: str
     root_path: str
     project: Optional[str] = None
@@ -22,15 +34,17 @@ class GoogleCloudStorageFileSourceConfiguration(FilesSourceProperties):
     token: Optional[str] = None
 
 
-class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
+class GoogleCloudStorageFilesSource(
+    PyFilesystem2FilesSource[
+        GoogleCloudStorageFileSourceTemplateConfiguration, GoogleCloudStorageFileSourceConfiguration
+    ]
+):
     plugin_type = "googlecloudstorage"
     required_module = GCSFS
     required_package = "fs-gcsfs"
-    config_class: ClassVar[type[GoogleCloudStorageFileSourceConfiguration]] = GoogleCloudStorageFileSourceConfiguration
-    config: GoogleCloudStorageFileSourceConfiguration
 
-    def __init__(self, config: GoogleCloudStorageFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = GoogleCloudStorageFileSourceTemplateConfiguration
+    resolved_config_class = GoogleCloudStorageFileSourceConfiguration
 
     def _open_fs(self):
         if GCSFS is None:

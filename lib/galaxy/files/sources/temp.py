@@ -1,16 +1,24 @@
-from typing import ClassVar
+from typing import Union
 
 from fs.osfs import OSFS
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class TempFileSourceConfiguration(FilesSourceProperties):
+class TempFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    root_path: Union[str, TemplateExpansion]
+
+
+class TempFileSourceConfiguration(BaseFileSourceConfiguration):
     root_path: str
 
 
-class TempFilesSource(PyFilesystem2FilesSource):
+class TempFilesSource(PyFilesystem2FilesSource[TempFileSourceTemplateConfiguration, TempFileSourceConfiguration]):
     """A FilesSource plugin for temporary file systems.
 
     Used for testing and other temporary file system needs.
@@ -21,11 +29,9 @@ class TempFilesSource(PyFilesystem2FilesSource):
     plugin_type = "temp"
     required_module = OSFS
     required_package = "fs.osfs"
-    config_class: ClassVar[type[TempFileSourceConfiguration]] = TempFileSourceConfiguration
-    config: TempFileSourceConfiguration
 
-    def __init__(self, config: TempFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = TempFileSourceTemplateConfiguration
+    resolved_config_class = TempFileSourceConfiguration
 
     def _open_fs(self):
         if OSFS is None:

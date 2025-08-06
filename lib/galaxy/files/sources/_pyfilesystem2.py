@@ -15,13 +15,16 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from . import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    BaseFilesSource,
-    DEFAULT_PAGE_LIMIT,
-    FilesSourceProperties,
     RemoteDirectory,
     RemoteFile,
+    TResolvedConfig,
+    TTemplateConfig,
+)
+from . import (
+    BaseFilesSource,
+    DEFAULT_PAGE_LIMIT,
 )
 
 log = logging.getLogger(__name__)
@@ -29,17 +32,17 @@ log = logging.getLogger(__name__)
 PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 plugin package [%s]"
 
 
-class PyFilesystem2FilesSource(BaseFilesSource):
+class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
     required_module: ClassVar[Optional[type[FS]]]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
     allow_key_error_on_empty_directories = False  # work around a bug in webdav
 
-    def __init__(self, config: FilesSourceProperties):
+    def __init__(self, template_config: TTemplateConfig):
         if self.required_module is None:
             raise self.required_package_exception
-        super().__init__(config)
+        super().__init__(template_config)
 
     @property
     def required_package_exception(self) -> Exception:
