@@ -13,10 +13,10 @@ from urllib.parse import (
 
 import requests
 
+from galaxy.files.models import BaseFileSourceTemplateConfiguration
 from galaxy.files.uris import validate_uri_access
 from . import (
-    BaseFilesSource,
-    FilesSourceProperties,
+    DefaultBaseFilesSource,
     PluginKind,
 )
 
@@ -45,12 +45,12 @@ The following parameters are required and assumed to be known in advance:
 """
 
 
-class RemoteZipFilesSource(BaseFilesSource):
+class RemoteZipFilesSource(DefaultBaseFilesSource):
     plugin_type = "remoteZip"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, config: FilesSourceProperties):
-        super().__init__(config)
+    def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         overrides = {
             "id": "extract",
             "label": "Remote ZIP extractor",
@@ -58,7 +58,7 @@ class RemoteZipFilesSource(BaseFilesSource):
             "writable": False,
             "browsable": False,
         }
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
 
     @property
     def _allowlist(self):
