@@ -3,24 +3,26 @@ import os
 import shutil
 from typing import (
     Any,
-    ClassVar,
     Optional,
+    Union,
 )
 
 from galaxy import exceptions
 from galaxy.files import OptionalUserContext
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    RemoteDirectory,
+    RemoteFile,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from galaxy.util.path import (
     safe_contains,
     safe_path,
     safe_walk,
 )
-from . import (
-    AnyRemoteEntry,
-    BaseFilesSource,
-    FilesSourceProperties,
-    RemoteDirectory,
-    RemoteFile,
-)
+from . import BaseFilesSource
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
@@ -28,7 +30,19 @@ DEFAULT_ALLOW_SUBDIR_CREATION = True
 DEFAULT_PREFER_LINKS = False
 
 
-class PosixFileSourceConfiguration(FilesSourceProperties):
+class PosixTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    """Posix template configuration with templating support."""
+
+    root: Union[str, TemplateExpansion, None] = None
+    enforce_symlink_security: Union[bool, TemplateExpansion] = DEFAULT_ENFORCE_SYMLINK_SECURITY
+    delete_on_realize: Union[bool, TemplateExpansion] = DEFAULT_DELETE_ON_REALIZE
+    allow_subdir_creation: Union[bool, TemplateExpansion] = DEFAULT_ALLOW_SUBDIR_CREATION
+    prefer_links: Union[bool, TemplateExpansion] = DEFAULT_PREFER_LINKS
+
+
+class PosixConfiguration(BaseFileSourceConfiguration):
+    """Posix resolved configuration with proper types."""
+
     root: Optional[str] = None
     enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
     delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
@@ -36,21 +50,17 @@ class PosixFileSourceConfiguration(FilesSourceProperties):
     prefer_links: bool = DEFAULT_PREFER_LINKS
 
 
-class PosixFilesSource(BaseFilesSource):
+class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfiguration]):
     plugin_type = "posix"
-    config_class: ClassVar[type[PosixFileSourceConfiguration]] = PosixFileSourceConfiguration
-    config: PosixFileSourceConfiguration
 
-    # If this were a PyFilesystem2FilesSource all that would be needed would be,
+    template_config_class = PosixTemplateConfiguration
+    resolved_config_class = PosixConfiguration
+
+    # If this were a PyFilesystem2FilesSource it would be much simpler,
     # but we couldn't enforce security our way I suspect.
-    # def _open_fs(self):
-    #    from fs.osfs import OSFS
-    #    handle = OSFS(**self._props)
-    #    return handle
 
-    def __init__(self, config: PosixFileSourceConfiguration):
-        super().__init__(config)
-
+    def __init__(self, template_config: PosixTemplateConfiguration):
+        super().__init__(template_config)
         if not self.config.root:
             self.config.writable = False
 
@@ -131,8 +141,7 @@ class PosixFilesSource(BaseFilesSource):
         return os.path.join(self._effective_root(), source_path)
 
     def _effective_root(self) -> str:
-        user_context = self.user_data.context if self.user_data else None
-        return str(self._evaluate_prop(self.config.root or "/", user_context=user_context))
+        return self.config.root or "/"
 
     def _resource_info_to_dict(self, dir: str, name: str) -> AnyRemoteEntry:
         rel_path = os.path.normpath(os.path.join(dir, name))
