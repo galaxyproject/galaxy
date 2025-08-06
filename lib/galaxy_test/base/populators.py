@@ -40,6 +40,7 @@ is then added to populators to be shared across tests or across testing framewor
 
 import base64
 import contextlib
+import hashlib
 import json
 import os
 import tarfile
@@ -574,6 +575,20 @@ class BaseDatasetPopulator(BasePopulator):
         }
         if ext:
             item["ext"] = ext
+        output = self.fetch_hda(history_id, item)
+        details = self.get_history_dataset_details(history_id, dataset=output)
+        return details
+
+    def create_deferred_hda_with_hash(self, history_id: str, content: str) -> dict[str, Any]:
+        url = f"base64://{base64.b64encode(content.encode()).decode()}"
+        hashes = [{"hash_function": "SHA-1", "hash_value": hashlib.sha1(content.encode()).hexdigest()}]
+        item = {
+            "ext": "txt",
+            "src": "url",
+            "url": url,
+            "hashes": hashes,
+            "deferred": True,
+        }
         output = self.fetch_hda(history_id, item)
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details
