@@ -1,5 +1,5 @@
 import urllib.parse
-from typing import ClassVar
+from typing import Union
 
 try:
     from fs.ftpfs import FTPFS
@@ -7,26 +7,35 @@ except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class FTPFileSourcePropertiesConfiguration(FilesSourceProperties):
+class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    host: Union[str, TemplateExpansion] = ""
+    port: Union[int, TemplateExpansion] = 21
+    user: Union[str, TemplateExpansion] = "anonymous"
+    passwd: Union[str, TemplateExpansion] = ""
+
+
+class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     host: str = ""
     port: int = 21
     user: str = "anonymous"
     passwd: str = ""
 
 
-class FtpFilesSource(PyFilesystem2FilesSource):
+class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration, FTPFileSourceConfiguration]):
     plugin_type = "ftp"
     required_module = FTPFS
     required_package = "fs.ftpfs"
-    config_class: ClassVar[type[FTPFileSourcePropertiesConfiguration]] = FTPFileSourcePropertiesConfiguration
-    config: FTPFileSourcePropertiesConfiguration
 
-    def __init__(self, config: FTPFileSourcePropertiesConfiguration):
-        super().__init__(config)
+    template_config_class = FTPFileSourceTemplateConfiguration
+    resolved_config_class = FTPFileSourceConfiguration
 
     def _open_fs(self):
         if FTPFS is None:

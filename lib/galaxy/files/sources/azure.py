@@ -8,30 +8,41 @@ except ImportError:
     BlobFSV2 = None
 
 from typing import (
-    ClassVar,
     Optional,
+    Union,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
+AzureNamespaceType = Literal["hierarchical", "flat"]
 
-class AzureFileSourceConfiguration(FilesSourceProperties):
+
+class AzureFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    account_name: Union[str, TemplateExpansion]
+    container_name: Union[str, TemplateExpansion]
+    account_key: Union[str, TemplateExpansion]
+    namespace_type: Optional[AzureNamespaceType] = "hierarchical"
+
+
+class AzureFileSourceConfiguration(BaseFileSourceConfiguration):
     account_name: str
     container_name: str
     account_key: str
-    namespace_type: Optional[Literal["hierarchical", "flat"]] = "hierarchical"
+    namespace_type: Optional[AzureNamespaceType] = "hierarchical"
 
 
-class AzureFileSource(PyFilesystem2FilesSource):
+class AzureFileSource(PyFilesystem2FilesSource[AzureFileSourceTemplateConfiguration, AzureFileSourceConfiguration]):
     plugin_type = "azure"
     required_module = BlobFS
     required_package = "fs-azureblob"
-    config_class: ClassVar[type[AzureFileSourceConfiguration]] = AzureFileSourceConfiguration
-    config: AzureFileSourceConfiguration
 
-    def __init__(self, config: AzureFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = AzureFileSourceTemplateConfiguration
+    resolved_config_class = AzureFileSourceConfiguration
 
     def _open_fs(self):
         if BlobFS is None or BlobFSV2 is None:

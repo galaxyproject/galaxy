@@ -4,10 +4,14 @@ except ImportError:
     OnedataRESTFS = None
 
 
-from typing import ClassVar
+from typing import Union
 
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
 from galaxy.util import mapped_chars
-from . import FilesSourceProperties
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
@@ -17,21 +21,27 @@ def remove_prefix(prefix: str, string: str) -> str:
     return string
 
 
-class OnedataFileSourceConfiguration(FilesSourceProperties):
+class OnedataFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    access_token: Union[str, TemplateExpansion]
+    onezone_domain: Union[str, TemplateExpansion]
+    disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
+
+
+class OnedataFileSourceConfiguration(BaseFileSourceConfiguration):
     access_token: str
     onezone_domain: str
     disable_tls_certificate_validation: bool = False
 
 
-class OnedataFilesSource(PyFilesystem2FilesSource):
+class OnedataFilesSource(
+    PyFilesystem2FilesSource[OnedataFileSourceTemplateConfiguration, OnedataFileSourceConfiguration]
+):
     plugin_type = "onedata"
     required_module = OnedataRESTFS
     required_package = "fs.onedatarestfs"
-    config_class: ClassVar[type[OnedataFileSourceConfiguration]] = OnedataFileSourceConfiguration
-    config: OnedataFileSourceConfiguration
 
-    def __init__(self, config: OnedataFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = OnedataFileSourceTemplateConfiguration
+    resolved_config_class = OnedataFileSourceConfiguration
 
     def _open_fs(self):
         if OnedataRESTFS is None:

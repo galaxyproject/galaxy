@@ -6,8 +6,8 @@ except ImportError:
 import tempfile
 from typing import (
     Annotated,
-    ClassVar,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -15,11 +15,24 @@ from pydantic import (
     field_validator,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class WebDavFileSourceConfiguration(FilesSourceProperties):
+class WebDavFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    url: Union[str, TemplateExpansion, None] = None
+    root: Optional[Union[str, TemplateExpansion]] = None
+    login: Optional[Union[str, TemplateExpansion]] = None
+    password: Optional[Union[str, TemplateExpansion]] = None
+    temp_path: Optional[Union[str, TemplateExpansion]] = None
+    use_temp_files: Union[bool, TemplateExpansion] = True
+
+
+class WebDavFileSourceConfiguration(BaseFileSourceConfiguration):
     # Override url field to make it required for WebDAV - we keep a default but validate it's provided
     url: Annotated[
         str,
@@ -43,16 +56,14 @@ class WebDavFileSourceConfiguration(FilesSourceProperties):
         return v
 
 
-class WebDavFilesSource(PyFilesystem2FilesSource):
+class WebDavFilesSource(PyFilesystem2FilesSource[WebDavFileSourceTemplateConfiguration, WebDavFileSourceConfiguration]):
     plugin_type = "webdav"
     required_module = WebDAVFS
     required_package = "fs.webdavfs"
     allow_key_error_on_empty_directories = True
-    config_class: ClassVar[type[WebDavFileSourceConfiguration]] = WebDavFileSourceConfiguration
-    config: WebDavFileSourceConfiguration
 
-    def __init__(self, config: WebDavFileSourceConfiguration):
-        super().__init__(config)
+    template_config_class = WebDavFileSourceTemplateConfiguration
+    resolved_config_class = WebDavFileSourceConfiguration
 
     def _open_fs(self):
         if WebDAVFS is None:

@@ -7,7 +7,7 @@ except ImportError:
 
 from typing import (
     Annotated,
-    ClassVar,
+    Union,
 )
 
 from pydantic import (
@@ -15,29 +15,36 @@ from pydantic import (
     Field,
 )
 
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
-
-class GoogleDriveFilesSourceConfiguration(FilesSourceProperties):
-    access_token: Annotated[
-        str,
-        Field(
-            ...,
-            validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
-        ),
-    ]
+AccessTokenField = Field(
+    ...,
+    validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
+)
 
 
-class GoogleDriveFilesSource(PyFilesystem2FilesSource):
+class GoogleDriveFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+
+
+class GoogleDriveFilesSourceConfiguration(BaseFileSourceConfiguration):
+    access_token: Annotated[str, AccessTokenField]
+
+
+class GoogleDriveFilesSource(
+    PyFilesystem2FilesSource[GoogleDriveFileSourceTemplateConfiguration, GoogleDriveFilesSourceConfiguration]
+):
     plugin_type = "googledrive"
     required_module = GoogleDriveFS
     required_package = "fs.googledrivefs"
-    config_class: ClassVar[type[GoogleDriveFilesSourceConfiguration]] = GoogleDriveFilesSourceConfiguration
-    config: GoogleDriveFilesSourceConfiguration
 
-    def __init__(self, config: GoogleDriveFilesSourceConfiguration):
-        super().__init__(config)
+    template_config_class = GoogleDriveFileSourceTemplateConfiguration
+    resolved_config_class = GoogleDriveFilesSourceConfiguration
 
     def _open_fs(self):
         if GoogleDriveFS is None:

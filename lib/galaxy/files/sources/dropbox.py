@@ -6,7 +6,7 @@ except ImportError:
 
 from typing import (
     Annotated,
-    ClassVar,
+    Union,
 )
 
 from pydantic import (
@@ -18,31 +18,38 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from . import FilesSourceProperties
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
-
-class DropboxFilesSourceConfiguration(FilesSourceProperties):
-    access_token: Annotated[
-        str,
-        Field(
-            ...,
-            title="Access Token",
-            description="The access token for Dropbox. You can generate one from your Dropbox app settings.",
-            validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
-        ),
-    ]
+AccessTokenField = Field(
+    ...,
+    title="Access Token",
+    description="The access token for Dropbox. You can generate one from your Dropbox app settings.",
+    validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
+)
 
 
-class DropboxFilesSource(PyFilesystem2FilesSource):
+class DropboxFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+
+
+class DropboxFilesSourceConfiguration(BaseFileSourceConfiguration):
+    access_token: Annotated[str, AccessTokenField]
+
+
+class DropboxFilesSource(
+    PyFilesystem2FilesSource[DropboxFileSourceTemplateConfiguration, DropboxFilesSourceConfiguration]
+):
     plugin_type = "dropbox"
     required_module = DropboxFS
     required_package = "fs.dropboxfs"
-    config_class: ClassVar[type[DropboxFilesSourceConfiguration]] = DropboxFilesSourceConfiguration
-    config: DropboxFilesSourceConfiguration
 
-    def __init__(self, config: DropboxFilesSourceConfiguration):
-        super().__init__(config)
+    template_config_class = DropboxFileSourceTemplateConfiguration
+    resolved_config_class = DropboxFilesSourceConfiguration
 
     def _open_fs(self):
         if DropboxFS is None:
