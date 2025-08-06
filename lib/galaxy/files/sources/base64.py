@@ -1,28 +1,28 @@
 import base64
 import logging
 
+from galaxy.files.models import BaseFileSourceTemplateConfiguration
 from . import (
-    BaseFilesSource,
-    FilesSourceProperties,
+    DefaultBaseFilesSource,
     PluginKind,
 )
 
 log = logging.getLogger(__name__)
 
 
-class Base64FilesSource(BaseFilesSource):
+class Base64FilesSource(DefaultBaseFilesSource):
     plugin_type = "base64"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, config: FilesSourceProperties):
-        super().__init__(config)
+    def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
+        super().__init__(template_config)
         overrides = dict(
             id="_base64",
             label="Base64 encoded string",
             doc="Base64 string handler",
             writable=False,
         )
-        self.config = self.config.model_copy(update=overrides)
+        self._override_template_config(overrides)
 
     def _realize_to(self, source_path: str, native_path: str):
         with open(native_path, "wb") as temp:
