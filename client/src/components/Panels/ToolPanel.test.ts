@@ -112,7 +112,6 @@ describe("ToolPanel", () => {
             },
             localVue,
             stubs: {
-                icon: { template: "<div></div>" },
                 ToolBox: true,
             },
             pinia,
@@ -154,17 +153,20 @@ describe("ToolPanel", () => {
                 await flushPromises();
 
                 // Test: check if the current panel view is selected now
-                expect(currItem.find(".fa-check").exists()).toBe(true);
+                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
+                    "check",
+                );
 
                 // Test: check if the panel header now has an icon and a changed name
+                const currentViewType = value.view_type as keyof typeof types_to_icons;
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
-                expect(panelViewIcon.classes()).toContain(
-                    `fa-${types_to_icons[value.view_type as keyof typeof types_to_icons]}`,
-                );
+                expect(panelViewIcon.attributes("data-icon")).toEqual(types_to_icons[currentViewType].iconName);
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value!.name);
             } else {
                 // Test: check if the default panel view is already selected, and no icon
-                expect(currItem.find(".fa-check").exists()).toBe(true);
+                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
+                    "check",
+                );
                 expect(wrapper.find("[data-description='panel view header icon']").exists()).toBe(false);
             }
         }

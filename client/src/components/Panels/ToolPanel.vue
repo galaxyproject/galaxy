@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -41,14 +41,14 @@ const panelName = ref("");
 const panelsFetched = ref(false);
 const query = ref("");
 
-const panelIcon = computed(() => {
+const panelIcon = computed<IconDefinition | null>(() => {
     if (
         currentPanelView.value !== "default" &&
         panels.value &&
         typeof panels.value[currentPanelView.value]?.view_type === "string"
     ) {
         const viewType = panels.value[currentPanelView.value]?.view_type;
-        return viewType ? types_to_icons[viewType] : null;
+        return viewType && types_to_icons[viewType] ? types_to_icons[viewType] : null;
     } else {
         return null;
     }
@@ -154,9 +154,10 @@ initializePanel();
                 <template v-slot:panel-view-selector>
                     <div class="d-flex justify-content-between panel-view-selector">
                         <div>
-                            <span
+                            <FontAwesomeIcon
                                 v-if="panelIcon && !loading"
-                                :class="['fas', `fa-${panelIcon}`, 'mr-1']"
+                                class="mr-1"
+                                :icon="panelIcon"
                                 data-description="panel view header icon" />
                             <Heading
                                 id="toolbox-heading"

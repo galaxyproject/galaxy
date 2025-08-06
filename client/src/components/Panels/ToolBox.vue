@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 
@@ -13,6 +13,7 @@ import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
 
+import GButton from "../BaseComponents/GButton.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 
@@ -31,8 +32,6 @@ const props = defineProps({
     panelQuery: { type: String, required: true },
     useSearchWorker: { type: Boolean, default: true },
 });
-
-library.add(faEye, faEyeSlash);
 
 const queryFilter: Ref<string | null> = ref(null);
 const queryPending = ref(false);
@@ -175,25 +174,25 @@ function onToggle() {
                 @onResults="onResults" />
             <section>
                 <div v-if="hasResults && resultPanel" class="pb-2">
-                    <b-button size="sm" class="w-100" @click="onToggle">
+                    <GButton size="small" class="w-100 d-block" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />
                         <span class="mr-1">{{ buttonText }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-info w-100">Search term is too short</b-badge>
+                    <BBadge class="alert-info w-100">Search term is too short</BBadge>
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
-                    <b-badge class="alert-warning w-100">No results found</b-badge>
+                    <BBadge class="alert-warning w-100">No results found</BBadge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
-                    <b-badge class="alert-danger w-100">
+                    <BBadge class="alert-danger w-100">
                         Did you mean:
                         <i>
                             <a href="javascript:void(0)" @click="query = closestTerm">{{ closestTerm }}</a>
                         </i>
                         ?
-                    </b-badge>
+                    </BBadge>
                 </div>
             </section>
         </div>

@@ -1,14 +1,14 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import ariaAlert from "utils/ariaAlert";
 import { computed } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 
-library.add(fasStar, farStar);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps({
     id: {
@@ -68,8 +68,8 @@ async function onRemoveFavorite() {
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
-        <icon v-if="showAddFavorite" icon="far fa-star" />
-        <icon v-if="showRemoveFavorite" icon="fas fa-star" />
-    </b-button>
+    <GButton tooltip transparent :title="title" @click="onToggleFavorite">
+        <FontAwesomeIcon v-if="showAddFavorite" :icon="farStar" />
+        <FontAwesomeIcon v-if="showRemoveFavorite" :icon="fasStar" />
+    </GButton>
 </template>

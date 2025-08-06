@@ -2,6 +2,15 @@
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  * Note: Any mention of "DL" in this file refers to the Demerau-Levenshtein distance algorithm
  */
+import {
+    faFilter,
+    faGraduationCap,
+    faNewspaper,
+    faProjectDiagram,
+    faSitemap,
+    faUndo,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { orderBy } from "lodash";
 
 import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
@@ -51,13 +60,13 @@ interface SearchMatch {
 
 /** Returns icon for tool panel `view_type` */
 export const types_to_icons = {
-    default: "undo",
-    generic: "filter",
-    ontology: "sitemap",
-    activity: "project-diagram",
-    publication: "newspaper",
-    training: "graduation-cap",
-};
+    default: faUndo,
+    generic: faFilter,
+    ontology: faSitemap,
+    activity: faProjectDiagram,
+    publication: faNewspaper,
+    training: faGraduationCap,
+} as const satisfies Record<string, IconDefinition>;
 
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
