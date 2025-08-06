@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavItem, VBTooltipPlugin } from "bootstrap-vue";
-import Vue from "vue";
+import Vue, { type PropType } from "vue";
 
 import type { IconLike } from "@/components/icons/galaxyIcons";
 import { withPrefix } from "@/utils/redirect";
@@ -9,16 +9,16 @@ import { withPrefix } from "@/utils/redirect";
 Vue.use(VBTooltipPlugin);
 
 /* props */
-defineProps<{
-    disabled?: boolean;
-    id?: string;
-    icon?: string | IconLike; // String for legacy CSS classes, IconLike for proper imports
-    target?: string;
-    title?: string;
-    tooltip?: string;
-    toggle?: boolean;
-    url?: string;
-}>();
+defineProps({
+    disabled: Boolean,
+    id: String,
+    icon: [String, Object] as PropType<string | IconLike>, // String for legacy CSS classes, IconLike for proper imports
+    target: String,
+    title: String,
+    tooltip: String,
+    toggle: Boolean,
+    url: String,
+});
 </script>
 
 <template>

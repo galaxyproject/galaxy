@@ -1,3 +1,4 @@
+import { faCog, faEdit, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -22,7 +23,7 @@ const testGrid = {
     actions: [
         {
             title: "test",
-            icon: "test-icon",
+            icon: faPlus,
             handler: jest.fn(),
         },
     ],
@@ -45,19 +46,19 @@ const testGrid = {
             operations: [
                 {
                     title: "operation-title-1",
-                    icon: "operation-icon-1",
+                    icon: faEdit,
                     condition: (_, config) => config.value.enabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-2",
-                    icon: "operation-icon-2",
+                    icon: faCog,
                     condition: (_, config) => config.value.disabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-3",
-                    icon: "operation-icon-3",
+                    icon: faPlus,
                     condition: (_, config) => config.value.enabled,
                     handler: () => ({
                         status: "success",
@@ -112,7 +113,7 @@ describe("GridList", () => {
         expect(testGrid.actions[0].handler).toHaveBeenCalledTimes(1);
         expect(testGrid.getData).toHaveBeenCalledTimes(1);
         expect(testGrid.getData.mock.calls[0]).toEqual([0, 25, "", "id", true]);
-        expect(findAction.find("[icon='test-icon']").exists()).toBeTruthy();
+        expect(findAction.find("svg").exists()).toBeTruthy();
         await wrapper.vm.$nextTick();
         expect(wrapper.find("[data-description='grid title']").text()).toBe("Test");
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-1");
