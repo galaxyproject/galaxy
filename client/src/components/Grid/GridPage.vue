@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import pagesGridConfig from "@/components/Grid/configs/pages";
@@ -29,7 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Pages</Heading>
             <div v-if="!userStore.isAnonymous">
                 <GButton id="page-create" size="small" outline color="blue" to="/pages/create">
-                    <Icon :icon="faPlus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     <span v-localize>Create Page</span>
                 </GButton>
             </div>

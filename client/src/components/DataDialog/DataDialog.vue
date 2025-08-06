@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
@@ -206,7 +207,7 @@ watch(
         @onUndo="load()">
         <template v-slot:buttons>
             <GButton v-if="allowUpload" size="small" @click="onUpload">
-                <Icon :icon="faUpload" />
+                <FontAwesomeIcon :icon="faUpload" />
                 Upload
             </GButton>
         </template>
