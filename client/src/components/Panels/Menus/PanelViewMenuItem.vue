@@ -1,61 +1,40 @@
-<template>
-    <BDropdownItem class="ml-1" :title="title" :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
-        <FontAwesomeIcon :icon="icon" data-description="panel view item icon" fixed-width />
-        <span v-localize>{{ name }}</span>
-    </BDropdownItem>
-</template>
-
-<script>
+<script setup lang="ts">
 import { faCheck, faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdownItem } from "bootstrap-vue";
+import { computed } from "vue";
+
+import type { Panel } from "@/stores/toolStore";
 
 import { types_to_icons } from "../utilities";
 
-export default {
-    components: {
-        BDropdownItem,
-        FontAwesomeIcon,
-    },
-    props: {
-        currentPanelView: {
-            type: String,
-            required: true,
-        },
-        panelView: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            faCheck,
-            faEye,
-        };
-    },
-    computed: {
-        title() {
-            return this.panelView.description;
-        },
-        icon() {
-            const viewType = this.panelView.view_type;
-            if (this.isSelected) {
-                return this.faCheck;
-            } else {
-                return types_to_icons[viewType] || this.faEye;
-            }
-        },
-        isSelected() {
-            return this.currentPanelView == this.panelView.id;
-        },
-        name() {
-            return this.panelView.name;
-        },
-    },
-    methods: {
-        onClick() {
-            this.$emit("onSelect", this.panelView);
-        },
-    },
-};
+const props = defineProps<{
+    currentPanelView: string;
+    panelView: Panel;
+}>();
+
+const emit = defineEmits<{
+    (e: "onSelect", panelView: Panel): void;
+}>();
+
+const icon = computed(() => {
+    const viewType = props.panelView.view_type;
+    if (props.currentPanelView === props.panelView.id) {
+        return faCheck;
+    } else {
+        return types_to_icons[viewType] || faEye;
+    }
+});
 </script>
+
+<template>
+    <BDropdownItem
+        class="ml-1"
+        :title="props.panelView.description"
+        :data-panel-id="panelView.id"
+        :active="props.currentPanelView === props.panelView.id"
+        @click="emit('onSelect', props.panelView)">
+        <FontAwesomeIcon :icon="icon" data-description="panel view item icon" fixed-width />
+        <span v-localize>{{ props.panelView.name }}</span>
+    </BDropdownItem>
+</template>
