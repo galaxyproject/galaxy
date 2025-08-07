@@ -490,7 +490,11 @@ const allowedTitleLines = computed(() => props.titleNLines);
                                                 :to="badge.to"
                                                 :href="badge.href"
                                                 @click.stop="badge.handler">
-                                                <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                                <FontAwesomeIcon
+                                                    v-if="badge.icon"
+                                                    :icon="badge.icon"
+                                                    fixed-width
+                                                    :spin="badge.spin" />
                                                 {{ localize(badge.label) }}
                                             </BBadge>
                                         </template>
