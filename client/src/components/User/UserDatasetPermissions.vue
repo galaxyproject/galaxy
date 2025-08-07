@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { computed, ref } from "vue";
 
@@ -45,7 +46,7 @@ const formConfig = computed(() => {
         description:
             "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
         url: inputsUrl.value,
-        icon: "fa-users",
+        icon: faUsers,
         submitTitle: "Save Permissions",
         redirect: "/user",
     };

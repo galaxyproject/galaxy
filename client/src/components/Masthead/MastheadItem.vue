@@ -1,37 +1,23 @@
-<script setup>
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavItem, VBTooltipPlugin } from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
-import Vue from "vue";
+import Vue, { type PropType } from "vue";
+
+import type { IconLike } from "@/components/icons/galaxyIcons";
+import { withPrefix } from "@/utils/redirect";
 
 Vue.use(VBTooltipPlugin);
 
 /* props */
 defineProps({
-    disabled: {
-        type: Boolean,
-    },
-    id: {
-        type: String,
-    },
-    icon: {
-        type: String,
-    },
-    target: {
-        type: String,
-    },
-    title: {
-        type: String,
-    },
-    tooltip: {
-        type: String,
-    },
-    toggle: {
-        type: Boolean,
-        default: false,
-    },
-    url: {
-        type: String,
-    },
+    disabled: Boolean,
+    id: String,
+    icon: [String, Object] as PropType<string | IconLike>, // String for legacy CSS classes, IconLike for proper imports
+    target: String,
+    title: String,
+    tooltip: String,
+    toggle: Boolean,
+    url: String,
 });
 </script>
 
@@ -39,7 +25,7 @@ defineProps({
     <BNavItem
         :id="id"
         v-b-tooltip.noninteractive.hover.bottom
-        :href="withPrefix(url)"
+        :href="url ? withPrefix(url) : undefined"
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
         :title="tooltip"
@@ -47,7 +33,8 @@ defineProps({
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
-            <span :class="`fa fa-fw ${icon}`" />
+            <FontAwesomeIcon v-if="typeof icon === 'object'" fixed-width :icon="icon" />
+            <span v-else :class="`fa fa-fw ${icon}`" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>

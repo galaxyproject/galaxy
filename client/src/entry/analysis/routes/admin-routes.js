@@ -1,3 +1,4 @@
+import { faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import AdminHome from "components/admin/AdminHome";
 import DataManager from "components/admin/DataManager/DataManager";
@@ -181,7 +182,7 @@ export default [
                 props: (route) => ({
                     title: "Reset passwords",
                     url: `/admin/reset_user_password?id=${route.query.id}`,
-                    icon: "fa-user",
+                    icon: faUser,
                     submitTitle: "Save new password",
                     redirect: "/admin/users",
                 }),
@@ -191,7 +192,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
-                    icon: "fa-users",
+                    icon: faUsers,
                     redirect: "/admin/users",
                 }),
             },

@@ -3,7 +3,7 @@
 // the same plugins and events.
 
 import BootstrapVue from "bootstrap-vue";
-import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
+import { localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
@@ -18,9 +18,6 @@ Vue.use(localizationPlugin);
 
 // rxjs utilities
 Vue.use(vueRxShortcutPlugin);
-
-// font-awesome svg icon registration/loading
-Vue.use(iconPlugin);
 
 function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there

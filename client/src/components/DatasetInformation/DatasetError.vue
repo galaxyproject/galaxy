@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCard } from "bootstrap-vue";
@@ -20,8 +19,6 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
-
-library.add(faBug);
 
 interface Props {
     datasetId: string;

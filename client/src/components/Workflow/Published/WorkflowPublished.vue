@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BAlert, BCard } from "bootstrap-vue";
@@ -20,8 +19,6 @@ import Heading from "@/components/Common/Heading.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
-
-library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
 
 interface Props {
     id: string;

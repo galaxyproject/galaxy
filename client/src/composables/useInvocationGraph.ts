@@ -1,4 +1,4 @@
-import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
     faClock,
@@ -82,8 +82,6 @@ export function useInvocationGraph(
     workflowId: string | undefined,
     workflowVersion: number | undefined
 ) {
-    library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
-
     const steps = ref<{ [index: string]: GraphStep }>({});
     const stepsPopulated = ref(false);
     const storeId = computed(() => `invocation-${invocation.value.id}`);

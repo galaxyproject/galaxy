@@ -1,7 +1,6 @@
 <script lang="ts">
 /* cannot use a setup block and get params injection in Vue 2.7 I think */
 
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLink, faUndo, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ICellRendererParams } from "ag-grid-community";
@@ -13,8 +12,6 @@ import { showHid } from "./useCollectionCreator";
 
 type StoreType = ReturnType<typeof usePairingDatasetTargetsStore>;
 
-library.add(faLink, faUndo, faUnlink);
-
 export default defineComponent({
     components: {
         FontAwesomeIcon,
@@ -23,6 +20,9 @@ export default defineComponent({
         return {
             params: {} as ICellRendererParams,
             showHid: showHid,
+            faLink,
+            faUndo,
+            faUnlink,
         };
     },
     computed: {
@@ -97,8 +97,8 @@ export default defineComponent({
 <template>
     <div>
         <div v-if="isPaired" class="paired-datasets-cell">
-            <FontAwesomeIcon size="2x" icon="fa-undo" class="paired-action-icon" @click="onSwap" />
-            <FontAwesomeIcon size="2x" icon="fa-unlink" class="paired-action-icon" @click="onUnpair" />
+            <FontAwesomeIcon size="2x" :icon="faUndo" class="paired-action-icon" @click="onSwap" />
+            <FontAwesomeIcon size="2x" :icon="faUnlink" class="paired-action-icon" @click="onUnpair" />
             <div class="text-container">
                 <span>
                     <span class="direction">FORWARD</span>
@@ -126,7 +126,7 @@ export default defineComponent({
                 @drop="onDrop">
                 <FontAwesomeIcon
                     size="2x"
-                    icon="fa-link"
+                    :icon="faLink"
                     class="paired-action-icon"
                     :class="{ dragging: dragging, 'active-target': isUnpairedTarget, 'fa-beat': isUnpairedTarget }" />
             </div>

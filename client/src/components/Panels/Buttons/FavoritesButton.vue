@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar as faRegStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -9,8 +8,6 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
-
-library.add(faStar, faRegStar);
 
 interface Props {
     value?: boolean;

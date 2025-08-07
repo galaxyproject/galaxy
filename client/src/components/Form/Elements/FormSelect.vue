@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
@@ -12,8 +11,6 @@ import { uid } from "@/utils/utils";
 import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-library.add(faCheckSquare, faSquare);
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 

@@ -2,7 +2,7 @@
     <b-card border-variant="danger" :header="header">
         <b-card-text>
             <div @click="showInfo = true">
-                <a href="#">See full job details <FontAwesomeIcon icon="info-circle" /></a>
+                <a href="#">See full job details <FontAwesomeIcon :icon="faInfoCircle" /></a>
             </div>
             <div v-if="job.stderr" class="error-wrapper" @click="toggleExpanded">
                 Job Standard Error
@@ -18,7 +18,6 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
@@ -26,7 +25,6 @@ import Vue from "vue";
 
 import JobInformation from "./JobInformation.vue";
 
-library.add(faInfoCircle);
 Vue.use(BootstrapVue);
 
 export default {
@@ -45,6 +43,7 @@ export default {
         return {
             expanded: false,
             showInfo: false,
+            faInfoCircle,
         };
     },
     computed: {

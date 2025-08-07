@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore
@@ -38,11 +39,11 @@ const onImport = async () => {
             Click to Import History: {{ name }}
         </b-link>
         <div v-if="imported" class="text-success">
-            <FontAwesomeIcon icon="check" class="mr-1" />
+            <FontAwesomeIcon :icon="faCheck" class="mr-1" />
             <span>Successfully Imported History: {{ name }}!</span>
         </div>
         <div v-if="!!error" class="text-danger">
-            <FontAwesomeIcon icon="exclamation-triangle" class="mr-1" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
             <span>Failed to handle History: {{ name || "n/a" }}!</span>
             <span>{{ error }}</span>
         </div>

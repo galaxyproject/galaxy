@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleLeft, faAngleLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionEntry } from "@/api";
-
-library.add(faAngleDoubleLeft, faAngleLeft);
 
 interface Props {
     historyName: string;

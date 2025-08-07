@@ -41,7 +41,7 @@
             title="Roles that can manage this library"
             @input="setUserPermissionsPreferences" />
         <button title="Save modifications" class="toolbtn_save_permissions" @click="postPermissions">
-            <FontAwesomeIcon :icon="['far', 'save']" />
+            <FontAwesomeIcon :icon="faSave" />
             Save
         </button>
     </div>
@@ -50,7 +50,6 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
@@ -59,8 +58,9 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { faSave } from "@/components/Libraries/icons";
+
 Vue.use(BootstrapVue);
-initPermissionsIcons();
 
 export default {
     components: {
@@ -87,6 +87,7 @@ export default {
             modify_type: "modify_library_role_list",
             manage_type: "manage_library_role_list",
             access_type: "access_library_role_list",
+            faSave,
         };
     },
     created() {

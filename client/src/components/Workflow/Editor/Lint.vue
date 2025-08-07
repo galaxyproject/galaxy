@@ -74,14 +74,13 @@
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUnlabeledOutputs" />
         <div v-if="!hasActiveOutputs">
-            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
             <span>This workflow has no labeled outputs, please select and label at least one output.</span>
         </div>
     </ActivityPanel>
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
@@ -113,9 +112,6 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
 Vue.use(BootstrapVue);
-
-library.add(faExclamationTriangle);
-library.add(faMagic);
 
 export default {
     components: {
@@ -162,6 +158,8 @@ export default {
     },
     data() {
         return {
+            faExclamationTriangle,
+            faMagic,
             bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
             bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
             bestPracticeWarningCreator: bestPracticeWarningCreator,

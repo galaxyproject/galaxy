@@ -57,9 +57,6 @@ describe("Masthead.vue", () => {
             },
             localVue,
             pinia: testPinia,
-            stubs: {
-                Icon: true,
-            },
         });
         await flushPromises();
     });
@@ -72,7 +69,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should display window manager button", async () => {
-        expect(wrapper.find("#enable-window-manager a span.fa-th").exists()).toBe(true);
+        expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
         expect(windowManager.active).toBe(false);
         await wrapper.find("#enable-window-manager a").trigger("click");
         expect(windowManager.active).toBe(true);
