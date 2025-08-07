@@ -177,13 +177,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
     template_config_class = eLabFTWFileSourceTemplateConfiguration
     resolved_config_class = eLabFTWFileSourceConfiguration
 
-    def __init__(self, template_config: eLabFTWFileSourceTemplateConfiguration):
-        """Initialize the eLabFTW files source with an API key and an endpoint URL."""
-        super().__init__(template_config)
-
-        self._endpoint = self.config.endpoint  # meant to be accessed only from `_get_endpoint()`
-        self._api_key = self.config.api_key  # meant to be accessed only from `_create_session()`
-
     def get_prefix(self) -> Optional[str]:
         endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)

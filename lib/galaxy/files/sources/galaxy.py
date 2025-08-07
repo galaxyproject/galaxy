@@ -23,8 +23,9 @@ class UserFtpFilesSource(PosixFilesSource):
         )
         template_config = self._apply_defaults_to_template(defaults, template_config)
         super().__init__(template_config)
-        if not self.config.delete_on_realize:
-            self.config.delete_on_realize = self.config.file_sources_config.ftp_upload_purge
+        if not self.template_config.delete_on_realize:
+            # If delete_on_realize is not set, use the default from the file sources config.
+            self.template_config.delete_on_realize = self.template_config.file_sources_config.ftp_upload_purge
 
     def get_prefix(self) -> Optional[str]:
         return None

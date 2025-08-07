@@ -150,9 +150,9 @@ class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFile
 
     def __init__(self, template_config: RDMFileSourceTemplateConfiguration):
         super().__init__(template_config)
-        if not self.config.url:
+        if not self.template_config.url:
             raise Exception("URL for RDM repository must be provided in configuration")
-        self._repository_interactor = self.get_repository_interactor(self.config.url)
+        self._repository_interactor = self.get_repository_interactor(self.template_config.url)
 
     @property
     def repository(self) -> RDMRepositoryInteractor:
