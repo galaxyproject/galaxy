@@ -67,7 +67,7 @@ function toggleFavorites() {
 
 <template>
     <GButton
-        class="panel-header-button-toolbox d-block"
+        class="d-block"
         transparent
         tooltip
         aria-label="Show favorite tools"
