@@ -359,7 +359,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         """
         self._file_sources_config = config.file_sources_config
         self.id = config.id
-        self.label = config.label
+        self.label = config.label or f"Unlabeled {self.plugin_kind.value.capitalize()} File Source [{self.id}]"
         self.doc = config.doc
         self.scheme = config.scheme
         self.writable = config.writable

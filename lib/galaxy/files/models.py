@@ -157,7 +157,7 @@ class FilesSourceProperties(StrictModel):
             ...,
             description="The display label for this plugin.",
         ),
-    ] = "Unlabeled File Source"
+    ] = None
     doc: Annotated[
         Optional[str],
         Field(
