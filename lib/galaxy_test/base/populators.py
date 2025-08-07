@@ -4176,6 +4176,31 @@ class TargetHistory:
         )
         return HasSrcDict("hda", new_dataset)
 
+    def with_deferred_dataset(
+        self,
+        uri: str,
+        named: Optional[str] = None,
+        ext: Optional[str] = None,
+    ) -> "HasSrcDict":
+        kwd = {}
+        if named is not None:
+            kwd["name"] = named
+        new_dataset = self._dataset_populator.create_deferred_hda(
+            history_id=self._history_id,
+            uri=uri,
+            ext=ext,
+        )
+        return HasSrcDict("hda", new_dataset)
+
+    def with_deferred_dataset_for_test_file(
+        self,
+        filename: str,
+        named: Optional[str] = None,
+        ext: Optional[str] = None,
+    ) -> "HasSrcDict":
+        base64_url = self._dataset_populator.base64_url_for_test_file(filename)
+        return self.with_deferred_dataset(base64_url, named=named, ext=ext)
+
     def with_unpaired(self) -> "HasSrcDict":
         return self._fetch_response(
             self._dataset_collection_populator.create_unpaired_in_history(self._history_id, wait=True)
