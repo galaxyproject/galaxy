@@ -19,7 +19,8 @@
             :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
             :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
-            @open="() => onOpen(item)" />
+            @open="() => onOpen(item)"
+            @apply-filter="(filter, value) => $emit('apply-filter', filter, value)" />
         <div>
             <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
             <b-overlay :show="busy" opacity="0.5" />
