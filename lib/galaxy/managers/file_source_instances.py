@@ -27,7 +27,6 @@ from galaxy.files import (
     ProvidesFileSourcesUserContext,
     UserDefinedFileSources,
 )
-from galaxy.files.models import FilesSourceProperties
 from galaxy.files.plugins import (
     FileSourcePluginLoader,
     FileSourcePluginsConfig,
@@ -559,7 +558,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         user_object_store: UserFileSource = self._sa_session.query(UserFileSource).filter(index_filter).one()
         return user_object_store
 
-    def _file_source_properties_from_uri(self, uri: str) -> Optional[FilesSourceProperties]:
+    def _file_source_properties_from_uri(self, uri: str) -> Optional[dict[str, Any]]:
         user_file_source = self._user_file_source(uri)
         if not user_file_source:
             return None
@@ -567,7 +566,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
             return None
         return self._file_source_properties(user_file_source)
 
-    def _file_source_properties(self, user_file_source: UserFileSource) -> FilesSourceProperties:
+    def _file_source_properties(self, user_file_source: UserFileSource) -> dict[str, Any]:
         secrets = recover_secrets(user_file_source, self._app_vault, self._app_config)
         environment = prepare_environment(user_file_source, self._app_vault, self._app_config)
         template_server_configuration = self.template_server_configuration(
@@ -605,20 +604,20 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         file_source = self._file_source(files_source_properties)
         return FileSourceScore(file_source, len(url))
 
-    def _file_source(self, files_source_properties: FilesSourceProperties) -> BaseFilesSource:
-        plugin_source = plugin_source_from_dict([cast(dict[str, Any], files_source_properties)])
+    def _file_source(self, files_source_properties: dict[str, Any]) -> BaseFilesSource:
+        plugin_source = plugin_source_from_dict([files_source_properties])
         file_source = self._plugin_loader.load_plugins(
             plugin_source,
             self._file_sources_config,
         )[0]
         return file_source
 
-    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> list[FilesSourceProperties]:
+    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> list[dict[str, Any]]:
         username_filter = User.__table__.c.username == user_context.username
         user: Optional[User] = self._sa_session.query(User).filter(username_filter).one_or_none()
         if user is None:
             return []
-        all_file_source_properties: list[FilesSourceProperties] = []
+        all_file_source_properties: list[dict[str, Any]] = []
         for user_file_source in user.file_sources:
             if user_file_source.hidden:
                 continue
@@ -669,7 +668,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 
         as_dicts = []
         for files_source_properties in self._all_user_file_source_properties(user_context):
-            files_source_type = files_source_properties.type
+            files_source_type = files_source_properties["type"]
             plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
             plugin_kind = plugin_type_class.plugin_kind
             if include_kind and plugin_kind not in include_kind:
@@ -691,7 +690,7 @@ def configuration_to_file_source_properties(
     label: str,
     doc: Optional[str],
     id: str,
-) -> FilesSourceProperties:
+) -> dict[str, Any]:
     file_source_properties = file_source_configuration.model_dump()
     file_source_properties["label"] = label
     file_source_properties["doc"] = doc
@@ -706,7 +705,7 @@ def configuration_to_file_source_properties(
     # these plugins. I can't imagine a use case for that and I would hate to templating
     # languages having odd interactions.
     file_source_properties["disable_templating"] = True
-    return FilesSourceProperties(**file_source_properties)
+    return file_source_properties
 
 
 __all__ = (
