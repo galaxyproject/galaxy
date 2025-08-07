@@ -880,6 +880,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     "collection_type",
                     "populated_state",
                     "populated_state_message",
+                    "column_definitions",
                     "element_count",
                 ]
                 for attribute in attributes:
@@ -891,6 +892,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc = model.DatasetCollection(collection_type=collection_attrs["type"])
                 dc.populated_state = collection_attrs["populated_state"]
                 dc.populated_state_message = collection_attrs.get("populated_state_message")
+                dc.column_definitions = collection_attrs.get("column_definitions")
                 self._attach_raw_id_if_editing(dc, collection_attrs)
                 materialize_elements(dc)
 
