@@ -108,7 +108,7 @@ def __as_configurable_plugin_instance(obj: Any) -> Optional[Type]:
     return None
 
 
-def __create_plugin_instance(plugin_class: Type[T], plugin_kwds: dict[str, Any]) -> T:
+def __create_plugin_instance(plugin_class: Type[T], plugin_kwds: Dict[str, Any]) -> T:
     """Create an instance of the plugin class with the provided keyword arguments."""
     configurable_instance = __as_configurable_plugin_instance(plugin_class)
     if configurable_instance:
