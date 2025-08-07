@@ -58,6 +58,10 @@ RuleBuilderMappingTargetKey = Literal[
     "url_deferred",
     "info",
     "ftp_path",
+    "deferred",
+    "to_posix_lines",
+    "space_to_tab",
+    "auto_decompress",
 ]
 
 
