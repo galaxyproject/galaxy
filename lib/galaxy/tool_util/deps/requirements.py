@@ -187,6 +187,7 @@ class ContainerDescription:
         type: str = DEFAULT_CONTAINER_TYPE,
         resolve_dependencies: bool = DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell: str = DEFAULT_CONTAINER_SHELL,
+        cmd: Optional[str] = None,
     ) -> None:
         # Force to lowercase because container image names must be lowercase.
         # Cached singularity images include the path on disk, so only lowercase
@@ -206,6 +207,7 @@ class ContainerDescription:
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
         self.explicit = False
+        self.cmd = cmd
 
     def to_dict(self, *args, **kwds) -> Dict[str, Any]:
         return dict(
