@@ -69,7 +69,7 @@ class RemoteZipFilesSource(DefaultBaseFilesSource):
         file_extract_params = validate_params(params)
         validate_uri_access(
             file_extract_params.source,
-            self.user_data.is_admin if self.user_data else False,
+            self.user_data.is_admin,
             self._allowlist or [],
         )
         stream_and_decompress(file_extract_params, native_path)
