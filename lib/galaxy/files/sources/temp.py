@@ -1,29 +1,130 @@
-from typing import Optional
+import os
+import tempfile
+from typing import (
+    List,
+    Optional,
+    Tuple,
+)
 
-from fs.osfs import OSFS
+from fsspec.implementations.local import LocalFileSystem
+from typing_extensions import Unpack
 
-from . import FilesSourceOptions
-from ._pyfilesystem2 import PyFilesystem2FilesSource
+from galaxy.files import OptionalUserContext
+from . import (
+    AnyRemoteEntry,
+    FilesSourceOptions,
+)
+from ._fsspec import (
+    FsspecFilesSource,
+    FsspecFilesSourceProperties,
+)
 
 
-class TempFilesSource(PyFilesystem2FilesSource):
+class TempFilesSource(FsspecFilesSource):
     """A FilesSource plugin for temporary file systems.
 
-    Used for testing and other temporary file system needs.
+    Since fsspec does not have temporary file system implementation, this plugin
+    uses a local file system with a specified root path (ideally a temporary directory)
+    to simulate a temporary file system. Files created in this source are not
+    guaranteed to be deleted automatically, so users should manage cleanup as needed.
 
-    Note: This plugin is not intended for production use.
+    **Note: This plugin is not intended for production use. It is primarily for testing and development purposes.**
     """
 
     plugin_type = "temp"
-    required_module = OSFS
+    required_module = LocalFileSystem
+    required_package = "fsspec"
+
+    def __init__(self, **kwd: Unpack[FsspecFilesSourceProperties]):
+        super().__init__(**kwd)
+        props = self._parse_common_config_opts(kwd)
+        self._root_path = props.get("root_path", "")
+
+    def _ensure_root_path(self):
+        if not self._root_path:
+            raise ValueError("The config value for 'root_path' must be set for TempFilesSource.")
+
+    def _to_temp_path(self, path: str) -> str:
+        """Convert a virtual temp path to an actual filesystem path.
+
+        i.e. /a/b/c -> /{root_path}/a/b/c
+        """
+        self._ensure_root_path()
+        relative_path = path.lstrip(os.sep)
+        if not relative_path:
+            return self._root_path
+        return os.path.join(self._root_path, relative_path)
+
+    def _from_temp_path(self, native_path: str) -> str:
+        """Convert an actual filesystem path back to virtual temp path.
+
+        i.e. /{root_path}/a/b/c -> /a/b/c
+        """
+        self._ensure_root_path()
+        native_path = native_path.replace(self._root_path, os.sep, 1)
+        return native_path
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         extra_props = opts.extra_props or {} if opts else {}
-        # We use OSFS here because using TempFS or MemoryFS would wipe out the files
-        # every time we instantiate a new handle, which happens on every request.
-        handle = OSFS(**{**props, **extra_props})
+
+        root_path = props.pop("root_path", None)
+        if root_path is None:
+            root_path = tempfile.mkdtemp()
+
+        self._root_path = root_path
+        handle = LocalFileSystem(auto_mkdir=True, **{**props, **extra_props})
         return handle
+
+    def _list(
+        self,
+        path="/",
+        recursive=False,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        native_path = self._to_temp_path(path)
+        entries, total = super()._list(
+            path=native_path,
+            recursive=recursive,
+            user_context=user_context,
+            opts=opts,
+            limit=limit,
+            offset=offset,
+            query=query,
+            sort_by=sort_by,
+        )
+
+        # Transform the paths in the results back to virtual paths
+        for entry in entries:
+            entry["path"] = self._from_temp_path(entry["path"])
+            entry["uri"] = self._from_temp_path(entry["uri"])
+
+        return entries, total
+
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
+        temp_path = self._to_temp_path(source_path)
+        return super()._realize_to(temp_path, native_path, user_context, opts)
+
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
+        temp_path = self._to_temp_path(target_path)
+        return super()._write_from(temp_path, native_path, user_context, opts)
 
     def get_scheme(self) -> str:
         return "temp"
