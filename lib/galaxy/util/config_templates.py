@@ -622,14 +622,14 @@ M = TypeVar("M", bound="BaseModel")
 #       It should be removed when Python/pydantic supports this feature natively.
 # https://github.com/pydantic/pydantic/issues/1673
 def partial_model(
-    include: Optional[list[str]] = None, exclude: Optional[list[str]] = None
-) -> Callable[[type[M]], type[M]]:
+    include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> Callable[[Type[M]], Type[M]]:
     """Decorator to make all model fields optional"""
 
     if exclude is None:
         exclude = []
 
-    def decorator(model: type[M]) -> type[M]:
+    def decorator(model: Type[M]) -> Type[M]:
         def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
             new = deepcopy(field)
             new.default = default
