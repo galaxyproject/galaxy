@@ -20,6 +20,8 @@ const labels = new Map([
     ["list:list", "list"],
     ["paired", "pair"],
     ["sample_sheet", "sample sheet"],
+    ["sample_sheet:paired", "sample sheet"],
+    ["sample_sheet:paired_or_unpaired", "sample sheet"],
 ]);
 
 const jobStateSummary = computed(() => {
@@ -28,7 +30,18 @@ const jobStateSummary = computed(() => {
 
 const collectionLabel = computed(() => {
     const collectionType = props.hdca.collection_type;
-    return labels.get(collectionType) ?? "nested list";
+    const isList = collectionType.startsWith("list");
+    if (labels.get(collectionType)) {
+        return labels.get(collectionType);
+    } else if (isList) {
+        // call everything like list:list:paired or list:list:list a nested list
+        return "nested list";
+    } else if (collectionType.indexOf(":") > -1) {
+        // e.g. paired:paired or paired:list:list
+        return "nested collection";
+    } else {
+        return "collection";
+    }
 });
 const hasSingleElement = computed(() => {
     return props.hdca.element_count === 1;

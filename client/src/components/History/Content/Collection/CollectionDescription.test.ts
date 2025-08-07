@@ -97,7 +97,7 @@ describe("CollectionDescription", () => {
                 collection_type: "other",
             },
         });
-        expect(wrapper.text()).toBe("a nested list with 10 dataset collections");
+        expect(wrapper.text()).toBe("a collection with 10 dataset collections");
     });
 
     it("should display expected homogeneous descriptions", async () => {
@@ -155,10 +155,20 @@ describe("CollectionDescription", () => {
             hdca: {
                 ...defaultTestHDCA,
                 element_count: 10,
+                collection_type: "paired:paired",
+                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
+            },
+        });
+        expect(wrapper.text()).toBe(`a nested collection with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
+
+        await wrapper.setProps({
+            hdca: {
+                ...defaultTestHDCA,
+                element_count: 10,
                 collection_type: "other",
                 elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
             },
         });
-        expect(wrapper.text()).toBe(`a nested list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
+        expect(wrapper.text()).toBe(`a collection with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
     });
 });
