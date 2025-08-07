@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {
     faAngleDown,
     faAngleUp,
@@ -8,18 +8,20 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
+
+import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
+// TODO: Refactor props to use defineProps with types (best practices)
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     section: { type: String, required: true },
-    ontologies: { type: Array, default: null },
+    ontologies: { type: Array<string>, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -30,7 +32,11 @@ const props = defineProps({
     owner: { type: String, default: null },
 });
 
-const emit = defineEmits(["open"]);
+// TODO: For tool open emit, consider adding event as param to allow for opening tool in new tab
+const emit = defineEmits<{
+    (e: "open"): void;
+    (e: "apply-filter", filter: string, value: string): void;
+}>();
 
 const showHelp = ref(false);
 
@@ -42,6 +48,10 @@ const formattedToolHelp = computed(() => {
         return "";
     }
 });
+
+/** We add double quotes to the section filter since the backend Whoosh search
+ * requires it for exact matches, and the `Filtering` class only does single quotes. */
+const quotedSection = computed(() => (props.section ? `"${props.section}"` : ""));
 </script>
 
 <template>
@@ -86,7 +96,8 @@ const formattedToolHelp = computed(() => {
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b> <GLink thin :to="`/tools/list?section=${props.section}`">{{ section }}</GLink>
+                    <b>Section:</b>
+                    <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
                 </span>
 
                 <span v-if="!props.local" class="tag info">
@@ -101,12 +112,13 @@ const formattedToolHelp = computed(() => {
 
                 <span v-if="props.owner" class="tag success">
                     <FontAwesomeIcon :icon="faUser" />
-                    <b>Owner:</b> <GLink thin :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</GLink>
+                    <b>Owner:</b>
+                    <GLink thin @click="() => emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
                 </span>
 
                 <span v-if="props.ontologies && props.ontologies.length > 0">
                     <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
-                        <GLink thin :to="`/tools/list?ontology=${ontology}`">{{ ontology }}</GLink>
+                        <GLink thin @click="() => emit('apply-filter', 'ontology', ontology)">{{ ontology }}</GLink>
                     </span>
                 </span>
             </div>

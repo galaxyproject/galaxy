@@ -63,7 +63,13 @@ const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
         help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
     };
 });
-const ToolFilters = computed<Filtering<string>>(() => new Filtering(validFilters.value, undefined, true, false));
+// TODO: We need to use double quotes as opposed to the default single quotes in the Filtering class
+// (will need to implement this in the Filtering class). We need this because the whoosh query
+// requires double quotes for phrases.
+// See: https://whoosh.readthedocs.io/en/latest/querylang.html#query
+// For now, I've changed the `quoteStrings` param to `false` to avoid issues with the quotes, and added
+// a "hint" to the `FilterMenu` help text.
+const ToolFilters = computed<Filtering<string>>(() => new Filtering(validFilters.value, undefined, false, false));
 
 // Scroll Variables
 const scrollContainer = ref<HTMLElement | null>(null);
@@ -98,6 +104,10 @@ watch(
     },
     { deep: true, immediate: true },
 );
+
+function applyFilter(filter: string, value: string) {
+    filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+}
 </script>
 
 <template>
@@ -127,12 +137,23 @@ watch(
                             the results showing up in the center panel.
                         </p>
 
-                        <p>
-                            <i>
-                                (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
-                                according filter)
-                            </i>
-                        </p>
+                        <div>
+                            Hints:
+                            <ul>
+                                <li>
+                                    <i>
+                                        Clicking on the Section, Repo or Owner labels in the Search Results will
+                                        activate the according filter.
+                                    </i>
+                                </li>
+                                <li>
+                                    <i>
+                                        To find exact matches, you need to use double quotes (e.g.:
+                                        <code>"Get Data"</code>) around the search term.
+                                    </i>
+                                </li>
+                            </ul>
+                        </div>
 
                         <p>The available tool search filters are:</p>
                         <dl>
@@ -173,7 +194,7 @@ watch(
                 No tools found for the entered filters.
             </BAlert>
             <div v-else>
-                <ToolsListTable :tools="itemsLoaded" />
+                <ToolsListTable :tools="itemsLoaded" @apply-filter="applyFilter" />
             </div>
         </div>
         <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
