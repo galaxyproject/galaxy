@@ -43,14 +43,14 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
     resolved_config_class = HTTPFileSourceConfiguration
 
     def __init__(self, template_config: HTTPFileSourceTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_http",
             label="HTTP File",
             doc="Default HTTP file handler",
             writable=False,
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
         assert self.config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
         self._compiled_url_regex = re.compile(self.config.url_regex)
 

@@ -36,14 +36,14 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
     resolved_config_class = DRSFileSourceConfiguration
 
     def __init__(self, template_config: DRSFileSourceTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_drs",
             label="DRS file",
             doc="DRS file handler",
             writable=False,
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
         assert self.config.url_regex, "DRSFilesSource requires a url_regex to be set in the configuration"
         self._url_regex = re.compile(self.config.url_regex)
 

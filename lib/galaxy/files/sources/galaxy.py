@@ -14,15 +14,15 @@ class UserFtpFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, template_config: PosixTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_ftp",
             root="${user.ftp_dir}",
             label="FTP Directory",
             doc="Galaxy User's FTP Directory",
             writable=True,
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
         if not self.config.delete_on_realize:
             self.config.delete_on_realize = self.config.file_sources_config.ftp_upload_purge
 
@@ -38,14 +38,14 @@ class LibraryImportFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, template_config: PosixTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_import",
             root="${config.library_import_dir}",
             label="Library Import Directory",
             doc="Galaxy's library import directory",
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
 
     def get_prefix(self) -> Optional[str]:
         return None
@@ -59,14 +59,14 @@ class UserLibraryImportFilesSource(PosixFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, template_config: PosixTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_userimport",
             root="${config.user_library_import_dir}/${user.email}",
             label="Library User Import Directory",
             doc="Galaxy's user library import directory",
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
 
     def get_prefix(self) -> Optional[str]:
         return None
