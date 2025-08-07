@@ -63,8 +63,8 @@ const formattedToolHelp = computed(() => {
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
             <div class="d-flex align-items-start">
-                <div class="d-flex align-items-center">
-                    <ToolFavoriteButton :id="props.id" />
+                <div class="d-flex align-items-center flex-gapx-1">
+                    <ToolFavoriteButton :id="props.id" color="grey" />
 
                     <GButton
                         v-if="props.local"

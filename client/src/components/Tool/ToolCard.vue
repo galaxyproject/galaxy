@@ -16,6 +16,8 @@ import { useUserStore } from "@/stores/userStore";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -137,7 +139,7 @@ const canGenerateTours = computed(() =>
         :name="props.title"
         :version="props.version">
         <template v-slot:buttons>
-            <b-button-group class="tool-card-buttons">
+            <GButtonGroup class="tool-card-buttons">
                 <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
                 <ToolVersionsButton
                     v-if="showVersions"
@@ -151,16 +153,16 @@ const canGenerateTours = computed(() =>
                     :sharable-url="props.options.sharable_url"
                     :version="props.version"
                     :options="props.options" />
-                <b-button
+                <GButton
                     v-if="allowObjectStoreSelection"
                     id="tool-storage"
-                    role="button"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    color="blue"
+                    size="small"
                     class="float-right tool-storage"
                     @click="onShowObjectStoreSelect">
                     <FontAwesomeIcon :icon="faHdd" />
-                </b-button>
+                </GButton>
                 <ToolTargetPreferredObjectStorePopover
                     v-if="allowObjectStoreSelection"
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
@@ -180,7 +182,7 @@ const canGenerateTours = computed(() =>
                         :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                         @updated="onUpdatePreferredObjectStoreId" />
                 </BModal>
-            </b-button-group>
+            </GButtonGroup>
             <slot name="buttons" />
         </template>
 
