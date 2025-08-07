@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class DRSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    url_regex: Union[str, TemplateExpansion] = r"^drs://"
+    # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
+    url_regex: str = r"^drs://"
     force_http: Union[bool, TemplateExpansion] = False
     http_headers: Union[dict[str, str], TemplateExpansion] = {}
 
@@ -44,8 +45,8 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
         )
         template_config = self._apply_defaults_to_template(defaults, template_config)
         super().__init__(template_config)
-        assert self.config.url_regex, "DRSFilesSource requires a url_regex to be set in the configuration"
-        self._url_regex = re.compile(self.config.url_regex)
+        assert self.template_config.url_regex, "DRSFilesSource requires a url_regex to be set in the configuration"
+        self._url_regex = re.compile(self.template_config.url_regex)
 
     @property
     def _allowlist(self):
@@ -55,7 +56,7 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
         fetch_drs_to_file(
             source_path,
             native_path,
-            user_context=self.user_data.context if self.user_data else None,
+            user_context=self.user_data.context if self.user_data.context else None,
             fetch_url_allowlist=self._allowlist,
             headers=self.config.http_headers,
             force_http=self.config.force_http,

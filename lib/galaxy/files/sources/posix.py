@@ -61,8 +61,8 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
 
     def __init__(self, template_config: PosixTemplateConfiguration):
         super().__init__(template_config)
-        if not self.config.root:
-            self.config.writable = False
+        if not self.template_config.root:
+            self.template_config.writable = False
 
     def _list(
         self,
@@ -94,7 +94,7 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
             return list(map(to_dict, entry_names)), len(entry_names)
 
     def _realize_to(self, source_path: str, native_path: str):
-        if not self.config.root and (not self.user_data or not self.user_data.is_admin):
+        if not self.config.root and not self.user_data.is_admin:
             raise exceptions.ItemAccessibilityException("Writing to file:// URLs has been disabled.")
 
         effective_root = self._effective_root()
@@ -186,24 +186,23 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         return self._file_sources_config.symlink_allowlist
 
     def score_url_match(self, url: str):
+        # We need to use template_config.root here because this is called before the template is expanded.
+        root = self.template_config.root
         # For security, we need to ensure that a partial match doesn't work. e.g. file://{root}something/myfiles
-        if self.config.root and (
-            url.startswith(f"{self.get_uri_root()}://{self.config.root}/")
-            or url == f"self.get_uri_root()://{self.config.root}"
-        ):
-            return len(f"self.get_uri_root()://{self.config.root}")
-        elif self.config.root and (
-            url.startswith(f"file://{self.config.root}/") or url == f"file://{self.config.root}"
-        ):
-            return len(f"file://{self.config.root}")
-        elif not self.config.root and url.startswith("file://"):
+        if root and (url.startswith(f"{self.get_uri_root()}://{root}/") or url == f"self.get_uri_root()://{root}"):
+            return len(f"self.get_uri_root()://{root}")
+        elif root and (url.startswith(f"file://{root}/") or url == f"file://{root}"):
+            return len(f"file://{root}")
+        elif not root and url.startswith("file://"):
             return len("file://")
         else:
             return super().score_url_match(url)
 
     def to_relative_path(self, url: str) -> str:
-        if url.startswith(f"file://{self.config.root}"):
-            return url[len(f"file://{self.config.root}") :]
+        # We need to use template_config.root here because this is called before the template is expanded.
+        root = self.template_config.root
+        if url.startswith(f"file://{root}"):
+            return url[len(f"file://{root}") :]
         elif url.startswith("file://"):
             return url[7:]
         else:

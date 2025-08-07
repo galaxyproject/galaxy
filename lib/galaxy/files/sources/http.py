@@ -24,7 +24,8 @@ log = logging.getLogger(__name__)
 
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    url_regex: Union[str, TemplateExpansion] = r"^https?://|^ftp://"
+    # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
+    url_regex: str = r"^https?://|^ftp://"
     http_headers: Union[dict[str, str], TemplateExpansion] = {}
     fetch_url_allowlist: Union[list[IpAllowedListEntryT], TemplateExpansion] = []
 
@@ -51,8 +52,8 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         )
         template_config = self._apply_defaults_to_template(defaults, template_config)
         super().__init__(template_config)
-        assert self.config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
-        self._compiled_url_regex = re.compile(self.config.url_regex)
+        assert self.template_config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
+        self._compiled_url_regex = re.compile(self.template_config.url_regex)
 
     @property
     def _allowlist(self):
