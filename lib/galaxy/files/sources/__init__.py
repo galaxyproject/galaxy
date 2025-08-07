@@ -25,8 +25,8 @@ from galaxy.files.models import (
     EntryData,
     FilesSourceOptions,
     FilesSourceProperties,
+    FilesSourceRuntimeContext,
     resolve_file_source_template,
-    RuntimeContext,
     TResolvedConfig,
     TTemplateConfig,
     UserData,
@@ -443,12 +443,12 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         return self.template_config_class(**defaults)
 
     def _resolve_config_with_templates(self) -> TResolvedConfig:
-        if self.disable_templating or self.user_data.context is None:
+        if self.disable_templating:
             # Convert template config to resolved config without template evaluation
             config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
             return self.resolved_config_class(**config_dict)
 
-        runtime_context = RuntimeContext(
+        runtime_context = FilesSourceRuntimeContext(
             user_data=self.user_data,
             environment=dict(os.environ),
             file_sources_config=self._file_sources_config,

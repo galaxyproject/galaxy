@@ -355,7 +355,7 @@ class BaseFileSourceConfiguration(FilesSourceProperties):
     """
 
 
-class RuntimeContext:
+class FilesSourceRuntimeContext:
     """Context for the runtime environment of a file source.
 
     This is used to provide additional context to file sources during operations.
@@ -375,7 +375,7 @@ class RuntimeContext:
     def to_dict(self) -> dict[str, Any]:
         """Convert the runtime context to a dictionary."""
         return {
-            "user": self.user_data.context if self.user_data else None,
+            "user": self.user_data.context if self.user_data.context else None,
             "environ": self.environment,
             "config": self.file_sources_config.to_dict(),
         }
@@ -388,7 +388,7 @@ TResolvedConfig = TypeVar("TResolvedConfig", bound=BaseFileSourceConfiguration)
 def resolve_file_source_template(
     template_config: BaseFileSourceTemplateConfiguration,
     resolved_config_class: type[TResolvedConfig],
-    context: RuntimeContext,
+    context: FilesSourceRuntimeContext,
 ) -> TResolvedConfig:
     """Resolve templated file source configuration to actual values.
 
