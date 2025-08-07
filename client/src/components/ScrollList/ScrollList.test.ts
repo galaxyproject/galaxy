@@ -12,6 +12,9 @@ interface TestItem {
 const TOTAL_ITEMS = 50;
 const BUFFER_SIZE = 5;
 const TEST_ITEM_DIV = "div[data-description='test item']";
+const LOAD_MORE_BUTTON = "[data-description='load more items button']";
+const ITEM_NAME = "test item";
+const ITEM_NAME_PLURAL = "test items";
 
 function createTestItems(count: number): TestItem[] {
     const items = Array.from({ length: count }, (_, index) => ({
@@ -43,17 +46,18 @@ async function scrollOnce() {
     }
 }
 
+const TEST_ITEMS = createTestItems(TOTAL_ITEMS);
+
+/** Returns `BUFFER_SIZE` items each time, given the current offset. */
+const testLoader = jest.fn((offset: number, limit: number): Promise<{ items: TestItem[]; total: number }> => {
+    return Promise.resolve({
+        items: TEST_ITEMS.slice(offset, offset + limit),
+        total: TOTAL_ITEMS,
+    });
+});
+
 describe("ScrollList with local loader and data", () => {
     let wrapper: Wrapper<Vue>;
-    const items = createTestItems(TOTAL_ITEMS);
-
-    /** Returns `BUFFER_SIZE` items each time, given the current offset. */
-    const testLoader = jest.fn((offset: number, limit: number): Promise<{ items: TestItem[]; total: number }> => {
-        return Promise.resolve({
-            items: items.slice(offset, offset + limit),
-            total: items.length,
-        });
-    });
 
     beforeEach(async () => {
         wrapper = mount(ScrollList as object, {
@@ -61,6 +65,8 @@ describe("ScrollList with local loader and data", () => {
                 loader: (offset: number, limit: number) => testLoader(offset, limit),
                 itemKey: (item: TestItem) => item.id,
                 limit: BUFFER_SIZE,
+                name: "test item",
+                namePlural: "test items",
             },
             localVue: getLocalVue(),
             scopedSlots: {
@@ -100,5 +106,55 @@ describe("ScrollList with local loader and data", () => {
         await scrollOnce();
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(TOTAL_ITEMS);
         expect(testLoader).toHaveBeenCalledTimes(Math.ceil(TOTAL_ITEMS / BUFFER_SIZE));
+    });
+
+    it("shows item count and total items", async () => {
+        await scrollOnce();
+        expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE} out of ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL}`);
+
+        await scrollOnce();
+        await scrollOnce();
+        expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE * 3} out of ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL}`);
+
+        expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(true);
+
+        while (wrapper.findAll(TEST_ITEM_DIV).length < TOTAL_ITEMS) {
+            await scrollOnce();
+        }
+        expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
+        expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(false);
+    });
+});
+
+describe("ScrollList with prop items and no local state", () => {
+    let wrapper: Wrapper<Vue>;
+
+    beforeEach(() => {
+        wrapper = mount(ScrollList as object, {
+            propsData: {
+                propItems: TEST_ITEMS,
+                propTotalCount: TOTAL_ITEMS,
+                itemKey: (item: TestItem) => item.id,
+                name: ITEM_NAME,
+                namePlural: ITEM_NAME_PLURAL,
+            },
+            localVue: getLocalVue(),
+            scopedSlots: {
+                item: '<div data-description="test item" slot-scope="{ item, index }">Test {{ item.name }}</div>',
+            },
+            stubs: {
+                FontAwesomeIcon: true,
+            },
+        });
+    });
+
+    it("renders all items without scrolling/loading", async () => {
+        expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(TOTAL_ITEMS);
+        expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
+        expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(false);
+
+        // We try to scroll, but since there are no items to load, the loader should not be called
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(0);
     });
 });
