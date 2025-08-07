@@ -50,15 +50,15 @@ class RemoteZipFilesSource(DefaultBaseFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
+        defaults = dict(
+            id="extract",
+            label="Remote ZIP extractor",
+            doc=DOC_TEMPLATE,
+            writable=False,
+            browsable=False,
+        )
+        template_config = self._apply_defaults_to_template(defaults, template_config)
         super().__init__(template_config)
-        overrides = {
-            "id": "extract",
-            "label": "Remote ZIP extractor",
-            "doc": DOC_TEMPLATE,
-            "writable": False,
-            "browsable": False,
-        }
-        self._override_template_config(overrides)
 
     @property
     def _allowlist(self):

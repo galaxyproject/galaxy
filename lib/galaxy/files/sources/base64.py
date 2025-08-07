@@ -15,14 +15,14 @@ class Base64FilesSource(DefaultBaseFilesSource):
     plugin_kind = PluginKind.stock
 
     def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
-        super().__init__(template_config)
-        overrides = dict(
+        defaults = dict(
             id="_base64",
             label="Base64 encoded string",
             doc="Base64 string handler",
             writable=False,
         )
-        self._override_template_config(overrides)
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
 
     def _realize_to(self, source_path: str, native_path: str):
         with open(native_path, "wb") as temp:

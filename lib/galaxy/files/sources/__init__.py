@@ -424,14 +424,23 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         # Update template config with extra properties if provided
         if opts and opts.extra_props:
             extra_props = opts.extra_props.model_dump(exclude_unset=True)
-            self._override_template_config(extra_props)
+            self.template_config = self.template_config.model_copy(update=extra_props)
 
         # Resolve the configuration with templates and user context
         self._resolved_config = self._resolve_config_with_templates()
 
-    def _override_template_config(self, overrides: dict[str, Any]) -> None:
-        """Override the template configuration with the provided overrides."""
-        self.template_config = self.template_config.model_copy(update=overrides)
+    def _apply_defaults_to_template(
+        self, defaults: dict[str, Any], template_config: TTemplateConfig
+    ) -> TTemplateConfig:
+        """
+        Merge default values into the template config.
+
+        Values set in the template config take precedence over defaults.
+        Returns a new template config instance with all required fields set.
+        """
+        template_updates = template_config.model_dump(exclude_none=True)
+        defaults.update(template_updates)
+        return self.template_config_class(**defaults)
 
     def _resolve_config_with_templates(self) -> TResolvedConfig:
         if self.disable_templating or self.user_data.context is None:
