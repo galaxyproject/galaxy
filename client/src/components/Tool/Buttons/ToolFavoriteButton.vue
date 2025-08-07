@@ -1,23 +1,28 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import ariaAlert from "utils/ariaAlert";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import { useUserStore } from "@/stores/userStore";
+import ariaAlert from "@/utils/ariaAlert";
 
-library.add(fasStar, farStar);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
-const props = defineProps({
-    id: {
-        type: String,
-        required: true,
-    },
+interface Props {
+    id: string;
+    color?: ComponentColor;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    color: "blue",
 });
 
 const emit = defineEmits(["onSetError", "onUpdateFavorites"]);
+
+const loading = ref(false);
 
 const userStore = useUserStore();
 const { currentFavorites, isAnonymous } = storeToRefs(userStore);
@@ -32,8 +37,17 @@ const title = computed(() => {
     } else if (showRemoveFavorite.value) {
         return "Remove from Favorites";
     } else {
-        return null;
+        return undefined;
     }
+});
+
+const icon = computed(() => {
+    if (showAddFavorite.value) {
+        return farStar;
+    } else if (showRemoveFavorite.value) {
+        return fasStar;
+    }
+    return farStar;
 });
 
 function onToggleFavorite() {
@@ -46,30 +60,42 @@ function onToggleFavorite() {
 
 async function onAddFavorite() {
     try {
+        loading.value = true;
         await userStore.addFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("added to favorites");
     } catch {
         emit("onSetError", `Failed to add '${props.id}' to favorites.`);
         ariaAlert("failed to add to favorites");
+    } finally {
+        loading.value = false;
     }
 }
 
 async function onRemoveFavorite() {
     try {
+        loading.value = true;
         await userStore.removeFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("removed from favorites");
     } catch {
         emit("onSetError", `Failed to remove '${props.id}' from favorites.`);
         ariaAlert("failed to remove from favorites");
+    } finally {
+        loading.value = false;
     }
 }
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
-        <icon v-if="showAddFavorite" icon="far fa-star" />
-        <icon v-if="showRemoveFavorite" icon="fas fa-star" />
-    </b-button>
+    <GButton
+        :color="props.color"
+        :disabled="!title || loading"
+        tooltip
+        size="small"
+        transparent
+        :title="title"
+        @click="onToggleFavorite">
+        <FontAwesomeIcon :icon="icon" />
+    </GButton>
 </template>

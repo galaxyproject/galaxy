@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar as faRegStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 
-library.add(faStar, faRegStar);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     value?: boolean;
@@ -68,15 +66,14 @@ function toggleFavorites() {
 </script>
 
 <template>
-    <BButton
-        v-b-tooltip.hover.top.noninteractive
-        class="panel-header-button-toolbox"
-        size="sm"
-        variant="link"
+    <GButton
+        class="d-block"
+        transparent
+        tooltip
         aria-label="Show favorite tools"
         :disabled="isAnonymous"
         :title="tooltipText"
         @click="toggleFavorites">
         <FontAwesomeIcon :icon="toggle ? faRegStar : faStar" />
-    </BButton>
+    </GButton>
 </template>
