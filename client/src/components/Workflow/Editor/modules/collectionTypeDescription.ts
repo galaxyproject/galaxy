@@ -120,9 +120,6 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
             if (other.collectionType.endsWith(":paired_or_unpaired")) {
                 return !this.collectionType.endsWith(":paired");
             }
-            if (this.rank == other.rank) {
-                console.log("skipping over this because may be equal rank...");
-            }
             // Cannot map over self...
             return false;
         }
