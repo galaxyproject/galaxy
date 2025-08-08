@@ -146,6 +146,8 @@ SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ER
 
 PRIVATE_ROLE_TYPE = "private"
 
+HistoryContentsType = Literal["dataset_collections", "datasets"]
+
 
 def flakey(method):
     @wraps(method)
@@ -1341,6 +1343,11 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_contents(self, history_id: str, data=None) -> list[dict[str, Any]]:
         contents_response = self._get_contents_request(history_id, data=data)
         contents_response.raise_for_status()
+        return contents_response.json()
+
+    def get_history_contents_of_type(self, history_id: str, content_type: str) -> list[dict[str, Any]]:
+        contents_response = self._get_contents_request(history_id, f"/{content_type}")
+        api_asserts.assert_status_code_is_ok(contents_response)
         return contents_response.json()
 
     def _get_contents_request(self, history_id: str, suffix: str = "", data=None) -> Response:
