@@ -1,6 +1,6 @@
 <script setup>
 import { BButton } from "bootstrap-vue";
-import Vue, { computed, ref } from "vue";
+import { computed, ref } from "vue";
 
 import { buildLegacyPayload, submitUpload } from "@/utils/upload";
 
@@ -143,7 +143,7 @@ function inputExtension(newExtension) {
                 description: item.description || item.name,
                 optional: item.optional,
             };
-            Vue.set(uploadItems.value, index, uploadModel);
+            uploadItems.value[index] = uploadModel;
         });
     }
     restoreStatus();

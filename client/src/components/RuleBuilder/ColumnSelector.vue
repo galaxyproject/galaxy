@@ -34,8 +34,6 @@
 </template>
 
 <script>
-import Vue from "vue";
-
 import _l from "@/utils/localization";
 
 import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
@@ -123,8 +121,8 @@ export default {
         },
         moveUp(value) {
             const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
+            this.target[value - 1] = this.target[value];
+            this.target[value] = swapVal;
         },
     },
 };
