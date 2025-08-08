@@ -94,8 +94,9 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         }
 
     def score_url_match(self, url: str):
-        host = self.config.host
-        port = self.config.port
+        # We need to use template_config here because this is called before the template is expanded.
+        host = self.template_config.host
+        port = self.template_config.port
         if host and port and url.startswith(f"ftp://{host}:{port}"):
             return len(f"ftp://{host}:{port}")
         # For security, we need to ensure that a partial match doesn't work e.g. ftp://{host}something/myfiles

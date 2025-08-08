@@ -159,7 +159,7 @@ class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFile
         return self._repository_interactor
 
     def get_url(self) -> Optional[str]:
-        return self.config.url
+        return self.template_config.url
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         """Returns an interactor compatible with the given repository URL.
