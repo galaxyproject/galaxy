@@ -25,6 +25,48 @@ from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.sources import BaseFilesSource
 
 
+class Colors:
+    """ANSI color codes for terminal output"""
+
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    RESET = "\033[0m"
+
+    @classmethod
+    def colorize(cls, text: str, color: str) -> str:
+        """Apply color to text if stdout is a TTY"""
+        if sys.stdout.isatty():
+            return f"{color}{text}{cls.RESET}"
+        return text
+
+    @classmethod
+    def success(cls, text: str) -> str:
+        return cls.colorize(text, cls.GREEN)
+
+    @classmethod
+    def error(cls, text: str) -> str:
+        return cls.colorize(text, cls.RED)
+
+    @classmethod
+    def warning(cls, text: str) -> str:
+        return cls.colorize(text, cls.YELLOW)
+
+    @classmethod
+    def info(cls, text: str) -> str:
+        return cls.colorize(text, cls.BLUE)
+
+    @classmethod
+    def bold(cls, text: str) -> str:
+        return cls.colorize(text, cls.BOLD)
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Validate file sources configuration by instantiating each configured file source"
@@ -85,7 +127,7 @@ def load_file_sources_config(config_path: str) -> List[Dict]:
 
         return config
     except Exception as e:
-        print(f"Error loading file sources config from {config_path}: {e}")
+        print(Colors.error(f"Error loading file sources config from {config_path}: {e}"))
         sys.exit(1)
 
 
@@ -141,15 +183,21 @@ def validate_file_source_config(
         _ = file_source.config
 
         if verbose:
-            print(f"    ✓ Valid: File source '{file_source_id}' ({file_source_type}) configured successfully")
+            print(
+                f"    {Colors.success('✓ Valid')}: File source '{Colors.bold(file_source_id)}' ({file_source_type}) configured successfully"
+            )
 
         return True
 
     except KeyError as e:
-        print(f"    ✗ Error: Unknown file source type '{file_source_type}' for file source '{file_source_id}': {e}")
+        print(
+            f"    {Colors.error('✗ Error')}: Unknown file source type '{Colors.bold(file_source_type)}' for file source '{Colors.bold(file_source_id)}': {e}"
+        )
         return False
     except Exception as e:
-        print(f"    ✗ Error: Failed to validate file source '{file_source_id}' ({file_source_type}): {e}")
+        print(
+            f"    {Colors.error('✗ Error')}: Failed to validate file source '{Colors.bold(file_source_id)}' ({file_source_type}): {e}"
+        )
         if verbose:
             traceback.print_exc()
         return False
@@ -158,17 +206,17 @@ def validate_file_source_config(
 def main():
     args = parse_arguments()
 
-    print("Galaxy File Sources Configuration Validator")
-    print("=" * 45)
+    print(Colors.bold("Galaxy File Sources Configuration Validator"))
+    print(Colors.bold("=" * 45))
 
     # Find Galaxy configuration file
     galaxy_config_path = find_galaxy_config(args.config_file)
     if not galaxy_config_path:
-        print("Error: Could not find Galaxy configuration file")
+        print(Colors.error("Error: Could not find Galaxy configuration file"))
         print("Try specifying it with --config-file option")
         sys.exit(1)
 
-    print(f"Using Galaxy config: {galaxy_config_path}")
+    print(f"Using Galaxy config: {Colors.info(galaxy_config_path)}")
 
     # Load Galaxy configuration to get file sources config path
     if args.file_sources_config:
@@ -188,23 +236,23 @@ def main():
             file_sources_config_path = os.path.join(config_dir, file_sources_config_file)
 
         except Exception as e:
-            print(f"Error reading Galaxy config: {e}")
+            print(Colors.error(f"Error reading Galaxy config: {e}"))
             # Fall back to default
             file_sources_config_path = "config/file_sources_conf.yml"
 
     if not os.path.exists(file_sources_config_path):
-        print(f"Error: File sources config file not found: {file_sources_config_path}")
+        print(Colors.error(f"Error: File sources config file not found: {file_sources_config_path}"))
         sys.exit(1)
 
-    print(f"Using file sources config: {file_sources_config_path}")
+    print(f"Using file sources config: {Colors.info(file_sources_config_path)}")
     print()
 
     # Load file sources configuration
     file_sources_list = load_file_sources_config(file_sources_config_path)
-    print(f"Found {len(file_sources_list)} file source(s) to validate")
+    print(f"Found {Colors.bold(str(len(file_sources_list)))} file source(s) to validate")
 
     if not file_sources_list:
-        print("No file sources found in configuration")
+        print(Colors.warning("No file sources found in configuration"))
         sys.exit(0)
 
     # Create plugin loader and file sources config
@@ -218,7 +266,7 @@ def main():
 
     print()
     for i, file_source_config in enumerate(file_sources_list, 1):
-        print(f"[{i}/{total_count}] Validating file source configuration...")
+        print(f"[{Colors.bold(f'{i}/{total_count}')}] Validating file source configuration...")
 
         is_valid = validate_file_source_config(
             file_source_config, plugin_loader, file_sources_config, verbose=args.verbose
@@ -229,22 +277,22 @@ def main():
         else:
             error_count += 1
             if args.fail_fast:
-                print("\nFailing fast due to --fail-fast option")
+                print(f"\n{Colors.warning('Failing fast due to --fail-fast option')}")
                 sys.exit(1)
 
         print()
 
     # Print summary
-    print("Validation Summary:")
-    print(f"  Total file sources: {total_count}")
-    print(f"  Valid: {valid_count}")
-    print(f"  Errors: {error_count}")
+    print(Colors.bold("Validation Summary:"))
+    print(f"  Total file sources: {Colors.bold(str(total_count))}")
+    print(f"  Valid: {Colors.success(str(valid_count))}")
+    print(f"  Errors: {Colors.error(str(error_count))}")
 
     if error_count > 0:
-        print(f"\n✗ Validation failed: {error_count} file source(s) have configuration errors")
+        print(f"\n{Colors.error('✗ Validation failed')}: {error_count} file source(s) have configuration errors")
         sys.exit(1)
     else:
-        print("\n✓ All file sources validated successfully!")
+        print(f"\n{Colors.success('✓ All file sources validated successfully!')}")
         sys.exit(0)
 
 
