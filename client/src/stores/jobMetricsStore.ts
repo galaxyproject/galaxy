@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api/client";
 import type { JobMetric } from "@/api/jobs";
@@ -36,7 +36,7 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
         }
         const jobMetricsObject = datasetType === "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
 
-        set(jobMetricsObject.value, datasetId, data);
+        jobMetricsObject.value[datasetId] = data;
     }
 
     async function fetchJobMetricsForJobId(jobId: string) {
@@ -51,7 +51,7 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
             rethrowSimpleWithStatus(error, response);
         }
 
-        set(jobMetricsByJobId.value, jobId, data);
+        jobMetricsByJobId.value[jobId] = data;
     }
 
     return {

@@ -605,7 +605,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             // Incoming summaries may carry fewer fields than what is already
             // cached (e.g. a search result after a detailed listing), so merge
             // instead of overwriting.
-            set(listedHistories.value, history.id, storedHistory ? { ...storedHistory, ...history } : history);
+            listedHistories.value[history.id] = storedHistory ? { ...storedHistory, ...history } : history;
         });
     }
 
