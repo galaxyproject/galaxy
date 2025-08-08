@@ -55,10 +55,10 @@ export default {
         },
         removeErrorMessage(key) {
             if (key) {
-                this.$set(this.currentErrors, key, null);
+                this.currentErrors[key] = null;
             } else {
                 for (const key in this.currentErrors) {
-                    this.$set(this.currentErrors, key, null);
+                    this.currentErrors[key] = null;
                 }
             }
         },
@@ -66,7 +66,7 @@ export default {
             for (const attr of this.displayedAttributes) {
                 const item = this.currentValues[attr.key];
                 if (!item) {
-                    this.$set(this.currentErrors, attr.key, "Please provide a value");
+                    this.currentErrors[attr.key] = "Please provide a value";
                     return false;
                 }
             }
