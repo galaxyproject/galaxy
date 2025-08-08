@@ -134,12 +134,12 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
             )
 
     def score_url_match(self, url: str):
+        # We need to use template_config here because this is called before the template is expanded.
+        bucket_name = self.template_config.bucket
         # For security, we need to ensure that a partial match doesn't work. e.g. s3://{bucket}something/myfiles
-        if self.config.bucket and (
-            url.startswith(f"s3://{self.config.bucket}/") or url == f"s3://{self.config.bucket}"
-        ):
-            return len(f"s3://{self.config.bucket}")
-        elif not self.config.bucket and url.startswith("s3://"):
+        if bucket_name and (url.startswith(f"s3://{bucket_name}/") or url == f"s3://{bucket_name}"):
+            return len(f"s3://{bucket_name}")
+        elif not bucket_name and url.startswith("s3://"):
             return len("s3://")
         else:
             return super().score_url_match(url)

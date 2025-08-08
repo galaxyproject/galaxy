@@ -186,7 +186,7 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         return self._file_sources_config.symlink_allowlist
 
     def score_url_match(self, url: str):
-        # We need to use template_config.root here because this is called before the template is expanded.
+        # We need to use template_config here because this is called before the template is expanded.
         root = self.template_config.root
         # For security, we need to ensure that a partial match doesn't work. e.g. file://{root}something/myfiles
         if root and (url.startswith(f"{self.get_uri_root()}://{root}/") or url == f"self.get_uri_root()://{root}"):
