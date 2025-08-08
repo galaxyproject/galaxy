@@ -4,6 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -24,10 +25,20 @@ jest.mock("./modules/utilities");
 
 jest.mock("app");
 
+const { server, http } = useServerMock();
+
 const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
 const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;
 const mockLoadWorkflow = loadWorkflow as jest.Mocked<typeof loadWorkflow>;
 const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
+
+function mockUnprivilegedToolsRequest() {
+    server.use(
+        http.get("/api/unprivileged_tools", ({ response }) => {
+            return response(200).json([]);
+        })
+    );
+}
 
 describe("Index", () => {
     let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
