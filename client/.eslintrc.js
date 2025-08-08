@@ -9,6 +9,26 @@ const baseRules = {
 
     "vue/valid-v-slot": "error",
     "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
+    
+    // Vue 3 specific rules
+    "vue/no-deprecated-dollar-listeners-api": "error",
+    "vue/no-deprecated-dollar-scopedslots-api": "error",
+    "vue/no-deprecated-events-api": "error",
+    "vue/no-deprecated-filter": "error",
+    "vue/no-deprecated-functional-template": "error",
+    "vue/no-deprecated-inline-template": "error",
+    "vue/no-deprecated-props-default-this": "error",
+    "vue/no-deprecated-router-link-tag-prop": "error",
+    "vue/no-deprecated-scope-attribute": "error",
+    "vue/no-deprecated-slot-attribute": "error",
+    "vue/no-deprecated-slot-scope-attribute": "error",
+    "vue/no-deprecated-v-bind-sync": "error",
+    "vue/no-deprecated-v-on-number-modifiers": "error",
+    "vue/no-deprecated-vue-config-keycodes": "error",
+    "vue/no-lifecycle-after-await": "error",
+    "vue/no-ref-as-operand": "error",
+    "vue/no-v-for-template-key-on-child": "error",
+    "vue/require-explicit-emits": "warn",
 
     // Downgrade the severity of some rules to warnings as a transition measure.
     // For example, vue/multi-word-component names is considered an error,
@@ -94,7 +114,7 @@ const baseRules = {
 const baseExtends = [
     "eslint:recommended",
     "plugin:compat/recommended",
-    "plugin:vue/recommended",
+    "plugin:vue/vue3-recommended",
     "plugin:vuejs-accessibility/recommended",
 ];
 
