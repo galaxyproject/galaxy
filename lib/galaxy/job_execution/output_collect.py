@@ -16,7 +16,6 @@ from typing import (
 
 from galaxy.model import (
     DatasetInstance,
-    HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.dataset_collections import builder
@@ -61,7 +60,10 @@ if TYPE_CHECKING:
         BaseDirectoryImportModelStore,
         DirectoryModelExportStore,
     )
-    from galaxy.schema.schema import JobState
+    from galaxy.schema.schema import (
+        DatasetState,
+        JobState,
+    )
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
@@ -416,7 +418,7 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
                 except Exception:
                     # We don't want to fail here on a single "bad" discovered dataset
                     log.debug("set meta failed for %s", outdata, exc_info=True)
-                    outdata.state = HistoryDatasetAssociation.states.FAILED_METADATA
+                    outdata.state = DatasetState.FAILED_METADATA
             outdata.set_peek()
             outdata.discovered = True  # type: ignore[attr-defined]
             sa_session = job_context.sa_session

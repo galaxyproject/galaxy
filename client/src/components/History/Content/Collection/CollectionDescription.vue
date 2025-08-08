@@ -3,9 +3,11 @@ import { computed } from "vue";
 
 import type { HDCASummary } from "@/api";
 
+import { DatasetStateSummary } from "./DatasetStateSummary";
 import { JobStateSummary } from "./JobStateSummary";
 
 import CollectionProgress from "./CollectionProgress.vue";
+import DatasetProgress from "./DatasetProgress.vue";
 
 interface Props {
     hdca: HDCASummary;
@@ -24,6 +26,10 @@ const labels = new Map([
 
 const jobStateSummary = computed(() => {
     return new JobStateSummary(props.hdca);
+});
+
+const datasetStateSummary = computed(() => {
+    return new DatasetStateSummary(props.hdca);
 });
 
 const collectionLabel = computed(() => {
@@ -85,6 +91,7 @@ function pluralize(word: string) {
         </span>
 
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
+        <DatasetProgress v-else-if="datasetStateSummary.datasetCount > 0" :summary="datasetStateSummary" />
     </div>
 </template>
 

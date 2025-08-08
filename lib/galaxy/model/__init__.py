@@ -180,6 +180,7 @@ from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetSourceTransformActionTypeLiteral,
     DatasetState,
+    DatasetStateLiteral,
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
@@ -2350,9 +2351,22 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
         sa_session = required_object_session(self)
         update_time = now()
+
+        # Update job-specific collection associations (legacy logic)
         self.update_hdca_update_time_for_job(
             update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked
         )
+
+        # Update general collection associations for all datasets in this job
+        # This handles collections that contain datasets from this job but aren't directly job-associated
+        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
+        for dataset in job_datasets:
+            try:
+                dataset.touch_collection_update_time()
+            except Exception:
+                # Don't let collection update failures prevent job completion
+                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
             sa_session.execute(statement, params)
@@ -4355,10 +4369,8 @@ class Dataset(Base, StorableObject, Serializable):
     states = DatasetState
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
-    ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(
-        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
-    )
+    ready_states = tuple(set(states.values()) - set(non_ready_states))
+    valid_input_states = tuple(set(states.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA})
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4670,6 +4682,177 @@ class Dataset(Base, StorableObject, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def touch_collection_update_time(self):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data. This method updates all collection associations that reference
+        this dataset through any of its dataset instances (HDAs, LDDAs, etc.).
+
+        Uses database-specific recursive CTEs for optimal performance.
+        """
+        session = required_object_session(self)
+        dialect_name = session.bind.dialect.name
+
+        try:
+            if dialect_name == "postgresql":
+                self._touch_collection_update_time_postgresql(session)
+            elif dialect_name == "sqlite":
+                self._touch_collection_update_time_sqlite(session)
+            else:
+                # Fallback for other databases
+                self._touch_collection_update_time_fallback(session)
+        except Exception as e:
+            # If CTE approach fails, fall back to Python implementation
+            import logging
+
+            log = logging.getLogger(__name__)
+            log.warning(f"CTE approach failed for {dialect_name}: {e}, falling back to Python implementation")
+            self._touch_collection_update_time_fallback(session)
+
+    def _touch_collection_update_time_postgresql(self, session):
+        """PostgreSQL-optimized version with cycle detection"""
+
+        update_stmt = text(
+            """
+            WITH RECURSIVE collection_hierarchy AS (
+                -- Base case: Collections directly containing this dataset (HDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level,
+                    ARRAY[dce.dataset_collection_id] as path
+                FROM dataset_collection_element dce
+                JOIN history_dataset_association hda ON dce.hda_id = hda.id
+                WHERE hda.dataset_id = :dataset_id
+
+                UNION
+
+                -- Base case: Collections directly containing this dataset (LDDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level,
+                    ARRAY[dce.dataset_collection_id] as path
+                FROM dataset_collection_element dce
+                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
+                WHERE ldda.dataset_id = :dataset_id
+
+                UNION ALL
+
+                -- Recursive case: Parent collections
+                SELECT
+                    parent_dce.dataset_collection_id,
+                    ch.depth_level + 1,
+                    ch.path || parent_dce.dataset_collection_id
+                FROM collection_hierarchy ch
+                JOIN dataset_collection_element parent_dce
+                    ON parent_dce.child_collection_id = ch.collection_id
+                WHERE ch.depth_level < :max_depth
+                    AND NOT (parent_dce.dataset_collection_id = ANY(ch.path))
+            )
+            UPDATE history_dataset_collection_association
+            SET update_time = :now_time
+            WHERE collection_id IN (SELECT DISTINCT collection_id FROM collection_hierarchy)
+        """
+        )
+
+        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+
+    def _touch_collection_update_time_sqlite(self, session):
+        """SQLite-compatible version with depth limiting"""
+
+        update_stmt = text(
+            """
+            WITH RECURSIVE collection_hierarchy(collection_id, depth_level) AS (
+                -- Base case: Collections directly containing this dataset (HDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level
+                FROM dataset_collection_element dce
+                JOIN history_dataset_association hda ON dce.hda_id = hda.id
+                WHERE hda.dataset_id = :dataset_id
+
+                UNION
+
+                -- Base case: Collections directly containing this dataset (LDDAs)
+                SELECT
+                    dce.dataset_collection_id as collection_id,
+                    0 as depth_level
+                FROM dataset_collection_element dce
+                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
+                WHERE ldda.dataset_id = :dataset_id
+
+                UNION ALL
+
+                -- Recursive case: Parent collections
+                SELECT
+                    parent_dce.dataset_collection_id,
+                    ch.depth_level + 1
+                FROM collection_hierarchy ch
+                JOIN dataset_collection_element parent_dce
+                    ON parent_dce.child_collection_id = ch.collection_id
+                WHERE ch.depth_level < :max_depth
+            )
+            UPDATE history_dataset_collection_association
+            SET update_time = :now_time
+            WHERE collection_id IN (
+                SELECT DISTINCT collection_id FROM collection_hierarchy
+            )
+        """
+        )
+
+        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+
+    def _touch_collection_update_time_fallback(self, session):
+        """Python-based fallback for databases without good CTE support"""
+        visited_collections = set()
+        hdcas_to_update = []
+
+        def collect_parent_hdcas(collection_id, depth=0):
+            if collection_id in visited_collections or depth > 50:
+                return
+
+            visited_collections.add(collection_id)
+
+            # Find HDCAs for this collection
+            hdca_stmt = select(HistoryDatasetCollectionAssociation).where(
+                HistoryDatasetCollectionAssociation.collection_id == collection_id
+            )
+            hdcas = session.scalars(hdca_stmt).all()
+            hdcas_to_update.extend(hdcas)
+
+            # Find parent collections
+            parent_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
+                DatasetCollectionElement.child_collection_id == collection_id
+            )
+            parent_collection_ids = session.scalars(parent_stmt).all()
+
+            for parent_id in parent_collection_ids:
+                collect_parent_hdcas(parent_id, depth + 1)
+
+        # Start with collections containing this dataset
+        initial_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
+            or_(
+                DatasetCollectionElement.hda_id.in_(
+                    select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.dataset_id == self.id)
+                ),
+                DatasetCollectionElement.ldda_id.in_(
+                    select(LibraryDatasetDatasetAssociation.id).where(
+                        LibraryDatasetDatasetAssociation.dataset_id == self.id
+                    )
+                ),
+            )
+        )
+
+        initial_collection_ids = session.scalars(initial_stmt).all()
+
+        for collection_id in initial_collection_ids:
+            collect_parent_hdcas(collection_id)
+
+        # Update all collected HDCAs
+        update_time = now()
+        for hdca in hdcas_to_update:
+            hdca.update_time = update_time
+            session.add(hdca)
+
 
 class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
@@ -4911,14 +5094,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return None
 
     @property
-    def state(self):
+    def state(self) -> Optional["DatasetStateLiteral"]:
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
-            return self._state
-        return self.dataset.state
+            return cast("DatasetStateLiteral", self._state)
+        return cast("DatasetStateLiteral", self.dataset.state) if self.dataset else None
 
     @state.setter
-    def state(self, state: Optional[DatasetState]):
+    def state(self, state: Optional["DatasetStateLiteral"]):
         if state != self.state:
             if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
                 self._state = state
@@ -4927,7 +5110,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
-                self.dataset.state = state
+                assert self.dataset
+                self.dataset.state = state if state else None
+
+    def touch_collection_update_time(self):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data.
+        """
+        if self.dataset:
+            self.dataset.touch_collection_update_time()
 
     def set_metadata_success_state(self):
         self._state = None
@@ -4946,7 +5138,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         assert self.dataset
         object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
-        self.state = self.states.OK
+        self.state = DatasetState.OK
         self.blurb = "skipped"
         self.visible = False
         null = json.dumps(None)
@@ -6673,6 +6865,13 @@ class InnerCollectionFilter(NamedTuple):
         return self.operator_function(getattr(table, self.column), self.expected_value)
 
 
+class CollectionStateSummary(NamedTuple):
+    dbkeys: list[Union[str, None]]
+    extensions: list[str]
+    states: dict[str, int]
+    deleted: int
+
+
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     __tablename__ = "dataset_collection"
 
@@ -6694,8 +6893,14 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         order_by=lambda: DatasetCollectionElement.element_index,
     )
 
-    dict_collection_visible_keys = ["id", "collection_type"]
-    dict_element_visible_keys = ["id", "collection_type"]
+    dict_collection_visible_keys = [
+        "id",
+        "collection_type",
+        "elements_datatypes",
+        "elements_states",
+        "elements_deleted",
+    ]
+    dict_element_visible_keys = ["id", "collection_type", "elements_datatypes", "elements_states", "elements_deleted"]
 
     populated_states = DatasetCollectionPopulatedState
 
@@ -6807,12 +7012,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def elements_deleted(self):
         if not hasattr(self, "_elements_deleted"):
-            if session := object_session(self):
-                stmt = self._build_nested_collection_attributes_stmt(
-                    hda_attributes=("deleted",), dataset_attributes=("deleted",)
-                )
-                stmt = stmt.exists().where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
-                self._elements_deleted = session.execute(select(stmt)).scalar()
+            if object_session(self):
+                self._elements_deleted = self.dataset_states_and_extensions_summary.deleted
             else:
                 self._elements_deleted = False
                 for dataset_instance in self.dataset_instances:
@@ -6822,40 +7023,72 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._elements_deleted
 
     @property
-    def dataset_states_and_extensions_summary(self):
-        if not hasattr(self, "_dataset_states_and_extensions_summary"):
-            stmt = self._build_nested_collection_attributes_stmt(
-                hda_attributes=("extension",), dataset_attributes=("state",)
-            )
-            # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
-            stmt = stmt.add_columns(*stmt._order_by_clauses)
-            stmt = stmt.distinct()
+    def elements_datatypes(self):
+        if not hasattr(self, "_elements_datatypes"):
+            if object_session(self):
+                self._elements_datatypes = self.dataset_states_and_extensions_summary.extensions
+            else:
+                self._elements_datatypes = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.extension:
+                        self._elements_datatypes[dataset_instance.extension] += 1
+        return self._elements_datatypes
 
+    @property
+    def elements_states(self):
+        if not hasattr(self, "_elements_states"):
+            if object_session(self):
+                self._elements_states = self.dataset_states_and_extensions_summary.states
+            else:
+                self._elements_states = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.state:
+                        self._elements_states[dataset_instance.state] += 1
+        return self._elements_states
+
+    @property
+    def dataset_states_and_extensions_summary(self):
+        """
+        Calculate dataset states and extensions for this collection.
+        Returns (dbkeys, extensions, states, deleted) similar to HDCA method.
+        """
+        if not hasattr(self, "_dataset_states_and_extensions_summary"):
+
+            stmt = self._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
-            states = set()
-            for extension, state, *_ in tuples:  # we discard the added columns from the order-by clause
-                states.add(state)
-                extensions.add(extension)
-
-            self._dataset_states_and_extensions_summary = (states, extensions)
-
+            dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
+            for row in tuples:
+                if row is not None:
+                    dbkey_field = row._metadata.get("dbkey")
+                    if isinstance(dbkey_field, list):
+                        for dbkey in dbkey_field:
+                            dbkeys.add(dbkey)
+                    else:
+                        dbkeys.add(dbkey_field)
+                    if row.extension:
+                        extensions.add(row.extension)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            self._dataset_states_and_extensions_summary = CollectionStateSummary(
+                list(sorted(dbkeys)), list(sorted(extensions)), states, deleted
+            )
         return self._dataset_states_and_extensions_summary
 
     @property
     def has_deferred_data(self):
         if not hasattr(self, "_has_deferred_data"):
-            has_deferred_data = False
-            if session := object_session(self):
-                # TODO: Optimize by just querying without returning the states...
-                stmt = self._build_nested_collection_attributes_stmt(dataset_attributes=("state",))
-                tuples = session.execute(stmt)
-                for (state,) in tuples:
-                    if state == Dataset.states.DEFERRED:
-                        has_deferred_data = True
-                        break
+            if object_session(self):
+                has_deferred_data = Dataset.states.DEFERRED in self.dataset_states_and_extensions_summary.states
             else:
+                has_deferred_data = False
                 # This will be in a remote tool evaluation context, so can't query database
                 for dataset_element in self.dataset_elements_and_identifiers():
                     if dataset_element.hda.state == Dataset.states.DEFERRED:
@@ -7163,7 +7396,9 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             element_count=self.collection.element_count,
-            elements_datatypes=list(self.dataset_dbkeys_and_extensions_summary[1]),
+            elements_datatypes=list(self.collection.elements_datatypes),
+            elements_deleted=self.collection.elements_deleted,
+            elements_states=self.collection.elements_states,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -7369,11 +7604,15 @@ class HistoryDatasetCollectionAssociation(
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
-            stmt = self.collection._build_nested_collection_attributes_stmt(hda_attributes=("_metadata", "extension"))
+            stmt = self.collection._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7384,7 +7623,11 @@ class HistoryDatasetCollectionAssociation(
                         dbkeys.add(dbkey_field)
                     if row.extension:
                         extensions.add(row.extension)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -7458,7 +7701,7 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
+            (dbkeys, extensions, *_) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",

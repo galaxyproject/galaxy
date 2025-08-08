@@ -188,7 +188,11 @@ class TestMappings(BaseModelTestCase):
         assert c2.dataset_elements == [dce1, dce2]
         assert c2.dataset_action_tuples == []
         assert c2.populated_optimized
-        assert c2.dataset_states_and_extensions_summary == ({"new"}, {"txt", "bam"})
+        summary = c2.dataset_states_and_extensions_summary
+        extensions = summary.extensions
+        states = summary.states
+        assert states == {"new": 2}
+        assert extensions == ["bam", "txt"]
         assert c2.element_identifiers_extensions_paths_and_metadata_files == [
             [
                 ("inner_list", "forward"),
@@ -200,7 +204,11 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
-        assert c3.dataset_states_and_extensions_summary == (set(), set())
+        summary_c3 = c3.dataset_states_and_extensions_summary
+        dbkeys_c3 = summary_c3.dbkeys
+        extensions_c3 = summary_c3.extensions
+        assert not dbkeys_c3
+        assert not extensions_c3
 
         stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
         result = self.model.session.execute(stmt).all()

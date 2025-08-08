@@ -113,3 +113,13 @@ export async function fetchDatasetAttributes(datasetId: string) {
 
 export type HistoryContentType = components["schemas"]["HistoryContentType"];
 export type HistoryContentSource = components["schemas"]["HistoryContentSource"];
+
+/** Dataset state constants */
+// Non-terminal dataset states (dataset is still being processed)
+export const NON_TERMINAL_DATASET_STATES = ["new", "upload", "queued", "running", "setting_metadata"];
+
+// Error dataset states (dataset failed processing)
+export const ERROR_DATASET_STATES = ["error", "failed_metadata"];
+
+// Terminal dataset states (dataset processing is complete)
+export const TERMINAL_DATASET_STATES = ["ok", "empty", "deferred", "discarded", "paused"].concat(ERROR_DATASET_STATES);

@@ -20,7 +20,7 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
-import { getContentItemState, type StateMap, STATES } from "./model/states";
+import { getContentItemState, type State, STATES } from "./model/states";
 import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
@@ -97,7 +97,7 @@ const itemIsRunningInteractiveTool = computed(() => {
 });
 
 const contentId = computed(() => {
-    return `dataset-${props.item.id}`;
+    return isCollection.value ? `collection-${props.item.id}` : `dataset-${props.item.id}`;
 });
 
 const contentCls = computed(() => {
@@ -133,7 +133,7 @@ const hasStateIcon = computed(() => {
     return contentState.value && contentState.value.icon;
 });
 
-const state = computed<keyof StateMap>(() => {
+const state = computed<State>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
     }
@@ -159,7 +159,7 @@ const tagsDisabled = computed(() => {
 });
 
 const isCollection = computed(() => {
-    return "collection_type" in props.item;
+    return "collection_type" in props.item || props.item.element_type === "dataset_collection";
 });
 
 const itemUrls = computed<ItemUrls>(() => {

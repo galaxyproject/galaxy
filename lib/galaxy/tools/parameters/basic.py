@@ -51,6 +51,7 @@ from galaxy.model.dataset_collections.adapters import (
     validate_collection_adapter_src_dict,
 )
 from galaxy.schema.fetch_data import FilesPayload
+from galaxy.schema.schema import DatasetState
 from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.tool_util.parser.util import (
@@ -2832,7 +2833,7 @@ def raw_to_galaxy(
             flush=False,
             sa_session=app.model.session,
         )
-        primary_data.state = Dataset.states.DEFERRED
+        primary_data.state = DatasetState.DEFERRED
         permissions = app.security_agent.history_get_default_permissions(history)
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
         app.model.session.add(primary_data)

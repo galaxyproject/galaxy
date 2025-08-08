@@ -9,6 +9,7 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    get_args,
     Optional,
     Union,
 )
@@ -72,29 +73,77 @@ OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
-class DatasetState(str, Enum):
-    NEW = "new"
-    UPLOAD = "upload"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    EMPTY = "empty"
-    ERROR = "error"
-    PAUSED = "paused"
-    SETTING_METADATA = "setting_metadata"
-    FAILED_METADATA = "failed_metadata"
-    # Non-deleted, non-purged datasets that don't have physical files.
-    # These shouldn't have objectstores attached -
-    # 'deferred' can be materialized for jobs using
-    # attached DatasetSource objects but 'discarded'
-    # cannot (e.g. imported histories). These should still
-    # be able to have history contents associated (normal HDAs?)
-    DEFERRED = "deferred"
-    DISCARDED = "discarded"
+# Dataset state constants
+class DatasetState:
+    # When changing states also update DatasetStateLiteral!
+    NEW: Literal["new"] = "new"
+    UPLOAD: Literal["upload"] = "upload"
+    QUEUED: Literal["queued"] = "queued"
+    RUNNING: Literal["running"] = "running"
+    OK: Literal["ok"] = "ok"
+    EMPTY: Literal["empty"] = "empty"
+    ERROR: Literal["error"] = "error"
+    PAUSED: Literal["paused"] = "paused"
+    SETTING_METADATA: Literal["setting_metadata"] = "setting_metadata"
+    FAILED_METADATA: Literal["failed_metadata"] = "failed_metadata"
+    DEFERRED: Literal["deferred"] = "deferred"
+    DISCARDED: Literal["discarded"] = "discarded"
 
     @classmethod
-    def values(self):
-        return self.__members__.values()
+    def values(cls):
+        return [
+            cls.NEW,
+            cls.UPLOAD,
+            cls.QUEUED,
+            cls.RUNNING,
+            cls.OK,
+            cls.EMPTY,
+            cls.ERROR,
+            cls.PAUSED,
+            cls.SETTING_METADATA,
+            cls.FAILED_METADATA,
+            cls.DEFERRED,
+            cls.DISCARDED,
+        ]
+
+
+# Dataset state as Literal type for type hints
+DatasetStateLiteral = Literal[
+    "new",
+    "upload",
+    "queued",
+    "running",
+    "ok",
+    "empty",
+    "error",
+    "paused",
+    "setting_metadata",
+    "failed_metadata",
+    "deferred",
+    "discarded",
+]
+
+state_literal_values = get_args(DatasetStateLiteral)
+state_enum_members = {value.upper(): value for value in state_literal_values}
+# This is just used for the pydantic models, we don't care that this isn't statically checked
+DatasetStateEnum = Enum("DatasetState", state_enum_members)  # type: ignore[misc]
+
+
+# Create dictionary for ElementsStatesDict using class syntax
+class ElementsStatesDict(TypedDict, total=False):
+    # Add fields for each DatasetState value
+    new: NotRequired[int]
+    upload: NotRequired[int]
+    queued: NotRequired[int]
+    running: NotRequired[int]
+    ok: NotRequired[int]
+    empty: NotRequired[int]
+    error: NotRequired[int]
+    paused: NotRequired[int]
+    setting_metadata: NotRequired[int]
+    failed_metadata: NotRequired[int]
+    deferred: NotRequired[int]
+    discarded: NotRequired[int]
 
 
 class JobState(str, Enum):
@@ -171,7 +220,7 @@ JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
 DatasetStateField = Annotated[
-    DatasetState,
+    DatasetStateEnum,
     BeforeValidator(lambda v: "discarded" if v == "deleted" else v),
     Field(..., title="State", description="The current state of this dataset."),
 ]
@@ -1032,6 +1081,17 @@ class DCObject(Model, WithModelClass):
     element_count: ElementCountField
     contents_url: Optional[ContentsUrlField] = None
     elements: list["DCESummary"] = ElementsField
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
+    )
+    elements_datatypes: set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class DCESummary(Model, WithModelClass):
@@ -1179,6 +1239,14 @@ class HDCASummary(HDCACommon, WithModelClass):
     element_count: ElementCountField
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
+    )
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
     )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
@@ -1413,10 +1481,10 @@ class HistoryActiveContentCounts(Model):
 
 
 # TODO: https://github.com/galaxyproject/galaxy/issues/17785
-HistoryStateCounts = dict[DatasetState, int]
-HistoryStateIds = dict[DatasetState, list[DecodedDatabaseIdField]]
+HistoryStateCounts = dict[DatasetStateEnum, int]
+HistoryStateIds = dict[DatasetStateEnum, list[DecodedDatabaseIdField]]
 
-HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
+HistoryContentStates = Union[DatasetStateEnum, DatasetCollectionPopulatedState]
 HistoryContentStateCounts = dict[HistoryContentStates, int]
 
 
@@ -1456,7 +1524,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         description="The relative URL in the form of /u/{username}/h/{slug}",
     )
     genome_build: Optional[str] = GenomeBuildField
-    state: DatasetState = Field(
+    state: DatasetStateEnum = Field(
         ...,
         title="State",
         description="The current state of the History based on the states of the datasets it contains.",
