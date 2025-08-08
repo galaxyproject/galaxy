@@ -2,7 +2,6 @@
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, type Ref, ref, watch } from "vue";
-import Vue from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
@@ -86,7 +85,7 @@ function formatRows() {
         if (item.isLeaf) {
             _rowVariant = model.exists(item.id) ? "success" : "default";
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        item._rowVariant = _rowVariant;
     }
 }
 

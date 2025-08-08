@@ -23,7 +23,6 @@
 
 <script>
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-import Vue from "vue";
 
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
 
@@ -142,7 +141,7 @@ export default {
             visitInputs(this.formInputs, (input, name) => {
                 const newValue = newAttributes[name];
                 if (newValue != undefined) {
-                    Vue.set(input, "attributes", newValue);
+                    input.attributes = newValue;
                 }
             });
             this.onChangeForm();
@@ -206,7 +205,7 @@ export default {
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
             visitInputs(this.formInputs, (input) => {
-                Vue.set(input, "error", null);
+                input.error = null;
             });
             this.onCreateIndex();
         },
