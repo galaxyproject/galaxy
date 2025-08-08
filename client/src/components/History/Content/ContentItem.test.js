@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -22,6 +22,8 @@ jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
     useRouter: jest.fn(() => ({})),
 }));
+
+suppressLucideVue2Deprecation();
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});

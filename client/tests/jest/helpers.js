@@ -312,3 +312,14 @@ export function suppressErrorForCustomIcons() {
         })
     );
 }
+
+export function suppressLucideVue2Deprecation() {
+    const originalWarn = console.warn;
+    jest.spyOn(console, "warn").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("[Lucide Vue] This package will be deprecated") < 0) {
+                originalWarn(msg);
+            }
+        })
+    );
+}
