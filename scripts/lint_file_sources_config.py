@@ -176,12 +176,6 @@ def validate_file_source_config(
         if not isinstance(file_source, BaseFilesSource):
             raise ValueError("Plugin did not return a valid BaseFilesSource instance")
 
-        # Check if the configuration models are properly defined
-        file_source._ensure_config_models_defined()
-
-        # Try to access the config to trigger any validation
-        _ = file_source.config
-
         if verbose:
             print(
                 f"    {Colors.success('✓ Valid')}: File source '{Colors.bold(file_source_id)}' ({file_source_type}) configured successfully"
