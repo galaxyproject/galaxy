@@ -59,7 +59,7 @@ class FileSourcePluginsConfig(BaseModel):
         # for this component.
         kwds = {}
         kwds["symlink_allowlist"] = config.user_library_import_symlink_allowlist
-        kwds["fetch_url_allowlist"] = [str(ip) for ip in config.fetch_url_allowlist_ips]
+        kwds["fetch_url_allowlist"] = config.fetch_url_allowlist_ips
         kwds["library_import_dir"] = config.library_import_dir
         kwds["user_library_import_dir"] = config.user_library_import_dir
         kwds["ftp_upload_dir"] = config.ftp_upload_dir
@@ -73,7 +73,7 @@ class FileSourcePluginsConfig(BaseModel):
     def to_dict(self):
         return {
             "symlink_allowlist": self.symlink_allowlist,
-            "fetch_url_allowlist": self.fetch_url_allowlist,
+            "fetch_url_allowlist": [str(ip) for ip in self.fetch_url_allowlist],
             "library_import_dir": self.library_import_dir,
             "user_library_import_dir": self.user_library_import_dir,
             "ftp_upload_dir": self.ftp_upload_dir,
