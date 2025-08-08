@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
 )
@@ -5,6 +6,7 @@ from typing import (
 from pydantic import ValidationError
 from typing_extensions import Self
 
+from galaxy.model import CollectionStateSummary
 from galaxy.tool_util_models.parameters import (
     AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal,
     AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal,
@@ -88,11 +90,11 @@ class DCECollectionAdapter(CollectionAdapter):
             return self._dce.child_collection.dataset_states_and_extensions_summary
         else:
             hda = self._dce.dataset_instance
-            extensions = set()
-            states = set()
-            states.add(hda.dataset.state)
-            extensions.add(hda.extension)
-            return (states, extensions)
+            dbkeys = [hda.dbkey] if hda.dbkey else []
+            extensions = [hda.extension] if hda.extension else []
+            states = {hda.dataset.state: 1} if hda.dataset.state else {}
+            deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
+            return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)
 
     @property
     def dataset_instances(self):
@@ -161,11 +163,11 @@ class PromoteDatasetToCollection(CollectionAdapter):
     @property
     def dataset_states_and_extensions_summary(self):
         hda = self._hda
-        extensions = set()
-        states = set()
-        states.add(hda.dataset.state)
-        extensions.add(hda.extension)
-        return (states, extensions)
+        dbkeys = [hda.dbkey] if hda.dbkey else []
+        extensions = [hda.extension] if hda.extension else []
+        states = {hda.dataset.state: 1} if hda.dataset.state else {}
+        deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
+        return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)
 
     @property
     def dataset_instances(self):
@@ -234,12 +236,22 @@ class PromoteDatasetsToCollection(CollectionAdapter):
 
     @property
     def dataset_states_and_extensions_summary(self):
+        dbkeys = set()
         extensions = set()
-        states = set()
+        states: dict[str, int] = defaultdict(int)
+        deleted = 0
         for hda in self.dataset_instances:
-            states.add(hda.dataset.state)
-            extensions.add(hda.extension)
-        return (states, extensions)
+            if hda.dbkey:
+                dbkeys.add(hda.dbkey)
+            if hda.extension:
+                extensions.add(hda.extension)
+            if hda.dataset.state:
+                states[hda.dataset.state] += 1
+            if hda.deleted or (hda.dataset and hda.dataset.deleted):
+                deleted += 1
+        return CollectionStateSummary(
+            dbkeys=sorted(dbkeys), extensions=sorted(extensions), states=states, deleted=deleted
+        )
 
     @property
     def adapting(self):

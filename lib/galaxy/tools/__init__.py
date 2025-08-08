@@ -3619,8 +3619,9 @@ class DatabaseOperationTool(Tool):
                 if not input_dataset_collection.collection.populated_optimized:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            states, *_ = input_dataset_collection.collection.dataset_states_and_extensions_summary
-            for state in states:
+            summary = input_dataset_collection.collection.dataset_states_and_extensions_summary
+            states = summary.states
+            for state in states.keys():
                 check_dataset_state(input_key, state)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):

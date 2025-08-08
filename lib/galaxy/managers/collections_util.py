@@ -185,9 +185,9 @@ def dictify_element_reference(
             # Add hierarchical state information for intermediate collections
             # Add elements_states and intermediate_states from DatasetCollection
             dataset_summary = element_object.dataset_states_and_extensions_summary
-            object_details["elements_states"] = dataset_summary[2]  # states
-            object_details["elements_deleted"] = dataset_summary[3]  # deleted count
-            object_details["elements_datatypes"] = dataset_summary[1]  # extensions
+            object_details["elements_states"] = dataset_summary.states
+            object_details["elements_deleted"] = dataset_summary.deleted
+            object_details["elements_datatypes"] = dataset_summary.extensions
 
             # Recursively yield elements for each nested collection...
             if recursive:

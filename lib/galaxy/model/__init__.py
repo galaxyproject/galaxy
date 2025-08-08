@@ -6868,6 +6868,13 @@ class InnerCollectionFilter(NamedTuple):
         return self.operator_function(getattr(table, self.column), self.expected_value)
 
 
+class CollectionStateSummary(NamedTuple):
+    dbkeys: list[Union[str, None]]
+    extensions: list[str]
+    states: dict[str, int]
+    deleted: int
+
+
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     __tablename__ = "dataset_collection"
 
@@ -6889,8 +6896,14 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         order_by=lambda: DatasetCollectionElement.element_index,
     )
 
-    dict_collection_visible_keys = ["id", "collection_type"]
-    dict_element_visible_keys = ["id", "collection_type"]
+    dict_collection_visible_keys = [
+        "id",
+        "collection_type",
+        "elements_datatypes",
+        "elements_states",
+        "elements_deleted",
+    ]
+    dict_element_visible_keys = ["id", "collection_type", "elements_datatypes", "elements_states", "elements_deleted"]
 
     populated_states = DatasetCollectionPopulatedState
 
@@ -7002,12 +7015,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def elements_deleted(self):
         if not hasattr(self, "_elements_deleted"):
-            if session := object_session(self):
-                stmt = self._build_nested_collection_attributes_stmt(
-                    hda_attributes=("deleted",), dataset_attributes=("deleted",)
-                )
-                stmt = stmt.exists().where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
-                self._elements_deleted = session.execute(select(stmt)).scalar()
+            if object_session(self):
+                self._elements_deleted = self.dataset_states_and_extensions_summary.deleted
             else:
                 self._elements_deleted = False
                 for dataset_instance in self.dataset_instances:
@@ -7015,6 +7024,30 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                         self._elements_deleted = True
                         break
         return self._elements_deleted
+
+    @property
+    def elements_datatypes(self):
+        if not hasattr(self, "_elements_datatypes"):
+            if object_session(self):
+                self._elements_datatypes = self.dataset_states_and_extensions_summary.extensions
+            else:
+                self._elements_datatypes = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.extension:
+                        self._elements_datatypes[dataset_instance.extension] += 1
+        return self._elements_datatypes
+
+    @property
+    def elements_states(self):
+        if not hasattr(self, "_elements_states"):
+            if object_session(self):
+                self._elements_states = self.dataset_states_and_extensions_summary.states
+            else:
+                self._elements_states = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.state:
+                        self._elements_states[dataset_instance.state] += 1
+        return self._elements_states
 
     @property
     def dataset_states_and_extensions_summary(self):
@@ -7047,22 +7080,22 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                         deleted += 1
                     if row.state:
                         states[row.state] += 1
-            self._dataset_states_and_extensions_summary = (dbkeys, extensions, states, deleted)
+            # Filter out None values before sorting
+            filtered_dbkeys = (dbkey for dbkey in dbkeys if dbkey is not None)
+            filtered_extensions = (ext for ext in extensions if ext is not None)
+
+            self._dataset_states_and_extensions_summary = CollectionStateSummary(
+                sorted(filtered_dbkeys), sorted(filtered_extensions), states, deleted
+            )
         return self._dataset_states_and_extensions_summary
 
     @property
     def has_deferred_data(self):
         if not hasattr(self, "_has_deferred_data"):
-            has_deferred_data = False
-            if session := object_session(self):
-                # TODO: Optimize by just querying without returning the states...
-                stmt = self._build_nested_collection_attributes_stmt(dataset_attributes=("state",))
-                tuples = session.execute(stmt)
-                for (state,) in tuples:
-                    if state == Dataset.states.DEFERRED:
-                        has_deferred_data = True
-                        break
+            if object_session(self):
+                has_deferred_data = Dataset.states.DEFERRED in self.dataset_states_and_extensions_summary.states
             else:
+                has_deferred_data = False
                 # This will be in a remote tool evaluation context, so can't query database
                 for dataset_element in self.dataset_elements_and_identifiers():
                     if dataset_element.hda.state == Dataset.states.DEFERRED:
@@ -7370,9 +7403,9 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             element_count=self.collection.element_count,
-            elements_datatypes=list(self.dataset_dbkeys_and_extensions_summary[1]),
-            elements_deleted=self.dataset_dbkeys_and_extensions_summary[3],
-            elements_states=self.dataset_dbkeys_and_extensions_summary[2],
+            elements_datatypes=list(self.collection.elements_datatypes),
+            elements_deleted=self.collection.elements_deleted,
+            elements_states=self.collection.elements_states,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
