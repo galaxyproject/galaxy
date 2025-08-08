@@ -4,7 +4,7 @@
 
 import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
-import Vue, { computed, type Ref, ref, shallowRef } from "vue";
+import { computed, type Ref, ref, shallowRef } from "vue";
 
 import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { parseHelpForSummary } from "@/components/ToolsList/utilities";
@@ -291,15 +291,15 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {
-        Vue.set(toolSections.value, panelView, newPanel);
+        toolSections.value[panelView] = newPanel;
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
-        Vue.set(toolsById.value, toolId, toolData);
+        toolsById.value[toolId] = toolData;
     }
 
     function saveToolResults(whooshQuery: string, toolsData: Array<string>) {
-        Vue.set(toolResults.value, whooshQuery, toolsData);
+        toolResults.value[whooshQuery] = toolsData;
     }
 
     async function setPanel(panelView: string) {
