@@ -20,6 +20,10 @@ class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     port: Union[int, TemplateExpansion] = 21
     user: Union[str, TemplateExpansion] = "anonymous"
     passwd: Union[str, TemplateExpansion] = ""
+    acct: Union[str, TemplateExpansion] = ""
+    timeout: Union[int, TemplateExpansion] = 10
+    proxy: Union[str, TemplateExpansion, None] = None
+    tls: Union[bool, TemplateExpansion] = False
 
 
 class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -27,6 +31,10 @@ class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     port: int = 21
     user: str = "anonymous"
     passwd: str = ""
+    acct: str = ""
+    timeout: int = 10
+    proxy: Union[str, None] = None
+    tls: bool = False
 
 
 class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration, FTPFileSourceConfiguration]):
@@ -46,6 +54,10 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
             port=self.config.port,
             user=self.config.user,
             passwd=self.config.passwd,
+            timeout=self.config.timeout,
+            acct=self.config.acct,
+            tls=self.config.tls,
+            proxy=self.config.proxy,
         )
 
     def _realize_to(self, source_path: str, native_path: str):
