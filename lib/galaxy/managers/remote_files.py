@@ -40,7 +40,7 @@ class RemoteFilesManager:
         format: Optional[RemoteFilesFormat],
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
-        writeable: Optional[bool] = False,
+        write_intent: Optional[bool] = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -81,7 +81,7 @@ class RemoteFilesManager:
         file_source = file_source_path.file_source
 
         opts = FilesSourceOptions()
-        opts.writeable = writeable or False
+        opts.write_intent = write_intent or False
         try:
             index, count = file_source.list(
                 file_source_path.path,

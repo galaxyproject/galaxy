@@ -273,7 +273,7 @@ class PartialFilesSourceProperties(FilesSourceProperties):
 class FilesSourceOptions(StrictModel):
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
-    writeable: Annotated[
+    write_intent: Annotated[
         bool,
         Field(
             False,
