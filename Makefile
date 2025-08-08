@@ -263,7 +263,7 @@ serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
 
 files-sources-lint: ## Validate file sources configuration
-	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py --verbose
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
