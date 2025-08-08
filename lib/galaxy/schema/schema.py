@@ -5,10 +5,7 @@ from datetime import (
     date,
     datetime,
 )
-from enum import (
-    Enum,
-    StrEnum,
-)
+from enum import Enum
 from typing import (
     Annotated,
     Any,
@@ -78,18 +75,19 @@ TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 # Dataset state constants
 class DatasetState:
-    NEW = "new"
-    UPLOAD = "upload"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    EMPTY = "empty"
-    ERROR = "error"
-    PAUSED = "paused"
-    SETTING_METADATA = "setting_metadata"
-    FAILED_METADATA = "failed_metadata"
-    DEFERRED = "deferred"
-    DISCARDED = "discarded"
+    # When changing states also update DatasetStateLiteral!
+    NEW: Literal["new"] = "new"
+    UPLOAD: Literal["upload"] = "upload"
+    QUEUED: Literal["queued"] = "queued"
+    RUNNING: Literal["running"] = "running"
+    OK: Literal["ok"] = "ok"
+    EMPTY: Literal["empty"] = "empty"
+    ERROR: Literal["error"] = "error"
+    PAUSED: Literal["paused"] = "paused"
+    SETTING_METADATA: Literal["setting_metadata"] = "setting_metadata"
+    FAILED_METADATA: Literal["failed_metadata"] = "failed_metadata"
+    DEFERRED: Literal["deferred"] = "deferred"
+    DISCARDED: Literal["discarded"] = "discarded"
 
     @classmethod
     def values(cls):
@@ -111,23 +109,24 @@ class DatasetState:
 
 # Dataset state as Literal type for type hints
 DatasetStateLiteral = Literal[
-    DatasetState.NEW,
-    DatasetState.UPLOAD,
-    DatasetState.QUEUED,
-    DatasetState.RUNNING,
-    DatasetState.OK,
-    DatasetState.EMPTY,
-    DatasetState.ERROR,
-    DatasetState.PAUSED,
-    DatasetState.SETTING_METADATA,
-    DatasetState.FAILED_METADATA,
-    DatasetState.DEFERRED,
-    DatasetState.DISCARDED,
+    "new",
+    "upload",
+    "queued",
+    "running",
+    "ok",
+    "empty",
+    "error",
+    "paused",
+    "setting_metadata",
+    "failed_metadata",
+    "deferred",
+    "discarded",
 ]
 
 state_literal_values = get_args(DatasetStateLiteral)
 state_enum_members = {value.upper(): value for value in state_literal_values}
-DatasetStateEnum = StrEnum("DatasetState", state_enum_members)
+# This is just used for the pydantic models, we don't care that this isn't statically checked
+DatasetStateEnum = Enum("DatasetState", state_enum_members)  # type: ignore[misc]
 
 
 # Create dictionary for ElementsStatesDict using class syntax

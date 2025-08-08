@@ -62,6 +62,7 @@ from galaxy.model.index_filter_util import (
 from galaxy.schema.fields import Security
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
+    DatasetStateLiteral,
     ExportObjectMetadata,
     ExportObjectType,
     HDABasicInfo,
@@ -913,7 +914,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         history = item
         states = model.Dataset.states
         # (default to ERROR)
-        state = states.ERROR
+        state: DatasetStateLiteral = states.ERROR
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
         hda_state_counts = self.serialize_state_counts(history, "counts", exclude_deleted=True, **context)

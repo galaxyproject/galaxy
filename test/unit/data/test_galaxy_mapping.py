@@ -192,7 +192,7 @@ class TestMappings(BaseModelTestCase):
         extensions = summary.extensions
         states = summary.states
         assert states == {"new": 2}
-        assert extensions == ["txt", "bam"]
+        assert extensions == ["bam", "txt"]
         assert c2.element_identifiers_extensions_paths_and_metadata_files == [
             [
                 ("inner_list", "forward"),

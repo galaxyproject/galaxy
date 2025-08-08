@@ -5097,8 +5097,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def state(self) -> Optional["DatasetStateLiteral"]:
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
-            return self._state
-        return self.dataset.state if self.dataset else None
+            return cast("DatasetStateLiteral", self._state)
+        return cast("DatasetStateLiteral", self.dataset.state) if self.dataset else None
 
     @state.setter
     def state(self, state: Optional["DatasetStateLiteral"]):
@@ -5110,7 +5110,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
-                self.dataset.state = state.value if state else None
+                assert self.dataset
+                self.dataset.state = state if state else None
 
     def touch_collection_update_time(self):
         """
@@ -7077,7 +7078,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                     if row.state:
                         states[row.state] += 1
             self._dataset_states_and_extensions_summary = CollectionStateSummary(
-                list(dbkeys), list(extensions), states, deleted
+                list(sorted(dbkeys)), list(sorted(extensions)), states, deleted
             )
         return self._dataset_states_and_extensions_summary
 

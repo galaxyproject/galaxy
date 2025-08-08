@@ -249,7 +249,9 @@ class PromoteDatasetsToCollection(CollectionAdapter):
                 states[hda.dataset.state] += 1
             if hda.deleted or (hda.dataset and hda.dataset.deleted):
                 deleted += 1
-        return CollectionStateSummary(dbkeys=list(dbkeys), extensions=list(extensions), states=states, deleted=deleted)
+        return CollectionStateSummary(
+            dbkeys=list(sorted(dbkeys)), extensions=list(sorted(extensions)), states=states, deleted=deleted
+        )
 
     @property
     def adapting(self):
