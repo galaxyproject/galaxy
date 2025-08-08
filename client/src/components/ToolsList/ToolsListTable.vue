@@ -29,7 +29,6 @@
 
 <script>
 import { useGlobalUploadModal } from "composables/globalUploadModal";
-import Vue from "vue";
 import infiniteScroll from "vue-infinite-scroll";
 
 import { fetchData } from "./services";
@@ -99,12 +98,12 @@ export default {
         async fetchHelp(tool) {
             await fetchData(`api/tools/${encodeURIComponent(tool.id)}/build`).then((response) => {
                 const help = response.help;
-                Vue.set(tool, "_showDetails", false); // maybe not needed
+                tool._showDetails = false; // maybe not needed
                 if (help && help != "\n") {
-                    Vue.set(tool, "help", help);
-                    Vue.set(tool, "summary", this.parseHelp(help));
+                    tool.help = help;
+                    tool.summary = this.parseHelp(help);
                 } else {
-                    Vue.set(tool, "help", ""); // for cases where helpText == '\n'
+                    tool.help = ""; // for cases where helpText == '\n'
                 }
             });
         },

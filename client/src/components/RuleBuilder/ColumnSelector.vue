@@ -42,7 +42,6 @@
 <script>
 import Select2 from "components/Select2";
 import _l from "utils/localization";
-import Vue from "vue";
 
 export default {
     components: {
@@ -130,8 +129,8 @@ export default {
         },
         moveUp(value) {
             const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
+            this.target[value - 1] = this.target[value];
+            this.target[value] = swapVal;
         },
     },
 };

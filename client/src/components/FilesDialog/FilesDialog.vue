@@ -2,7 +2,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -224,7 +224,7 @@ function formatRows() {
         else if (!item.isLeaf) {
             _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        item._rowVariant = _rowVariant;
     }
     allSelected.value = checkIfAllSelected();
     if (currentDirectory.value?.url) {
