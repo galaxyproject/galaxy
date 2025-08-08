@@ -284,7 +284,8 @@ describe("ScrollList with prop items and a local state loader", () => {
 
         expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE * 2 + 1} out of ${TOTAL_ITEMS + 1} ${ITEM_NAME_PLURAL}`);
 
-        // We confirm that we don't need `adjustForTotalCountChanges` anymore, as the counts are now aligned
+        // We confirm that the adjustment based on `adjustForTotalCountChanges` in the `totalItemCount` computed was not calculated
+        // here, since localItems and propItems are in sync.
         await wrapper.setProps({ adjustForTotalCountChanges: false });
 
         expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE * 2 + 1} out of ${TOTAL_ITEMS + 1} ${ITEM_NAME_PLURAL}`);
