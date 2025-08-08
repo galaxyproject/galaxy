@@ -480,7 +480,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
                 raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
         self._update_config_with_user_context(opts, user_context)
-        write_intent = opts.writeable if opts else False
+        write_intent = opts.write_intent if opts else False
         return self._list(path, recursive, write_intent, limit, offset, query)
 
     def _list(

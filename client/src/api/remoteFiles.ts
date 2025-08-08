@@ -61,7 +61,7 @@ export interface BrowseRemoteFilesResult {
  * Get the list of files and directories from the server for the given file source URI.
  * @param uri The file source URI to browse.
  * @param isRecursive Whether to recursively retrieve all files inside subdirectories.
- * @param writeable Whether to return only entries that can be written to.
+ * @param isWriteIntent Whether to return only entries that can be written to.
  * @param limit The maximum number of entries to return.
  * @param offset The number of entries to skip before returning the rest.
  * @param query The query string to filter the entries.
@@ -71,7 +71,7 @@ export interface BrowseRemoteFilesResult {
 export async function browseRemoteFiles(
     uri: string,
     isRecursive = false,
-    writeable = false,
+    isWriteIntent = false,
     limit?: number,
     offset?: number,
     query?: string,
@@ -83,7 +83,7 @@ export async function browseRemoteFiles(
                 format: "uri",
                 target: uri,
                 recursive: isRecursive,
-                writeable,
+                write_intent: isWriteIntent,
                 limit,
                 offset,
                 query,

@@ -26124,8 +26124,13 @@ export interface operations {
                 recursive?: boolean | null;
                 /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
-                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                /**
+                 * @deprecated
+                 * @description Deprecated, please use `write_intent` instead.
+                 */
                 writeable?: boolean | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                write_intent?: boolean | null;
                 /** @description Maximum number of entries to return. */
                 limit?: number | null;
                 /** @description Number of entries to skip. */
@@ -35754,8 +35759,13 @@ export interface operations {
                 recursive?: boolean | null;
                 /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
-                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                /**
+                 * @deprecated
+                 * @description Deprecated, please use `write_intent` instead.
+                 */
                 writeable?: boolean | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                write_intent?: boolean | null;
                 /** @description Maximum number of entries to return. */
                 limit?: number | null;
                 /** @description Number of entries to skip. */
