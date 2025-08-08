@@ -155,6 +155,12 @@ def validate_file_source_config(
         plugin_kwds = file_source_config.copy()
         plugin_kwds.update({"file_sources_config": file_sources_config})
 
+        if verbose:
+            print("    Using configuration:")
+            yaml_str = yaml.dump(file_source_config, default_flow_style=False, sort_keys=False, indent=2)
+            indented_yaml = "\n".join(" " * 8 + line if line.strip() else "" for line in yaml_str.splitlines())
+            print(Colors.info(indented_yaml))
+
         # Try to instantiate the file source using the same pattern as the plugin loader
         # Check if this plugin uses the configurable plugin pattern
         configurable_instance = None
@@ -260,7 +266,8 @@ def main():
 
     print()
     for i, file_source_config in enumerate(file_sources_list, 1):
-        print(f"[{Colors.bold(f'{i}/{total_count}')}] Validating file source configuration...")
+        if args.verbose:
+            print(f"[{Colors.bold(f'{i}/{total_count}')}] Validating file source configuration...")
 
         is_valid = validate_file_source_config(
             file_source_config, plugin_loader, file_sources_config, verbose=args.verbose
@@ -273,10 +280,11 @@ def main():
             if args.fail_fast:
                 print(f"\n{Colors.warning('Failing fast due to --fail-fast option')}")
                 sys.exit(1)
-
-        print()
+        if args.verbose:
+            print()
 
     # Print summary
+    print()
     print(Colors.bold("Validation Summary:"))
     print(f"  Total file sources: {Colors.bold(str(total_count))}")
     print(f"  Valid: {Colors.success(str(valid_count))}")
