@@ -357,7 +357,7 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     root.mkdir()
     content_path = root / "2.bed"
     content_path.write_text(CONTENTS_2_BED, encoding="utf-8")
-    file_sources = TestPosixConfiguredFileSources(root)
+    file_sources = TestPosixConfiguredFileSources(str(root))
     fixture_context = setup_fixture_context_with_history()
     store_dict = deferred_hda_model_store_dict(
         source_uri="gxfiles://test1/2.bed",
