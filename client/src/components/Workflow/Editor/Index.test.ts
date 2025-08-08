@@ -56,6 +56,7 @@ describe("Index", () => {
             value: null,
             writable: true,
         });
+        mockUnprivilegedToolsRequest();
         wrapper = shallowMount(Index as object, {
             propsData: {
                 workflowId: "workflow_id",
@@ -68,6 +69,25 @@ describe("Index", () => {
             },
             localVue,
             pinia: testingPinia,
+            // mock out components that have exposed methods used by Index.vue.
+            stubs: {
+                ActivityBar: {
+                    template: "<div />",
+                    methods: {
+                        isActiveSideBar(name: string) {
+                            return name === "workflow-editor-tools";
+                        },
+                    },
+                    expose: ["isActiveSideBar"],
+                },
+                WorkflowGraph: {
+                    template: "<div />",
+                    methods: {
+                        fitWorkflow() {},
+                    },
+                    expose: ["fitWorkflow"],
+                },
+            },
         });
     });
 
