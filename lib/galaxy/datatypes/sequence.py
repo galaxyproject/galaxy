@@ -68,20 +68,6 @@ class SequenceSplitLocations(data.Text):
 
     file_ext = "fqtoc"
 
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            try:
-                parsed_data = json.load(open(dataset.get_file_name()))
-                # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek(dataset.get_file_name())
-                dataset.blurb = "{} sections".format(len(parsed_data["sections"]))
-            except Exception:
-                dataset.peek = "Not FQTOC file"
-                dataset.blurb = "Not FQTOC file"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             try:
