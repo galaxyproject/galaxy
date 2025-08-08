@@ -1,7 +1,7 @@
 /* eslint-env node */
 const webpack = require("webpack");
 const path = require("path");
-const VueLoaderPlugin = require("vue-loader/lib/plugin");
+const { VueLoaderPlugin } = require("vue-loader");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
@@ -80,7 +80,7 @@ module.exports = (env = {}, argv = {}) => {
                 buffer: require.resolve("buffer/"),
             },
             alias: {
-                vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
+                vue: "@vue/compat",
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
@@ -120,6 +120,13 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                    options: {
+                        compilerOptions: {
+                            compatConfig: {
+                                MODE: 2
+                            }
+                        }
+                    }
                 },
                 {
                     test: /\.tsx?$/,
@@ -271,6 +278,9 @@ module.exports = (env = {}, argv = {}) => {
                 __targetEnv__: JSON.stringify(targetEnv),
                 __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
                 __license__: JSON.stringify(require("./package.json").license),
+                __VUE_OPTIONS_API__: true,
+                __VUE_PROD_DEVTOOLS__: false,
+                __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
             }),
             new webpack.DefinePlugin({
                 // Define empty stubs for required modules
