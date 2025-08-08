@@ -265,6 +265,9 @@ serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 files-sources-lint: ## Validate file sources configuration
 	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py
 
+files-sources-lint-verbose: ## Validate file sources configuration (verbose)
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py --verbose
+
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
 	$(IN_VENV) ./scripts/release.sh -c
