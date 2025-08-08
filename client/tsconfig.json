@@ -27,7 +27,7 @@
         "resolvePackageJsonExports": false
     },
     "vueCompilerOptions": {
-        "target": 2.7
+        "target": 3
     },
     "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"]
 }
