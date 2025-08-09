@@ -26,6 +26,7 @@ from typing import (
 )
 
 import h5py
+import safetensors
 import numpy as np
 import pysam
 from bx.seq.twobit import (
@@ -4770,3 +4771,125 @@ class Numpy(Binary):
             return dataset.peek
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
+
+class Safetensors(Binary):
+    """safetensors is a new simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy)."""
+
+    file_ext = "safetensors"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def set_peek(self, dataset, **kwd):
+        """Set the peek and blurb text for safetensors files"""
+        if not dataset.dataset.purged:
+            try:
+                # Try to read safetensors metadata without loading the actual tensors
+                from safetensors import safe_open
+
+                with safe_open(dataset.get_file_name(), framework="numpy", device="cpu") as f:
+                    # Get tensor info without loading data
+                    keys = list(f.keys())
+                    metadata = f.metadata()
+
+                    # Create a summary
+                    peek_text = f"Safetensors file with {len(keys)} tensor(s)\n"
+
+                    if metadata:
+                        peek_text += f"Metadata: {len(metadata)} entries\n"
+
+                    # Show first few tensor names and their shapes
+                    for i, key in enumerate(keys[:5]):
+                        tensor = f.get_tensor(key)
+                        peek_text += f"- {key}: shape {tensor.shape}, dtype {tensor.dtype}\n"
+
+                    if len(keys) > 5:
+                        peek_text += f"... and {len(keys) - 5} more tensor(s)\n"
+
+                    dataset.peek = peek_text
+                    dataset.blurb = f"Safetensors file ({len(keys)} tensors)"
+
+            except Exception as e:
+                dataset.peek = f"Safetensors file (could not parse: {str(e)})"
+                dataset.blurb = "Safetensors file"
+        else:
+            dataset.peek = "Safetensors file"
+            dataset.blurb = "Safetensors file"
+
+    def sniff(self, filename):
+        """
+        Determining if the file is in safetensors format
+        """
+        try:
+            # Check if file has the right magic bytes/header
+            with open(filename, 'rb') as f:
+                # Safetensors files start with an 8-byte little-endian integer
+                # indicating the size of the JSON header
+                header_size_bytes = f.read(8)
+                if len(header_size_bytes) != 8:
+                    return False
+
+                import struct
+                header_size = struct.unpack('<Q', header_size_bytes)[0]
+
+                # Header size should be reasonable (not too large, not zero)
+                if header_size == 0 or header_size > 10**8:  # 100MB max for JSON header
+                    return False
+
+                # Check if file is large enough to contain the header
+                current_pos = f.tell()
+                f.seek(0, 2)  # Seek to end
+                file_size = f.tell()
+                f.seek(current_pos)  # Seek back
+
+                if file_size < 8 + header_size:
+                    return False
+
+                # Try to read and parse the JSON header
+                header_bytes = f.read(header_size)
+                if len(header_bytes) != header_size:
+                    return False
+
+                import json
+                header = json.loads(header_bytes.decode('utf-8'))
+
+                # Should be a dictionary with tensor information
+                if not isinstance(header, dict) or len(header) == 0:
+                    return False
+
+                # Basic validation: check if it looks like safetensors metadata
+                # Safetensors headers should have entries with data_offsets
+                has_valid_entries = False
+                for key, value in header.items():
+                    if key == "__metadata__":  # Special metadata key
+                        continue
+                    if isinstance(value, dict) and "data_offsets" in value:
+                        has_valid_entries = True
+                        break
+
+                return has_valid_entries
+
+        except Exception:
+            # Any exception during parsing means it's not a valid safetensors file
+            return False
+
+    def set_meta(self, dataset, **kwd):
+        """Set metadata for the dataset"""
+        try:
+            from safetensors import safe_open
+
+            with safe_open(dataset.get_file_name(), framework="numpy", device="cpu") as f:
+                keys = list(f.keys())
+                metadata = f.metadata() or {}
+
+                # Set some basic metadata
+                dataset.metadata.tensor_count = len(keys)
+                dataset.metadata.tensor_names = keys[:10]  # First 10 names
+
+                # Add any custom metadata from the file
+                for key, value in metadata.items():
+                    setattr(dataset.metadata, f"custom_{key}", value)
+
+        except Exception:
+            # If we can't read metadata, just set basic info
+            dataset.metadata.tensor_count = 0
