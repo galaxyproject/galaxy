@@ -26,7 +26,6 @@ from typing import (
 )
 
 import h5py
-import safetensors
 import numpy as np
 import pysam
 from bx.seq.twobit import (
