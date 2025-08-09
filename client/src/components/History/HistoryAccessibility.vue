@@ -2,8 +2,9 @@
 import { faExclamation, faLock, faShareAlt, faUserLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BTab, BTabs } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
+import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
@@ -25,15 +26,7 @@ const historyPrivacyChanged = ref(false);
 /** Once the history is made private, this boolean is used to notify the user if sharing status has also changed or not. */
 const sharingStatusChanged = ref(false);
 
-const breadcrumbItems = computed(() => [
-    { title: "Histories", to: "/histories/list" },
-    {
-        title: historyStore.getHistoryNameById(props.historyId),
-        to: `/histories/view?id=${props.historyId}`,
-        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
-    },
-    { title: "Share & Manage Access" },
-]);
+const { breadcrumbItems } = useHistoryBreadCrumbsToForProps(props, "Share & Manage Access");
 
 function historyMadePrivate(hasSharingStatusChanged: boolean) {
     sharingStatusChanged.value = hasSharingStatusChanged;

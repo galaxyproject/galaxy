@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";

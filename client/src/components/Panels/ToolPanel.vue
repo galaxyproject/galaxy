@@ -92,7 +92,10 @@ async function initializePanel() {
         await toolStore.fetchTools();
         await toolStore.initializePanel();
     } catch (error) {
-        console.error(`ToolPanel::initializePanel - ${error}`);
+        if (process.env.NODE_ENV != "test") {
+            console.error(`ToolPanel::initializePanel - ${error}`);
+        }
+
         errorMessage.value = errorMessageAsString(error);
     } finally {
         panelsFetched.value = true;

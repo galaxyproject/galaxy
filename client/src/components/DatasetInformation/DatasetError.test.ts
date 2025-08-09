@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { components } from "@/api/schema";
@@ -38,6 +38,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     };
 
     server.use(
+        expectConfigurationRequest(http, {}),
         http.get("/api/datasets/{dataset_id}", ({ response }) => {
             // We need to use untyped here because this endpoint is not
             // described in the OpenAPI spec due to its complexity for now.

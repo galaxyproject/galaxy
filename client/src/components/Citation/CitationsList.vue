@@ -2,11 +2,11 @@
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
-import { computed, onMounted, onUpdated, ref } from "vue";
+import { computed, onMounted, onUpdated, ref, toRef } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
-import { useHistoryStore } from "@/stores/historyStore";
+import { useHistoryBreadCrumbsTo } from "@/composables/historyBreadcrumbs";
 import { copy } from "@/utils/clipboard";
 
 import type { Citation } from ".";
@@ -32,7 +32,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { config } = useConfig(true);
-const historyStore = useHistoryStore();
 
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
@@ -55,15 +54,8 @@ onMounted(async () => {
     }
 });
 
-const breadcrumbItems = computed(() => [
-    { title: "Histories", to: "/histories/list" },
-    {
-        title: historyStore.getHistoryNameById(props.id),
-        to: `/histories/view?id=${props.id}`,
-        superText: historyStore.currentHistoryId === props.id ? "current" : undefined,
-    },
-    { title: "Tool References" },
-]);
+const historyId = toRef(props, "id");
+const { breadcrumbItems } = useHistoryBreadCrumbsTo(historyId, "Citations");
 
 /** The fetched Citations in addition to the Galaxy citation from config */
 const citations = computed<Citation[]>(() => {

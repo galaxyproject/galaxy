@@ -19,6 +19,8 @@ export function errorMessageAsString(e: any, defaultMessage = "Request failed.")
 }
 
 export function rethrowSimple(e: any): never {
-    console.debug(e);
+    if (process.env.NODE_ENV != "test") {
+        console.debug(e);
+    }
     throw Error(errorMessageAsString(e));
 }

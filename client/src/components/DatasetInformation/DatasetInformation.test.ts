@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
@@ -53,11 +54,14 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
+        const pinia = createTestingPinia();
+
         wrapper = mount(DatasetInformation as object, {
             propsData: {
                 dataset: datasetResponse,
             },
             localVue,
+            pinia,
         });
 
         datasetInfoTable = wrapper.find("#dataset-details");
