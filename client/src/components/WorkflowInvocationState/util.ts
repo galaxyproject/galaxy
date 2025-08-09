@@ -1,11 +1,26 @@
-import type { InvocationJobsSummary } from "@/api/invocations";
+import type { InvocationJobsSummary, StepJobSummary } from "@/api/invocations";
 import { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
 export { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
 export const POPULATED_STATE_FAILED = "failed";
 
-function countStates(jobSummary: InvocationJobsSummary | null, queryStates: string[]): number {
+export const INVOCATION_MSG_LEVEL = {
+    history_deleted: "cancel",
+    user_request: "cancel",
+    cancelled_on_review: "cancel",
+    dataset_failed: "error",
+    collection_failed: "error",
+    job_failed: "error",
+    output_not_found: "error",
+    expression_evaluation_failed: "error",
+    when_not_boolean: "error",
+    unexpected_failure: "error",
+    workflow_output_not_found: "warning",
+    workflow_parameter_invalid: "error",
+} as const satisfies Readonly<Record<string, "cancel" | "error" | "warning">>;
+
+function countStates(jobSummary: InvocationJobsSummary | StepJobSummary | null, queryStates: string[]): number {
     let count = 0;
     const states = jobSummary?.states;
     if (states) {
@@ -42,7 +57,7 @@ export function numTerminal(jobSummary: InvocationJobsSummary): number {
     return countStates(jobSummary, TERMINAL_STATES);
 }
 
-export function errorCount(jobSummary: InvocationJobsSummary): number {
+export function errorCount(jobSummary: InvocationJobsSummary | StepJobSummary): number {
     return countStates(jobSummary, ERROR_STATES);
 }
 

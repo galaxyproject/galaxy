@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref } from "vue";
 
-import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { withPrefix } from "@/utils/redirect";
@@ -11,8 +11,8 @@ import { withPrefix } from "@/utils/redirect";
 import ExternalLink from "../ExternalLink.vue";
 import HelpText from "../Help/HelpText.vue";
 import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
+import WorkflowInvocationError from "./WorkflowInvocationError.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 interface Props {
     invocation: WorkflowInvocationElementView;
@@ -20,6 +20,7 @@ interface Props {
     invocationAndJobTerminal: boolean;
     isFullPage?: boolean;
     isSubworkflow?: boolean;
+    invocationMessages?: InvocationMessage[];
 }
 
 const props = defineProps<Props>();
@@ -27,12 +28,6 @@ const props = defineProps<Props>();
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
 const invocationGraph = ref<InstanceType<typeof InvocationGraph> | null>(null);
-
-const uniqueMessages = computed(() => {
-    const messages = props.invocation.messages || [];
-    const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
-    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
-});
 
 // TODO: Refactor so that `storeId` is only defined here, and then used in all children components/composables.
 const storeId = computed(() => `invocation-${props.invocation.id}`);
@@ -57,16 +52,15 @@ async function showStep(stepId: number) {
             <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
             to view this subworkflow in graph view.
         </BAlert>
-        <div v-if="uniqueMessages.length" class="d-flex align-items-center">
-            <InvocationMessage
-                v-for="message in uniqueMessages"
+        <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
+            <WorkflowInvocationError
+                v-for="message in props.invocationMessages"
                 :key="message.reason"
                 class="steps-progress my-1 w-100"
                 :invocation-message="message"
                 :invocation="invocation"
                 :store-id="storeId"
-                @view-step="showStep">
-            </InvocationMessage>
+                @view-step="showStep" />
         </div>
         <!-- Once the workflow for the invocation and step job summaries are loaded, display the graph -->
         <BAlert v-if="loading || !props.stepsJobsSummary" variant="info" show>

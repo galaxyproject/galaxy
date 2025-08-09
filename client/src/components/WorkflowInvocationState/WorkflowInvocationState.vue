@@ -26,6 +26,7 @@ import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationFeedback from "./WorkflowInvocationFeedback.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
@@ -54,6 +55,12 @@ const jobStatesInterval = ref<any>(undefined);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
+
+const uniqueMessages = computed(() => {
+    const messages = invocation.value?.messages || [];
+    const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
+    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
+});
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -136,6 +143,11 @@ const invocationStateSuccess = computed(() => {
         invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
     );
 });
+
+const canSubmitFeedback = computed(
+    () =>
+        invocationAndJobTerminal.value && (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount))
+);
 
 type StepStateType = { [state: string]: number };
 
@@ -342,7 +354,8 @@ async function onCancel() {
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
-                    :is-subworkflow="isSubworkflow" />
+                    :is-subworkflow="isSubworkflow"
+                    :invocation-messages="uniqueMessages" />
             </BTab>
             <BTab v-if="!isSubworkflow" title="Steps" lazy>
                 <WorkflowInvocationSteps
@@ -368,6 +381,17 @@ async function onCancel() {
             </BTab>
             <BTab title="Metrics" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
+            </BTab>
+            <BTab
+                v-if="canSubmitFeedback && stepsJobsSummary && storeId"
+                title="Debug"
+                title-item-class="invocation-debug-tab">
+                <WorkflowInvocationFeedback
+                    :invocation-id="invocation.id"
+                    :steps-jobs-summary="stepsJobsSummary"
+                    :store-id="storeId"
+                    :invocation="invocation"
+                    :invocation-messages="uniqueMessages" />
             </BTab>
             <template v-slot:tabs-end>
                 <div class="ml-auto d-flex align-items-center">

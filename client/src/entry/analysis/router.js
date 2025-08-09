@@ -182,6 +182,7 @@ export function getRouter(Galaxy) {
                 component: WorkflowPublished,
                 props: (route) => ({
                     id: route.query.id,
+                    version: route.query.version,
                     zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
