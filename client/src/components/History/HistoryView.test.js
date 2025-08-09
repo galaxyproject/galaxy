@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 import VueRouter from "vue-router";
 
@@ -20,6 +20,8 @@ localVue.use(VueRouter);
 jest.mock("stores/services/history.services");
 
 const { server, http } = useServerMock();
+
+suppressLucideVue2Deprecation();
 
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;

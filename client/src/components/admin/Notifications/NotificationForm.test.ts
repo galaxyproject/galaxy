@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
@@ -9,8 +11,8 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import NotificationForm from "./NotificationForm.vue";
 
-// Even though we don't use the API endpoints, this seems to prevent failure fetching
-// openapi during jest testing.
+// Calls roles, groups, and users APIs so we need to use a server mock
+// to prevent attempts at making real API calls.
 useServerMock();
 
 const SUBMIT_BUTTON_SELECTOR = "#notification-submit";

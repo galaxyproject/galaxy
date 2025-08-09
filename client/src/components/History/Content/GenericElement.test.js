@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
 import GenericElement from "./GenericElement";
@@ -10,6 +10,8 @@ jest.mock("components/History/model/queries");
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 const router = new VueRouter();
+
+suppressLucideVue2Deprecation();
 
 describe("GenericElement", () => {
     let wrapper;

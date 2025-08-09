@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
@@ -19,6 +19,8 @@ const TEST_VERSIONS = [
     { version: 1, update_time: "2022-03-04", steps: 20 },
 ];
 const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
+
+suppressBootstrapVueWarnings();
 
 describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
