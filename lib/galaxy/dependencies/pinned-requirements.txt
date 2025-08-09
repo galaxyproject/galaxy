@@ -172,6 +172,7 @@ rpds-py==0.24.0
 ruamel-yaml==0.18.10
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.13' and platform_python_implementation == 'CPython'
 s3fs==2025.3.2
+safetensors==0.6.2
 schema-salad==8.9.20250408123006
 setuptools==79.0.1
 setuptools-scm==5.0.2
