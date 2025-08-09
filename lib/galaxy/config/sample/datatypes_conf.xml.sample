@@ -1172,6 +1172,7 @@
     <datatype extension="bcsp" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Binary format of k-mer hash table which is only compatible with Fairy"/>
     <!-- rdeval types -->
     <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
+    <datatype extension="safetensors" type="galaxy.datatypes.binary:Safetensors" mimetype="application/octet-stream" display_in_upload="true" description="A simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy)" description_url="https://huggingface.co/docs/safetensors/index"/>
   </registration>
 
   <sniffers>
