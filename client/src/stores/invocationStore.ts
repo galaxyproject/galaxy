@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type {
@@ -17,6 +17,7 @@ type GraphSteps = { [index: string]: GraphStep };
 
 export const useInvocationStore = defineStore("invocationStore", () => {
     const graphStepsByStoreId = ref<{ [index: string]: GraphSteps }>({});
+    const scrollListScrollTop = ref(0);
 
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
@@ -81,8 +82,19 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         if (error) {
             rethrowSimple(error);
         }
-        storedInvocations.value[invocationId] = data;
+        updateInvocation(invocationId, data);
         return data;
+    }
+
+    function updateInvocation(id: string, updatedData: Partial<WorkflowInvocation>) {
+        if (storedInvocations.value[id]) {
+            set(storedInvocations.value, id, {
+                ...storedInvocations.value[id],
+                ...updatedData,
+            });
+        } else {
+            set(storedInvocations.value, id, updatedData);
+        }
     }
 
     const {
@@ -104,6 +116,14 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     const { getItemById: getInvocationRequestById } = useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
 
+    const sortedStoredInvocations = computed(() => {
+        return Object.values(storedInvocations.value)
+            .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime())
+            .filter((invocation) => invocation !== undefined);
+    });
+
+    const totalInvocationCount = ref<number | undefined>(undefined);
+
     return {
         cancelWorkflowScheduling,
         fetchInvocationById,
@@ -118,5 +138,10 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationRequestById,
         graphStepsByStoreId,
         isLoadingInvocation,
+        sortedStoredInvocations,
+        totalInvocationCount,
+        updateInvocation,
+        /** The current scroll position of the list (used to track where the user has scrolled to). */
+        scrollListScrollTop,
     };
 });
