@@ -22,10 +22,15 @@
         <title>${self.title()}</title>
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ${self.metas()}
         ${self.stylesheets()}
         ${self.javascripts()}
     </head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
     <body>
         ${self.get_body()}
     </body>
@@ -35,18 +40,8 @@
 ## Default title
 <%def name="title()">${ visualization_display_name + ' | Galaxy' }</%def>
 
-## Additional metas can be defined by templates inheriting from this one.
-<%def name="metas()"></%def>
-
-## Default stylesheets
-<%def name="stylesheets()">
-${h.dist_css('base')}
-</%def>
-
 ## Default javascripts
 <%def name="javascripts()">
-## connect to Galaxy here
-
 <script type="text/javascript">
     // console protection
     window.console = window.console || {
@@ -60,11 +55,8 @@ ${h.dist_css('base')}
 </script>
 </%def>
 
-## Default body
-<%def name="get_body()">
-    ${self.late_javascripts()}
-</%def>
+## Default stylesheets
+<%def name="stylesheets()"></%def>
 
-## Default javascripts
-<%def name="late_javascripts()">
-</%def>
+## Default body
+<%def name="get_body()"></%def>
