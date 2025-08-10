@@ -4771,49 +4771,19 @@ class Numpy(Binary):
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
 
-class Safetensors(Binary):
-    """safetensors is a new simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy)."""
+
+class safetensors(Binary):
+    """
+    safetensors is a new simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy).
+    It provides a secure way to store and load tensors without the security risks associated with pickle-based formats.
+    Safetensors files consist of a JSON header followed by tensor data.
+    more info at: https://github.com/huggingface/safetensors
+    """
 
     file_ext = "safetensors"
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
-
-    def set_peek(self, dataset, **kwd):
-        """Set the peek and blurb text for safetensors files"""
-        if not dataset.dataset.purged:
-            try:
-                # Try to read safetensors metadata without loading the actual tensors
-                from safetensors import safe_open
-
-                with safe_open(dataset.get_file_name(), framework="numpy", device="cpu") as f:
-                    # Get tensor info without loading data
-                    keys = list(f.keys())
-                    metadata = f.metadata()
-
-                    # Create a summary
-                    peek_text = f"Safetensors file with {len(keys)} tensor(s)\n"
-
-                    if metadata:
-                        peek_text += f"Metadata: {len(metadata)} entries\n"
-
-                    # Show first few tensor names and their shapes
-                    for i, key in enumerate(keys[:5]):
-                        tensor = f.get_tensor(key)
-                        peek_text += f"- {key}: shape {tensor.shape}, dtype {tensor.dtype}\n"
-
-                    if len(keys) > 5:
-                        peek_text += f"... and {len(keys) - 5} more tensor(s)\n"
-
-                    dataset.peek = peek_text
-                    dataset.blurb = f"Safetensors file ({len(keys)} tensors)"
-
-            except Exception as e:
-                dataset.peek = f"Safetensors file (could not parse: {str(e)})"
-                dataset.blurb = "Safetensors file"
-        else:
-            dataset.peek = "Safetensors file"
-            dataset.blurb = "Safetensors file"
 
     def sniff(self, filename):
         """
@@ -4832,6 +4802,9 @@ class Safetensors(Binary):
                 header_size = struct.unpack('<Q', header_size_bytes)[0]
 
                 # Header size should be reasonable (not too large, not zero)
+                # if too large, it's not a valid safetensors file, probably a pytorch file
+                # if you open a Pytorch.pt file, you'll get error:
+                # safetensors_rust.SafetensorError: Error while deserializing header: header too large
                 if header_size == 0 or header_size > 10**8:  # 100MB max for JSON header
                     return False
 
@@ -4871,24 +4844,3 @@ class Safetensors(Binary):
         except Exception:
             # Any exception during parsing means it's not a valid safetensors file
             return False
-
-    def set_meta(self, dataset, **kwd):
-        """Set metadata for the dataset"""
-        try:
-            from safetensors import safe_open
-
-            with safe_open(dataset.get_file_name(), framework="numpy", device="cpu") as f:
-                keys = list(f.keys())
-                metadata = f.metadata() or {}
-
-                # Set some basic metadata
-                dataset.metadata.tensor_count = len(keys)
-                dataset.metadata.tensor_names = keys[:10]  # First 10 names
-
-                # Add any custom metadata from the file
-                for key, value in metadata.items():
-                    setattr(dataset.metadata, f"custom_{key}", value)
-
-        except Exception:
-            # If we can't read metadata, just set basic info
-            dataset.metadata.tensor_count = 0
