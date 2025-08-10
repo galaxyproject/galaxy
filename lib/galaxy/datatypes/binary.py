@@ -4801,14 +4801,23 @@ class Safetensors(Binary):
                 import struct
                 header_size = struct.unpack('<Q', header_size_bytes)[0]
 
-                # Header size should be reasonable (not too large, not zero)
-                # if too large, it's not a valid safetensors file, probably a pytorch file
-                # if you open a Pytorch.pt file, you'll get error:
-                # safetensors_rust.SafetensorError: Error while deserializing header: header too large
+                # Currently, there's a limit on the size of the header of 100MB to prevent parsing extremely large JSON headers
+                # In practice, safetensors headers are typically just a few KB to MB
+                # (containing tensor names, shapes, dtypes, and offsets - rarely exceeds 1-10MB even for large models)
+                # But in theory it is possible to have 100 MB header
+                # more info here: https://github.com/huggingface/safetensors?tab=readme-ov-file#benefits
                 if header_size == 0 or header_size > 10**8:  # 100MB max for JSON header
                     return False
 
-                # Check if file is large enough to contain the header
+                # CRITICAL: Check if header begins with '{' character (0x7B) as per safetensors spec
+                # This is required by the format and helps distinguish from other binary formats
+                # Only read 1 byte to avoid memory exhaustion from malicious header_size values
+                # more info here: https://github.com/huggingface/safetensors?tab=readme-ov-file#format
+                first_header_byte = f.read(1)
+                if len(first_header_byte) != 1 or first_header_byte[0] != 0x7B:
+                    return False
+
+                # Check if file is large enough to contain the full header
                 current_pos = f.tell()
                 f.seek(0, 2)  # Seek to end
                 file_size = f.tell()
@@ -4817,10 +4826,13 @@ class Safetensors(Binary):
                 if file_size < 8 + header_size:
                     return False
 
-                # Try to read and parse the JSON header
-                header_bytes = f.read(header_size)
-                if len(header_bytes) != header_size:
+                # Read the rest of the header (we already read 1 byte)
+                remaining_header_bytes = f.read(header_size - 1)
+                if len(remaining_header_bytes) != header_size - 1:
                     return False
+
+                # Reconstruct full header
+                header_bytes = first_header_byte + remaining_header_bytes
 
                 import json
                 header = json.loads(header_bytes.decode('utf-8'))
