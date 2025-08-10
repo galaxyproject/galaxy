@@ -4772,7 +4772,7 @@ class Numpy(Binary):
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
 
 
-class safetensors(Binary):
+class Safetensors(Binary):
     """
     safetensors is a new simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy).
     It provides a secure way to store and load tensors without the security risks associated with pickle-based formats.
