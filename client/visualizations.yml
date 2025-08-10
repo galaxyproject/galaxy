@@ -32,7 +32,7 @@ fitsgraph:
     version: 0.0.1
 ghost:
     package: "@galaxyproject/ghost"
-    version: 0.0.0
+    version: 0.0.1
 h5web:
     package: "@galaxyproject/h5web"
     version: 0.5.2
