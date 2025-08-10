@@ -4788,6 +4788,16 @@ class Safetensors(Binary):
     def sniff(self, filename):
         """
         Determining if the file is in safetensors format
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('model.safetensors')
+        >>> Safetensors().sniff(fname)
+        True
+        >>> fname = get_test_fname('model.pkl')
+        >>> Safetensors().sniff(fname)
+        False
+        >>> fname = get_test_fname('model.pth')
+        >>> Safetensors().sniff(fname)
+        False
         """
         try:
             # Check if file has the right magic bytes/header
@@ -4798,7 +4808,6 @@ class Safetensors(Binary):
                 if len(header_size_bytes) != 8:
                     return False
 
-                import struct
                 header_size = struct.unpack('<Q', header_size_bytes)[0]
 
                 # Currently, there's a limit on the size of the header of 100MB to prevent parsing extremely large JSON headers
@@ -4834,7 +4843,6 @@ class Safetensors(Binary):
                 # Reconstruct full header
                 header_bytes = first_header_byte + remaining_header_bytes
 
-                import json
                 header = json.loads(header_bytes.decode('utf-8'))
 
                 # Should be a dictionary with tensor information
