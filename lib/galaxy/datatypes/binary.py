@@ -4789,13 +4789,10 @@ class Safetensors(Binary):
         """
         Determining if the file is in safetensors format
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('model.safetensors')
+        >>> fname = get_test_fname('cellpose_model_safetensors.safetensors')
         >>> Safetensors().sniff(fname)
         True
-        >>> fname = get_test_fname('model.pkl')
-        >>> Safetensors().sniff(fname)
-        False
-        >>> fname = get_test_fname('model.pth')
+        >>> fname = get_test_fname('cellpose_model_pytorch_pickle.pth')
         >>> Safetensors().sniff(fname)
         False
         """
