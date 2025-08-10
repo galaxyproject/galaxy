@@ -30,6 +30,9 @@ drawrna:
 fitsgraph:
     package: "@galaxyproject/fitsgraph"
     version: 0.0.1
+ghost:
+    package: "@galaxyproject/ghost"
+    version: 0.0.0
 h5web:
     package: "@galaxyproject/h5web"
     version: 0.5.2
