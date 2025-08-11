@@ -2,26 +2,38 @@
 import { faDatabase, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
+import { onMounted, ref } from "vue";
+
+import { getHistoryCounts, type HistoryCounts } from "@/api/histories";
+import { Toast } from "@/composables/toast";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
     historyId: string;
-    niceSize?: string;
     count?: number;
-    contentsActive?: {
-        deleted?: number;
-        hidden?: number;
-        active?: number;
-    };
-    contentsStates?: {
-        error?: number;
-        ok?: number;
-        new?: number;
-        running?: number;
-        queued?: number;
-    };
 }
 
 const props = defineProps<Props>();
+
+const niceSize = ref<HistoryCounts["nice_size"]>();
+const contentsActive = ref<HistoryCounts["contents_active"]>();
+const contentsStates = ref<HistoryCounts["contents_states"]>();
+
+async function getCounts() {
+    try {
+        const counts = await getHistoryCounts(props.historyId);
+
+        niceSize.value = counts.nice_size;
+        contentsActive.value = counts.contents_active;
+        contentsStates.value = counts.contents_states;
+    } catch (e) {
+        Toast.error(`Failed to load history counts: ${errorMessageAsString(e)}`);
+    }
+}
+
+onMounted(async () => {
+    await getCounts();
+});
 </script>
 
 <template>
@@ -31,41 +43,41 @@ const props = defineProps<Props>();
         pill
         :title="`View history storage overview`"
         variant="light"
-        :to="`/storage/history/${props.historyId}`">
+        :to="`/storage/history/${historyId}`">
         <small v-if="props.count">
             <FontAwesomeIcon :icon="faDatabase" fixed-width />
             <template v-if="props.count"> {{ props.count }} <span class="items">items</span> </template>
         </small>
 
-        <template v-if="props.count && props.niceSize"> | </template>
+        <template v-if="props.count && niceSize"> | </template>
 
-        <small v-if="props.niceSize">
+        <small v-if="niceSize">
             <FontAwesomeIcon :icon="faSave" fixed-width />
-            {{ props.niceSize }}
+            {{ niceSize }}
         </small>
 
         <template
             v-if="
-                (props.contentsStates && Object.values(props.contentsStates).some((count) => count)) ||
-                (props.contentsActive && Object.values(props.contentsActive).some((count) => count))
+                (contentsStates && Object.values(contentsStates).some((cs) => cs)) ||
+                (contentsActive && Object.values(contentsActive).some((ca) => ca))
             ">
             |
         </template>
 
         <span
-            v-for="(stateCount, state) of props.contentsStates"
+            v-for="(stateCount, state) of contentsStates"
             :key="state"
             class="stats px-1 rounded"
             :class="`state-color-${state}`">
             {{ stateCount }}
         </span>
 
-        <span v-if="props.contentsActive?.deleted" class="stats px-1 rounded state-color-deleted">
-            {{ props.contentsActive.deleted }}
+        <span v-if="contentsActive?.deleted" class="stats px-1 rounded state-color-deleted">
+            {{ contentsActive.deleted }}
         </span>
 
-        <span v-if="props.contentsActive?.hidden" class="stats px-1 rounded state-color-hidden">
-            {{ props.contentsActive.hidden }}
+        <span v-if="contentsActive?.hidden" class="stats px-1 rounded state-color-hidden">
+            {{ contentsActive.hidden }}
         </span>
     </BBadge>
 </template>
