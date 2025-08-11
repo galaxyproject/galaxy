@@ -199,7 +199,7 @@ describe("FilterMenu", () => {
             expect(radioBtnGrp.at(i).props().value).toBe(options[i]?.value);
             expect(radioBtnGrp.at(i).props().checked).toBe(null);
         }
-        await radioBtnGrp.at(1).find("input").setChecked(); // click "Yes"
+        await radioBtnGrp[1].find("input").setChecked(); // click "Yes"
         // boolean filter
         const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
@@ -207,7 +207,7 @@ describe("FilterMenu", () => {
         expect(boolBtnGrp.at(0).props().value).toBe(true);
         expect(boolBtnGrp.at(1).text()).toBe("No");
         expect(boolBtnGrp.at(1).props().value).toBe("any");
-        await boolBtnGrp.at(1).find("input").setChecked(); // click "No"
+        await boolBtnGrp[1].find("input").setChecked(); // click "No"
 
         // perform search
         await performSearch();
