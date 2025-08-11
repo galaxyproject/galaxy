@@ -1,10 +1,12 @@
-import type Vue from "vue";
-import type { Ref } from "vue";
+import type { ComponentPublicInstance, Ref } from "vue";
 import { ref } from "vue";
 
-import type ToastComponentFile from "@/components/Toast";
+// Toast component is a JS file with methods property
+interface ToastMethods {
+    showToast: (message: string, title: string, variant: string, href: string) => void;
+}
 
-export type ToastComponent = Vue & typeof ToastComponentFile.methods;
+export type ToastComponent = ComponentPublicInstance & ToastMethods;
 
 let toastRef: Ref<ToastComponent | null> = ref(null);
 
