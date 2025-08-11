@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
@@ -99,7 +99,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
             if (error) {
                 throw Error(`Failed to retrieve workflow. ${error.err_msg}`);
             }
-            set(workflowsByInstanceId.value, workflowId, data);
+            workflowsByInstanceId.value[workflowId] = data;
         }
         workflowDetailPromises.delete(workflowId);
     }
