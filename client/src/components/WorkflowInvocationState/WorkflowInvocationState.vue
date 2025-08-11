@@ -198,7 +198,7 @@ watch(
         // Prevent the page from reloading when you switch tabs. We set the boolean as soon as we know that
         // the invocation exists in the store, and with this, when we change tabs there isn't a refresh every time.
         const storedInvocation = invocationStore.getInvocationById(id);
-        if (storedInvocation) {
+        if (storedInvocation && isWorkflowInvocationElementView(storedInvocation)) {
             invocationLoaded.value = true;
         } else {
             invocationLoaded.value = false;
