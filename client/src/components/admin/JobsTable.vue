@@ -59,10 +59,10 @@
                     >{{ data.value }}</a
                 >
             </template>
-            <template v-for="(index, name) in $slots" v-slot:[name]>
+            <template v-for="(index, name) in $slots" :key="name" v-slot:[name]>
                 <slot :name="name" />
             </template>
-            <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
+            <template v-for="(index, name) in $scopedSlots" :key="`scoped-${name}`" v-slot:[name]="data">
                 <slot :name="name" v-bind="data"></slot>
             </template>
         </b-table>

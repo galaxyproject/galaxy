@@ -332,11 +332,10 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
-                <template v-for="activity in props.specialActivities">
+                <template v-for="activity in props.specialActivities" :key="activity.id">
                     <ActivityItem
                         v-if="activity.panel"
                         :id="`${activity.id}`"
-                        :key="activity.id"
                         :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
                         :is-active="panelActivityIsActive(activity)"
