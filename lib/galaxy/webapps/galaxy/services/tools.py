@@ -354,6 +354,8 @@ class ToolsService(ServiceBase):
         if not tool:
             if user:
                 # FIXME: id as tool_uuid is for raw_tool_source endpoint, port to fastapi and fix
+                if id == tool_uuid:
+                    id = None
                 tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
                 if tool:
                     return tool
