@@ -74,6 +74,7 @@ import UtcDate from "components/UtcDate";
 
 export default {
     components: { UtcDate, JobDetails, LoadingSpan },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     props: {
         tableCaption: {
             type: String,
