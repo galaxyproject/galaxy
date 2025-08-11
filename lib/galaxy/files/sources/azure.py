@@ -15,6 +15,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -44,21 +45,22 @@ class AzureFileSource(PyFilesystem2FilesSource[AzureFileSourceTemplateConfigurat
     template_config_class = AzureFileSourceTemplateConfiguration
     resolved_config_class = AzureFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[AzureFileSourceConfiguration]):
+        config = context.config
         if BlobFS is None or BlobFSV2 is None:
             raise self.required_package_exception
 
-        if self.config.namespace_type == "flat":
+        if config.namespace_type == "flat":
             return BlobFS(
-                account_name=self.config.account_name,
-                container=self.config.container_name,
-                account_key=self.config.account_key,
+                account_name=config.account_name,
+                container=config.container_name,
+                account_key=config.account_key,
             )
         else:
             return BlobFSV2(
-                account_name=self.config.account_name,
-                container=self.config.container_name,
-                account_key=self.config.account_key,
+                account_name=config.account_name,
+                container=config.container_name,
+                account_key=config.account_key,
             )
 
 

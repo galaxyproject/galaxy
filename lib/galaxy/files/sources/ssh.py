@@ -11,6 +11,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -48,22 +49,23 @@ class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration
     template_config_class = SshFileSourceTemplateConfiguration
     resolved_config_class = SshFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[SshFileSourceConfiguration]):
         if SSHFS is None:
             raise self.required_package_exception
 
+        config = context.config
         handle = SSHFS(
-            host=self.config.host,
-            user=self.config.user,
-            passwd=self.config.passwd,
-            pkey=self.config.pkey,
-            port=self.config.port,
-            timeout=self.config.timeout,
-            compress=self.config.compress,
-            config_path=self.config.config_path,
+            host=config.host,
+            user=config.user,
+            passwd=config.passwd,
+            pkey=config.pkey,
+            port=config.port,
+            timeout=config.timeout,
+            compress=config.compress,
+            config_path=config.config_path,
         )
-        if self.config.path:
-            return handle.opendir(self.config.path)
+        if config.path:
+            return handle.opendir(config.path)
         return handle
 
 

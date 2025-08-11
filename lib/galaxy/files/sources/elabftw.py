@@ -84,6 +84,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -208,49 +209,47 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
             path = f"/{path}"
         return path
 
-    def _create_session(self) -> RequestsSession:
+    def _create_session(self, config: eLabFTWFileSourceConfiguration) -> RequestsSession:
         """
-        Create a Galaxy ``requests`` session, overriding initial settings via a :class:`FileSourceOptions` object.
+        Create a Galaxy ``requests`` session.
         """
         return requests.Session(
-            headers=self._get_session_headers(),  # type: ignore[call-arg]
+            headers=self._get_session_headers(config),  # type: ignore[call-arg]
         )
 
-    def _create_session_async(self) -> aiohttp.ClientSession:
+    def _create_session_async(self, config: eLabFTWFileSourceConfiguration) -> aiohttp.ClientSession:
         """
-        Create an ``aiohttp`` session, overriding initial settings via a :class:`FileSourceOptions` object.
+        Create an ``aiohttp`` session.
         """
         connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,
-            headers=self._get_session_headers(),
+            headers=self._get_session_headers(config),
         )
 
-    def _get_session_headers(self) -> dict:
+    def _get_session_headers(self, config: eLabFTWFileSourceConfiguration) -> dict:
         """
         Construct a dictionary of HTTP client session headers.
-
-        Optionally, override initial settings via a :class:`FileSourceOptions` object and/or a
-        :class:`FileSourcesUserContext` object.
 
         Meant to be used only by `_create_session()` and `_create_session_async()`.
         """
 
         headers = {
-            "Authorization": self.config.api_key,
+            "Authorization": config.api_key,
             "Accept": "application/json",
         }
         return headers
 
     def _get_endpoint(self) -> ParseResult:
         """
-        Retrieve the endpoint from the constructor, or override it via a :class:`FileSourceOptions` object.
+        Retrieve the endpoint from the constructor.
         """
-        return urlparse(self.config.endpoint)
+        return urlparse(self.template_config.endpoint)
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -279,6 +278,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
             asyncio.set_event_loop(event_loop)
             return event_loop.run_until_complete(
                 self._list_async(
+                    context=context,
                     path=path,
                     recursive=recursive,
                     limit=limit,
@@ -292,6 +292,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
 
     async def _list_async(
         self,
+        context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration],
         path="/",
         recursive=False,
         limit: Optional[int] = None,
@@ -330,7 +331,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         :raises InvalidPath: Path constraints described in the docstring of :class:`InvalidPath` are not satisfied.
         :raises ResourceNotFound: If the path refers to a non-existing experiment, resource, or attachment.
         """
-        session = self._create_session_async()
+        session = self._create_session_async(context.config)
         endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(path)
@@ -694,7 +695,9 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                 upload,
             )
 
-    def _write_from(self, target_path: str, native_path: str) -> str:
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration]
+    ) -> str:
         """
         Attach the file located at ``native_path`` on the filesystem to an eLabFTW resource or experiment with URI
         ``target_path``.
@@ -717,7 +720,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                              three components.
         :raises EntityExpected: When attempting to attach the file to the root "/" or an entity type.
         """
-        session = self._create_session()
+        session = self._create_session(context.config)
         endpoint = self._get_endpoint()
 
         target_path_obj = Path(target_path)
@@ -768,7 +771,9 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
 
         return f"/{entity_type}/{entity_id}/{attachment_id}"
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration]
+    ):
         """
         Save the file attachment from an eLabFTW resource or experiment located at ``source_path`` to ``native_path``.
 
@@ -781,7 +786,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         :raises ValidationError: If the HTTP response from the eLabFTW server is invalid.
         :raises AttachmentExpected: When referencing an entity type, an entity or the root rather than an attachment.
         """
-        session = self._create_session()
+        session = self._create_session(context.config)
         endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(source_path)

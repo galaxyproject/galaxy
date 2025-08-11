@@ -6,6 +6,7 @@ from typing import Union
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
@@ -59,18 +60,23 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(self, source_path: str, native_path: str):
-        req = urllib.request.Request(source_path, headers=self.config.http_headers)
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
+    ):
+        config = context.config
+        req = urllib.request.Request(source_path, headers=config.http_headers)
 
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), self._allowlist or self.config.fetch_url_allowlist)
+            validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
             f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
             return stream_to_open_named_file(
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

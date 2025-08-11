@@ -13,6 +13,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -54,25 +55,26 @@ class GoogleCloudStorageFilesSource(
     template_config_class = GoogleCloudStorageFileSourceTemplateConfiguration
     resolved_config_class = GoogleCloudStorageFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration]):
         if GCSFS is None:
             raise self.required_package_exception
 
-        if self.config.anonymous:
+        config = context.config
+        if config.anonymous:
             client = Client.create_anonymous_client()
-        elif self.config.token:
+        elif config.token:
             client = Client(
-                project=self.config.project,
+                project=config.project,
                 credentials=Credentials(
-                    token=self.config.token,
-                    token_uri=self.config.token_uri,
-                    client_id=self.config.client_id,
-                    client_secret=self.config.client_secret,
-                    refresh_token=self.config.refresh_token,
+                    token=config.token,
+                    token_uri=config.token_uri,
+                    client_id=config.client_id,
+                    client_secret=config.client_secret,
+                    refresh_token=config.refresh_token,
                 ),
             )
 
-        handle = GCSFS(bucket_name=self.config.bucket_name, root_path=self.config.root_path, retry=0, client=client)
+        handle = GCSFS(bucket_name=config.bucket_name, root_path=config.root_path or "", retry=0, client=client)
         return handle
 
 

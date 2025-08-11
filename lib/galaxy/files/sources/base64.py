@@ -1,7 +1,11 @@
 import base64
 import logging
 
-from galaxy.files.models import BaseFileSourceTemplateConfiguration
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
 from . import (
     DefaultBaseFilesSource,
     PluginKind,
@@ -24,12 +28,16 @@ class Base64FilesSource(DefaultBaseFilesSource):
         template_config = self._apply_defaults_to_template(defaults, template_config)
         super().__init__(template_config)
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
+    ):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

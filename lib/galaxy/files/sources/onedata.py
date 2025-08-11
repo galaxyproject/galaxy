@@ -9,6 +9,7 @@ from typing import Union
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util import mapped_chars
 from galaxy.util.config_templates import TemplateExpansion
@@ -43,18 +44,19 @@ class OnedataFilesSource(
     template_config_class = OnedataFileSourceTemplateConfiguration
     resolved_config_class = OnedataFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[OnedataFileSourceConfiguration]):
         if OnedataRESTFS is None:
             raise self.required_package_exception
 
-        onezone_domain = remove_prefix("http://", remove_prefix("https://", self.config.onezone_domain))
+        config = context.config
+        onezone_domain = remove_prefix("http://", remove_prefix("https://", config.onezone_domain))
         alt_space_fqn_separators = [mapped_chars["@"]] if "@" in mapped_chars else None
 
         handle = OnedataRESTFS(
             onezone_host=onezone_domain,
-            token=self.config.access_token,
+            token=config.access_token,
             alt_space_fqn_separators=alt_space_fqn_separators,
-            verify_ssl=not self.config.disable_tls_certificate_validation,
+            verify_ssl=not config.disable_tls_certificate_validation,
         )
         return handle
 

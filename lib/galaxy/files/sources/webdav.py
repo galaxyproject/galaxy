@@ -18,6 +18,7 @@ from pydantic import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -65,31 +66,32 @@ class WebDavFilesSource(PyFilesystem2FilesSource[WebDavFileSourceTemplateConfigu
     template_config_class = WebDavFileSourceTemplateConfiguration
     resolved_config_class = WebDavFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[WebDavFileSourceConfiguration]):
         if WebDAVFS is None:
             raise self.required_package_exception
 
+        config = context.config
         file_sources_config = self._file_sources_config
-        use_temp_files = self.config.use_temp_files
+        use_temp_files = config.use_temp_files
         if file_sources_config and file_sources_config.webdav_use_temp_files is not None:
             use_temp_files = file_sources_config.webdav_use_temp_files
 
         if use_temp_files:
-            temp_path = self.config.temp_path
+            temp_path = config.temp_path
             if temp_path is None and file_sources_config and file_sources_config.tmp_dir:
                 temp_path = file_sources_config.tmp_dir
             if temp_path is None:
                 temp_path = tempfile.mkdtemp(prefix="webdav_")
-            self.config.temp_path = temp_path
-        self.config.use_temp_files = use_temp_files
+            config.temp_path = temp_path
+        config.use_temp_files = use_temp_files
 
         handle = WebDAVFS(
-            url=self.config.url,
-            root=self.config.root,
-            login=self.config.login,
-            password=self.config.password,
-            temp_path=self.config.temp_path,
-            use_temp_files=self.config.use_temp_files,
+            url=config.url,
+            root=config.root,
+            login=config.login,
+            password=config.password,
+            temp_path=config.temp_path,
+            use_temp_files=config.use_temp_files,
         )
         return handle
 

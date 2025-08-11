@@ -23,6 +23,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     Entry,
     EntryData,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -30,6 +31,7 @@ from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._rdm import (
     ContainerAndFileIdentifier,
+    RDMFileSourceConfiguration,
     RDMFileSourceTemplateConfiguration,
     RDMFilesSource,
     RDMRepositoryInteractor,
@@ -182,6 +184,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -193,16 +196,18 @@ class InvenioRDMFilesSource(RDMFilesSource):
         is_root_path = path == "/"
         if is_root_path:
             records, total_hits = self.repository.get_file_containers(
-                write_intent, limit=limit, offset=offset, query=query
+                context, write_intent, limit=limit, offset=offset, query=query
             )
             return cast(list[AnyRemoteEntry], records), total_hits
         record_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_container(record_id, write_intent, query)
+        files = self.repository.get_files_in_container(context, record_id, write_intent, query)
         return cast(list[AnyRemoteEntry], files), len(files)
 
-    def _create_entry(self, entry_data: EntryData) -> Entry:
-        public_name = self.get_public_name()
-        record = self.repository.create_draft_file_container(entry_data.name, public_name)
+    def _create_entry(
+        self, entry_data: EntryData, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> Entry:
+        public_name = self.get_public_name(context)
+        record = self.repository.create_draft_file_container(entry_data.name, public_name, context)
         record_id = record.get("id")
         record_id = str(record_id) if record_id else None
         if not record_id:
@@ -223,13 +228,17 @@ class InvenioRDMFilesSource(RDMFilesSource):
             external_link=external_link,
         )
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         record_id, filename = self.parse_path(source_path)
-        self.repository.download_file_from_container(record_id, filename, native_path)
+        self.repository.download_file_from_container(record_id, filename, native_path, context)
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         record_id, filename = self.parse_path(target_path)
-        self.repository.upload_file_to_draft_container(record_id, filename, native_path)
+        self.repository.upload_file_to_draft_container(record_id, filename, native_path, context)
 
 
 class InvenioRepositoryInteractor(RDMRepositoryInteractor):
@@ -248,6 +257,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
     def get_file_containers(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         writeable: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -267,7 +277,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         if query:
             params["q"] = query
             params["sort"] = "bestmatch"
-        response_data = self._get_response(request_url, params=params)
+        response_data = self._get_response(context, request_url, params=params)
         total_hits = response_data["hits"]["total"]
         return self._get_records_from_response(response_data), total_hits
 
@@ -279,14 +289,20 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return size, page
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, query: Optional[str] = None
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        container_id: str,
+        writeable: bool,
+        query: Optional[str] = None,
     ) -> list[RemoteFile]:
         conditionally_draft = "/draft" if writeable else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
-        response_data = self._get_response(request_url)
+        response_data = self._get_response(context, request_url)
         return self._get_record_files_from_response(container_id, response_data)
 
-    def create_draft_file_container(self, title: str, public_name: str) -> dict[str, Any]:
+    def create_draft_file_container(
+        self, title: str, public_name: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> dict[str, Any]:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_public_name(public_name)
         create_record_request = {
@@ -301,17 +317,23 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             },
         }
 
-        headers = self._get_request_headers(auth_required=True)
+        headers = self._get_request_headers(context, auth_required=True)
         response = requests.post(self.records_url, json=create_record_request, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
         record["title"] = self._get_record_title(record)
         return record
 
-    def upload_file_to_draft_container(self, record_id: str, filename: str, file_path: str):
-        record = self._get_draft_record(record_id)
+    def upload_file_to_draft_container(
+        self,
+        record_id: str,
+        filename: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ):
+        record = self._get_draft_record(record_id, context)
         upload_file_url = record["links"]["files"]
-        headers = self._get_request_headers(auth_required=True)
+        headers = self._get_request_headers(context, auth_required=True)
 
         # Add file metadata entry
         response = requests.post(upload_file_url, json=[{"key": filename}], headers=headers)
@@ -330,12 +352,18 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         response = requests.post(commit_file_upload_url, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
 
-    def download_file_from_container(self, container_id: str, file_identifier: str, file_path: str):
-        download_file_content_url = self._get_download_file_url(container_id, file_identifier)
+    def download_file_from_container(
+        self,
+        container_id: str,
+        file_identifier: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ):
+        download_file_content_url = self._get_download_file_url(container_id, file_identifier, context)
         headers = {}
         if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
-            headers = self._get_request_headers()
+            headers = self._get_request_headers(context)
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -350,15 +378,17 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                     f"Cannot download file '{file_identifier}' from record '{container_id}'. Please make sure the record exists and it is public."
                 )
 
-    def _get_download_file_url(self, record_id: str, filename: str):
+    def _get_download_file_url(
+        self, record_id: str, filename: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         """Get the URL to download a file from a record.
 
         This method is used to download files from both published and draft records that are accessible by the user.
         """
         file_details_url = self._get_file_details_url(record_id, filename)
-        if self._is_published_record(record_id):
+        if self._is_published_record(record_id, context):
             return self._file_url_to_download_url(file_details_url)
-        if self._is_draft_record(record_id):
+        if self._is_draft_record(record_id, context):
             draft_download_url = f"{self._to_draft_url(file_details_url)}/content"
             return draft_download_url
         raise MessageException(
@@ -371,15 +401,15 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def _to_draft_url(self, url: str) -> str:
         return url.replace("/files/", "/draft/files/")
 
-    def _is_draft_record(self, record_id: str):
+    def _is_draft_record(self, record_id: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]):
         request_url = self._get_draft_record_url(record_id)
-        headers = self._get_request_headers()
+        headers = self._get_request_headers(context)
         response = requests.head(request_url, headers=headers)
         return response.status_code == 200
 
-    def _is_published_record(self, record_id: str):
+    def _is_published_record(self, record_id: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]):
         request_url = self._get_record_url(record_id)
-        headers = self._get_request_headers()
+        headers = self._get_request_headers(context)
         response = requests.head(request_url, headers=headers)
         return response.status_code == 200
 
@@ -398,9 +428,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         # So this is the most reliable way to download files for now.
         return f"{file_url.replace('/api', '')}?download=1"
 
-    def _get_draft_record(self, record_id: str):
+    def _get_draft_record(self, record_id: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]):
         request_url = self._get_draft_record_url(record_id)
-        draft_record = self._get_response(request_url)
+        draft_record = self._get_response(context, request_url)
         return draft_record
 
     def _get_records_from_response(self, response: dict) -> list[RemoteDirectory]:
@@ -469,17 +499,20 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
     def _get_response(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         request_url: str,
         params: Optional[dict[str, Any]] = None,
         auth_required: bool = False,
     ) -> dict:
-        headers = self._get_request_headers(auth_required)
+        headers = self._get_request_headers(context, auth_required)
         response = requests.get(request_url, params=params, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    def _get_request_headers(self, auth_required: bool = False):
-        token = self.plugin.get_authorization_token()
+    def _get_request_headers(
+        self, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration], auth_required: bool = False
+    ):
+        token = self.plugin.get_authorization_token(context)
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         if auth_required and token is None:
             self._raise_auth_required()

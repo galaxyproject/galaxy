@@ -10,6 +10,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -39,16 +40,17 @@ class AnVILFilesSource(PyFilesystem2FilesSource[AnVILFileSourceTemplateConfigura
     template_config_class = AnVILFileSourceTemplateConfiguration
     resolved_config_class = AnVILFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[AnVILFileSourceConfiguration]):
         if AnVILFS is None:
             raise self.required_package_exception
 
+        config = context.config
         handle = AnVILFS(
-            namespace=self.config.namespace,
-            workspace=self.config.workspace,
-            api_url=self.config.api_url,
-            on_anvil=self.config.on_anvil,
-            drs_url=self.config.drs_url,
+            namespace=config.namespace,
+            workspace=config.workspace,
+            api_url=config.api_url,
+            on_anvil=config.on_anvil,
+            drs_url=config.drs_url,
         )
         return handle
 

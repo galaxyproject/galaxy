@@ -5,6 +5,7 @@ from fs.osfs import OSFS
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -33,11 +34,11 @@ class TempFilesSource(PyFilesystem2FilesSource[TempFileSourceTemplateConfigurati
     template_config_class = TempFileSourceTemplateConfiguration
     resolved_config_class = TempFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[TempFileSourceConfiguration]):
         if OSFS is None:
             raise self.required_package_exception
 
-        return OSFS(root_path=self.config.root_path)
+        return OSFS(root_path=context.config.root_path)
 
     def get_scheme(self) -> str:
         return "temp"

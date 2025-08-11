@@ -9,6 +9,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -74,6 +75,7 @@ class RDMRepositoryInteractor:
 
     def get_file_containers(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         writeable: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -87,7 +89,11 @@ class RDMRepositoryInteractor:
         raise NotImplementedError()
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, query: Optional[str] = None
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        container_id: str,
+        writeable: bool,
+        query: Optional[str] = None,
     ) -> list[RemoteFile]:
         """Returns the list of files of a file container.
 
@@ -95,7 +101,9 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_file_container(self, title: str, public_name: str) -> dict[str, Any]:
+    def create_draft_file_container(
+        self, title: str, public_name: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> dict[str, Any]:
         """Creates a draft file container in the repository with basic metadata.
 
         The metadata is usually just the title of the container and the user that created it.
@@ -107,6 +115,7 @@ class RDMRepositoryInteractor:
         container_id: str,
         filename: str,
         file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
     ) -> None:
         """Uploads a file with the provided filename (from file_path) to a draft container with the given container_id.
 
@@ -121,6 +130,7 @@ class RDMRepositoryInteractor:
         container_id: str,
         file_identifier: str,
         file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
     ) -> None:
         """Downloads a file with the provided filename from the container with the given container_id.
 
@@ -178,8 +188,8 @@ class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFile
     def get_container_id_from_path(self, source_path: str) -> str:
         raise NotImplementedError()
 
-    def get_authorization_token(self) -> Optional[str]:
-        return self.config.token
+    def get_authorization_token(self, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]) -> Optional[str]:
+        return context.config.token
 
-    def get_public_name(self) -> str:
-        return self.config.public_name or "Anonymous Galaxy User"
+    def get_public_name(self, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]) -> str:
+        return context.config.public_name or "Anonymous Galaxy User"
