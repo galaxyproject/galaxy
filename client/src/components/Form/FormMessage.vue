@@ -1,6 +1,6 @@
 <template>
     <b-alert class="mt-2" :variant="variant" :show="showAlert">
-        {{ message | l }}
+        {{ l(message) }}
     </b-alert>
 </template>
 <script>
