@@ -432,9 +432,9 @@ published_histories:
 
 shared_histories:
   selectors:
-    _: '#histories-shared-grid'
-    histories: '.grid-table tr'
-    tab: '#histories-shared-tab'
+    shared_list: '.history-card-list'
+    history_cards: '.history-card-list .g-card'
+    shared_tab: '#histories-shared-tab'
 
 history_copy_elements:
   selectors:
@@ -480,7 +480,8 @@ histories:
     advanced_search_name_input: '#histories-advanced-filter-name'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
     advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
-    histories: '.grid-table tr'
+    history_cards: '.history-card-list .g-card'
+    history_card_title: '[id^="g-card-title-link-history-"]'
     import_button: '[data-description="grid action import new history"]'
     reset_input: '#histories-grid [data-description="reset query"]'
     search_input: '#histories-grid input.search-query[data-description="filter text input"]'
