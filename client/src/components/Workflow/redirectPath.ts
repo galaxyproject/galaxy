@@ -1,11 +1,11 @@
-import type { RawLocation } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 
 import { Toast } from "@/composables/toast";
 
 export function getRedirectOnImportPath(
     response: { id?: string; message?: string; status?: string },
     isRunFormRedirect = false,
-): RawLocation {
+): RouteLocationRaw {
     if (isRunFormRedirect) {
         return { path: "/workflows/run", query: { id: response.id } };
     } else {
