@@ -15,6 +15,7 @@ export interface Invocation {
     history_id: string;
     inputs: Record<string, { label?: string; id?: string }>;
     outputs: Record<string, { id?: string }>;
+    output_collections: Record<string, { id?: string }>;
     steps: { workflow_step_label?: string; job_id?: string; implicit_collection_jobs_id?: string }[];
     workflow_id: string;
 }
