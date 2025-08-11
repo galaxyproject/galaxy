@@ -17,7 +17,7 @@
                         :internal-search="false"
                         @input="valueChanged"
                         @search-change="searchChanged">
-                        <template slot="afterList">
+                        <template v-slot:afterList>
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
