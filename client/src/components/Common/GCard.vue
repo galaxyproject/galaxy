@@ -391,11 +391,10 @@ function onKeyDown(event: KeyboardEvent) {
 
                             <div class="align-items-center d-flex flex-gapx-1">
                                 <slot name="titleBadges">
-                                    <template v-for="badge in props.titleBadges">
+                                    <template v-for="badge in props.titleBadges" :key="badge.id">
                                         <BBadge
                                             v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
-                                            :key="badge.id"
                                             v-b-tooltip.hover.noninteractive
                                             :pill="badge.type !== 'badge'"
                                             class="mt-1"
@@ -465,11 +464,10 @@ function onKeyDown(event: KeyboardEvent) {
                                             <FontAwesomeIcon :icon="faCaretDown" fixed-width />
                                         </template>
 
-                                        <template v-for="ea in props.extraActions">
+                                        <template v-for="ea in props.extraActions" :key="ea.id">
                                             <BDropdownItem
                                                 v-if="ea.visible ?? true"
                                                 :id="getActionId(props.id, ea.id)"
-                                                :key="ea.id"
                                                 :disabled="ea.disabled"
                                                 :variant="ea.variant || 'link'"
                                                 :to="ea.to"
@@ -491,11 +489,10 @@ function onKeyDown(event: KeyboardEvent) {
                                     :id="getElementId(props.id, 'badges')"
                                     class="align-items-center align-self-baseline d-flex flex-gapx-1">
                                     <slot name="badges">
-                                        <template v-for="badge in props.badges">
+                                        <template v-for="badge in props.badges" :key="badge.id">
                                             <BBadge
                                                 v-if="badge.visible ?? true"
                                                 :id="getBadgeId(props.id, badge.id)"
-                                                :key="badge.id"
                                                 v-b-tooltip.hover.top.noninteractive
                                                 :pill="badge.type !== 'badge'"
                                                 :class="{
@@ -521,11 +518,10 @@ function onKeyDown(event: KeyboardEvent) {
 
                                 <div :id="getElementId(props.id, 'indicators')" class="align-self-baseline">
                                     <slot name="indicators">
-                                        <template v-for="indicator in props.indicators">
+                                        <template v-for="indicator in props.indicators" :key="indicator.id">
                                             <BButton
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="`${indicator.id}-button`"
                                                 v-b-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
@@ -613,12 +609,11 @@ function onKeyDown(event: KeyboardEvent) {
                                     :id="getElementId(props.id, 'secondary-actions')"
                                     size="sm"
                                     class="mt-1">
-                                    <template v-for="sa in props.secondaryActions">
+                                    <template v-for="sa in props.secondaryActions" :key="sa.id">
                                         <BButton
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
-                                            :key="sa.id"
-                                            v-b-tooltip.hover.noninteractive
+                                            v-b-tooltip.hover
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
                                             :variant="sa.variant || 'outline-primary'"
@@ -643,11 +638,10 @@ function onKeyDown(event: KeyboardEvent) {
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
                                     <template v-if="props.primaryActions?.length">
-                                        <template v-for="pa in props.primaryActions">
+                                        <template v-for="pa in props.primaryActions" :key="pa.id">
                                             <BButton
                                                 v-if="pa.visible ?? true"
                                                 :id="getActionId(props.id, pa.id)"
-                                                :key="pa.id"
                                                 v-b-tooltip.hover.noninteractive
                                                 class="mt-1"
                                                 :disabled="pa.disabled"
