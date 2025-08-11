@@ -1,4 +1,4 @@
-import { mount, type Wrapper, type WrapperArray } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -50,7 +50,7 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
     return wrapper;
 }
 
-async function setAllItemsChecked(wrapper: Wrapper<Vue>) {
+async function setAllItemsChecked(wrapper: VueWrapper<any>) {
     await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
     await flushPromises();
 }

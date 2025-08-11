@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -41,7 +41,7 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
 }
 
 describe("RDMDestinationSelector", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(async () => {
         wrapper = await initWrapper();

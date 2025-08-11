@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -155,7 +155,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
     return { wrapper };
 }
 
-async function openShareModal(wrapper: Wrapper<Vue>) {
+async function openShareModal(wrapper: VueWrapper<any>) {
     await wrapper.find(SELECTORS.SHARE_ICON_BUTTON).trigger("click");
 }
 

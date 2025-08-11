@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { nextTick } from "vue";
@@ -12,7 +12,7 @@ import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 
 const localVue = getLocalVue(true);
 
-async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
+async function mountComponent(component: object, propsData: object = {}): Promise<VueWrapper<any>> {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 

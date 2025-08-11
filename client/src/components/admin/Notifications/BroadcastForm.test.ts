@@ -2,7 +2,7 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -50,7 +50,7 @@ async function mountBroadcastForm(props?: object) {
 const { server, http } = useServerMock();
 
 describe("BroadcastForm.vue", () => {
-    function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
+    function expectSubmitButton(wrapper: VueWrapper<any>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
@@ -58,7 +58,7 @@ describe("BroadcastForm.vue", () => {
         );
     }
 
-    async function createBroadcast(wrapper: Wrapper<Vue>, mockRouter: { push: jest.Mock }, actionsLink = false) {
+    async function createBroadcast(wrapper: VueWrapper<any>, mockRouter: { push: jest.Mock }, actionsLink = false) {
         server.use(
             http.post("/api/notifications/broadcast", ({ response }) => {
                 // We use untyped here because we don't care about the response
