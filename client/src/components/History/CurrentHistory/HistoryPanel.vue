@@ -466,11 +466,7 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
                     :show-advanced.sync="showAdvanced" />
 
                 <section v-if="!showAdvanced">
-                    <HistoryDetails
-                        :history="history"
-                        :writeable="canEditHistory"
-                        :summarized="detailsSummarized"
-                        @update:history="historyStore.updateHistory($event)" />
+                    <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
 
                     <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
