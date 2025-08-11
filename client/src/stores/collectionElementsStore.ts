@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import {
     type CollectionEntry,
@@ -107,7 +107,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 offset = 0;
             }
 
-            set(loadingCollectionElements.value, collectionKey, true);
+            loadingCollectionElements.value[collectionKey] = true;
             // Mark all elements in the range as fetching
             storedElements
                 .slice(offset, offset + limit)
@@ -121,9 +121,9 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
             return { fetchedElements, elementOffset: offset };
         } catch (error) {
-            set(loadingCollectionElementsErrors.value, collectionKey, error);
+            loadingCollectionElementsErrors.value[collectionKey] = error;
         } finally {
-            del(loadingCollectionElements.value, collectionKey);
+            delete loadingCollectionElements.value[collectionKey];
         }
     }
 
@@ -135,7 +135,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
         if (!storedElements) {
             storedElements = initWithPlaceholderElements(collection);
-            set(storedCollectionElements.value, key, storedElements);
+            storedCollectionElements.value[key] = storedElements;
         }
 
         try {
@@ -147,10 +147,10 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
                 for (let index = from; index < to; index++) {
                     const element = ensureDefined(data.fetchedElements[index - from]);
-                    set(storedElements, index, element);
+                    storedElements[index] = element;
                 }
 
-                set(storedCollectionElements.value, key, storedElements);
+                storedCollectionElements.value[key] = storedElements;
             }
         } catch (e) {
             if (!(e instanceof ActionSkippedError)) {
@@ -167,9 +167,9 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     function saveCollection(collection: HDCASummary | HDCADetailed) {
-        set<HDCASummary>(storedCollections.value, collection.id, collection);
+        storedCollections.value[collection.id] = collection;
         if ("elements" in collection) {
-            set<HDCADetailed>(storedCollectionsDetailed.value, collection.id, collection);
+            storedCollectionsDetailed.value[collection.id] = collection;
         }
     }
 
@@ -207,15 +207,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     });
 
     async function fetchCollection(params: { id: string }) {
-        set(loadingCollectionElements.value, params.id, true);
+        loadingCollectionElements.value[params.id] = true;
         try {
             const collection = await fetchCollectionDetails({ hdca_id: params.id });
             saveCollection(collection);
             return collection;
         } catch (error) {
-            set(loadingCollectionElementsErrors.value, params.id, error);
+            loadingCollectionElementsErrors.value[params.id] = error;
         } finally {
-            del(loadingCollectionElements.value, params.id);
+            delete loadingCollectionElements.value[params.id];
         }
     }
 
