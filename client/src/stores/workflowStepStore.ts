@@ -386,7 +386,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         delete steps.value[stepId.toString()];
         delete stepExtraInputs.value[stepId];
         delete stateStore.multiSelectedSteps[stepId];
-        delete stepMapOver.value[stepId.toString()];
+        delete stepMapOver.value[stepId];
 
         deleteStepPosition(stepId);
         deleteStepTerminals(stepId);
