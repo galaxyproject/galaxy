@@ -4753,7 +4753,7 @@ class Dataset(Base, StorableObject, Serializable):
             )
             UPDATE history_dataset_collection_association
             SET update_time = :now_time
-            WHERE collection_id IN (SELECT DISTINCT collection_id FROM collection_hierarchy ORDER BY collection_id)
+            WHERE collection_id IN (SELECT collection_id FROM collection_hierarchy ORDER BY collection_id)
         """
         )
 
@@ -4797,7 +4797,7 @@ class Dataset(Base, StorableObject, Serializable):
             UPDATE history_dataset_collection_association
             SET update_time = :now_time
             WHERE collection_id IN (
-                SELECT DISTINCT collection_id FROM collection_hierarchy ORDER BY collection_id
+                SELECT collection_id FROM collection_hierarchy ORDER BY collection_id
             )
         """
         )
