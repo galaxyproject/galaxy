@@ -86,18 +86,21 @@ def test_serialization():
 def test_config_options():
     file_sources = configured_file_sources(FILE_SOURCES_CONF)
     fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert fs._open_fs().use_temp_files
+    assert fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
 
     file_sources = configured_file_sources(FILE_SOURCES_CONF_NO_USE_TEMP_FILES)
     fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert not fs._open_fs().use_temp_files
+    assert not fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
 
     disable_default_use_temp = FileSourcePluginsConfig(
         webdav_use_temp_files=False,
     )
     file_sources = configured_file_sources(FILE_SOURCES_CONF, disable_default_use_temp)
     fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert not fs._open_fs().use_temp_files
+    assert not fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
 
 
 def file_source_as_webdav(file_source: BaseFilesSource) -> WebDavFilesSource:
