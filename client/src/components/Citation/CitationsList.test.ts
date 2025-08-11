@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
+import { setupMockHistoryBreadcrumbs } from "@tests/jest/mockHistoryBreadcrumbs";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import VueRouter from "vue-router";
@@ -36,6 +37,8 @@ jest.mock("@/components/Citation/services", () => ({
         ])
     ),
 }));
+
+setupMockHistoryBreadcrumbs();
 
 describe("CitationsList", () => {
     let wrapper: Wrapper<Vue>;
