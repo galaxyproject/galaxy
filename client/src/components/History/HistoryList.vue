@@ -5,15 +5,19 @@ import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstra
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { AnyHistory, HistorySortByLiteral } from "@/api";
-import { GalaxyApi } from "@/api";
-import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
+import {
+    type AnyHistoryEntry,
+    getArchivedHistories,
+    getMyHistories,
+    getPublishedHistories,
+    getSharedHistories,
+} from "@/api/histories";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getHistoryListFilters } from "./historyList";
 
@@ -60,7 +64,7 @@ const listHeader = ref<typeof ListHeader | null>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
-const historiesLoaded = ref<AnyHistory | ArchivedHistoryDetailed[]>([]);
+const historiesLoaded = ref<AnyHistoryEntry[]>([]);
 const selectedHistoryIds = ref<SelectedHistory[]>([]);
 
 const myView = computed(() => props.activeList === "my");
@@ -128,68 +132,42 @@ async function load(overlayLoading = false, silent = false) {
         return;
     }
 
-    let keys = "username,nice_size,contents_active,contents_states";
-    if (sharedView.value) {
-        keys += ",owner";
-    } else if (publishedView.value) {
-        keys += ",owner,published";
-    }
+    const options = {
+        limit: limit.value,
+        offset: offset.value,
+        search: validatedFilterText(),
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+    };
 
-    if (props.activeList !== "archived") {
-        const { response, data, error } = await GalaxyApi().GET("/api/histories", {
-            params: {
-                query: {
-                    view: "summary",
-                    keys,
-                    limit: limit.value,
-                    offset: offset.value,
-                    search: validatedFilterText(),
-                    sort_by: sortBy.value as HistorySortByLiteral,
-                    sort_desc: sortDesc.value,
-                    show_own: myView.value,
-                    show_published: publishedView.value,
-                    show_shared: sharedView.value,
-                    show_archived: !myView.value,
-                },
-            },
-        });
+    try {
+        if (myView.value) {
+            const { data, total } = await getMyHistories(options);
 
-        if (error) {
-            Toast.error(`Failed to load histories: ${errorMessageAsString(error)}`);
-            rethrowSimple(error);
-        }
-
-        if (response) {
             historiesLoaded.value = data;
-            totalHistories.value = parseInt(response.headers.get("total_matches") ?? "0");
-        }
-    } else {
-        const { response, data, error } = await GalaxyApi().GET("/api/histories/archived", {
-            params: {
-                query: {
-                    limit: limit.value,
-                    offset: offset.value,
-                    search: validatedFilterText(),
-                    sort_by: sortBy.value as HistorySortByLiteral,
-                    sort_desc: sortDesc.value,
-                },
-            },
-        });
+            totalHistories.value = total;
+        } else if (sharedView.value) {
+            const { data, total } = await getSharedHistories(options);
 
-        if (error) {
-            Toast.error(`Failed to load archived histories: ${errorMessageAsString(error)}`);
-            rethrowSimple(error);
-        }
-
-        if (response) {
             historiesLoaded.value = data;
-            totalHistories.value = parseInt(response.headers.get("total_matches") ?? "0");
+            totalHistories.value = total;
+        } else if (publishedView.value) {
+            const { data, total } = await getPublishedHistories(options);
+
+            historiesLoaded.value = data;
+            totalHistories.value = total;
+        } else if (archivedView.value) {
+            const { data, total } = await getArchivedHistories(options);
+
+            historiesLoaded.value = data;
+            totalHistories.value = total;
         }
+    } catch (error) {
+        Toast.error(`Failed to load histories: ${errorMessageAsString(error)}`);
+    } finally {
+        loading.value = false;
+        overlay.value = false;
     }
-
-    loading.value = false;
-
-    overlay.value = false;
 }
 
 async function onPageChange(page: number) {
