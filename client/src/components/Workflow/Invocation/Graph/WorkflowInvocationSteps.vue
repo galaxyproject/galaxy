@@ -71,7 +71,6 @@ const expandInvocationInputs = ref(oneOrNoInput.value);
                 :class="{ 'mx-1': !oneOrNoInput && isWorkflowInput(step.type) }"
                 :data-index="step.id"
                 :invocation="props.invocation"
-                :workflow="workflow"
                 :workflow-step="step"
                 :graph-step="graphSteps[step.id]" />
         </div>

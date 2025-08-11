@@ -506,6 +506,24 @@ class InvocationReport(Model, WithModelClass):
     )
 
 
+class ReportInvocationErrorPayload(Model):
+    invocation_id: DecodedDatabaseIdField = Field(
+        default=...,
+        title="Invocation ID",
+        description="The ID of the invocation related to the error.",
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="Email",
+        description="Email address for communication with the user. Only required for anonymous users.",
+    )
+    message: Optional[str] = Field(
+        default=None,
+        title="Message",
+        description="The optional message sent with the error report.",
+    )
+
+
 class InvocationUpdatePayload(Model):
     action: bool = InvocationStepActionField
 
