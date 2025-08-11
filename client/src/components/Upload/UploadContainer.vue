@@ -188,7 +188,7 @@ defineExpose({
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
                 :list-db-keys="listDbKeys"
-                v-on="$listeners" />
+                v-bind="$attrs" />
         </BTab>
         <BTab
             v-if="showCollection"
@@ -202,7 +202,7 @@ defineExpose({
                 :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
-                v-on="$listeners" />
+                v-bind="$attrs" />
         </BTab>
         <DefaultBox
             v-if="showRegular || showCollection"
@@ -221,7 +221,7 @@ defineExpose({
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
             @progress="progress"
-            v-on="$listeners" />
+            v-bind="$attrs" />
     </BTabs>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />

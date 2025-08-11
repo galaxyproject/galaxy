@@ -140,7 +140,7 @@ watch(
                 <CollectionNavigation
                     :history-name="history.name"
                     :selected-collections="selectedCollections"
-                    v-on="$listeners" />
+                    v-bind="$attrs" />
                 <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
                 <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>
