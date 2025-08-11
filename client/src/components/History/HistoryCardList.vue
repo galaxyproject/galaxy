@@ -448,12 +448,7 @@ function getSecondaryActions(history: AnyHistoryEntry): CardAction[] {
             </template>
 
             <template v-slot:badges>
-                <HistoryDatasetsBadge
-                    :history-id="history.id"
-                    :count="history.count"
-                    :nice-size="history.nice_size"
-                    :contents-active="history.contents_active"
-                    :contents-states="history.contents_states" />
+                <HistoryDatasetsBadge :history-id="history.id" :count="history.count" />
             </template>
         </GCard>
     </div>
