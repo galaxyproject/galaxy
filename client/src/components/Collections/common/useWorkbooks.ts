@@ -75,7 +75,8 @@ export function useWorkbookDropHandling(workbookHandler: WorkbookHandler) {
         }
     };
 
-    const uploadRef = ref<InstanceType<typeof HiddenWorkbookUploadInput>>();
+    // Vue 3 components are not constructors, use the component type directly
+    const uploadRef = ref<typeof HiddenWorkbookUploadInput>();
 
     interface HasBrowse {
         browse: () => void;
