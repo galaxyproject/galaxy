@@ -4,7 +4,7 @@ import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 

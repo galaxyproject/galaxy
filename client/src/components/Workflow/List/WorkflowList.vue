@@ -5,7 +5,7 @@ import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstra
 import { faTrashRestore } from "font-awesome-6";
 import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";

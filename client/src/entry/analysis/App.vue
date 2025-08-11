@@ -56,7 +56,7 @@ import { setToastComponentRef } from "composables/toast";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
