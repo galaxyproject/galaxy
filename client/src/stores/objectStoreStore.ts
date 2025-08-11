@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type { UserConcreteObjectStoreModel } from "@/api";
 import { getSelectableObjectStores } from "@/api/objectStores";
@@ -60,7 +60,7 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
                 (store) => store.object_store_id === objectStore.object_store_id,
             );
             if (index !== -1) {
-                set(selectableObjectStores.value, index, objectStore);
+                selectableObjectStores.value[index] = objectStore;
             } else {
                 selectableObjectStores.value.push(objectStore);
             }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, type Ref, ref, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { getGalaxyInstance } from "@/app";
@@ -228,7 +228,7 @@ watch(historyItems, (newHistoryItems) => {
     // Re-hide invisible history items when `historyItems` changes
     for (const newHistoryItem of newHistoryItems) {
         if (invisibleHistoryItems.value[newHistoryItem.hid]) {
-            VueSet(invisibleHistoryItems.value, newHistoryItem.hid, false);
+            invisibleHistoryItems.value[newHistoryItem.hid] = false;
         }
     }
 });
@@ -338,7 +338,7 @@ function reloadContents() {
 }
 
 function setInvisible(item: HistoryItemSummary) {
-    VueSet(unref(invisibleHistoryItems), item.hid, true);
+    unref(invisibleHistoryItems)[item.hid] = true;
 }
 
 function onTagChange(item: HistoryItemSummary, newTags: string[]) {
