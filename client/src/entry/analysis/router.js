@@ -1,5 +1,4 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
@@ -14,7 +13,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
-import { patchRouterPush } from "./router-push";
+// import { patchRouterPush } from "./router-push";  // Vue Router 3 only
 
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
@@ -112,7 +111,6 @@ import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-Vue.use(VueRouter);
 
 // Async component for CustomToolEditor to reduce bundle size
 // NOTE: We use the full async component factory pattern instead of simple dynamic imports
@@ -129,8 +127,8 @@ const CustomToolEditor = () => ({
     timeout: 10000,
 });
 
-// patches $router.push() to trigger an event and hide duplication warnings
-patchRouterPush(VueRouter);
+// TODO: patchRouterPush was used with Vue Router 3 but VueRouter constructor
+// doesn't exist in Vue Router 4. Revisit if navigation duplicate warnings return.
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -152,9 +150,8 @@ function redirectIf(condition, path) {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    const router = new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
+    const router = createRouter({
+        history: createWebHistory(getAppRoot()),
         routes: [
             /** Login and registration entry routes */
             ...LoginRoutes,
