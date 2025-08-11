@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";

@@ -14,7 +14,7 @@ import {
     BFormText,
 } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";

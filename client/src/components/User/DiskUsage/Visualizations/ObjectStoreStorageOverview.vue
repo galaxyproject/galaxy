@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";

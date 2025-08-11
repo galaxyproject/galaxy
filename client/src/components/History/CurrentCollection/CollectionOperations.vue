@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
