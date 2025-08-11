@@ -5,7 +5,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";

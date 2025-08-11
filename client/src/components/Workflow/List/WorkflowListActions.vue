@@ -2,7 +2,7 @@
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 
