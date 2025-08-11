@@ -286,6 +286,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "populated_state",
                 "populated_state_message",
                 "element_count",
+                "elements_datatypes",
                 "elements_deleted",
                 "elements_states",
                 "job_source_id",
@@ -307,7 +308,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             [
                 "populated",
                 "elements",
-                "elements_datatypes",
             ],
             include_keys_from="summary",
         )
