@@ -1,5 +1,4 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
@@ -107,10 +106,9 @@ import Login from "@/entry/analysis/modules/Login.vue";
 import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-Vue.use(VueRouter);
 
-// patches $router.push() to trigger an event and hide duplication warnings
-patchRouterPush(VueRouter);
+// TODO: patchRouterPush was used with Vue Router 3 but VueRouter constructor
+// doesn't exist in Vue Router 4. Revisit if navigation duplicate warnings return.
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -140,9 +138,8 @@ function redirectIf(condition, path) {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    const router = new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
+    const router = createRouter({
+        history: createWebHistory(getAppRoot()),
         routes: [
             /** Login entry route */
             {
