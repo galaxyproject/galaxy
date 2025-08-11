@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDCASummary } from "@/api";
@@ -82,13 +83,27 @@ function pluralize(word: string) {
 
 <template>
     <div>
-        <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
-            a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-        </span>
-        <span v-else class="description mt-1 mb-1">
-            a {{ collectionLabel }} with {{ hdca.element_count || 0
-            }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-        </span>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
+                    a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                </span>
+                <span v-else class="description mt-1 mb-1">
+                    a {{ collectionLabel }} with {{ hdca.element_count || 0
+                    }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                </span>
+            </div>
+
+            <BBadge
+                v-if="datasetStateSummary.elements_deleted > 0"
+                variant="warning"
+                class="ml-2"
+                :title="`${datasetStateSummary.elements_deleted} deleted ${
+                    datasetStateSummary.elements_deleted === 1 ? 'dataset' : 'datasets'
+                } in collection`">
+                <icon icon="trash" /> {{ datasetStateSummary.elements_deleted }} deleted
+            </BBadge>
+        </div>
 
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
         <DatasetProgress v-else-if="datasetStateSummary.datasetCount > 0" :summary="datasetStateSummary" />
