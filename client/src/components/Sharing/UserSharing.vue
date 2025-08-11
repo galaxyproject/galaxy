@@ -180,7 +180,7 @@ defineExpose({
                     @remove="onRemove"
                     @search-change="onSearchChanged"
                     @close="onBlur">
-                    <template v-if="!sharingCandidates" slot="caret">
+                    <template v-if="!sharingCandidates" v-slot:caret>
                         <div></div>
                     </template>
 
@@ -196,7 +196,7 @@ defineExpose({
                         </span>
                     </template>
 
-                    <template v-if="sharingCandidates" slot="noResult">
+                    <template v-if="sharingCandidates" v-slot:noResult>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
@@ -205,7 +205,7 @@ defineExpose({
                         </div>
                     </template>
 
-                    <template slot="noOptions">
+                    <template v-slot:noOptions>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
