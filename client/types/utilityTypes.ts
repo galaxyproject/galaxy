@@ -22,9 +22,7 @@ export type First<A extends readonly [...any]> = A[Length<A>];
  * @example
  * type MyComponentPropsType = GetComponentPropTypes<typeof MyComponent>;
  */
-export type GetComponentPropTypes<
-    T extends import("vue").ComponentPublicInstance
-> = T["$props"];
+export type GetComponentPropTypes<T extends import("vue").ComponentPublicInstance> = T["$props"];
 
 /** Convert snake case string literal to camel case string literal */
 export type SnakeToCamelCase<S extends string> = S extends `${infer T}_${infer U}`
