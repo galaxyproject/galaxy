@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, set } from "vue";
+import { computed } from "vue";
 
 import { type HDADetailed, type HistoryContentItemBase, isInaccessible } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -29,7 +29,7 @@ export const useDatasetStore = defineStore("datasetStore", () => {
             (entry) => entry.history_content_type === "dataset",
         ) as HDADetailed[];
         for (const dataset of datasetList) {
-            set(storedItems.value, dataset.id, dataset);
+            storedItems.value[dataset.id] = dataset;
         }
     }
 
