@@ -291,22 +291,6 @@ class TestTouchCollectionUpdateTime:
         # Verify update time was changed
         assert hdca.update_time > original_time
 
-    def test_cte_exception_fallback(self, session, hda):
-        """Test that CTE exceptions trigger fallback to Python implementation."""
-        hdca = create_simple_collection_hierarchy(session, hda)
-        original_time = hdca.update_time
-
-        # Mock CTE to raise exception
-        with patch.object(session, "execute") as mock_execute:
-            mock_execute.side_effect = Exception("CTE failed")
-
-            # Should fall back to Python implementation
-            hda.dataset.touch_collection_update_time()
-            session.commit()
-
-        session.refresh(hdca)
-        assert hdca.update_time > original_time
-
     def test_depth_limiting(self, session, hda):
         """Test that very deep hierarchies are handled with depth limiting."""
         # Create a deep hierarchy (this tests the depth limit logic)

@@ -81,6 +81,7 @@ from sqlalchemy import (
     Integer,
     join,
     JSON,
+    literal,
     MetaData,
     not_,
     Numeric,
@@ -4696,113 +4697,93 @@ class Dataset(Base, StorableObject, Serializable):
             return
         dialect_name = session.bind.dialect.name
 
-        try:
-            if dialect_name == "postgresql":
-                self._touch_collection_update_time_postgresql(session)
-            elif dialect_name == "sqlite":
-                self._touch_collection_update_time_sqlite(session)
-            else:
-                # Fallback for other databases
-                self._touch_collection_update_time_fallback(session)
-        except Exception as e:
-            # If CTE approach fails, fall back to Python implementation
-            import logging
-
-            log = logging.getLogger(__name__)
-            log.warning(f"CTE approach failed for {dialect_name}: {e}, falling back to Python implementation")
+        if dialect_name in ("postgresql", "sqlite"):
+            self._touch_collection_update_time_cte(session)
+        else:
+            # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_postgresql(self, session):
-        """PostgreSQL-optimized version with cycle detection"""
+    def _touch_collection_update_time_cte(self, session):
+        """Unified CTE implementation with database-specific optimizations using SQLAlchemy core constructs"""
 
-        update_stmt = text(
-            """
-            WITH RECURSIVE collection_hierarchy AS (
-                -- Base case: Collections directly containing this dataset (HDAs)
-                SELECT
-                    dce.dataset_collection_id as collection_id,
-                    0 as depth_level,
-                    ARRAY[dce.dataset_collection_id] as path
-                FROM dataset_collection_element dce
-                JOIN history_dataset_association hda ON dce.hda_id = hda.id
-                WHERE hda.dataset_id = :dataset_id
+        dialect_name = session.bind.dialect.name
+        use_postgresql_arrays = dialect_name == "postgresql"
 
-                UNION
+        # Base case columns - conditional based on database support
+        base_columns = [
+            DatasetCollectionElement.dataset_collection_id.label("collection_id"),
+            literal(0).label("depth_level"),
+        ]
+        if use_postgresql_arrays:
+            # PostgreSQL: Add path array for cycle detection
+            base_columns.append(func.array([DatasetCollectionElement.dataset_collection_id]).label("path"))
 
-                -- Base case: Collections directly containing this dataset (LDDAs)
-                SELECT
-                    dce.dataset_collection_id as collection_id,
-                    0 as depth_level,
-                    ARRAY[dce.dataset_collection_id] as path
-                FROM dataset_collection_element dce
-                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
-                WHERE ldda.dataset_id = :dataset_id
-
-                UNION ALL
-
-                -- Recursive case: Parent collections
-                SELECT
-                    parent_dce.dataset_collection_id,
-                    ch.depth_level + 1,
-                    ch.path || parent_dce.dataset_collection_id
-                FROM collection_hierarchy ch
-                JOIN dataset_collection_element parent_dce
-                    ON parent_dce.child_collection_id = ch.collection_id
-                WHERE ch.depth_level < :max_depth
-                    AND NOT (parent_dce.dataset_collection_id = ANY(ch.path))
+        # Create a single base query that covers both HDA and LDDA cases using OR conditions
+        # This avoids the CompoundSelect issue while still using SQLAlchemy constructs
+        base_query = (
+            select(*base_columns)
+            .select_from(
+                DatasetCollectionElement.__table__.outerjoin(
+                    HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
+                ).outerjoin(
+                    LibraryDatasetDatasetAssociation.__table__,
+                    DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
+                )
             )
-            UPDATE history_dataset_collection_association
-            SET update_time = :now_time
-            WHERE collection_id IN (SELECT collection_id FROM collection_hierarchy ORDER BY collection_id)
-        """
+            .where(
+                or_(
+                    HistoryDatasetAssociation.dataset_id == self.id,
+                    LibraryDatasetDatasetAssociation.dataset_id == self.id,
+                )
+            )
         )
 
-        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+        # Create the recursive CTE from the single base query
+        collection_hierarchy_cte = base_query.cte(name="collection_hierarchy", recursive=True)
 
-    def _touch_collection_update_time_sqlite(self, session):
-        """SQLite-compatible version with depth limiting"""
+        # Create aliases for the recursive part
+        ch_alias = aliased(collection_hierarchy_cte, name="ch")
+        parent_dce_alias = aliased(DatasetCollectionElement, name="parent_dce")
 
-        update_stmt = text(
-            """
-            WITH RECURSIVE collection_hierarchy(collection_id, depth_level) AS (
-                -- Base case: Collections directly containing this dataset (HDAs)
-                SELECT
-                    dce.dataset_collection_id as collection_id,
-                    0 as depth_level
-                FROM dataset_collection_element dce
-                JOIN history_dataset_association hda ON dce.hda_id = hda.id
-                WHERE hda.dataset_id = :dataset_id
-
-                UNION
-
-                -- Base case: Collections directly containing this dataset (LDDAs)
-                SELECT
-                    dce.dataset_collection_id as collection_id,
-                    0 as depth_level
-                FROM dataset_collection_element dce
-                JOIN library_dataset_dataset_association ldda ON dce.ldda_id = ldda.id
-                WHERE ldda.dataset_id = :dataset_id
-
-                UNION ALL
-
-                -- Recursive case: Parent collections
-                SELECT
-                    parent_dce.dataset_collection_id,
-                    ch.depth_level + 1
-                FROM collection_hierarchy ch
-                JOIN dataset_collection_element parent_dce
-                    ON parent_dce.child_collection_id = ch.collection_id
-                WHERE ch.depth_level < :max_depth
+        # Recursive case columns - conditional based on database support
+        recursive_columns = [
+            parent_dce_alias.dataset_collection_id.label("collection_id"),
+            (ch_alias.c.depth_level + 1).label("depth_level"),
+        ]
+        if use_postgresql_arrays:
+            # PostgreSQL: Add path array concatenation
+            recursive_columns.append(
+                func.array_cat(ch_alias.c.path, func.array([parent_dce_alias.dataset_collection_id])).label("path")
             )
-            UPDATE history_dataset_collection_association
-            SET update_time = :now_time
-            WHERE collection_id IN (
-                SELECT collection_id FROM collection_hierarchy ORDER BY collection_id
-            )
-        """
+
+        # Recursive case conditions - conditional based on database support
+        recursive_conditions = [
+            parent_dce_alias.child_collection_id == ch_alias.c.collection_id,
+            ch_alias.c.depth_level < 50,
+        ]
+        if use_postgresql_arrays:
+            # PostgreSQL: Add cycle detection
+            recursive_conditions.append(not_(parent_dce_alias.dataset_collection_id == func.any(ch_alias.c.path)))
+
+        # Recursive case: Parent collections
+        recursive_query = select(*recursive_columns).where(and_(*recursive_conditions))
+
+        # Add the recursive part to the CTE
+        collection_hierarchy_cte = collection_hierarchy_cte.union_all(recursive_query)
+
+        # Create the final subquery that selects and orders collection IDs
+        collection_ids_subquery = select(collection_hierarchy_cte.c.collection_id).order_by(
+            collection_hierarchy_cte.c.collection_id
         )
 
-        session.execute(update_stmt, {"dataset_id": self.id, "now_time": now(), "max_depth": 50})
+        # Use SQLAlchemy core update with the CTE subquery
+        update_stmt = (
+            update(HistoryDatasetCollectionAssociation)
+            .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
+            .values(update_time=now())
+        )
+
+        session.execute(update_stmt)
 
     def _touch_collection_update_time_fallback(self, session):
         """Python-based fallback for databases without good CTE support"""
