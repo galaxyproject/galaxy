@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
-import type { RawLocation } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 import { useRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
@@ -18,7 +18,7 @@ const props = defineProps<Props>();
 
 const router = useRouter();
 
-function isPathActive(path: RawLocation): boolean {
+function isPathActive(path: RouteLocationRaw): boolean {
     return router.currentRoute.path === router.resolve(path).route.path;
 }
 </script>
