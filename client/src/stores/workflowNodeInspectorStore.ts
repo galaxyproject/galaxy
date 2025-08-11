@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { usePersistentRef } from "@/composables/persistentRef";
 import { ensureDefined } from "@/utils/assertions";
@@ -44,16 +44,16 @@ export const useWorkflowNodeInspectorStore = defineStore("workflowNodeInspectorS
 
         if (stored) {
             if (!storedValue) {
-                set(storedSizes.value, id, {
+                storedSizes.value[id] = {
                     width: generalWidth.value,
                     maximized: generalMaximized.value,
-                });
+                };
             }
         } else {
             if (storedValue) {
                 generalWidth.value = storedValue.width;
                 generalMaximized.value = storedValue.maximized;
-                del(storedSizes.value, id);
+                delete storedSizes.value[id];
             }
         }
     }
