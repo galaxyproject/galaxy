@@ -21,7 +21,7 @@ import type { AnyHistoryEntry, MyHistory, PublishedHistory, SharedHistory } from
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
-import { useToast } from "@/composables/toast";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -115,9 +115,9 @@ async function onDeleteHistory(historyId: string, purge = false) {
     if (confirmed) {
         try {
             await historyStore.deleteHistory(String(historyId), purge);
-            toast.success("History deleted");
+            Toast.success("History deleted");
         } catch (e) {
-            toast.error("Failed to delete history");
+            Toast.error(`Failed to delete history: ${errorMessageAsString(e)}`);
         }
     }
 }
@@ -125,10 +125,10 @@ async function onDeleteHistory(historyId: string, purge = false) {
 async function onRestore(historyId: string) {
     try {
         await historyStore.restoreHistory(historyId);
-        toast.success("History restored");
+        Toast.success("History restored");
         emit("refreshList", true, true);
     } catch (e) {
-        toast.error("Failed to restore history");
+        Toast.error(`Failed to restore history: ${errorMessageAsString(e)}`);
     }
 }
 
@@ -156,10 +156,10 @@ async function onRestoreHistory(history: ArchivedHistorySummary) {
     try {
         const force = true;
         await historyStore.unarchiveHistoryById(history.id, force);
-        toast.success(localize(`History '${history.name}' has been restored.`), localize("History Restored"));
+        Toast.success(localize(`History '${history.name}' has been restored.`), localize("History Restored"));
         emit("refreshList", true, true);
     } catch (error) {
-        toast.error(
+        Toast.error(
             localize(`Failed to restore history '${history.name}' with reason: ${error}`),
             localize("History Restore Failed")
         );
@@ -180,7 +180,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     }
 
     if (!history.export_record_data) {
-        toast.error(
+        Toast.error(
             localize(`Failed to import history '${history.name}' because it does not have an export record.`),
             localize("History Import Failed")
         );
@@ -195,14 +195,14 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     });
 
     if (error) {
-        toast.error(
+        Toast.error(
             localize(`Failed to import history '${history.name}' with reason: ${error}`),
             localize("History Import Failed")
         );
         return;
     }
 
-    toast.success(
+    Toast.success(
         localize(
             `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
         ),
