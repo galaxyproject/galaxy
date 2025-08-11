@@ -2362,9 +2362,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
         for dataset in job_datasets:
             try:
-                dataset.touch_collection_update_time()
+                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
             except Exception:
-                # Don't let collection update failures prevent job completion
+                # Don't let collection update failures prevent job comion
                 log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
 
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
@@ -4684,13 +4684,17 @@ class Dataset(Base, StorableObject, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
-    def touch_collection_update_time(self):
+    def touch_collection_update_time(self, supports_skip_locked=None):
         """
         Update time is important to determine for what history items we need to fetch
         updated data. This method updates all collection associations that reference
         this dataset through any of its dataset instances (HDAs, LDDAs, etc.).
 
         Uses database-specific recursive CTEs for optimal performance.
+
+        Args:
+            supports_skip_locked: Boolean to indicate if database supports
+                FOR UPDATE SKIP LOCKED. Defaults to False.
         """
         session = object_session(self)
         if not session:
@@ -4698,28 +4702,21 @@ class Dataset(Base, StorableObject, Serializable):
         dialect_name = session.bind.dialect.name
 
         if dialect_name in ("postgresql", "sqlite"):
-            self._touch_collection_update_time_cte(session)
+            self._touch_collection_update_time_cte(session, supports_skip_locked)
         else:
             # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_cte(self, session):
-        """Unified CTE implementation with database-specific optimizations using SQLAlchemy core constructs"""
+    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
+        """CTE implementation using SQLAlchemy core constructs"""
 
-        dialect_name = session.bind.dialect.name
-        use_postgresql_arrays = dialect_name == "postgresql"
-
-        # Base case columns - conditional based on database support
+        # Base case columns
         base_columns = [
             DatasetCollectionElement.dataset_collection_id.label("collection_id"),
             literal(0).label("depth_level"),
         ]
-        if use_postgresql_arrays:
-            # PostgreSQL: Add path array for cycle detection
-            base_columns.append(func.array([DatasetCollectionElement.dataset_collection_id]).label("path"))
 
         # Create a single base query that covers both HDA and LDDA cases using OR conditions
-        # This avoids the CompoundSelect issue while still using SQLAlchemy constructs
         base_query = (
             select(*base_columns)
             .select_from(
@@ -4750,20 +4747,12 @@ class Dataset(Base, StorableObject, Serializable):
             parent_dce_alias.dataset_collection_id.label("collection_id"),
             (ch_alias.c.depth_level + 1).label("depth_level"),
         ]
-        if use_postgresql_arrays:
-            # PostgreSQL: Add path array concatenation
-            recursive_columns.append(
-                func.array_cat(ch_alias.c.path, func.array([parent_dce_alias.dataset_collection_id])).label("path")
-            )
 
-        # Recursive case conditions - conditional based on database support
+        # Recursive case conditions
         recursive_conditions = [
             parent_dce_alias.child_collection_id == ch_alias.c.collection_id,
             ch_alias.c.depth_level < 50,
         ]
-        if use_postgresql_arrays:
-            # PostgreSQL: Add cycle detection
-            recursive_conditions.append(not_(parent_dce_alias.dataset_collection_id == func.any(ch_alias.c.path)))
 
         # Recursive case: Parent collections
         recursive_query = select(*recursive_columns).where(and_(*recursive_conditions))
@@ -4776,14 +4765,36 @@ class Dataset(Base, StorableObject, Serializable):
             collection_hierarchy_cte.c.collection_id
         )
 
-        # Use SQLAlchemy core update with the CTE subquery
-        update_stmt = (
-            update(HistoryDatasetCollectionAssociation)
-            .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
-            .values(update_time=now())
-        )
+        if supports_skip_locked:
+            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
+            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            hdca_ids_to_update = (
+                session.execute(
+                    select(HistoryDatasetCollectionAssociation.id)
+                    .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
+                    .order_by(HistoryDatasetCollectionAssociation.id)
+                    .with_for_update(skip_locked=True)
+                )
+                .scalars()
+                .all()
+            )
 
-        session.execute(update_stmt)
+            # Then update only the locked HDCAs
+            if hdca_ids_to_update:
+                update_stmt = (
+                    update(HistoryDatasetCollectionAssociation)
+                    .where(HistoryDatasetCollectionAssociation.id.in_(hdca_ids_to_update))
+                    .values(update_time=now())
+                )
+                session.execute(update_stmt)
+        else:
+            # Fallback to regular update without locking
+            update_stmt = (
+                update(HistoryDatasetCollectionAssociation)
+                .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
+                .values(update_time=now())
+            )
+            session.execute(update_stmt)
 
     def _touch_collection_update_time_fallback(self, session):
         """Python-based fallback for databases without good CTE support"""
@@ -5099,11 +5110,12 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 self._state = state
             else:
                 self.set_metadata_success_state()
+                assert self.dataset, "Dataset must be set before setting state"
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
-                assert self.dataset, "Dataset must be set before setting state"
                 self.dataset.state = state
+                self.touch_collection_update_time()
 
     def touch_collection_update_time(self):
         """
