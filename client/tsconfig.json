@@ -14,7 +14,9 @@
             "@fortawesome/fontawesome-common-types": [
                 "./node_modules/@fortawesome/fontawesome-common-types/index"
             ],
-            "vite": ["./node_modules/vite/dist/node/index"]
+            "vite": ["./node_modules/vite/dist/node/index"],
+            "vue": ["./node_modules/@vue/compat/dist/vue.esm-bundler.js"],
+            "vue/*": ["./node_modules/@vue/compat/*"]
         },
         "outDir": "./dist/build",
 
