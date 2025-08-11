@@ -9,13 +9,15 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import { defineAsyncComponent } from "vue";
+
 import LoadingSpan from "../LoadingSpan.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
+const VegaWrapper = defineAsyncComponent(() => import("@/components/Common/VegaWrapper.vue"));
 
 interface Props {
     invocationId: string;
