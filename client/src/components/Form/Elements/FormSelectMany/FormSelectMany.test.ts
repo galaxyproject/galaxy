@@ -127,7 +127,7 @@ describe("FormSelectMany", () => {
             expect(selectedOptions.at(1).text()).toBe("foo@galaxy.org");
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.wrappers.forEach((unselectedOption) => {
+            unselectedOptions.forEach((unselectedOption) => {
                 expect(unselectedOption.text()).not.toBe("foo@galaxy.com");
                 expect(unselectedOption.text()).not.toBe("foo@galaxy.org");
             });
@@ -143,7 +143,7 @@ describe("FormSelectMany", () => {
             expect(selectedOptions.at(2).text()).toBe(emitted[2]);
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.wrappers.forEach((unselectedOption) => {
+            unselectedOptions.forEach((unselectedOption) => {
                 expect(unselectedOption.text()).not.toBe(emitted[2]);
             });
         }
