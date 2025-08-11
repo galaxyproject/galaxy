@@ -4753,7 +4753,7 @@ class Dataset(Base, StorableObject, Serializable):
             )
             UPDATE history_dataset_collection_association
             SET update_time = :now_time
-            WHERE collection_id IN (SELECT DISTINCT collection_id FROM collection_hierarchy)
+            WHERE collection_id IN (SELECT DISTINCT collection_id FROM collection_hierarchy ORDER BY collection_id)
         """
         )
 
@@ -4797,7 +4797,7 @@ class Dataset(Base, StorableObject, Serializable):
             UPDATE history_dataset_collection_association
             SET update_time = :now_time
             WHERE collection_id IN (
-                SELECT DISTINCT collection_id FROM collection_hierarchy
+                SELECT DISTINCT collection_id FROM collection_hierarchy ORDER BY collection_id
             )
         """
         )
@@ -4815,44 +4815,52 @@ class Dataset(Base, StorableObject, Serializable):
 
             visited_collections.add(collection_id)
 
-            # Find HDCAs for this collection
-            hdca_stmt = select(HistoryDatasetCollectionAssociation).where(
-                HistoryDatasetCollectionAssociation.collection_id == collection_id
+            # Find HDCAs for this collection - ordered by ID for consistency
+            hdca_stmt = (
+                select(HistoryDatasetCollectionAssociation)
+                .where(HistoryDatasetCollectionAssociation.collection_id == collection_id)
+                .order_by(HistoryDatasetCollectionAssociation.id)
             )
             hdcas = session.scalars(hdca_stmt).all()
             hdcas_to_update.extend(hdcas)
 
-            # Find parent collections
-            parent_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
-                DatasetCollectionElement.child_collection_id == collection_id
+            # Find parent collections - ordered by ID for consistency
+            parent_stmt = (
+                select(DatasetCollectionElement.dataset_collection_id)
+                .where(DatasetCollectionElement.child_collection_id == collection_id)
+                .order_by(DatasetCollectionElement.dataset_collection_id)
             )
             parent_collection_ids = session.scalars(parent_stmt).all()
 
-            for parent_id in parent_collection_ids:
+            for parent_id in sorted(parent_collection_ids):
                 collect_parent_hdcas(parent_id, depth + 1)
 
-        # Start with collections containing this dataset
-        initial_stmt = select(DatasetCollectionElement.dataset_collection_id).where(
-            or_(
-                DatasetCollectionElement.hda_id.in_(
-                    select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.dataset_id == self.id)
-                ),
-                DatasetCollectionElement.ldda_id.in_(
-                    select(LibraryDatasetDatasetAssociation.id).where(
-                        LibraryDatasetDatasetAssociation.dataset_id == self.id
-                    )
-                ),
+        # Start with collections containing this dataset - ordered by ID for consistency
+        initial_stmt = (
+            select(DatasetCollectionElement.dataset_collection_id)
+            .where(
+                or_(
+                    DatasetCollectionElement.hda_id.in_(
+                        select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.dataset_id == self.id)
+                    ),
+                    DatasetCollectionElement.ldda_id.in_(
+                        select(LibraryDatasetDatasetAssociation.id).where(
+                            LibraryDatasetDatasetAssociation.dataset_id == self.id
+                        )
+                    ),
+                )
             )
+            .order_by(DatasetCollectionElement.dataset_collection_id)
         )
 
         initial_collection_ids = session.scalars(initial_stmt).all()
 
-        for collection_id in initial_collection_ids:
+        for collection_id in sorted(initial_collection_ids):
             collect_parent_hdcas(collection_id)
 
-        # Update all collected HDCAs
+        # Update all collected HDCAs - sort by ID for consistent ordering
         update_time = now()
-        for hdca in hdcas_to_update:
+        for hdca in sorted(hdcas_to_update, key=lambda x: x.id):
             hdca.update_time = update_time
             session.add(hdca)
 
