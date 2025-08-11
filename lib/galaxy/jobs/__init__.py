@@ -1520,9 +1520,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         dep_job_assoc.job,
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
-            job.set_final_state(
-                job.states.ERROR, supports_skip_locked=self.app.application_stack.supports_skip_locked()
-            )
+            job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -2292,7 +2290,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
+        job.set_final_state(final_job_state)
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
