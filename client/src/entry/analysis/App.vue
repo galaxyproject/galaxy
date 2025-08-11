@@ -49,7 +49,7 @@
 <script>
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import ConfirmDialog from "@/components/ConfirmDialog";
