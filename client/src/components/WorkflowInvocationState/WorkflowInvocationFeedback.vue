@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
-import { useInvocationStore } from "@/stores/invocationStore";
+import { useInvocationGraph } from "@/composables/useInvocationGraph";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { isWorkflowInput } from "../Workflow/constants";
@@ -16,15 +16,21 @@ import WorkflowInvocationStep from "./WorkflowInvocationStep.vue";
 
 const props = defineProps<{
     invocationId: string;
-    storeId: string;
     stepsJobsSummary: StepJobSummary[];
     invocation: WorkflowInvocationElementView;
     invocationMessages: InvocationMessage[];
 }>();
 
-const { graphStepsByStoreId } = storeToRefs(useInvocationStore());
+const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
 
-const steps = computed(() => graphStepsByStoreId.value[props.storeId]);
+const { steps, loadInvocationGraph } = useInvocationGraph(
+    computed(() => props.invocation),
+    computed(() => props.stepsJobsSummary),
+    workflow.value?.id,
+    workflow.value?.version
+);
+
+loadInvocationGraph(false);
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {

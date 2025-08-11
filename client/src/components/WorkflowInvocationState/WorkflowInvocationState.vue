@@ -382,7 +382,7 @@ async function onCancel() {
                 Metrics
             </BNavItem>
             <BNavItem
-                v-if="canSubmitFeedback && stepsJobsSummary && storeId"
+                v-if="canSubmitFeedback && stepsJobsSummary"
                 title="Debug"
                 class="invocation-debug-tab"
                 :active="props.tab === 'debug'"
@@ -467,14 +467,13 @@ async function onCancel() {
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </div>
             <div v-if="props.tab === 'debug'">
-                <BAlert v-if="!canSubmitFeedback || !stepsJobsSummary || !storeId" variant="info" show>
+                <BAlert v-if="!canSubmitFeedback || !stepsJobsSummary" variant="info" show>
                     <span v-localize>Debug information is not available.</span>
                 </BAlert>
                 <WorkflowInvocationFeedback
                     v-else
                     :invocation-id="invocation.id"
                     :steps-jobs-summary="stepsJobsSummary"
-                    :store-id="storeId"
                     :invocation="invocation"
                     :invocation-messages="uniqueMessages" />
             </div>
