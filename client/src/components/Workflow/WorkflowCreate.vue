@@ -3,7 +3,7 @@ import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import type { AxiosError } from "axios";
 import { BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { createWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";

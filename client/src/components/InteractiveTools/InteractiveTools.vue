@@ -3,7 +3,7 @@ import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 

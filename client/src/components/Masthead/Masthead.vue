@@ -5,7 +5,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { faGear } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
     getOIDCIdpsWithRegistration,
