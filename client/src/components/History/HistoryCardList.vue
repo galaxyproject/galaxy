@@ -80,8 +80,7 @@ function onRename(historyId: string) {
 }
 
 async function onTagsUpdate(historyId: string, tags: string[]) {
-    const update = { tags: tags };
-    await historyStore.updateHistory({ id: historyId, ...update });
+    await historyStore.updateHistory(historyId, { tags: tags });
     emit("refreshList", true, true);
 }
 
