@@ -6,7 +6,7 @@
 
 import { reverse } from "lodash";
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { getContentItemState, type State } from "@/components/History/Content/model/states";
@@ -102,7 +102,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
             payload.forEach((item: HistoryItemSummary) => {
                 // current `item.hid` is related to item with hid = `relatedHid`
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
-                set(relatedItems.value, relationKey, true);
+                relatedItems.value[relationKey] = true;
             });
         }
     }

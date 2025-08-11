@@ -1,5 +1,5 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
-import { computed, del, type Ref, ref, set, unref } from "vue";
+import { computed, type Ref, ref, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
 
@@ -90,16 +90,16 @@ export function useKeyedCache<T>(
             try {
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
-                set(storedItems.value, itemId, item);
+                storedItems.value[itemId] = item;
                 return item;
             } catch (error) {
-                set(loadingErrors.value, itemId, error as Error);
+                loadingErrors.value[itemId] = error as Error;
             } finally {
-                del(loadingRequests.value, itemId);
+                delete loadingRequests.value[itemId];
             }
         })();
 
-        set(loadingRequests.value, itemId, fetchPromise);
+        loadingRequests.value[itemId] = fetchPromise;
         return fetchPromise;
     }
 
