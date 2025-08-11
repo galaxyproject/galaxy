@@ -16,8 +16,8 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { AnyHistory } from "@/api";
 import { GalaxyApi } from "@/api";
+import type { AnyHistoryEntry, MyHistory, PublishedHistory, SharedHistory } from "@/api/histories";
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -25,13 +25,14 @@ import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";
 import HistoryDatasetsBadge from "@/components/History/HistoryDatasetsBadge.vue";
 
 interface Props {
-    histories: AnyHistory[];
+    histories: AnyHistoryEntry[];
     gridView?: boolean;
     publishedView?: boolean;
     archivedView?: boolean;
@@ -48,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "select", history: AnyHistory): void;
+    (e: "select", history: MyHistory): void;
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
@@ -61,15 +62,30 @@ const { isAnonymous } = storeToRefs(userStore);
 
 const historyStore = useHistoryStore();
 
-const toast = useToast();
 const { confirm } = useConfirmDialog();
 
 const owned = computed(() => {
     return (username?: string) => userStore?.matchesCurrentUsername(username);
 });
 const isTagsEditable = computed(() => {
-    return (history: AnyHistory) => !isAnonymous.value && !history.deleted && owned.value(history.username);
+    return (history: AnyHistoryEntry) => !isAnonymous.value && !history.deleted && isMyHistory(history);
 });
+
+function isMyHistory(history: AnyHistoryEntry): history is MyHistory {
+    return "username" in history && owned.value(history.username);
+}
+
+function isSharedHistory(history: AnyHistoryEntry): history is SharedHistory {
+    return "username" in history && !owned.value(history.username);
+}
+
+function isPublishedHistory(history: AnyHistoryEntry): history is PublishedHistory {
+    return "published" in history && history.published;
+}
+
+function isArchivedHistory(history: AnyHistoryEntry): history is ArchivedHistorySummary {
+    return "archived" in history && history.archived;
+}
 
 function onTitleClick(historyId: string) {
     router.push(`/histories/view?id=${historyId}`);
@@ -194,7 +210,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     );
 }
 
-function publishedIndicatorTitle(history: AnyHistory): string {
+function publishedIndicatorTitle(history: PublishedHistory): string {
     if (history.published && !props.publishedView) {
         return "Published history. Click to filter published histories";
     } else if (userStore.matchesCurrentUsername(history.username)) {
@@ -204,7 +220,7 @@ function publishedIndicatorTitle(history: AnyHistory): string {
     }
 }
 
-function ownerBadgeTitle(history: AnyHistory): string {
+function ownerBadgeTitle(history: SharedHistory | PublishedHistory): string {
     if (history.published && props.sharedView && !props.publishedView) {
         return `Shared by '${history.username}'. Click to view all histories shared by '${history.username}'`;
     } else if (userStore.matchesCurrentUsername(history.username)) {
@@ -214,8 +230,8 @@ function ownerBadgeTitle(history: AnyHistory): string {
     }
 }
 
-function getIndicators(history: AnyHistory): CardBadge[] {
-    return [
+function getIndicators(history: AnyHistoryEntry): CardBadge[] {
+    const cardIndicators: CardBadge[] = [
         {
             id: "deleted",
             label: "",
@@ -233,19 +249,24 @@ function getIndicators(history: AnyHistory): CardBadge[] {
             disabled: props.publishedView,
             visible: history.purged,
         },
-        {
+    ];
+
+    if (isPublishedHistory(history)) {
+        cardIndicators.push({
             id: "published",
             label: "",
             title: publishedIndicatorTitle(history),
             icon: faGlobe,
             handler: () => emit("updateFilter", "published", true),
             disabled: props.publishedView,
-            visible: history.published,
-        },
-    ];
+            visible: true,
+        });
+    }
+
+    return cardIndicators;
 }
 
-function getExtraActions(history: AnyHistory): CardAction[] {
+function getExtraActions(history: AnyHistoryEntry): CardAction[] {
     return [
         {
             id: "delete",
@@ -253,7 +274,7 @@ function getExtraActions(history: AnyHistory): CardAction[] {
             title: "Delete this history",
             icon: faTrash,
             handler: () => onDeleteHistory(history.id),
-            visible: !history.deleted && owned.value(history.username),
+            visible: !history.deleted && isMyHistory(history),
         },
         {
             id: "purge",
@@ -261,14 +282,24 @@ function getExtraActions(history: AnyHistory): CardAction[] {
             title: "Purge this history (permanently delete)",
             icon: faBurn,
             handler: () => onDeleteHistory(history.id, true),
-            visible: !history.purged && owned.value(history.username),
+            visible: !history.purged && isMyHistory(history),
         },
     ];
 }
 
-function getHistoryTitleBadges(history: AnyHistory): CardBadge[] {
-    return [
+function getHistoryTitleBadges(history: AnyHistoryEntry): CardBadge[] {
+    const historyCardBadges: CardBadge[] = [
         {
+            id: "snapshot",
+            label: "Snapshot available",
+            title: "This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.",
+            icon: faCopy,
+            visible: isArchivedHistory(history) && !!history.export_record_data,
+        },
+    ];
+
+    if (isSharedHistory(history)) {
+        historyCardBadges.unshift({
             id: "owner-shared",
             label: history.username,
             title: `'${history.username}' shared this history with you. Click to view all histories shared with you by '${history.username}'`,
@@ -277,29 +308,29 @@ function getHistoryTitleBadges(history: AnyHistory): CardBadge[] {
             variant: "outline-secondary",
             handler: () => emit("updateFilter", "user", history.username),
             visible: !owned.value(history.username) && props.sharedView,
-        },
-        {
+        });
+    }
+
+    if (isPublishedHistory(history)) {
+        historyCardBadges.unshift({
             id: "owner-published",
             label: history.username,
-            title: () => ownerBadgeTitle(history),
+            title: ownerBadgeTitle(history),
             icon: faUser,
             type: "badge",
             variant: "outline-secondary",
             disabled: props.publishedView,
             handler: () => emit("updateFilter", "user", history.username),
-            visible: history.published && props.publishedView,
-        },
-        {
-            id: "snapshot",
-            label: "Snapshot available",
-            title: "This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.",
-            icon: faCopy,
-            visible: !!history.export_record_data,
-        },
-    ];
+            visible: props.publishedView,
+        });
+    }
+
+    return historyCardBadges;
 }
 
-function getPrimaryActions(history: AnyHistory): CardAction[] {
+function getPrimaryActions(
+    history: MyHistory | PublishedHistory | SharedHistory | ArchivedHistorySummary
+): CardAction[] {
     return [
         {
             id: "restore",
@@ -308,7 +339,7 @@ function getPrimaryActions(history: AnyHistory): CardAction[] {
             variant: "outline-primary",
             icon: faTrashRestore,
             handler: () => onRestore(history.id),
-            visible: history.deleted && !history.purged && owned.value(history.username),
+            visible: history.deleted && !history.purged && isMyHistory(history),
         },
         {
             id: "switch",
@@ -317,8 +348,7 @@ function getPrimaryActions(history: AnyHistory): CardAction[] {
             variant: "outline-primary",
             icon: faExchangeAlt,
             handler: () => historyStore.setCurrentHistory(String(history.id)),
-            visible:
-                (owned.value(history.username) || props.archivedView) && historyStore.currentHistoryId !== history.id,
+            visible: (isMyHistory(history) || props.archivedView) && historyStore.currentHistoryId !== history.id,
         },
         {
             title: "current history",
@@ -326,18 +356,17 @@ function getPrimaryActions(history: AnyHistory): CardAction[] {
             label: "Current",
             variant: "outline-primary",
             disabled: true,
-            visible:
-                (owned.value(history.username) || props.archivedView) && historyStore.currentHistoryId === history.id,
+            visible: (isMyHistory(history) || props.archivedView) && historyStore.currentHistoryId === history.id,
         },
         {
             id: "import-copy",
             label: "Import Copy",
             icon: faCopy,
             title: "Import a new copy of this history from the associated export record",
-            disabled: history.export_record_data?.target_uri === undefined,
+            disabled: isArchivedHistory(history) && history.export_record_data?.target_uri === undefined,
             variant: history.purged ? "primary" : "outline-primary",
             handler: () => onImportCopy(history),
-            visible: history.export_record_data?.target_uri !== undefined,
+            visible: isArchivedHistory(history) && history.export_record_data?.target_uri !== undefined,
         },
         {
             id: "restore",
@@ -359,7 +388,7 @@ function getPrimaryActions(history: AnyHistory): CardAction[] {
     ];
 }
 
-function getSecondaryActions(history: AnyHistory): CardAction[] {
+function getSecondaryActions(history: AnyHistoryEntry): CardAction[] {
     return [
         {
             id: "change-permissions",
@@ -367,7 +396,7 @@ function getSecondaryActions(history: AnyHistory): CardAction[] {
             title: "Change permissions for this history",
             icon: faUsers,
             to: `/histories/permissions?id=${history.id}`,
-            visible: !history.deleted && owned.value(history.username),
+            visible: !history.deleted && isMyHistory(history),
         },
         {
             id: "share",
@@ -376,7 +405,7 @@ function getSecondaryActions(history: AnyHistory): CardAction[] {
             icon: faShareAlt,
             variant: "outline-primary",
             to: `/histories/sharing?id=${history.id}`,
-            visible: !history.deleted && owned.value(history.username),
+            visible: !history.deleted && isMyHistory(history),
         },
     ];
 }
@@ -407,13 +436,13 @@ function getSecondaryActions(history: AnyHistory): CardAction[] {
             :update-time="history.update_time"
             :tags-editable="isTagsEditable(history)"
             :max-visible-tags="props.gridView ? 2 : 8"
-            :can-rename-title="!history.deleted && !history.purged && owned(history.username)"
+            :can-rename-title="!history.deleted && !history.purged && isMyHistory(history)"
             @rename="() => onRename(history.id)"
-            @select="emit('select', history)"
+            @select="isMyHistory(history) && emit('select', history)"
             @titleClick="() => onTitleClick(history.id)"
             @tagsUpdate="(tags) => onTagsUpdate(history.id, tags)"
             @tagClick="(tag) => emit('tagClick', tag)">
-            <template v-if="props.archivedView" v-slot:titleActions>
+            <template v-if="props.archivedView && isArchivedHistory(history)" v-slot:titleActions>
                 <ExportRecordDOILink :export-record-uri="history.export_record_data?.target_uri" />
             </template>
 
