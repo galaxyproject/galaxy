@@ -60,7 +60,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
 
         expect(wrapper.find(REVIEW_TABLE).exists()).toBe(true);
-        expect(wrapper.findAll("tbody > tr").wrappers.length).toBe(EXPECTED_TOTAL_ITEMS);
+        expect(wrapper.findAll("tbody > tr").length).toBe(EXPECTED_TOTAL_ITEMS);
     });
 
     it("should disable the delete button if no items are selected", async () => {
@@ -91,7 +91,7 @@ describe("ReviewCleanupDialog.vue", () => {
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
         const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete").at(0);
+        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
         expect(permanentlyDeleteBtn.attributes().disabled).toBeTruthy();
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
@@ -104,7 +104,7 @@ describe("ReviewCleanupDialog.vue", () => {
         await wrapper.find(DELETE_BUTTON).trigger("click");
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
         const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete").at(0);
+        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
         await permanentlyDeleteBtn.trigger("click");
@@ -112,13 +112,13 @@ describe("ReviewCleanupDialog.vue", () => {
         expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
     });
 
-    // From: https://github.com/vuejs/vue-test-utils/issues/960#issuecomment-626327505
-    function withNameFilter(wrapperArray: WrapperArray<Vue>) {
+    // Helper function for filtering DOM wrappers in Vue Test Utils v2
+    function withNameFilter(wrapperArray: ReturnType<typeof wrapper.findAll>) {
         return {
-            childSelectorHasText: (selector: string, str: string): WrapperArray<Vue> =>
+            childSelectorHasText: (selector: string, str: string) =>
                 wrapperArray.filter((i) => i.find(selector).text().match(str)),
 
-            hasText: (str: string): WrapperArray<Vue> => wrapperArray.filter((i) => i.text().match(str)),
+            hasText: (str: string) => wrapperArray.filter((i) => i.text().match(str)),
         };
     }
 });
