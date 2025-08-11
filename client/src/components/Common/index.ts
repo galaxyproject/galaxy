@@ -1,5 +1,5 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import type { RawLocation } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 
 /**
  * Basic color variants for components that only support
@@ -39,8 +39,7 @@ export interface BreadcrumbItem {
      * Optional The URL or route to navigate to when the breadcrumb item is clicked.
      * the item will not be clickable if this is not provided or the current route matches this location.
      */
-    to?: RawLocation;
-
+    to?: RouteLocationRaw;
     /**
      * Optional additional text displayed above the item.
      */
