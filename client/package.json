@@ -92,6 +92,7 @@
     "lucide-vue": "^0.344.0",
     "markdown-it": "^14.1.1",
     "markdown-it-regexp": "^0.4.0",
+    "mitt": "^3.0.1",
     "monaco-editor": "^0.52.2",
     "monaco-languageserver-types": "^0.4.0",
     "monaco-types": "^0.1.0",
