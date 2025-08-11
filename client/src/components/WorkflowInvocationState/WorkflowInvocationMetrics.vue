@@ -9,10 +9,12 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import { defineAsyncComponent } from "vue";
+
 import LoadingSpan from "../LoadingSpan.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
+const VegaWrapper = defineAsyncComponent(() => import("@/components/Common/VegaWrapper.vue"));
 
 interface Props {
     invocationId: string;

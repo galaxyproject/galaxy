@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { defineAsyncComponent, ref, watch } from "vue";
 
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
+const VegaWrapper = defineAsyncComponent(() => import("@/components/Common/VegaWrapper.vue"));
 
 const props = defineProps<{
     content: string;

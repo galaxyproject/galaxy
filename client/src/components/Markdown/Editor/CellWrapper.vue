@@ -70,10 +70,11 @@ import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
 import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
+import { defineAsyncComponent } from "vue";
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
-const CellCode = () => import("./CellCode.vue");
+const CellCode = defineAsyncComponent(() => import("./CellCode.vue"));
 
 const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
