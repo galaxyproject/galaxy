@@ -177,7 +177,7 @@ function onStart() {
         @mouseup="onMouseUp"
         @start="onStart"
         @mousedown="(e) => emit('mousedown', e)"
-        v-on="$listeners">
+        v-bind="$attrs">
         <slot></slot>
     </Draggable>
 </template>
