@@ -155,7 +155,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         self.wait_for_and_click_selector('[data-description="grid sort key name"]')
-        actual_histories = self.get_histories()
+        actual_histories = self.get_history_titles()
 
         expected_histories = [self.history2_name, self.history3_name]
         if self.history1_name in actual_histories:
@@ -220,7 +220,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)
-        return self.components.histories.histories.all()
+        return self.components.histories.history_cards.all()
 
     @selenium_test
     def test_tags(self):
@@ -245,7 +245,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
     @retry_assertion_during_transitions
     def assert_grid_histories_are(self, expected_histories, sort_matters=True):
-        actual_histories = self.get_histories()
+        actual_histories = self.get_history_titles()
         if not sort_matters:
             actual_histories = set(actual_histories)
             expected_histories = set(expected_histories)
@@ -253,15 +253,25 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
     @retry_assertion_during_transitions
     def assert_histories_in_grid(self, expected_histories, present=True):
-        actual_histories = self.get_histories()
+        actual_histories = self.get_history_titles()
         intersection = set(actual_histories).intersection(expected_histories)
         if present:
             assert intersection == set(expected_histories)
         else:
             assert intersection == set()
 
-    def get_histories(self):
-        return self.get_grid_entry_names("#histories-grid")
+    def get_history_titles(self):
+        self.wait_for_selector(".history-card-list")
+
+        names = []
+
+        history_names = self.components.histories.history_card_title.all()
+
+        for hn in history_names:
+            if hn.text.strip():
+                names.append(hn.text.strip())
+
+        return names
 
     def add_tag(self, tags_cell, tag):
         tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
