@@ -88,6 +88,7 @@
     "lucide-vue": "^0.344.0",
     "markdown-it": "^13.0.2",
     "markdown-it-regexp": "^0.4.0",
+    "mitt": "^3.0.1",
     "monaco-editor": "^0.52.2",
     "monaco-editor-webpack-plugin": "^7.1.0",
     "monaco-yaml": "^5.4.0",
