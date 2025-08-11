@@ -1,5 +1,4 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
@@ -102,7 +101,6 @@ import Login from "@/entry/analysis/modules/Login.vue";
 import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-Vue.use(VueRouter);
 
 // Async component for CustomToolEditor to reduce bundle size
 // NOTE: We use the full async component factory pattern instead of simple dynamic imports
@@ -119,8 +117,7 @@ const CustomToolEditor = () => ({
     timeout: 10000,
 });
 
-// patches $router.push() to trigger an event and hide duplication warnings
-patchRouterPush(VueRouter);
+// TODO: Update patchRouterPush for Vue Router 4 if needed
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -150,9 +147,8 @@ function redirectIf(condition, path) {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    const router = new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
+    const router = createRouter({
+        history: createWebHistory(getAppRoot()),
         routes: [
             /** Login entry route */
             {
