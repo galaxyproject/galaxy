@@ -4915,10 +4915,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
             return self._state
-        return self.dataset.state
+        return self.dataset.state if self.dataset else None
 
     @state.setter
-    def state(self, state: Optional[DatasetState]):
+    def state(self, state: DatasetState):
         if state != self.state:
             if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
                 self._state = state
@@ -4927,6 +4927,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
+                assert self.dataset, "Dataset must be set before setting state"
                 self.dataset.state = state
 
     def set_metadata_success_state(self):

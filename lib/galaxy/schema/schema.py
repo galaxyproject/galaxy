@@ -97,7 +97,21 @@ class DatasetState(str, Enum):
         return self.__members__.values()
 
 
-ElementsStatesDict = TypedDict("ElementsStatesDict", {state.value: NotRequired[int] for state in DatasetState})
+# Create dictionary for ElementsStatesDict using class syntax
+class ElementsStatesDict(TypedDict, total=False):
+    # Add fields for each DatasetState value
+    new: NotRequired[int]
+    upload: NotRequired[int]
+    queued: NotRequired[int]
+    running: NotRequired[int]
+    ok: NotRequired[int]
+    empty: NotRequired[int]
+    error: NotRequired[int]
+    paused: NotRequired[int]
+    setting_metadata: NotRequired[int]
+    failed_metadata: NotRequired[int]
+    deferred: NotRequired[int]
+    discarded: NotRequired[int]
 
 
 class JobState(str, Enum):
