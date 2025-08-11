@@ -230,7 +230,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def get_file_containers(
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
-        writeable: bool,
+        write_intent: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -245,7 +245,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             "q": f"title:{query}" if query else "*",
             "sort": sort_by or "date",
         }
-        if writeable:
+        if write_intent:
             params["fq"] = "publicationStatus:Draft"
         response_data = self._get_response(context, request_url, params)
         total_hits = response_data["data"]["total_count"]

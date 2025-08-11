@@ -258,7 +258,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def get_file_containers(
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
-        writeable: bool,
+        write_intent: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -267,7 +267,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         """Gets the records in the repository and returns the total count of records."""
         params: dict[str, Any] = {}
         request_url = self.records_url
-        if writeable:
+        if write_intent:
             # Only draft records owned by the user can be written to.
             params["is_published"] = "false"
             request_url = self.user_records_url

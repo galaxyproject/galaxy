@@ -76,7 +76,7 @@ class RDMRepositoryInteractor:
     def get_file_containers(
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
-        writeable: bool,
+        write_intent: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
