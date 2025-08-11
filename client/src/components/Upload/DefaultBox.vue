@@ -2,7 +2,7 @@
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";

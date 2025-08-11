@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BForm, BFormGroup, BFormSelect, BInputGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { useHistoryStore } from "@/stores/historyStore";
