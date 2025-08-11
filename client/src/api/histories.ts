@@ -1,4 +1,4 @@
-import type { AnyHistory, components, HistorySummary } from "@/api";
+import type { AnyHistory, components, HistorySortByLiteral, HistorySummary } from "@/api";
 import { GalaxyApi } from "@/api";
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -30,6 +30,127 @@ export type PublishedHistory = SharedHistory & {
 };
 
 export type AnyHistoryEntry = MyHistory | SharedHistory | PublishedHistory | ArchivedHistorySummary;
+
+export interface GetHistoriesOptions {
+    limit: number;
+    offset: number;
+    search: string;
+    sortBy: HistorySortByLiteral;
+    sortDesc: boolean;
+}
+
+export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ data: MyHistory[]; total: number }> {
+    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                view: "summary",
+                keys: "username",
+                limit: limit,
+                offset: offset,
+                search: search,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+                show_own: true,
+                show_published: false,
+                show_shared: false,
+                show_archived: false,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return { data: data as MyHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+}
+
+export async function getSharedHistories(
+    options?: GetHistoriesOptions
+): Promise<{ data: SharedHistory[]; total: number }> {
+    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                view: "summary",
+                keys: "username,owner",
+                limit: limit,
+                offset: offset,
+                search: search,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+                show_own: false,
+                show_published: false,
+                show_shared: true,
+                show_archived: false,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return { data: data as SharedHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+}
+
+export async function getPublishedHistories(
+    options?: GetHistoriesOptions
+): Promise<{ data: PublishedHistory[]; total: number }> {
+    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                view: "summary",
+                keys: "username,owner,published",
+                limit: limit,
+                offset: offset,
+                search: search,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+                show_own: false,
+                show_published: true,
+                show_shared: false,
+                show_archived: false,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return { data: data as PublishedHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+}
+
+export async function getArchivedHistories(
+    options?: GetHistoriesOptions
+): Promise<{ data: ArchivedHistorySummary[]; total: number }> {
+    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+
+    const { response, data, error } = await GalaxyApi().GET("/api/histories/archived", {
+        params: {
+            query: {
+                view: "summary",
+                limit: limit,
+                offset: offset,
+                search: search,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return { data: data as ArchivedHistorySummary[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+}
 
 export async function getHistoryCounts(historyId: string): Promise<HistoryCounts> {
     const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
