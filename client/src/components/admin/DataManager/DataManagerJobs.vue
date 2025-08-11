@@ -16,7 +16,7 @@
                                 <BFormInput
                                     v-model="filter"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                    @keyup.esc="filter = ''" />
 
                                 <BInputGroupAppend>
                                     <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
