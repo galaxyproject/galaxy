@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { nextTick } from "vue";
+import { ExtractPropTypes, nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
@@ -11,7 +11,8 @@ describe("HeadlessMultiselect", () => {
 
     const localVue = getLocalVue();
 
-    type Props = InstanceType<typeof HeadlessMultiselect>["$props"];
+    // Extract props type from the Vue component using Vue's utility
+    type Props = ExtractPropTypes<typeof HeadlessMultiselect>;
     const mountWithProps = (props: Props) => {
         return mount(HeadlessMultiselect as any, {
             propsData: props,
@@ -30,13 +31,14 @@ describe("HeadlessMultiselect", () => {
         invalid: ".headless-multiselect__option.invalid",
     } as const;
 
-    async function keyPress(wrapper: ReturnType<typeof mountWithProps>, key: string) {
-        wrapper.trigger("keydown", {
+    // Accept both VueWrapper and DOMWrapper for keyboard events
+    async function keyPress(element: any, key: string) {
+        element.trigger("keydown", {
             key,
             code: key,
         });
         await nextTick();
-        wrapper.trigger("keyup", {
+        element.trigger("keyup", {
             key,
             code: key,
         });
