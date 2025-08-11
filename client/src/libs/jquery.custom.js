@@ -3,7 +3,7 @@
  * single module, then aliased by webpack as "jquery"
  */
 
-var jQuery = require("jqueryVendor");
+var jQuery = require("./jquery/jquery.js");
 
 // Make jQuery available globally for plugins
 window.jQuery = jQuery;
