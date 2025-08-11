@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
+import { eventBus } from "@/utils/eventBus";
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
 
@@ -42,11 +43,11 @@ function onLoad() {
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
     // always fires when a route is pushed instead of validating it first.
-    router.app.$on("router-push", hideCenter);
+    eventBus.on("router-push", hideCenter);
 });
 
 onUnmounted(() => {
-    router.app.$off("router-push", hideCenter);
+    eventBus.off("router-push", hideCenter);
 });
 </script>
 
