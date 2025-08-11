@@ -1,4 +1,4 @@
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 export function buildInstanceRoutingComposable(index: string) {
     return () => {

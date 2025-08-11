@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type AnyWorkflow, type Creator, hasCreator } from "@/api/workflows";
 import { useToast } from "@/composables/toast";

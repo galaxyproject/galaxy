@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowUp, faCaretDown, faEdit, faStethoscope, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 interface Props {
     prefix: string;
