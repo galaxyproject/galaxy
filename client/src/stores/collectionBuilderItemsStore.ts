@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, set } from "vue";
+import { ref } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistoryItemSummary } from "@/api";
 import type { ShowElementExtensionFunction } from "@/components/Collections/common/useExtensionFilter";
@@ -35,7 +35,7 @@ export const useCollectionBuilderItemsStore = defineStore("collectionBuilderItem
             };
         }
 
-        set(isFetching.value, filterText, true);
+        isFetching.value[filterText] = true;
 
         const filterQuery = getFilterQuery(filterText);
 
@@ -53,10 +53,10 @@ export const useCollectionBuilderItemsStore = defineStore("collectionBuilderItem
             error = errorMessageAsString(apiError);
             errorMessage.value = error;
         } else {
-            set(cachedDatasetsForFilterText.value, filterText, returnedData);
+            cachedDatasetsForFilterText.value[filterText] = returnedData;
         }
 
-        set(isFetching.value, filterText, false);
+        isFetching.value[filterText] = false;
         lastFetch.value = { id: historyId, time: historyUpdateTime || "", text: filterText };
 
         return { data: returnedData, error };

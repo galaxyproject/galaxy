@@ -3,7 +3,7 @@ import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal, BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
@@ -185,10 +185,10 @@ function setDisabled(filter: string, newVal: any) {
     if (disablesFilters && type !== Boolean) {
         for (const [disabledFilter, disablingValues] of Object.entries(disablesFilters)) {
             if (newVal && (disablingValues === null || disablingValues.includes(newVal))) {
-                set(isDisabled.value, disabledFilter, true);
+                isDisabled.value[disabledFilter] = true;
                 filters.value[disabledFilter] = undefined;
             } else {
-                set(isDisabled.value, disabledFilter, false);
+                isDisabled.value[disabledFilter] = false;
             }
         }
     }
