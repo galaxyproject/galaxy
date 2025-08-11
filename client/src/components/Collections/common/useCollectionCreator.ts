@@ -37,10 +37,11 @@ export type SupportedPairedOrPairedBuilderCollectionTypes =
     | "list:list"
     | "list:list:paired";
 
+// Vue 3 components are not constructors, so we use the component type directly
 export type CollectionCreatorComponent =
-    | InstanceType<typeof ListCollectionCreator>
-    | InstanceType<typeof PairedOrUnpairedListCollectionCreator>
-    | InstanceType<typeof RuleCollectionBuilder>;
+    | typeof ListCollectionCreator
+    | typeof PairedOrUnpairedListCollectionCreator
+    | typeof RuleCollectionBuilder;
 
 export async function attemptCreate(creator: CollectionCreatorComponent | Ref<CollectionCreatorComponent | undefined>) {
     const creatorValue: CollectionCreatorComponent | undefined = unref(creator);
