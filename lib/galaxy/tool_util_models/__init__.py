@@ -43,6 +43,7 @@ from .tool_source import (
     OutputCompareType,
     ResourceRequirement,
     XrefDict,
+    YamlTemplateConfigFile,
 )
 
 
@@ -103,6 +104,9 @@ class UserToolSource(BaseModel):
         Field(
             description="The description is displayed in the tool menu immediately following the hyperlink for the tool."
         ),
+    ] = None
+    configfiles: Annotated[
+        Optional[List[YamlTemplateConfigFile]], Field(description="A list of config files for this tool.")
     ] = None
     container: Annotated[
         str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
