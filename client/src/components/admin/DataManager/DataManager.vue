@@ -18,7 +18,7 @@
                                 <b-form-input
                                     v-model="filter"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                    @keyup.esc="filter = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
