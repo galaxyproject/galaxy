@@ -4,7 +4,7 @@ import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icon
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";

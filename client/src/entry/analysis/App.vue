@@ -52,7 +52,7 @@
 <script>
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";

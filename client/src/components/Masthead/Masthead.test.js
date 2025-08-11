@@ -16,7 +16,7 @@ import Masthead from "./Masthead.vue";
 
 vi.mock("app");
 vi.mock("./_webhooks");
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({ name: "Home" })),
     useRouter: vi.fn(),
 }));

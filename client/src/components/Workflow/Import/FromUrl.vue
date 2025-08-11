@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BAlert, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";

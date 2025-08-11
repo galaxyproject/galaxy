@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
 import { useConfig } from "@/composables/config";

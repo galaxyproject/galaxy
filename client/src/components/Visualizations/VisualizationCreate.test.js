@@ -19,7 +19,7 @@ const PLUGIN = {
     tags: ["tag1", "tag2"],
 };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: vi.fn(),
     }),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchPlugins, type Plugin } from "@/api/plugins";
 

@@ -12,7 +12,7 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),

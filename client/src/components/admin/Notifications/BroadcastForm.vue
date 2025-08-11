@@ -3,7 +3,7 @@ import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type components, GalaxyApi } from "@/api";
 import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";

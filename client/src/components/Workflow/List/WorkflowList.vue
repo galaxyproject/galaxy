@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";

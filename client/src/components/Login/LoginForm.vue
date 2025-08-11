@@ -13,7 +13,7 @@ import {
     BFormText,
 } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
 import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";

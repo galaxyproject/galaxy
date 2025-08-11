@@ -3,7 +3,7 @@ import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";

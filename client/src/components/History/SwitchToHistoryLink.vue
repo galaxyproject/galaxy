@@ -2,7 +2,7 @@
 import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type HistorySummary, userOwnsHistory } from "@/api";
 import { Toast } from "@/composables/toast";
