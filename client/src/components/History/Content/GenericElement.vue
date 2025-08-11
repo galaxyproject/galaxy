@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type PropType, ref, set } from "vue";
+import { type PropType, ref } from "vue";
 
 import type { DCESummary, DCObject } from "@/api";
 
@@ -16,7 +16,7 @@ const expandCollections = ref<Record<string, boolean>>({});
 const expandDatasets = ref<Record<string, boolean>>({});
 
 function toggle(expansionMap: Record<string, boolean>, itemId: string) {
-    set(expansionMap, itemId, !expansionMap[itemId]);
+    expansionMap[itemId] = !expansionMap[itemId];
 }
 
 function childObject(item: DCESummary): DCObject {
