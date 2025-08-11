@@ -8041,7 +8041,7 @@ export interface components {
             annotation?: string | null;
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
@@ -16993,10 +16993,16 @@ export interface components {
             author_deleted: boolean;
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
+            /**
+             * Content for Editor
+             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @default
+             */
+            content_editor: string | null;
             /**
              * Content format
              * @description Either `markdown` or `html`.
@@ -20058,7 +20064,7 @@ export interface components {
         ToolReportForDataset: {
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
