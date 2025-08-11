@@ -295,7 +295,7 @@ NumberCompatiableValidators = Union[InRangeParameterValidatorModel,]
 class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_integer"] = "gx_integer"
     type: Literal["integer"]
-    optional: bool
+    optional: bool = False
     value: Optional[int] = None
     min: Optional[int] = None
     max: Optional[int] = None

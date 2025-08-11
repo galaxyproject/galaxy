@@ -87,6 +87,42 @@ class XrefDict(TypedDict):
     type: str
 
 
+class TemplateConfigFile(BaseModel):
+    content: str
+    name: Optional[str] = None
+    filename: Optional[str] = None
+
+
+class InputConfigFileContent(BaseModel):
+    format: Literal["json"] = "json"
+    handle_files: Literal["paths", "staging_path_and_source_path"] = "paths"
+    type: Literal["inputs"] = "inputs"
+
+
+class InputConfigFile(BaseModel):
+    name: Optional[str] = None
+    content: InputConfigFileContent
+    filename: Optional[str] = None
+
+
+class FileSourceConfigFileContent(BaseModel):
+    type: Literal["files"] = "files"
+
+
+class FileSourceConfigFile(BaseModel):
+    name: Optional[str]
+    filename: Optional[str] = None
+    content: FileSourceConfigFileContent
+
+
+class XmlTemplateConfigFile(TemplateConfigFile):
+    eval_engine: Literal["cheetah"] = "cheetah"
+
+
+class YamlTemplateConfigFile(TemplateConfigFile):
+    eval_engine: Literal["ecmascript"] = "ecmascript"
+
+
 class Citation(BaseModel):
     type: str
     content: str
