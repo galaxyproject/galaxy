@@ -60,7 +60,7 @@ const props = withDefaults(
         tag?: string;
         userDefinedTitle?: string;
         workflowRun?: boolean;
-        extendedCollectionType: ExtendedCollectionType;
+        extendedCollectionType?: ExtendedCollectionType;
     }>(),
     {
         loading: false,

@@ -306,7 +306,7 @@ export default {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
             this.loading = true;
-            console.debug("ToolForm - Requesting tool.", this.id);
+
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
                     this.currentVersion = data.version;
