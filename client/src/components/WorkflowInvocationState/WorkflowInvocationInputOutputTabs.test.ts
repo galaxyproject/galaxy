@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -166,7 +166,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         testOutputsDisplayed(wrapper, false);
     });
 
-    function testOutputsDisplayed(wrapper: Wrapper<Vue>, terminal = true) {
+    function testOutputsDisplayed(wrapper: VueWrapper<any>, terminal = true) {
         /** The actual outputs of the workflow invocation */
         const testDatasetOutputLabels = Object.keys(invocationData.outputs);
         const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);

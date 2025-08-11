@@ -1,4 +1,4 @@
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -28,7 +28,7 @@ async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     return wrapper;
 }
 
-async function expectWrapperButtonToEmitEvent(wrapper: Wrapper<Vue>, buttonSelector: string, expectedEvent: string) {
+async function expectWrapperButtonToEmitEvent(wrapper: VueWrapper<any>, buttonSelector: string, expectedEvent: string) {
     expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
     await wrapper.find(buttonSelector).trigger("click");
     expect(wrapper.emitted()).toHaveProperty(expectedEvent);

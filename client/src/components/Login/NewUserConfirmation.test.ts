@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
@@ -14,7 +14,7 @@ jest.spyOn(window, "location", "get").mockImplementation(() => ({
 }));
 
 describe("NewUserConfirmation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let axiosMock: MockAdapter;
 
     beforeEach(() => {

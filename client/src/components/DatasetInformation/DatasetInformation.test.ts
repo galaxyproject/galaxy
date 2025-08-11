@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
@@ -42,9 +42,9 @@ const datasetResponse: DatasetResponse = {
 const localVue = getLocalVue();
 
 describe("DatasetInformation/DatasetInformation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let axiosMock: MockAdapter;
-    let datasetInfoTable: Wrapper<Vue>;
+    let datasetInfoTable: VueWrapper<any>;
 
     afterEach(() => {
         axiosMock.restore();

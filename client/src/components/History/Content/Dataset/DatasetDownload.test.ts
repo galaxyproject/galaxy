@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import type Vue from "vue";
 
 import DatasetDownload from "./DatasetDownload.vue";
@@ -12,7 +12,7 @@ const items = [
 ];
 
 describe("DatasetDownload", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(() => {
         wrapper = mount(DatasetDownload as object, {

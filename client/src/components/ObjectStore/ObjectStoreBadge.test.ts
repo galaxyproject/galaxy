@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import type Vue from "vue";
 
@@ -20,7 +20,7 @@ async function mountBadge(badge: ObjectStoreBadgeType) {
     return wrapper;
 }
 
-async function getTooltip(wrapper: Wrapper<Vue>) {
+async function getTooltip(wrapper: VueWrapper<any>) {
     const badge = wrapper.find(".object-store-badge-wrapper");
 
     return badge.attributes("data-mock-directive");

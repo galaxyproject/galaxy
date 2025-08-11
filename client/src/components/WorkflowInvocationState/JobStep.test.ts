@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createLocalVue, mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -21,7 +21,7 @@ const SELECTORS = {
 };
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let propsData;
     let iteration: "base" | "state_change" = "base";
     const pinia = createTestingPinia();

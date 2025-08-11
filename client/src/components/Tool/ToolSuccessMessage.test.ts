@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 
@@ -31,7 +31,7 @@ const SELECTORS = {
 };
 
 describe("ToolSuccessMessage", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(async () => {
         wrapper = mount(ToolSuccessMessage as object, {
