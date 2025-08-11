@@ -99,7 +99,7 @@ export default {
             return this.currentIndex === this.steps.length - 1;
         },
     },
-    beforeDestroy() {
+    beforeUnmount() {
         window.removeEventListener("keyup", this.handleKeyup);
     },
     mounted() {
