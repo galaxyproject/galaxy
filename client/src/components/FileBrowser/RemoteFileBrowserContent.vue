@@ -3,7 +3,7 @@ import { faFolder, faGlobe, faPlus, faUser } from "@fortawesome/free-solid-svg-i
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { FilterFileSourcesOptions, RemoteEntry } from "@/api/remoteFiles";
 import type { TableField } from "@/components/Common/GTable.types";

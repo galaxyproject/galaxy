@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
