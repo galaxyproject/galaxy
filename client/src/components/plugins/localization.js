@@ -10,7 +10,7 @@ const doublespaces = /\s\s+/g;
 function localizeDirective(l) {
     return {
         // TODO consider using a different hook if we need dynamic updates in content translation
-        bind(el, binding, vnode) {
+        beforeMount(el, binding, vnode) {
             el.childNodes.forEach((node) => {
                 // trim for lookup, but put back whitespace after
                 const leadingSpace = node.textContent.match(/^\s*/)[0];
