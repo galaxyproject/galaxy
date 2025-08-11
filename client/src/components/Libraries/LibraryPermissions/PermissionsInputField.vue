@@ -51,6 +51,7 @@ export default {
         GAlert,
         Multiselect,
     },
+    emits: ["input"],
     props: {
         id: {
             type: String,
