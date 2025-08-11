@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { fetchAllBroadcasts } from "@/api/notifications.broadcast";
 import type { components } from "@/api/schema";
@@ -37,7 +37,7 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
     }
 
     function dismissBroadcast(broadcast: BroadcastNotification) {
-        set(dismissedBroadcasts.value, broadcast.id, { expiration_time: broadcast.expiration_time });
+        dismissedBroadcasts.value[broadcast.id] = { expiration_time: broadcast.expiration_time };
     }
 
     function hasExpired(expirationTimeStr?: string | null) {
