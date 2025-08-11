@@ -415,6 +415,7 @@ function getSecondaryActions(history: AnyHistoryEntry): CardAction[] {
     <div class="history-card-list d-flex flex-wrap overflow-auto">
         <GCard
             v-for="history in props.histories"
+            :id="`history-${history.id}`"
             :key="history.id"
             :title="{
                 label: history.name,
