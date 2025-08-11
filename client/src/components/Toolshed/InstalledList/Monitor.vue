@@ -82,7 +82,7 @@ export default {
         this.services = new Services();
         this.load();
     },
-    destroyed() {
+    unmounted() {
         this.clearTimeout();
     },
     methods: {
