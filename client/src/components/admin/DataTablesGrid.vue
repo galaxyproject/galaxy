@@ -23,6 +23,7 @@ export default {
     components: {
         "base-grid": BaseGrid,
     },
+    emits: ["changeview"],
     props: {
         isLoaded: {
             type: Boolean,
