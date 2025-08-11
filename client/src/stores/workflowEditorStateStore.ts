@@ -1,5 +1,5 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { computed, reactive, ref, set, type UnwrapRef } from "vue";
+import { computed, reactive, ref, type UnwrapRef } from "vue";
 
 import type { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
@@ -96,23 +96,23 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     }
 
     function setStepMultiSelected(stepId: number, selected: boolean) {
-        set(multiSelectedSteps.value, stepId, selected);
+        multiSelectedSteps.value[stepId] = selected;
     }
 
     function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
         if (!inputTerminals.value[stepId]) {
-            set(inputTerminals.value, stepId, {});
+            inputTerminals.value[stepId] = {};
         }
 
-        set(inputTerminals.value[stepId]!, inputName, position);
+        inputTerminals.value[stepId]![inputName] = position;
     }
 
     function setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
         if (!outputTerminals.value[stepId]) {
-            set(outputTerminals.value, stepId, reactive({}));
+            outputTerminals.value[stepId] = reactive({});
         }
 
-        set(outputTerminals.value[stepId]!, outputName, position);
+        outputTerminals.value[stepId]![outputName] = position;
     }
 
     function deleteInputTerminalPosition(stepId: number, inputName: string) {
@@ -124,7 +124,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     }
 
     function setStepPosition(stepId: number, position: UnwrapRef<UseElementBoundingReturn>) {
-        set(stepPosition.value, stepId, position);
+        stepPosition.value[stepId] = position;
     }
 
     function deleteStepPosition(stepId: number) {
@@ -137,7 +137,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     }
 
     function setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
-        set(stepLoadingState.value, stepId, { loading, error });
+        stepLoadingState.value[stepId] = { loading, error };
     }
 
     return {
