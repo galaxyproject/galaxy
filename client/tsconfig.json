@@ -13,7 +13,9 @@
             "@tests/*": ["tests/*"],
             "@fortawesome/fontawesome-common-types": [
                 "./node_modules/@fortawesome/fontawesome-common-types/index"
-            ]
+            ],
+            "vue": ["./node_modules/@vue/compat/dist/vue.esm-bundler.js"],
+            "vue/*": ["./node_modules/@vue/compat/*"]
         },
         "outDir": "./dist/build",
 
