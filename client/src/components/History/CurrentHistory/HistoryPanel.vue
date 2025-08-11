@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, type Ref, ref, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { getGalaxyInstance } from "@/app";
@@ -234,7 +234,7 @@ watch(historyItems, (newHistoryItems) => {
     // Re-hide invisible history items when `historyItems` changes
     for (const newHistoryItem of newHistoryItems) {
         if (invisibleHistoryItems.value[newHistoryItem.hid]) {
-            VueSet(invisibleHistoryItems.value, newHistoryItem.hid, false);
+            invisibleHistoryItems.value[newHistoryItem.hid] = false;
         }
     }
 });
@@ -293,7 +293,7 @@ async function onDelete(item: HistoryItemSummary, recursive = false) {
         await deleteContent(item, { recursive: recursive });
         updateContentStats();
     } catch (error) {
-        VueSet(invisibleHistoryItems.value, item.hid, false);
+        invisibleHistoryItems.value[item.hid] = false;
         onOperationError({ errorMessage: error });
     } finally {
         isLoading.value = false;
@@ -347,7 +347,7 @@ function reloadContents() {
 }
 
 function setInvisible(item: HistoryItemSummary) {
-    VueSet(unref(invisibleHistoryItems), item.hid, true);
+    unref(invisibleHistoryItems)[item.hid] = true;
 }
 
 function onTagChange(item: HistoryItemSummary, newTags: string[]) {

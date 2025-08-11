@@ -1,4 +1,4 @@
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { type DatasetExtraFiles, getCompositeDatasetLink } from "@/api/datasets";
 import { useDatasetExtraFilesStore } from "@/stores/datasetExtraFilesStore";
@@ -47,7 +47,7 @@ export function useDatasetPathDestination() {
         };
 
         if (path === undefined || path === "undefined") {
-            set(cache.value, dataset_id, { ["undefined"]: pathDestination });
+            cache.value[dataset_id] = { ["undefined"]: pathDestination };
             return pathDestination;
         }
 
@@ -65,7 +65,7 @@ export function useDatasetPathDestination() {
             }
             pathDestination.fileLink = getCompositeDatasetLink(dataset_id, datasetEntry.path);
         }
-        set(cache.value, dataset_id, { [path]: pathDestination });
+        cache.value[dataset_id] = { [path]: pathDestination };
         return pathDestination;
     }
 

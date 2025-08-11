@@ -1,9 +1,8 @@
-import { set } from "vue";
 
 /* This function merges the existing data with new incoming data. */
 export function mergeArray(id, payload, items, itemKey) {
     if (!items[id]) {
-        set(items, id, []);
+        items[id] = [];
     }
     const itemArray = items[id];
     for (const item of payload) {
@@ -29,7 +28,7 @@ export function mergeArray(id, payload, items, itemKey) {
                     // 2: `localItem` has fewer keys than the new item
                     Object.keys(localItem).length < Object.keys(item).length
                 ) {
-                    set(itemArray, itemIndex, item);
+                    itemArray[itemIndex] = item;
                     pushSubItem(item, localItem);
                     localItem.sub_items = [];
                 } else {
@@ -37,7 +36,7 @@ export function mergeArray(id, payload, items, itemKey) {
                 }
             }
         } else {
-            set(itemArray, itemIndex, item);
+            itemArray[itemIndex] = item;
         }
     }
 }

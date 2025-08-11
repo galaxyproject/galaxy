@@ -105,7 +105,6 @@
 </template>
 
 <script>
-import { set } from "vue";
 
 import { matchCase } from "@/components/Form/utilities";
 
@@ -207,7 +206,7 @@ export default {
         repeatInsert(input) {
             const newInputs = structuredClone(input.inputs);
 
-            set(input, "cache", input.cache ?? []);
+            input.cache = input.cache ?? [];
             input.cache.push(newInputs);
 
             this.onChangeForm();
@@ -219,7 +218,7 @@ export default {
         repeatClone(input, cacheId) {
             const clonedInputs = structuredClone(input.cache[cacheId]);
 
-            set(input, "cache", input.cache ?? []);
+            input.cache = input.cache ?? [];
             input.cache.splice(cacheId + 1, 0, clonedInputs);
 
             this.onChangeForm();
