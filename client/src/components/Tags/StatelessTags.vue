@@ -43,6 +43,7 @@ export default {
     components: {
         VueTagsInput,
     },
+    emits: ["tag-click", "tag-input-changed", "input", "show"],
     props: {
         value: { type: Array, required: false, default: () => [] },
         autocompleteItems: { type: Array, required: false, default: () => [] },
