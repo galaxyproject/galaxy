@@ -499,7 +499,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_deferred_list_7_named")
         rule_builder.main_button_ok.wait_for_and_click()
         hid = 2
-        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_wait_for_hid_state(hid, state="deferred", allowed_force_refreshes=1)
         self.screenshot("rules_deferred_list_7_download_complete")
 
     def _read_rules_test_data_file(self, name):
