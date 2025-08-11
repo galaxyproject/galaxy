@@ -111,6 +111,7 @@ export default {
         FormInputMismatchBadge,
         GButton,
     },
+    emits: ["stop-flagging", "update:active-node-id"],
     props: {
         inputs: {
             type: Array,
