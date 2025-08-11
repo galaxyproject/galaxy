@@ -124,7 +124,7 @@ export default {
             return false;
         },
         hasHandler(eventName) {
-            return Object.keys(this.$listeners).includes(eventName);
+            return Object.keys(this.$attrs).includes(`on${eventName.charAt(0).toUpperCase()}${eventName.slice(1)}`);
         },
     },
 };
