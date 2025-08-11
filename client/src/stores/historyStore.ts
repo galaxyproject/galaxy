@@ -131,7 +131,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.entries(history).forEach(([key, value]) => {
-                storedHistories.value[history.id]![key] = value;
+                (storedHistories.value[history.id] as any)[key] = value;
             });
         } else {
             storedHistories.value[history.id] = history;
