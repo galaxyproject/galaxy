@@ -21,6 +21,7 @@ from galaxy.exceptions import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -51,12 +52,12 @@ class DropboxFilesSource(
     template_config_class = DropboxFileSourceTemplateConfiguration
     resolved_config_class = DropboxFilesSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[DropboxFilesSourceConfiguration]):
         if DropboxFS is None:
             raise self.required_package_exception
 
         try:
-            return DropboxFS(access_token=self.config.access_token)
+            return DropboxFS(access_token=context.config.access_token)
         except Exception as e:
             # This plugin might raise dropbox.dropbox_client.BadInputException
             # which is not a subclass of fs.errors.FSError

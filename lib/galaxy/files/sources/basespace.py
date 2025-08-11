@@ -11,6 +11,7 @@ from typing import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -42,16 +43,17 @@ class BaseSpaceFilesSource(
     template_config_class = BaseSpaceFileSourceTemplateConfiguration
     resolved_config_class = BaseSpaceFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[BaseSpaceFileSourceConfiguration]):
         if BASESPACEFS is None:
             raise self.required_package_exception
 
+        config = context.config
         return BASESPACEFS(
-            dir_path=self.config.dir_path,
-            client_id=self.config.client_id,
-            client_secret=self.config.client_secret,
-            access_token=self.config.access_token,
-            basespace_server=self.config.basespace_server,
+            dir_path=config.dir_path,
+            client_id=config.client_id,
+            client_secret=config.client_secret,
+            access_token=config.access_token,
+            basespace_server=config.basespace_server,
         )
 
 

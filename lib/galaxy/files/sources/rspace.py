@@ -45,6 +45,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -143,7 +144,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
     _upload_global_id: str
     # The RSpace global id of the most recently uploaded file.
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[RSpaceFileSourceConfiguration]):
         """
         Instantiate a PyFilesystem2 FS object for RSpace's Gallery.
         """
@@ -152,7 +153,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
 
         # patch the `upload()` method to keep track of the global id of the most recently uploaded file, change the
         # target path and fake the name of the file
-        gallery_fs = PatchedRSpaceGalleryFilesystem(self.config.endpoint, self.config.api_key)
+        gallery_fs = PatchedRSpaceGalleryFilesystem(context.config.endpoint, context.config.api_key)
         gallery_fs_upload_method = gallery_fs.upload
 
         def upload(self_, path: str, file: BinaryIO, chunk_size: Optional[int] = None, **options: Any) -> None:
@@ -168,12 +169,14 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
 
         return gallery_fs
 
-    def _write_from(self, target_path: str, native_path: str) -> str:
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[RSpaceFileSourceConfiguration]
+    ) -> str:
         """
         Save a file to the RSpace Gallery.
         """
         target_directory = os.path.dirname(target_path)
-        super()._write_from(target_path, native_path)
+        super()._write_from(target_path, native_path, context)
         return os.path.join(target_directory, self._upload_global_id)
 
     def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:

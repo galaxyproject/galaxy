@@ -5,6 +5,7 @@ from typing import Union
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from . import (
@@ -52,17 +53,23 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[DRSFileSourceConfiguration]
+    ):
+        user_context = context.user_data.context if context.user_data.context else None
+        config = context.config
         fetch_drs_to_file(
             source_path,
             native_path,
-            user_context=self.user_data.context if self.user_data.context else None,
+            user_context=user_context,
             fetch_url_allowlist=self._allowlist,
-            headers=self.config.http_headers,
-            force_http=self.config.force_http,
+            headers=config.http_headers,
+            force_http=config.force_http,
         )
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[DRSFileSourceConfiguration]
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

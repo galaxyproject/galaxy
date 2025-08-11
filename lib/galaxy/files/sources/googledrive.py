@@ -18,6 +18,7 @@ from pydantic import (
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
@@ -46,10 +47,10 @@ class GoogleDriveFilesSource(
     template_config_class = GoogleDriveFileSourceTemplateConfiguration
     resolved_config_class = GoogleDriveFilesSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[GoogleDriveFilesSourceConfiguration]):
         if GoogleDriveFS is None:
             raise self.required_package_exception
-        credentials = Credentials(token=self.config.access_token)
+        credentials = Credentials(token=context.config.access_token)
         handle = GoogleDriveFS(credentials)
         return handle
 

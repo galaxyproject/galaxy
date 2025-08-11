@@ -3,6 +3,7 @@
 from typing import (
     Annotated,
     Any,
+    Generic,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -355,8 +356,8 @@ class BaseFileSourceConfiguration(FilesSourceProperties):
     """
 
 
-class FilesSourceRuntimeContext:
-    """Context for the runtime environment of a file source.
+class FilesSourceTemplateContext:
+    """Context for filling templates in file source configurations.
 
     This is used to provide additional context to file sources during operations.
     It can include user data, environment variables, and other relevant information.
@@ -373,7 +374,6 @@ class FilesSourceRuntimeContext:
         self.file_sources_config = file_sources_config or FileSourcePluginsConfig()
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the runtime context to a dictionary."""
         return {
             "user": self.user_data.context if self.user_data.context else None,
             "environ": self.environment,
@@ -388,7 +388,7 @@ TResolvedConfig = TypeVar("TResolvedConfig", bound=BaseFileSourceConfiguration)
 def resolve_file_source_template(
     template_config: BaseFileSourceTemplateConfiguration,
     resolved_config_class: type[TResolvedConfig],
-    context: FilesSourceRuntimeContext,
+    context: FilesSourceTemplateContext,
 ) -> TResolvedConfig:
     """Resolve templated file source configuration to actual values.
 
@@ -432,3 +432,21 @@ def resolve_file_source_template(
             expanded_dict[skip_field] = getattr(template_config, skip_field)
 
     return resolved_config_class(**expanded_dict)
+
+
+class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
+    """Context for file source operations, providing user data and resolved configuration."""
+
+    def __init__(self, user_data: UserData, config: TResolvedConfig):
+        self._user_data = user_data
+        self._config = config
+
+    @property
+    def user_data(self) -> UserData:
+        """User data for the current context."""
+        return self._user_data
+
+    @property
+    def config(self) -> TResolvedConfig:
+        """Resolved configuration for the file source with all templates expanded."""
+        return self._config

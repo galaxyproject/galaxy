@@ -11,6 +11,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -52,26 +53,24 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
     template_config_class = S3FSFileSourceTemplateConfiguration
     resolved_config_class = S3FSFileSourceConfiguration
 
-    def _open_fs(self):
+    def _open_fs(self, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]):
         if s3fs is None:
             raise Exception("Missing s3fs package, please install it to use S3 file sources.")
-        client_kwargs = {"endpoint_url": self.config.endpoint_url} if self.config.endpoint_url else None
+
+        config = context.config
+        client_kwargs = {"endpoint_url": config.endpoint_url} if config.endpoint_url else None
         fs = s3fs.S3FileSystem(
-            anon=self.config.anon,
-            key=self.config.key,
-            secret=self.config.secret,
+            anon=config.anon,
+            key=config.key,
+            secret=config.secret,
             client_kwargs=client_kwargs,
-            listings_expiry_time=self.listings_expiry_time,
+            listings_expiry_time=config.file_sources_config.listings_expiry_time,
         )
         return fs
 
-    @property
-    def listings_expiry_time(self) -> Optional[int]:
-        """Return the listings expiry time for this file source."""
-        return self.config.file_sources_config.listings_expiry_time
-
     def _list(
         self,
+        context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -80,8 +79,8 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        _bucket_name = self.config.bucket or ""
-        fs = self._open_fs()
+        _bucket_name = context.config.bucket or ""
+        fs = self._open_fs(context)
         if recursive:
             res: list[AnyRemoteEntry] = []
             bucket_path = self._bucket_path(_bucket_name, path)
@@ -99,15 +98,17 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res)), len(res)
 
-    def _realize_to(self, source_path: str, native_path: str):
-        _bucket_name = self.config.bucket or ""
-        fs = self._open_fs()
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]
+    ):
+        _bucket_name = context.config.bucket or ""
+        fs = self._open_fs(context)
         bucket_path = self._bucket_path(_bucket_name, source_path)
         fs.download(bucket_path, native_path)
 
-    def _write_from(self, target_path, native_path):
-        _bucket_name = self.config.bucket or ""
-        fs = self._open_fs()
+    def _write_from(self, target_path, native_path, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]):
+        _bucket_name = context.config.bucket or ""
+        fs = self._open_fs(context)
         bucket_path = self._bucket_path(_bucket_name, target_path)
         fs.upload(native_path, bucket_path)
 

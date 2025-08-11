@@ -17,6 +17,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files.models import (
     AnyRemoteEntry,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
     TResolvedConfig,
@@ -49,7 +50,7 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
         return Exception(PACKAGE_MESSAGE % self.required_package)
 
     @abc.abstractmethod
-    def _open_fs(self) -> FS:
+    def _open_fs(self, context: FilesSourceRuntimeContext[TResolvedConfig]) -> FS:
         """Subclasses must instantiate a PyFilesystem2 handle for this file system.
 
         All the required properties should be already set in the config.
@@ -57,6 +58,7 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -67,7 +69,7 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
-            with self._open_fs() as h:
+            with self._open_fs(context) as h:
                 if recursive:
                     recursive_result: list[AnyRemoteEntry] = []
                     try:
@@ -109,13 +111,13 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
             return None
         return [f"*{query}*"]
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
         with open(native_path, "wb") as write_file:
-            self._open_fs().download(source_path, write_file)
+            self._open_fs(context).download(source_path, write_file)
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
         with open(native_path, "rb") as read_file:
-            openfs = self._open_fs()
+            openfs = self._open_fs(context)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)

@@ -26,6 +26,7 @@ from galaxy.files.models import (
     FilesSourceOptions,
     FilesSourceProperties,
     FilesSourceRuntimeContext,
+    FilesSourceTemplateContext,
     resolve_file_source_template,
     TResolvedConfig,
     TTemplateConfig,
@@ -265,9 +266,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def __init__(self, template_config: TTemplateConfig):
         self.template_config = template_config
-        self.user_data = UserData(context=None)
         self._parse_common_props(self.template_config)
-        self._resolved_config: Optional[TResolvedConfig] = None
 
     @classmethod
     def build_template_config(cls, **kwargs) -> TTemplateConfig:
@@ -292,13 +291,6 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
                 f"Template configuration class not defined for plugin type '{cls.plugin_type}'. "
                 "Subclasses of BaseFilesSource must set 'template_config_class'."
             )
-
-    @property
-    def config(self) -> TResolvedConfig:
-        if self._resolved_config is None:
-            # Fall back to resolving the configuration without user context
-            self._resolved_config = self._resolve_config_with_templates()
-        return self._resolved_config
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -391,15 +383,22 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         if self.get_url() is not None:
             rval["url"] = self.get_url()
         if for_serialization:
-            self._update_config_with_user_context(user_context=user_context)
-            rval.update(
-                self.config.model_dump(
-                    exclude_unset=True,
-                    exclude_none=True,
-                    exclude=COMMON_FILE_SOURCE_PROP_NAMES,
-                )
-            )
+            context = self._get_runtime_context(user_context=user_context)
+            serialized_config = self._serialize_config(context.config)
+            rval.update(serialized_config)
         return rval
+
+    def _serialize_config(self, config: TResolvedConfig) -> dict[str, Any]:
+        """Serialize properties needed to recover plugin configuration.
+        Used in to_dict method if for_serialization is True.
+
+        Override this method in subclasses to customize serialization of the configuration.
+        """
+        return config.model_dump(
+            exclude_unset=True,
+            exclude_none=True,
+            exclude=COMMON_FILE_SOURCE_PROP_NAMES,
+        )
 
     def to_dict_time(self, ctime) -> Optional[str]:
         if ctime is None:
@@ -409,25 +408,24 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         else:
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
-    def _update_config_with_user_context(
+    def _get_runtime_context(
         self,
         opts: Optional[FilesSourceOptions] = None,
         user_context: "OptionalUserContext" = None,
-    ):
+    ) -> FilesSourceRuntimeContext:
         """
-        Ensures that the configuration is updated with any extra properties provided in the options and
-        evaluates any properties that need to be computed based on the user context from template variables.
+        Get the runtime context for this file source, resolving the template configuration
+        with the provided user context and options.
         """
-        # Ensure user context is updated
-        self.user_data = UserData(context=user_context)
+        user_data = UserData(context=user_context)
 
         # Update template config with extra properties if provided
         if opts and opts.extra_props:
             extra_props = opts.extra_props.model_dump(exclude_unset=True)
             self.template_config = self.template_config.model_copy(update=extra_props)
 
-        # Resolve the configuration with templates and user context
-        self._resolved_config = self._resolve_config_with_templates()
+        resolved_config = self._evaluate_template_config(user_data)
+        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config)
 
     def _apply_defaults_to_template(
         self, defaults: dict[str, Any], template_config: TTemplateConfig
@@ -442,14 +440,14 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         defaults.update(template_updates)
         return self.template_config_class(**defaults)
 
-    def _resolve_config_with_templates(self) -> TResolvedConfig:
+    def _evaluate_template_config(self, user_data: Optional[UserData] = None) -> TResolvedConfig:
         if self.disable_templating:
             # Convert template config to resolved config without template evaluation
             config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
             return self.resolved_config_class(**config_dict)
 
-        runtime_context = FilesSourceRuntimeContext(
-            user_data=self.user_data,
+        runtime_context = FilesSourceTemplateContext(
+            user_data=user_data,
             environment=dict(os.environ),
             file_sources_config=self._file_sources_config,
         )
@@ -479,12 +477,13 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             if offset is not None and offset < 0:
                 raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
-        self._update_config_with_user_context(opts, user_context)
+        resolved_config = self._get_runtime_context(opts, user_context)
         write_intent = opts.write_intent if opts else False
-        return self._list(path, recursive, write_intent, limit, offset, query)
+        return self._list(resolved_config, path, recursive, write_intent, limit, offset, query)
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -503,10 +502,10 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     ) -> Entry:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        self._update_config_with_user_context(opts, user_context)
-        return self._create_entry(entry_data)
+        context = self._get_runtime_context(opts, user_context)
+        return self._create_entry(entry_data, context)
 
-    def _create_entry(self, entry_data: EntryData) -> Entry:
+    def _create_entry(self, entry_data: EntryData, context: FilesSourceRuntimeContext[TResolvedConfig]) -> Entry:
         """Create a new entry (directory) in the file source.
 
         The file source must be writeable.
@@ -523,11 +522,16 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        self._update_config_with_user_context(opts, user_context)
-        return self._write_from(target_path, native_path) or target_path
+        resolved_config = self._get_runtime_context(opts, user_context)
+        return self._write_from(target_path, native_path, resolved_config) or target_path
 
     @abc.abstractmethod
-    def _write_from(self, target_path: str, native_path: str) -> Optional[str]:
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
+    ) -> Optional[str]:
         pass
 
     def realize_to(
@@ -538,11 +542,16 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         opts: Optional[FilesSourceOptions] = None,
     ):
         self._check_user_access(user_context)
-        self._update_config_with_user_context(opts, user_context)
-        self._realize_to(source_path, native_path)
+        resolved_config = self._get_runtime_context(opts, user_context)
+        self._realize_to(source_path, native_path, resolved_config)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
+    ):
         pass
 
     def _ensure_writeable(self):

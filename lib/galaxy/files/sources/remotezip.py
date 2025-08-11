@@ -13,7 +13,11 @@ from urllib.parse import (
 
 import requests
 
-from galaxy.files.models import BaseFileSourceTemplateConfiguration
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
 from galaxy.files.uris import validate_uri_access
 from . import (
     DefaultBaseFilesSource,
@@ -64,17 +68,21 @@ class RemoteZipFilesSource(DefaultBaseFilesSource):
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
+    ):
         params = extract_query_parameters(source_path)
         file_extract_params = validate_params(params)
         validate_uri_access(
             file_extract_params.source,
-            self.user_data.is_admin,
+            context.user_data.is_admin,
             self._allowlist or [],
         )
         stream_and_decompress(file_extract_params, native_path)
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

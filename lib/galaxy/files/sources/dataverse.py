@@ -16,6 +16,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     Entry,
     EntryData,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
@@ -23,6 +24,7 @@ from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._rdm import (
     ContainerAndFileIdentifier,
+    RDMFileSourceConfiguration,
     RDMFileSourceTemplateConfiguration,
     RDMFilesSource,
     RDMRepositoryInteractor,
@@ -123,6 +125,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -135,18 +138,20 @@ class DataverseRDMFilesSource(RDMFilesSource):
         is_root_path = path == "/"
         if is_root_path:
             datasets, total_hits = self.repository.get_file_containers(
-                write_intent, limit=limit, offset=offset, query=query
+                context, write_intent, limit=limit, offset=offset, query=query
             )
             return cast(list[AnyRemoteEntry], datasets), total_hits
         dataset_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_container(dataset_id, write_intent, query)
+        files = self.repository.get_files_in_container(context, dataset_id, write_intent, query)
         return cast(list[AnyRemoteEntry], files), len(files)
 
-    def _create_entry(self, entry_data: EntryData) -> Entry:
+    def _create_entry(
+        self, entry_data: EntryData, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> Entry:
         """Creates a draft dataset in the repository."""
-        public_name = self.get_public_name()
+        public_name = self.get_public_name(context)
         title = entry_data.name or "No title"
-        dataset = self.repository.create_draft_file_container(title, public_name)
+        dataset = self.repository.create_draft_file_container(title, public_name, context)
         datasetId = str(dataset.get("persistentId"))
         return Entry(
             name=title,
@@ -154,11 +159,13 @@ class DataverseRDMFilesSource(RDMFilesSource):
             external_link=self.repository.public_dataset_url(datasetId),
         )
 
-    def _realize_to(self, source_path: str, native_path: str):
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         """Used when downloading files from dataverse."""
         dataset_id, file_id = self.parse_path(source_path)
         try:
-            self.repository.download_file_from_container(dataset_id, file_id, native_path)
+            self.repository.download_file_from_container(dataset_id, file_id, native_path, context)
         except NotFoundException:
             filename = file_id.split("/")[-1]
             is_zip_file = self._is_zip_archive(filename)
@@ -168,15 +175,17 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 # Only the contents are stored, not the zip itself.
                 # So, if a zip is not found, we suppose we are trying to reimport an archived history
                 # and make an API call to Dataverse to download the dataset as a zip.
-                self.repository._download_dataset_as_zip(dataset_id, native_path)
+                self.repository._download_dataset_as_zip(dataset_id, native_path, context)
 
     def _is_zip_archive(self, file_name: str) -> bool:
         return file_name.endswith(".zip")
 
-    def _write_from(self, target_path: str, native_path: str):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         """Used when uploading files to dataverse."""
         dataset_id, file_id = self.parse_path(target_path)
-        self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path)
+        self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, context)
 
 
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
@@ -220,6 +229,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def get_file_containers(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         writeable: bool,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -237,16 +247,20 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         }
         if writeable:
             params["fq"] = "publicationStatus:Draft"
-        response_data = self._get_response(request_url, params)
+        response_data = self._get_response(context, request_url, params)
         total_hits = response_data["data"]["total_count"]
         return self._get_datasets_from_response(response_data["data"]), total_hits
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, query: Optional[str] = None
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        container_id: str,
+        writeable: bool,
+        query: Optional[str] = None,
     ) -> list[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
         request_url = self.files_of_dataset_url(dataset_id=container_id)
-        response_data = self._get_response(request_url)
+        response_data = self._get_response(context, request_url)
         files = self._get_files_from_response(container_id, response_data["data"])
         files = self._filter_files_by_name(files, query)
         return files
@@ -256,41 +270,54 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             return files
         return [file for file in files if query in file.name]
 
-    def create_draft_file_container(self, title: str, public_name: str) -> dict[str, Any]:
+    def create_draft_file_container(
+        self, title: str, public_name: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> dict[str, Any]:
         """Creates a draft dataset in the repository. Dataverse datasets are contained in collections. Collections can be contained in collections.
         We create a collection inside the root collection and then a dataset inside that collection.
         """
         # Prepare and create the collection
-        collection_payload = self._prepare_collection_data(title, public_name)
-        collection = self._create_collection(":root", collection_payload)
+        user_email = context.user_data.email or "enteryourmail@placeholder.com"
+        collection_payload = self._prepare_collection_data(title, public_name, user_email)
+        collection = self._create_collection(":root", collection_payload, context)
         if not collection or "data" not in collection or "alias" not in collection["data"]:
             raise Exception("Could not create collection in Dataverse or response has an unexpected format.")
         collection_alias = collection["data"]["alias"]
 
         # Prepare and create the dataset
-        dataset_payload = self._prepare_dataset_data(title, public_name)
-        dataset = self._create_dataset(collection_alias, dataset_payload)
+        dataset_payload = self._prepare_dataset_data(title, public_name, user_email)
+        dataset = self._create_dataset(collection_alias, dataset_payload, context)
         if not dataset or "data" not in dataset:
             raise Exception("Could not create dataset in Dataverse or response has an unexpected format.")
 
         dataset["data"]["name"] = title
         return dataset["data"]
 
-    def _create_collection(self, parent_alias: str, collection_payload: str) -> dict:
-        headers = self._get_request_headers(auth_required=True)
+    def _create_collection(
+        self, parent_alias: str, collection_payload: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> dict:
+        headers = self._get_request_headers(context, auth_required=True)
         response = requests.post(self.create_collection_url(parent_alias), data=collection_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         return response.json()
 
-    def _create_dataset(self, parent_alias: str, dataset_payload: str) -> dict:
-        headers = self._get_request_headers(auth_required=True)
+    def _create_dataset(
+        self, parent_alias: str, dataset_payload: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ) -> dict:
+        headers = self._get_request_headers(context, auth_required=True)
         response = requests.post(self.create_dataset_url(parent_alias), data=dataset_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         return response.json()
 
-    def upload_file_to_draft_container(self, dataset_id: str, filename: str, file_path: str):
+    def upload_file_to_draft_container(
+        self,
+        dataset_id: str,
+        filename: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ):
         """Uploads a file to a draft dataset in the repository."""
-        headers = self._get_request_headers(auth_required=True)
+        headers = self._get_request_headers(context, auth_required=True)
 
         with open(file_path, "rb") as file:
             # TODO: For some reason tar.gz files are not uploaded successfully to Dataverse.
@@ -299,20 +326,33 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             response = requests.post(add_files_url, files=files, headers=headers)
             self._ensure_response_has_expected_status_code(response, 200)
 
-    def download_file_from_container(self, container_id: str, file_identifier: str, file_path: str):
+    def download_file_from_container(
+        self,
+        container_id: str,
+        file_identifier: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ):
         download_file_content_url = self.file_access_url(file_identifier)
-        self._download_file(file_path, download_file_content_url)
+        self._download_file(file_path, download_file_content_url, context)
 
-    def _download_dataset_as_zip(self, dataset_id: str, file_path: str):
+    def _download_dataset_as_zip(
+        self, dataset_id: str, file_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
         download_dataset_url = self.download_dataset_as_zip_url(dataset_id)
-        self._download_file(file_path, download_dataset_url)
+        self._download_file(file_path, download_dataset_url, context)
 
-    def _download_file(self, file_path: str, download_file_content_url: str):
+    def _download_file(
+        self,
+        file_path: str,
+        download_file_content_url: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ):
         headers = {}
 
         if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
-            headers = self._get_request_headers()
+            headers = self._get_request_headers(context)
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -358,17 +398,20 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def _get_response(
         self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         request_url: str,
         params: Optional[dict[str, Any]] = None,
         auth_required: bool = False,
     ) -> dict:
-        headers = self._get_request_headers(auth_required)
+        headers = self._get_request_headers(context, auth_required)
         response = requests.get(request_url, params=params, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    def _get_request_headers(self, auth_required: bool = False):
-        token = self.plugin.get_authorization_token()
+    def _get_request_headers(
+        self, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration], auth_required: bool = False
+    ):
+        token = self.plugin.get_authorization_token(context)
         headers = {"X-Dataverse-Key": f"{token}"} if token else {}
         if auth_required and token is None:
             self._raise_auth_required()
@@ -396,32 +439,24 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             error_message += f"\n{json.dumps(error)}"
         return error_message
 
-    def _get_user_email(self) -> str:
-        return (
-            self.plugin.user_data.email
-            if self.plugin.user_data and self.plugin.user_data.email
-            else "enteryourmail@placeholder.com"
-        )
-
     def _create_valid_alias(self, public_name: str, title: str) -> str:
         return re.sub(
             r"[^a-zA-Z0-9-_]", "", public_name.lower().replace(" ", "-") + "_" + title.lower().replace(" ", "-")
         )
 
-    def _prepare_collection_data(self, title: str, public_name: str) -> str:
+    def _prepare_collection_data(self, title: str, public_name: str, user_email: str) -> str:
         return json.dumps(
             {
                 "name": title,
                 "alias": self._create_valid_alias(public_name, title),
                 "dataverseContacts": [
-                    {"contactEmail": self._get_user_email()},
+                    {"contactEmail": user_email},
                 ],
             }
         )
 
-    def _prepare_dataset_data(self, title: str, public_name: str) -> str:
+    def _prepare_dataset_data(self, title: str, public_name: str, user_email: str) -> str:
         """Prepares the dataset data with all required metadata fields."""
-        user_email = self._get_user_email()
         author_name = public_name
         dataset_data = {
             "datasetVersion": {
