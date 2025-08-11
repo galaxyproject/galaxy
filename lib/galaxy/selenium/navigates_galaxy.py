@@ -1441,12 +1441,12 @@ class NavigatesGalaxy(HasDriver):
     def navigate_to_histories_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
-        self.components.histories.histories.wait_for_present()
+        self.components.histories.history_cards.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
-        self.components.shared_histories.tab.wait_for_and_click()
+        self.components.shared_histories.shared_tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
