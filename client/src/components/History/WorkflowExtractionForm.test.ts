@@ -28,7 +28,7 @@ vi.mock("@/api/histories", () => ({
 
 vi.mock("@/composables/toast");
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({ push: vi.fn() }),
 }));
 

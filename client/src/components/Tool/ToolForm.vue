@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { canMutateHistory as canMutateHistoryMethod } from "@/api";
 import type { JobRequest, JobResponse } from "@/api/jobs";

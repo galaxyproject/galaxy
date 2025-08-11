@@ -100,7 +100,7 @@ function editorStubs() {
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
 let mockRoute: { query: Record<string, string>; fullPath: string } = { query: {}, fullPath: "/" };
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({ push: mockPush, replace: mockReplace }),
     useRoute: () => mockRoute,
 }));

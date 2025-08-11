@@ -19,7 +19,7 @@ localVue.use(VueRouter);
 localVue.use(PiniaVuePlugin);
 const router = new VueRouter();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({})),
     useRouter: vi.fn(() => ({})),
 }));

@@ -18,7 +18,7 @@ import type { ZoomTransform } from "d3-zoom";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
 import type { Creator, RefactorRequestAction } from "@/api/workflows";

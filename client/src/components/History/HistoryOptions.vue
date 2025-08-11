@@ -21,7 +21,7 @@ import axios from "axios";
 import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { canMutateHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useToast } from "@/composables/toast";

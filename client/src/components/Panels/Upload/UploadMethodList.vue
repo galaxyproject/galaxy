@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 // @ts-ignore missing types
 import Vue2Teleport from "vue2-teleport";
 

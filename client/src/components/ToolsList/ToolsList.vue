@@ -2,8 +2,8 @@
 import { faBars, faGripVertical, faSitemap, faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, onMounted, type Ref, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
 import { type ListViewMode, useUserStore } from "@/stores/userStore";

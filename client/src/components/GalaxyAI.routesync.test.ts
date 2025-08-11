@@ -41,7 +41,7 @@ vi.mock("@/api/client", () => ({
 }));
 
 // Center (route) mode: the component keeps the /galaxyai/<exchange> path in sync.
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => routeMock,
     useRouter: () => routerMock,
 }));

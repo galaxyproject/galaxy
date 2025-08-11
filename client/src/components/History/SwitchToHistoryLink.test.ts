@@ -26,7 +26,7 @@ const mockApplyFilters = vi.fn();
 const mockWindowOpen = vi.fn(() => null);
 const mockGetHistoryLoadError = vi.fn(() => null as Error | null);
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         resolve: (route: string) => ({
             href: `resolved-${route}`,

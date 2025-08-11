@@ -9,7 +9,7 @@ import VisualizationDisplay from "./VisualizationDisplay.vue";
 
 const guards = { leave: undefined, update: undefined };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     onBeforeRouteLeave: (guard) => (guards.leave = guard),
     onBeforeRouteUpdate: (guard) => (guards.update = guard),
 }));

@@ -13,7 +13,7 @@ const mockPush = vi.fn();
 const mockFrameAdd = vi.fn();
 let mockRoute: { path: string; params: Record<string, string> } = { path: "/", params: {} };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({ push: mockPush }),
     useRoute: () => mockRoute,
 }));

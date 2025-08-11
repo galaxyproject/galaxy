@@ -3,7 +3,7 @@ import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";

@@ -12,7 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import JobState from "./JobState.vue";
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({})),
 }));
 

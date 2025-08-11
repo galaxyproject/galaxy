@@ -12,7 +12,7 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 const mockOnBeforeRouteLeave = vi.fn();
 const mockOnBeforeRouteUpdate = vi.fn();
 const mockPush = vi.fn();
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     onBeforeRouteLeave: (guard: unknown) => mockOnBeforeRouteLeave(guard),
     onBeforeRouteUpdate: (guard: unknown) => mockOnBeforeRouteUpdate(guard),
     useRouter: vi.fn(() => ({

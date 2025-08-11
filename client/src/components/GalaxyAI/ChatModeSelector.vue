@@ -3,7 +3,7 @@ import { faAngleDoubleDown, faColumns, faExpand } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore.js";

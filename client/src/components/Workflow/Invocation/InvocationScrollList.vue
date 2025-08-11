@@ -4,7 +4,7 @@ import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { getData } from "@/components/Grid/configs/invocations";
