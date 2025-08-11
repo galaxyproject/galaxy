@@ -121,7 +121,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
             return { fetchedElements, elementOffset: offset };
         } catch (error) {
-            loadingCollectionElementsErrors.value[collectionKey] = error;
+            loadingCollectionElementsErrors.value[collectionKey] = error as Error;
         } finally {
             delete loadingCollectionElements.value[collectionKey];
         }
@@ -213,7 +213,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             saveCollection(collection);
             return collection;
         } catch (error) {
-            loadingCollectionElementsErrors.value[params.id] = error;
+            loadingCollectionElementsErrors.value[params.id] = error as Error;
         } finally {
             delete loadingCollectionElements.value[params.id];
         }
