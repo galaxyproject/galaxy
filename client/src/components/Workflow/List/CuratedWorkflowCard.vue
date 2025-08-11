@@ -2,7 +2,7 @@
 import { faCheck, faExclamationTriangle, faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";

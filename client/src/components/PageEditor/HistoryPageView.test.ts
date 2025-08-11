@@ -20,7 +20,7 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const mockPush = vi.fn();
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: vi.fn(() => ({
         push: mockPush,
     })),

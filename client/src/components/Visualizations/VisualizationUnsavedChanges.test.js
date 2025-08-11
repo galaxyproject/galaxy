@@ -14,7 +14,7 @@ const PLUGIN = {
 
 vi.mock("axios", () => ({ default: { get: vi.fn(async () => ({ data: PLUGIN })) } }));
 vi.mock("@/onload/loadConfig", () => ({ getAppRoot: () => "/" }));
-vi.mock("vue-router/composables", () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn() }));
+vi.mock("vue-router", () => ({ onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn() }));
 vi.mock("@/api", async (importOriginal) => ({
     ...(await importOriginal()),
     GalaxyApi: () => ({ GET: async () => ({ data: null, error: null }) }),

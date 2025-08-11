@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";

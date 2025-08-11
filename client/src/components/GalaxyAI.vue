@@ -3,7 +3,7 @@ import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";

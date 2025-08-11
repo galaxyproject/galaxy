@@ -19,7 +19,7 @@ let mockRoute: { path: string; params: Record<string, string>; query: Record<str
     query: {},
 };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({ push: mockPush }),
     useRoute: () => mockRoute,
 }));

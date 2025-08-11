@@ -31,7 +31,7 @@ vi.mock("@/composables/config", () => ({
 const mockPush = vi.fn().mockResolvedValue(undefined);
 /** Stands in for the modal's exposed guard; runs the navigation straight through by default. */
 const mockGuardNavigation = vi.fn((navigate: () => void) => navigate());
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: vi.fn(() => ({
         push: mockPush,
     })),

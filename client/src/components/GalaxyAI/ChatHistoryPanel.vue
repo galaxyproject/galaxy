@@ -4,7 +4,7 @@ import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-i
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";

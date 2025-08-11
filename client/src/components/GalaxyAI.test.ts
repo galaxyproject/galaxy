@@ -69,7 +69,7 @@ vi.mock("@/composables/usePageProposals", () => ({
     }),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => ({ path: "/", params: {}, query: {} }),
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));

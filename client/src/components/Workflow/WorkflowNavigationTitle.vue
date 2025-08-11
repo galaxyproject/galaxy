@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { userOwnsHistory } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";

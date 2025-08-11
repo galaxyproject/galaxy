@@ -13,7 +13,7 @@ import TEST_JOBS_JSON from "./test/json/jobs.json";
 
 import JobStepJobs from "./JobStepJobs.vue";
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({})),
     useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));

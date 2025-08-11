@@ -14,7 +14,7 @@
 import type VueRouter from "vue-router";
 import type { RawLocation } from "vue-router";
 import { isNavigationFailure } from "vue-router";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";

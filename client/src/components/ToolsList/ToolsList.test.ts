@@ -54,7 +54,7 @@ const routerPushMock = vi.fn();
 // The component reads the router via `useRouter()` (mocked here) while child
 // components (e.g. GButton's `<RouterLink>`) need a real router on the mount
 // option to render — keep both wired up.
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: routerPushMock,
     }),

@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { RequestedTool, UserNotification } from "@/api/notifications";
 import type { CardAction, TitleIcon } from "@/components/Common/GCard.types";

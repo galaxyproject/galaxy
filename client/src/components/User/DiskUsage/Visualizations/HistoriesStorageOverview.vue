@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faBurn } from "@fortawesome/free-solid-svg-icons";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
