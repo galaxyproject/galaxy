@@ -5,10 +5,6 @@
 
 var jQuery = require("jqueryVendor");
 
-// Make jQuery available globally for plugins
-window.jQuery = jQuery;
-window.$ = jQuery;
-
 // Use webpack 5 imports-loader syntax to inject jQuery into plugins
 require("imports-loader?wrapper=window&imports=default|jqueryVendor|jQuery!./jquery/jquery.autocomplete");
 require("imports-loader?wrapper=window&imports=default|jqueryVendor|jQuery!./jquery/jquery.event.hover");
