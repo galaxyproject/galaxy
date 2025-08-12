@@ -114,9 +114,9 @@ function userTitle(title: string) {
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
+                v-model:filter-text="filter"
                 :loading="historiesLoading || loading"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
             <section v-if="!showAdvanced">
                 <BButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
@@ -140,6 +140,6 @@ function userTitle(title: string) {
             </BBadge>
         </div>
 
-        <HistoryList v-show="!showAdvanced" multiple :filter="filter" :loading.sync="loading" @setFilter="setFilter" />
+        <HistoryList v-show="!showAdvanced" multiple :filter="filter" v-model:loading="loading" @setFilter="setFilter" />
     </ActivityPanel>
 </template>

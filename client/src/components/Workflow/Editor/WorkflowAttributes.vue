@@ -47,7 +47,7 @@
                 target="workflow-annotation"
                 boundary="window"
                 placement="right"
-                :show.sync="showAnnotationHightlight"
+                v-model:show="showAnnotationHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="annotationBestPracticeMessage">
@@ -64,7 +64,7 @@
                 target="license-selector"
                 boundary="window"
                 placement="right"
-                :show.sync="showLicenseHightlight"
+                v-model:show="showLicenseHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningLicense">
@@ -81,7 +81,7 @@
                 target="creator-editor"
                 boundary="window"
                 placement="right"
-                :show.sync="showCreatorHightlight"
+                v-model:show="showCreatorHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningCreator">
@@ -126,7 +126,7 @@
                 target="workflow-readme"
                 boundary="window"
                 placement="right"
-                :show.sync="showReadmeHightlight"
+                v-model:show="showReadmeHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningReadme">

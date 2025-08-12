@@ -13,7 +13,7 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
+        <SaveChangesModal v-model:nav-url="navUrl" v-model:show-modal="showSaveChangesModal" @on-proceed="onNavigate" />
         <b-modal
             v-model="showSaveAsModal"
             title="Save As a New Workflow"
@@ -88,7 +88,7 @@
                     :doi="doi"
                     :logo-url="logoUrl"
                     :help="help"
-                    :readme-active.sync="readmeActive"
+                    v-model:readme-active="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"

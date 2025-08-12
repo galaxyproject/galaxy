@@ -50,7 +50,7 @@
             hover
             :fields="fields"
             :items="librariesList"
-            :sort-by.sync="sortBy"
+            v-model:sort-by="sortBy"
             :per-page="perPage"
             :current-page="currentPage"
             show-empty
@@ -76,7 +76,7 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.description"
-                    :changed-value.sync="item[newDescriptionProperty]"
+                    v-model:changed-value="item[newDescriptionProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(synopsis)="{ item }">
@@ -85,7 +85,7 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.synopsis"
-                    :changed-value.sync="item[newSynopsisProperty]"
+                    v-model:changed-value="item[newSynopsisProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
