@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount } from "@vue/test-utils";
+import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { suppressErrorForCustomIcons } from "tests/jest/helpers";
 import { nextTick, reactive, ref } from "vue";
@@ -153,7 +153,7 @@ describe("WorkflowComment", () => {
             },
         });
 
-        const textComment = wrapper.findComponent(TextComment);
+        const textComment = wrapper.findComponent(TextComment) as VueWrapper;
 
         textComment.vm.$emit("change", "abc");
         expect(changeData).toBeCalledWith(123, "abc");
@@ -183,7 +183,7 @@ describe("WorkflowComment", () => {
             },
         });
 
-        const textComment = wrapper.findComponent(TextComment);
+        const textComment = wrapper.findComponent(TextComment) as VueWrapper;
 
         textComment.vm.$emit("pan-by", { x: 50, y: 50 });
         expect(wrapper.emitted()["pan-by"]?.[0]?.[0]).toEqual({ x: 50, y: 50 });
