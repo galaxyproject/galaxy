@@ -60,7 +60,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />

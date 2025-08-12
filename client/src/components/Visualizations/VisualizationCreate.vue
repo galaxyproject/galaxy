@@ -87,7 +87,7 @@ defineExpose({ doQuery });
                 v-if="extensions && extensions.length > 0"
                 :extensions="extensions"
                 formats-button-id="vis-create-ext"
-                :formats-visible.sync="formatsVisible" />
+                v-model:formats-visible="formatsVisible" />
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>

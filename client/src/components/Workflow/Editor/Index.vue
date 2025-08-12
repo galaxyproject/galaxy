@@ -18,10 +18,10 @@
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            :show-modal.sync="showSaveChangesModal"
+            v-model:show-modal="showSaveChangesModal"
             @on-proceed="onNavigate" />
         <GModal
-            :show.sync="showSaveAsModal"
+            v-model:show="showSaveAsModal"
             confirm
             size="small"
             data-description="save-as-modal"
@@ -101,7 +101,7 @@
                     :doi="doi"
                     :logo-url="logoUrl"
                     :help="help"
-                    :readme-active.sync="readmeActive"
+                    v-model:readme-active="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
