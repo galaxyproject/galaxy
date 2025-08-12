@@ -1,5 +1,5 @@
 import { createPinia } from "pinia";
-import { createApp } from "vue";
+import { configureCompat, createApp } from "@vue/compat";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { initGalaxyInstance } from "@/app";
@@ -10,8 +10,7 @@ import { getRouter } from "./router";
 
 import App from "./App.vue";
 
-// Import and configure compat mode
-import { configureCompat } from "vue";
+// Configure compat mode
 configureCompat({
     MODE: 2,
 });
