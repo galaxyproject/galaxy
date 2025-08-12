@@ -1,5 +1,5 @@
 import { createPinia } from "pinia";
-import { createApp } from "vue";
+import { configureCompat, createApp } from "@vue/compat";
 
 import { addInitialization, standardInit } from "@/onload";
 
@@ -7,8 +7,7 @@ import { getRouter } from "./router";
 
 import App from "./App.vue";
 
-// Import and configure compat mode
-import { configureCompat } from "vue";
+// Configure compat mode
 configureCompat({
     MODE: 2,
 });
