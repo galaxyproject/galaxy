@@ -44,7 +44,7 @@ const selectionText = computed(() => {
 
 <template>
     <span class="filter-objectstore-link">
-        <GModal size="small" :show.sync="showModal" title="Select a storage source to filter by">
+        <GModal size="small" v-model:show="showModal" title="Select a storage source to filter by">
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
         </GModal>
         <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>

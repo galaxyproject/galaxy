@@ -106,8 +106,8 @@ watch(
             v-else
             :jobs="currentStateJobs"
             :invocation-id="props.invocationId"
-            :current-page.sync="currentPage"
-            :sort-desc.sync="sortDesc"
+            v-model:current-page="currentPage"
+            v-model:sort-desc="sortDesc"
             :per-page="PER_PAGE" />
     </div>
 </template>

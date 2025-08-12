@@ -114,7 +114,7 @@ function setFilterValue(newFilter: string, newValue: string) {
         size="small"
         :overflow-visible="showAdvanced"
         :fixed-height="!showAdvanced"
-        :show.sync="propShowModal"
+        v-model:show="propShowModal"
         :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
@@ -122,9 +122,9 @@ function setFilterValue(newFilter: string, newValue: string) {
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
+                v-model:filter-text="filter"
                 :loading="busy"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
         </BFormGroup>
 
         <HistoryList
@@ -133,10 +133,10 @@ function setFilterValue(newFilter: string, newValue: string) {
             :selected-histories="selectedHistories"
             :additional-options="props.additionalOptions"
             :hide-deleted="props.hideDeleted"
-            :show-modal.sync="propShowModal"
+            v-model:show-modal="propShowModal"
             in-modal
             :filter="filter"
-            :loading.sync="busy"
+            v-model:loading="busy"
             @selectHistory="selectHistory"
             @setFilter="setFilterValue">
             <template v-slot:footer-button-area>

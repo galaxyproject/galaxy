@@ -245,7 +245,7 @@ function updateFilterText(newFilterText: string) {
                 (props.view === 'popover' && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced
             "
             class="mt-2"
-            :show.sync="localAdvancedToggle"
+            v-model:show="localAdvancedToggle"
             :target="toggleMenuButton"
             placement="bottomleft"
             data-description="advanced filters"
@@ -355,7 +355,7 @@ function updateFilterText(newFilterText: string) {
                     v-if="props.hasHelp"
                     fixed-height
                     size="small"
-                    :show.sync="showHelp"
+                    v-model:show="showHelp"
                     :title="`${capitalizeFirstLetter(props.name)} Advanced Search Help`">
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>

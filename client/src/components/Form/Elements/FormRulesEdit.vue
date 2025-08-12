@@ -86,7 +86,7 @@ function onCancel() {
         <GAlert v-if="loadError" variant="danger" dismissible @dismissed="loadError = undefined">
             {{ loadError }}
         </GAlert>
-        <GModal :show.sync="showModal" title="Build Rules for Applying to Existing Collection" size="medium">
+        <GModal v-model:show="showModal" title="Build Rules for Applying to Existing Collection" size="medium">
             <!-- Note: We need the v-if="showModal" here because the rules do not appear inline with 
             the table otherwise. -->
             <RuleCollectionBuilder

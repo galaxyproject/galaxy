@@ -1146,7 +1146,7 @@ const noOptionsWarningMessage = computed(() => {
                 :multiple="Boolean(currentVariant?.multiple)"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
-                :workflow-tab.sync="workflowTab"
+                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions"
                 @on-browse="onBrowse"
@@ -1217,7 +1217,7 @@ const noOptionsWarningMessage = computed(() => {
                 :extensions="props.extensions"
                 :multiple="Boolean(currentVariant?.multiple)"
                 show-view-create-options
-                :workflow-tab.sync="workflowTab"
+                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions" />
         </div>
@@ -1227,7 +1227,7 @@ const noOptionsWarningMessage = computed(() => {
                 v-if="restrictsExtensions"
                 :extensions="props.extensions"
                 :formats-button-id="formatsButtonId"
-                :formats-visible.sync="formatsVisible" />
+                v-model:formats-visible="formatsVisible" />
 
             <FormSelectionPreference
                 v-if="showSelectionPreference"
@@ -1277,7 +1277,7 @@ const noOptionsWarningMessage = computed(() => {
             :collection-type="currentCollectionTypeTab"
             :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
-            :workflow-tab.sync="workflowTab"
+            v-model:workflow-tab="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="handleUploadedDataOptions" />
     </div>

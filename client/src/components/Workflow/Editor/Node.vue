@@ -74,7 +74,7 @@
                 :target="popoverId"
                 triggers="hover"
                 placement="bottom"
-                :show.sync="popoverShow">
+                v-model:show="popoverShow">
                 <div>
                     <Recommendations
                         v-if="popoverShow"

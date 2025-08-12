@@ -475,7 +475,7 @@ function stepKind(job: ExtractionRow): string {
             :rename-action="renameOutput"
             @close="outputRenameTarget = null" />
 
-        <GModal :show.sync="showJobModal" title="View Job" fixed-height size="medium" @close="viewedJobId = null">
+        <GModal v-model:show="showJobModal" title="View Job" fixed-height size="medium" @close="viewedJobId = null">
             <JobDetails v-if="viewedJobId" :job-id="viewedJobId" />
         </GModal>
     </div>

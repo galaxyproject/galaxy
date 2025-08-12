@@ -1321,7 +1321,7 @@ initializeWorkflowEditor();
             :version="version ?? undefined"
             :versions="versions"
             :refactor-actions="refactorActions"
-            :loading.sync="loadingWorkflow"
+            v-model:loading="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
             @onRefactor="onRefactor"
             @onShow="hideErrorModal" />
@@ -1338,11 +1338,11 @@ initializeWorkflowEditor();
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            :show-modal.sync="showSaveChangesModal"
+            v-model:show-modal="showSaveChangesModal"
             @on-proceed="onNavigate" />
 
         <GModal
-            :show.sync="showSaveAsModal"
+            v-model:show="showSaveAsModal"
             confirm
             size="small"
             data-description="save-as-modal"
@@ -1410,7 +1410,7 @@ initializeWorkflowEditor();
                     v-else-if="isActive('workflow-editor-attributes')"
                     :id="id"
                     :tags="tags"
-                    :highlight.sync="highlightAttribute"
+                    v-model:highlight="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -1421,7 +1421,7 @@ initializeWorkflowEditor();
                     :doi="doi || undefined"
                     :logo-url="logoUrl"
                     :help="help"
-                    :readme-active.sync="readmeActive"
+                    v-model:readme-active="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"

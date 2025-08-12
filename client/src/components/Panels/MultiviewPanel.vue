@@ -119,9 +119,9 @@ function userTitle(title: string) {
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
+                v-model:filter-text="filter"
                 :loading="historiesLoading || loading"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
             <section v-if="!showAdvanced">
                 <GButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
@@ -153,7 +153,7 @@ function userTitle(title: string) {
             v-show="!showAdvanced"
             multiple
             :filter="filter"
-            :loading.sync="loading"
+            v-model:loading="loading"
             :pinned-order-reset-key="pinnedOrderResetKey"
             @setFilter="setFilter" />
     </ActivityPanel>

@@ -28,7 +28,7 @@
 
                 <BRow>
                     <BCol>
-                        <GButton :pressed.sync="showCommandLine" outline>
+                        <GButton v-model:pressed="showCommandLine" outline>
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
                         </GButton>
                     </BCol>
@@ -53,7 +53,7 @@
                         <GButton
                             v-if="!showCommandLine"
                             outline
-                            :pressed.sync="row.detailsShowing"
+                            v-model:pressed="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </GButton>

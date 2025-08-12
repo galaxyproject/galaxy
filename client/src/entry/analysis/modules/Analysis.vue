@@ -100,7 +100,7 @@ onUnmounted(() => {
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
@@ -115,7 +115,7 @@ onUnmounted(() => {
             v-if="showPanels && isRightPanelOpen"
             panel-id="chat-panel"
             side="right"
-            :reactive-width.sync="chatPanelWidth"
+            v-model:reactive-width="chatPanelWidth"
             @close="chatStore.hideChat()">
             <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>

@@ -42,14 +42,14 @@ function openGraph(history: HistorySummary) {
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
+                v-model:filter-text="filter"
                 :loading="historiesLoading || loading"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
         </template>
         <HistoryScrollList
             v-show="!showAdvanced"
             :filter="filter"
-            :loading.sync="loading"
+            v-model:loading="loading"
             :current-item-id="highlightId"
             hide-deleted
             @setFilter="setFilter"

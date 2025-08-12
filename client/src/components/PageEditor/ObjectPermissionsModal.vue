@@ -27,7 +27,7 @@ const localShowToggle = computed({
 </script>
 
 <template>
-    <GModal :show.sync="localShowToggle" :title="PERMISSIONS_LABELS.modalTitle" size="small">
+    <GModal v-model:show="localShowToggle" :title="PERMISSIONS_LABELS.modalTitle" size="small">
         <ObjectPermissions :markdown-content="markdownContent" />
     </GModal>
 </template>

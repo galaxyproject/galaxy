@@ -96,7 +96,7 @@ async function relocate(objectStoreId: string) {
 
 <template>
     <span class="storage-relocate-link d-flex justify-content-center">
-        <GModal v-if="currentObjectStore" size="small" :show.sync="showModal" title="Relocate Dataset">
+        <GModal v-if="currentObjectStore" size="small" v-model:show="showModal" title="Relocate Dataset">
             <LoadingOverlay v-if="relocating" />
             <GAlert v-if="relocationError">
                 {{ relocationError }}

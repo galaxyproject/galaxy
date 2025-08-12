@@ -404,12 +404,12 @@ onMounted(() => {
                 id="workflow-list-filter"
                 name="workflows"
                 :filter-class="workflowFilters"
-                :filter-text.sync="filterText"
+                v-model:filter-text="filterText"
                 :loading="loading || overlay"
                 has-help
                 view="compact"
                 :placeholder="localize(searchPlaceHolder)"
-                :show-advanced.sync="showAdvanced">
+                v-model:show-advanced="showAdvanced">
                 <template v-slot:menu-help-text>
                     <div v-sanitize-html="helpHtml(activeList, userStore.isAnonymous)"></div>
                 </template>

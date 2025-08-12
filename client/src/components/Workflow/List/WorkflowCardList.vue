@@ -128,7 +128,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             @close="onRenameClose" />
 
         <GModal
-            :show.sync="showPreview"
+            v-model:show="showPreview"
             size="large"
             title="Workflow Preview"
             fixed-height
