@@ -65,6 +65,9 @@ module.exports = (env = {}, argv = {}) => {
             clean: true,
         },
         resolve: {
+            alias: {
+                vue: "@vue/compat",
+            },
             plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],
             extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
