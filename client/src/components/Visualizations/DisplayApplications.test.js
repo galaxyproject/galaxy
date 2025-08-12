@@ -4,16 +4,16 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import DisplayApplications from "./DisplayApplications";
 
-const localVue = getLocalVue();
-
 describe("DisplayApplications", () => {
     let wrapper;
 
     beforeEach(() => {
+        const globalConfig = getLocalVue();
         wrapper = mount(DisplayApplications, {
             propsData: {
                 datasetId: "dataset-id",
             },
+            ...globalConfig,
             stubs: {
                 DatasetProvider: MockProvider({
                     result: {
@@ -47,20 +47,19 @@ describe("DisplayApplications", () => {
                     },
                 }),
             },
-            localVue,
         });
     });
 
     it("check props", async () => {
         const labels = wrapper.findAll(".font-weight-bold");
         for (let i = 0; i < 2; i++) {
-            expect(labels.at(i).text()).toBe(`app-${i + 1}`);
+            expect(labels[i].text()).toBe(`app-${i + 1}`);
         }
         const links = wrapper.findAll("a");
         for (let i = 0; i < 3; i++) {
-            expect(links.at(i).attributes("href")).toBe(`link-href-${i + 1}`);
-            expect(links.at(i).attributes("target")).toBe(`link-target-${i + 1}`);
-            expect(links.at(i).text()).toBe(`link-text-${i + 1}`);
+            expect(links[i].attributes("href")).toBe(`link-href-${i + 1}`);
+            expect(links[i].attributes("target")).toBe(`link-target-${i + 1}`);
+            expect(links[i].text()).toBe(`link-text-${i + 1}`);
         }
     });
 });

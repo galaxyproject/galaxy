@@ -6,15 +6,17 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./FormSelection.vue";
 
-const localVue = getLocalVue(true);
-
 function createTarget(propsData) {
     const pinia = createTestingPinia();
+    const globalConfig = getLocalVue(true);
 
     return mount(MountTarget, {
-        localVue,
+        ...globalConfig,
         propsData,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
+        },
     });
 }
 
@@ -30,7 +32,7 @@ function testDefaultOptions(wrapper) {
     const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
     for (let i = 0; i < options.length; i++) {
-        expect(options.at(i).text()).toBe(`label_${i + 1}`);
+        expect(options[i].text()).toBe(`label_${i + 1}`);
     }
 }
 
