@@ -100,7 +100,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         const jobsContents = wrapper.findAll(SELECTORS.JOB_CONTENT);
         expect(jobsContents.length).toBe(jobs.length);
 
-        liTabs.wrappers.forEach((liTab, i) => {
+        liTabs.forEach((liTab, i) => {
             expect(jobs[i]).toBeTruthy();
             expect(liTab.text()).toEqual(jobs[i]?.state);
             // expect the first job to be shown and rest to be hidden
@@ -113,7 +113,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         await flushPromises();
 
         // expect the second job to be shown and rest to be hidden
-        jobsContents.wrappers.forEach((jobContent, i) => {
+        jobsContents.forEach((jobContent, i) => {
             expect(jobContent.attributes("style")).toEqual(i === 1 ? "" : "display: none;");
             expect(liTabs[i].attributes("aria-selected")).toEqual(i === 1 ? "true" : "false");
         });

@@ -88,7 +88,7 @@ describe("CleanupResultDialog.vue", () => {
         expect(wrapper.find(SUCCESS_INFO).exists()).toBe(false);
         expect(wrapper.find(PARTIAL_SUCCESS_INFO).exists()).toBe(true);
         expect(wrapper.find(ERRORS_TABLE).exists()).toBe(true);
-        expect(wrapper.findAll("tbody > tr").wrappers.length).toBe(partialSuccessResult.errors.length);
+        expect(wrapper.findAll("tbody > tr").length).toBe(partialSuccessResult.errors.length);
     });
 
     it("should display a success message when everything went OK", async () => {
