@@ -53,7 +53,7 @@ describe("JobParameters/JobParameters.vue", () => {
         await flushPromises();
 
         const checkTableParameter = (
-            element: Wrapper<any>,
+            element: any,
             expectedTitle: string,
             expectedValue: string | { hid: number; name: string },
             link?: string,
