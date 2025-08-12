@@ -1,16 +1,17 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
 import StatelessTags from "./StatelessTags";
 
 describe("Tags/StatelessTags.vue", () => {
-    const localVue = createLocalVue();
 
     const testTags = ["abc", "def", "ghi"];
     let wrapper;
     let emitted;
 
     beforeEach(async () => {
-        wrapper = mount(StatelessTags, { localVue });
+        const globalConfig = getLocalVue();
+        wrapper = mount(StatelessTags, globalConfig);
         await wrapper.setProps({
             value: testTags,
         });
@@ -21,21 +22,21 @@ describe("Tags/StatelessTags.vue", () => {
         const tags = wrapper.findAll(".ti-tag-center");
         expect(tags.length).toBe(testTags.length);
         for (let i = 0; i < testTags.length; i++) {
-            expect(tags.at(i).element.tagName).toBe("DIV");
-            expect(tags.at(i).text()).toBe(testTags[i]);
+            expect(tags[i].element.tagName).toBe("DIV");
+            expect(tags[i].text()).toBe(testTags[i]);
         }
     });
 
     it("should emit a click event when the tag is clicked", () => {
         const tags = wrapper.findAll(".ti-tag-center > div");
-        tags.at(0).trigger("click");
+        tags[0].trigger("click");
         expect(emitted["tag-click"]).toBeTruthy();
         expect(emitted["tag-click"].length).toBe(1);
     });
 
     it("should emit a tag model payload when tag is clicked", () => {
         const tags = wrapper.findAll(".ti-tag-center > div");
-        tags.at(0).trigger("click");
+        tags[0].trigger("click");
         const firstEvent = emitted["tag-click"][0];
         const firstArg = firstEvent[0];
         expect(firstArg.text).toBe(testTags[0]);

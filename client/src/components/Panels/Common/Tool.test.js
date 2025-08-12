@@ -3,18 +3,17 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Tool from "./Tool";
 
-const localVue = getLocalVue();
-
 describe("Tool", () => {
     test("test tool", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {},
             },
-            localVue,
+            ...globalConfig,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("");
+        expect(nameElement[0].text()).toBe("");
         nameElement.trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
@@ -25,6 +24,7 @@ describe("Tool", () => {
         expect(wrapper.emitted().onOperation).toBeDefined();
     });
     test("test tool operation", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
@@ -33,10 +33,10 @@ describe("Tool", () => {
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
-            localVue,
+            ...globalConfig,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
+        expect(nameElement[0].text()).toBe("name");
         const operationElement = wrapper.find(".operation");
         expect(operationElement.classes()).toEqual(expect.arrayContaining(["operationIconClass"]));
         const title = operationElement.attributes("title");
