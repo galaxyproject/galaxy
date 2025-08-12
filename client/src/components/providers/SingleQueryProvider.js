@@ -53,7 +53,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
         mounted() {
             this.doQuery();
         },
-        destroyed() {
+        unmounted() {
             if (this.timeoutId) {
                 clearTimeout(this.timeoutId);
             }
