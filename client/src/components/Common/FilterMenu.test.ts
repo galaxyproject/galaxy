@@ -199,7 +199,7 @@ describe("FilterMenu", () => {
             expect(radioBtnGrp[i].attributes("value")).toBe(options[i]?.value);
             expect(radioBtnGrp[i].attributes("checked")).toBe(undefined);
         }
-        await radioBtnGrp[1].find("input").setChecked(); // click "Yes"
+        await radioBtnGrp[1].find("input").setValue(true); // click "Yes"
         // boolean filter
         const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
@@ -207,7 +207,7 @@ describe("FilterMenu", () => {
         expect(boolBtnGrp[0].attributes("value")).toBe("true");
         expect(boolBtnGrp[1].text()).toBe("No");
         expect(boolBtnGrp[1].attributes("value")).toBe("any");
-        await boolBtnGrp[1].find("input").setChecked(); // click "No"
+        await boolBtnGrp[1].find("input").setValue(true); // click "No"
 
         // perform search
         await performSearch();
@@ -237,7 +237,7 @@ describe("FilterMenu", () => {
         let deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
         expect(deletedFilterActiveBtn.text()).toBe("No");
 
-        await deletedFilterAnyBtn.find("input").setChecked();
+        await deletedFilterAnyBtn.find("input").setValue(true);
 
         // now active button for deleted filter should be "Any"
         deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
@@ -260,7 +260,7 @@ describe("FilterMenu", () => {
         let visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
         expect(visibleFilterActiveBtn.text()).toBe("Yes");
 
-        await visibleFilterAnyBtn.find("input").setChecked();
+        await visibleFilterAnyBtn.find("input").setValue(true);
 
         // now active button for visible filter should be "Any"
         visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
@@ -295,7 +295,7 @@ describe("FilterMenu", () => {
 
         // -------- Testing deleted filter first:  ---------
         const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
-        await deletedFilterCheckbox.setChecked();
+        await deletedFilterCheckbox.setValue(true);
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });
 });
