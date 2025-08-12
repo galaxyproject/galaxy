@@ -232,9 +232,9 @@ watch(
             class="mb-2"
             name="Credentials Groups"
             :filter-class="credentialsFilterClass"
-            :filter-text.sync="filterText"
+            v-model:filter-text="filterText"
             :loading="isBusy"
-            :show-advanced.sync="showAdvanced"
+            v-model:show-advanced="showAdvanced"
             placeholder="Search credentials groups by name, tool, or service" />
 
         <GAlert v-if="isBusy" show>

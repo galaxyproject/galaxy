@@ -120,7 +120,7 @@ initializePanel();
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
-            :show-favorites.sync="showFavorites"
+            v-model:show-favorites="showFavorites"
             :favorites-default="isMyPanel"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool" />

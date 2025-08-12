@@ -257,9 +257,9 @@ onBeforeUnmount(() => {
                     view="compact"
                     placeholder="search failed/skipped items"
                     :filter-class="runItemFilterClass"
-                    :filter-text.sync="filterText"
+                    v-model:filter-text="filterText"
                     :loading="isLoadingItems"
-                    :show-advanced.sync="showAdvanced" />
+                    v-model:show-advanced="showAdvanced" />
 
                 <LoadingSpan v-if="isLoadingItems" class="mb-2" :message="localize('Loading failed/skipped items')" />
 

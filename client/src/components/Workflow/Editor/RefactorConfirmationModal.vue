@@ -119,7 +119,7 @@ async function executeRefactoring() {
 <template>
     <GModal
         confirm
-        :show.sync="show"
+        v-model:show="show"
         title="Potential Issues Reworking Workflow"
         fixed-height
         ok-text="Proceed"

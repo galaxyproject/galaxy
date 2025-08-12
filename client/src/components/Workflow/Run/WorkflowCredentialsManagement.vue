@@ -17,7 +17,7 @@
  *
  * @component WorkflowCredentialsManagement
  * @example
- * <WorkflowCredentialsManagement :show.sync="showModal" :tool-identifiers="toolIdentifiers" />
+ * <WorkflowCredentialsManagement v-model:show="showModal" :tool-identifiers="toolIdentifiers" />
  */
 
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
@@ -146,7 +146,7 @@ function onSelectCredentials(): void {
 <template>
     <GModal
         confirm
-        :show.sync="localShowToggle"
+        v-model:show="localShowToggle"
         size="small"
         title="Manage & Select Credentials Groups for This Workflow"
         :ok-text="okTitle"

@@ -375,13 +375,13 @@ function onToggleView(newView: ListViewMode) {
                     name="Tools"
                     placeholder="search tools"
                     :debounce-delay="400"
-                    :filter-text.sync="filterText"
+                    v-model:filter-text="filterText"
                     :filter-class="ToolFilters"
                     :autocomplete-values="tagAutocompleteValues"
                     autocomplete-prefix="tag:"
                     has-help
                     :loading="loading"
-                    :show-advanced.sync="showAdvanced">
+                    v-model:show-advanced="showAdvanced">
                     <template v-slot:menu-help-text>
                         <div>
                             <p>

@@ -51,7 +51,7 @@ watch(
                 :collapsible="false"
                 :min-width="320"
                 :max-width="800"
-                :reactive-width.sync="documentationWidth">
+                v-model:reactive-width="documentationWidth">
                 <div class="custom-tool-documentation-pane">
                     <div class="custom-tool-documentation-controls">
                         <GButton

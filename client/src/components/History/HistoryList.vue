@@ -592,11 +592,11 @@ onMounted(async () => {
                 id="history-list-filter"
                 name="history-list-filter"
                 :filter-class="historyListFilters"
-                :filter-text.sync="filterText"
+                v-model:filter-text="filterText"
                 :loading="loading || overlay"
                 view="compact"
                 :placeholder="searchPlaceHolder"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
 
             <ListHeader
                 ref="listHeader"

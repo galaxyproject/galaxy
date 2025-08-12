@@ -112,7 +112,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         name="invocation"
         name-plural="invocations"
         :load-disabled="!currentUser || currentUser.isAnonymous"
-        :prop-scroll-top.sync="scrollListScrollTop">
+        v-model:prop-scroll-top="scrollListScrollTop">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"

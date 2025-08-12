@@ -32,7 +32,7 @@ const link = computed(() => props.historyExport.external_download_permanent_url)
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<GLink class="font-italic show-job-link" thin @click="() => (details = true)">view job details</GLink>)
         </i>
-        <GModal title="History Export Job" size="medium" :show.sync="details" data-description="job information modal">
+        <GModal title="History Export Job" size="medium" v-model:show="details" data-description="job information modal">
             <JobInformation :job-id="historyExport.job_id" :include-times="true" />
         </GModal>
     </span>

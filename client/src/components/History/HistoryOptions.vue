@@ -271,10 +271,10 @@ watch(
             </GDropdownItem>
         </GDropdown>
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
+        <CopyModal :history="history" v-model:show-modal="showCopyModal" />
 
         <GModal
-            :show.sync="showDeleteModal"
+            v-model:show="showDeleteModal"
             :title="localize(isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?')"
             :ok-text="localize(isDeletedNotPurged ? 'Delete Permanently' : 'Delete')"
             ok-color="red"

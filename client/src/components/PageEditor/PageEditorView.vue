@@ -203,7 +203,7 @@ function handleRevisionRestore(revisionId: string) {
         <template v-else-if="store.hasCurrentPage">
             <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
                 <template v-if="isStandalone" v-slot:extra-actions>
-                    <ObjectPermissionsModal :show.sync="showPermissions" :markdown-content="store.currentContent" />
+                    <ObjectPermissionsModal v-model:show="showPermissions" :markdown-content="store.currentContent" />
                     <GButton
                         color="blue"
                         outline
@@ -241,7 +241,7 @@ function handleRevisionRestore(revisionId: string) {
                 <GModal
                     data-description="page revisions modal"
                     fixed-height
-                    :show.sync="store.showRevisions"
+                    v-model:show="store.showRevisions"
                     size="small"
                     :title="`${labels.entityName} Revisions`">
                     <template v-slot:header>

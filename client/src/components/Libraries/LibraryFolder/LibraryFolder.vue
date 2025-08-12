@@ -4,7 +4,7 @@
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            :include-deleted.sync="includeDeleted"
+            v-model:include-deleted="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"

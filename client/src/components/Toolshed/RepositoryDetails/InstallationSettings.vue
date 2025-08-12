@@ -1,7 +1,7 @@
 <template>
     <GModal
         id="repo-install-settings"
-        :show.sync="modalShow"
+        v-model:show="modalShow"
         size="small"
         :title="modalTitle"
         confirm

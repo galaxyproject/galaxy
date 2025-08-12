@@ -44,10 +44,10 @@
                         name="jobs"
                         placeholder="search jobs"
                         :filter-class="filterClass"
-                        :filter-text.sync="filter"
+                        v-model:filter-text="filter"
                         has-help
                         :loading="busy"
-                        :show-advanced.sync="showAdvanced">
+                        v-model:show-advanced="showAdvanced">
                         <template v-slot:menu-help-text>
                             <div>
                                 <p>This textbox box can be used to filter the jobs displayed.</p>

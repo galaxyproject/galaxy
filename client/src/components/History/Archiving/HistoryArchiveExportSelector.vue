@@ -210,7 +210,7 @@ function onArchiveHistoryWithExport() {
             Archive (and purge) history
         </GButton>
 
-        <GModal :show.sync="isExportDialogOpen" title="Export history to permanent storage" size="medium" fixed-height>
+        <GModal v-model:show="isExportDialogOpen" title="Export history to permanent storage" size="medium" fixed-height>
             <GTabs card vertical lazy scrollable-content class="export-option-tabs">
                 <GTab id="to-remote-file-tab" title="To Repository" active>
                     <p>

@@ -759,7 +759,7 @@ onBeforeMount(() => {
         </div>
 
         <GModal
-            :show.sync="showExportWizard"
+            v-model:show="showExportWizard"
             title="Configure Export on Completion"
             size="medium"
             @close="onExportWizardCancel">

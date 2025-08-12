@@ -234,7 +234,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
 </script>
 
 <template>
-    <GModal :show.sync="showProxy" title="Move Datasets to New Storage Location" size="medium" overflow-visible>
+    <GModal v-model:show="showProxy" title="Move Datasets to New Storage Location" size="medium" overflow-visible>
         <GAlert v-if="previewError" show variant="danger" dismissible class="mb-2" @dismissed="previewError = null">
             {{ previewError }}
         </GAlert>
