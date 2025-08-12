@@ -1,16 +1,16 @@
 /**
  * Unit test debugging utilities
  */
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { iconPlugin } from "components/plugins/icons";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
-import { PiniaVuePlugin } from "pinia";
+import { createPinia } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import _short from "@/components/plugins/short";
 
@@ -179,32 +179,41 @@ export const wait = (n) => {
     });
 };
 
-// Gets a localVue with custom directives
+// Gets Vue Test Utils global configuration for Vue 3
 export function getLocalVue(instrumentLocalization = false) {
-    const localVue = createLocalVue();
     const mockedDirective = {
-        bind(el, binding) {
+        beforeMount(el, binding) {
             el.setAttribute("data-mock-directive", binding.value || el.title);
         },
     };
-    localVue.use(PiniaVuePlugin);
-    localVue.use(BootstrapVue);
+    
     const l = instrumentLocalization ? testLocalize : _l;
-    localVue.use(localizationPlugin, l);
-    localVue.use(vueRxShortcutPlugin);
-    localVue.use(iconPlugin);
-    localVue.directive("b-tooltip", mockedDirective);
-    localVue.directive("b-popover", mockedDirective);
-    return localVue;
+    
+    // Return global config object for Vue Test Utils v2
+    return {
+        global: {
+            plugins: [
+                createPinia(),
+                BootstrapVue,
+                [localizationPlugin, l],
+                vueRxShortcutPlugin,
+                iconPlugin,
+            ],
+            directives: {
+                "b-tooltip": mockedDirective,
+                "b-popover": mockedDirective,
+            },
+        },
+    };
 }
 
 // Mounts a renderless component with sample content for testing
 export function mountRenderless(component, mountConfig = {}) {
-    const { localVue = getLocalVue(), ...otherConfig } = mountConfig;
+    const globalConfig = getLocalVue();
     return shallowMount(component, {
-        localVue,
-        ...otherConfig,
-        scopedSlots: {
+        ...globalConfig,
+        ...mountConfig,
+        slots: {
             default: "<div></div>",
         },
     });
@@ -287,11 +296,13 @@ export function mockUnprivilegedToolsRequest(server, http) {
 }
 
 /**
- * Return a new mocked out router attached the specified localVue instance.
+ * Return a new mocked out router for Vue 3.
  */
-export function injectTestRouter(localVue) {
-    localVue.use(VueRouter);
-    const router = new VueRouter();
+export function injectTestRouter() {
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [],
+    });
     return router;
 }
 
