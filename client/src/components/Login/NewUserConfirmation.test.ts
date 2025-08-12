@@ -44,7 +44,7 @@ describe("NewUserConfirmation", () => {
 
         expect(axiosMock.history.post?.length).toBe(0);
 
-        await checkField.setChecked();
+        await checkField.setValue(true);
 
         await submitButton.trigger("click");
 

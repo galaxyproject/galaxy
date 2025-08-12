@@ -159,7 +159,7 @@ describe("RDMDestinationSelector", () => {
     async function selectExportChoice(choice: string, fileSourceId?: string) {
         const suffix = fileSourceId ? `${fileSourceId}` : "any";
         const exportChoice = wrapper.find(`#radio-${choice}-${suffix}`);
-        await exportChoice.setChecked(true);
+        await exportChoice.setValue(true);
     }
 
     async function setRDMSourceInput(newValue: string) {

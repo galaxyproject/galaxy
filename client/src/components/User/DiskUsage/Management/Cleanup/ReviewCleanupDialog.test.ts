@@ -51,7 +51,7 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
 }
 
 async function setAllItemsChecked(wrapper: VueWrapper<any>) {
-    await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+    await wrapper.find(SELECT_ALL_CHECKBOX).setValue(true);
     await flushPromises();
 }
 
@@ -94,7 +94,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
         expect(permanentlyDeleteBtn.attributes().disabled).toBeTruthy();
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
         expect(permanentlyDeleteBtn.attributes().disabled).toBeFalsy();
     });
 
@@ -102,7 +102,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
         const allButtons = wrapper.findAll(".btn");
         const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
