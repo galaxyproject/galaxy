@@ -9,12 +9,11 @@ import StatelessTags from "./StatelessTags";
 const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
-const localVue = getLocalVue();
 
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
         propsData: props,
-        localVue,
+        ...getLocalVue(),
     });
 };
 
@@ -62,9 +61,9 @@ describe("StatelessTags", () => {
 
         const tags = wrapper.findAll(".tag");
         expect(tags.length).toBe(3);
-        expect(tags.at(0).text()).toBe("tag_1");
-        expect(tags.at(1).text()).toBe("tag_2");
-        expect(tags.at(2).text()).toBe("tags:tag_3");
+        expect(tags[0).text()).toBe("tag_1");
+        expect(tags[1).text()).toBe("tag_2");
+        expect(tags[2).text()).toBe("tags:tag_3");
     });
 
     it("formats named tags", () => {
@@ -74,9 +73,9 @@ describe("StatelessTags", () => {
         });
 
         const tags = wrapper.findAll(".tag");
-        expect(tags.at(0).text()).toBe("#tag_1");
-        expect(tags.at(1).text()).toBe("tag_2");
-        expect(tags.at(2).text()).toBe("#tag_3");
+        expect(tags[0).text()).toBe("#tag_1");
+        expect(tags[1).text()).toBe("tag_2");
+        expect(tags[2).text()).toBe("#tag_3");
     });
 
     it("shows autocomplete options", async () => {

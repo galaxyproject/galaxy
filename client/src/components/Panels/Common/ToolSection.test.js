@@ -13,8 +13,6 @@ useConfig.mockReturnValue({
     isConfigLoaded: true,
 });
 
-const localVue = getLocalVue();
-const pinia = createPinia();
 
 function sectionIsOpened(wrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
@@ -28,11 +26,14 @@ describe("ToolSection", () => {
                     name: "name",
                 },
             },
-            localVue,
-            pinia,
+            ...getLocalVue(),
+            global: {
+                ...getLocalVue().global,
+                plugins: [...(getLocalVue().global?.plugins || []), createPinia()],
+            },
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
+        expect(nameElement[0].text()).toBe("name");
         nameElement.trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
     });
@@ -52,15 +53,18 @@ describe("ToolSection", () => {
                     ],
                 },
             },
-            localVue,
-            pinia,
+            ...getLocalVue(),
+            global: {
+                ...getLocalVue().global,
+                plugins: [...(getLocalVue().global?.plugins || []), createPinia()],
+            },
         });
         expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
-        expect($names.at(1).text()).toBe("name");
+        expect($names[1).text()).toBe("name");
         const $label = wrapper.find(".title-link");
         expect($label.text()).toBe("tool_section");
         await $sectionName.trigger("click");
@@ -83,8 +87,11 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
-            localVue,
-            pinia,
+            ...getLocalVue(),
+            global: {
+                ...getLocalVue().global,
+                plugins: [...(getLocalVue().global?.plugins || []), createPinia()],
+            },
         });
         expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");
