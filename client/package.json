@@ -22,8 +22,8 @@
   "pnpm": {
     "overrides": {
       "chokidar": "3.5.3",
-      "vue": "3.5.12",
-      "@vue/compat": "3.5.12",
+      "vue": "3.5.18",
+      "@vue/compat": "3.5.18",
       "@fortawesome/fontawesome-common-types": "6.2.1"
     },
     "onlyBuiltDependencies": [
@@ -50,7 +50,7 @@
     "@popperjs/core": "^2.11.8",
     "@sentry/browser": "^7.74.1",
     "@sentry/vue": "^8.0.0",
-    "@vue/compat": "^3.5.12",
+    "@vue/compat": "^3.5.18",
     "@vueuse/core": "^10.5.0",
     "@vueuse/math": "^10.9.0",
     "@vueuse/shared": "^10.5.0",
@@ -125,7 +125,8 @@
     "vega-embed": "^6.26.0",
     "vega-lite": "^5.21.0",
     "vscode-languageserver-types": "^3.17.5",
-    "vue": "^3.5.12",
+    "vue": "^3.5.18",
+    "@vue/compat": "^3.5.18",
     "vue-class-component": "^7.2.6",
     "vue-demi": "0.13.11",
     "vue-echarts": "^7.0.3",
@@ -183,6 +184,7 @@
     "@vitest/coverage-v8": "^4.0.14",
     "@vitest/spy": "^4.0.14",
     "@vitest/ui": "^4.0.14",
+    "@vue/compiler-sfc": "^3.5.18",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.4.0",
     "autoprefixer": "10.4.16",
@@ -210,7 +212,6 @@
     "vitest": "^4.0.14",
     "vitest-fail-on-console": "^0.10.1",
     "vitest-location-mock": "^1.0.4",
-    "@vue/compiler-sfc": "^3.5.12",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "2.2.12",
     "xml-js": "^1.6.11",
