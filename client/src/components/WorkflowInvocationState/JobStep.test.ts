@@ -105,17 +105,17 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
             expect(liTab.text()).toEqual(jobs[i]?.state);
             // expect the first job to be shown and rest to be hidden
             expect(liTab.attributes("aria-selected")).toEqual(i === 0 ? "true" : "false");
-            expect(jobsContents.at(i).attributes("style")).toEqual(i === 0 ? "" : "display: none;");
+            expect(jobsContents[i].attributes("style")).toEqual(i === 0 ? "" : "display: none;");
         });
 
         // click on the second tab
-        await liTabs.at(1).trigger("click");
+        await liTabs[1].trigger("click");
         await flushPromises();
 
         // expect the second job to be shown and rest to be hidden
         jobsContents.wrappers.forEach((jobContent, i) => {
             expect(jobContent.attributes("style")).toEqual(i === 1 ? "" : "display: none;");
-            expect(liTabs.at(i).attributes("aria-selected")).toEqual(i === 1 ? "true" : "false");
+            expect(liTabs[i].attributes("aria-selected")).toEqual(i === 1 ? "true" : "false");
         });
     });
     test("it reacts to prop update", async () => {

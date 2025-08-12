@@ -79,7 +79,7 @@ describe("FormDataUri", () => {
         expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
 
         for (let i = 0; i < collectionElements.length; i++) {
-            const element = collectionElements.at(i);
+            const element = collectionElements[i];
             const expectedElement = testUriDataCollection.elements[i];
             if (!expectedElement) {
                 throw new Error("No element found");

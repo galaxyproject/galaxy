@@ -129,10 +129,10 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         // Test that the parameters are displayed correctly
         for (let i = 0; i < testParameters.length; i++) {
             const testParameter = testParameters[i];
-            const tableRow = tableParamValues.at(i);
+            const tableRow = tableParamValues[i];
             expect(tableRow.find("td").text()).toEqual(testParameter?.label);
             if (testParameter && "parameter_value" in testParameter) {
-                expect(tableRow.findAll("td").at(1).text()).toEqual(testParameter.parameter_value.toString());
+                expect(tableRow.findAll("td")[1].text()).toEqual(testParameter.parameter_value.toString());
             }
         }
 
@@ -180,7 +180,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
 
         // Test that the output labels are shown
         for (let i = 0; i < invocationOutputs.length; i++) {
-            const testOutput = invocationOutputs.at(i);
+            const testOutput = invocationOutputs[i];
             const testLabel = expectedLabels[i];
             expect(testOutput.text()).toContain(testLabel);
             expect(testOutput.find(selectors.terminalInvocationOutputItem).exists()).toBe(terminal);

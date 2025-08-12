@@ -73,15 +73,15 @@ describe("WorkflowAttributes", () => {
         expect(version).toHaveLength(TEST_VERSIONS.length);
 
         for (let i = 0; i < version.length; i++) {
-            const versionLabel = version.at(i).text();
+            const versionLabel = version[i].text();
             const versionDate = versionLabel.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }
 
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);
-        expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
-        expect(parameters.at(1).text()).toBe("2: workflow_parameter_1");
+        expect(parameters[0].text()).toBe("1: workflow_parameter_0");
+        expect(parameters[1].text()).toBe("2: workflow_parameter_1");
         expect((wrapper.find("#workflow-annotation").element as HTMLInputElement).value).toBe(TEST_ANNOTATION);
     });
 });
