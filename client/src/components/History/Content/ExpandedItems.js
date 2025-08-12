@@ -48,7 +48,7 @@ export default {
         }
     },
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             isExpanded: this.isExpanded,
             setExpanded: this.setExpanded,
             collapseAll: this.reset,
