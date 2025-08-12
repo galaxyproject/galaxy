@@ -1,6 +1,6 @@
 const MockCurrentHistory = (currentHistory = { id: "xyz" }) => ({
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             currentHistory: currentHistory,
             currentHistoryId: currentHistory.id,
         });

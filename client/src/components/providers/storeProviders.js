@@ -42,7 +42,7 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: this.loading,
             item: this.item,
             save: this.save,
