@@ -897,7 +897,7 @@ describe("Input terminal", () => {
         const firstInputTerminal = terminals[1]?.["input"] as InputTerminal;
         const invalidTerminals = firstInputTerminal.getConnectedTerminals();
         expect(invalidTerminals.length).toBe(1);
-        expect(invalidTerminals[0]).toBeInstanceOf(InvalidOutputTerminal);
+        expect(invalidTerminals[0]!).toBeInstanceOf(InvalidOutputTerminal);
     });
 });
 

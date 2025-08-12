@@ -26,11 +26,11 @@ describe("DatasetDownload", () => {
     it("checks basics", async () => {
         const dropdownItems = wrapper.findAll(".dropdown-item");
         expect(dropdownItems.length).toBe(3);
-        expect(dropdownItems[0].text()).toBe("Download Dataset");
-        expect(dropdownItems[1].text()).toBe("Download a");
-        expect(dropdownItems[2].text()).toBe("Download b");
+        expect(dropdownItems[0]!.text()).toBe("Download Dataset");
+        expect(dropdownItems[1]!.text()).toBe("Download a");
+        expect(dropdownItems[2]!.text()).toBe("Download b");
         for (let i = 0; i < dropdownItems.length; i++) {
-            await dropdownItems[i].trigger("click");
+            await dropdownItems[i]!.trigger("click");
         }
         await wrapper.setProps({ item: items[1] });
         const foundItems = wrapper.find(".dropdown-item").exists();

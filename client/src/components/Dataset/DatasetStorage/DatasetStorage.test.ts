@@ -63,7 +63,7 @@ describe("DatasetStorage.vue", () => {
         mount({ simulateError: true });
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);
-        expect(wrapper.findAll(".error")[0].text()).toBe(TEST_ERROR_MESSAGE);
+        expect(wrapper.findAll(".error")[0]!.text()).toBe(TEST_ERROR_MESSAGE);
         expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
     });
 

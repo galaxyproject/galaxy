@@ -132,7 +132,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
             const tableRow = tableParamValues[i];
             expect(tableRow.find("td").text()).toEqual(testParameter?.label);
             if (testParameter && "parameter_value" in testParameter) {
-                expect(tableRow.findAll("td")[1].text()).toEqual(testParameter.parameter_value.toString());
+                expect(tableRow.findAll("td")[1]!.text()).toEqual(testParameter.parameter_value.toString());
             }
         }
 

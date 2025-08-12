@@ -19,7 +19,7 @@ describe("workflowEditorToolbarStore", () => {
 
         toolbarStore.emitInputCatcherEvent("pointerdown", { type: "pointerdown", position: [100, 200] });
         expect(receivedEvents.length).toBe(1);
-        expect(receivedEvents[0]?.position).toEqual([100, 200]);
+        expect(receivedEvents[0]!?.position).toEqual([100, 200]);
 
         toolbarStore.emitInputCatcherEvent("pointermove", { type: "pointermove", position: [0, 0] });
         toolbarStore.emitInputCatcherEvent("pointerup", { type: "pointerup", position: [0, 0] });

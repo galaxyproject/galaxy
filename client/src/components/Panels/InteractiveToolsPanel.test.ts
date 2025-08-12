@@ -204,15 +204,15 @@ describe("InteractiveToolsPanel component", () => {
         expect(activeToolItems).toHaveLength(2);
 
         // Check that the first active tool has the correct name
-        expect(activeToolItems[0].text()).toContain("Active RStudio");
-        expect(activeToolItems[0].text()).toContain("Running");
+        expect(activeToolItems[0]!.text()).toContain("Active RStudio");
+        expect(activeToolItems[0]!.text()).toContain("Running");
 
         // Check that the second active tool (starting) has the correct name
-        expect(activeToolItems[1].text()).toContain("Starting Jupyter");
-        expect(activeToolItems[1].text()).toContain("Starting...");
+        expect(activeToolItems[1]!.text()).toContain("Starting Jupyter");
+        expect(activeToolItems[1]!.text()).toContain("Starting...");
 
         // Check that stop buttons are present
-        expect(activeToolItems[0].find(".btn-link.text-danger").exists()).toBe(true);
-        expect(activeToolItems[1].find(".btn-link.text-danger").exists()).toBe(true);
+        expect(activeToolItems[0]!.find(".btn-link.text-danger").exists()).toBe(true);
+        expect(activeToolItems[1]!.find(".btn-link.text-danger").exists()).toBe(true);
     });
 });

@@ -24,7 +24,7 @@ describe("ObjectStoreBadges", () => {
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges[0].attributes("size")).toBe("lg");
+        expect(badges[0]!.attributes("size")).toBe("lg");
     });
 
     it("should pass along size attributes", async () => {
@@ -36,6 +36,6 @@ describe("ObjectStoreBadges", () => {
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges[0].attributes("size")).toBe("2x");
+        expect(badges[0]!.attributes("size")).toBe("2x");
     });
 });

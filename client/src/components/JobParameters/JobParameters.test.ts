@@ -59,9 +59,9 @@ describe("JobParameters/JobParameters.vue", () => {
             link?: string,
         ) => {
             const tds = element.findAll("td");
-            expect(tds[0].text()).toBe(expectedTitle);
+            expect(tds[0]!.text()).toBe(expectedTitle);
             if (typeof expectedValue === "string") {
-                expect(tds[1].text()).toContain(expectedValue);
+                expect(tds[1]!.text()).toContain(expectedValue);
             } else {
                 const contentItem = tds[1].find("contentitem-stub");
                 expect(contentItem.attributes("id")).toBe(`${expectedValue.hid}`);
