@@ -140,7 +140,7 @@
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
+            v-model:show="collectionModalShow"
             hide-on-create
             default-hide-source-items
             @created-collection="createdCollection" />
