@@ -3,10 +3,9 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ServerSelection from "./ServerSelection";
 
-const localVue = getLocalVue();
-
 describe("ServerSelection", () => {
     it("test server selection dropdown", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(ServerSelection, {
             propsData: {
                 toolshedUrl: "url_0",
@@ -14,13 +13,13 @@ describe("ServerSelection", () => {
                 loading: false,
                 total: 10,
             },
-            localVue,
+            ...globalConfig,
         });
         expect(wrapper.find(".description").text()).toBe("10 repositories available at");
         const $options = wrapper.findAll("a");
-        expect($options.at(0).text()).toBe("url_0");
-        expect($options.at(1).text()).toBe("url_0");
-        expect($options.at(2).text()).toBe("url_1");
+        expect($options[0].text()).toBe("url_0");
+        expect($options[1].text()).toBe("url_0");
+        expect($options[2].text()).toBe("url_1");
         expect(wrapper.vm.showDropdown).toBe(true);
         const $link = wrapper.find(".dropdown-item:last-child");
         $link.trigger("click");
