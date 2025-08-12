@@ -436,7 +436,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         Values set in the template config take precedence over defaults.
         Returns a new template config instance with all required fields set.
         """
-        template_updates = template_config.model_dump(exclude_none=True)
+        template_updates = template_config.model_dump(exclude_none=True, exclude_defaults=True)
         defaults.update(template_updates)
         return self.template_config_class(**defaults)
 
