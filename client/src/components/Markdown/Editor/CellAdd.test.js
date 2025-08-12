@@ -56,8 +56,8 @@ describe("CellAdd.vue", () => {
         await wrapper.vm.$nextTick();
         const categories = wrapper.findAll(".cell-add-categories");
         expect(categories).toHaveLength(1);
-        expect(categories[0).find(".text-info").text()).toBe("Category 1");
-        expect(categories[0).find(".cell-add-options").text()).toContain("Option A");
+        expect(categories[0].find(".text-info").text()).toBe("Category 1");
+        expect(categories[0].find(".cell-add-options").text()).toContain("Option A");
     });
 
     it("shows 'No results found' when no templates match search", async () => {

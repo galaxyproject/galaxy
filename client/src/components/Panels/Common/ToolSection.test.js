@@ -64,7 +64,7 @@ describe("ToolSection", () => {
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
-        expect($names[1).text()).toBe("name");
+        expect($names[1].text()).toBe("name");
         const $label = wrapper.find(".title-link");
         expect($label.text()).toBe("tool_section");
         await $sectionName.trigger("click");
