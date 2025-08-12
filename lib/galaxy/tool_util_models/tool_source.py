@@ -95,7 +95,7 @@ class TemplateConfigFile(BaseModel):
 
 class InputConfigFileContent(BaseModel):
     format: Literal["json"] = "json"
-    handle_files: Literal["paths", "staging_path_and_source_path"] = "paths"
+    handle_files: Optional[Literal["paths", "staging_path_and_source_path"]] = None
     type: Literal["inputs"] = "inputs"
 
 

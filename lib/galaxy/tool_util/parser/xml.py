@@ -765,9 +765,9 @@ class XmlToolSource(ToolSource):
             inputs_elem = conf_parent_elem.find("inputs")
             if inputs_elem is not None:
                 name = inputs_elem.get("name")
-                filename = inputs_elem.get("filename", None)
+                filename = inputs_elem.get("filename")
                 format = inputs_elem.get("format", "json")
-                data_style = inputs_elem.get("data_style", "skip")
+                data_style = inputs_elem.get("data_style")
                 content = {"format": format, "handle_files": data_style, "type": "inputs"}
                 config_files.append(InputConfigFile(name=name, filename=filename, content=content))
         return config_files
