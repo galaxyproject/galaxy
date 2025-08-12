@@ -34,10 +34,11 @@ class PosixTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     """Posix template configuration with templating support."""
 
     root: Union[str, TemplateExpansion, None] = None
-    enforce_symlink_security: Union[bool, TemplateExpansion] = DEFAULT_ENFORCE_SYMLINK_SECURITY
-    delete_on_realize: Union[bool, TemplateExpansion] = DEFAULT_DELETE_ON_REALIZE
-    allow_subdir_creation: Union[bool, TemplateExpansion] = DEFAULT_ALLOW_SUBDIR_CREATION
-    prefer_links: Union[bool, TemplateExpansion] = DEFAULT_PREFER_LINKS
+    # These are not using TemplateExpansion because they are not user-configurable.
+    enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
+    delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
+    allow_subdir_creation: bool = DEFAULT_ALLOW_SUBDIR_CREATION
+    prefer_links: bool = DEFAULT_PREFER_LINKS
 
 
 class PosixConfiguration(BaseFileSourceConfiguration):
