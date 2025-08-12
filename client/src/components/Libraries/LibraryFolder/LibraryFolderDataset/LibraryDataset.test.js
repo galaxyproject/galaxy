@@ -28,7 +28,7 @@ const EXPECTED_DATASET_DATA = unrestrictedDatasetResponse;
 
 const mockDatatypesProvider = {
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: false,
             item: ["xml"],
         });
@@ -36,7 +36,7 @@ const mockDatatypesProvider = {
 };
 const mockDbKeyProvider = {
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: false,
             item: ["?"],
         });
