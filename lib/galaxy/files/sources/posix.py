@@ -65,6 +65,14 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         if not self.template_config.root:
             self.template_config.writable = False
 
+    def prefer_links(self) -> bool:
+        return self.template_config.prefer_links
+
+    @property
+    def root(self) -> Optional[str]:
+        """Return the root directory for backward compatibility."""
+        return self.template_config.root
+
     def _list(
         self,
         context: FilesSourceRuntimeContext[PosixConfiguration],
