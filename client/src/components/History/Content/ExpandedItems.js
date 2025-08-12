@@ -48,11 +48,14 @@ export default {
         }
     },
     render() {
-        return this.$slots.default({
-            isExpanded: this.isExpanded,
-            setExpanded: this.setExpanded,
-            collapseAll: this.reset,
-            expandedCount: this.expandedCount,
-        });
+        return (
+            this.$slots.default &&
+            this.$slots.default({
+                isExpanded: this.isExpanded,
+                setExpanded: this.setExpanded,
+                collapseAll: this.reset,
+                expandedCount: this.expandedCount,
+            })
+        );
     },
 };
