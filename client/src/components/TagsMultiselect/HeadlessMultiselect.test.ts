@@ -123,8 +123,8 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("bc");
             const options = wrapper.findAll(selectors.option);
 
-            expect(options[0].find("span").text()).toBe("bc");
-            expect(options[1].find("span").text()).toBe("abc");
+            expect(options[0]!.find("span").text()).toBe("bc");
+            expect(options[1]!.find("span").text()).toBe("abc");
 
             await close(wrapper);
         });
