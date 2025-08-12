@@ -69,7 +69,7 @@ module.exports = {
     testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",
-        "^.*\\.(vue)$": "@vue/vue2-jest",
+        "^.*\\.(vue)$": "@vue/vue3-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
         "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
         ...mergedTSJTransform,
