@@ -130,7 +130,7 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: /\.tsx?$/,
-                    exclude: /node_modules/,
+                    exclude: [/node_modules/, /\.test\.tsx?$/],
                     use: [
                         {
                             loader: "thread-loader",
@@ -323,6 +323,7 @@ module.exports = (env = {}, argv = {}) => {
             new ForkTsCheckerWebpackPlugin({
                 async: false,
                 typescript: {
+                    configFile: "tsconfig.webpack.json",
                     diagnosticOptions: {
                         semantic: true,
                         syntactic: true,
