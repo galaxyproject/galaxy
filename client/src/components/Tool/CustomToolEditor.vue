@@ -75,7 +75,9 @@ if (props.toolUuid) {
         })
         .then(({ data, error }) => {
             if (!error) {
-                yamlRepresentation.value = stringify(data.representation);
+                yamlRepresentation.value = stringify(data.representation, {
+                    blockQuote: "literal",
+                });
             }
         });
 }
