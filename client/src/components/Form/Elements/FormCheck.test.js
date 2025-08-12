@@ -58,8 +58,8 @@ describe("FormCheck", () => {
         expect(inputs.length).toBe(emptyValues.length + 1);
         const expectedValues = [];
         for (let i = 0; i < emptyValues; i++) {
-            await inputs.at(i + 1).setChecked();
-            expect(inputs.at(i + 1).attributes("value")).toBe(emptyValues[i]);
+            await inputs[i + 1].setValue(true);
+            expect(inputs[i + 1].attributes("value")).toBe(emptyValues[i]);
             expectedValues.push(expectedValues[i]);
             expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
         }
@@ -77,25 +77,25 @@ describe("FormCheck", () => {
         expect(inputs.length).toBe(n + 1);
         /* confirm component loads unchecked */
         for (let i = 0; i < n + 1; i++) {
-            expect(inputs.at(i).element.checked).toBeFalsy();
+            expect(inputs[i].element.checked).toBeFalsy();
         }
         /* 1 - confirm select-all option checked */
-        await inputs.at(0).setChecked();
-        expect(inputs.at(0).element.checked).toBeTruthy();
+        await inputs[0].setValue(true);
+        expect(inputs[0].element.checked).toBeTruthy();
         /* ...confirm corresponding options checked */
         const values = options.map((option) => option.value);
         expect(wrapper.emitted()["input"][0][0]).toStrictEqual(values);
         /* 2 - confirm select-all option UNchecked */
-        await inputs.at(0).setChecked(false);
-        expect(inputs.at(0).element.checked).toBeFalsy();
+        await inputs[0].setValue(false);
+        expect(inputs[0].element.checked).toBeFalsy();
         /* ...confirm corresponding options UNchecked */
         for (let i = 0; i < n; i++) {
-            expect(inputs.at(i + 1).element.checked).toBeFalsy();
+            expect(inputs[i + 1].element.checked).toBeFalsy();
         }
         /* 3 - confirm corresponding options indeterminate-state */
-        await inputs.at(1).setChecked(true);
+        await inputs[1].setValue(true);
         expect(wrapper.emitted().input[2][0]).toStrictEqual(["value_0"]);
         await wrapper.setProps({ value: ["value_0"] });
-        expect(inputs.at(0).element.indeterminate).toBe(true);
+        expect(inputs[0].element.indeterminate).toBe(true);
     });
 });

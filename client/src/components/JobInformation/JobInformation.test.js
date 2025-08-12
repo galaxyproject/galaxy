@@ -14,7 +14,7 @@ jest.mock("app");
 
 const JOB_ID = "test_id";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -59,7 +59,7 @@ describe("JobInformation/JobInformation.vue", () => {
         };
         wrapper = mount(JobInformation, {
             propsData,
-            localVue,
+            ...globalConfig,
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");
@@ -85,7 +85,7 @@ describe("JobInformation/JobInformation.vue", () => {
         const rendered_link = jobInfoTable.findAll(`#job-messages .job-message`);
         expect(rendered_link.length).toBe(jobResponse.job_messages.length);
         for (let i = 0; i < rendered_link.length; i++) {
-            const msg = rendered_link.at(i).text();
+            const msg = rendered_link[i].text();
             expect(jobResponse.job_messages.includes(msg));
         }
     });

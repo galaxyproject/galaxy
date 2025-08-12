@@ -6,7 +6,6 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./WorkflowDisplay";
 
-const localVue = getLocalVue(true);
 
 let axiosMock;
 
@@ -22,7 +21,7 @@ function mountDefault() {
             embedded: false,
             expanded: false,
         },
-        localVue,
+        ...getLocalVue(true),
     });
 }
 
@@ -38,7 +37,7 @@ function mountError(errContent) {
             embedded: false,
             expanded: false,
         },
-        localVue,
+        ...getLocalVue(true),
     });
 }
 
@@ -63,8 +62,8 @@ describe("WorkflowDisplay", () => {
         });
         await flushPromises();
         const errorContent = wrapper.findAll("li");
-        expect(errorContent.at(0).text()).toBe("firstError: firstValue");
-        expect(errorContent.at(1).text()).toBe("secondError: secondValue");
+        expect(errorContent[0].text()).toBe("firstError: firstValue");
+        expect(errorContent[1].text()).toBe("secondError: secondValue");
     });
 
     it("error message as text", async () => {

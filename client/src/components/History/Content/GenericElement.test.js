@@ -11,8 +11,7 @@ jest.mock("components/History/model/queries");
 
 setupSelectableMock();
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
+const globalConfig = getLocalVue();
 const router = new VueRouter();
 
 describe("GenericElement", () => {
@@ -65,7 +64,7 @@ describe("GenericElement", () => {
                     ],
                 },
             },
-            localVue,
+            ...globalConfig,
             router,
             pinia: createTestingPinia(),
         });
@@ -74,12 +73,12 @@ describe("GenericElement", () => {
     it("check basics", async () => {
         const contentItems = wrapper.findAll(".content-item");
         expect(contentItems.length).toBe(2);
-        expect(contentItems.at(0).attributes("data-hid")).toBe("1");
-        expect(contentItems.at(1).attributes("data-hid")).toBe("2");
-        await contentItems.at(1).find(".cursor-pointer").trigger("click");
+        expect(contentItems[0].attributes("data-hid")).toBe("1");
+        expect(contentItems[1].attributes("data-hid")).toBe("2");
+        await contentItems[1].find(".cursor-pointer").trigger("click");
         const contentExpanded = wrapper.findAll(".content-item");
         expect(contentExpanded.length).toBe(4);
-        expect(contentExpanded.at(2).attributes("data-hid")).toBe("3");
-        expect(contentExpanded.at(3).attributes("data-hid")).toBe("4");
+        expect(contentExpanded[2].attributes("data-hid")).toBe("3");
+        expect(contentExpanded[3].attributes("data-hid")).toBe("4");
     });
 });

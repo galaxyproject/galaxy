@@ -4,11 +4,10 @@ import { getLocalVue } from "tests/jest/helpers";
 import ConfigureHeader from "./ConfigureHeader.vue";
 import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
-const localVue = getLocalVue();
 
 function mountComponent(props = {}) {
     return mount(ConfigureHeader, {
-        localVue,
+        ...getLocalVue(),
         propsData: { hasChanged: undefined, ...props },
         stubs: {
             BModal: {
@@ -37,35 +36,35 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: false });
         const buttons = wrapper.findAllComponents(CellButton);
         expect(buttons.length).toBe(2);
-        expect(buttons.at(0).props("title")).toBe("Apply Changes");
-        expect(buttons.at(1).props("title")).toBe("Cancel");
+        expect(buttons[0].props("title")).toBe("Apply Changes");
+        expect(buttons[1].props("title")).toBe("Cancel");
     });
 
     it("always renders Cancel button", () => {
         const wrapper = mountComponent({ hasChanged: undefined });
         const buttons = wrapper.findAllComponents(CellButton);
-        const cancelBtn = buttons.at(buttons.length - 1);
+        const cancelBtn = buttons[buttons.length - 1];
         expect(cancelBtn.exists()).toBe(true);
         expect(cancelBtn.props("title")).toBe("Cancel");
     });
 
     it("emits ok when Apply Changes is clicked", async () => {
         const wrapper = mountComponent({ hasChanged: true });
-        const applyBtn = wrapper.findAllComponents(CellButton).at(0);
+        const applyBtn = wrapper.findAllComponents(CellButton)[0];
         await applyBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeTruthy();
     });
 
     it("emits cancel immediately if hasChanged is false", async () => {
         const wrapper = mountComponent({ hasChanged: false });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(CellButton)[1];
         await cancelBtn.trigger("click");
         expect(wrapper.emitted("cancel")).toBeTruthy();
     });
 
     it("shows modal if hasChanged is true and Cancel is clicked", async () => {
         const wrapper = mountComponent({ hasChanged: true });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(CellButton)[1];
         await cancelBtn.trigger("click");
         expect(wrapper.vm.showModal).toBe(true);
     });

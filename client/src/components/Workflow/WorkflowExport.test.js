@@ -6,7 +6,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import WorkflowExport from "./WorkflowExport";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const axiosMock = new MockAdapter(axios);
 axiosMock.onGet("/api/workflows/0").reply(200, {
     id: "0",
@@ -26,15 +26,12 @@ function getHref(item) {
 describe("Workflow Export", () => {
     let wrapper;
     beforeEach(async () => {
-        wrapper = shallowMount(
-            WorkflowExport,
-            {
-                propsData: {
-                    id: "0",
-                },
+        wrapper = shallowMount(WorkflowExport, {
+            propsData: {
+                id: "0",
             },
-            localVue,
-        );
+            ...globalConfig,
+        });
     });
 
     it("verify display", async () => {

@@ -10,8 +10,7 @@ import { getUntypedWorkflowParameters } from "./modules/parameters";
 
 import Lint from "./Lint.vue";
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 
 const steps = {
     0: {
@@ -101,7 +100,7 @@ describe("Lint", () => {
                 creator: null,
                 datatypesMapper: testDatatypesMapper,
             },
-            localVue,
+            ...globalConfig,
             pinia,
             provide: { workflowId: "mock-workflow" },
         });
@@ -121,11 +120,11 @@ describe("Lint", () => {
 
         const links = wrapper.findAll("a");
         expect(links.length).toBe(numLintChecksFailing);
-        expect(links.at(0).text()).toContain("Provide Creator Details.");
-        expect(links.at(1).text()).toContain("Specify a License.");
-        expect(links.at(2).text()).toContain("untyped_parameter");
-        expect(links.at(3).text()).toContain("data input: Missing an annotation");
-        expect(links.at(4).text()).toContain("step label: output");
+        expect(links[0].text()).toContain("Provide Creator Details.");
+        expect(links[1].text()).toContain("Specify a License.");
+        expect(links[2].text()).toContain("untyped_parameter");
+        expect(links[3].text()).toContain("data input: Missing an annotation");
+        expect(links[4].text()).toContain("step label: output");
     });
 
     it("should fire refactor event to extract untyped parameter and remove unlabeled workflows", async () => {
