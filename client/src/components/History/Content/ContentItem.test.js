@@ -13,9 +13,7 @@ jest.mock("components/History/model/queries");
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 const router = new VueRouter();
 
 jest.mock("vue-router/composables", () => ({
@@ -60,7 +58,7 @@ describe("ContentItem", () => {
                 selectable: false,
                 filterable: true,
             },
-            localVue,
+            ...globalConfig,
             stubs: {
                 DatasetDetails: true,
                 vueTagsInput: false,
@@ -85,9 +83,9 @@ describe("ContentItem", () => {
         expect(tags.length).toBe(3);
 
         for (let i = 0; i < 3; i++) {
-            expect(tags.at(i).text()).toBe(`tag${i + 1}`);
+            expect(tags[i].text()).toBe(`tag${i + 1}`);
 
-            await tags.at(i).trigger("click");
+            await tags[i].trigger("click");
             expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
         }
 
@@ -118,13 +116,13 @@ describe("ContentItem", () => {
         expect(selector.attributes("data-icon")).toBe("square");
         selector.trigger("click");
 
-        await localVue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.emitted()["update:selected"][0][0]).toBe(true);
 
         await wrapper.setProps({ selected: true });
         selector.trigger("click");
 
-        await localVue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");

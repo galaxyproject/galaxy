@@ -15,8 +15,7 @@ setupMockConfig({ disabled: false, enabled: true });
 
 jest.mock("vue-router/composables");
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 
 const testIcon = "copy";
 const operationIcon1 = "cog";
@@ -94,7 +93,7 @@ const testGrid = {
 function createTarget(propsData) {
     const pinia = createTestingPinia({ stubActions: false });
     return mount(MountTarget, {
-        localVue,
+        ...globalConfig,
         propsData,
         pinia,
         stubs: {
@@ -153,13 +152,13 @@ describe("GridList", () => {
         await wrapper.vm.$nextTick();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
         const dropdownItems = dropdown.findAll(".dropdown-item");
-        expect(dropdownItems.at(0).text()).toBe("operation-title-1");
-        expect(dropdownItems.at(1).text()).toBe("operation-title-3");
-        await dropdownItems.at(0).trigger("click");
+        expect(dropdownItems[0].text()).toBe("operation-title-1");
+        expect(dropdownItems[1].text()).toBe("operation-title-3");
+        await dropdownItems[0].trigger("click");
         const clickHandler = testGrid.fields[2].operations[0].handler;
         expect(clickHandler).toHaveBeenCalledTimes(1);
         expect(clickHandler.mock.calls[0]).toEqual([{ id: "id-1", link: "link-1", operation: "operation-1" }]);
-        await dropdownItems.at(1).trigger("click");
+        await dropdownItems[1].trigger("click");
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("Operation-3 has been executed.");
@@ -188,7 +187,7 @@ describe("GridList", () => {
         });
         await wrapper.vm.$nextTick();
         const pageLinks = wrapper.findAll(".page-link");
-        await pageLinks.at(4).trigger("click");
+        await pageLinks[4].trigger("click");
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
         expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-6");
     });

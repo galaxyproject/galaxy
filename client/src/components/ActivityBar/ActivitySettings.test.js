@@ -10,8 +10,7 @@ import { useActivityStore } from "@/stores/activityStore";
 
 import mountTarget from "./ActivitySettings.vue";
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
@@ -51,7 +50,7 @@ describe("ActivitySettings", () => {
         );
         activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
-            localVue,
+            ...globalConfig,
             pinia,
             props: {
                 query: "",
@@ -75,7 +74,7 @@ describe("ActivitySettings", () => {
         await nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const checkbox = items[0].find("[data-title='Hide in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         const icon = wrapper.find("[icon='activity-test-icon'");
         expect(icon.exists()).toBeTruthy();
@@ -95,12 +94,12 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Show in Activity Bar']");
+        const checkbox = items[0].find("[data-title='Show in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeFalsy();
         checkbox.trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const visibleCheckbox = items[0].find("[data-title='Hide in Activity Bar']");
         expect(visibleCheckbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
     });
@@ -110,7 +109,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-description='delete activity']");
+        const trash = items[0].find("[data-description='delete activity']");
         expect(trash.exists()).toBeTruthy();
         expect(activityStore.getAll().length).toBe(1);
         trash.trigger("click");
@@ -127,7 +126,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-icon='trash']");
+        const trash = items[0].find("[data-icon='trash']");
         expect(trash.exists()).toBeFalsy();
     });
 
