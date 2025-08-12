@@ -13948,7 +13948,10 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
-            /** Optional */
+            /**
+             * Optional
+             * @default false
+             */
             optional: boolean;
             /**
              * Parameter Type
@@ -21129,6 +21132,11 @@ export interface components {
              */
             class: "GalaxyUserTool";
             /**
+             * Configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
+            /**
              * Container
              * @description Container image to use for this tool.
              */
@@ -21210,6 +21218,11 @@ export interface components {
              * @constant
              */
             class: "GalaxyUserTool";
+            /**
+             * Configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * Container
              * @description Container image to use for this tool.
@@ -22124,6 +22137,21 @@ export interface components {
              * @description External resource vendor prefix
              */
             namespace: string;
+        };
+        /** YamlTemplateConfigFile */
+        YamlTemplateConfigFile: {
+            /** Content */
+            content: string;
+            /**
+             * Eval Engine
+             * @default ecmascript
+             * @constant
+             */
+            eval_engine: "ecmascript";
+            /** Filename */
+            filename?: string | null;
+            /** Name */
+            name?: string | null;
         };
         /** Organization */
         galaxy__schema__drs__Organization: {
