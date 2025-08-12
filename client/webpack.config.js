@@ -81,7 +81,6 @@ module.exports = (env = {}, argv = {}) => {
             },
             alias: {
                 vue: "@vue/compat",
-                "vue-demi": `${libsBase}/vue-demi-shim.js`,
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
