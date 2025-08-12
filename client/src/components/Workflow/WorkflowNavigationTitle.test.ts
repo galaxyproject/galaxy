@@ -160,8 +160,8 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
-        // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        // Trigger click on the AsyncButton
+        await importButton.trigger("click");
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
@@ -174,8 +174,8 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
-        // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        // Trigger click on the AsyncButton
+        await importButton.trigger("click");
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
