@@ -217,6 +217,7 @@ async function onBulkDelete() {
         `${hasPublished ? "Some of the selected histories are published and will be removed from public view. " : ""}
             Are you sure you want to delete ${totalSelected} histories?`,
         {
+            id: "bulk-delete-histories",
             title: "Delete histories",
             okTitle: "Delete histories",
             okVariant: "danger",
@@ -260,6 +261,7 @@ async function onBulkRestore() {
     const totalSelected = selectedHistoryIds.value.length;
 
     const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} histories?`, {
+        id: "bulk-restore-histories",
         title: "Restore histories",
         okTitle: "Restore histories",
         okVariant: "primary",
