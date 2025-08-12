@@ -14,7 +14,7 @@ import JobParameters from "./JobParameters.vue";
 const JOB_ID = "foo";
 const DatasetProvider: any = {
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: false,
             result: raw,
         });
