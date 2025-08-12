@@ -1,6 +1,6 @@
 const MockCurrentUser = (fakeUser) => ({
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             user: fakeUser,
         });
     },
