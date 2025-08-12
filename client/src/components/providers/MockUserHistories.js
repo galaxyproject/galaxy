@@ -1,6 +1,6 @@
 const MockUserHistories = (currentHistory = { id: "xyz" }, histories = [{ id: "abc" }], historiesLoading = false) => ({
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             currentHistory: currentHistory,
             histories: histories,
             historiesLoading: historiesLoading,

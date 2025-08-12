@@ -42,7 +42,7 @@ export default {
         }
     },
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             value: this.value,
             input: (e) => {
                 // Vue Bootstrap does not conform to the standard
