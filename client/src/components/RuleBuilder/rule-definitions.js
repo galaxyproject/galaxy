@@ -849,7 +849,7 @@ const colHeadersFor = function (data, columns) {
         if (columns) {
             return columns.map((el, i) => String.fromCharCode(65 + i));
         } else {
-            return [];
+            return null;
         }
     } else {
         return data[0].map((el, i) => String.fromCharCode(65 + i));
