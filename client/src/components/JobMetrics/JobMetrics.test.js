@@ -15,7 +15,6 @@ jest.mock("axios", () => ({
     },
 }));
 
-const localVue = getLocalVue();
 
 describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
@@ -24,7 +23,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
             propsData: {
                 jobId: "9000",
             },
-            localVue,
+            ...getLocalVue(),
         });
 
         await wrapper.vm.$nextTick();
@@ -54,7 +53,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
         setActivePinia(pinia);
 
         const wrapper = mount(JobMetrics, {
-            localVue,
+            ...getLocalVue(),
             pinia,
             propsData: {
                 jobId: JOB_ID,
@@ -67,9 +66,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
         expect(metricsTables.length).toBe(2);
-        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).toBe("core");
-        expect(metricsTables.at(0).findAll("tr").length).toBe(2);
-        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).toBe("extended");
-        expect(metricsTables.at(1).findAll("tr").length).toBe(1);
+        expect(metricsTables[0).find(".metrics_plugin_title").text()).toBe("core");
+        expect(metricsTables[0).findAll("tr").length).toBe(2);
+        expect(metricsTables[1).find(".metrics_plugin_title").text()).toBe("extended");
+        expect(metricsTables[1).findAll("tr").length).toBe(1);
     });
 });
