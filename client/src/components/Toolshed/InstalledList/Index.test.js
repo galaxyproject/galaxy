@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -9,8 +10,6 @@ jest.mock("app");
 jest.mock("onload/loadConfig");
 getAppRoot.mockImplementation(() => "/");
 jest.mock("../services");
-
-const localVue = getLocalVue();
 
 Services.mockImplementation(() => {
     return {
@@ -39,6 +38,7 @@ Services.mockImplementation(() => {
 
 describe("InstalledList", () => {
     it("test installed list", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Index, {
             propsData: {
                 filter: "",
@@ -46,18 +46,18 @@ describe("InstalledList", () => {
             stubs: {
                 RepositoryDetails: true,
             },
-            localVue,
+            ...globalConfig,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
-        await wrapper.vm.$nextTick();
+        await nextTick();
         expect(wrapper.find(".installed-message").text()).toBe("2 repositories installed on this instance.");
         const names = wrapper.findAll(".name");
         expect(names.length).toBe(2);
-        expect(names.at(0).text()).toBe("name_0");
-        expect(names.at(1).text()).toBe("name_1");
+        expect(names[0].text()).toBe("name_0");
+        expect(names[1].text()).toBe("name_1");
         const links = wrapper.findAll("a");
         expect(links.length).toBe(3);
-        const badge = links.at(1).find(".badge");
+        const badge = links[1].find(".badge");
         expect(badge.text()).toBe("Newer version available!");
         expect(wrapper.find('th[role="columnheader"][aria-colindex="3"] > div').text()).toBe("Tool Shed");
     });
