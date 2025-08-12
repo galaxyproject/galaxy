@@ -177,7 +177,7 @@ defineExpose({
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" :active.sync="regularTabActive">
+        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" v-model:active="regularTabActive">
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <CompositeBox
@@ -194,7 +194,7 @@ defineExpose({
             v-if="showCollection"
             title="Collection"
             button-id="tab-title-link-collection"
-            :active.sync="collectionTabActive">
+            v-model:active="collectionTabActive">
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput

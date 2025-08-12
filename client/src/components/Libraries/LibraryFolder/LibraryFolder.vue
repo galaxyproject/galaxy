@@ -4,7 +4,7 @@
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            :include-deleted.sync="includeDeleted"
+            v-model:include-deleted="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
@@ -22,7 +22,7 @@
             ref="folder_content_table"
             striped
             hover
-            :busy.sync="isBusy"
+            v-model:busy="isBusy"
             :fields="fields"
             :items="folderContents"
             :per-page="perPage"

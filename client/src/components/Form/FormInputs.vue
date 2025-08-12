@@ -39,7 +39,7 @@
                     @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
-                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
+                <FormCard :title="input.title || input.name" v-model:expanded="input.expanded" :collapsible="true">
                     <template v-slot:body>
                         <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
                         <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
