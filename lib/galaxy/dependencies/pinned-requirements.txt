@@ -93,6 +93,8 @@ jinja2==3.1.6
 jmespath==1.0.1
 jsonref==1.1.0
 jsonschema==4.25.0
+json-stream==2.3.3
+json-stream-rs-tokenizer==0.4.29
 jsonschema-specifications==2025.4.1
 kombu==5.5.4
 lagom==2.7.7

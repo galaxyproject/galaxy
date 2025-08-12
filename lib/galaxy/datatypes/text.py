@@ -14,6 +14,7 @@ from typing import (
 )
 
 import yaml
+import json_stream
 
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -438,7 +439,7 @@ class Biom1(Json):
         if dataset.has_data():
             with open(dataset.get_file_name()) as fh:
                 try:
-                    json_dict = json.load(fh)
+                    json_dict = json_stream.load(fh)
                 except Exception:
                     return
 
