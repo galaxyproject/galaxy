@@ -9,8 +9,6 @@ import { rootResponse } from "@/components/FilesDialog/testingData";
 
 import FormDirectory from "./FormDirectory.vue";
 import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
-
-const localVue = getLocalVue();
 jest.mock("app");
 
 const { server, http } = useServerMock();
@@ -80,13 +78,17 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         );
 
         const pinia = createPinia();
+        const globalConfig = getLocalVue();
 
         wrapper = mount(FormDirectory, {
             propsData: {
                 value: null,
             },
-            localVue: localVue,
-            pinia,
+            ...globalConfig,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
         await flushPromises();
     });
@@ -117,7 +119,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const chunks = testingData.pathChunks.map((e) => e.pathChunk);
         // every item should be rendered
         for (let i = 0; i < regularPathElements.length; i++) {
-            const text = regularPathElements.at(i).text();
+            const text = regularPathElements[i].text();
             expect(chunks.includes(text)).toBe(true);
         }
     });
