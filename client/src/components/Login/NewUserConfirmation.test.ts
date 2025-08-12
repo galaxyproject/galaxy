@@ -36,7 +36,7 @@ describe("NewUserConfirmation", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(1);
 
-        const checkField = inputs.at(0);
+        const checkField = inputs[0];
         expect(checkField.attributes("type")).toBe("checkbox");
 
         const submitButton = wrapper.find("button[name='confirm']");

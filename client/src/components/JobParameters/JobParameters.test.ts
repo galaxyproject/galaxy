@@ -59,16 +59,16 @@ describe("JobParameters/JobParameters.vue", () => {
             link?: string,
         ) => {
             const tds = element.findAll("td");
-            expect(tds.at(0).text()).toBe(expectedTitle);
+            expect(tds[0].text()).toBe(expectedTitle);
             if (typeof expectedValue === "string") {
-                expect(tds.at(1).text()).toContain(expectedValue);
+                expect(tds[1].text()).toContain(expectedValue);
             } else {
-                const contentItem = tds.at(1).find("contentitem-stub");
+                const contentItem = tds[1].find("contentitem-stub");
                 expect(contentItem.attributes("id")).toBe(`${expectedValue.hid}`);
                 expect(contentItem.attributes("name")).toBe(expectedValue.name);
             }
             if (link) {
-                const a_element = tds.at(1).find("a");
+                const a_element = tds[1].find("a");
                 expect(a_element.attributes("href")).toBe(link);
             }
         };
@@ -80,9 +80,9 @@ describe("JobParameters/JobParameters.vue", () => {
         const elements = tbody.findAll("tr");
         expect(elements.length).toBe(3);
 
-        checkTableParameter(elements.at(0), "Add this value", "22", undefined);
-        checkTableParameter(elements.at(1), linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
-        checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
+        checkTableParameter(elements[0], "Add this value", "22", undefined);
+        checkTableParameter(elements[1], linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
+        checkTableParameter(elements[2], "Iterate?", "NO", undefined);
     });
 
     it("should show only single parameter", async () => {

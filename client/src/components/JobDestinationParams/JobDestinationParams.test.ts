@@ -56,9 +56,9 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         expect(params.length).toBe(responseKeys.length);
 
         for (let counter = 0; counter < responseKeys.length - 1; counter++) {
-            const parameter = params.at(counter).findAll("td");
-            const parameterTitle = parameter.at(0).text();
-            const parameterValue = parameter.at(1).text();
+            const parameter = params[counter].findAll("td");
+            const parameterTitle = parameter[0].text();
+            const parameterValue = parameter[1].text();
 
             expect(responseKeys.includes(parameterTitle)).toBeTruthy();
             // since we render null as an empty string, rendered empty string should always equal null in test data

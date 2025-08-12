@@ -40,12 +40,12 @@ describe("ChangePassword", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const firstPwdField = inputs.at(0);
+        const firstPwdField = inputs[0];
         expect(firstPwdField.attributes("type")).toBe("password");
 
         await firstPwdField.setValue("test_first_pwd");
 
-        const secondPwdField = inputs.at(1);
+        const secondPwdField = inputs[1];
         expect(secondPwdField.attributes("type")).toBe("password");
 
         await secondPwdField.setValue("test_second_pwd");

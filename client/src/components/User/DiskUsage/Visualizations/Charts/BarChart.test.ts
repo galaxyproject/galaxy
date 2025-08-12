@@ -105,7 +105,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(dataPoint.label);
+                expect(wrapper.findAll(".legend-item")[index].text()).toContain(dataPoint.label);
             });
         });
 
@@ -138,7 +138,7 @@ describe("BarChart.vue", () => {
                 labelFormatter: newLabelFormatter,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(newLabelFormatter(dataPoint));
+                expect(wrapper.findAll(".legend-item")[index].text()).toContain(newLabelFormatter(dataPoint));
             });
         });
     });
@@ -174,7 +174,7 @@ describe("BarChart.vue", () => {
                     enableTooltips: true,
                 });
                 await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA.at(0)?.label);
+                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA[0]?.label);
             });
         });
 
@@ -228,7 +228,7 @@ describe("BarChart.vue", () => {
                     enableSelection: true,
                 });
                 await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA.at(0)?.label);
+                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA[0]?.label);
             });
         });
     });

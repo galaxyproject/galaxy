@@ -123,8 +123,8 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("bc");
             const options = wrapper.findAll(selectors.option);
 
-            expect(options.at(0).find("span").text()).toBe("bc");
-            expect(options.at(1).find("span").text()).toBe("abc");
+            expect(options[0].find("span").text()).toBe("bc");
+            expect(options[1].find("span").text()).toBe("abc");
 
             await close(wrapper);
         });
@@ -254,10 +254,10 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = wrapper.findAll(selectors.option);
 
-            await options.at(0).trigger("click");
+            await options[0].trigger("click");
             expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
 
-            await options.at(1).trigger("click");
+            await options[1].trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
             await close(wrapper);
         });
@@ -271,10 +271,10 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = wrapper.findAll(selectors.option);
 
-            await options.at(0).trigger("click");
+            await options[0].trigger("click");
             expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
-            await options.at(1).trigger("click");
+            await options[1].trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });
