@@ -1,13 +1,11 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import VueRouter from "vue-router";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
 import CarbonEmissions from "./CarbonEmissions";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;
@@ -23,7 +21,7 @@ const testServerInstance = {
 describe("CarbonEmissions/CarbonEmissions.vue", () => {
     it("correctly calculates carbon emissions.", () => {
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity: worldwideCarbonIntensity,
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
@@ -32,8 +30,11 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
                 geographicalServerLocationName: "GLOBAL",
             },
-            localVue,
-            router,
+            ...globalConfig,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, router],
+            },
         });
 
         const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
