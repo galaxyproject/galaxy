@@ -1,14 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
-import VueRouter from "vue-router";
+import { getLocalVue, injectTestRouter, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 
 import GenericElement from "./GenericElement";
 
 jest.mock("components/History/model/queries");
 
 const globalConfig = getLocalVue();
-const router = new VueRouter();
+const router = injectTestRouter();
 
 describe("GenericElement", () => {
     let wrapper;
@@ -17,7 +16,7 @@ describe("GenericElement", () => {
         suppressLucideVue2Deprecation();
 
         wrapper = mount(GenericElement, {
-            propsData: {
+            props: {
                 dsc: {
                     elements: [
                         {
@@ -61,8 +60,10 @@ describe("GenericElement", () => {
                 },
             },
             ...globalConfig,
-            router,
-            pinia: createTestingPinia(),
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, createTestingPinia(), router],
+            },
         });
     });
 

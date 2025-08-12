@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
-import VueRouter from "vue-router";
+import { getLocalVue, injectTestRouter, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -14,7 +13,7 @@ jest.mock("components/History/model/queries");
 const { server, http } = useServerMock();
 
 const globalConfig = getLocalVue();
-const router = new VueRouter();
+const router = injectTestRouter();
 
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
@@ -47,7 +46,7 @@ describe("ContentItem", () => {
         );
 
         wrapper = mount(ContentItem, {
-            propsData: {
+            props: {
                 expandDataset: true,
                 item,
                 id: 1,
@@ -59,18 +58,20 @@ describe("ContentItem", () => {
                 filterable: true,
             },
             ...globalConfig,
-            stubs: {
-                DatasetDetails: true,
-                vueTagsInput: false,
-            },
-            provide: {
-                store: {
-                    dispatch: jest.fn,
-                    getters: {},
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, createTestingPinia(), router],
+                stubs: {
+                    DatasetDetails: true,
+                    vueTagsInput: false,
+                },
+                provide: {
+                    store: {
+                        dispatch: jest.fn,
+                        getters: {},
+                    },
                 },
             },
-            pinia: createTestingPinia(),
-            router,
         });
     });
 

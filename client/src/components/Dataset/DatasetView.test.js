@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -29,8 +28,8 @@ jest.mock("@/stores/datatypeVisualizationsStore", () => ({
 }));
 
 const DATASET_ID = "dataset_id";
-const localVue = getLocalVue();
-localVue.use(VueRouter);
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 // Mock dataset
 const mockDataset = {
@@ -87,20 +86,19 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
     router.push = jest.fn();
     router.replace = jest.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        localVue,
-        pinia,
-        router,
-        attachTo: document.createElement("div"),
-        stubs: {
+        ...globalConfig,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia, router],
+            stubs: {
             // Only shallow stub certain components
             "font-awesome-icon": true,
             Heading: {
@@ -128,14 +126,16 @@ async function mountDatasetView(tab = "preview", options = {}) {
                 template: '<div class="viz-frame"></div>',
                 props: ["datasetId", "visualization", "visualizationParams"],
             },
-        },
-        mocks: {
-            $store: {
-                state: {
-                    config: {},
+            },
+            mocks: {
+                $store: {
+                    state: {
+                        config: {},
+                    },
                 },
             },
         },
+        attachTo: document.createElement("div"),
     });
 
     await flushPromises();
@@ -151,27 +151,28 @@ async function mountLoadingDatasetView() {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
     router.push = jest.fn();
     router.replace = jest.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
-        pinia,
-        router,
-        stubs: {
-            Heading: true,
-            BLink: true,
-            BTabs: true,
-            BTab: true,
-        },
-        mocks: {
-            $store: {
-                state: {
-                    config: {},
+        ...globalConfig,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia, router],
+            stubs: {
+                Heading: true,
+                BLink: true,
+                BTabs: true,
+                BTab: true,
+            },
+            mocks: {
+                $store: {
+                    state: {
+                        config: {},
+                    },
                 },
             },
         },

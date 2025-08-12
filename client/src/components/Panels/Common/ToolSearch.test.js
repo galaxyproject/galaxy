@@ -2,20 +2,18 @@ import "jest-location-mock";
 
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import VueRouter from "vue-router";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import ToolSearch from "./ToolSearch";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 describe("ToolSearch", () => {
     it("test tools advanced filter panel navigation", async () => {
         const pinia = createPinia();
         const wrapper = mount(ToolSearch, {
-            propsData: {
+            props: {
                 currentPanelView: "default",
                 enableAdvanced: false,
                 showAdvanced: false,
@@ -23,12 +21,14 @@ describe("ToolSearch", () => {
                 currentPanel: {},
                 useWorker: false,
             },
-            localVue,
-            router,
-            stubs: {
-                icon: { template: "<div></div>" },
+            ...globalConfig,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia, router],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
-            pinia,
         });
         const $router = wrapper.vm.$router;
 

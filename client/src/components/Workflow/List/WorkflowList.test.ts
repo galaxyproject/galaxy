@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -13,9 +12,8 @@ import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 const { server, http } = useServerMock();
 
@@ -33,9 +31,11 @@ async function mountWorkflowList() {
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
-        localVue,
-        pinia,
-        router,
+        ...globalConfig,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia, router],
+        },
     });
 
     const userStore = useUserStore();

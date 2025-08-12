@@ -1,8 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { nextTick } from "vue";
-import VueRouter from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 
@@ -12,19 +11,20 @@ const ACTIVE_CLASS = ".breadcrumb-heading-header-active";
 const INACTIVE_CLASS = ".breadcrumb-heading-header-inactive";
 const BETA_CLASS = ".breadcrumb-heading-header-beta";
 
-const localVue = getLocalVue();
-
-localVue.use(VueRouter);
+const globalConfig = getLocalVue();
 
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = new VueRouter();
+    const router = injectTestRouter();
 
-    router.push(routePath);
+    await router.push(routePath);
 
     const wrapper = mount(BreadcrumbHeading as object, {
-        localVue,
-        router,
-        propsData: {
+        ...globalConfig,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, router],
+        },
+        props: {
             items,
         },
         slots: {
