@@ -170,7 +170,7 @@ describe("FilterMenu", () => {
 
         // First 4 filters are normal, non ranged input fields
         expectedFilters.forEach((expectedFilter, i) => {
-            const label = labels.at(i);
+            const label = labels[i];
             expect(label.text()).toBe(expectedFilter.label);
             if (i < 4) {
                 const filterInput = wrapper.find(`[placeholder='${expectedFilter.placeholder}']`);
@@ -195,18 +195,18 @@ describe("FilterMenu", () => {
         const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAll(".btn-secondary");
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
-            expect(radioBtnGrp.at(i).text()).toBe(options[i]?.text);
-            expect(radioBtnGrp.at(i).props().value).toBe(options[i]?.value);
-            expect(radioBtnGrp.at(i).props().checked).toBe(null);
+            expect(radioBtnGrp[i].text()).toBe(options[i]?.text);
+            expect(radioBtnGrp[i].props().value).toBe(options[i]?.value);
+            expect(radioBtnGrp[i].props().checked).toBe(null);
         }
         await radioBtnGrp[1].find("input").setChecked(); // click "Yes"
         // boolean filter
         const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
-        expect(boolBtnGrp.at(0).text()).toBe("Yes");
-        expect(boolBtnGrp.at(0).props().value).toBe(true);
-        expect(boolBtnGrp.at(1).text()).toBe("No");
-        expect(boolBtnGrp.at(1).props().value).toBe("any");
+        expect(boolBtnGrp[0].text()).toBe("Yes");
+        expect(boolBtnGrp[0].props().value).toBe(true);
+        expect(boolBtnGrp[1].text()).toBe("No");
+        expect(boolBtnGrp[1].props().value).toBe("any");
         await boolBtnGrp[1].find("input").setChecked(); // click "No"
 
         // perform search
