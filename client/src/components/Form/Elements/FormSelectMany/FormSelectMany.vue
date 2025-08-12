@@ -328,7 +328,7 @@ const selectedCount = computed(() => {
                 class="toggle-button case-sensitivity"
                 outline
                 color="blue"
-                :pressed.sync="caseSensitive"
+                v-model:pressed="caseSensitive"
                 :aria-pressed="`${caseSensitive}`"
                 role="switch"
                 title="case sensitive">
@@ -338,7 +338,7 @@ const selectedCount = computed(() => {
                 class="toggle-button use-regex"
                 outline
                 color="blue"
-                :pressed.sync="useRegex"
+                v-model:pressed="useRegex"
                 :aria-pressed="`${useRegex}`"
                 role="switch"
                 title="use regex">

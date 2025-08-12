@@ -446,7 +446,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             :collection-type="collectionModalType"
             :extended-collection-type="{}"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
+            v-model:show="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

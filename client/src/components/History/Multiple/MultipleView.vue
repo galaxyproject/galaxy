@@ -151,15 +151,15 @@ function showRecent() {
                 name="History Multiview"
                 :placeholder="localize('Search datasets and collections in selected histories')"
                 :filter-class="HistoryFilters"
-                :filter-text.sync="filter"
+                v-model:filter-text="filter"
                 :loading="historiesLoading"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
             <MultipleViewList
                 v-show="!showAdvanced"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
-                :show-modal.sync="showSelectModal" />
+                v-model:show-modal="showSelectModal" />
         </div>
         <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
@@ -169,7 +169,7 @@ function showRecent() {
             :multiple="true"
             :histories="histories"
             :additional-options="['center', 'set-current']"
-            :show-modal.sync="showSelectModal"
+            v-model:show-modal="showSelectModal"
             title="Select/Deselect histories"
             @selectHistories="addHistoriesToList" />
     </div>
