@@ -53,9 +53,9 @@
                         }">
                         <RuleComponent
                             rule-type="sort"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
                                 {{ l("Numeric sorting.") }}
@@ -63,15 +63,15 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_basename"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector
-                                :target.sync="addColumnBasenameTarget"
+                                v-model:target="addColumnBasenameTarget"
                                 :col-headers="activeRuleColHeaders" />
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_rownum"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Starting from") }}
@@ -80,7 +80,7 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_metadata"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
                                 {{ l("For") }}
@@ -101,7 +101,7 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_group_tag_value"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Value") }}
@@ -114,9 +114,9 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_regex"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <input v-model="addColumnRegexType" type="radio" value="global" />Create column matching
                                 expression.
@@ -132,7 +132,7 @@
                                 from expression replacement.
                             </label>
                             <br />
-                            <RegularExpressionInput :target.sync="addColumnRegexExpression" />
+                            <RegularExpressionInput v-model:target="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType == 'groups'">
                                 {{ l("Number of Groups") }}
                                 <input v-model="addColumnRegexGroupCount" type="number" min="1" />
@@ -148,20 +148,20 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_concatenate"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector
-                                :target.sync="addColumnConcatenateTarget0"
+                                v-model:target="addColumnConcatenateTarget0"
                                 :col-headers="activeRuleColHeaders" />
                             <ColumnSelector
-                                :target.sync="addColumnConcatenateTarget1"
+                                v-model:target="addColumnConcatenateTarget1"
                                 :col-headers="activeRuleColHeaders" />
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_substr"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <select v-model="addColumnSubstrType">
                                     <option value="keep_prefix">Keep only prefix specified.</option>
@@ -177,7 +177,7 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_column_value"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Value") }}
@@ -186,47 +186,47 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="remove_columns"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector
-                                :target.sync="removeColumnTargets"
+                                v-model:target="removeColumnTargets"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true" />
                         </RuleComponent>
                         <RuleComponent
                             rule-type="split_columns"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector
-                                :target.sync="splitColumnsTargets0"
+                                v-model:target="splitColumnsTargets0"
                                 label="Odd Row Column(s)"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true" />
                             <ColumnSelector
-                                :target.sync="splitColumnsTargets1"
+                                v-model:target="splitColumnsTargets1"
                                 label="Even Row Column(s)"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true" />
                         </RuleComponent>
                         <RuleComponent
                             rule-type="swap_columns"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector
-                                :target.sync="swapColumnsTarget0"
+                                v-model:target="swapColumnsTarget0"
                                 label="Swap Column"
                                 :col-headers="activeRuleColHeaders" />
                             <ColumnSelector
-                                :target.sync="swapColumnsTarget1"
+                                v-model:target="swapColumnsTarget1"
                                 label="With Column"
                                 :col-headers="activeRuleColHeaders" />
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_filter_regex"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
-                            <RegularExpressionInput :target.sync="addFilterRegexExpression" />
+                            <ColumnSelector v-model:target="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
+                            <RegularExpressionInput v-model:target="addFilterRegexExpression" />
                             <label v-b-tooltip.hover :title="titleInvertFilterRegex">
                                 <input v-model="addFilterRegexInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
@@ -234,9 +234,9 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_filter_matches"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
                             <input v-model="addFilterMatchesValue" type="text" />
                             <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterMatchesInvert" type="checkbox" />
@@ -245,9 +245,9 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_filter_compare"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addFilterCompareTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addFilterCompareTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 Filter out rows
                                 <select v-model="addFilterCompareType">
@@ -261,7 +261,7 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_filter_count"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
                             <label>
                                 Filter which rows?
@@ -281,9 +281,9 @@
                         </RuleComponent>
                         <RuleComponent
                             rule-type="add_filter_empty"
-                            :display-rule-type.sync="displayRuleType"
+                            v-model:display-rule-type="displayRuleType"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector v-model:target="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input v-model="addFilterEmptyInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
@@ -295,8 +295,8 @@
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
                                     :help="mappingTargets()[map.type].help"
-                                    :target.sync="map.columns"
-                                    :ordered-edit.sync="map.editing"
+                                    v-model:target="map.columns"
+                                    v-model:ordered-edit="map.editing"
                                     :col-headers="colHeaders"
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"

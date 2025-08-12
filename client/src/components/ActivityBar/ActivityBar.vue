@@ -349,7 +349,7 @@ defineExpose({
             v-if="isSideBarOpen && !hidePanel"
             side="left"
             :collapsible="false"
-            :reactive-width.sync="sidePanelWidth">
+            v-model:reactive-width="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />

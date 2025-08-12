@@ -556,7 +556,7 @@ defineExpose({
             :collection-type="collectionType"
             :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
-            :show.sync="collectionModalShow"
+            v-model:show="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

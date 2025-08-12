@@ -286,10 +286,10 @@ function onAdvancedSearch(filters: any) {
             :placeholder="props.placeholder"
             :debounce-delay="200"
             :filter-class="ToolFilters"
-            :filter-text.sync="localFilterText"
+            v-model:filter-text="localFilterText"
             has-help
             :loading="props.queryPending"
-            :show-advanced.sync="propShowAdvanced"
+            v-model:show-advanced="propShowAdvanced"
             menu-type="separate"
             @on-search="onAdvancedSearch">
             <template v-slot:menu-help-text>

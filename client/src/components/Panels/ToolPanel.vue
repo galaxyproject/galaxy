@@ -146,7 +146,7 @@ initializePanel();
                     v-if="panels && Object.keys(panels).length > 1"
                     :panel-views="panels"
                     :current-panel-view="currentPanelView"
-                    :show-advanced.sync="showAdvanced"
+                    v-model:show-advanced="showAdvanced"
                     :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
@@ -182,8 +182,8 @@ initializePanel();
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
-            :panel-query.sync="query"
-            :show-advanced.sync="showAdvanced"
+            v-model:panel-query="query"
+            v-model:show-advanced="showAdvanced"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool"
             @onInsertWorkflow="onInsertWorkflow"

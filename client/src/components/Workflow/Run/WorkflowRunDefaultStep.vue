@@ -1,6 +1,6 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" v-model:expanded="expanded">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
