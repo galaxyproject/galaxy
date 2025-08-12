@@ -73,7 +73,7 @@ describe("WorkflowAttributes", () => {
         expect(version).toHaveLength(TEST_VERSIONS.length);
 
         for (let i = 0; i < version.length; i++) {
-            const versionLabel = version[i].text();
+            const versionLabel = version[i]!.text();
             const versionDate = versionLabel!.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }
