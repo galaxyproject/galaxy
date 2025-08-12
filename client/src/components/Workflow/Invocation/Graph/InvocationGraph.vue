@@ -71,15 +71,13 @@ const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
-const invocationRef = computed(() => props.invocation);
-
 const { datatypesMapper } = useDatatypesMapper();
 
 const workflowId = computed(() => props.workflow?.id);
 const workflowVersion = computed(() => props.workflow?.version);
 
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
-    invocationRef,
+    computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
     workflowId.value,
     workflowVersion.value

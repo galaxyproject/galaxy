@@ -992,9 +992,7 @@ invocations:
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
     change_history_rerun_confirm: '#change-history-rerun-workflow .btn-primary'
-    invocation_tab:
-      type: xpath
-      selector: '//a[text()="${label}"]'
+    invocation_tab: '.nav-item[title="${label}"] > a.nav-link'
     invocation_details_tab:
       type: xpath
       selector: '//a[text()="${label}"]'

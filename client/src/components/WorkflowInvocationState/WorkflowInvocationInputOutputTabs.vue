@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BTab } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -18,6 +18,7 @@ const OUTPUTS_NOT_AVAILABLE_YET_MSG =
 
 const props = defineProps<{
     invocation: WorkflowInvocationElementView;
+    tab?: "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
     terminal?: boolean;
 }>();
 
@@ -63,60 +64,55 @@ const outputs = computed(() => {
 const parameters = computed(() => Object.values(props.invocation.input_step_parameters));
 </script>
 <template>
-    <span>
-        <BTab title="Inputs">
-            <div v-if="parameters.length || inputData.length">
-                <WorkflowInvocationInputs :invocation="props.invocation" />
+    <div v-if="props.tab === 'inputs'">
+        <div v-if="parameters.length || inputData.length">
+            <WorkflowInvocationInputs :invocation="props.invocation" />
+        </div>
+        <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
+    </div>
+    <div v-else-if="props.tab === 'outputs'">
+        <div v-if="outputs.length">
+            <div v-for="([key, output], index) in outputs" :key="index" data-description="terminal invocation output">
+                <Heading size="text" bold separator>{{ key }}</Heading>
+                <GenericHistoryItem
+                    :item-id="output.id"
+                    :item-src="output.src"
+                    data-description="terminal invocation output item" />
             </div>
-            <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
-        </BTab>
-        <BTab title="Outputs">
-            <div v-if="outputs.length">
-                <div
-                    v-for="([key, output], index) in outputs"
-                    :key="index"
-                    data-description="terminal invocation output">
-                    <Heading size="text" bold separator>{{ key }}</Heading>
-                    <GenericHistoryItem
-                        :item-id="output.id"
-                        :item-src="output.src"
-                        data-description="terminal invocation output item" />
-                </div>
+        </div>
+        <div v-else-if="workflowOutputLabels.length">
+            <div
+                v-for="(label, index) in workflowOutputLabels"
+                :key="index"
+                data-description="non-terminal invocation output">
+                <Heading size="text" bold separator>{{ label }}</Heading>
+                <BAlert
+                    v-if="!props.terminal"
+                    class="m-1 py-2"
+                    show
+                    variant="info"
+                    data-description="non-terminal invocation output loading">
+                    <LoadingSpan message="Output not created yet" />
+                </BAlert>
+                <BAlert v-else class="m-1 py-2" show variant="danger">
+                    <LoadingSpan message="Output not available" />
+                </BAlert>
             </div>
-            <div v-else-if="workflowOutputLabels.length">
-                <div
-                    v-for="(label, index) in workflowOutputLabels"
-                    :key="index"
-                    data-description="non-terminal invocation output">
-                    <Heading size="text" bold separator>{{ label }}</Heading>
-                    <BAlert
-                        v-if="!props.terminal"
-                        class="m-1 py-2"
-                        show
-                        variant="info"
-                        data-description="non-terminal invocation output loading">
-                        <LoadingSpan message="Output not created yet" />
-                    </BAlert>
-                    <BAlert v-else class="m-1 py-2" show variant="danger">
-                        <LoadingSpan message="Output not available" />
-                    </BAlert>
-                </div>
-            </div>
-            <BAlert v-else show variant="info">
-                <p>
-                    <LoadingSpan v-if="!props.terminal" :message="OUTPUTS_NOT_AVAILABLE_YET_MSG" />
-                    <span v-else v-localize>
-                        No steps were checked to mark their outputs as primary workflow outputs.
-                    </span>
-                </p>
-                <p>
-                    To get outputs from a workflow in this tab, you need to check the
-                    <i>
-                        "Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
-                    </i>
-                    option on individual outputs on individual steps in the workflow.
-                </p>
-            </BAlert>
-        </BTab>
-    </span>
+        </div>
+        <BAlert v-else show variant="info">
+            <p>
+                <LoadingSpan v-if="!props.terminal" :message="OUTPUTS_NOT_AVAILABLE_YET_MSG" />
+                <span v-else v-localize>
+                    No steps were checked to mark their outputs as primary workflow outputs.
+                </span>
+            </p>
+            <p>
+                To get outputs from a workflow in this tab, you need to check the
+                <i>
+                    "Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                </i>
+                option on individual outputs on individual steps in the workflow.
+            </p>
+        </BAlert>
+    </div>
 </template>
