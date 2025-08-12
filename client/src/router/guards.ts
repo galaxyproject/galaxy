@@ -1,4 +1,4 @@
-import type { NavigationGuardNext, Route } from "vue-router";
+import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
@@ -21,7 +21,7 @@ const LOGIN_ENTRY_ROUTES = ["/login/start", "/register/start"];
  * treats a `redirect` function returning undefined as "no match" and renders nothing --
  * which would leave anonymous users staring at a blank login page.
  */
-export function redirectLoggedIn(to: Route, _from: Route, next: NavigationGuardNext) {
+export function redirectLoggedIn(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy?.user?.id) {
         next();
@@ -31,7 +31,7 @@ export function redirectLoggedIn(to: Route, _from: Route, next: NavigationGuardN
     next(redirect && !LOGIN_ENTRY_ROUTES.includes(redirect) ? redirect : "/");
 }
 
-async function redirectIfAnonymous(to: Route, next: NavigationGuardNext) {
+async function redirectIfAnonymous(to: RouteLocationNormalized, next: NavigationGuardNext) {
     const userStore = useUserStore();
     await userStore.loadUser(false);
 
@@ -45,14 +45,14 @@ async function redirectIfAnonymous(to: Route, next: NavigationGuardNext) {
     return false;
 }
 
-export async function requireAuth(to: Route, _from: Route, next: NavigationGuardNext) {
+export async function requireAuth(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
     if (await redirectIfAnonymous(to, next)) {
         return;
     }
     next();
 }
 
-export async function requireAuthForUploadMethod(to: Route, _from: Route, next: NavigationGuardNext) {
+export async function requireAuthForUploadMethod(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
     const methodId = to.params.methodId as UploadMethod;
     const method = getUploadMethod(methodId);
 
