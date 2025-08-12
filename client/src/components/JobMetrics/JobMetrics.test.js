@@ -66,9 +66,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
         expect(metricsTables.length).toBe(2);
-        expect(metricsTables[0).find(".metrics_plugin_title").text()).toBe("core");
-        expect(metricsTables[0).findAll("tr").length).toBe(2);
-        expect(metricsTables[1).find(".metrics_plugin_title").text()).toBe("extended");
-        expect(metricsTables[1).findAll("tr").length).toBe(1);
+        expect(metricsTables[0].find(".metrics_plugin_title").text()).toBe("core");
+        expect(metricsTables[0].findAll("tr").length).toBe(2);
+        expect(metricsTables[1].find(".metrics_plugin_title").text()).toBe("extended");
+        expect(metricsTables[1].findAll("tr").length).toBe(1);
     });
 });

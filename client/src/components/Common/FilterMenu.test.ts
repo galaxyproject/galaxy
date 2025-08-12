@@ -117,11 +117,12 @@ describe("FilterMenu", () => {
     async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
             const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+            const showAdvancedEvent = wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0];
+            expect(showAdvancedEvent).toEqual(showAdvanced);
+            await wrapper.setProps({ showAdvanced: showAdvancedEvent });
         }
         const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
+        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0] as string;
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
@@ -170,7 +171,7 @@ describe("FilterMenu", () => {
 
         // First 4 filters are normal, non ranged input fields
         expectedFilters.forEach((expectedFilter, i) => {
-            const label = labels[i];
+            const label = labels[i]!;
             expect(label.text()).toBe(expectedFilter.label);
             if (i < 4) {
                 const filterInput = wrapper.find(`[placeholder='${expectedFilter.placeholder}']`);

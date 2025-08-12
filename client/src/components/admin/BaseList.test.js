@@ -39,8 +39,8 @@ describe("Categories", () => {
         expect(wrapper.find(".card-header").text()).toContain("There are 2");
         const th = wrapper.findAll("th");
         expect(th.length).toBe(3);
-        expect(th[0).text()).toBe("Execute");
-        expect(th[1).text()).toBe("Col 0");
-        expect(th[2).text()).toBe("Col 1");
+        expect(th[0].text()).toBe("Execute");
+        expect(th[1].text()).toBe("Col 0");
+        expect(th[2].text()).toBe("Col 1");
     });
 });

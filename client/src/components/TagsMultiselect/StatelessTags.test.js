@@ -61,9 +61,9 @@ describe("StatelessTags", () => {
 
         const tags = wrapper.findAll(".tag");
         expect(tags.length).toBe(3);
-        expect(tags[0).text()).toBe("tag_1");
-        expect(tags[1).text()).toBe("tag_2");
-        expect(tags[2).text()).toBe("tags:tag_3");
+        expect(tags[0].text()).toBe("tag_1");
+        expect(tags[1].text()).toBe("tag_2");
+        expect(tags[2].text()).toBe("tags:tag_3");
     });
 
     it("formats named tags", () => {
@@ -73,9 +73,9 @@ describe("StatelessTags", () => {
         });
 
         const tags = wrapper.findAll(".tag");
-        expect(tags[0).text()).toBe("#tag_1");
-        expect(tags[1).text()).toBe("tag_2");
-        expect(tags[2).text()).toBe("#tag_3");
+        expect(tags[0].text()).toBe("#tag_1");
+        expect(tags[1].text()).toBe("tag_2");
+        expect(tags[2].text()).toBe("#tag_3");
     });
 
     it("shows autocomplete options", async () => {

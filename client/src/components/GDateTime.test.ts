@@ -3,14 +3,14 @@ import { mount } from "@vue/test-utils";
 
 import GDateTime from "./GDateTime.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 async function mountGDateTime(props: object) {
     const wrapper = mount(GDateTime as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
+        ...globalConfig,
     });
 
     return wrapper;
@@ -26,7 +26,7 @@ describe("GDateTime.vue", () => {
         await dateInput.setValue("2023-08-30");
 
         expect(wrapper.emitted()).toHaveProperty("input");
-        expect(wrapper.emitted()?.["input"]?.[0]?.[0]).toEqual(new Date("2023-08-30T00:00:00"));
+        expect(wrapper.emitted()?.["input"]?.[0]?.[0] as Date).toEqual(new Date("2023-08-30T00:00:00"));
     });
 
     it("emits updated time when input changes", async () => {
@@ -38,6 +38,6 @@ describe("GDateTime.vue", () => {
         await timeInput.setValue("12:30");
 
         expect(wrapper.emitted()).toHaveProperty("input");
-        expect(wrapper.emitted()?.["input"]?.[0]?.[0]).toEqual(new Date("1970-01-01T12:30:00"));
+        expect(wrapper.emitted()?.["input"]?.[0]?.[0] as Date).toEqual(new Date("1970-01-01T12:30:00"));
     });
 });
