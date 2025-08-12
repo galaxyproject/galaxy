@@ -106,7 +106,7 @@ loadBroadcastsList();
                             <GButton
                                 id="show-active-filter-button"
                                 size="small"
-                                :pressed.sync="showActive"
+                                v-model:pressed="showActive"
                                 title="Show active broadcasts"
                                 outline
                                 color="blue">
@@ -116,7 +116,7 @@ loadBroadcastsList();
                             <GButton
                                 id="show-scheduled-filter-button"
                                 size="small"
-                                :pressed.sync="showScheduled"
+                                v-model:pressed="showScheduled"
                                 title="Show scheduled broadcasts"
                                 outline
                                 color="blue">
@@ -126,7 +126,7 @@ loadBroadcastsList();
                             <GButton
                                 id="show-expired-filter-button"
                                 size="small"
-                                :pressed.sync="showExpired"
+                                v-model:pressed="showExpired"
                                 title="Show expired broadcasts"
                                 outline
                                 color="blue">
