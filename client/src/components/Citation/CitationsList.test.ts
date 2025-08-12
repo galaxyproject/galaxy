@@ -69,10 +69,10 @@ describe("CitationsList", () => {
         expect(citationItems.length).toBe(2);
 
         expect(citationItems.at(0).text()).toContain(
-            "The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update",
+            "The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update"
         );
         expect(citationItems.at(1).text()).toContain(
-            "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations",
+            "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations"
         );
     });
 });
