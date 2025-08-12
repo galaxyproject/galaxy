@@ -3,18 +3,17 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./FormRadio";
 
-const localVue = getLocalVue(true);
-
 describe("FormRadio", () => {
     let wrapper;
 
     beforeEach(() => {
+        const globalConfig = getLocalVue(true);
         wrapper = mount(MountTarget, {
             propsData: {
                 value: false,
                 options: [],
             },
-            localVue,
+            ...globalConfig,
         });
     });
 
@@ -31,9 +30,9 @@ describe("FormRadio", () => {
         const labels = wrapper.findAll(".custom-control-label");
         expect(inputs.length).toBe(n);
         for (let i = 0; i < n; i++) {
-            await inputs.at(i).setChecked();
-            expect(labels.at(i).text()).toBe(`label_${i}`);
-            expect(inputs.at(i).attributes("value")).toBe(`value_${i}`);
+            await inputs[i].setValue(true);
+            expect(labels[i].text()).toBe(`label_${i}`);
+            expect(inputs[i].attributes("value")).toBe(`value_${i}`);
             expect(wrapper.emitted()["input"][i][0]).toBe(`value_${i}`);
         }
     });

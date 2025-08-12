@@ -3,18 +3,17 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./FormCheck";
 
-const localVue = getLocalVue(true);
-
 describe("FormCheck", () => {
     let wrapper;
 
     beforeEach(() => {
+        const globalConfig = getLocalVue(true);
         wrapper = mount(MountTarget, {
             propsData: {
                 value: null,
                 options: [],
             },
-            localVue,
+            ...globalConfig,
         });
     });
 
@@ -32,14 +31,14 @@ describe("FormCheck", () => {
         expect(inputs.length).toBe(n + 1);
         let expectedValues = [];
         for (let i = 0; i < n; i++) {
-            await inputs.at(i + 1).setChecked();
-            expect(labels.at(i + 1).text()).toBe(`label_${i}`);
-            expect(inputs.at(i + 1).attributes("value")).toBe(`value_${i}`);
+            await inputs[i + 1].setValue(true);
+            expect(labels[i + 1].text()).toBe(`label_${i}`);
+            expect(inputs[i + 1].attributes("value")).toBe(`value_${i}`);
             expectedValues.push(`value_${i}`);
             expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
         }
         for (let i = 0; i < n; i++) {
-            await inputs.at(i + 1).setChecked(false);
+            await inputs[i + 1].setValue(false);
             expectedValues = expectedValues.slice(1);
             if (expectedValues.length === 0) {
                 expectedValues = null;
