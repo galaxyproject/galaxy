@@ -350,9 +350,9 @@ watch(operationMessage, () => {
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
+                v-model:filter-text="filterText"
                 :loading="initDataLoading || resultsLoading"
-                :show-advanced.sync="showAdvanced"
+                v-model:show-advanced="showAdvanced"
                 view="compact" />
         </div>
         <div v-if="initDataLoading" class="grid-initial-loading">

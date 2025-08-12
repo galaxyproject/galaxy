@@ -93,7 +93,7 @@ function userTitle(title: string) {
             id="selector-history-modal"
             :histories="histories"
             :additional-options="['center', 'multi']"
-            :show-modal.sync="showSwitchModal"
+            v-model:show-modal="showSwitchModal"
             @selectHistory="historyStore.setCurrentHistory($event.id)" />
     </div>
 </template>

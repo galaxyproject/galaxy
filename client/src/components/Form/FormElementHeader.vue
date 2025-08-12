@@ -62,7 +62,7 @@ const badgeData = computed(() => {
             minimal
             :extensions="props.extensions || []"
             :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
+            v-model:formats-visible="formatsVisible" />
         <slot name="badges" />
         <BBadge
             v-if="badgeData.message && props.type !== 'boolean'"

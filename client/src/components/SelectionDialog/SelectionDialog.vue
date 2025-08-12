@@ -184,9 +184,9 @@ defineExpose({
                     class="w-100"
                     :placeholder="props.searchTitle || props.title"
                     :filter-class="props.filterClass"
-                    :filter-text.sync="filter"
+                    v-model:filter-text="filter"
                     :loading="props.isBusy"
-                    :show-advanced.sync="showAdvancedSearch" />
+                    v-model:show-advanced="showAdvancedSearch" />
 
                 <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
             </slot>

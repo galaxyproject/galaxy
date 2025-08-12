@@ -423,10 +423,10 @@ const {
                 name="History Items"
                 placeholder="search datasets"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
+                v-model:filter-text="filterText"
                 :loading="isLoading"
                 :search-error="searchError"
-                :show-advanced.sync="showAdvanced" />
+                v-model:show-advanced="showAdvanced" />
 
             <section v-if="!showAdvanced">
                 <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
@@ -439,7 +439,7 @@ const {
                     :last-checked="lastCheckedTime"
                     :show-controls="canEditHistory"
                     :owned-by-current-user="userOwnsHistory(currentUser, history)"
-                    :filter-text.sync="filterText"
+                    v-model:filter-text="filterText"
                     :hide-reload="isMultiViewItem"
                     @reloadContents="reloadContents" />
 
@@ -450,7 +450,7 @@ const {
                     :show-selection="showSelection"
                     :expanded-count="expandedCount"
                     :has-matches="hasMatches(historyItems)"
-                    :operation-running.sync="operationRunning"
+                    v-model:operation-running="operationRunning"
                     @update:show-selection="setShowSelection"
                     @collapse-all="collapseAll">
                     <template v-slot:selection-operations>
@@ -462,7 +462,7 @@ const {
                             :selection-size="selectionSize"
                             :is-query-selection="isQuerySelection"
                             :total-items-in-query="totalMatchesCount"
-                            :operation-running.sync="operationRunning"
+                            v-model:operation-running="operationRunning"
                             @update:show-selection="setShowSelection"
                             @operation-error="onOperationError"
                             @hide-selection="onHideSelection"
