@@ -57,7 +57,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
             <HistoryIndex @show="onShow" />
         </FlexPanel>
         <DragAndDropModal />

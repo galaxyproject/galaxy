@@ -897,7 +897,7 @@ const noOptionsWarningMessage = computed(() => {
                 :is-populated="currentValue && currentValue.length > 0"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
-                :workflow-tab.sync="workflowTab"
+                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @on-browse="onBrowse"
                 @set-current-field="(value) => (currentField = value)" />
@@ -947,7 +947,7 @@ const noOptionsWarningMessage = computed(() => {
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
                 show-view-create-options
-                :workflow-tab.sync="workflowTab"
+                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange" />
         </div>
 
@@ -999,7 +999,7 @@ const noOptionsWarningMessage = computed(() => {
             :collection-type="currentCollectionTypeTab"
             :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
-            :workflow-tab.sync="workflowTab"
+            v-model:workflow-tab="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
     </div>
