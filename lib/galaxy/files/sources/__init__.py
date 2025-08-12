@@ -344,11 +344,6 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         return uri_join(uri_root, path)
 
     def _parse_common_props(self, config: FilesSourceProperties):
-        """Initialize common configuration from a Pydantic model.
-
-        This method extracts common file source properties from a Pydantic model
-        and returns the remaining properties for plugin-specific use.
-        """
         self._file_sources_config = config.file_sources_config
         self.id = config.id
         self.label = config.label or f"Unlabeled {self.plugin_kind.value.capitalize()} File Source [{self.id}]"
