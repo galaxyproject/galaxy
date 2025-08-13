@@ -7,7 +7,7 @@ import type { MonitoringData, PersistentProgressTaskMonitorResult } from "@/comp
 
 import DownloadItemCard from "./DownloadItemCard.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 jest.mock("@/components/TagsMultiselect/StatelessTags.vue", () => ({
     name: "StatelessTags",
@@ -87,8 +87,8 @@ describe("DownloadItemCard.vue", () => {
     function mountDownloadItemCard(options: { monitoringData?: MonitoringData } = {}) {
         const monitoringData = options.monitoringData || baseMonitoringData;
         return mount(DownloadItemCard as object, {
-            propsData: { monitoringData },
-            localVue,
+            props: { monitoringData },
+            global: globalConfig.global,
         });
     }
 

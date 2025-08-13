@@ -18,18 +18,22 @@ jest.mock("@/utils/logout", () => ({
 
 const userLogoutClientMock = jest.mocked(userLogoutClient);
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 const { server, http } = useServerMock();
 
 const TEST_USER_ID = "myTestUserId";
 const TEST_EMAIL = `${TEST_USER_ID}@test.com`;
+const TEST_ROOT = false;
 
 async function mountComponent() {
     const pinia = createPinia();
 
     const wrapper = mount(UserDeletion as object, {
-        localVue,
-        pinia,
+        props: { userId: TEST_USER_ID, root: TEST_ROOT, email: TEST_EMAIL },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
 
     const userStore = useUserStore();

@@ -11,7 +11,7 @@ import { generateNewBroadcast } from "./test.utils";
 
 import BroadcastsList from "./BroadcastsList.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const selectors = {
     emptyBroadcastsListAlert: "#empty-broadcast-list-alert",
@@ -34,10 +34,12 @@ async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
     );
 
     const wrapper = mount(BroadcastsList as object, {
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 

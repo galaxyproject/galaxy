@@ -1,15 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { setActivePinia } from "pinia";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const selectors = {
     invocationSummary: ".invocation-overview",
@@ -152,12 +149,13 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {
-        propsData: {
+        props: {
             invocationId,
             isFullPage,
         },
-        pinia,
-        localVue,
+        global: {
+            plugins: [pinia],
+        },
     });
     await flushPromises();
     return wrapper;

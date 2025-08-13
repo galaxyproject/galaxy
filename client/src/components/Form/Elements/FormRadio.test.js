@@ -30,7 +30,7 @@ describe("FormRadio", () => {
         const labels = wrapper.findAll(".custom-control-label");
         expect(inputs.length).toBe(n);
         for (let i = 0; i < n; i++) {
-            await inputs[i].setValue(true);
+            await inputs[i].trigger('click');
             expect(labels[i].text()).toBe(`label_${i}`);
             expect(inputs[i].attributes("value")).toBe(`value_${i}`);
             expect(wrapper.emitted()["input"][i][0]).toBe(`value_${i}`);

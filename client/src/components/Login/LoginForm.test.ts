@@ -65,12 +65,12 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs[0];
+        const usernameField = inputs.at(0)!;
         expect(usernameField.attributes("type")).toBe("text");
 
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs[1];
+        const pwdField = inputs.at(1)!;
         expect(pwdField.attributes("type")).toBe("password");
 
         await pwdField.setValue("test_pwd");
@@ -94,7 +94,7 @@ describe("LoginForm", () => {
             enableOidc: true,
             showWelcomeWithLogin: true,
             welcomeUrl: "welcome_url",
-        });
+        } as any);
 
         expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeFalsy();
         // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
@@ -132,13 +132,13 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs[0];
+        const usernameField = inputs.at(0)!;
         expect(usernameField.attributes("type")).toBe("text");
         expect((usernameField.element as HTMLInputElement).disabled).toBe(true);
         expect((usernameField.element as HTMLInputElement).value).not.toBe("");
         expect((usernameField.element as HTMLInputElement).value).toContain(external_email);
 
-        const pwdField = inputs[1];
+        const pwdField = inputs.at(1)!;
         expect(pwdField.attributes("type")).toBe("password");
         expect((pwdField.element as HTMLInputElement).value).toBe("");
 

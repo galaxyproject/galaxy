@@ -56,7 +56,11 @@ describe("WorkflowAttributes", () => {
         await flushPromises();
 
         const userTagsStore = useUserTagsStore();
-        jest.spyOn(userTagsStore, "userTags", "get").mockReturnValue(autocompleteTags);
+        // Mock the userTags property directly
+        Object.defineProperty(userTagsStore, 'userTags', {
+            get: () => autocompleteTags,
+            configurable: true
+        });
         userTagsStore.onNewTagSeen = jest.fn();
         userTagsStore.onTagUsed = jest.fn();
         userTagsStore.onMultipleNewTagsSeen = jest.fn();
@@ -67,7 +71,7 @@ describe("WorkflowAttributes", () => {
 
         const name = wrapper.find("#workflow-name");
         expect((name.element as HTMLInputElement).value).toBe(TEST_NAME);
-        await wrapper.setProps({ name: "new_workflow_name" });
+        await wrapper.setProps({ name: "new_workflow_name" } as any);
         expect((name.element as HTMLInputElement).value).toBe("new_workflow_name");
 
         const version = wrapper.findAll(`#workflow-version-area > select > option`);
