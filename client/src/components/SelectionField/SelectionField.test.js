@@ -24,7 +24,7 @@ jest.mock("./services", () => ({
     getWorkflows: jest.fn(),
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 let mockedStore;
 
 // Helper to wait for debounce + async resolution
@@ -41,8 +41,8 @@ jest.mock("@/stores/historyStore", () => {
 
 function mountComponent(props = {}) {
     return mount(SelectionField, {
-        localVue,
-        propsData: {
+        global: globalConfig.global,
+        props: {
             objectType: "history_dataset_id",
             ...props,
         },
