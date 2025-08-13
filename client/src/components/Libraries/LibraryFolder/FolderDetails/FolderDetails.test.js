@@ -28,10 +28,10 @@ const DETAILS_MODAL = "#details-modal";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
-async function mountFolderDetailsWrapper(localVue) {
+async function mountFolderDetailsWrapper(globalConfig) {
     const wrapper = mount(FolderDetails, {
-        localVue,
-        propsData: INPUT_PROP_DATA,
+        props: INPUT_PROP_DATA,
+        global: globalConfig.global,
     });
     await flushPromises();
     return wrapper;
@@ -39,15 +39,15 @@ async function mountFolderDetailsWrapper(localVue) {
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     const axiosMock = new MockAdapter(axios);
     let wrapper;
-    const localVue = getLocalVue();
+    const globalConfig = getLocalVue();
 
     beforeEach(async () => {
         axiosMock.reset();
-        wrapper = await mountFolderDetailsWrapper(localVue);
+        wrapper = await mountFolderDetailsWrapper(globalConfig);
     });
 
     afterEach(async () => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("Should display details button", async () => {
