@@ -9,11 +9,11 @@ describe("FormRadio", () => {
     beforeEach(() => {
         const globalConfig = getLocalVue(true);
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 value: false,
                 options: [],
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
     });
 
