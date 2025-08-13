@@ -6,7 +6,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import invocationData from "../Workflow/test/json/invocation.json";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 // Constants
 const workflowData = {
@@ -46,17 +46,20 @@ jest.mock("@/stores/workflowStore", () => {
 
 describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
     async function loadWrapper(invocationData) {
-        const propsData = {
+        const props = {
             invocation: invocationData,
             invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
             stepsJobsSummary: [],
             jobStatesSummary: {},
         };
+        const pinia = createTestingPinia();
         const wrapper = shallowMount(WorkflowInvocationOverview, {
-            propsData,
-            localVue,
-            pinia: createTestingPinia(),
+            props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
         await flushPromises();
         return wrapper;
