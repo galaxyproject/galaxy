@@ -63,7 +63,7 @@ describe("CitationsList", () => {
     });
 
     it("renders the config Galaxy citation and any fetched citations", () => {
-        const citationItems = wrapper.findAllComponents(CitationItem);
+        const citationItems = wrapper.findAllComponents(CitationItem as any);
 
         // It finds the Galaxy citation from the config, and the mocked citation for the history tools.
         expect(citationItems.length).toBe(2);
