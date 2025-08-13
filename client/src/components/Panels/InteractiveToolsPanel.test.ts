@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -37,6 +37,9 @@ describe("InteractiveToolsPanel component", () => {
         );
     });
 
+    const globalConfig = getLocalVue();
+    const router = injectTestRouter();
+    
     const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
         const pinia = createTestingPinia({
             createSpy: () => jest.fn(),
@@ -56,17 +59,14 @@ describe("InteractiveToolsPanel component", () => {
         entryPointStore.$patch({ entryPoints: [] });
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
-            pinia,
-            stubs: {
-                ActivityPanel: true,
-                DelayedInput: true,
-                FontAwesomeIcon: true,
-                UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: jest.fn(),
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia, router],
+                stubs: {
+                    ActivityPanel: true,
+                    DelayedInput: true,
+                    FontAwesomeIcon: true,
+                    UtcDate: true,
                 },
             },
         });
