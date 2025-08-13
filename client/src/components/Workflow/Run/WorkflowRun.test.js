@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
+import { setActivePinia } from "pinia";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { getRunData } from "./services";
 import sampleRunData1 from "./testdata/run1.json";
@@ -28,17 +29,20 @@ jest.mock("./WorkflowRunSuccess");
 
 describe("WorkflowRun.vue", () => {
     let wrapper;
-    let localVue;
+    const globalConfig = getLocalVue();
+    const router = injectTestRouter();
     const run1WorkflowId = "ebab00128497f9d7";
 
     beforeEach(() => {
-        const propsData = { workflowId: run1WorkflowId };
-        localVue = createLocalVue();
-        localVue.use(PiniaVuePlugin);
+        const props = { workflowId: run1WorkflowId };
+        const pinia = createTestingPinia();
+        setActivePinia(pinia);
         wrapper = mount(WorkflowRun, {
-            propsData: propsData,
-            localVue,
-            pinia: createTestingPinia(),
+            props: props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia, router],
+            },
         });
     });
 
@@ -71,7 +75,7 @@ describe("WorkflowRun.vue", () => {
 
     it("displays submission error", async () => {
         // waits for vue to render wrapper
-        await localVue.nextTick();
+        await wrapper.vm.$nextTick();
 
         expect(wrapper.vm.loading).toBe(true);
         expect(wrapper.vm.workflowError).toBe("");
@@ -85,7 +89,7 @@ describe("WorkflowRun.vue", () => {
         expect(wrapper.find(".alert-danger").exists()).toBe(false);
         wrapper.vm.handleSubmissionError("Some exception here");
 
-        await localVue.nextTick();
+        await wrapper.vm.$nextTick();
 
         expect(wrapper.vm.submissionError).toBe("Some exception here");
         expect(wrapper.find(".alert-danger").exists()).toBe(true);

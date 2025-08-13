@@ -27,10 +27,10 @@ describe("Workflow Export", () => {
     let wrapper;
     beforeEach(async () => {
         wrapper = shallowMount(WorkflowExport, {
-            propsData: {
+            props: {
                 id: "0",
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
     });
 

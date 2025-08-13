@@ -1,8 +1,11 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { BTable } from "bootstrap-vue";
+import { getLocalVue } from "tests/jest/helpers";
 
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
+
+const globalConfig = getLocalVue();
 
 const mockOptions = {
     callback: () => {},
@@ -12,13 +15,11 @@ const mockOptions = {
 
 describe("SelectionDialog.vue", () => {
     let wrapper;
-    let localVue;
 
     beforeEach(() => {
-        localVue = createLocalVue();
         wrapper = mount(SelectionDialog, {
-            propsData: mockOptions,
-            localVue,
+            props: mockOptions,
+            global: globalConfig.global,
         });
     });
 
@@ -31,7 +32,7 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("loads header correctly", async () => {
-        await localVue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
     });
 

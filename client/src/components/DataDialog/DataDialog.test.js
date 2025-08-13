@@ -1,4 +1,5 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { Model } from "./model";
 import { Services } from "./services";
@@ -8,6 +9,8 @@ import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
 
 jest.mock("app");
+
+const globalConfig = getLocalVue();
 
 const mockOptions = {
     callback: () => {},
@@ -130,12 +133,13 @@ describe("DataDialog.vue", () => {
     */
 
     it("loads correctly, embeds a SelectionDialog", () => {
-        const localVue = createLocalVue();
         wrapper = shallowMount(DataDialog, {
-            propsData: mockOptions,
-            localVue,
-            stubs: {
-                Icon: true,
+            props: mockOptions,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    Icon: true,
+                },
             },
         });
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
