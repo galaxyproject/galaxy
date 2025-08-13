@@ -5,16 +5,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import DetailsLayout from "./DetailsLayout";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
-async function createWrapper(component, localVue, userData, unwritable = false) {
+async function createWrapper(component, globalConfig, userData, unwritable = false) {
     const pinia = createPinia();
     const wrapper = mount(component, {
-        localVue,
-        pinia,
-        propsData: {
+        props: {
             writeable: !unwritable,
             renameable: !unwritable,
+        },
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
         },
     });
     const userStore = useUserStore();
@@ -24,7 +26,7 @@ async function createWrapper(component, localVue, userData, unwritable = false) 
 
 describe("DetailsLayout", () => {
     it("allows logged-in users to edit all details", async () => {
-        const wrapper = await createWrapper(DetailsLayout, localVue, {
+        const wrapper = await createWrapper(DetailsLayout, globalConfig, {
             id: "user.id",
             email: "user.email",
         });
@@ -36,7 +38,7 @@ describe("DetailsLayout", () => {
     });
 
     it("prompts anonymous users to log in to edit all details, but allows rename", async () => {
-        const wrapper = await createWrapper(DetailsLayout, localVue, {});
+        const wrapper = await createWrapper(DetailsLayout, globalConfig, {});
 
         expect(wrapper.find(".edit-button").attributes("title")).toContain("Log in");
 
@@ -47,7 +49,7 @@ describe("DetailsLayout", () => {
     it("disallows editing and renaming if props set them to false", async () => {
         const wrapper = await createWrapper(
             DetailsLayout,
-            localVue,
+            globalConfig,
             {
                 id: "user.id",
                 email: "user.email",
