@@ -7,13 +7,13 @@ describe("ServerSelection", () => {
     it("test server selection dropdown", () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(ServerSelection, {
-            propsData: {
+            props: {
                 toolshedUrl: "url_0",
                 toolshedUrls: ["url_0", "url_1"],
                 loading: false,
                 total: 10,
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         expect(wrapper.find(".description").text()).toBe("10 repositories available at");
         const $options = wrapper.findAll("a");
