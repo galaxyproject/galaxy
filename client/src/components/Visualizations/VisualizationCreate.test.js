@@ -18,7 +18,8 @@ const PLUGIN = {
     tags: ["tag1", "tag2"],
 };
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRouter: () => ({
         push: jest.fn(),
     }),
@@ -39,7 +40,7 @@ jest.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockedStore,
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 beforeEach(() => {
     setActivePinia(createPinia());
@@ -58,8 +59,8 @@ beforeEach(() => {
 
 it("renders plugin info after load", async () => {
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: globalConfig.global,
+        props: {
             visualization: "scatterplot",
         },
     });
@@ -83,8 +84,8 @@ it("adds hid to dataset names when fetching history items", async () => {
         ],
     });
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: globalConfig.global,
+        props: {
             visualization: "scatterplot",
         },
     });
