@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
+import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
@@ -15,7 +15,7 @@ import Masthead from "./Masthead.vue";
 
 jest.mock("app");
 jest.mock("./_webhooks");
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
     useRoute: jest.fn(() => ({ name: "Home" })),
     useRouter: jest.fn(),
 }));
@@ -26,7 +26,6 @@ setupMockConfig({});
 
 describe("Masthead.vue", () => {
     let wrapper;
-    let localVue;
     let windowManager;
     let testPinia;
 
@@ -41,9 +40,9 @@ describe("Masthead.vue", () => {
     loadMastheadWebhooks.mockImplementation(stubLoadWebhooks);
 
     beforeEach(async () => {
-        localVue = getLocalVue();
-        localVue.use(PiniaVuePlugin);
+        const globalConfig = getLocalVue();
         testPinia = createTestingPinia();
+        setActivePinia(testPinia);
 
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
@@ -52,13 +51,15 @@ describe("Masthead.vue", () => {
         userStore.currentUser = currentUser;
 
         wrapper = mount(Masthead, {
-            propsData: {
+            props: {
                 windowTab,
             },
-            localVue,
-            pinia: testPinia,
-            stubs: {
-                Icon: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, testPinia],
+                stubs: {
+                    Icon: true,
+                },
             },
         });
         await flushPromises();
