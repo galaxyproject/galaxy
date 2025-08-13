@@ -7,14 +7,14 @@ import { MESSAGES } from "@/components/ObjectStore/badgeMessages";
 
 import ObjectStoreBadge from "./ObjectStoreBadge.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue();
 
 const TEST_MESSAGE = "This is a test message for the badge.";
 
 async function mountBadge(badge: ObjectStoreBadgeType) {
     const wrapper = mount(ObjectStoreBadge as object, {
-        propsData: { badge },
-        localVue,
+        props: { badge },
+        global: globalConfig.global,
     });
 
     return wrapper;
