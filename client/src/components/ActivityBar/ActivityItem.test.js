@@ -1,17 +1,18 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import mountTarget from "./ActivityItem.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 describe("ActivityItem", () => {
     let wrapper;
 
     beforeEach(async () => {
         wrapper = mount(mountTarget, {
-            propsData: {
+            props: {
                 id: "activity-test-id",
                 activityBarId: "activity-bar-test-id",
                 icon: "activity-test-icon",
@@ -22,10 +23,12 @@ describe("ActivityItem", () => {
                 to: null,
                 tooltip: "activity-test-tooltip",
             },
-            pinia: createTestingPinia(),
-            localVue,
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), createTestingPinia(), router],
+                stubs: {
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
