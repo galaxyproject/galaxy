@@ -38,12 +38,12 @@ describe("JobParameters/JobParameters.vue", () => {
     });
 
     it("should render job parameters", async () => {
-        const propsData = {
+        const props = {
             jobId: JOB_ID,
         };
 
         const wrapper = mount(JobParameters as object, {
-            propsData,
+            props,
             stubs: {
                 DatasetProvider: DatasetProvider,
                 ContentItem: true,
@@ -86,14 +86,14 @@ describe("JobParameters/JobParameters.vue", () => {
     });
 
     it("should show only single parameter", async () => {
-        const propsData = {
+        const props = {
             jobId: JOB_ID,
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
+        const getSingleParam = async (props: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters as object, {
-                propsData,
+                props,
                 stubs: {
                     DatasetProvider: DatasetProvider,
                     ContentItem: true,
@@ -104,7 +104,7 @@ describe("JobParameters/JobParameters.vue", () => {
             return wrapper.find("#single-param");
         };
 
-        const singleParam = await getSingleParam(propsData);
+        const singleParam = await getSingleParam(props);
 
         expect(singleParam.text()).toBe("NO");
     });

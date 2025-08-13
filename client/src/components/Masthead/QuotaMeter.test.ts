@@ -12,16 +12,18 @@ import QuotaMeter from "./QuotaMeter.vue";
 
 jest.mock("@/api/schema");
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     setupMockConfig(config);
     const pinia = createTestingPinia();
     const userStore = useUserStore();
     userStore.currentUser = user;
-    const wrapper = mount(QuotaMeter as object, {
-        localVue,
-        pinia,
+    const wrapper = mount(QuotaMeter, {
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
     await flushPromises();
     return wrapper;

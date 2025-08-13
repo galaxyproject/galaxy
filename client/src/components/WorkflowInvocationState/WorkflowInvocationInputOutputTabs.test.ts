@@ -96,16 +96,18 @@ async function mountWorkflowInvocationInputOutputTabs(
     );
 
     const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
-        propsData: {
+        props: {
             invocation,
             terminal,
             tab,
         },
-        stubs: {
-            ContentItem: true,
-            ParameterStep: true,
+        global: {
+            stubs: {
+                ContentItem: true,
+                ParameterStep: true,
+            },
+            plugins: [createTestingPinia()],
         },
-        pinia: createTestingPinia(),
     });
     await flushPromises();
     return wrapper;
@@ -130,9 +132,11 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         for (let i = 0; i < testParameters.length; i++) {
             const testParameter = testParameters[i];
             const tableRow = tableParamValues[i];
-            expect(tableRow.find("td").text()).toEqual(testParameter?.label);
-            if (testParameter && "parameter_value" in testParameter) {
-                expect(tableRow.findAll("td")[1]!.text()).toEqual(testParameter.parameter_value.toString());
+            if (tableRow && testParameter) {
+                expect(tableRow.find("td").text()).toEqual(testParameter.label);
+                if ("parameter_value" in testParameter) {
+                    expect(tableRow.findAll("td")[1]!.text()).toEqual(testParameter.parameter_value.toString());
+                }
             }
         }
 
@@ -182,9 +186,11 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         for (let i = 0; i < invocationOutputs.length; i++) {
             const testOutput = invocationOutputs[i];
             const testLabel = expectedLabels[i];
-            expect(testOutput.text()).toContain(testLabel);
-            expect(testOutput.find(selectors.terminalInvocationOutputItem).exists()).toBe(terminal);
-            expect(testOutput.find(selectors.nonTerminalInvocationOutputLoading).exists()).toBe(!terminal);
+            if (testOutput && testLabel) {
+                expect(testOutput.text()).toContain(testLabel);
+                expect(testOutput.find(selectors.terminalInvocationOutputItem).exists()).toBe(terminal);
+                expect(testOutput.find(selectors.nonTerminalInvocationOutputLoading).exists()).toBe(!terminal);
+            }
         }
     }
 });

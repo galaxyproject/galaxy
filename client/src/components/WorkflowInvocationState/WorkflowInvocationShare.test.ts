@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
 import { useUserStore } from "@/stores/userStore";
@@ -109,7 +108,6 @@ jest.mock("@/stores/historyStore", () => {
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
 
 /**
  * Mounts the WorkflowInvocationShare component with props/stores adjusted given the parameters
@@ -132,17 +130,18 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
     );
 
     const wrapper = mount(WorkflowInvocationShare as object, {
-        propsData: {
+        props: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
             historyId: bothShareable ? `${TEST_HISTORY.id}-importable` : TEST_HISTORY.id,
         },
-        stubs: {
-            FontAwesomeIcon: true,
-            BModal: true,
+        global: {
+            stubs: {
+                FontAwesomeIcon: true,
+                BModal: true,
+            },
+            plugins: [createTestingPinia()],
         },
-        localVue,
-        pinia: createTestingPinia(),
     });
 
     const userStore = useUserStore();
@@ -208,9 +207,9 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        expect((wrapper.findComponent(GModal) as VueWrapper).vm.$props.visible).toBeFalsy();
+        expect((wrapper.findComponent(GModal) as VueWrapper).vm.$props.show).toBeFalsy();
         await openShareModal(wrapper);
-        expect((wrapper.findComponent(GModal) as VueWrapper).vm.$props.visible).toBeFalsy();
+        expect((wrapper.findComponent(GModal) as VueWrapper).vm.$props.show).toBeFalsy();
 
         // Instead we already have a singular toast with the link copied message
         const toasts = toastMock.mock.calls;

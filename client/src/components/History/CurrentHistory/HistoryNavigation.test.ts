@@ -33,12 +33,12 @@ const anonymousOptions = [
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
-async function createWrapper(propsData: object, userData?: any) {
+async function createWrapper(props: object, userData?: any) {
     const pinia = createPinia();
     setActivePinia(pinia);
 
     const wrapper = shallowMount(HistoryNavigation as object, {
-        props: propsData,
+        props: props,
         global: {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia],

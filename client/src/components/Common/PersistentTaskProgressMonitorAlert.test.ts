@@ -10,7 +10,7 @@ import {
 
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";
 
-type ComponentUnderTestProps = Partial<PropType<typeof PersistentTaskProgressMonitorAlert>>;
+type ComponentUnderTestProps = Record<string, any>;
 
 const selectors = {
     ProgressAlert: ".progress-monitor-alert",
@@ -47,8 +47,8 @@ const mountComponent = (
         useMonitor: FAKE_MONITOR,
     },
 ) => {
-    return shallowMount(PersistentTaskProgressMonitorAlert as object, {
-        propsData: {
+    return shallowMount(PersistentTaskProgressMonitorAlert as any, {
+        props: {
             ...props,
         },
     });
@@ -87,7 +87,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
 
         const inProgressAlert = wrapper.find('[variant="info"]');
         expect(inProgressAlert.exists()).toBe(true);
-        expect(inProgressAlert.text()).toContain("Task is in progress");
+        expect(inProgressAlert.text()).toContain("Task is in progress. Please wait");
     });
 
     it("renders completed when monitoring data is available and completed", () => {
@@ -113,7 +113,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
 
         const completedAlert = wrapper.find('[variant="success"]');
         expect(completedAlert.exists()).toBe(true);
-        expect(completedAlert.text()).toContain("Task completed");
+        expect(completedAlert.text()).toContain("Task completed successfully");
     });
 
     it("renders failed when monitoring data is available and failed", () => {
@@ -139,7 +139,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
 
         const failedAlert = wrapper.find('[variant="danger"]');
         expect(failedAlert.exists()).toBe(true);
-        expect(failedAlert.text()).toContain("Task failed");
+        expect(failedAlert.text()).toContain("Task failed.");
     });
 
     it("renders a link to download the task result when completed and task type is 'short_term_storage'", () => {

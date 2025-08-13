@@ -18,8 +18,6 @@ jest.mock("@/utils/tool-version", () => ({
     filterLatestToolVersions: jest.fn((tools: Tool[]) => tools),
 }));
 
-const localVue = getLocalVue();
-
 // Mock tools data
 const mockTools: Partial<Tool>[] = [
     { id: "rstudio/1.1.0", version: "1.1.0", name: "RStudio", model_class: "InteractiveTool" },
