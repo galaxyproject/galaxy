@@ -31,7 +31,6 @@ async function mountWorkflowList() {
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
-        ...globalConfig,
         global: {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia, router],
