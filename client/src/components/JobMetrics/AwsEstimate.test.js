@@ -5,19 +5,19 @@ import { getLocalVue } from "tests/jest/helpers";
 import { ec2Instances } from "./awsEc2ReferenceData.js";
 import AwsEstimate from "./AwsEstimate";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("JobMetrics/AwsEstimate.vue", () => {
     it("renders nothing if no matching EC2 instance exists.", async () => {
         const wrapper = mount(AwsEstimate, {
-            propsData: {
+            props: {
                 jobId: "0",
                 jobRuntimeInSeconds: 0,
                 coresAllocated: -999,
                 memoryAllocatedInMebibyte: -999,
                 ec2Instances,
             },
-            localVue,
+            global: globalConfig.global,
         });
 
         await wrapper.vm.$nextTick();
@@ -29,8 +29,8 @@ describe("JobMetrics/AwsEstimate.vue", () => {
             const JOB_ID = Math.random().toString(36).substring(2);
 
             const wrapper = mount(AwsEstimate, {
-                localVue,
-                propsData: {
+                global: globalConfig.global,
+                props: {
                     jobId: JOB_ID,
                     jobRuntimeInSeconds: Number(seconds),
                     coresAllocated: Number(cores),
