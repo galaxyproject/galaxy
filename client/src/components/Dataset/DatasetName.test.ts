@@ -3,12 +3,12 @@ import { shallowMount } from "@vue/test-utils";
 
 import DatasetName from "./DatasetName.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 async function mountComponent(propsData: { item: { name: string; state: string } }) {
     return shallowMount(DatasetName as object, {
-        propsData,
-        localVue,
+        props: propsData,
+        global: globalConfig.global,
     });
 }
 

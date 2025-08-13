@@ -7,7 +7,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import DatasetStorage from "./DatasetStorage.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const TEST_STORAGE_API_RESPONSE_WITHOUT_ID: DatasetStorageDetails = {
     object_store_id: null,
@@ -42,8 +42,8 @@ describe("DatasetStorage.vue", () => {
         );
 
         wrapper = shallowMount(DatasetStorage as object, {
-            propsData: { datasetId: TEST_DATASET_ID },
-            localVue,
+            props: { datasetId: TEST_DATASET_ID },
+            global: globalConfig.global,
         });
     }
 

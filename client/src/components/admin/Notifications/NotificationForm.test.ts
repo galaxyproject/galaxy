@@ -17,20 +17,22 @@ useServerMock();
 
 const SUBMIT_BUTTON_SELECTOR = "#notification-submit";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 async function mountNotificationForm(props?: object) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
     const wrapper = mount(NotificationForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 
