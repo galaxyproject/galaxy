@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToLink from "./ToLink.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const TEST_HISTORY_ID = "hist1235";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 const TEST_JOB_ID = "test1234job";
@@ -21,13 +21,13 @@ describe("ToLink.vue", () => {
     async function mountWithInitialExports(exports) {
         axiosMock.onGet(TEST_EXPORTS_URL).reply(200, exports);
         wrapper = shallowMount(ToLink, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: globalConfig.global,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();
+        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
         await flushPromises();
     }
 
@@ -38,7 +38,7 @@ describe("ToLink.vue", () => {
     it("should display a link if no exports ever generated", async () => {
         await mountWithInitialExports([]);
         expect(wrapper.find(".export-link")).toBeTruthy();
-        expect(wrapper.find("loadingspan-stub").exists()).toBeFalsy(); // loading span gone
+        expect(wrapper.find("loading-span-stub").exists()).toBeFalsy(); // loading span gone
     });
 
     it("should start polling if latest export is preparing", async () => {
@@ -56,7 +56,7 @@ describe("ToLink.vue", () => {
         ]);
         expect(then).toBeTruthy();
         expect(wrapper.vm.waitingOnJob).toBeTruthy();
-        expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();
+        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
     });
 
     afterEach(() => {
