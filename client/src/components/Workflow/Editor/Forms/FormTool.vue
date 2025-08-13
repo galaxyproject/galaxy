@@ -208,6 +208,7 @@ export default {
         postChanges(newVersion) {
             const payload = Object.assign({}, this.mainValues);
             const options = this.configForm;
+            const toolUuid = options.uuid;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
@@ -216,6 +217,7 @@ export default {
             }
             this.$emit("onSetData", this.stepId, {
                 tool_id: toolId,
+                tool_uuid: toolUuid,
                 tool_version: toolVersion,
                 type: "tool",
                 inputs: payload,
