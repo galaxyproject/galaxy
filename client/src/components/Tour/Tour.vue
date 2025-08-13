@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 import { isAdminUser, isAnonymousUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -95,6 +95,16 @@ const modalContents = computed<{
     return null;
 });
 
+// We use this ref to control the modal visibility
+const showModal = ref(false);
+watch(
+    () => modalContents.value,
+    (newValue) => {
+        showModal.value = newValue !== null;
+    },
+    { immediate: true },
+);
+
 start();
 
 onUnmounted(() => {
@@ -163,7 +173,7 @@ async function handleKeyup(e: KeyboardEvent) {
     <div class="d-flex flex-column">
         <GModal
             id="tour-requirement"
-            :show="modalContents !== null"
+            :show.sync="showModal"
             :confirm="modalContents?.ok !== undefined"
             :ok-text="modalContents?.okText"
             :title="modalContents?.title"
