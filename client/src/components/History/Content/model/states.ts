@@ -1,9 +1,28 @@
-import { isHDCA } from "@/api";
+import type { DCESummary, HDADetailed, HDCADetailed } from "@/api";
+import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
+import type { HistoryContentsResult } from "@/api/histories";
 import type { components } from "@/api/schema";
+
+import { DatasetStateSummary } from "../Collection/DatasetStateSummary";
+
+type HistoryContentItem = HistoryContentsResult[number];
+
+function isHDCAItem(item: HistoryContentItem | HDADetailed | HDCADetailed | DCESummary): boolean {
+    return (
+        item &&
+        typeof item === "object" &&
+        "history_content_type" in item &&
+        item.history_content_type === "dataset_collection"
+    );
+}
+
+function isDCEWithCollection(item: HistoryContentItem | HDADetailed | HDCADetailed | DCESummary): boolean {
+    return item && typeof item === "object" && "collection_type" in item && item.collection_type !== undefined;
+}
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
-type State =
+export type State =
     | DatasetState
     | "failed"
     | "placeholder"
@@ -166,24 +185,51 @@ export const HIERARCHICAL_COLLECTION_JOB_STATES = [
     "new",
 ] as const;
 
-export function getContentItemState(item: any) {
-    if (isHDCA(item)) {
-        if (item.populated_state === "failed") {
+/** Similar hierarchy for dataset states, ordered from highest to lowest priority. */
+export const HIERARCHICAL_COLLECTION_DATASET_STATES = [
+    ...(ERROR_DATASET_STATES as readonly DatasetState[]),
+    ...(NON_TERMINAL_DATASET_STATES as readonly DatasetState[]),
+    "deferred" as const,
+    "discarded" as const,
+] as const satisfies readonly DatasetState[];
+
+export function getContentItemState(item: HistoryContentItem | HDADetailed | HDCADetailed): State {
+    if (isHDCAItem(item) || isDCEWithCollection(item)) {
+        if ("populated_state" in item && item.populated_state === "failed") {
             return "failed_populated_state";
         }
-        if (item.populated_state === "new") {
+        if ("populated_state" in item && item.populated_state === "new") {
             return "new_populated_state";
         }
-        if (item.job_state_summary) {
+
+        // Check dataset states first (higher priority for actual data states)
+        if ("elements_states" in item && item.elements_states) {
+            const datasetSummary = new DatasetStateSummary(
+                item as {
+                    elements_states?: Record<string, number>;
+                    elements_deleted?: number;
+                    populated_state?: string | null;
+                }
+            );
+            for (const datasetState of HIERARCHICAL_COLLECTION_DATASET_STATES) {
+                if (datasetSummary.get(datasetState) > 0) {
+                    return datasetState;
+                }
+            }
+        }
+
+        // Fall back to job states if no dataset states
+        if ("job_state_summary" in item && item.job_state_summary) {
+            const jobStateSummary = item.job_state_summary as Record<string, number>;
             for (const jobState of HIERARCHICAL_COLLECTION_JOB_STATES) {
-                if (item.job_state_summary[jobState] > 0) {
+                if ((jobStateSummary[jobState] || 0) > 0) {
                     return jobState;
                 }
             }
         }
-    } else if (item.accessible === false) {
+    } else if ("accessible" in item && item.accessible === false) {
         return "inaccessible";
-    } else if (item.state) {
+    } else if ("state" in item && item.state) {
         return item.state;
     }
     return "ok";

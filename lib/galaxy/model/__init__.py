@@ -81,6 +81,7 @@ from sqlalchemy import (
     Integer,
     join,
     JSON,
+    literal,
     MetaData,
     not_,
     Numeric,
@@ -2235,44 +2236,15 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
         return rval
 
-    def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
-        subq = (
-            sa_session.query(HistoryDatasetCollectionAssociation.id)
-            .join(ImplicitCollectionJobs)
-            .join(ImplicitCollectionJobsJobAssociation)
-            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
-        )
-        if supports_skip_locked:
-            subq = subq.with_for_update(skip_locked=True).subquery()
-        implicit_statement = (
-            HistoryDatasetCollectionAssociation.table.update()
-            .where(HistoryDatasetCollectionAssociation.id.in_(select(subq)))
-            .values(update_time=update_time)
-        )
+    def update_hdca_update_time_for_job(self, update_time, sa_session):
         explicit_statement = (
             HistoryDatasetCollectionAssociation.table.update()
             .where(HistoryDatasetCollectionAssociation.job_id == self.id)
             .values(update_time=update_time)
         )
         sa_session.execute(explicit_statement)
-        if supports_skip_locked:
-            sa_session.execute(implicit_statement)
-        else:
-            conn = sa_session.connection(execution_options={"isolation_level": "SERIALIZABLE"})
-            with conn.begin() as trans:
-                try:
-                    conn.execute(implicit_statement)
-                    trans.commit()
-                except OperationalError as e:
-                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
-                    # and should have attribute `code`. Other engines should just report the message and move on.
-                    if int(getattr(e.orig, "pgcode", -1)) != 40001:
-                        log.debug(
-                            f"Updating implicit collection uptime_time for job {self.id} failed (this is expected for large collections and not a problem): {unicodify(e)}"
-                        )
-                    trans.rollback()
 
-    def set_final_state(self, final_state, supports_skip_locked):
+    def set_final_state(self, final_state):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
         statement = text(
@@ -2284,9 +2256,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         )
         sa_session = required_object_session(self)
         update_time = now()
-        self.update_hdca_update_time_for_job(
-            update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked
-        )
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
         params = {"job_id": self.id, "update_time": update_time}
         sa_session.execute(statement, params)
 
@@ -2350,9 +2320,22 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
         sa_session = required_object_session(self)
         update_time = now()
+
+        # Update job-specific collection associations
         self.update_hdca_update_time_for_job(
-            update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked
+            update_time=update_time,
+            sa_session=sa_session,
         )
+        # Update general collection associations for all datasets in this job
+        # This handles collections that contain datasets from this job but aren't directly job-associated
+        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
+        for dataset in job_datasets:
+            try:
+                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
+            except Exception:
+                # Don't let collection update failures prevent job comion
+                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
             sa_session.execute(statement, params)
@@ -4670,6 +4653,178 @@ class Dataset(Base, StorableObject, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def touch_collection_update_time(self, supports_skip_locked=None):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data. This method updates all collection associations that reference
+        this dataset through any of its dataset instances (HDAs, LDDAs, etc.).
+
+        Uses database-specific recursive CTEs for optimal performance.
+
+        Args:
+            supports_skip_locked: Boolean to indicate if database supports
+                FOR UPDATE SKIP LOCKED. Defaults to False.
+        """
+        session = object_session(self)
+        if not session:
+            return
+        dialect_name = session.bind.dialect.name
+
+        if dialect_name in ("postgresql", "sqlite"):
+            self._touch_collection_update_time_cte(session, supports_skip_locked)
+        else:
+            # Fallback for other databases
+            self._touch_collection_update_time_fallback(session)
+
+    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
+        """CTE implementation using SQLAlchemy core constructs"""
+
+        # Base case columns
+        base_columns = [
+            DatasetCollectionElement.dataset_collection_id.label("collection_id"),
+            literal(0).label("depth_level"),
+        ]
+
+        # Create a single base query that covers both HDA and LDDA cases using OR conditions
+        base_query = (
+            select(*base_columns)
+            .select_from(
+                DatasetCollectionElement.__table__.outerjoin(
+                    HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
+                ).outerjoin(
+                    LibraryDatasetDatasetAssociation.__table__,
+                    DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
+                )
+            )
+            .where(
+                or_(
+                    HistoryDatasetAssociation.dataset_id == self.id,
+                    LibraryDatasetDatasetAssociation.dataset_id == self.id,
+                )
+            )
+        )
+
+        # Create the recursive CTE from the single base query
+        collection_hierarchy_cte = base_query.cte(name="collection_hierarchy", recursive=True)
+
+        # Create aliases for the recursive part
+        ch_alias = aliased(collection_hierarchy_cte, name="ch")
+        parent_dce_alias = aliased(DatasetCollectionElement, name="parent_dce")
+
+        # Recursive case columns - conditional based on database support
+        recursive_columns = [
+            parent_dce_alias.dataset_collection_id.label("collection_id"),
+            (ch_alias.c.depth_level + 1).label("depth_level"),
+        ]
+
+        # Recursive case conditions
+        recursive_conditions = [
+            parent_dce_alias.child_collection_id == ch_alias.c.collection_id,
+            ch_alias.c.depth_level < 50,
+        ]
+
+        # Recursive case: Parent collections
+        recursive_query = select(*recursive_columns).where(and_(*recursive_conditions))
+
+        # Add the recursive part to the CTE
+        collection_hierarchy_cte = collection_hierarchy_cte.union_all(recursive_query)
+
+        # Create the final subquery that selects and orders collection IDs
+        collection_ids_subquery = select(collection_hierarchy_cte.c.collection_id).order_by(
+            collection_hierarchy_cte.c.collection_id
+        )
+
+        if supports_skip_locked:
+            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
+            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            hdca_ids_to_update = (
+                session.execute(
+                    select(HistoryDatasetCollectionAssociation.id)
+                    .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
+                    .order_by(HistoryDatasetCollectionAssociation.id)
+                    .with_for_update(skip_locked=True)
+                )
+                .scalars()
+                .all()
+            )
+
+            # Then update only the locked HDCAs
+            if hdca_ids_to_update:
+                update_stmt = (
+                    update(HistoryDatasetCollectionAssociation)
+                    .where(HistoryDatasetCollectionAssociation.id.in_(hdca_ids_to_update))
+                    .values(update_time=now())
+                )
+                session.execute(update_stmt)
+        else:
+            # Fallback to regular update without locking
+            update_stmt = (
+                update(HistoryDatasetCollectionAssociation)
+                .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
+                .values(update_time=now())
+            )
+            session.execute(update_stmt)
+
+    def _touch_collection_update_time_fallback(self, session):
+        """Python-based fallback for databases without good CTE support"""
+        visited_collections = set()
+        hdcas_to_update = []
+
+        def collect_parent_hdcas(collection_id, depth=0):
+            if collection_id in visited_collections or depth > 50:
+                return
+
+            visited_collections.add(collection_id)
+
+            # Find HDCAs for this collection - ordered by ID for consistency
+            hdca_stmt = (
+                select(HistoryDatasetCollectionAssociation)
+                .where(HistoryDatasetCollectionAssociation.collection_id == collection_id)
+                .order_by(HistoryDatasetCollectionAssociation.id)
+            )
+            hdcas = session.scalars(hdca_stmt).all()
+            hdcas_to_update.extend(hdcas)
+
+            # Find parent collections - ordered by ID for consistency
+            parent_stmt = (
+                select(DatasetCollectionElement.dataset_collection_id)
+                .where(DatasetCollectionElement.child_collection_id == collection_id)
+                .order_by(DatasetCollectionElement.dataset_collection_id)
+            )
+            parent_collection_ids = session.scalars(parent_stmt).all()
+
+            for parent_id in sorted(parent_collection_ids):
+                collect_parent_hdcas(parent_id, depth + 1)
+
+        # Start with collections containing this dataset - ordered by ID for consistency
+        initial_stmt = (
+            select(DatasetCollectionElement.dataset_collection_id)
+            .where(
+                or_(
+                    DatasetCollectionElement.hda_id.in_(
+                        select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.dataset_id == self.id)
+                    ),
+                    DatasetCollectionElement.ldda_id.in_(
+                        select(LibraryDatasetDatasetAssociation.id).where(
+                            LibraryDatasetDatasetAssociation.dataset_id == self.id
+                        )
+                    ),
+                )
+            )
+            .order_by(DatasetCollectionElement.dataset_collection_id)
+        )
+
+        initial_collection_ids = session.scalars(initial_stmt).all()
+
+        for collection_id in sorted(initial_collection_ids):
+            collect_parent_hdcas(collection_id)
+
+        # Update all collected HDCAs - sort by ID for consistent ordering
+        update_time = now()
+        for hdca in sorted(hdcas_to_update, key=lambda x: x.id):
+            hdca.update_time = update_time
+            session.add(hdca)
+
 
 class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
@@ -4915,19 +5070,29 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
             return self._state
-        return self.dataset.state
+        return self.dataset.state if self.dataset else None
 
     @state.setter
-    def state(self, state: Optional[DatasetState]):
+    def state(self, state: DatasetState):
         if state != self.state:
             if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
                 self._state = state
             else:
                 self.set_metadata_success_state()
+                assert self.dataset, "Dataset must be set before setting state"
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
                 self.dataset.state = state
+                self.touch_collection_update_time()
+
+    def touch_collection_update_time(self):
+        """
+        Update time is important to determine for what history items we need to fetch
+        updated data.
+        """
+        if self.dataset:
+            self.dataset.touch_collection_update_time()
 
     def set_metadata_success_state(self):
         self._state = None
@@ -6673,6 +6838,13 @@ class InnerCollectionFilter(NamedTuple):
         return self.operator_function(getattr(table, self.column), self.expected_value)
 
 
+class CollectionStateSummary(NamedTuple):
+    dbkeys: list[Union[str, None]]
+    extensions: list[str]
+    states: dict[str, int]
+    deleted: int
+
+
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     __tablename__ = "dataset_collection"
 
@@ -6694,8 +6866,14 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         order_by=lambda: DatasetCollectionElement.element_index,
     )
 
-    dict_collection_visible_keys = ["id", "collection_type"]
-    dict_element_visible_keys = ["id", "collection_type"]
+    dict_collection_visible_keys = [
+        "id",
+        "collection_type",
+        "elements_datatypes",
+        "elements_states",
+        "elements_deleted",
+    ]
+    dict_element_visible_keys = ["id", "collection_type", "elements_datatypes", "elements_states", "elements_deleted"]
 
     populated_states = DatasetCollectionPopulatedState
 
@@ -6807,12 +6985,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def elements_deleted(self):
         if not hasattr(self, "_elements_deleted"):
-            if session := object_session(self):
-                stmt = self._build_nested_collection_attributes_stmt(
-                    hda_attributes=("deleted",), dataset_attributes=("deleted",)
-                )
-                stmt = stmt.exists().where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
-                self._elements_deleted = session.execute(select(stmt)).scalar()
+            if object_session(self):
+                self._elements_deleted = self.dataset_states_and_extensions_summary.deleted
             else:
                 self._elements_deleted = False
                 for dataset_instance in self.dataset_instances:
@@ -6822,40 +6996,76 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._elements_deleted
 
     @property
-    def dataset_states_and_extensions_summary(self):
-        if not hasattr(self, "_dataset_states_and_extensions_summary"):
-            stmt = self._build_nested_collection_attributes_stmt(
-                hda_attributes=("extension",), dataset_attributes=("state",)
-            )
-            # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
-            stmt = stmt.add_columns(*stmt._order_by_clauses)
-            stmt = stmt.distinct()
+    def elements_datatypes(self):
+        if not hasattr(self, "_elements_datatypes"):
+            if object_session(self):
+                self._elements_datatypes = self.dataset_states_and_extensions_summary.extensions
+            else:
+                self._elements_datatypes = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.extension:
+                        self._elements_datatypes[dataset_instance.extension] += 1
+        return self._elements_datatypes
 
+    @property
+    def elements_states(self):
+        if not hasattr(self, "_elements_states"):
+            if object_session(self):
+                self._elements_states = self.dataset_states_and_extensions_summary.states
+            else:
+                self._elements_states = defaultdict(int)
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.state:
+                        self._elements_states[dataset_instance.state] += 1
+        return self._elements_states
+
+    @property
+    def dataset_states_and_extensions_summary(self):
+        """
+        Calculate dataset states and extensions for this collection.
+        Returns (dbkeys, extensions, states, deleted) similar to HDCA method.
+        """
+        if not hasattr(self, "_dataset_states_and_extensions_summary"):
+
+            stmt = self._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
-            states = set()
-            for extension, state, *_ in tuples:  # we discard the added columns from the order-by clause
-                states.add(state)
-                extensions.add(extension)
+            dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
+            for row in tuples:
+                if row is not None:
+                    dbkey_field = row._metadata.get("dbkey")
+                    if isinstance(dbkey_field, list):
+                        for dbkey in dbkey_field:
+                            dbkeys.add(dbkey)
+                    else:
+                        dbkeys.add(dbkey_field)
+                    if row.extension:
+                        extensions.add(row.extension)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            # Filter out None values before sorting
+            filtered_dbkeys = (dbkey for dbkey in dbkeys if dbkey is not None)
+            filtered_extensions = (ext for ext in extensions if ext is not None)
 
-            self._dataset_states_and_extensions_summary = (states, extensions)
-
+            self._dataset_states_and_extensions_summary = CollectionStateSummary(
+                sorted(filtered_dbkeys), sorted(filtered_extensions), states, deleted
+            )
         return self._dataset_states_and_extensions_summary
 
     @property
     def has_deferred_data(self):
         if not hasattr(self, "_has_deferred_data"):
-            has_deferred_data = False
-            if session := object_session(self):
-                # TODO: Optimize by just querying without returning the states...
-                stmt = self._build_nested_collection_attributes_stmt(dataset_attributes=("state",))
-                tuples = session.execute(stmt)
-                for (state,) in tuples:
-                    if state == Dataset.states.DEFERRED:
-                        has_deferred_data = True
-                        break
+            if object_session(self):
+                has_deferred_data = Dataset.states.DEFERRED in self.dataset_states_and_extensions_summary.states
             else:
+                has_deferred_data = False
                 # This will be in a remote tool evaluation context, so can't query database
                 for dataset_element in self.dataset_elements_and_identifiers():
                     if dataset_element.hda.state == Dataset.states.DEFERRED:
@@ -7163,7 +7373,9 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             element_count=self.collection.element_count,
-            elements_datatypes=list(self.dataset_dbkeys_and_extensions_summary[1]),
+            elements_datatypes=list(self.collection.elements_datatypes),
+            elements_deleted=self.collection.elements_deleted,
+            elements_states=self.collection.elements_states,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -7369,11 +7581,15 @@ class HistoryDatasetCollectionAssociation(
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
-            stmt = self.collection._build_nested_collection_attributes_stmt(hda_attributes=("_metadata", "extension"))
+            stmt = self.collection._build_nested_collection_attributes_stmt(
+                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+            )
             tuples = required_object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
+            states = defaultdict(int)
+            deleted = 0
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7384,7 +7600,11 @@ class HistoryDatasetCollectionAssociation(
                         dbkeys.add(dbkey_field)
                     if row.extension:
                         extensions.add(row.extension)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+                    if row.deleted:
+                        deleted += 1
+                    if row.state:
+                        states[row.state] += 1
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -7458,7 +7678,7 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
+            (dbkeys, extensions, *_) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",

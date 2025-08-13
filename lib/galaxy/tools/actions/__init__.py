@@ -293,7 +293,8 @@ class DefaultToolAction(ToolAction):
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
-                _, extensions = collection.dataset_states_and_extensions_summary
+                summary = collection.dataset_states_and_extensions_summary
+                extensions = summary.extensions
                 conversion_required = False
                 for ext in extensions:
                     if ext:

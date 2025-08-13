@@ -97,6 +97,23 @@ class DatasetState(str, Enum):
         return self.__members__.values()
 
 
+# Create dictionary for ElementsStatesDict using class syntax
+class ElementsStatesDict(TypedDict, total=False):
+    # Add fields for each DatasetState value
+    new: NotRequired[int]
+    upload: NotRequired[int]
+    queued: NotRequired[int]
+    running: NotRequired[int]
+    ok: NotRequired[int]
+    empty: NotRequired[int]
+    error: NotRequired[int]
+    paused: NotRequired[int]
+    setting_metadata: NotRequired[int]
+    failed_metadata: NotRequired[int]
+    deferred: NotRequired[int]
+    discarded: NotRequired[int]
+
+
 class JobState(str, Enum):
     NEW = "new"
     RESUBMITTED = "resubmitted"
@@ -1032,6 +1049,17 @@ class DCObject(Model, WithModelClass):
     element_count: ElementCountField
     contents_url: Optional[ContentsUrlField] = None
     elements: list["DCESummary"] = ElementsField
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
+    )
+    elements_datatypes: set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class DCESummary(Model, WithModelClass):
@@ -1179,6 +1207,14 @@ class HDCASummary(HDCACommon, WithModelClass):
     element_count: ElementCountField
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
+    )
+    elements_states: ElementsStatesDict = Field(
+        ..., description="A dictionary containing counts for each dataset state in the collection."
+    )
+    elements_deleted: int = Field(
+        ...,
+        title="Datasets deleted",
+        description="The number of elements in the collection that are marked as deleted.",
     )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
