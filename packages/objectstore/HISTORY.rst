@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-25.0.2.dev0
------------
+-------------------
+25.0.2 (2025-08-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Do not set attribute on a namedtuple by `@jdavcs <https://github.com/jdavcs>`_ in `#20599 <https://github.com/galaxyproject/galaxy/pull/20599>`_
 
 -------------------
 25.0.1 (2025-06-20)

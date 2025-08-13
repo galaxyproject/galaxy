@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
------------
-25.0.2.dev0
------------
+-------------------
+25.0.2 (2025-08-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix restricting user defined tool input datasets extensions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20545 <https://github.com/galaxyproject/galaxy/pull/20545>`_
+* Don't assume cwd = job directory when running prepare dirs by `@natefoo <https://github.com/natefoo>`_ in `#20571 <https://github.com/galaxyproject/galaxy/pull/20571>`_
+* Fix apply rules ownership check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20582 <https://github.com/galaxyproject/galaxy/pull/20582>`_
+* Prevent importing workflows with invalid step UUID by `@davelopez <https://github.com/davelopez>`_ in `#20596 <https://github.com/galaxyproject/galaxy/pull/20596>`_
+* Constraint conditional `redis` version to allow only minor updates by `@davelopez <https://github.com/davelopez>`_ in `#20603 <https://github.com/galaxyproject/galaxy/pull/20603>`_
+* Fix optional unspecified input to conditional step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20647 <https://github.com/galaxyproject/galaxy/pull/20647>`_
+* Avoid postgres truncation of aliases and labels by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20649 <https://github.com/galaxyproject/galaxy/pull/20649>`_
+* Fix deferred datasets in multiple dataset parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#20650 <https://github.com/galaxyproject/galaxy/pull/20650>`_
+* Bump up pulsar dependency to 0.15.9 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20672 <https://github.com/galaxyproject/galaxy/pull/20672>`_
+* Fix dataset serializers and response models by `@arash77 <https://github.com/arash77>`_ in `#20694 <https://github.com/galaxyproject/galaxy/pull/20694>`_
+* Update galaxy-release-util by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20727 <https://github.com/galaxyproject/galaxy/pull/20727>`_
+* Fix maximum workflow invocation duration test by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20729 <https://github.com/galaxyproject/galaxy/pull/20729>`_
+
+============
+Enhancements
+============
+
+* Add redis conditional dependency by `@davelopez <https://github.com/davelopez>`_ in `#20502 <https://github.com/galaxyproject/galaxy/pull/20502>`_
+* Improve workflow monitor loop times by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20522 <https://github.com/galaxyproject/galaxy/pull/20522>`_
 
 -------------------
 25.0.1 (2025-06-20)

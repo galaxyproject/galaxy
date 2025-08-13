@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-25.0.2.dev0
------------
+-------------------
+25.0.2 (2025-08-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix bug: tool output file may be overwritten by Runner's multi work t… by `@jianzuoyi <https://github.com/jianzuoyi>`_ in `#20639 <https://github.com/galaxyproject/galaxy/pull/20639>`_
+* Fix deferred datasets in multiple dataset parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#20650 <https://github.com/galaxyproject/galaxy/pull/20650>`_
 
 -------------------
 25.0.1 (2025-06-20)

@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-25.0.2.dev0
------------
+-------------------
+25.0.2 (2025-08-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix Invenio file downloads for published records with draft by `@davelopez <https://github.com/davelopez>`_ in `#20685 <https://github.com/galaxyproject/galaxy/pull/20685>`_
 
 -------------------
 25.0.1 (2025-06-20)

@@ -3,11 +3,86 @@ History
 
 .. to_doc
 
------------
-25.0.2.dev0
------------
+-------------------
+25.0.2 (2025-08-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Remove ``num_unique_values`` tiff metadata element by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20464 <https://github.com/galaxyproject/galaxy/pull/20464>`_
+* Bump up python for for pulsar package tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20521 <https://github.com/galaxyproject/galaxy/pull/20521>`_
+* Update Gravity to 1.0.8 by `@natefoo <https://github.com/natefoo>`_ in `#20523 <https://github.com/galaxyproject/galaxy/pull/20523>`_
+* Prevent DCE collections from being renamed by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20534 <https://github.com/galaxyproject/galaxy/pull/20534>`_
+* Use venv instead of virtualenv in package `make setup-venv` by `@natefoo <https://github.com/natefoo>`_ in `#20536 <https://github.com/galaxyproject/galaxy/pull/20536>`_
+* Move definition of ``DatasetCollectionDescriptionT`` before its use by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20539 <https://github.com/galaxyproject/galaxy/pull/20539>`_
+* Fix docs versioning by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20542 <https://github.com/galaxyproject/galaxy/pull/20542>`_
+* Fix restricting user defined tool input datasets extensions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20545 <https://github.com/galaxyproject/galaxy/pull/20545>`_
+* Fix description and metadata of some packages by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20546 <https://github.com/galaxyproject/galaxy/pull/20546>`_
+* Fix activity bar reordering persistence by `@dannon <https://github.com/dannon>`_ in `#20550 <https://github.com/galaxyproject/galaxy/pull/20550>`_
+* Fix PDF preview functionality in dataset view by `@dannon <https://github.com/dannon>`_ in `#20552 <https://github.com/galaxyproject/galaxy/pull/20552>`_
+* Propagate cached job output replacement to copies of outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20553 <https://github.com/galaxyproject/galaxy/pull/20553>`_
+* Fix workflow invocation report pdf generate by `@itisAliRH <https://github.com/itisAliRH>`_ in `#20558 <https://github.com/galaxyproject/galaxy/pull/20558>`_
+* Fix Storage Dashboard Link to Dataset Details by `@itisAliRH <https://github.com/itisAliRH>`_ in `#20565 <https://github.com/galaxyproject/galaxy/pull/20565>`_
+* Upgrade requests-unixsocket for requests compatibility by `@natefoo <https://github.com/natefoo>`_ in `#20566 <https://github.com/galaxyproject/galaxy/pull/20566>`_
+* Don't assume cwd = job directory when running prepare dirs by `@natefoo <https://github.com/natefoo>`_ in `#20571 <https://github.com/galaxyproject/galaxy/pull/20571>`_
+* Fix planemo serve, need user list by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20575 <https://github.com/galaxyproject/galaxy/pull/20575>`_
+* Fix apply rules ownership check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20582 <https://github.com/galaxyproject/galaxy/pull/20582>`_
+* Don't fail volume mount construction for tools without tool directory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20593 <https://github.com/galaxyproject/galaxy/pull/20593>`_
+* Prevent importing workflows with invalid step UUID by `@davelopez <https://github.com/davelopez>`_ in `#20596 <https://github.com/galaxyproject/galaxy/pull/20596>`_
+* Fix workflow loading error handling by `@davelopez <https://github.com/davelopez>`_ in `#20597 <https://github.com/galaxyproject/galaxy/pull/20597>`_
+* Do not set attribute on a namedtuple by `@jdavcs <https://github.com/jdavcs>`_ in `#20599 <https://github.com/galaxyproject/galaxy/pull/20599>`_
+* Constraint conditional `redis` version to allow only minor updates by `@davelopez <https://github.com/davelopez>`_ in `#20603 <https://github.com/galaxyproject/galaxy/pull/20603>`_
+* fix Admin job limit query by `@martenson <https://github.com/martenson>`_ in `#20626 <https://github.com/galaxyproject/galaxy/pull/20626>`_
+* Correct visualization response schema by `@guerler <https://github.com/guerler>`_ in `#20627 <https://github.com/galaxyproject/galaxy/pull/20627>`_
+* Ignore webob http exceptions for logging purposes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20630 <https://github.com/galaxyproject/galaxy/pull/20630>`_
+* Fix HistoryDatasetAsTable by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20636 <https://github.com/galaxyproject/galaxy/pull/20636>`_
+* Fix bug: tool output file may be overwritten by Runner's multi work t… by `@jianzuoyi <https://github.com/jianzuoyi>`_ in `#20639 <https://github.com/galaxyproject/galaxy/pull/20639>`_
+* Fix IntersectionObserver updates when replacing items by `@davelopez <https://github.com/davelopez>`_ in `#20646 <https://github.com/galaxyproject/galaxy/pull/20646>`_
+* Fix optional unspecified input to conditional step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20647 <https://github.com/galaxyproject/galaxy/pull/20647>`_
+* Avoid postgres truncation of aliases and labels by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20649 <https://github.com/galaxyproject/galaxy/pull/20649>`_
+* Fix deferred datasets in multiple dataset parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#20650 <https://github.com/galaxyproject/galaxy/pull/20650>`_
+* Fix empty default Optionals for tool_shed_repositories API. by `@jmchilton <https://github.com/jmchilton>`_ in `#20656 <https://github.com/galaxyproject/galaxy/pull/20656>`_
+* Remove content from ``packages/meta/requirements.txt`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20662 <https://github.com/galaxyproject/galaxy/pull/20662>`_
+* Add `num_unique_values` tiff metadata element, fixed by `@kostrykin <https://github.com/kostrykin>`_ in `#20669 <https://github.com/galaxyproject/galaxy/pull/20669>`_
+* Bump up pulsar dependency to 0.15.9 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20672 <https://github.com/galaxyproject/galaxy/pull/20672>`_
+* Fix invocation header by `@qchiujunhao <https://github.com/qchiujunhao>`_ in `#20676 <https://github.com/galaxyproject/galaxy/pull/20676>`_
+* Fix scratchbook display by `@dannon <https://github.com/dannon>`_ in `#20684 <https://github.com/galaxyproject/galaxy/pull/20684>`_
+* Fix Invenio file downloads for published records with draft by `@davelopez <https://github.com/davelopez>`_ in `#20685 <https://github.com/galaxyproject/galaxy/pull/20685>`_
+* Input linter: add missing attribute to `sort_by` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20693 <https://github.com/galaxyproject/galaxy/pull/20693>`_
+* Fix dataset serializers and response models by `@arash77 <https://github.com/arash77>`_ in `#20694 <https://github.com/galaxyproject/galaxy/pull/20694>`_
+* Add username filter to published pages grid by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20703 <https://github.com/galaxyproject/galaxy/pull/20703>`_
+* Fix parameter models for optional color params. by `@jmchilton <https://github.com/jmchilton>`_ in `#20705 <https://github.com/galaxyproject/galaxy/pull/20705>`_
+* Prevent negative offset in historyStore handleTotalCountChange by `@davelopez <https://github.com/davelopez>`_ in `#20708 <https://github.com/galaxyproject/galaxy/pull/20708>`_
+* Fix click to edit link by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20710 <https://github.com/galaxyproject/galaxy/pull/20710>`_
+* Fix ``test_base_image_for_targets`` mulled test to use mzmine by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20713 <https://github.com/galaxyproject/galaxy/pull/20713>`_
+* DatasetView Header - fixes text wrapping issues on small screens by `@dannon <https://github.com/dannon>`_ in `#20721 <https://github.com/galaxyproject/galaxy/pull/20721>`_
+* Update galaxy-release-util by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20727 <https://github.com/galaxyproject/galaxy/pull/20727>`_
+* Fix maximum workflow invocation duration test by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20729 <https://github.com/galaxyproject/galaxy/pull/20729>`_
+* Remove base_dir from zip in make_fast_zipfile by `@davelopez <https://github.com/davelopez>`_ in `#20739 <https://github.com/galaxyproject/galaxy/pull/20739>`_
+* fix config for nginx in docs by `@martenson <https://github.com/martenson>`_ in `#20757 <https://github.com/galaxyproject/galaxy/pull/20757>`_
+
+============
+Enhancements
+============
+
+* add fasta.bz2 as auto_compressed type by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20496 <https://github.com/galaxyproject/galaxy/pull/20496>`_
+* Add redis conditional dependency by `@davelopez <https://github.com/davelopez>`_ in `#20502 <https://github.com/galaxyproject/galaxy/pull/20502>`_
+* Improve workflow monitor loop times by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20522 <https://github.com/galaxyproject/galaxy/pull/20522>`_
+* Add datatype for LexicMap index by `@Smeds <https://github.com/Smeds>`_ in `#20586 <https://github.com/galaxyproject/galaxy/pull/20586>`_
+* Clarify how to separate job and workflow scheduling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20625 <https://github.com/galaxyproject/galaxy/pull/20625>`_
+* Add mzMLb and MBI datatypes by `@chambm <https://github.com/chambm>`_ in `#20632 <https://github.com/galaxyproject/galaxy/pull/20632>`_
+* Pairtool updated format and sniffers by `@Smeds <https://github.com/Smeds>`_ in `#20634 <https://github.com/galaxyproject/galaxy/pull/20634>`_
+* Add support for M4A audio files by `@arash77 <https://github.com/arash77>`_ in `#20667 <https://github.com/galaxyproject/galaxy/pull/20667>`_
+
+=============
+Other changes
+=============
+
+* Require user for visualizations create endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20629 <https://github.com/galaxyproject/galaxy/pull/20629>`_
+* Merge 24.2 into 25.0 by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20681 <https://github.com/galaxyproject/galaxy/pull/20681>`_
 
 -------------------
 25.0.1 (2025-06-20)
