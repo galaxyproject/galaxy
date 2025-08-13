@@ -100,7 +100,7 @@ describe("History SelectorModal.vue", () => {
     it("paginates the histories", async () => {
         await mountWith(PROPS_FOR_MODAL);
 
-        let displayedRows = wrapper.findAllComponents(GCard).wrappers;
+        let displayedRows = wrapper.findAllComponents(GCard);
         expect(displayedRows.length).toBe(10);
         expect(wrapper.find("[data-description='load more items button']").exists()).toBe(true);
 
@@ -109,7 +109,7 @@ describe("History SelectorModal.vue", () => {
             histories: historyStore.histories,
         });
 
-        displayedRows = wrapper.findAllComponents(GCard).wrappers;
+        displayedRows = wrapper.findAllComponents(GCard);
         expect(displayedRows.length).toBe(15);
         expect(wrapper.find("[data-description='load more items button']").exists()).toBe(false);
     });
@@ -141,7 +141,7 @@ describe("History SelectorModal.vue", () => {
             const targetRow2 = wrapper.find(`[data-pk="${targetHistoryId2}"]`);
             await targetRow2.trigger("click");
 
-            const selectedHistories = wrapper.findAll(`.${SELECTED_HISTORY_CLASS}`).wrappers;
+            const selectedHistories = wrapper.findAll(`.${SELECTED_HISTORY_CLASS}`);
             expect(selectedHistories.length).toBe(2);
 
             const button = wrapper.find("[data-description='change selected histories button']");
