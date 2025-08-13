@@ -3,7 +3,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import filtersMixin from "./filtersMixin";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const Component = {
     render() {},
@@ -14,8 +14,9 @@ describe("filtersMixin.js", () => {
     let wrapper;
 
     beforeEach(async () => {
-        const propsData = {};
-        wrapper = shallowMount(Component, propsData, localVue);
+        wrapper = shallowMount(Component, {
+            global: globalConfig.global,
+        });
     });
 
     it("should be initially unfiltered", async () => {
