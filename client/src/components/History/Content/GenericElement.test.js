@@ -11,12 +11,12 @@ const localVue = getLocalVue();
 localVue.use(VueRouter);
 const router = new VueRouter();
 
-suppressLucideVue2Deprecation();
-
 describe("GenericElement", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         wrapper = mount(GenericElement, {
             propsData: {
                 dsc: {

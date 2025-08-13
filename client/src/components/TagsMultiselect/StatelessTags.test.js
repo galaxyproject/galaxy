@@ -18,8 +18,6 @@ const mountWithProps = (props) => {
     });
 };
 
-suppressBootstrapVueWarnings();
-
 jest.mock("@/stores/userTagsStore");
 const onNewTagSeenMock = jest.fn((tag) => tag);
 useUserTagsStore.mockReturnValue({
@@ -50,6 +48,10 @@ const selectors = {
 };
 
 describe("StatelessTags", () => {
+    beforeEach(() => {
+        suppressBootstrapVueWarnings();
+    });
+
     it("shows tags", () => {
         const wrapper = mountWithProps({
             value: ["tag_1", "tag_2", "tags:tag_3"],

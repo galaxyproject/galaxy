@@ -46,9 +46,6 @@ async function mountWorkflowList() {
     return wrapper;
 }
 
-// The use of the tool tip in statelesstag without a real dom is causing issues
-suppressBootstrapVueWarnings();
-
 describe("WorkflowList", () => {
     beforeEach(() => {
         server.use(
@@ -56,6 +53,9 @@ describe("WorkflowList", () => {
                 return response(200).json({});
             })
         );
+
+        // The use of the tool tip in statelesstag without a real dom is causing issues
+        suppressBootstrapVueWarnings();
     });
 
     it("render empty workflow list", async () => {

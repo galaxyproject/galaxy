@@ -23,8 +23,6 @@ jest.mock("vue-router/composables", () => ({
     useRouter: jest.fn(() => ({})),
 }));
 
-suppressLucideVue2Deprecation();
-
 // mock queries
 updateContentFields.mockImplementation(async () => {});
 
@@ -40,6 +38,8 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => {
                 // We need to use untyped here because this endpoint is not

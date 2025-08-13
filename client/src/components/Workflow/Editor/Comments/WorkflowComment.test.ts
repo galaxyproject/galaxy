@@ -57,8 +57,6 @@ function getStyleProperty(element: Element, property: string) {
     return style.substring(startIndex, endIndex).trim();
 }
 
-suppressErrorForCustomIcons();
-
 describe("WorkflowComment", () => {
     const comment = {
         id: 0,
@@ -68,6 +66,10 @@ describe("WorkflowComment", () => {
         size: [100, 100],
         data: {},
     };
+
+    beforeEach(() => {
+        suppressErrorForCustomIcons();
+    });
 
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {
