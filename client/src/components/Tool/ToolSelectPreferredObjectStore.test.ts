@@ -52,7 +52,7 @@ describe("ToolSelectPreferredObjectStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[1]).toBeFalsy();
+        const emitted = wrapper.emitted("updated");
+        expect(emitted?.[0]?.[1]).toBeFalsy();
     });
 });
