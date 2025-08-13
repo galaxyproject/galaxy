@@ -21,7 +21,6 @@ describe("ToolSearch", () => {
                 currentPanel: {},
                 useWorker: false,
             },
-            ...globalConfig,
             global: {
                 ...globalConfig.global,
                 plugins: [...globalConfig.global.plugins, pinia, router],
@@ -40,9 +39,10 @@ describe("ToolSearch", () => {
 
         // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
         const sectionField = wrapper.find("[placeholder='any section']");
-        expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();
+        expect(wrapper.emitted("update:show-advanced")).toBeUndefined();
         await sectionField.trigger("keyup.esc");
-        expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
+        const emitted = wrapper.emitted("update:show-advanced");
+        expect(emitted ? emitted.length - 1 : 0).toBeFalsy();
 
         // Add filters to fields
         await wrapper.find("[data-description='toggle advanced search']").trigger("click");

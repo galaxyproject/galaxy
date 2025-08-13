@@ -1,11 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import DefaultBox from "./DefaultBox.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 type IntersectionObserverType = {
     new (callback: IntersectionObserverCallback, options?: IntersectionObserverInit): IntersectionObserver;
@@ -13,8 +14,10 @@ type IntersectionObserverType = {
 };
 
 function getWrapper() {
+    const pinia = createTestingPinia();
+    setActivePinia(pinia);
     return mount(DefaultBox as object, {
-        propsData: {
+        props: {
             chunkUploadSize: 100,
             defaultDbKey: "?",
             defaultExtension: "auto",
@@ -25,11 +28,13 @@ function getWrapper() {
             lazyLoad: 3,
             listDbKeys: [],
         },
-        localVue,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
-        pinia: createTestingPinia(),
     });
 }
 
