@@ -29,7 +29,7 @@ describe("Index.vue", () => {
             },
         });
         await flushPromises();
-        const tabs = wrapper.findComponent(".history-export-tabs");
+        const tabs = wrapper.find(".history-export-tabs");
         expect(tabs.exists()).toBeTruthy();
     });
 });

@@ -1,12 +1,12 @@
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryNavigation from "./HistoryNavigation.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 // all options
 const expectedOptions = [
@@ -35,11 +35,14 @@ const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOp
 
 async function createWrapper(propsData: object, userData?: any) {
     const pinia = createPinia();
+    setActivePinia(pinia);
 
     const wrapper = shallowMount(HistoryNavigation as object, {
-        propsData,
-        localVue,
-        pinia,
+        props: propsData,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
 
     const userStore = useUserStore();

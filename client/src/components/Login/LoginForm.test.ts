@@ -4,27 +4,32 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
 
 import MountTarget from "./LoginForm.vue";
 
-const localVue = getLocalVue(true);
-const testingPinia = createTestingPinia({ stubActions: false });
+const globalConfig = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
 async function mountLoginForm() {
+    const testingPinia = createTestingPinia({ stubActions: false });
+    setActivePinia(testingPinia);
+    
     const wrapper = mount(MountTarget as object, {
-        propsData: {
+        props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        localVue,
-        stubs: {
-            ExternalLogin: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, testingPinia],
+            stubs: {
+                ExternalLogin: true,
+            },
         },
-        pinia: testingPinia,
     });
 
     return wrapper;

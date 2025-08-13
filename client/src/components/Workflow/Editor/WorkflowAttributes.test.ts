@@ -25,7 +25,7 @@ describe("WorkflowAttributes", () => {
         suppressBootstrapVueWarnings();
 
         const pinia = createPinia();
-        const localVue = getLocalVue(true);
+        const globalConfig = getLocalVue(true);
 
         setActivePinia(pinia);
 
@@ -35,7 +35,7 @@ describe("WorkflowAttributes", () => {
         untypedParameters.getParameter("workflow_parameter_1");
 
         const wrapper = mount(WorkflowAttributes as object, {
-            propsData: {
+            props: {
                 id: "workflow_id",
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
@@ -44,11 +44,13 @@ describe("WorkflowAttributes", () => {
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },
-            stubs: {
-                LicenseSelector: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    LicenseSelector: true,
+                },
             },
-            localVue,
-            pinia,
         });
 
         await flushPromises();
