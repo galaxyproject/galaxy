@@ -87,9 +87,10 @@ function mountTour(props) {
  * Runs a Tour by identifier or from provided data.
  * @param {String} Unique Tour identifier (for api request)
  * @param {Object} Tour data
+ * @param {Function} routePush function to handle route changes
  * @returns mounted instance
  */
-export async function runTour(tourId, tourData = null) {
+export async function runTour(tourId, tourData = null, routePush = undefined) {
     if (!tourData) {
         tourData = await getTourData(tourId);
     }
@@ -124,5 +125,5 @@ export async function runTour(tourId, tourData = null) {
         });
     });
     const requirements = tourData.requirements || [];
-    return mountTour({ steps, requirements });
+    return mountTour({ steps, requirements, routePush });
 }
