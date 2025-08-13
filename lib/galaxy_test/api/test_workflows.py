@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import io
 import json
 import os
@@ -1667,42 +1668,71 @@ steps:
     @skip_without_tool("cat1")
     def test_run_workflow_with_valid_url_hashes(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
-            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
-            deferred = False
-            hashes_1 = [{"hash_function": "MD5", "hash_value": "5ba48b6e5a7c4d4930fda256f411e55b"}]
-            hashes_2 = [{"hash_function": "MD5", "hash_value": "ad0f811416f7ed2deb9122007d649fb0"}]
-            inputs = {
-                "WorkflowInput1": {
-                    "src": "url",
-                    "url": f"base64://{input_b64_1}",
-                    "ext": "txt",
-                    "deferred": deferred,
-                    "hashes": hashes_1,
-                },
-                "WorkflowInput2": {
-                    "src": "url",
-                    "url": f"base64://{input_b64_2}",
-                    "ext": "txt",
-                    "deferred": deferred,
-                    "hashes": hashes_2,
-                },
-            }
-            workflow_request = dict(
-                history=f"hist_id={history_id}",
+            self.run_workflow_with_valid_hashes(history_id=history_id, content_1="1 2 3", content_2="4 5 6")
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_with_valid_url_hashes_cached(self):
+        with self.dataset_populator.test_history() as history_id:
+            content_1 = uuid4().hex
+            content_2 = uuid4().hex
+            invocation_1 = self.run_workflow_with_valid_hashes(
+                history_id=history_id, content_1=content_1, content_2=content_2, use_cached_job=False
             )
-            workflow_request["inputs"] = json.dumps(inputs)
-            workflow_request["inputs_by"] = "name"
-            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-                workflow_id, request=workflow_request
-            ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
-            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-            for job in invocation_jobs:
-                assert job["state"] == "ok"
+            invocation_2 = self.run_workflow_with_valid_hashes(
+                history_id=history_id, content_1=content_1, content_2=content_2, use_cached_job=True
+            )
+            invocation_1_jobs = self.dataset_populator.invocation_jobs(invocation_1)
+            for job in invocation_1_jobs:
+                job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+                assert job_details["state"] == "ok"
+                assert not job_details["copied_from_job_id"]
+            invocation_2_jobs = self.dataset_populator.invocation_jobs(invocation_2)
+            for job in invocation_2_jobs:
+                job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+                assert job_details["state"] == "ok"
+                assert job_details["copied_from_job_id"]
+
+    def run_workflow_with_valid_hashes(
+        self, history_id: str, content_1: str, content_2: str, use_cached_job: bool = False
+    ):
+        workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        input_b64_1 = base64.b64encode(content_1.encode()).decode("utf-8")
+        input_b64_2 = base64.b64encode(content_2.encode()).decode("utf-8")
+        deferred = False
+        hashes_1 = [{"hash_function": "MD5", "hash_value": hashlib.md5(content_1.encode()).hexdigest()}]
+        hashes_2 = [{"hash_function": "MD5", "hash_value": hashlib.md5(content_2.encode()).hexdigest()}]
+        inputs = {
+            "WorkflowInput1": {
+                "src": "url",
+                "url": f"base64://{input_b64_1}",
+                "ext": "txt",
+                "deferred": deferred,
+                "hashes": hashes_1,
+            },
+            "WorkflowInput2": {
+                "src": "url",
+                "url": f"base64://{input_b64_2}",
+                "ext": "txt",
+                "deferred": deferred,
+                "hashes": hashes_2,
+            },
+        }
+        workflow_request = dict(
+            history=f"hist_id={history_id}",
+            use_cached_job=use_cached_job,
+        )
+        workflow_request["inputs"] = json.dumps(inputs)
+        workflow_request["inputs_by"] = "name"
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
+            "id"
+        ]
+        invocation = self._invocation_details(workflow_id, invocation_id)
+        assert invocation["state"] == "scheduled", invocation
+        invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+        for job in invocation_jobs:
+            assert job["state"] == "ok"
+        return invocation_id
 
     @skip_without_tool("cat1")
     def test_run_workflow_with_invalid_url_hashes(self):
