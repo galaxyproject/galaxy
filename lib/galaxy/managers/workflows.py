@@ -1559,6 +1559,7 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
+                step_dict["tool_uuid"] = step.tool_uuid
             # Add tool shed repository information and post-job actions to step dict.
             if isinstance(module, ToolModule):
                 if module.tool and module.tool.tool_shed:
@@ -1743,6 +1744,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "id": step_id,
                 "type": step_type,
                 "tool_id": step.tool_id,
+                "tool_uuid": step.tool_uuid,
                 "tool_version": step.tool_version,
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
                 "tool_inputs": step.tool_inputs,

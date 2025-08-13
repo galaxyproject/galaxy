@@ -14067,6 +14067,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -14109,6 +14114,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -14150,6 +14160,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -18107,6 +18122,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -20204,6 +20224,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -20732,6 +20757,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
