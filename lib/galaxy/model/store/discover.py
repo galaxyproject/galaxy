@@ -932,6 +932,7 @@ def persist_hdas(elements, model_persistence_context: ModelPersistenceContext, f
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
                 )
+                model_persistence_context.add_output_dataset_association("__unnamed_outputs", dataset)
                 dataset.discovered = True  # type: ignore[attr-defined]
                 if not hda_id:
                     datasets.append(dataset)
