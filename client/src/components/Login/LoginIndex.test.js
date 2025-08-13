@@ -3,7 +3,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./LoginIndex";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue(true);
 
 const SELECTORS = {
     REGISTER_TOGGLE: "[id=register-toggle]",
@@ -15,11 +15,11 @@ describe("LoginIndex", () => {
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 allowUserCreation: false,
                 sessionCsrfToken: "sessionCsrfToken",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 
