@@ -27,7 +27,7 @@ function getElement(selector) {
 }
 
 // wait for element
-function waitForElement(selector, resolve, reject, tries) {
+function waitForElement(selector, resolve, reject, tries, prerequisite) {
     try {
         if (selector) {
             const el = getElement(selector);
@@ -36,6 +36,14 @@ function waitForElement(selector, resolve, reject, tries) {
             if (el && isVisible) {
                 resolve();
             } else if (tries > 0) {
+                // First, try to click the prerequisite element if it exists
+                if (prerequisite) {
+                    const prereqEl = getElement(prerequisite);
+                    if (prereqEl) {
+                        prereqEl.click();
+                    }
+                }
+
                 setTimeout(() => {
                     waitForElement(selector, resolve, reject, tries - 1);
                 }, delay);
@@ -107,7 +115,7 @@ export async function runTour(tourId, tourData = null, routePush = undefined) {
             onBefore: async () => {
                 return new Promise((resolve, reject) => {
                     // wait for element before continuing tour
-                    waitForElement(step.element, resolve, reject, attempts);
+                    waitForElement(step.element, resolve, reject, attempts, step.prerequisite);
                 }).then(() => {
                     // pre-actions
                     let preclick = step.preclick;
@@ -118,13 +126,18 @@ export async function runTour(tourId, tourData = null, routePush = undefined) {
                     doInsert(step.element, step.textinsert);
                 });
             },
-            onNext: () => {
-                // post-actions
-                let postclick = step.postclick;
-                if (postclick === true) {
-                    postclick = [step.element];
-                }
-                doClick(postclick);
+            onNext: async () => {
+                return new Promise((resolve, reject) => {
+                    // wait for element before continuing tour
+                    waitForElement(step.element, resolve, reject, attempts, step.prerequisite);
+                }).then(() => {
+                    // post-actions
+                    let postclick = step.postclick;
+                    if (postclick === true) {
+                        postclick = [step.element];
+                    }
+                    doClick(postclick);
+                });
             },
         });
     });
