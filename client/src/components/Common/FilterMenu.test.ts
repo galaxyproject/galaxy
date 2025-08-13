@@ -116,16 +116,22 @@ describe("FilterMenu", () => {
 
     async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
-            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-            const showAdvancedEvent = wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0];
-            expect(showAdvancedEvent).toEqual(showAdvanced);
-            await wrapper.setProps({ showAdvanced: showAdvancedEvent });
+            const showAdvancedEvents = wrapper.emitted("update:show-advanced");
+            if (showAdvancedEvents) {
+                const toggleEmit = showAdvancedEvents.length - 1;
+                const showAdvancedEvent = showAdvancedEvents[toggleEmit]?.[0];
+                expect(showAdvancedEvent).toEqual(showAdvanced);
+                await wrapper.setProps({ showAdvanced: showAdvancedEvent });
+            }
         }
-        const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0] as string;
-        const receivedDict = filterClass.getQueryDict(receivedText);
-        const parsedDict = filterClass.getQueryDict(filterText);
-        expect(receivedDict).toEqual(parsedDict);
+        const filterTextEvents = wrapper.emitted("update:filter-text");
+        if (filterTextEvents) {
+            const filterEmit = filterTextEvents.length - 1;
+            const receivedText = filterTextEvents[filterEmit]?.[0] as string;
+            const receivedDict = filterClass.getQueryDict(receivedText);
+            const parsedDict = filterClass.getQueryDict(filterText);
+            expect(receivedDict).toEqual(parsedDict);
+        }
     }
 
     it("test generic test items filter panel search", async () => {
