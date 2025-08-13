@@ -56,7 +56,7 @@ const modalContents = computed<{
             ok: async () => {
                 errorMessage.value = "";
                 isPlaying.value = false;
-            }
+            },
         };
     }
 
@@ -211,7 +211,7 @@ function modalOk() {
                 <span v-if="!modalContents?.loading">{{ modalContents?.message }}</span>
                 <LoadingSpan v-else :message="modalContents?.message" />
             </BAlert>
-            <p v-if="errorMessage">
+            <div v-if="errorMessage">
                 The tour encountered an issue and cannot continue to the next step. This may be due to:
                 <ul class="mb-2">
                     <li>Required interface elements not being visible or accessible</li>
@@ -219,7 +219,7 @@ function modalOk() {
                     <li>Browser or network connectivity issues</li>
                 </ul>
                 Click <strong>Ok</strong> to retry the current step, or <strong>Cancel</strong> to cancel the tour.
-            </p>
+            </div>
         </GModal>
         <TourStep
             v-if="modalContents === null && currentHistory && currentStep && currentUser"
