@@ -21,7 +21,7 @@ describe("ToolFooter", () => {
         axiosMock.onGet(`/api/tools/tool_b/citations`).reply(200, citationsB);
 
         wrapper = mount(ToolFooter, {
-            propsData: {
+            props: {
                 id: "tool_a",
                 hasCitations: true,
                 xrefs: [],
@@ -29,12 +29,14 @@ describe("ToolFooter", () => {
                 creators: [],
                 requirements: [],
             },
-            ...globalConfig,
-            stubs: {
-                Citation: false,
-                License: true,
-                Creators: true,
-                FontAwesomeIcon: true,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    Citation: false,
+                    License: true,
+                    Creators: true,
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
