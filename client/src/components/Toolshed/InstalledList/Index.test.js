@@ -40,13 +40,15 @@ describe("InstalledList", () => {
     it("test installed list", async () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Index, {
-            propsData: {
+            props: {
                 filter: "",
             },
-            stubs: {
-                RepositoryDetails: true,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    RepositoryDetails: true,
+                },
             },
-            ...globalConfig,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
         await nextTick();

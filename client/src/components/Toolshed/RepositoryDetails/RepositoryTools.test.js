@@ -5,8 +5,9 @@ import RepositoryTools from "./RepositoryTools";
 
 describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(RepositoryTools, {
-            propsData: {
+            props: {
                 tools: [
                     {
                         guid: "guid",
@@ -15,7 +16,7 @@ describe("RepositoryTools", () => {
                     },
                 ],
             },
-            ...getLocalVue(),
+            global: globalConfig.global,
         });
         const $el = wrapper.findAll("td");
         const $first = $el[0];
@@ -25,8 +26,9 @@ describe("RepositoryTools", () => {
     });
 
     it("test collapsing tool version list in repository details", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(RepositoryTools, {
-            propsData: {
+            props: {
                 tools: [
                     {
                         guid: "guid_1",
@@ -45,6 +47,7 @@ describe("RepositoryTools", () => {
                     },
                 ],
             },
+            global: globalConfig.global,
         });
         const $el = wrapper.findAll("tr");
         expect($el.length).toBe(3);

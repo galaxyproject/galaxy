@@ -33,12 +33,12 @@ describe("Repositories", () => {
     it("test repository details loading", async () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Repositories, {
-            propsData: {
+            props: {
                 query: "toolname",
                 scrolled: false,
                 toolshedUrl: "toolshedUrl",
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         // Test initial state prior to the data fetch tick -- should be loading.
         expect(wrapper.find(".loading-message").text()).toBe("Loading repositories...");
@@ -50,7 +50,7 @@ describe("Repositories", () => {
         // Reset repositories and state to test empty.
         wrapper.vm.repositories = [];
         wrapper.vm.pageState = 2; // COMPLETE is '2'
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.find(".unavailable-message").text()).toBe("No matching repositories found.");
     });
 });

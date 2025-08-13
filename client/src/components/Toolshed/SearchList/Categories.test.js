@@ -31,22 +31,24 @@ describe("Categories", () => {
     it("test categories loading", () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: true,
                 toolshedUrl: "toolshedUrl",
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading categories...");
     });
 
     it("test categories table", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: false,
                 toolshedUrl: "toolshedUrl",
             },
-            });
+            global: globalConfig.global,
+        });
         await nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
