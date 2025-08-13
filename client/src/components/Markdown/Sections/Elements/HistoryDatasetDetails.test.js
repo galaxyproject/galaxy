@@ -9,7 +9,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetDetails from "./HistoryDatasetDetails.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -30,12 +30,14 @@ function setUpDatatypesStore() {
     return pinia;
 }
 
-async function mountTarget(propsData = {}) {
+async function mountTarget(props = {}) {
     server.use(http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(tabularMetaData)));
     const wrapper = mount(HistoryDatasetDetails, {
-        localVue,
-        propsData,
-        pinia: setUpDatatypesStore(),
+        props,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), setUpDatatypesStore()],
+        },
     });
     await flushPromises();
     return wrapper;

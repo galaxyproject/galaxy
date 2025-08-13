@@ -4,12 +4,12 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Target from "./CellOption.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function mountTarget(props = {}) {
     return mount(Target, {
-        localVue,
-        propsData: props,
+        props,
+        global: globalConfig.global,
     });
 }
 
