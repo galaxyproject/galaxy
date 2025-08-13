@@ -3,16 +3,16 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./RulesInput.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function getWrapper() {
     return mount(mountTarget, {
-        propsData: {
+        props: {
             fileSourcesConfigured: true,
             ftpUploadSite: null,
             historyId: "historyId",
         },
-        localVue,
+        global: globalConfig.global,
     });
 }
 
