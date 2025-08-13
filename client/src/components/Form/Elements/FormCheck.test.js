@@ -9,11 +9,11 @@ describe("FormCheck", () => {
     beforeEach(() => {
         const globalConfig = getLocalVue(true);
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 value: null,
                 options: [],
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
     });
 

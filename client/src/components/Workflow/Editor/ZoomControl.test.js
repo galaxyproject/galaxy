@@ -9,10 +9,10 @@ describe("ZoomControl", () => {
     it("test zoom control", async () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(ZoomControl, {
-            propsData: {
+            props: {
                 zoomLevel: 1,
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         const buttons = wrapper.findAll("button");
         expect(buttons.length).toBe(3);
