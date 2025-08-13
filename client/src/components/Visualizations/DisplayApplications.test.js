@@ -1,5 +1,4 @@
 import { mount } from "@vue/test-utils";
-import MockProvider from "components/providers/MockProvider";
 import { getLocalVue } from "tests/jest/helpers";
 
 import DisplayApplications from "./DisplayApplications";
@@ -9,43 +8,55 @@ describe("DisplayApplications", () => {
 
     beforeEach(() => {
         const globalConfig = getLocalVue();
+        
+        // Create a Vue 3 compatible mock provider
+        const mockData = {
+            display_apps: [
+                {
+                    label: "app-1",
+                    links: [
+                        {
+                            href: "link-href-1",
+                            text: "link-text-1",
+                            target: "link-target-1",
+                        },
+                    ],
+                },
+                {
+                    label: "app-2",
+                    links: [
+                        {
+                            href: "link-href-2",
+                            text: "link-text-2",
+                            target: "link-target-2",
+                        },
+                        {
+                            href: "link-href-3",
+                            text: "link-text-3",
+                            target: "link-target-3",
+                        },
+                    ],
+                },
+            ],
+        };
+        
         wrapper = mount(DisplayApplications, {
-            propsData: {
+            props: {
                 datasetId: "dataset-id",
             },
-            ...globalConfig,
-            stubs: {
-                DatasetProvider: MockProvider({
-                    result: {
-                        display_apps: [
-                            {
-                                label: "app-1",
-                                links: [
-                                    {
-                                        href: "link-href-1",
-                                        text: "link-text-1",
-                                        target: "link-target-1",
-                                    },
-                                ],
-                            },
-                            {
-                                label: "app-2",
-                                links: [
-                                    {
-                                        href: "link-href-2",
-                                        text: "link-text-2",
-                                        target: "link-target-2",
-                                    },
-                                    {
-                                        href: "link-href-3",
-                                        text: "link-text-3",
-                                        target: "link-target-3",
-                                    },
-                                ],
-                            },
-                        ],
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    DatasetProvider: {
+                        template: '<div><slot :result="result" :loaded="loaded" /></div>',
+                        data() {
+                            return {
+                                result: mockData,
+                                loaded: true,
+                            };
+                        },
                     },
-                }),
+                },
             },
         });
     });

@@ -7,14 +7,14 @@ describe("Tool", () => {
     test("test tool", () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {},
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement[0].text()).toBe("");
-        nameElement.trigger("click");
+        nameElement[0].trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
         expect(labelsElement.children).toBeUndefined();
@@ -26,14 +26,14 @@ describe("Tool", () => {
     test("test tool operation", () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {
                     name: "name",
                 },
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
-            ...globalConfig,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement[0].text()).toBe("name");
@@ -43,15 +43,16 @@ describe("Tool", () => {
         expect(title).toBe("operationTitle");
     });
     test("test tool hide name, test description", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {
                     name: "name",
                     description: "description",
                 },
                 hideName: true,
             },
-            localVue,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.length).toBe(0);
