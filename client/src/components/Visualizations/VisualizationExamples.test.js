@@ -101,8 +101,8 @@ describe("UploadExamples.vue", () => {
 
     it("does not render dropdown if urlData is missing", () => {
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: {},
+            props: {},
+            global: globalConfig.global,
         });
         expect(wrapper.findComponent(BDropdown).exists()).toBe(false);
     });

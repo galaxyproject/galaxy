@@ -15,7 +15,7 @@ jest.mock("@popperjs/core", () => ({
 
 function mountTarget(trigger = "click", interactive = false) {
     return mount(PopperComponent, {
-        propsData: {
+        props: {
             title: "Test Title",
             placement: "bottom",
             interactive,

@@ -6,20 +6,23 @@ import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
 
 function mountComponent(props = {}) {
+    const globalConfig = getLocalVue();
     return mount(ConfigureHeader, {
-        ...getLocalVue(),
-        propsData: { hasChanged: undefined, ...props },
-        stubs: {
-            BModal: {
-                template: "<div><slot></slot><slot name='modal-header'></slot><slot name='modal-footer'></slot></div>",
-                props: ["visible"],
-            },
-            BButton: {
-                template: "<button @click=\"$emit('click')\"><slot /></button>",
-            },
-            FontAwesomeIcon: true,
-            Heading: {
-                template: "<div><slot /></div>",
+        props: { hasChanged: undefined, ...props },
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                BModal: {
+                    template: "<div><slot></slot><slot name='modal-header'></slot><slot name='modal-footer'></slot></div>",
+                    props: ["visible"],
+                },
+                BButton: {
+                    template: "<button @click=\"$emit('click')\"><slot /></button>",
+                },
+                FontAwesomeIcon: true,
+                Heading: {
+                    template: "<div><slot /></div>",
+                },
             },
         },
     });
@@ -73,7 +76,7 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: true });
         wrapper.vm.showModal = true;
         await wrapper.vm.$nextTick();
-        const buttons = wrapper.findAll("button").wrappers;
+        const buttons = wrapper.findAll("button");
         const discardBtn = buttons.find((b) => b.text().includes("Discard Changes"));
         await discardBtn.trigger("click");
         expect(wrapper.emitted("cancel")).toBeTruthy();
@@ -83,7 +86,7 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: true });
         wrapper.vm.showModal = true;
         await wrapper.vm.$nextTick();
-        const buttons = wrapper.findAll("button").wrappers;
+        const buttons = wrapper.findAll("button");
         const applyBtn = buttons.find((b) => b.text().includes("Apply Changes"));
         await applyBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeTruthy();

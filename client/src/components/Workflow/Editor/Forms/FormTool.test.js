@@ -35,8 +35,9 @@ describe("FormTool", () => {
     });
 
     function mountTarget() {
+        const pinia = createTestingPinia();
         return mount(FormTool, {
-            propsData: {
+            props: {
                 id: "input",
                 datatypes: [],
                 step: {
@@ -57,12 +58,14 @@ describe("FormTool", () => {
                     post_job_actions: {},
                 },
             },
-            ...globalConfig,
-            stubs: {
-                ToolFooter: { template: "<div>tool-footer</div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    ToolFooter: { template: "<div>tool-footer</div>" },
+                },
+                provide: { workflowId: "mock-workflow" },
             },
-            pinia: createTestingPinia(),
-            provide: { workflowId: "mock-workflow" },
         });
     }
 
