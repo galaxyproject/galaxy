@@ -44,7 +44,6 @@ describe("HistoryImport.vue", () => {
 
         wrapper = mount(HistoryImport, {
             props: {},
-            ...globalConfig,
             global: {
                 ...globalConfig.global,
                 plugins: [...globalConfig.global.plugins, router],
@@ -60,24 +59,21 @@ describe("HistoryImport.vue", () => {
     });
 
     it("should allow import when URL available", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.importReady).toBeTruthy();
     });
 
     it("should require an URI if that is the import type", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-            importType: "sourceRemoteFilesUri",
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        wrapper.vm.importType = "sourceRemoteFilesUri";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.importReady).toBeFalsy();
     });
 
     it("should post to create a new history and wait on job when submitted", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        await wrapper.vm.$nextTick();
         let formData;
 
         server.use(
