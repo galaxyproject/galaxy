@@ -81,10 +81,9 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const globalConfig = getLocalVue();
 
         wrapper = mount(FormDirectory, {
-            propsData: {
+            props: {
                 value: null,
             },
-            ...globalConfig,
             global: {
                 ...globalConfig.global,
                 plugins: [...(globalConfig.global?.plugins || []), pinia],
