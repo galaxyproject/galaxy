@@ -13,7 +13,7 @@ jest.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-jest.mock("vue-router/composables");
+jest.mock("vue-router");
 
 const globalConfig = getLocalVue();
 
