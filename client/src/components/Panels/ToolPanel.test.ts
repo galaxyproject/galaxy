@@ -5,7 +5,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
 
@@ -29,7 +29,7 @@ interface ToolPanelView {
     searchable: boolean;
 }
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const { server, http } = useServerMock();
 
 const TEST_PANELS_URI = "/api/tool_panels";
@@ -104,18 +104,22 @@ describe("ToolPanel", () => {
         viewsList[DEFAULT_VIEW_ID]!.name = "Tools";
 
         const pinia = createPinia();
+        setActivePinia(pinia);
+        
         const wrapper = mount(ToolPanel as object, {
-            propsData: {
+            props: {
                 workflow: false,
                 editorWorkflows: null,
                 useSearchWorker: false,
             },
-            localVue,
-            stubs: {
-                icon: { template: "<div></div>" },
-                ToolBox: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                    ToolBox: true,
+                },
             },
-            pinia,
         });
 
         await flushPromises();
