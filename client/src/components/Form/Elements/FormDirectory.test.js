@@ -33,7 +33,7 @@ async function validateLatestEmittedPath(wrapper, expectedPath) {
     // also manually change prop value to be able to test the value being displayed
     await wrapper.setProps({ value: latestPath });
     const fullPathDisplayed = wrapper.find("[data-description='directory full path']");
-    expect(fullPathDisplayed.text()).toBe(`Directory Path: ${expectedPath}`);
+    expect(fullPathDisplayed.text()).toBe(`Directory Path:${expectedPath}`);
 }
 
 describe("DirectoryPathEditableBreadcrumb", () => {
@@ -59,10 +59,12 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     const saveNewChunk = async (path) => {
         // enter a new path chunk
         const input = wrapper.find("#path-input-breadcrumb");
-        await input.setValue(path);
+        input.element.value = path;
+        await input.trigger('input');
         expect(input.element.value).toBe(path);
 
-        input.trigger("keyup.enter");
+        // Trigger the Enter keyup event to call addPath method
+        await input.trigger("keyup", { key: "Enter" });
         return input;
     };
 
@@ -93,7 +95,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     });
     afterEach(async () => {
         if (wrapper) {
-            wrapper.destroy();
+            wrapper.unmount();
         }
         wrapper = undefined;
     });
