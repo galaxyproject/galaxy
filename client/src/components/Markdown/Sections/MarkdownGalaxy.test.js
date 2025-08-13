@@ -173,7 +173,8 @@ describe("MarkdownContainer", () => {
         });
         await flushPromises();
         const alert = wrapper.find(".alert-danger");
-        expect(alert.text()).toContain("Invalid or missing label for history_dataset_display");
+        expect(alert.text()).toContain("Invalid or missing label for");
+        expect(alert.text()).toContain("history_dataset_display");
     });
 
     it("Renders loading span while invocation is loading", async () => {

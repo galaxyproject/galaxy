@@ -15,7 +15,7 @@ import {
 
 import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue();
 
 const TEST_HISTORY_ID = "test-history-id";
 const TEST_HISTORY = {
@@ -30,11 +30,13 @@ const CONFIRM_DELETE_CHECKBOX = "[type='checkbox']";
 
 async function mountComponentWithHistory(history: HistorySummary) {
     const wrapper = shallowMount(HistoryArchiveExportSelector as object, {
-        propsData: { history },
-        localVue,
-        stubs: {
-            // Stub with the real component to be able to use setChecked
-            BFormCheckbox,
+        props: { history },
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                // Stub with the real component to be able to use checkbox interaction
+                BFormCheckbox,
+            },
         },
     });
     await flushPromises();
