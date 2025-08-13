@@ -63,10 +63,26 @@ function stagePlugins(callback) {
     // Flatten the glob patterns to actual directory paths
     const dirs = [...globSync(visualizationDirs)];
 
+    // Get list of installed visualization plugin names to filter out
+    const installedVisualizationNames = Object.keys(VISUALIZATION_PLUGINS);
+
     // Process each directory
     const copyPromises = dirs.map((sourceDir) => {
         // Get the relative path from the plugin base dir
         const relativeDir = path.relative(PATHS.pluginBaseDir, sourceDir);
+
+        // Extract the plugin name from the path (e.g., "visualizations/myvis/static" -> "myvis")
+        const pathParts = relativeDir.split(path.sep);
+        const pluginName = pathParts[1]; // visualizations/[pluginName]/static
+
+        // Skip if this is an installed visualization plugin
+        if (installedVisualizationNames.includes(pluginName)) {
+            console.log(`Skipping plugin staging for '${pluginName}' (already installed via npm package)`);
+            return Promise.resolve();
+        } else {
+            console.log(`Staging filesystem plugin '${pluginName}' from ${sourceDir}`);
+        }
+
         // The target should preserve the full path including 'static'
         const targetDir = path.join(staticPluginDir, relativeDir);
 
