@@ -3,15 +3,15 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("ObjectStoreRestrictionSpan", () => {
     let wrapper;
 
     it("should render info about private storage if isPrivate", () => {
         wrapper = shallowMount(ObjectStoreRestrictionSpan, {
-            propsData: { isPrivate: true },
-            localVue,
+            props: { isPrivate: true },
+            global: globalConfig.global,
         });
         expect(wrapper.find(".stored-how").text()).toMatch("private");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
@@ -19,8 +19,8 @@ describe("ObjectStoreRestrictionSpan", () => {
 
     it("should render info about unrestricted storage if not isPrivate", () => {
         wrapper = shallowMount(ObjectStoreRestrictionSpan, {
-            propsData: { isPrivate: false },
-            localVue,
+            props: { isPrivate: false },
+            global: globalConfig.global,
         });
         expect(wrapper.find(".stored-how").text()).toMatch("sharable");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
