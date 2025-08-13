@@ -3,12 +3,12 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Tag from "./Tag";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const mountWithProps = (props) => {
     return mount(Tag, {
-        propsData: props,
-        localVue,
+        props,
+        global: globalConfig.global,
     });
 };
 
