@@ -13,29 +13,27 @@ from typing import (
 )
 
 from fsspec import AbstractFileSystem
-from typing_extensions import (
-    cast,
-    NotRequired,
-    Unpack,
-)
+from typing_extensions import cast
 
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from galaxy.files import OptionalUserContext
-from . import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+    RemoteDirectory,
+    RemoteFile,
+    StrictModel,
 )
+from galaxy.files.sources import BaseFilesSource
 
 log = logging.getLogger(__name__)
 
 PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin package [%s]"
 
-T = TypeVar("T")
 
 # Maximum number of items to return in a single listing.
 # This is a safeguard to prevent excessive memory usage and performance issues
@@ -43,65 +41,69 @@ T = TypeVar("T")
 MAX_ITEMS_LIMIT = 1000
 
 
-class FsspecFilesSourceProperties(FilesSourceProperties, total=False):
-    listings_expiry_time: NotRequired[Optional[int]]
+class FsspecCommonFileSourceConfiguration(StrictModel):
+    """Common configuration options for fsspec-based file sources.
+
+    These options are not user-configurable so they don't need TemplateExpansion.
+    """
+
+    listings_expiry_time: Optional[int] = None
 
 
-class FsspecFilesSource(BaseFilesSource):
+class FsspecBaseFileSourceTemplateConfiguration(
+    BaseFileSourceTemplateConfiguration, FsspecCommonFileSourceConfiguration
+):
+    """Base template configuration for fsspec-based file sources.
+
+    Fsspec-based file sources template configurations should inherit from this class to define their template configurations.
+    """
+
+
+class FsspecBaseFileSourceConfiguration(BaseFileSourceConfiguration, FsspecCommonFileSourceConfiguration):
+    """Base resolved configuration for fsspec-based file sources.
+
+    Fsspec-based file sources configurations should inherit from this class to define their resolved configurations.
+    """
+
+
+TTemplateConfig = TypeVar("TTemplateConfig", bound=FsspecBaseFileSourceTemplateConfiguration)
+TResolvedConfig = TypeVar("TResolvedConfig", bound=FsspecBaseFileSourceConfiguration)
+
+
+class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
     required_module: ClassVar[Optional[Type[AbstractFileSystem]]]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
     supports_sorting = False
 
-    def __init__(self, **kwd: Unpack[FsspecFilesSourceProperties]):
+    def __init__(self, template_config: TTemplateConfig):
         self.ensure_required_dependency()
-        props = cast(FsspecFilesSourceProperties, self._parse_common_config_opts(kwd))
-        props = self._initialize_listings_expiry(props)
-        self._props = props
+        super().__init__(template_config)
+        self.template_config.listings_expiry_time = self._initialize_listings_expiry(template_config)
+
+    @property
+    def required_package_exception(self) -> Exception:
+        return Exception(PACKAGE_MESSAGE % self.required_package)
 
     def ensure_required_dependency(self):
         if self.required_module is None:
-            raise Exception(PACKAGE_MESSAGE % self.required_package)
-        return self.required_module
+            raise self.required_package_exception
 
-    def _initialize_listings_expiry(self, props: FsspecFilesSourceProperties) -> FsspecFilesSourceProperties:
-        file_sources_config = self._file_sources_config
-        if (
-            props.get("listings_expiry_time") is None
-            and file_sources_config
-            and file_sources_config.listings_expiry_time
-        ):
-            props["listings_expiry_time"] = file_sources_config.listings_expiry_time
-        return props
-
-    def get_prop_value(
-        self, prop_name: str, expected_type: Type[T], user_context: OptionalUserContext = None
-    ) -> Optional[T]:
-        """Get a property value, evaluating it if necessary."""
-        value = self._props.get(prop_name)
-        if value is None:
-            return None
-
-        if self._is_templated(value) and user_context is not None:
-            value = self._evaluate_prop(value, user_context=user_context)
-
-        if isinstance(value, expected_type):
-            return value
-        return None
+    def _initialize_listings_expiry(self, template_config: TTemplateConfig):
+        """Use general config listings expiry time if not explicitly set in the template config."""
+        return template_config.listings_expiry_time or template_config.file_sources_config.listings_expiry_time
 
     @abc.abstractmethod
-    def _open_fs(
-        self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None
-    ) -> AbstractFileSystem:
+    def _open_fs(self, context: FilesSourceRuntimeContext[TResolvedConfig]) -> AbstractFileSystem:
         """Subclasses must instantiate an fsspec AbstractFileSystem handle for this file system."""
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -114,7 +116,7 @@ class FsspecFilesSource(BaseFilesSource):
         Pagination is supported with `limit` and `offset` but please note it is not applied until after the full listing is retrieved from the filesystem.
         """
         try:
-            fs = self._open_fs(user_context=user_context, opts=opts)
+            fs = self._open_fs(context)
 
             if recursive:
                 return self._list_recursive(fs, path)
@@ -151,32 +153,21 @@ class FsspecFilesSource(BaseFilesSource):
         self,
         source_path: str,
         native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
     ):
         """Download a file from the fsspec filesystem to a local path."""
-        fs = self._open_fs(user_context=user_context, opts=opts)
+        fs = self._open_fs(context)
         fs.get_file(source_path, native_path)
 
     def _write_from(
         self,
         target_path: str,
         native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
     ):
         """Upload a file from a local path to the fsspec filesystem."""
-        if opts is not None and opts.writeable is False:
-            raise MessageException("Cannot write to this destination because it is configured as read-only.")
-        fs = self._open_fs(user_context=user_context, opts=opts)
+        fs = self._open_fs(context)
         fs.put_file(native_path, target_path)
-
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        """Get effective properties for serialization."""
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
 
     def _file_info_to_dict(self, dir_path: str, info: dict) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
@@ -185,7 +176,7 @@ class FsspecFilesSource(BaseFilesSource):
         uri = self.uri_from_path(dir_path)
 
         if info.get("type") == "directory":
-            return {"class": "Directory", "name": name, "uri": uri, "path": dir_path}
+            return RemoteDirectory(name=name, uri=uri, path=dir_path)
         else:
             size = int(info.get("size", 0))
             # Handle timestamp fields more robustly - check for None explicitly
@@ -197,14 +188,7 @@ class FsspecFilesSource(BaseFilesSource):
 
             ctime_result = self.to_dict_time(mtime) if mtime is not None else ""
             ctime = ctime_result if ctime_result is not None else ""
-            return {
-                "class": "File",
-                "name": name,
-                "size": size,
-                "ctime": ctime,
-                "uri": uri,
-                "path": path,
-            }
+            return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=path)
 
     def _list_recursive(self, fs: AbstractFileSystem, path: str) -> Tuple[List[AnyRemoteEntry], int]:
         """Handle recursive directory listing with item limit."""

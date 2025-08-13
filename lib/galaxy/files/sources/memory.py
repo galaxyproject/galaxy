@@ -1,19 +1,23 @@
 """In-memory filesystem implementation for Galaxy files sources."""
 
 import logging
-from typing import Optional
 
 from fsspec import AbstractFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
 
-from galaxy.files import OptionalUserContext
-from galaxy.files.sources._fsspec import FsspecFilesSource
-from . import FilesSourceOptions
+from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.sources._fsspec import (
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
+)
 
 log = logging.getLogger(__name__)
 
 
-class MemoryFilesSource(FsspecFilesSource):
+class MemoryFilesSource(
+    FsspecFilesSource[FsspecBaseFileSourceTemplateConfiguration, FsspecBaseFileSourceConfiguration]
+):
     """A FilesSource plugin for in-memory filesystem operations.
 
     This implementation uses fsspec's MemoryFileSystem to provide
@@ -30,12 +34,10 @@ class MemoryFilesSource(FsspecFilesSource):
     required_module = MemoryFileSystem
     required_package = "fsspec"
 
-    def _open_fs(
-        self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None
-    ) -> AbstractFileSystem:
-        props = self._serialization_props(user_context)
-        extra_props = opts.extra_props or {} if opts else {}
-        fs = MemoryFileSystem(**{**props, **extra_props})
+    def _open_fs(self, context: FilesSourceRuntimeContext[FsspecBaseFileSourceConfiguration]) -> AbstractFileSystem:
+        fs = MemoryFileSystem(
+            listings_expiry_time=context.config.listings_expiry_time,
+        )
         return fs
 
     def get_scheme(self) -> str:

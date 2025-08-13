@@ -1,29 +1,31 @@
+import os
 from typing import (
     Optional,
     Union,
 )
 
-from fs.osfs import OSFS
-from typing_extensions import Unpack
+from fsspec.implementations.local import LocalFileSystem
 
 from galaxy.files.models import (
-    BaseFileSourceConfiguration,
-    BaseFileSourceTemplateConfiguration,
+    AnyRemoteEntry,
     FilesSourceRuntimeContext,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._fsspec import (
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
-    FsspecFilesSourceProperties,
 )
 
 
-class TempFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+class TempFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     root_path: Union[str, TemplateExpansion]
+    auto_mkdir: bool = True
 
 
-class TempFileSourceConfiguration(BaseFileSourceConfiguration):
+class TempFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     root_path: str
+    auto_mkdir: bool = True
 
 
 class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, TempFileSourceConfiguration]):
@@ -44,27 +46,22 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
     template_config_class = TempFileSourceTemplateConfiguration
     resolved_config_class = TempFileSourceConfiguration
 
+    def __init__(self, template_config: TempFileSourceTemplateConfiguration):
+        super().__init__(template_config)
+        self._root_path = self.template_config.root_path
+
     def _open_fs(self, context: FilesSourceRuntimeContext[TempFileSourceConfiguration]):
-        if OSFS is None:
-            raise self.required_package_exception
-
-        return OSFS(root_path=context.config.root_path)
-
-    def __init__(self, **kwd: Unpack[FsspecFilesSourceProperties]):
-        super().__init__(**kwd)
-        props = self._parse_common_config_opts(kwd)
-        self._root_path = props.get("root_path", "")
-
-    def _ensure_root_path(self):
-        if not self._root_path:
-            raise ValueError("The config value for 'root_path' must be set for TempFilesSource.")
+        self._root_path = context.config.root_path
+        return LocalFileSystem(
+            auto_mkdir=context.config.auto_mkdir,
+            listings_expiry_time=context.config.listings_expiry_time,
+        )
 
     def _to_temp_path(self, path: str) -> str:
         """Convert a virtual temp path to an actual filesystem path.
 
         i.e. /a/b/c -> /{root_path}/a/b/c
         """
-        self._ensure_root_path()
         relative_path = path.lstrip(os.sep)
         if not relative_path:
             return self._root_path
@@ -75,39 +72,26 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
 
         i.e. /{root_path}/a/b/c -> /a/b/c
         """
-        self._ensure_root_path()
         native_path = native_path.replace(self._root_path, os.sep, 1)
         return native_path
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props = opts.extra_props or {} if opts else {}
-
-        root_path = props.pop("root_path", None)
-        if root_path is None:
-            root_path = tempfile.mkdtemp()
-
-        self._root_path = root_path
-        handle = LocalFileSystem(auto_mkdir=True, **{**props, **extra_props})
-        return handle
-
     def _list(
         self,
+        context: FilesSourceRuntimeContext[TempFileSourceConfiguration],
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         native_path = self._to_temp_path(path)
         entries, total = super()._list(
+            context=context,
             path=native_path,
             recursive=recursive,
-            user_context=user_context,
-            opts=opts,
+            write_intent=write_intent,
             limit=limit,
             offset=offset,
             query=query,
@@ -116,8 +100,8 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
 
         # Transform the paths in the results back to virtual paths
         for entry in entries:
-            entry["path"] = self._from_temp_path(entry["path"])
-            entry["uri"] = self._from_temp_path(entry["uri"])
+            entry.path = self._from_temp_path(entry.path)
+            entry.uri = self._from_temp_path(entry.uri)
 
         return entries, total
 
@@ -125,21 +109,19 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
         self,
         source_path: str,
         native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TempFileSourceConfiguration],
     ):
         temp_path = self._to_temp_path(source_path)
-        return super()._realize_to(temp_path, native_path, user_context, opts)
+        return super()._realize_to(temp_path, native_path, context)
 
     def _write_from(
         self,
         target_path: str,
         native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TempFileSourceConfiguration],
     ):
         temp_path = self._to_temp_path(target_path)
-        return super()._write_from(temp_path, native_path, user_context, opts)
+        return super()._write_from(temp_path, native_path, context)
 
     def get_scheme(self) -> str:
         return "temp"
