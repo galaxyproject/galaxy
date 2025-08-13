@@ -167,6 +167,12 @@ async function handleKeyup(e: KeyboardEvent) {
             break;
     }
 }
+
+function modalOk() {
+    if (modalContents.value?.ok) {
+        modalContents.value.ok();
+    }
+}
 </script>
 
 <template>
@@ -178,7 +184,7 @@ async function handleKeyup(e: KeyboardEvent) {
             :ok-text="modalContents?.okText"
             :title="modalContents?.title"
             size="small"
-            @ok="modalContents?.ok">
+            @ok="modalOk">
             <BAlert :variant="modalContents?.variant" show>
                 <span v-if="!modalContents?.loading">{{ modalContents?.message }}</span>
                 <LoadingSpan v-else :message="modalContents?.message" />
