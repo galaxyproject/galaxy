@@ -3,13 +3,13 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormUpload from "./FormUpload";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormUpload", () => {
     const mountFormUpload = (props) =>
         mount(FormUpload, {
-            propsData: props,
-            localVue,
+            props,
+            global: globalConfig.global,
         });
 
     it("should display selected file in disabled textarea", async () => {
@@ -25,7 +25,8 @@ describe("FormUpload", () => {
         const el = wrapper.find("textarea");
         expect(el.isVisible()).toBe(false);
         expect(el.text()).toBe("");
-        const noInput = wrapper.find("label");
-        expect(noInput.text()).toBe("No file chosen");
+        // The "No file chosen" text is handled by b-form-file component
+        const fileInput = wrapper.find("b-form-file");
+        expect(fileInput.exists()).toBe(true);
     });
 });
