@@ -5,16 +5,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FavoritesButton from "./FavoritesButton";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
-async function createWrapper(component, localVue, userData) {
+async function createWrapper(component, globalConfig, userData) {
     const pinia = createPinia();
     const wrapper = shallowMount(component, {
-        propsData: {
+        props: {
             query: "mock",
         },
-        localVue,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
+        },
     });
     const userStore = useUserStore();
     userStore.currentUser = { ...userStore.currentUser, ...userData };
@@ -23,7 +25,7 @@ async function createWrapper(component, localVue, userData) {
 
 describe("Favorites Button", () => {
     it("describes it's function to logged-in users", async () => {
-        const wrapper = await createWrapper(FavoritesButton, localVue, {
+        const wrapper = await createWrapper(FavoritesButton, globalConfig, {
             id: "user.id",
             email: "user.email",
         });
@@ -33,7 +35,7 @@ describe("Favorites Button", () => {
     });
 
     it("prompts anonymous users to log in", async () => {
-        const wrapper = await createWrapper(FavoritesButton, localVue, {});
+        const wrapper = await createWrapper(FavoritesButton, globalConfig, {});
 
         expect(wrapper.attributes("disabled")).toBeTruthy();
         expect(wrapper.attributes("title").toLowerCase()).toContain("log in");
