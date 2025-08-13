@@ -10,10 +10,12 @@ const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
 
+const globalConfig = getLocalVue();
+
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
-        propsData: props,
-        ...getLocalVue(),
+        props,
+        global: globalConfig.global,
     });
 };
 

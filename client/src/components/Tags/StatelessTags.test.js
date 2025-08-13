@@ -12,10 +12,10 @@ describe("Tags/StatelessTags.vue", () => {
     beforeEach(async () => {
         const globalConfig = getLocalVue();
         wrapper = mount(StatelessTags, {
-            ...globalConfig,
-            propsData: {
+            props: {
                 value: testTags,
             },
+            global: globalConfig.global,
         });
         emitted = wrapper.emitted();
     });
