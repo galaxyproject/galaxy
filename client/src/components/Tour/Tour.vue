@@ -18,6 +18,8 @@ const PLAY_DELAY = 3000;
 const props = defineProps<{
     steps: { title: string; content: string; onNext?: () => Promise<void>; onBefore?: () => Promise<void> }[];
     requirements: string[];
+    /** A way to use the vue-router which won't be available in this component locally (because we mount it in `runTour`). */
+    routePush?: (path: string) => void;
 }>();
 
 const currentIndex = ref(-1);
@@ -69,6 +71,12 @@ const modalContents = computed<{
                 title: "Requires Login",
                 message: "You must log in to Galaxy to use this tour.",
                 variant: "info",
+                okText: props.routePush ? "Login or Register" : undefined,
+                ok: async () => {
+                    if (props.routePush) {
+                        props.routePush("/login/start");
+                    }
+                },
             };
         }
         if (props.requirements.indexOf("admin") >= 0 && !isAdminUser(currentUser.value)) {
@@ -76,6 +84,16 @@ const modalContents = computed<{
                 title: "Requires Admin",
                 message: "You must be an admin to use this tour.",
                 variant: "info",
+                okText: props.routePush ? "Exit Tour" : undefined,
+                ok: async () => {
+                    if (props.routePush) {
+                        if (isAnonymousUser(currentUser.value)) {
+                            props.routePush("/login/start");
+                        } else {
+                            props.routePush("/");
+                        }
+                    }
+                },
             };
         }
         // TODO: better estimate for whether the history is new.
