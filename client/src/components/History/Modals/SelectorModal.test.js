@@ -1,8 +1,8 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { createPinia, setActivePinia } from "pinia";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -11,7 +11,8 @@ import { useUserStore } from "@/stores/userStore";
 import SelectorModal from "./SelectorModal.vue";
 import GCard from "components/Common/GCard.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 const CURRENT_HISTORY_ID = "COOL_ID";
 const getFakeHistorySummaries = (num, selectedIndex = 0) => {
@@ -64,12 +65,15 @@ describe("History SelectorModal.vue", () => {
         );
 
         const pinia = createPinia();
+        setActivePinia(pinia);
         wrapper = mount(SelectorModal, {
-            propsData: props,
-            localVue,
-            pinia,
-            stubs: {
-                icon: { template: "<div></div>" },
+            props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia, router],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
         });
 
