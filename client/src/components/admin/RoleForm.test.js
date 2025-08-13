@@ -8,10 +8,11 @@ import { useServerMock } from "@/api/client/__mocks__";
 import RoleForm from "./RoleForm.vue";
 
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const mockPush = jest.fn();
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -27,15 +28,15 @@ jest.mock("@/composables/filter/filter.js", () => {
 function mountTarget() {
     setActivePinia(createPinia());
     return mount(RoleForm, {
-        localVue,
-        stubs: {
-            FontAwesomeIcon: true,
-            FormSelection: true,
-            BButton: true,
-            BAlert: true,
-        },
-        directives: {
-            localize: () => {},
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+                FormSelection: true,
+            },
+            directives: {
+                localize: () => {},
+            },
         },
     });
 }
