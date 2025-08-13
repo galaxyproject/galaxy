@@ -50,14 +50,16 @@ describe("ActivitySettings", () => {
         );
         activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
-            ...globalConfig,
-            pinia,
             props: {
                 query: "",
                 activityBarId: undefined,
             },
-            stubs: {
-                FontAwesomeIcon: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    FontAwesomeIcon: { template: "<div></div>" },
+                },
             },
         });
         await activityStore.sync();
