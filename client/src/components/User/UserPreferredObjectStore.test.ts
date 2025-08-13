@@ -13,7 +13,7 @@ import UserPreferredObjectStore from "./UserPreferredObjectStore.vue";
 
 setupSelectableMock();
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
@@ -25,7 +25,7 @@ async function mountComponent() {
     );
 
     const wrapper = mount(UserPreferredObjectStore as object, {
-        localVue,
+        global: globalConfig.global,
     });
 
     await flushPromises();
