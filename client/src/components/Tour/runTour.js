@@ -28,21 +28,25 @@ function getElement(selector) {
 
 // wait for element
 function waitForElement(selector, resolve, reject, tries) {
-    if (selector) {
-        const el = getElement(selector);
-        const rect = el?.getBoundingClientRect();
-        const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
-        if (el && isVisible) {
-            resolve();
-        } else if (tries > 0) {
-            setTimeout(() => {
-                waitForElement(selector, resolve, reject, tries - 1);
-            }, delay);
+    try {
+        if (selector) {
+            const el = getElement(selector);
+            const rect = el?.getBoundingClientRect();
+            const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
+            if (el && isVisible) {
+                resolve();
+            } else if (tries > 0) {
+                setTimeout(() => {
+                    waitForElement(selector, resolve, reject, tries - 1);
+                }, delay);
+            } else {
+                throw Error(`Element not found. ${selector}`);
+            }
         } else {
-            throw Error(`Element not found. ${selector}`);
+            resolve();
         }
-    } else {
-        resolve();
+    } catch (error) {
+        reject(error);
     }
 }
 
