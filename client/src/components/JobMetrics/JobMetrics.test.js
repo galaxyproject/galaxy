@@ -16,14 +16,20 @@ jest.mock("axios", () => ({
 }));
 
 
+const globalConfig = getLocalVue();
+
 describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
+        const pinia = createTestingPinia();
+        setActivePinia(pinia);
         const wrapper = mount(JobMetrics, {
-            pinia: createTestingPinia(),
-            propsData: {
+            props: {
                 jobId: "9000",
             },
-            ...getLocalVue(),
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
 
         await wrapper.vm.$nextTick();
@@ -53,10 +59,12 @@ describe("JobMetrics/JobMetrics.vue", () => {
         setActivePinia(pinia);
 
         const wrapper = mount(JobMetrics, {
-            ...getLocalVue(),
-            pinia,
-            propsData: {
+            props: {
                 jobId: JOB_ID,
+            },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
             },
         });
 
