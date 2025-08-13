@@ -49,16 +49,16 @@ describe("UploadExamples.vue", () => {
     it("renders loading spinner when no historyId", () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         expect(wrapper.find("svg").exists()).toBe(true);
     });
 
     it("renders dropdown with upload options", () => {
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         expect(items.length).toBe(urlData.length);
@@ -70,8 +70,8 @@ describe("UploadExamples.vue", () => {
         const { uploadPayload } = require("@/utils/upload-payload.js");
         const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items[0].find("a").trigger("click");
@@ -90,8 +90,8 @@ describe("UploadExamples.vue", () => {
     it("shows error toast when upload fails", async () => {
         const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items[1].find("a").trigger("click");
@@ -110,8 +110,8 @@ describe("UploadExamples.vue", () => {
     it("reacts to history ID becoming available", async () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            ...globalConfig,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         expect(wrapper.find("svg").exists()).toBe(true);
         mockedStore.currentHistoryId = ref("new-history-id");
