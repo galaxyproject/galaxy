@@ -10,7 +10,7 @@ import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vu
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 const TEST_OBJECT_ID = "os123";
 const TEST_USER_OBJECT_STORE_ID = "user_objects://34";
 
@@ -53,8 +53,8 @@ describe("ShowSelectedObjectStore", () => {
             }),
         );
         wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
-            localVue,
+            props: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
+            global: globalConfig.global,
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
@@ -73,8 +73,8 @@ describe("ShowSelectedObjectStore", () => {
         );
 
         wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_USER_OBJECT_STORE_ID, forWhat: "Data goes into..." },
-            localVue,
+            props: { preferredObjectStoreId: TEST_USER_OBJECT_STORE_ID, forWhat: "Data goes into..." },
+            global: globalConfig.global,
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
