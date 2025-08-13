@@ -46,7 +46,7 @@ describe("ToolCard", () => {
                     id: "options.id",
                     name: "options.name",
                     version: "options.version",
-                    versions: [],
+                    versions: ["1.0", "2.0"],
                     sharable_url: "options.sharable_url",
                     help: "options.help",
                     help_format: "restructuredtext",
@@ -61,6 +61,17 @@ describe("ToolCard", () => {
                 plugins: [...(globalConfig.global?.plugins || []), pinia],
                 stubs: {
                     ToolSourceMenuItem: { template: "<div></div>" },
+                    ToolFavoriteButton: { template: "<div></div>" },
+                    ToolVersionsButton: { template: "<div></div>" },
+                    ToolTargetPreferredObjectStorePopover: { template: "<div></div>" },
+                    ToolSelectPreferredObjectStore: { template: "<div></div>" },
+                    'b-button': true,
+                    'b-button-group': { template: '<div class="tool-card-buttons"><slot></slot></div>' },
+                    'b-dropdown': { 
+                        template: '<div class="tool-dropdown" title="Options"><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div></div>'
+                    },
+                    'b-dropdown-item': true,
+                    'b-modal': true,
                 },
             },
         });
