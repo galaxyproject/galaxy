@@ -19,7 +19,7 @@ describe("FormCardSticky.vue", () => {
 
     const mountComponent = (props = {}, slots = {}) => {
         return mount(FormCardSticky, {
-            propsData: { ...defaultProps, ...props },
+            props: { ...defaultProps, ...props },
             global: {
                 components: {
                     Heading,
