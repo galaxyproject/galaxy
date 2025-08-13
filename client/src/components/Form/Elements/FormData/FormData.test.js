@@ -467,15 +467,14 @@ describe("FormData", () => {
         };
         expect(wrapper.emitted("input")[3][0]).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
-        const checkLinked = wrapper.find("input[type='checkbox']");
+        const checkLinked = wrapper.findComponent(".custom-switch");
         expect(wrapper.find(".custom-switch span").text()).toContain("Linked:");
         expect(wrapper.find(".custom-switch span").text()).toContain(
             "Datasets will be run in matched order with other datasets."
         );
-        expect(checkLinked.element.checked).toBeTruthy();
-        // Trigger the change event to uncheck the checkbox
-        checkLinked.element.checked = false;
-        await checkLinked.trigger("change");
+        expect(checkLinked.props().checked).toBeTruthy();
+        // Emit change event to uncheck the checkbox via Bootstrap-Vue component
+        await checkLinked.vm.$emit('input', false);
         expect(wrapper.find(".custom-switch span").text()).toContain("Unlinked:");
         expect(wrapper.find(".custom-switch span").text()).toContain(
             "Dataset will be run against *all* other datasets."
