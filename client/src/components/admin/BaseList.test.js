@@ -23,8 +23,9 @@ describe("Categories", () => {
         return {};
     };
     test("test categories loading", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(BaseList, {
-            propsData: {
+            props: {
                 icon: "fa fa-caret-down",
                 tooltip: "tooltip",
                 plural: "plural",
@@ -33,7 +34,7 @@ describe("Categories", () => {
                 getter: getter,
                 setter: setter,
             },
-            ...getLocalVue(),
+            global: globalConfig.global,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".card-header").text()).toContain("There are 2");

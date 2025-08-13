@@ -19,6 +19,11 @@ jest.mock("stores/services/history.services");
 
 const { server, http } = useServerMock();
 
+jest.mock("vue-router", () => ({
+    useRoute: jest.fn(() => ({})),
+    useRouter: jest.fn(() => ({})),
+}));
+
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
     return {
@@ -78,16 +83,17 @@ async function createWrapper(globalConfig, currentUserId, history) {
     router.push(`/history/${history.id}`);
 
     const wrapper = mount(HistoryView, {
-        propsData: { id: history.id },
-        ...globalConfig,
-        provide: {
-            store: {
-                dispatch: jest.fn,
-                getters: {},
+        props: { id: history.id },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            provide: {
+                store: {
+                    dispatch: jest.fn,
+                    getters: {},
+                },
             },
         },
-        pinia,
-        router,
     });
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
