@@ -2,7 +2,7 @@
 
 ## Contributing
 
-If you're writing data types for local tools all data types
+If you're writing data types for local tools, all data types
 can be added directly to your Galaxy instance, but if you're
 publishing tools to the Galaxy Toolshed we strongly recommend
 adding all referenced data types upstream to Galaxy itself.
@@ -11,9 +11,9 @@ the
 [CONTRIBUTING documentation](https://github.com/galaxyproject/galaxy/blob/dev/CONTRIBUTING.md).
 
 The rest of this document contains the basics of how to create and register
-data types in Galaxy but we've noticed some common problems with simple
+data types in Galaxy, but we've noticed some common problems with simple
 implementations that can cause serious problems on production servers.
-When adding new data types to Galaxy please copy this production checklist
+When adding new data types to Galaxy, please copy this production checklist
 into your PR and update it with your answers to help use avoid these problems
 in the future.
 
@@ -21,20 +21,20 @@ in the future.
 ## Production Data Types Checklist
 
 - Do any of your ``sniff``, ``set_meta``, ``set_peek`` implementations for data types 
-  potentially use an  unbounded amount of memory. This will happen most often
-  if they read an whole file into memory. This is not allowed even if you would
+  potentially use an  unbounded amount of memory? This will happen most often
+  if they read a whole file into memory. This is not allowed even if you would
   expect these files to typically be small.
   - [ ] No.
 - Does your ``sniff`` implementation read through the entirety of the file? This
   is never allowed for production data types.
   - [ ] No.
 - Do either of your ``set_meta`` or ``set_peek`` implementations read through
-  the entirety of the file? This is generally discouraged but if you feel
-  it substantially improves the usability of the datatype please indicate why
+  the entirety of the file? This is generally discouraged, but if you feel
+  it substantially improves the usability of the datatype, please indicate why
   below.
   - [ ] No.
   - [ ] Yes. *Replace THIS sentence with the reason.*
-- Does your datatype include metadata elements? In general metadata should not
+- Does your datatype include metadata elements? In general, metadata should not
   take the place of say a data type viewer or visualization, metadata should be
   used by the tools that consume this datatype.
   - [ ] No.
