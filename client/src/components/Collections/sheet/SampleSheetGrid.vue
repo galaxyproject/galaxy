@@ -178,8 +178,19 @@ function validate(value: string, columnDefinition: SampleSheetColumnDefinition):
 }
 
 function valueSetter(params: ValueSetterParams, columnDefinition: SampleSheetColumnDefinition): boolean {
-    const value = params.newValue;
+    let value = params.newValue;
+    const columnType = columnDefinition.type;
     if (validate(value, columnDefinition)) {
+        if (columnType !== "string" && value === "" && columnDefinition.optional) {
+            value = null;
+        } else if (columnType === "boolean") {
+            value = value.toLowerCase() === "true";
+        } else if (columnType === "int") {
+            value = parseInt(value, 10);
+        } else if (columnType === "float") {
+            value = parseFloat(value);
+        }
+
         params.data[params.colDef.field!] = value;
         return true;
     } else {
