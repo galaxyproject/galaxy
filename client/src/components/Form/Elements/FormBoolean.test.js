@@ -3,17 +3,17 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormBoolean from "./FormBoolean";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormBoolean", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(FormBoolean, {
-            propsData: {
+            props: {
                 value: false,
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 
