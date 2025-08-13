@@ -14,7 +14,7 @@ const { server, http } = useServerMock();
 
 setupSelectableMock();
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const options = [
     { text: "Any", value: "any" },
     { text: "Yes", value: true },
@@ -92,19 +92,22 @@ describe("FilterMenu", () => {
     });
 
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
+        const pinia = createTestingPinia();
         wrapper = mount(FilterMenu as object, {
-            propsData: {
+            props: {
                 name: name,
                 placeholder: placeholder,
                 filterClass: filterClass,
                 filterText: "",
                 showAdvanced: false,
             },
-            localVue,
-            stubs: {
-                icon: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
-            pinia: createTestingPinia(),
         });
     }
 

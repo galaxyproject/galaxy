@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import type { FormEntry } from "./formUtil";
@@ -28,7 +28,7 @@ describe("InstanceForm", () => {
     });
 
     it("should hide a loading message after loading", async () => {
-        const wrapper = shallowMount(InstanceForm as object, {
+        const wrapper = mount(InstanceForm as object, {
             props: {
                 title: "MY FORM",
                 inputs: inputs,
@@ -40,8 +40,9 @@ describe("InstanceForm", () => {
         });
         const loadingSpan = wrapper.findComponent({ name: "LoadingSpan" }).exists();
         expect(loadingSpan).toBeFalsy();
-        expect(wrapper.find("#submit").exists()).toBeTruthy();
+        const submitButton = wrapper.find("#submit");
+        expect(submitButton.exists()).toBeTruthy();
         // Check if button contains the text (might be wrapped in additional elements)
-        expect(wrapper.find("#submit").text()).toContain(SUBMIT_TITLE);
+        expect(submitButton.text()).toContain(SUBMIT_TITLE);
     });
 });

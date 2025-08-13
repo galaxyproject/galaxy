@@ -11,7 +11,7 @@ import { generateNotificationsList } from "./test-utils";
 
 import NotificationsList from "./NotificationsList.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const { notifications: FAKE_NOTIFICATIONS, messageCount, sharedItemCount } = generateNotificationsList(10);
 
@@ -23,10 +23,12 @@ async function mountNotificationsList() {
     notificationsStore.notifications = mergeObjectListsById(FAKE_NOTIFICATIONS, []);
 
     const wrapper = mount(NotificationsList as object, {
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 

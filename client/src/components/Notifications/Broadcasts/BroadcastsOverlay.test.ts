@@ -8,7 +8,7 @@ import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadca
 
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const now = new Date();
 const inTwoMonths = new Date(new Date(now).setMonth(now.getMonth() + 2));
@@ -59,10 +59,12 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     });
 
     const wrapper = mount(BroadcastsOverlay as object, {
-        localVue,
-        pinia,
-        stubs: {
-            BroadcastContainer: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                BroadcastContainer: true,
+            },
         },
     });
 
