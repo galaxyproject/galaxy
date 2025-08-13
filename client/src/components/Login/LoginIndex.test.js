@@ -3,18 +3,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./LoginIndex";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 describe("LoginIndex", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 allowUserCreation: false,
                 sessionCsrfToken: "sessionCsrfToken",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 

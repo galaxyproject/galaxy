@@ -3,7 +3,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToolHelpRst from "./ToolHelpRst";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const inputHelpText = `
 <h1>Tool Help</h1>
@@ -28,10 +28,10 @@ const expectedHelpText = `
 describe("ToolHelp RST", () => {
     it("modifies help text", () => {
         const wrapper = mount(ToolHelpRst, {
-            propsData: {
+            props: {
                 content: inputHelpText,
             },
-            localVue,
+            global: globalConfig.global,
         });
 
         const help = wrapper.find(".form-help");
