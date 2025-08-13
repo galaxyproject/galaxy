@@ -10,7 +10,7 @@ async function mountGDateTime(props: object) {
         props: {
             ...props,
         },
-        ...globalConfig,
+        global: globalConfig.global,
     });
 
     return wrapper;
@@ -26,7 +26,8 @@ describe("GDateTime.vue", () => {
         await dateInput.setValue("2023-08-30");
 
         expect(wrapper.emitted()).toHaveProperty("input");
-        expect(wrapper.emitted()?.["input"]?.[0]?.[0] as Date).toEqual(new Date("2023-08-30T00:00:00"));
+        const emittedInput = wrapper.emitted("input");
+        expect(emittedInput?.[0]?.[0] as Date).toEqual(new Date("2023-08-30T00:00:00"));
     });
 
     it("emits updated time when input changes", async () => {
@@ -38,6 +39,7 @@ describe("GDateTime.vue", () => {
         await timeInput.setValue("12:30");
 
         expect(wrapper.emitted()).toHaveProperty("input");
-        expect(wrapper.emitted()?.["input"]?.[0]?.[0] as Date).toEqual(new Date("1970-01-01T12:30:00"));
+        const emittedInput = wrapper.emitted("input");
+        expect(emittedInput?.[0]?.[0] as Date).toEqual(new Date("1970-01-01T12:30:00"));
     });
 });

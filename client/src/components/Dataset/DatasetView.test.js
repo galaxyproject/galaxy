@@ -94,7 +94,6 @@ async function mountDatasetView(tab = "preview", options = {}) {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        ...globalConfig,
         global: {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia, router],
