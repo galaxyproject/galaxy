@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -33,6 +34,13 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util_models.tool_source import (
+    FileSourceConfigFile,
+    InputConfigFile,
+    TemplateConfigFile,
+    XmlTemplateConfigFile,
+    YamlTemplateConfigFile,
+)
 from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
@@ -766,19 +774,19 @@ class ToolEvaluator:
         """
         param_dict = self.param_dict
         config_filenames = []
-        for name, filename, content in self.tool.config_files:
-            config_text, is_template = self.__build_config_file_text(content)
+        for config_file in self.tool.config_files:
+            config_text, template_type = self._build_config_file_text(config_file)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
             with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                 config_filename = temp.name
-            if filename is not None:
+            if config_file.filename is not None:
                 # Explicit filename was requested, this is implemented as symbolic link
                 # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                os.link(config_filename, os.path.join(directory, filename))
-            self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
-            self.__register_extra_file(name, config_filename)
+                os.link(config_filename, os.path.join(directory, config_file.filename))
+            self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
+            self._register_extra_file(config_file.name, config_filename)
             config_filenames.append(config_filename)
         return config_filenames
 
@@ -790,6 +798,7 @@ class ToolEvaluator:
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
+            template_type: Optional[Literal["cheetah"]] = None
             if inject == "api_key":
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
@@ -797,10 +806,8 @@ class ToolEvaluator:
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
                 else:
                     environment_variable_template = ""
-                is_template = False
             elif inject and inject.startswith("oidc_"):
                 environment_variable_template = self.get_oidc_token(inject)
-                is_template = False
             elif inject and inject == "entry_point_path_for_label" and environment_variable_template:
                 from galaxy.managers.interactivetool import InteractiveToolManager
 
@@ -812,16 +819,15 @@ class ToolEvaluator:
                     environment_variable_template = entry_point_path.rstrip("/")
                 else:
                     environment_variable_template = ""
-                is_template = False
             else:
-                is_template = True
+                template_type = "cheetah"
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
-            self.__write_workdir_file(
+            self._write_workdir_file(
                 config_filename,
                 environment_variable_template,
                 param_dict,
-                is_template=is_template,
+                template_type=template_type,
                 strip=environment_variable_def.get("strip", False),
             )
             config_file_basename = os.path.basename(config_filename)
@@ -874,27 +880,23 @@ class ToolEvaluator:
                         value = [value]
                     for elem in value:
                         param.write(f"{key}={elem}\n")
-            self.__register_extra_file("param_file", param.name)
+            self._register_extra_file("param_file", param.name)
             return param.name
         else:
             return None
 
-    def __build_config_file_text(self, content):
-        if isinstance(content, str):
-            return content, True
+    def _build_config_file_text(self, config_file: Union[TemplateConfigFile, InputConfigFile, FileSourceConfigFile]):
+        if isinstance(config_file, (XmlTemplateConfigFile, YamlTemplateConfigFile)):
+            return config_file.content, config_file.eval_engine
 
-        config_type = content.get("type", "inputs")
-        if config_type == "inputs":
-            content_format = content["format"]
-            handle_files = content["handle_files"]
-            if content_format != "json":
-                template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
-                message = template % content_format
-                raise Exception(message)
+        assert not isinstance(config_file, TemplateConfigFile)
+        config_type = config_file.content.type
+        if isinstance(config_file, InputConfigFile):
+            handle_files = config_file.content.handle_files
         elif config_type == "files":
             file_sources_dict = self.file_sources_dict
             rval = json.dumps(file_sources_dict)
-            return rval, False
+            return rval, None
         else:
             raise Exception(f"Unknown config file type {config_type}")
 
@@ -902,15 +904,29 @@ class ToolEvaluator:
             json.dumps(
                 wrapped_json.json_wrap(self.tool.inputs, self.param_dict, self.tool.profile, handle_files=handle_files)
             ),
-            False,
+            None,
         )
 
-    def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
+    def _write_workdir_file(
+        self,
+        config_filename,
+        content,
+        context,
+        template_type: Optional[Literal["cheetah", "ecmascript"]] = None,
+        strip=False,
+    ):
         parent_dir = os.path.dirname(config_filename)
         if not os.path.exists(parent_dir):
             safe_makedirs(parent_dir)
-        if is_template:
+        if template_type == "cheetah":
             value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
+        elif template_type == "ecmascript":
+            value = do_eval(
+                content,
+                self.param_dict["inputs"],
+                javascript_requirements=self.tool.javascript_requirements,
+                outdir=self.param_dict["outdir"],
+            )
         else:
             value = unicodify(content)
         if strip:
@@ -920,17 +936,17 @@ class ToolEvaluator:
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)
 
-    def __register_extra_file(self, name, local_config_path):
+    def _register_extra_file(self, name, local_config_path):
         """
         Takes in the local path to a config file and registers the (potentially
         remote) ultimate path of the config file with the parameter dict.
         """
         self.extra_filenames.append(local_config_path)
         config_basename = os.path.basename(local_config_path)
-        compute_config_path = self.__join_for_compute(self.compute_environment.config_directory(), config_basename)
+        compute_config_path = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
         self.param_dict[name] = compute_config_path
 
-    def __join_for_compute(self, *args):
+    def _join_for_compute(self, *args):
         """
         os.path.join but with compute_environment.sep for cross-platform
         compat.
@@ -973,7 +989,27 @@ class UserToolEvaluator(ToolEvaluator):
     param_dict_style = "json"
 
     def _build_config_files(self):
-        pass
+        """
+        Build temporary file for file based parameter transfer if needed
+        """
+        param_dict = self.param_dict
+        config_filenames = []
+        for config_file in self.tool.config_files:
+            if isinstance(config_file, (YamlTemplateConfigFile)):
+                config_text, template_type = self._build_config_file_text(config_file)
+                # If a particular filename was forced by the config use it
+                directory = ensure_configs_directory(self.local_working_directory)
+                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                    config_filename = temp.name
+                if config_file.filename is not None:
+                    # Explicit filename was requested, this is implemented as symbolic link
+                    # to the actual config file that is placed in tool working directory
+                    directory = os.path.join(self.local_working_directory, "working")
+                    os.link(config_filename, os.path.join(directory, config_file.filename))
+                self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
+                self._register_extra_file(config_file.name, config_filename)
+                config_filenames.append(config_filename)
+        return config_filenames
 
     def _build_param_file(self):
         pass

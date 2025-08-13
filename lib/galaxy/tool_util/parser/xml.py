@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Tuple,
     TYPE_CHECKING,
 )
@@ -32,8 +33,12 @@ from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     Citation,
     DrillDownOptionsDict,
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     OutputCompareType,
+    TemplateConfigFile,
+    XmlTemplateConfigFile,
     XrefDict,
 )
 from galaxy.util import (
@@ -743,6 +748,39 @@ class XmlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = Version(python_template_version)
         return python_template_version
+
+    def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
+        configfiles: List[XmlTemplateConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            for conf_elem in conf_parent_elem.findall("configfile"):
+                name = conf_elem.get("name")
+                filename = conf_elem.get("filename", None)
+                content = conf_elem.text
+                configfiles.append(XmlTemplateConfigFile(name=name, filename=filename, content=content))
+        return configfiles
+
+    def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
+        config_files: list[InputConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            inputs_elem = conf_parent_elem.find("inputs")
+            if inputs_elem is not None:
+                name = inputs_elem.get("name")
+                filename = inputs_elem.get("filename")
+                format = inputs_elem.get("format", "json")
+                data_style = inputs_elem.get("data_style")
+                content = {"format": format, "handle_files": data_style, "type": "inputs"}
+                config_files.append(InputConfigFile(name=name, filename=filename, content=content))
+        return config_files
+
+    def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
+        config_files: list[FileSourceConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            file_sources_elem = conf_parent_elem.find("file_sources")
+            if file_sources_elem is not None:
+                name = file_sources_elem.get("name")
+                filename = file_sources_elem.get("filename", None)
+                config_files.append(FileSourceConfigFile(name=name, filename=filename, content={"type": "files"}))
+        return config_files
 
     def parse_creator(self):
         creators_el = self.root.find("creator")

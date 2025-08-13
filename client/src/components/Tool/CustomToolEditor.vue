@@ -75,7 +75,9 @@ if (props.toolUuid) {
         })
         .then(({ data, error }) => {
             if (!error) {
-                yamlRepresentation.value = stringify(data.representation);
+                yamlRepresentation.value = stringify(data.representation, {
+                    blockQuote: "literal",
+                });
             }
         });
 }
@@ -104,6 +106,9 @@ async function saveTool() {
 
 <template>
     <div>
+        <b-alert v-if="errorMsg" variant="danger" show dismissible>
+            {{ errorMsg }}
+        </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
             <b-button variant="primary" size="m" @click="saveTool">Save</b-button>
