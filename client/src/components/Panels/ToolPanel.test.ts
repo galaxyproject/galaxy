@@ -117,7 +117,9 @@ describe("ToolPanel", () => {
                 plugins: [...globalConfig.global.plugins, pinia],
                 stubs: {
                     icon: { template: "<div></div>" },
-                    ToolBox: true,
+                    ToolBox: { template: '<div data-description="panel toolbox"></div>' },
+                    'b-alert': { template: '<div><slot></slot></div>' },
+                    'b-badge': { template: '<div><slot></slot></div>' },
                 },
             },
         });
