@@ -1,13 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import ToolEntryPoints from "./ToolEntryPoints";
 
 describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
-    const localVue = getLocalVue();
-    localVue.use(PiniaVuePlugin);
+    const globalConfig = getLocalVue();
     const INACTIVE_ITS = [
         {
             model_class: "InteractiveToolEntryPoint",
@@ -56,11 +55,13 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         setActivePinia(testPinia);
         wrapper = mount(ToolEntryPoints, {
-            propsData: {
+            props: {
                 jobId: "52e496b945151ee8",
             },
-            localVue,
-            pinia: testPinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), testPinia],
+            },
         });
         const listItems = wrapper.findAll("li");
         expect(listItems.length).toBe(2);
@@ -77,11 +78,13 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         setActivePinia(testPinia);
         wrapper = mount(ToolEntryPoints, {
-            propsData: {
+            props: {
                 jobId: "52e496b945151ee8",
             },
-            localVue,
-            pinia: testPinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), testPinia],
+            },
         });
         const links = wrapper.findAll("span>a");
         expect(links.length).toBe(2);
