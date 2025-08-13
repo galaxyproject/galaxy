@@ -8,11 +8,12 @@ import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 import PageForm from "./PageForm.vue";
 
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const mockPush = jest.fn();
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -20,16 +21,16 @@ jest.mock("vue-router/composables", () => ({
 
 function mountTarget(props = {}) {
     return mount(PageForm, {
-        localVue,
-        propsData: props,
-        stubs: {
-            FontAwesomeIcon: true,
-            BButton: true,
-            BAlert: true,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+            },
+            directives: {
+                localize: () => {},
+            },
         },
-        directives: {
-            localize: () => {},
-        },
+        props,
     });
 }
 
