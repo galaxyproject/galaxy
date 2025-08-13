@@ -10,13 +10,13 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
 jest.mock("@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue", () => ({
     name: "HelpPopover",
-    render: (h) => h("div", "Mocked Popover"),
+    render: () => "div",
 }));
 
 describe("WorkflowStorageConfiguration.vue", () => {
@@ -31,15 +31,18 @@ describe("WorkflowStorageConfiguration.vue", () => {
     });
 
     async function doMount(split) {
-        const propsData = {
+        const props = {
             splitObjectStore: split,
             invocationPreferredObjectStoreId: null,
             invocationPreferredIntermediateObjectStoreId: null,
         };
+        const pinia = createTestingPinia();
         wrapper = mount(WorkflowStorageConfiguration, {
-            propsData,
-            localVue,
-            pinia: createTestingPinia(),
+            props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
     }
 
