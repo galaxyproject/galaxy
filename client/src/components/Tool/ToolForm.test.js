@@ -5,7 +5,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -18,8 +18,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
-const pinia = createPinia();
+const globalConfig = getLocalVue();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -59,17 +58,22 @@ describe("ToolForm", () => {
         axiosMock.onGet(`/api/webhooks`).reply(200, []);
         axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        
         wrapper = mount(ToolForm, {
-            propsData: {
+            props: {
                 id: "tool_id",
                 version: "version",
             },
-            localVue,
-            stubs: {
-                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
-                FormDisplay: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
+                    FormDisplay: true,
+                },
             },
-            pinia,
         });
         userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
