@@ -1,7 +1,7 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
 import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -18,7 +18,8 @@ const ACTION_LINK_SELECTOR = "#create-action-link";
 const SUBMIT_BUTTON_SELECTOR = "#broadcast-submit";
 const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue();
+const router = injectTestRouter();
 
 async function mountBroadcastForm(props?: object) {
     const pinia = createTestingPinia();
@@ -27,18 +28,18 @@ async function mountBroadcastForm(props?: object) {
     const mockRouter = {
         push: jest.fn(),
     };
+    router.push = mockRouter.push;
 
     const wrapper = mount(BroadcastForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-        mocks: {
-            $router: mockRouter,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia, router],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 
