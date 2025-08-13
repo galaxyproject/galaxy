@@ -80,7 +80,7 @@ const localFilterText = computed({
         return props.query !== null ? props.query : "";
     },
     set: (newVal: any) => {
-        if (newVal.trim() || props.query.trim()) {
+        if (newVal && (newVal.trim() || props.query.trim())) {
             checkQuery(newVal);
         }
     },
