@@ -18,7 +18,7 @@ jest.mock("@/api/schema");
 const config = { enable_tool_source_display: false };
 setupMockConfig(config);
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("ToolCard", () => {
     let wrapper;
@@ -36,7 +36,7 @@ describe("ToolCard", () => {
         const pinia = createPinia();
 
         wrapper = mount(ToolCard, {
-            propsData: {
+            props: {
                 id: "identifier",
                 version: "version",
                 title: "title",
@@ -56,11 +56,13 @@ describe("ToolCard", () => {
                 messageVariant: "warning",
                 disabled: false,
             },
-            stubs: {
-                ToolSourceMenuItem: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+                stubs: {
+                    ToolSourceMenuItem: { template: "<div></div>" },
+                },
             },
-            localVue,
-            pinia,
         });
         userStore = useUserStore();
         userStore.currentUser = {
