@@ -3,18 +3,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormInput from "./FormInput";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormInput", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(FormInput, {
-            propsData: {
+            props: {
                 id: "input",
                 value: "initial_value",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 
