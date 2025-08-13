@@ -3,19 +3,19 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormCard from "./FormCard";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormCard", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(FormCard, {
-            propsData: {
+            props: {
                 title: "title",
                 description: "description",
                 icon: "icon-class",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 
