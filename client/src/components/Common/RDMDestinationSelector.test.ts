@@ -8,7 +8,7 @@ import type { BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles
 import RDMDestinationSelector from "./RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const CREATE_RECORD_BTN = "#create-record-button";
 
@@ -31,10 +31,10 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
     );
 
     const wrapper = mount(RDMDestinationSelector as object, {
-        propsData: {
+        props: {
             fileSource,
         },
-        localVue,
+        global: globalConfig.global,
     });
     await flushPromises();
     return wrapper;
@@ -71,7 +71,7 @@ describe("RDMDestinationSelector", () => {
             const emitted = wrapper.emitted("onRecordSelected");
 
             expect(emitted).toBeTruthy();
-            expect(emitted?[0][0]).toEqual(FAKE_ENTRY.uri);
+            expect(emitted?.[0]?.[0]).toEqual(FAKE_ENTRY.uri);
         });
     });
 

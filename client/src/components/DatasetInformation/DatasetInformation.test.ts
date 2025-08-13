@@ -39,7 +39,7 @@ const datasetResponse: DatasetResponse = {
     file_name: "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat",
 };
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("DatasetInformation/DatasetInformation", () => {
     let wrapper: VueWrapper<any>;
@@ -57,11 +57,13 @@ describe("DatasetInformation/DatasetInformation", () => {
         const pinia = createTestingPinia();
 
         wrapper = mount(DatasetInformation as object, {
-            propsData: {
+            props: {
                 dataset: datasetResponse,
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
 
         datasetInfoTable = wrapper.find("#dataset-details");
