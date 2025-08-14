@@ -22,7 +22,6 @@ class ResizeObserver {
     disconnect = vi.fn();
 }
 
- 
 window.ResizeObserver = ResizeObserver;
 
 function propsForStep(step: Step) {

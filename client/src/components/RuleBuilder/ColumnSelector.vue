@@ -110,13 +110,13 @@ export default {
         },
         handleAdd(value) {
             // TODO: Rework add/remove here to not mutate props.
-             
+
             this.target.push(parseInt(value));
             this.$emit("update:orderedEdit", false);
         },
         handleRemove(index) {
             // TODO: See above.
-             
+
             this.target.splice(index, 1);
         },
         moveUp(value) {
