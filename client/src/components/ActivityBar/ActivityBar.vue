@@ -472,9 +472,9 @@ defineExpose({
         </div>
         <FlexPanel
             v-if="isSideBarOpen && !hidePanel"
+            v-model:reactive-width="sidePanelWidth"
             side="left"
-            :collapsible="false"
-            v-model:reactive-width="sidePanelWidth">
+            :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <UploadPanel v-else-if="isActiveSideBar('upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />

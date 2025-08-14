@@ -34,8 +34,8 @@
                     placeholder="enter directory name"
                     trim
                     @keyup.enter="addPath"
-                    @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture="removeLastPath"
+                    @keydown.capture="onSlashKeydown"
+                    @keydown.backspace.capture="removeLastPath"
                     @blur="handleBlur" />
             </b-breadcrumb-item>
         </b-breadcrumb>
@@ -136,6 +136,14 @@ export default {
                 }
             } catch (error) {
                 Toast.error(errorMessageAsString(error), "Invalid directory path");
+            }
+        },
+        onSlashKeydown(event) {
+            // Vue 3 dropped keyCode modifiers and has no modifier for "/", so match on the key name.
+            if (event.key === "/") {
+                event.preventDefault();
+                event.stopPropagation();
+                this.addPath(event);
             }
         },
         addPath({ key }) {

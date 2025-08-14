@@ -1,5 +1,5 @@
-import { createPinia } from "pinia";
 import { configureCompat, createApp } from "@vue/compat";
+import { createPinia } from "pinia";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
@@ -14,8 +14,8 @@ import App from "./App.vue";
 // Configure compat mode
 configureCompat({
     MODE: 2,
-    GLOBAL_SET: true,  // Enable Vue.set for libraries that need it
-    GLOBAL_DELETE: true,  // Enable Vue.delete for libraries that need it
+    GLOBAL_SET: true, // Enable Vue.set for libraries that need it
+    GLOBAL_DELETE: true, // Enable Vue.delete for libraries that need it
 });
 
 const pinia = createPinia();

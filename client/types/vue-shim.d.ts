@@ -11,7 +11,7 @@ declare module "vue" {
     export * from "@vue/runtime-core";
     export * from "@vue/reactivity";
     export * from "@vue/shared";
-    
+
     // Add any custom properties to components here
     export interface ComponentCustomProperties {
         // Custom properties can be added here if needed
