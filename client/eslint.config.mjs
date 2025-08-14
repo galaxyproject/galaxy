@@ -1,3 +1,13 @@
+import js from "@eslint/js";
+import compat from "eslint-plugin-compat";
+import importPlugin from "eslint-plugin-import";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import vue from "eslint-plugin-vue";
+import vueAccessibility from "eslint-plugin-vuejs-accessibility";
+import tseslint from "typescript-eslint";
+import vueParser from "vue-eslint-parser";
+import globals from "globals";
+
 const baseRules = {
     // Standard rules
     "no-console": "off",
@@ -31,9 +41,6 @@ const baseRules = {
     "vue/require-explicit-emits": "warn",
 
     // Downgrade the severity of some rules to warnings as a transition measure.
-    // For example, vue/multi-word-component names is considered an error,
-    // but that kind of refactoring is best done slowly, one bit at a time
-    // as those components are touched.
     "vue/multi-word-component-names": "warn",
     "vue/component-name-in-template-casing": "error",
     "vue/prop-name-casing": "warn",
@@ -102,83 +109,120 @@ const baseRules = {
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
-
-    "@typescript-eslint/consistent-type-imports": [
-        "error",
-        { prefer: "type-imports", fixStyle: "inline-type-imports" },
-    ],
-
-    "@typescript-eslint/no-import-type-side-effects": "error",
 };
 
-const baseExtends = [
-    "eslint:recommended",
-    "plugin:compat/recommended",
-    "plugin:vue/vue3-recommended",
-    "plugin:vuejs-accessibility/recommended",
-];
-
-const basePlugins = ["simple-import-sort", "import"];
-
-module.exports = {
-    root: true,
-    extends: baseExtends,
-    env: {
-        browser: true,
-        node: true,
-        es6: true,
-    },
-    rules: baseRules,
-    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
-    plugins: basePlugins,
-    overrides: [
-        {
-            files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
+export default [
+    // Base configuration for JavaScript and Vue files
+    {
+        files: ["**/*.js", "**/*.vue"],
+        languageOptions: {
+            ecmaVersion: 2020,
+            sourceType: "module",
             globals: {
-                vi: "readonly",
+                ...globals.browser,
+                ...globals.node,
+            },
+        },
+        plugins: {
+            vue,
+            compat,
+            "simple-import-sort": simpleImportSort,
+            import: importPlugin,
+            "vuejs-accessibility": vueAccessibility,
+        },
+        rules: {
+            ...js.configs.recommended.rules,
+            ...baseRules,
+        },
+    },
+    
+    // Vue files specific configuration
+    {
+        files: ["**/*.vue"],
+        languageOptions: {
+            parser: vueParser,
+            parserOptions: {
+                parser: "espree",
+                ecmaVersion: 2020,
+                sourceType: "module",
+            },
+        },
+    },
+
+    // TypeScript files configuration
+    ...tseslint.configs.recommended.map(config => ({
+        ...config,
+        files: ["**/*.ts", "**/*.tsx"],
+    })),
+    {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: {
+                ecmaFeatures: { jsx: true },
+                ecmaVersion: 2020,
+                sourceType: "module",
+                project: true,
+            },
+        },
+        plugins: {
+            "@typescript-eslint": tseslint.plugin,
+            vue,
+            compat,
+            "simple-import-sort": simpleImportSort,
+            import: importPlugin,
+            "vuejs-accessibility": vueAccessibility,
+        },
+        rules: {
+            ...baseRules,
+            "@typescript-eslint/ban-ts-comment": "warn",
+            "@typescript-eslint/no-explicit-any": "warn",
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
+        },
+    },
+
+    // Vue files with TypeScript
+    {
+        files: ["**/*.vue"],
+        languageOptions: {
+            parser: vueParser,
+            parserOptions: {
+                parser: tseslint.parser,
+                extraFileExtensions: [".vue"],
+                ecmaVersion: 2020,
+                sourceType: "module",
+            },
+        },
+    },
+
+    // Test files configuration
+    {
+        files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
+        languageOptions: {
+            globals: {
+                jest: "readonly",
                 describe: "readonly",
                 it: "readonly",
+                test: "readonly",
                 expect: "readonly",
                 beforeEach: "readonly",
                 afterEach: "readonly",
                 beforeAll: "readonly",
                 afterAll: "readonly",
-                test: "readonly",
             },
         },
-        {
-            files: ["**/*.vue"],
-            parser: "vue-eslint-parser",
-            parserOptions: {
-                parser: {
-                    js: "espree",
-                    ts: "@typescript-eslint/parser",
-                },
-            },
-        },
-        {
-            files: ["**/*.ts", "**/*.tsx"],
-            extends: [
-                ...baseExtends,
-                "plugin:@typescript-eslint/recommended",
-                // "plugin:@typescript-eslint/stylistic"  // TODO: work towards this
-            ],
-            rules: {
-                ...baseRules,
-                "@typescript-eslint/no-throw-literal": "error",
-                "@typescript-eslint/ban-ts-comment": "warn",
-                "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
-                "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
-            },
-            parser: "@typescript-eslint/parser",
-            parserOptions: {
-                ecmaFeatures: { jsx: true },
-                ecmaVersion: 2020,
-                sourceType: "module",
-                extraFileExtensions: [".vue"],
-                project: true,
-            },
-            plugins: [...basePlugins, "@typescript-eslint"],
-        },
-    ],
-};
+    },
+
+    // Ignore patterns
+    {
+        ignores: [
+            "**/dist/**", 
+            "src/libs/**", 
+            "src/nls/**", 
+            "src/legacy/**",
+            "**/node_modules/**",
+            "build/**",
+            "*.min.js"
+        ],
+    },
+];
