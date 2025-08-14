@@ -257,7 +257,7 @@ async function addDatasets(
             await datasetApiCall(dataset);
 
             progressStatus.okCount++;
-        } catch (e) {
+        } catch {
             progressStatus.errorCount++;
         } finally {
             progressStatus.runningCount--;

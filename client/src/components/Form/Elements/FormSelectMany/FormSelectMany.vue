@@ -58,7 +58,7 @@ const searchRegex = computed(() => {
         try {
             const regex = new RegExp(searchValue.value, caseSensitive.value ? undefined : "i");
             return regex;
-        } catch (e) {
+        } catch {
             return null;
         }
     } else {

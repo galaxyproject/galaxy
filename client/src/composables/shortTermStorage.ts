@@ -116,7 +116,7 @@ export function useShortTermStorage() {
                 storageRequestId,
                 downloadUrl: getDownloadObjectUrl(storageRequestId),
             };
-        } catch (err) {
+        } catch {
             isPreparing.value = false;
         }
     }
