@@ -321,12 +321,12 @@ export function useInvocationGraph(
             if (inputItem.src === "hda") {
                 const hda = await fetchDatasetDetails({ id: inputItem.id });
                 // TODO: There is a type mismatch for `hda.state` and `GraphStep["state"]`
-                graphStep.state = getContentItemState(hda);
+                graphStep.state = getContentItemState(hda) as GraphStep["state"];
                 graphStep.nodeText = `${hda.hid}: <b>${hda.name}</b>`;
             } else {
                 const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
-                graphStep.state = getContentItemState(hdca);
+                graphStep.state = getContentItemState(hdca) as GraphStep["state"];
                 graphStep.nodeText = `${hdca.hid}: <b>${hdca.name}</b>`;
             }
         } else if (inputParam) {
