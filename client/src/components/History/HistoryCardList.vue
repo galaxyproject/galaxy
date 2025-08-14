@@ -104,6 +104,7 @@ async function onDeleteHistory(historyId: string, purge = false) {
     const confirmed = await confirm(
         `Are you sure you want to ${purge ? "permanently delete" : "delete"} this history?`,
         {
+            id: "delete-history",
             title: purge ? "Permanently Delete History" : "Delete History",
             okTitle: purge ? "Permanently Delete" : "Delete",
             okVariant: "danger",
@@ -115,6 +116,7 @@ async function onDeleteHistory(historyId: string, purge = false) {
     if (confirmed) {
         try {
             await historyStore.deleteHistory(String(historyId), purge);
+            emit("refreshList", true);
             Toast.success("History deleted");
         } catch (e) {
             Toast.error(`Failed to delete history: ${errorMessageAsString(e)}`);
@@ -125,8 +127,8 @@ async function onDeleteHistory(historyId: string, purge = false) {
 async function onRestore(historyId: string) {
     try {
         await historyStore.restoreHistory(historyId);
+        emit("refreshList", true);
         Toast.success("History restored");
-        emit("refreshList", true, true);
     } catch (e) {
         Toast.error(`Failed to restore history: ${errorMessageAsString(e)}`);
     }
@@ -156,8 +158,8 @@ async function onRestoreHistory(history: ArchivedHistorySummary) {
     try {
         const force = true;
         await historyStore.unarchiveHistoryById(history.id, force);
+        emit("refreshList", true);
         Toast.success(localize(`History '${history.name}' has been restored.`), localize("History Restored"));
-        emit("refreshList", true, true);
     } catch (error) {
         Toast.error(
             localize(`Failed to restore history '${history.name}' with reason: ${error}`),
