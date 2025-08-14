@@ -1,4 +1,27 @@
 <script setup lang="ts">
+/**
+ * HistoryDatasetsBadge Component
+ *
+ * A specialized badge component that displays dataset information for a history
+ * including item count, storage size, and dataset states.
+ * The badge is clickable and navigates to the history's storage overview page.
+ *
+ * Features:
+ * - Shows dataset count and storage size
+ * - Displays dataset states (running, queued, error, etc.)
+ * - Shows counts for deleted and hidden datasets
+ * - Responsive design that hides text labels on small screens
+ * - Loading state with spinner
+ * - Error handling for API failures
+ * - Clickable navigation to storage overview
+ *
+ * @component HistoryDatasetsBadge
+ * @example
+ * <HistoryDatasetsBadge
+ *   :history-id="'abc123'"
+ *   :count="42" />
+ */
+
 import { faDatabase, faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
@@ -9,18 +32,36 @@ import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
+    /**
+     * The unique identifier of the history to display dataset information for
+     * @type {string}
+     */
     historyId: string;
+
+    /**
+     * Count of datasets in the history
+     * @type {number}
+     * @optional
+     */
     count?: number;
 }
 
 const props = defineProps<Props>();
 
+/** Loading state indicator */
 const loading = ref(true);
 
+/** Human-readable storage size (e.g., "1.2 GB") */
 const niceSize = ref<HistoryCounts["nice_size"]>();
+/** Counts of active datasets by state */
 const contentsActive = ref<HistoryCounts["contents_active"]>();
+/** Counts of datasets by processing state (running, queued, etc.) */
 const contentsStates = ref<HistoryCounts["contents_states"]>();
 
+/**
+ * Fetches and sets the history counts data from the API
+ * Handles loading state and error reporting
+ */
 async function getCounts() {
     try {
         const counts = await getHistoryCounts(props.historyId);
