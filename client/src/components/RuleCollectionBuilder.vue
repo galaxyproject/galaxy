@@ -1401,7 +1401,7 @@ export default {
             let asJson;
             try {
                 asJson = JSON.parse(this.ruleSource);
-            } catch (error) {
+            } catch {
                 this.ruleSourceError = "Problem parsing your rules.";
                 return;
             }

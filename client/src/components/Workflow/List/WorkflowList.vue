@@ -276,7 +276,7 @@ async function onBulkDelete() {
             Toast.success(`Deleted ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to delete some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -315,7 +315,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
