@@ -479,7 +479,7 @@ class CompressedZarrZipArchive(CompressedZipArchive):
             meta_file = self._find_zarr_metadata_file(zf)
             if meta_file:
                 with zf.open(meta_file) as f:
-                    meta = json.load(f)
+                    meta = json.loads(f.read(data.DEFAULT_MAX_PEEK_SIZE))
                     format_version = meta.get("zarr_format")
                     if not format_version:
                         log.debug("Could not determine Zarr format version")
@@ -2124,6 +2124,7 @@ class H5MLM(H5):
                 )
             with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 hyper_params = handle[self.HYPERPARAMETER][()]
+            # TODO: this looks like unbounded data. Not sure how to limit this.
             hyper_params = json.loads(util.unicodify(hyper_params))
             with open(params_file.get_file_name(), "w") as f:
                 f.write("\tParameter\tValue\n")
@@ -2218,6 +2219,7 @@ class H5MLM(H5):
             log.warning(e)
 
         config = self.get_config_string(dataset.get_file_name())
+        # unbounded data
         out_dict["Config"] = json.loads(config) if config else ""
         out = json.dumps(out_dict, sort_keys=True, indent=2)
         out = out[: self.max_preview_size]

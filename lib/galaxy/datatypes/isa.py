@@ -299,6 +299,7 @@ class IsaJson(_Isa):
     def _make_investigation_instance(self, filename: str):
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
+            # Definitely unbounded data loading ...
             isa = isajson.load(fp)
 
         return isa
