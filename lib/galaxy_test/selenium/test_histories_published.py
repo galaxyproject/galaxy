@@ -43,13 +43,17 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_published_histories()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         # Search by tag
         tags_cell = self.get_history_card(self.history3_name).find_element(By.CSS_SELECTOR, ".stateless-tags")
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         text = self.components.published_histories.search_input.wait_for_value()
-        if text == "":
+        if text != f"tag:'{self.history3_tags[0]}'":
             raise AssertionError("Failed to update search filter on tag click")
 
         self.assert_histories_present([self.history3_name, self.history1_name])
