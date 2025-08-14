@@ -3,16 +3,15 @@ import functools
 import logging
 import os
 from typing import (
+    Annotated,
+    Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
 )
 
 from fsspec import AbstractFileSystem
+from pydantic import Field
 from typing_extensions import cast
 
 from galaxy.exceptions import (
@@ -41,43 +40,61 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin p
 MAX_ITEMS_LIMIT = 1000
 
 
-class FsspecCommonFileSourceConfiguration(StrictModel):
-    """Common configuration options for fsspec-based file sources.
+class FsspecCommonCacheOptions(StrictModel):
+    """Common cache options for fsspec-based file sources.
 
     These options are not user-configurable so they don't need TemplateExpansion.
     """
 
-    listings_expiry_time: Optional[int] = None
+    use_listings_cache: Annotated[
+        bool,
+        Field(
+            description="If False, the cache never returns items, but always reports KeyError, and setting items has no effect.",
+        ),
+    ] = True
+
+    listings_expiry_time: Annotated[
+        Optional[int],
+        Field(description="Time in seconds that a listing is considered valid. If None, listings do not expire."),
+    ] = None
+
+    max_paths: Annotated[
+        Optional[int],
+        Field(
+            description="The number of most recent listings that are considered valid; 'recent' refers to when the entry was set.",
+        ),
+    ] = None
 
 
-class FsspecBaseFileSourceTemplateConfiguration(
-    BaseFileSourceTemplateConfiguration, FsspecCommonFileSourceConfiguration
-):
+CacheOptionsDictType = dict[str, Any]
+
+
+class FsspecBaseFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration, FsspecCommonCacheOptions):
     """Base template configuration for fsspec-based file sources.
 
     Fsspec-based file sources template configurations should inherit from this class to define their template configurations.
     """
 
 
-class FsspecBaseFileSourceConfiguration(BaseFileSourceConfiguration, FsspecCommonFileSourceConfiguration):
+class FsspecBaseFileSourceConfiguration(BaseFileSourceConfiguration, FsspecCommonCacheOptions):
     """Base resolved configuration for fsspec-based file sources.
 
     Fsspec-based file sources configurations should inherit from this class to define their resolved configurations.
     """
 
 
-TTemplateConfig = TypeVar("TTemplateConfig", bound=FsspecBaseFileSourceTemplateConfiguration)
-TResolvedConfig = TypeVar("TResolvedConfig", bound=FsspecBaseFileSourceConfiguration)
+FsspecTemplateConfigType = TypeVar("FsspecTemplateConfigType", bound=FsspecBaseFileSourceTemplateConfiguration)
+FsspecResolvedConfigurationType = TypeVar("FsspecResolvedConfigurationType", bound=FsspecBaseFileSourceConfiguration)
 
 
-class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
-    required_module: ClassVar[Optional[Type[AbstractFileSystem]]]
+class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolvedConfigurationType]):
+    required_module: ClassVar[Optional[type[AbstractFileSystem]]]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
     supports_sorting = False
 
-    def __init__(self, template_config: TTemplateConfig):
+    def __init__(self, template_config: FsspecTemplateConfigType):
         self.ensure_required_dependency()
         super().__init__(template_config)
         self.template_config.listings_expiry_time = self._initialize_listings_expiry(template_config)
@@ -90,17 +107,21 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
         if self.required_module is None:
             raise self.required_package_exception
 
-    def _initialize_listings_expiry(self, template_config: TTemplateConfig):
+    def _initialize_listings_expiry(self, template_config: FsspecTemplateConfigType):
         """Use general config listings expiry time if not explicitly set in the template config."""
         return template_config.listings_expiry_time or template_config.file_sources_config.listings_expiry_time
 
     @abc.abstractmethod
-    def _open_fs(self, context: FilesSourceRuntimeContext[TResolvedConfig]) -> AbstractFileSystem:
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
+        cache_options: CacheOptionsDictType,
+    ) -> AbstractFileSystem:
         """Subclasses must instantiate an fsspec AbstractFileSystem handle for this file system."""
 
     def _list(
         self,
-        context: FilesSourceRuntimeContext[TResolvedConfig],
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
         path="/",
         recursive=False,
         write_intent: bool = False,
@@ -108,7 +129,7 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """Return the list of 'Directory's and 'File's under the given path.
 
         If `recursive` is True, it will recursively list all files and directories under the given path with a maximum limit of `MAX_ITEMS_PER_LISTING`.
@@ -116,7 +137,8 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
         Pagination is supported with `limit` and `offset` but please note it is not applied until after the full listing is retrieved from the filesystem.
         """
         try:
-            fs = self._open_fs(context)
+            cache_options = self._get_cache_options(context.config)
+            fs = self._open_fs(context, cache_options)
 
             if recursive:
                 return self._list_recursive(fs, path)
@@ -153,20 +175,22 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
         self,
         source_path: str,
         native_path: str,
-        context: FilesSourceRuntimeContext[TResolvedConfig],
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
     ):
         """Download a file from the fsspec filesystem to a local path."""
-        fs = self._open_fs(context)
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
         fs.get_file(source_path, native_path)
 
     def _write_from(
         self,
         target_path: str,
         native_path: str,
-        context: FilesSourceRuntimeContext[TResolvedConfig],
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
     ):
         """Upload a file from a local path to the fsspec filesystem."""
-        fs = self._open_fs(context)
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
         fs.put_file(native_path, target_path)
 
     def _file_info_to_dict(self, dir_path: str, info: dict) -> AnyRemoteEntry:
@@ -190,18 +214,18 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
             ctime = ctime_result if ctime_result is not None else ""
             return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=path)
 
-    def _list_recursive(self, fs: AbstractFileSystem, path: str) -> Tuple[List[AnyRemoteEntry], int]:
+    def _list_recursive(self, fs: AbstractFileSystem, path: str) -> tuple[list[AnyRemoteEntry], int]:
         """Handle recursive directory listing with item limit."""
         # TODO: this is potentially inefficient for large directories.
         # We should consider dropping this option.
         # Limiting the number of items returned for now.
-        res: List[AnyRemoteEntry] = []
+        res: list[AnyRemoteEntry] = []
         count = 0
         for p, dirs, files in fs.walk(path, detail=True):
             # We are using detail=True to get file info as dicts,
             # so we can safely cast the result.
-            dirs = cast(Dict[str, dict], dirs)
-            files = cast(Dict[str, dict], files)
+            dirs = cast(dict[str, dict], dirs)
+            files = cast(dict[str, dict], files)
             to_dict = functools.partial(self._file_info_to_dict, str(p))
             res.extend(map(to_dict, dirs.values()))
             res.extend(map(to_dict, files.values()))
@@ -219,21 +243,21 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
             MAX_ITEMS_LIMIT,
         )
 
-    def _list_with_query(self, fs: AbstractFileSystem, path: str, query: str) -> List[AnyRemoteEntry]:
+    def _list_with_query(self, fs: AbstractFileSystem, path: str, query: str) -> list[AnyRemoteEntry]:
         """Handle directory listing with query filtering using glob patterns."""
         entries_list = []
         glob_pattern = self._build_glob_pattern(path, query)
         # Using detail=True returns a dict with file paths as keys and their info as
         # values so we can safely cast the result.
-        matched_paths = cast(Dict[str, dict], fs.glob(glob_pattern, detail=True))
+        matched_paths = cast(dict[str, dict], fs.glob(glob_pattern, detail=True))
         for file_path, info in matched_paths.items():
             entries_list.append(self._file_info_to_dict(str(file_path), info))
         return entries_list
 
-    def _list_directory(self, fs: AbstractFileSystem, path: str) -> List[AnyRemoteEntry]:
+    def _list_directory(self, fs: AbstractFileSystem, path: str) -> list[AnyRemoteEntry]:
         """Handle standard directory listing without query filtering."""
         entries_list = []
-        entries: List[dict] = fs.ls(path, detail=True)
+        entries: list[dict] = fs.ls(path, detail=True)
         for entry in entries:
             entry_path = entry.get("name", entry.get("path", ""))
             if entry_path:  # Only process entries with valid paths
@@ -241,11 +265,16 @@ class FsspecFilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
         return entries_list
 
     def _apply_pagination(
-        self, entries_list: List[AnyRemoteEntry], limit: Optional[int], offset: Optional[int]
-    ) -> List[AnyRemoteEntry]:
+        self, entries_list: list[AnyRemoteEntry], limit: Optional[int], offset: Optional[int]
+    ) -> list[AnyRemoteEntry]:
         """Apply pagination to the entries list."""
         if offset is not None and limit is not None:
             return entries_list[offset : offset + limit]
         elif limit is not None:
             return entries_list[:limit]
         return entries_list
+
+    def _get_cache_options(self, config: FsspecResolvedConfigurationType) -> dict[str, Any]:
+        return config.model_dump(
+            include=set(FsspecCommonCacheOptions.model_fields.keys()),
+        )

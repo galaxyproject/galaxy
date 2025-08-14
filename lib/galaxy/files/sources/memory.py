@@ -7,6 +7,7 @@ from fsspec.implementations.memory import MemoryFileSystem
 
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
+    CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
@@ -34,10 +35,12 @@ class MemoryFilesSource(
     required_module = MemoryFileSystem
     required_package = "fsspec"
 
-    def _open_fs(self, context: FilesSourceRuntimeContext[FsspecBaseFileSourceConfiguration]) -> AbstractFileSystem:
-        fs = MemoryFileSystem(
-            listings_expiry_time=context.config.listings_expiry_time,
-        )
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[FsspecBaseFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ) -> AbstractFileSystem:
+        fs = MemoryFileSystem(**cache_options)
         return fs
 
     def get_scheme(self) -> str:
