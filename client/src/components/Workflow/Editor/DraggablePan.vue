@@ -173,11 +173,11 @@ function onStart() {
         :disabled="disabled"
         :snappable="snappable"
         :selected="selected"
+        v-bind="$attrs"
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
-        @mousedown="(e) => emit('mousedown', e)"
-        v-bind="$attrs">
+        @mousedown="(e) => emit('mousedown', e)">
         <slot></slot>
     </Draggable>
 </template>

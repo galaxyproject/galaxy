@@ -4,8 +4,7 @@ import "@/composables/__mocks__/filter";
 import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";

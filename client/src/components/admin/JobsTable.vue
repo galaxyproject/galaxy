@@ -71,11 +71,7 @@
                 </GLink>
             </template>
 
-            <template v-for="(index, name) in $slots" :key="name" v-slot:[name]>
-                <slot :name="name" />
-            </template>
-
-            <template v-for="(index, name) in $slots" :key="`scoped-${name}`" v-slot:[name]="data">
+            <template v-for="(index, name) in $slots" :key="name" v-slot:[name]="data">
                 <slot :name="name" v-bind="data"></slot>
             </template>
         </GTable>
@@ -127,6 +123,7 @@ export default {
         },
         value: {},
     },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     data() {
         return {
             innerValue: this.value,

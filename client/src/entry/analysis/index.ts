@@ -1,5 +1,5 @@
-import { createPinia } from "pinia";
 import { configureCompat, createApp } from "@vue/compat";
+import { createPinia } from "pinia";
 
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
@@ -12,8 +12,8 @@ import App from "./App.vue";
 // Configure compat mode
 configureCompat({
     MODE: 2,
-    GLOBAL_SET: true,  // Enable Vue.set for libraries that need it
-    GLOBAL_DELETE: true,  // Enable Vue.delete for libraries that need it
+    GLOBAL_SET: true, // Enable Vue.set for libraries that need it
+    GLOBAL_DELETE: true, // Enable Vue.delete for libraries that need it
 });
 
 const pinia = createPinia();

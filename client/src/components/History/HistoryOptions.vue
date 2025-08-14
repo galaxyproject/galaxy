@@ -243,7 +243,7 @@ watch(
             </BDropdownItem>
         </BDropdown>
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" />
 
         <GModal
             :show.sync="showDeleteModal"

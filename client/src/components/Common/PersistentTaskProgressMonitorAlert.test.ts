@@ -1,6 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type PropType, ref } from "vue";
+import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import {

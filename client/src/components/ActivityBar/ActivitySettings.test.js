@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLocalVue } from "tests/jest/helpers";
 import { nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
