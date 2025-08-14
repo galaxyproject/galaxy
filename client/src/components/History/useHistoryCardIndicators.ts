@@ -9,11 +9,38 @@ import type { CardIndicator } from "@/components/Common/GCard.types";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
+/**
+ * Custom composable for managing history card visual indicators
+ *
+ * Provides visual indicator configurations for history cards including
+ * status indicators for different history states (deleted, purged, published).
+ * Indicators serve as visual cues and may include click handlers for filtering.
+ *
+ * @param {Ref<AnyHistoryEntry>} history - Reactive reference to the history entry
+ * @param {boolean} publishedView - Whether the card is displayed in published histories view
+ * @param {(key: string, value: boolean) => void} updateFilter - Callback to update filter values
+ * @returns {Object} Object containing the historyCardIndicators array
+ *
+ * @example
+ * const { historyCardIndicators } = useHistoryCardIndicators(
+ *   historyRef,
+ *   false,
+ *   (key, value) => updateFilter(key, value)
+ * );
+ */
 export function useHistoryCardIndicators(
     history: Ref<AnyHistoryEntry>,
     publishedView: boolean,
     updateFilter: (key: string, value: boolean) => void
-) {
+): {
+    historyCardIndicators: CardIndicator[];
+} {
+    /**
+     * Generates appropriate tooltip text for published history indicators
+     *
+     * @param {PublishedHistory} h - The published history
+     * @returns {string} Localized tooltip text for the published indicator
+     */
     function publishedIndicatorTitle(h: PublishedHistory): string {
         const { currentUser } = storeToRefs(useUserStore());
 
@@ -26,6 +53,11 @@ export function useHistoryCardIndicators(
         }
     }
 
+    /**
+     * Array of visual indicators for history cards
+     * Contains status indicators for deleted, purged, and published states
+     * @type {CardIndicator[]}
+     */
     const historyCardIndicators: CardIndicator[] = [
         {
             id: "deleted",
@@ -46,6 +78,9 @@ export function useHistoryCardIndicators(
         },
     ];
 
+    /*
+     * Adds published indicator for published histories
+     */
     if (isPublishedHistory(history.value)) {
         historyCardIndicators.push({
             id: "published",
