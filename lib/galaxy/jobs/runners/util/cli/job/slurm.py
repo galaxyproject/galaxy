@@ -1,7 +1,7 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
-from logging import getLogger
 import subprocess
+from logging import getLogger
 
 from . import (
     BaseJobExec,
@@ -16,27 +16,27 @@ argmap = {"time": "-t", "ncpus": "-c", "partition": "-p"}
 
 class Slurm(BaseJobExec):
     slurm_longjobstate_to_shortjobstate = {
-        'BOOT_FAIL': 'BF',
-        'CANCELLED': 'CA',
-        'COMPLETED': 'CD',
-        'DEADLINE': 'DL',
-        'FAILED': 'F',
-        'NODE_FAIL': 'NF',
-        'OUT_OF_MEMORY': 'OOM',
-        'PENDING': 'PD',
-        'PREEMPTED': 'PR',
-        'RUNNING': 'R',
-        'REQUEUED': 'RQ',
-        'RESIZING': 'RS',
-        'REVOKED': 'RV',
-        'SUSPENDED': 'S',
-        'TIMEOUT': 'TO',
-        'UNKNOWN': 'UN' # Custom for code in case one isn't available here
+        "BOOT_FAIL": "BF",
+        "CANCELLED": "CA",
+        "COMPLETED": "CD",
+        "DEADLINE": "DL",
+        "FAILED": "F",
+        "NODE_FAIL": "NF",
+        "OUT_OF_MEMORY": "OOM",
+        "PENDING": "PD",
+        "PREEMPTED": "PR",
+        "RUNNING": "R",
+        "REQUEUED": "RQ",
+        "RESIZING": "RS",
+        "REVOKED": "RV",
+        "SUSPENDED": "S",
+        "TIMEOUT": "TO",
+        "UNKNOWN": "UN",  # Custom for code in case one isn't available here
     }
     slurmstate_runnerstate_map = {
         "OOM": runner_states.MEMORY_LIMIT_REACHED,
         "TO": runner_states.WALLTIME_REACHED,
-        "UN": runner_states.UNKNOWN_ERROR
+        "UN": runner_states.UNKNOWN_ERROR,
     }
 
     def job_script_kwargs(self, ofile, efile, job_name):
@@ -90,12 +90,14 @@ class Slurm(BaseJobExec):
         elif len(status) <= 1:
             log.debug(f"For job '{job_id}', relying on 'sacct' method to determine job state")
             # Job no longer on cluster, retrieve state
-            pdata = subprocess.run(['sacct', '-o', 'JobIDRaw,State', '-P', '-n', '-j', job_id], capture_output=True, encoding='utf-8')
+            pdata = subprocess.run(
+                ["sacct", "-o", "JobIDRaw,State", "-P", "-n", "-j", job_id], capture_output=True, encoding="utf-8"
+            )
             job_data = pdata.stdout.splitlines()
 
             if len(job_data) == 0:
                 log.debug(f"Job '{job_id}' cannot be found. Returning error for job.")
-                return self._get_job_state('F')
+                return self._get_job_state("F")
 
             state = "CD"
             for jobline in job_data:
@@ -103,12 +105,12 @@ class Slurm(BaseJobExec):
                 if ".batch" in jobline or ".extern" in jobline:
                     continue
 
-                splitjobdata = jobline.split('|')
+                splitjobdata = jobline.split("|")
                 if len(splitjobdata) >= 2:
                     (s_jobid, s_jobstate) = splitjobdata
-                    if ' ' in s_jobstate:
-                        s_jobstate, s_jobotherinfo = s_jobstate.split(' ', 1)
-                    state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, 'UN')
+                    if " " in s_jobstate:
+                        s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
+                    state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, "UN")
         # else line like "slurm_load_jobs error: Invalid job id specified"
         return job_states.OK
 
@@ -131,7 +133,7 @@ class Slurm(BaseJobExec):
                 "RV": job_states.ERROR,
                 "S": job_states.RUNNING,
                 "TO": job_states.ERROR,
-                "UN": job_states.ERROR # Custom code for unknown
+                "UN": job_states.ERROR,  # Custom code for unknown
             }.get(state)
         except KeyError:
             raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
@@ -145,15 +147,15 @@ class Slurm(BaseJobExec):
             if ".batch" in line or ".extern" in line:
                 continue
 
-            splitjobdata = line.split('|')
+            splitjobdata = line.split("|")
             log.debug(f"State split line: {len(splitjobdata)}")
             if len(splitjobdata) >= 2:
                 (s_jobid, s_jobstate) = splitjobdata
-                if ' ' in s_jobstate:
-                    s_jobstate, s_jobotherinfo = s_jobstate.split(' ', 1)
+                if " " in s_jobstate:
+                    s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
                     log.debug(f"Found space in jobstate, split into: {s_jobstate} - {s_jobotherinfo}")
                 log.debug(f"State job data: {s_jobid} - {s_jobstate}")
-                state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, 'UN')
+                state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, "UN")
 
         if state in self.slurmstate_runnerstate_map:
             return self.slurmstate_runnerstate_map.get(state, runner_states.UNKNOWN_ERROR)
