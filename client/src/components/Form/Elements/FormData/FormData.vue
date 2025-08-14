@@ -887,6 +887,7 @@ const noOptionsWarningMessage = computed(() => {
         @drop.prevent="onDrop">
         <div class="d-flex flex-gapx-1">
             <FormDataContextButtons
+                v-model:workflow-tab="workflowTab"
                 :variant="variant"
                 :current-field="currentField"
                 :can-browse="canBrowse"
@@ -897,7 +898,6 @@ const noOptionsWarningMessage = computed(() => {
                 :is-populated="currentValue && currentValue.length > 0"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
-                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @on-browse="onBrowse"
                 @set-current-field="(value) => (currentField = value)" />
@@ -942,12 +942,12 @@ const noOptionsWarningMessage = computed(() => {
 
             <FormDataContextButtons
                 v-if="props.workflowRun && usingSimpleSelect"
+                v-model:workflow-tab="workflowTab"
                 compact
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
                 show-view-create-options
-                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange" />
         </div>
 
@@ -991,6 +991,7 @@ const noOptionsWarningMessage = computed(() => {
 
         <FormDataWorkflowRunTabs
             v-if="props.workflowRun"
+            v-model:workflow-tab="workflowTab"
             class="mt-3"
             :current-value="currentValue"
             :current-variant="currentVariant"
@@ -999,7 +1000,6 @@ const noOptionsWarningMessage = computed(() => {
             :collection-type="currentCollectionTypeTab"
             :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
-            v-model:workflow-tab="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
     </div>

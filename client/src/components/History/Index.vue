@@ -47,8 +47,8 @@ function onViewCollection(collection: CollectionEntry, currentOffset?: number) {
 
         <CurrentCollection
             v-else-if="breadcrumbs.length"
-            :history="currentHistory"
             v-model:selected-collections="breadcrumbs"
+            :history="currentHistory"
             @view-collection="onViewCollection" />
 
         <div v-else>

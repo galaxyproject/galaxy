@@ -234,8 +234,8 @@ function updateFilterText(newFilterText: string) {
             v-if="
                 (props.view === 'popover' && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced
             "
-            class="mt-2"
             v-model:show="localAdvancedToggle"
+            class="mt-2"
             :target="toggleMenuButton"
             placement="bottomleft"
             data-description="advanced filters"

@@ -78,8 +78,9 @@
                 <WorkflowAttributes
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
+                    v-model:readme-active="readmeActive"
                     :tags="tags"
-                    :highlight.sync="highlightAttribute"
+                    v-model:highlight="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -90,7 +91,6 @@
                     :doi="doi"
                     :logo-url="logoUrl"
                     :help="help"
-                    v-model:readme-active="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"

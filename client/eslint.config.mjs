@@ -11,7 +11,7 @@ import globals from "globals";
 const baseRules = {
     // Standard rules
     "no-console": "off",
-    "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "_.+" }],
+    "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "^_" }],
     "prefer-const": "error",
     "one-var": ["error", "never"],
     curly: "error",
@@ -19,7 +19,7 @@ const baseRules = {
 
     "vue/valid-v-slot": "error",
     "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
-    
+
     // Vue 3 specific rules
     "vue/no-deprecated-dollar-listeners-api": "error",
     "vue/no-deprecated-dollar-scopedslots-api": "error",
@@ -135,7 +135,7 @@ export default [
             ...baseRules,
         },
     },
-    
+
     // Vue files specific configuration
     {
         files: ["**/*.vue"],
@@ -150,7 +150,7 @@ export default [
     },
 
     // TypeScript files configuration
-    ...tseslint.configs.recommended.map(config => ({
+    ...tseslint.configs.recommended.map((config) => ({
         ...config,
         files: ["**/*.ts", "**/*.tsx"],
     })),
@@ -177,7 +177,7 @@ export default [
             ...baseRules,
             "@typescript-eslint/ban-ts-comment": "warn",
             "@typescript-eslint/no-explicit-any": "warn",
-            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
         },
     },
 
@@ -216,13 +216,13 @@ export default [
     // Ignore patterns
     {
         ignores: [
-            "**/dist/**", 
-            "src/libs/**", 
-            "src/nls/**", 
+            "**/dist/**",
+            "src/libs/**",
+            "src/nls/**",
             "src/legacy/**",
             "**/node_modules/**",
             "build/**",
-            "*.min.js"
+            "*.min.js",
         ],
     },
 ];

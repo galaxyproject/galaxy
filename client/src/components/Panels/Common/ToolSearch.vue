@@ -205,15 +205,15 @@ function post(message: object) {
     <div v-if="searchWorker || !props.useWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
+            v-model:filter-text="localFilterText"
+            v-model:show-advanced="propShowAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
             name="Tools"
             :placeholder="props.placeholder"
             :debounce-delay="200"
             :filter-class="ToolFilters"
-            v-model:filter-text="localFilterText"
             has-help
             :loading="props.queryPending"
-            v-model:show-advanced="propShowAdvanced"
             menu-type="separate"
             @on-search="onAdvancedSearch">
             <template v-slot:menu-help-text>
