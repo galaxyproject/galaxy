@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
