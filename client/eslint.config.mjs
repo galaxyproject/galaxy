@@ -11,7 +11,7 @@ import globals from "globals";
 const baseRules = {
     // Standard rules
     "no-console": "off",
-    "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "_.+" }],
+    "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "^_" }],
     "prefer-const": "error",
     "one-var": ["error", "never"],
     curly: "error",
@@ -177,7 +177,7 @@ export default [
             ...baseRules,
             "@typescript-eslint/ban-ts-comment": "warn",
             "@typescript-eslint/no-explicit-any": "warn",
-            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
         },
     },
 
