@@ -165,6 +165,8 @@
     "type-check": "vue-tsc --noEmit"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.33.0",
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@pinia/testing": "0.1.5",
     "@rollup/plugin-inject": "^5.0.5",
