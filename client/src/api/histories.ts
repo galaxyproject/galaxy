@@ -1,6 +1,7 @@
 import type { AnyHistory, components, HistorySortByLiteral, HistorySummary } from "@/api";
 import { GalaxyApi } from "@/api";
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
+import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 type HistoryDetailed = components["schemas"]["HistoryDetailed"];
@@ -37,6 +38,27 @@ export interface GetHistoriesOptions {
     search: string;
     sortBy: HistorySortByLiteral;
     sortDesc: boolean;
+}
+
+export function currentUserOwnsHistory(username: string) {
+    const userStore = useUserStore();
+    return userStore.matchesCurrentUsername(username);
+}
+
+export function isMyHistory(history: AnyHistoryEntry): history is MyHistory {
+    return "username" in history && currentUserOwnsHistory(history.username);
+}
+
+export function isSharedHistory(history: AnyHistoryEntry): history is SharedHistory {
+    return "username" in history && !currentUserOwnsHistory(history.username);
+}
+
+export function isPublishedHistory(history: AnyHistoryEntry): history is PublishedHistory {
+    return "published" in history && history.published;
+}
+
+export function isArchivedHistory(history: AnyHistoryEntry): history is ArchivedHistorySummary {
+    return "archived" in history && history.archived;
 }
 
 export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ data: MyHistory[]; total: number }> {
