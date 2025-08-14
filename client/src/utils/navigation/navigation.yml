@@ -486,6 +486,7 @@ histories:
     import_button: '[data-description="grid action import new history"]'
     reset_input: '#history-list-filter [data-description="reset query"]'
     search_input: '#history-list-filter input.search-query[data-description="filter text input"]'
+    delete_history_confirm: '#delete-history .btn.btn-danger'
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
