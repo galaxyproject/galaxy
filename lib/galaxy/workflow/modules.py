@@ -2647,24 +2647,6 @@ module_types = dict(
 module_factory = WorkflowModuleFactory(module_types)
 
 
-def load_module_sections(trans):
-    """Get abstract description of the workflow modules this Galaxy instance
-    is configured with.
-    """
-    module_sections = {}
-
-    if trans.app.config.enable_beta_workflow_modules:
-        module_sections["experimental"] = {
-            "name": "experimental",
-            "title": "Experimental",
-            "modules": [
-                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"}
-            ],
-        }
-
-    return module_sections
-
-
 class DelayedWorkflowEvaluation(Exception):
     def __init__(self, why=None):
         self.why = why

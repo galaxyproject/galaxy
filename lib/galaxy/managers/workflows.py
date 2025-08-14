@@ -1261,6 +1261,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
+        data["tags"] = stored.make_tag_string_list()
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)

@@ -40,17 +40,6 @@ export async function refactor(id, actions, dryRun = false) {
     }
 }
 
-export async function loadWorkflow({ id, version = null }) {
-    try {
-        const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
-        const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        return data;
-    } catch (e) {
-        console.debug(e);
-        rethrowSimple(e);
-    }
-}
-
 export async function saveWorkflow(workflow) {
     if (workflow.hasChanges) {
         try {
