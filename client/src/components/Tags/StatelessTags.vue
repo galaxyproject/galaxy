@@ -43,7 +43,6 @@ export default {
     components: {
         VueTagsInput,
     },
-    emits: ["tag-click", "tag-input-changed", "input", "show"],
     props: {
         value: { type: Array, required: false, default: () => [] },
         autocompleteItems: { type: Array, required: false, default: () => [] },
@@ -51,6 +50,7 @@ export default {
         useToggleLink: { type: Boolean, required: false, default: true },
         disabled: { type: Boolean, required: false, default: false },
     },
+    emits: ["tag-click", "tag-input-changed", "input", "show"],
     data() {
         // initialize toggle value
         const isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;

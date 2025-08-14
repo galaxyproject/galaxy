@@ -40,7 +40,7 @@ export function useRelativePosition(child: Ref<HTMLElement | null>, root: Ref<HT
     const transform = inject("transform") as Ref<ZoomTransform>;
 
     // not supported by two mobile device browsers
-    // eslint-disable-next-line compat/compat
+     
     const observer = new ResizeObserver(() => {
         if (child.value && root.value) {
             const clientPosition = getRelativePosition(child.value, root.value);

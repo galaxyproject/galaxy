@@ -346,13 +346,13 @@ watch(operationMessage, () => {
             </div>
             <FilterMenu
                 v-if="filterClass"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
-                v-model:filter-text="filterText"
                 :loading="initDataLoading || resultsLoading"
-                v-model:show-advanced="showAdvanced"
                 view="compact" />
         </div>
         <div v-if="initDataLoading" class="grid-initial-loading">

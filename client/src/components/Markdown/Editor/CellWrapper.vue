@@ -61,7 +61,7 @@
 
 <script setup lang="ts">
 import { faAngleDoubleDown, faAngleDoubleUp, faPaperclip } from "@fortawesome/free-solid-svg-icons";
-import { computed, ref } from "vue";
+import { computed, defineAsyncComponent,ref  } from "vue";
 
 import type { WorkflowLabel } from "./types";
 
@@ -70,7 +70,6 @@ import CellButton from "./CellButton.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
 import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
-import { defineAsyncComponent } from "vue";
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 

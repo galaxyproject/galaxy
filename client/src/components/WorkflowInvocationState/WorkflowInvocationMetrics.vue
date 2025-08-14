@@ -2,14 +2,12 @@
 import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
-import { computed, ref, watch } from "vue";
+import { computed, defineAsyncComponent,ref, watch  } from "vue";
 
 import { type components, GalaxyApi } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
-
-import { defineAsyncComponent } from "vue";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import HelpText from "@/components/Help/HelpText.vue";
