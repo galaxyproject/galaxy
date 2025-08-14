@@ -1,5 +1,5 @@
-import { createPinia } from "pinia";
 import { configureCompat, createApp } from "@vue/compat";
+import { createPinia } from "pinia";
 
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
