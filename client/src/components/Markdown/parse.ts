@@ -64,7 +64,7 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
                 try {
                     args = getArgs(galaxySection);
                     sections.push(args);
-                } catch (e) {
+                } catch {
                     markdownErrors.push({
                         error: "Found an unresolved tag.",
                         line: galaxySection,
