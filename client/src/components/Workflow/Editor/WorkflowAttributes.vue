@@ -43,11 +43,11 @@
                 or two.
             </div>
             <b-popover
+                v-model:show="showAnnotationHightlight"
                 custom-class="best-practice-popover"
                 target="workflow-annotation"
                 boundary="window"
                 placement="right"
-                v-model:show="showAnnotationHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="annotationBestPracticeMessage">
@@ -60,11 +60,11 @@
             <b>License</b>
             <LicenseSelector id="license-selector" :input-license="license" @onLicense="onLicense" />
             <b-popover
+                v-model:show="showLicenseHightlight"
                 custom-class="best-practice-popover"
                 target="license-selector"
                 boundary="window"
                 placement="right"
-                v-model:show="showLicenseHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningLicense">
@@ -77,11 +77,11 @@
             <b>Creator</b>
             <CreatorEditor id="creator-editor" :creators="creatorAsList" @onCreators="onCreator" />
             <b-popover
+                v-model:show="showCreatorHightlight"
                 custom-class="best-practice-popover"
                 target="creator-editor"
                 boundary="window"
                 placement="right"
-                v-model:show="showCreatorHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningCreator">
@@ -122,11 +122,11 @@
                 data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
             </div>
             <b-popover
+                v-model:show="showReadmeHightlight"
                 custom-class="best-practice-popover"
                 target="workflow-readme"
                 boundary="window"
                 placement="right"
-                v-model:show="showReadmeHightlight"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningReadme">

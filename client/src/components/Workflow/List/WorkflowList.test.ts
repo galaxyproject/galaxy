@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "tests/jest/helpers";
-import { getFakeRegisteredUser } from "tests/test-data";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { getFakeRegisteredUser } from "tests/test-data";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";

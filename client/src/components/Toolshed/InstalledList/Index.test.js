@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
-import { nextTick } from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
 import { Services } from "../services";
 import Index from "./Index";

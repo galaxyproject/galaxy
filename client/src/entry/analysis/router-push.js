@@ -1,5 +1,6 @@
 import { getGalaxyInstance } from "app";
 import { addSearchParams } from "utils/url";
+
 import { eventBus } from "@/utils/eventBus";
 
 /**

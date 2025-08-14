@@ -57,10 +57,10 @@
                 </b-button>
                 <b-popover
                     v-if="isEnabled && !readonly"
+                    v-model:show="popoverShow"
                     :target="popoverId"
                     triggers="hover"
-                    placement="bottom"
-                    v-model:show="popoverShow">
+                    placement="bottom">
                     <div>
                         <Recommendations
                             v-if="popoverShow"

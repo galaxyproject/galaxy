@@ -144,9 +144,9 @@ initializePanel();
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
                     v-if="panels && Object.keys(panels).length > 1"
+                    v-model:show-advanced="showAdvanced"
                     :panel-views="panels"
                     :current-panel-view="currentPanelView"
-                    v-model:show-advanced="showAdvanced"
                     :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
@@ -181,9 +181,9 @@ initializePanel();
         </div>
         <ToolBox
             v-if="isPanelPopulated"
-            :workflow="props.workflow"
             v-model:panel-query="query"
             v-model:show-advanced="showAdvanced"
+            :workflow="props.workflow"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool"
             @onInsertWorkflow="onInsertWorkflow"

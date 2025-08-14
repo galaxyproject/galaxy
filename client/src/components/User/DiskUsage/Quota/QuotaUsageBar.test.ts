@@ -1,5 +1,5 @@
-import { mount } from "@vue/test-utils";
 import { getLocalVue } from "@tests/jest/helpers";
+import { mount } from "@vue/test-utils";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 

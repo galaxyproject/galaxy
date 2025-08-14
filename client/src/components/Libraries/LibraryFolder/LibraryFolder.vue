@@ -1,10 +1,10 @@
 <template>
     <div>
         <FolderTopBar
+            v-model:include-deleted="includeDeleted"
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            v-model:include-deleted="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
@@ -20,9 +20,9 @@
         <b-table
             id="folder_list_body"
             ref="folder_content_table"
+            v-model:busy="isBusy"
             striped
             hover
-            v-model:busy="isBusy"
             :fields="fields"
             :items="folderContents"
             :per-page="perPage"

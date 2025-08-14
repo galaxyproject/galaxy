@@ -9,6 +9,7 @@ import { rootResponse } from "@/components/FilesDialog/testingData";
 
 import FormDirectory from "./FormDirectory.vue";
 import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
+
 jest.mock("app");
 
 const { server, http } = useServerMock();

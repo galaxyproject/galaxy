@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 import { setActivePinia } from "pinia";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";

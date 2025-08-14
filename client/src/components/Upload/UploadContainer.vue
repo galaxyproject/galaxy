@@ -177,7 +177,7 @@ defineExpose({
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" v-model:active="regularTabActive">
+        <BTab v-if="showRegular" v-model:active="regularTabActive" title="Regular" button-id="tab-title-link-regular">
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <CompositeBox
@@ -192,9 +192,9 @@ defineExpose({
         </BTab>
         <BTab
             v-if="showCollection"
+            v-model:active="collectionTabActive"
             title="Collection"
-            button-id="tab-title-link-collection"
-            v-model:active="collectionTabActive">
+            button-id="tab-title-link-collection">
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput
@@ -220,8 +220,8 @@ defineExpose({
             :list-db-keys="listDbKeys"
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
-            @progress="progress"
-            v-bind="$attrs" />
+            v-bind="$attrs"
+            @progress="progress" />
     </BTabs>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />

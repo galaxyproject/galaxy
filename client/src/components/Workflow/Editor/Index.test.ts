@@ -1,8 +1,8 @@
 import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";

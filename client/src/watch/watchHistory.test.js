@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState, setActivePinia } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
-import { suppressDebugConsole, getLocalVue } from "tests/jest/helpers";
+import { getLocalVue,suppressDebugConsole } from "tests/jest/helpers";
 
 import { watchHistoryOnce } from "./watchHistory";
 
