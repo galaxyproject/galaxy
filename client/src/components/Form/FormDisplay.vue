@@ -32,7 +32,6 @@ export default {
     components: {
         FormInputs,
     },
-    emits: ["stop-flagging", "onValidation", "onChange", "update:active-node-id"],
     props: {
         id: {
             type: String,
@@ -115,6 +114,7 @@ export default {
             default: null,
         },
     },
+    emits: ["stop-flagging", "onValidation", "onChange", "update:active-node-id"],
     data() {
         return {
             formData: {},

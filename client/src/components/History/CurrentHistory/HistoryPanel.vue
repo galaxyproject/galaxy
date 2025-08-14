@@ -419,14 +419,14 @@ const {
             <FilterMenu
                 v-if="filterable"
                 :key="props.history.id"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 class="content-operations-filters mx-3"
                 name="History Items"
                 placeholder="search datasets"
                 :filter-class="filterClass"
-                v-model:filter-text="filterText"
                 :loading="isLoading"
-                :search-error="searchError"
-                v-model:show-advanced="showAdvanced" />
+                :search-error="searchError" />
 
             <section v-if="!showAdvanced">
                 <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
@@ -434,27 +434,28 @@ const {
                 <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
                 <HistoryCounter
+                    v-model:filter-text="filterText"
                     :history="history"
                     :is-watching="isWatching"
                     :last-checked="lastCheckedTime"
                     :show-controls="canEditHistory"
                     :owned-by-current-user="userOwnsHistory(currentUser, history)"
-                    v-model:filter-text="filterText"
                     :hide-reload="isMultiViewItem"
                     @reloadContents="reloadContents" />
 
                 <HistoryOperations
+                    v-model:operation-running="operationRunning"
                     :history="history"
                     :editable="canEditHistory"
                     :is-multi-view-item="isMultiViewItem"
                     :show-selection="showSelection"
                     :expanded-count="expandedCount"
                     :has-matches="hasMatches(historyItems)"
-                    v-model:operation-running="operationRunning"
                     @update:show-selection="setShowSelection"
                     @collapse-all="collapseAll">
                     <template v-slot:selection-operations>
                         <HistorySelectionOperations
+                            v-model:operation-running="operationRunning"
                             :history="history"
                             :is-multi-view-item="isMultiViewItem"
                             :filter-text="filterText"
@@ -462,7 +463,6 @@ const {
                             :selection-size="selectionSize"
                             :is-query-selection="isQuerySelection"
                             :total-items-in-query="totalMatchesCount"
-                            v-model:operation-running="operationRunning"
                             @update:show-selection="setShowSelection"
                             @operation-error="onOperationError"
                             @hide-selection="onHideSelection"

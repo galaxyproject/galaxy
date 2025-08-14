@@ -52,8 +52,8 @@
                         </GButton>
                         <GButton
                             v-if="!showCommandLine"
-                            outline
                             v-model:pressed="row.detailsShowing"
+                            outline
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </GButton>

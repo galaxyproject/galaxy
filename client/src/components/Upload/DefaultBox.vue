@@ -553,11 +553,11 @@ defineExpose({
         </div>
         <CollectionCreatorIndex
             v-if="isCollection && historyId"
+            v-model:show="collectionModalShow"
             :history-id="historyId"
             :collection-type="collectionType"
             :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
-            v-model:show="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

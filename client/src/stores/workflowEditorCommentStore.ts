@@ -260,7 +260,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
                 if (comment !== frame && bounds.contains(rect)) {
                     // push id and remove from candidates when in bounds
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                     
                     frame.child_comments!.push(comment.id);
                     return [];
                 } else {
@@ -307,7 +307,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
                 if (rect && bounds.contains(rect)) {
                     // push id and remove from candidates when in bounds
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                     
                     frame.child_steps!.push(step.id);
                     return [];
                 } else {
