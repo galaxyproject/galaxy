@@ -134,7 +134,7 @@ class Slurm(BaseJobExec):
                 "S": job_states.RUNNING,
                 "TO": job_states.ERROR,
                 "UN": job_states.ERROR,  # Custom code for unknown
-            }.get(state)
+            }[state]
         except KeyError:
             raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
 
