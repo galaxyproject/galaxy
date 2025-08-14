@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
+import { computed, type ComputedRef, type Ref, ref } from "vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
@@ -25,15 +25,12 @@ const emit = defineEmits<{
     (e: "update:show-advanced", showAdvanced: boolean): void;
     (e: "update:panel-query", query: string): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
-    (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
 }>();
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
-    dataManagers: { type: Array, default: null },
-    moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
     useSearchWorker: { type: Boolean, default: true },
 });
 
@@ -70,17 +67,6 @@ const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
-
-const hasDataManagerSection = computed(() => props.workflow && props.dataManagers && props.dataManagers.length > 0);
-const dataManagerSection = computed(() => {
-    const dynamicSection: ToolSectionType = {
-        model_class: "ToolSection",
-        id: "__data_managers",
-        name: localize("Data Managers"),
-        elems: props.dataManagers as Tool[],
-    };
-    return dynamicSection;
-});
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
 const localToolsById = computed(() => {
@@ -131,11 +117,6 @@ const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = c
 
 const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
 const buttonText = computed(() => (showSections.value ? localize("Hide Sections") : localize("Show Sections")));
-
-function onInsertModule(module: Record<string, any>, event: Event) {
-    event.preventDefault();
-    emit("onInsertModule", module.name, module.title);
-}
 
 function onToolClick(tool: Tool, evt: Event) {
     if (!props.workflow) {
@@ -231,24 +212,6 @@ function onToggle() {
         <div v-if="!propShowAdvanced" class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div v-if="localPanel" class="toolMenu">
-                    <div v-if="props.workflow">
-                        <ToolSection
-                            v-for="category in moduleSections"
-                            :key="category.name"
-                            :hide-name="true"
-                            :category="category"
-                            tool-key="name"
-                            :section-name="category.name"
-                            :query-filter="queryFilter || undefined"
-                            :disable-filter="true"
-                            @onClick="onInsertModule" />
-                    </div>
-                    <ToolSection
-                        v-if="hasDataManagerSection"
-                        :category="dataManagerSection"
-                        :query-filter="queryFilter || undefined"
-                        :disable-filter="true"
-                        @onClick="onToolClick" />
                     <div v-for="(panel, key) in localPanel" :key="key">
                         <ToolSection
                             v-if="panel"

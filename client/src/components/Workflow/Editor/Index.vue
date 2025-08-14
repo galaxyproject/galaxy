@@ -45,10 +45,7 @@
                 <ToolPanel
                     v-if="isActiveSideBar('workflow-editor-tools')"
                     workflow
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
                     @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
                 <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
@@ -226,6 +223,7 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useMagicKeys } from "@/composables/useMagicKeys";
@@ -247,7 +245,7 @@ import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivitie
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
-import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -304,14 +302,6 @@ export default {
         workflowTags: {
             type: Array,
             default: () => [],
-        },
-        moduleSections: {
-            type: Array,
-            required: true,
-        },
-        dataManagers: {
-            type: Array,
-            required: true,
         },
     },
     setup(props, { emit }) {
@@ -475,14 +465,6 @@ export default {
 
         const tags = ref([]);
 
-        watch(
-            () => props.workflowTags,
-            (newTags) => {
-                tags.value = [...newTags];
-            },
-            { immediate: true }
-        );
-
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
@@ -492,6 +474,7 @@ export default {
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
             setTagsHandler.set(tags.value, newTags);
+            hasChanges.value = true;
         }
 
         watch(
@@ -850,7 +833,7 @@ export default {
         copyIntoWorkflow(id) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow({ id }).then((data) => {
+            getWorkflowFull(id).then((data) => {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
@@ -1157,6 +1140,7 @@ export default {
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
+            this.tags = data.tags;
             this.license = data.license;
             this.creator = data.creator;
             this.doi = data.doi;
@@ -1172,7 +1156,7 @@ export default {
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
-                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {

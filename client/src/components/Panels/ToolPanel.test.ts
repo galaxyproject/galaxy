@@ -108,8 +108,6 @@ describe("ToolPanel", () => {
             propsData: {
                 workflow: false,
                 editorWorkflows: null,
-                dataManagers: null,
-                moduleSections: null,
                 useSearchWorker: false,
             },
             localVue,

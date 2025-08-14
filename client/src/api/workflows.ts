@@ -86,7 +86,7 @@ export async function loadWorkflows({
     return { data, totalMatches };
 }
 
-export async function getWorkflowInfo(workflowId: string, version?: number) {
+export async function getWorkflowInfo(workflowId: string, version?: number, instance?: boolean) {
     const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
         params: {
             path: {
@@ -94,6 +94,7 @@ export async function getWorkflowInfo(workflowId: string, version?: number) {
             },
             query: {
                 version: version,
+                instance: instance,
             },
         },
     });

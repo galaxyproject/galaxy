@@ -21,14 +21,11 @@ const toolStore = useToolStore();
 
 const userStore = useUserStore();
 const props = defineProps({
-    dataManagers: { type: Array, default: null },
-    moduleSections: { type: Array, default: null },
     useSearchWorker: { type: Boolean, default: true },
     workflow: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
-    (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
@@ -106,10 +103,6 @@ async function updatePanelView(panelView: string) {
     panelName.value = panels.value[panelView]?.name || "";
     await toolStore.setPanel(panelView);
     panelName.value = "";
-}
-
-function onInsertModule(moduleName: string, moduleTitle: string | undefined) {
-    emit("onInsertModule", moduleName, moduleTitle);
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -191,11 +184,8 @@ initializePanel();
             :workflow="props.workflow"
             :panel-query.sync="query"
             :show-advanced.sync="showAdvanced"
-            :data-managers="dataManagers"
-            :module-sections="moduleSections"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool"
-            @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
             @onInsertWorkflowSteps="onInsertWorkflowSteps" />
         <div v-else-if="errorMessage" data-description="tool panel error message">
