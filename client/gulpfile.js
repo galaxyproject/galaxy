@@ -20,6 +20,9 @@ const PATHS = {
     },
 };
 
+// Check if visualization steps should be skipped
+const SKIP_VIZ = process.env.SKIP_VIZ === "true" || process.env.SKIP_VIZ === "1";
+
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
         ? process.env.GALAXY_PLUGIN_PATH
@@ -27,24 +30,39 @@ PATHS.pluginBaseDir =
 
 const staticPluginDir = "../static/plugins";
 const visualizationsConfig = "./visualizations.yml";
-const file = fs.readFileSync(visualizationsConfig, "utf8");
-const VISUALIZATION_PLUGINS = yaml.parse(file);
+
+// Load and validate visualization config
+let VISUALIZATION_PLUGINS = {};
+try {
+    if (fs.existsSync(visualizationsConfig)) {
+        const file = fs.readFileSync(visualizationsConfig, "utf8");
+        VISUALIZATION_PLUGINS = yaml.parse(file) || {};
+    } else {
+        console.warn(`Visualization config file not found: ${visualizationsConfig}`);
+    }
+} catch (err) {
+    console.error(`Error loading visualization config: ${err.message}`);
+    VISUALIZATION_PLUGINS = {};
+}
 
 function stageLibs(callback) {
-    Object.keys(PATHS.stagedLibraries).forEach((lib) => {
-        const p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
-        const p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
-        if (fs.existsSync(p1)) {
-            del.sync(p2);
-            fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
-        } else {
-            callback(
-                p1 +
-                    " does not exist, yet it is a required library.  This is an error.  Check that the package in question exists in node_modules."
-            );
-        }
-    });
-    return callback();
+    try {
+        Object.keys(PATHS.stagedLibraries).forEach((lib) => {
+            const p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
+            const p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
+            if (fs.existsSync(p1)) {
+                del.sync(p2);
+                fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
+            } else {
+                throw new Error(
+                    `${p1} does not exist, yet it is a required library. Check that the package in question exists in node_modules.`
+                );
+            }
+        });
+        callback();
+    } catch (err) {
+        callback(err);
+    }
 }
 
 async function icons() {
@@ -52,6 +70,11 @@ async function icons() {
 }
 
 function stagePlugins(callback) {
+    if (SKIP_VIZ) {
+        console.log("Skipping plugin staging (SKIP_VIZ is set)");
+        return callback();
+    }
+
     fs.ensureDirSync(path.join(staticPluginDir));
 
     // Get visualization directories
@@ -67,6 +90,12 @@ function stagePlugins(callback) {
     const copyPromises = dirs.map((sourceDir) => {
         // Get the relative path from the plugin base dir
         const relativeDir = path.relative(PATHS.pluginBaseDir, sourceDir);
+
+        // Extract the plugin name from the path for logging
+        const pathParts = relativeDir.split(path.sep);
+        const pluginName = pathParts[1]; // visualizations/[pluginName]/static
+
+        console.log(`Staging plugin '${pluginName}' from ${sourceDir}`);
 
         // The target should preserve the full path including 'static'
         const targetDir = path.join(staticPluginDir, relativeDir);
@@ -102,10 +131,23 @@ function stagePlugins(callback) {
  * Produce plugins from fully self-contained npm packages
  */
 async function installVisualizations(callback, forceReinstall = false) {
+    if (SKIP_VIZ) {
+        console.log("Skipping visualization installation (SKIP_VIZ is set)");
+        return callback();
+    }
+
     const visualizationsDir = path.join(PATHS.pluginBaseDir, "visualizations");
     fs.ensureDirSync(visualizationsDir);
     for (const pluginName of Object.keys(VISUALIZATION_PLUGINS)) {
-        const { package: pluginPackage, version } = VISUALIZATION_PLUGINS[pluginName];
+        const pluginConfig = VISUALIZATION_PLUGINS[pluginName];
+
+        // Validate plugin configuration
+        if (!pluginConfig.package || !pluginConfig.version) {
+            console.error(`Invalid configuration for plugin '${pluginName}': missing package or version`);
+            continue;
+        }
+
+        const { package: pluginPackage, version } = pluginConfig;
         const pluginDir = path.join(visualizationsDir, pluginName);
         const staticDir = path.join(pluginDir, "static");
         const xmlPath = path.join(staticDir, `${pluginName}.xml`);
