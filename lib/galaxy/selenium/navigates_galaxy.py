@@ -659,11 +659,15 @@ class NavigatesGalaxy(HasDriver):
         )
         popup_option.click()
 
-    def select_history_card_operation(self, card_name, action_selector):
+    def select_history_card_operation(self, card_name, action_selector, is_in_extra=False):
         target_card = self.get_history_card(card_name)
 
+        if is_in_extra:
+            target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
+
+        action_chains = self.action_chains()
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
-        action_selector.click()
+        action_chains.move_to_element(action_selector).click().perform()
 
     def get_history_card(self, card_name):
         card_list = self.components.histories.history_cards.all()
