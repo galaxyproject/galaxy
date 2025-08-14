@@ -106,7 +106,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
                 ...updatedData,
             };
         } else {
-            storedInvocations.value[id] = updatedData;
+            storedInvocations.value[id] = updatedData as WorkflowInvocation;
         }
     }
 
