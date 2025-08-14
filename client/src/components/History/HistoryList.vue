@@ -1,4 +1,24 @@
 <script setup lang="ts">
+/**
+ * HistoryList Component
+ *
+ * This component provides a comprehensive interface for managing and viewing histories.
+ * Supports multiple views including "My Histories", "Shared Histories", "Published Histories",
+ * and "Archived Histories" with features like:
+ *
+ * - Filtering and searching histories with advanced filter options
+ * - Pagination for large history collections
+ * - Bulk operations (delete, restore, add tags)
+ * - Individual history selection and management
+ * - View mode switching (grid/list)
+ * - Sorting capabilities
+ *
+ * @component HistoryList
+ * @example
+ * <HistoryList activeList="my" />
+ * <HistoryList activeList="shared" />
+ */
+
 import { faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
@@ -32,6 +52,13 @@ import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import HistoryCardList from "@/components/History/HistoryCardList.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+/**
+ * Represents a selected history item with minimal required data
+ * @typedef {Object} SelectedHistory
+ * @property {string} id - The unique identifier of the history
+ * @property {string} name - The display name of the history
+ * @property {boolean} published - Whether the history is published publicly
+ */
 type SelectedHistory = {
     id: string;
     name: string;
@@ -39,6 +66,10 @@ type SelectedHistory = {
 };
 
 interface Props {
+    /**
+     * The active list view for the history list.
+     * Can be "my", "shared", "published", or "archived".
+     */
     activeList?: "my" | "shared" | "published" | "archived";
 }
 
@@ -67,11 +98,19 @@ const bulkDeleteOrRestoreLoading = ref(false);
 const historiesLoaded = ref<AnyHistoryEntry[]>([]);
 const selectedHistoryIds = ref<SelectedHistory[]>([]);
 
+/** Computed property that determines if the current view is "My Histories" */
 const myView = computed(() => props.activeList === "my");
+/** Computed property that determines if the current view is "Shared Histories" */
 const sharedView = computed(() => props.activeList === "shared");
+/** Computed property that determines if the current view is "Published Histories" */
 const publishedView = computed(() => props.activeList === "published");
+/** Computed property that determines if the current view is "Archived Histories" */
 const archivedView = computed(() => props.activeList === "archived");
 
+/**
+ * Dynamic search placeholder text based on the current active list view
+ * @returns {string} Contextual placeholder text for the search input
+ */
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my histories";
 
@@ -108,15 +147,28 @@ const invalidFilters = computed(() => historyListFilters.value.getValidFilters(r
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
+/**
+ * Updates a specific filter value in the current filter text
+ * @param {string} filterKey - The key of the filter to update
+ * @param {any} newValue - The new value for the filter
+ */
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
     filterText.value = historyListFilters.value.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
+/**
+ * Toggles the "deleted" filter to show or hide deleted histories
+ */
 function onToggleDeleted() {
     updateFilterValue("deleted", true);
 }
 
+/**
+ * Loads histories based on current view (my, shared, published, or archived)
+ * @param {boolean} overlayLoading - Whether to show overlay loading instead of full loading
+ * @param {boolean} silent - Whether to skip loading indicators
+ */
 async function load(overlayLoading = false, silent = false) {
     if (!silent) {
         if (overlayLoading) {
@@ -170,11 +222,19 @@ async function load(overlayLoading = false, silent = false) {
     }
 }
 
+/**
+ * Handles pagination by updating offset and reloading histories
+ * @param {number} page - The page number to navigate to
+ */
 async function onPageChange(page: number) {
     offset.value = (page - 1) * limit.value;
     await load(true);
 }
 
+/**
+ * Validates and processes filter text, handling quoted strings and filter validation
+ * @returns {string} The processed filter text
+ */
 function validatedFilterText() {
     if (isSurroundedByQuotes.value) {
         // the `filterText` is surrounded by quotes, remove them
@@ -187,6 +247,10 @@ function validatedFilterText() {
     return historyListFilters.value.getFilterText(validFilters.value, true);
 }
 
+/**
+ * Toggles selection of a specific history item
+ * @param {SelectedHistory} h - The history object to toggle selection for
+ */
 function onSelectHistory(h: SelectedHistory) {
     const index = selectedHistoryIds.value.findIndex((selected) => selected.id === h.id);
 
@@ -197,6 +261,10 @@ function onSelectHistory(h: SelectedHistory) {
     }
 }
 
+/**
+ * Toggles selection of all histories in the current view
+ * If all are selected, deselects all; otherwise selects all loaded histories
+ */
 function onSelectAllHistories() {
     if (selectedHistoryIds.value.length === historiesLoaded.value.length) {
         selectedHistoryIds.value = [];
@@ -209,6 +277,10 @@ function onSelectAllHistories() {
     }
 }
 
+/**
+ * Handles bulk deletion of selected histories
+ * Shows confirmation dialog and processes deletion with proper error handling
+ */
 async function onBulkDelete() {
     const totalSelected = selectedHistoryIds.value.length;
     const hasPublished = selectedHistoryIds.value.some((h) => h.published);
@@ -257,6 +329,10 @@ async function onBulkDelete() {
     }
 }
 
+/**
+ * Handles bulk restoration of selected deleted histories
+ * Shows confirmation dialog and processes restoration with proper error handling
+ */
 async function onBulkRestore() {
     const totalSelected = selectedHistoryIds.value.length;
 
@@ -300,10 +376,17 @@ async function onBulkRestore() {
     }
 }
 
+/**
+ * Toggles the visibility of the bulk tags modal
+ */
 function onToggleBulkTags() {
     showBulkAddTagsModal.value = !showBulkAddTagsModal.value;
 }
 
+/**
+ * Adds tags to all selected histories
+ * @param {string[]} tags - Array of tag strings to add to the selected histories
+ */
 async function onBulkTagsAdd(tags: string[]) {
     const tmpSelected = [...selectedHistoryIds.value];
     const totalSelected = selectedHistoryIds.value.length;
@@ -335,6 +418,10 @@ async function onBulkTagsAdd(tags: string[]) {
     }
 }
 
+/**
+ * Watches for changes in filter text, sort options, and sort direction
+ * to reload the history list with updated parameters
+ */
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
