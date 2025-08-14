@@ -23,7 +23,7 @@ export function useToolState(step: Ref<Step>) {
                     try {
                         const parsedValue = JSON.parse(value);
                         parsedToolState[key] = parsedValue;
-                    } catch (error) {
+                    } catch {
                         parsedToolState[key] = rawToolState[key];
                     }
                 } else {

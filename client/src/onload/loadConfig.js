@@ -74,7 +74,7 @@ export function getAppRoot(defaultRoot = "/", stripTrailingSlash = false) {
     try {
         // try actual config
         root = get().options.root;
-    } catch (err) {
+    } catch {
         try {
             root = getRootFromIndexLink(defaultRoot);
         } catch (err) {

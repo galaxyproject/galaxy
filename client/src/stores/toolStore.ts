@@ -253,7 +253,7 @@ export const useToolStore = defineStore("toolStore", () => {
         try {
             currentPanelView.value = currentPanelView.value || defaultPanelView.value;
             await setPanel(currentPanelView.value);
-        } catch (e) {
+        } catch {
             await setPanel(defaultPanelView.value);
         }
     }
