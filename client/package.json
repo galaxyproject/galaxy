@@ -131,7 +131,7 @@
     "vue-echarts": "^7.0.3",
     "vue-infinite-scroll": "^2.0.2",
     "vue-json-pretty": "^1.9.5",
-    "vue-multiselect": "^2.1.7",
+    "vue-multiselect": "^3.3",
     "vue-observe-visibility": "^1.0.0",
     "vue-property-decorator": "^9.1.2",
     "vue-router": "^4.4.5",
