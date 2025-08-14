@@ -119,7 +119,7 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
     isExportDialogOpen.value = false;
     try {
         await exportHistoryToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
-    } catch (error) {
+    } catch {
         exportErrorMessage.value = "The history export request failed. Please try again later.";
     }
     updateExports();
