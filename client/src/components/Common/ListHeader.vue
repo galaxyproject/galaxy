@@ -68,6 +68,7 @@ defineExpose({
                 <BFormCheckbox
                     v-if="showSelectAll"
                     id="list-header-select-all"
+                    class="unselectable"
                     :disabled="selectAllDisabled"
                     :checked="allSelected"
                     :indeterminate="indeterminateSelected"

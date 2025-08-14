@@ -216,7 +216,7 @@ const emit = defineEmits<{
     /** Emitted when card is clicked
      * @event click
      */
-    (e: "click"): void;
+    (e: "click", event: MouseEvent | KeyboardEvent): void;
 
     /** Emitted when bookmark button is clicked
      * @event bookmark
@@ -252,6 +252,7 @@ const emit = defineEmits<{
      * @event tagsUpdate
      */
     (e: "tagsUpdate", tags: string[]): void;
+    (e: "keydown", event: KeyboardEvent): void;
 }>();
 
 const bookmarkLoading = ref(false);
@@ -279,6 +280,14 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
  * Number of lines before title truncation (undefined = no truncation)
  */
 const allowedTitleLines = computed(() => props.titleNLines);
+
+function onKeyDown(event: KeyboardEvent) {
+    if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        emit("click", event);
+    } else if (props.clickable) {
+        emit("keydown", event);
+    }
+}
 </script>
 
 <template>
@@ -296,8 +305,8 @@ const allowedTitleLines = computed(() => props.titleNLines);
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click') : undefined"
-        @keydown.enter="props.clickable ? emit('click') : undefined">
+        @click="props.clickable ? emit('click', $event) : undefined"
+        @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
