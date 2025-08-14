@@ -11,7 +11,7 @@ import type { UserQuotaUsageData } from "./Quota/model/QuotaUsage";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -48,9 +48,11 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
     );
 
     const pinia = createPinia();
-    const wrapper = mount(DiskUsageSummary as object, {
-        localVue,
-        pinia,
+    const wrapper = mount(DiskUsageSummary, {
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
     const userStore = useUserStore();
     userStore.currentUser = fakeUserWithQuota;

@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
@@ -25,11 +25,11 @@ const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 const SELECTORS = {
     WORKFLOW_HEADING: "[data-description='workflow heading']",
     ACTIONS_BUTTON_GROUP: "[data-button-group]",
-    EDIT_WORKFLOW_BUTTON: `[data-button-edit][title='Edit Workflow']`,
+    EDIT_WORKFLOW_BUTTON: `[data-button-edit][data-title='Edit Workflow']`,
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
-    ROUTE_TO_RERUN_BUTTON: "[data-button-rerun][title='Rerun Workflow with same inputs']",
-    ALERT_MESSAGE: "balert-stub",
+    ROUTE_TO_RERUN_BUTTON: "[data-button-rerun][data-title='Rerun Workflow with same inputs']",
+    ALERT_MESSAGE: ".alert, balert-stub",
 };
 
 // Mock the copyWorkflow function for importing a workflow
@@ -59,7 +59,7 @@ jest.mock("@/stores/workflowStore", () => {
     };
 });
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 /**
  * Mounts the WorkflowNavigationTitle component with props/stores adjusted given the parameters
@@ -86,13 +86,17 @@ async function mountWorkflowNavigationTitle(
         invocation = undefined;
     }
 
-    const wrapper = shallowMount(WorkflowNavigationTitle as object, {
-        propsData: {
+    const pinia = createTestingPinia();
+    const router = injectTestRouter();
+    const wrapper = mount(WorkflowNavigationTitle as object, {
+        props: {
             invocation,
             workflowId,
         },
-        localVue,
-        pinia: createTestingPinia(),
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia, router],
+        },
     });
 
     const userStore = useUserStore();
@@ -112,7 +116,7 @@ describe("WorkflowNavigationTitle renders", () => {
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
         const rerunButton = wrapper.find(SELECTORS.ROUTE_TO_RERUN_BUTTON);
-        expect(rerunButton.attributes("title")).toContain("Rerun");
+        expect(rerunButton.attributes("data-title")).toContain("Rerun");
     });
 
     it("the workflow name in header and run button in actions; run form version", async () => {
@@ -123,7 +127,7 @@ describe("WorkflowNavigationTitle renders", () => {
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
         const runButton = wrapper.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
-        expect(runButton.attributes("title")).toContain("Run");
+        expect(runButton.attributes("data-title")).toContain("Execute");
     });
 
     it("edit button if user owns the workflow", async () => {
@@ -132,8 +136,8 @@ describe("WorkflowNavigationTitle renders", () => {
             const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
 
             const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
-            expect(editButton.attributes("to")).toBe(
-                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`,
+            expect(editButton.attributes("href")).toBe(
+                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
             );
         }
         await findEditButton("invocation");
@@ -165,7 +169,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
-        expect(alert.attributes("variant")).toBe("info");
+        expect(alert.classes()).toContain("alert-info");
         expect(alert.text()).toContain(`Workflow ${SAMPLE_WORKFLOW.name} imported successfully`);
     });
 
@@ -179,7 +183,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
-        expect(alert.attributes("variant")).toBe("danger");
+        expect(alert.classes()).toContain("alert-danger");
         expect(alert.text()).toContain(IMPORT_ERROR_MESSAGE);
     });
 });
