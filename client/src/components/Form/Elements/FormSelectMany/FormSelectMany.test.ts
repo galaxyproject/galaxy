@@ -14,11 +14,13 @@ const localVue = getLocalVue();
 
 jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
-function mountSelectMany(props: Partial<PropType<typeof FormSelectMany>>) {
+function mountSelectMany(props: any) {
     return mount(FormSelectMany as any, {
-        propsData: { options: [], value: [], ...props },
-        pinia,
-        localVue,
+        props: { options: [], value: [], ...props },
+        global: {
+            ...localVue.global,
+            plugins: [pinia, ...(localVue.global?.plugins || [])],
+        },
     });
 }
 
@@ -56,13 +58,14 @@ function generateOptionsFromArrays(matrix: Array<Array<string>>): SelectOption[]
 
 /** gets the latest input event value and reflects it to props */
 async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
-    const emittedEvents = wrapper.emitted()?.["input"];
+    const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+    const emittedEvents = emitted.input;
 
     if (!emittedEvents) {
         return undefined;
     }
 
-    const latestValue = emittedEvents[emittedEvents.length - 1]?.[0];
+    const latestValue = emittedEvents?.[emittedEvents.length - 1]?.[0];
 
     if (latestValue === undefined) {
         return undefined;
@@ -100,7 +103,7 @@ describe("FormSelectMany", () => {
         const wrapper = mountSelectMany({ options });
 
         {
-            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0];
+            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
             await firstOption.trigger("click");
 
             const emitted = await emittedInput(wrapper);
@@ -108,7 +111,7 @@ describe("FormSelectMany", () => {
         }
 
         {
-            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0];
+            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
             await firstOption.trigger("click");
 
             const emitted = await emittedInput(wrapper);
@@ -133,18 +136,18 @@ describe("FormSelectMany", () => {
             });
         }
 
-        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0];
+        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
         await firstOption.trigger("click");
         const emitted = await emittedInput(wrapper);
 
         {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
             expect(selectedOptions.length).toBe(3);
-            expect(selectedOptions[2]!.text()).toBe(emitted[2]!);
+            expect(selectedOptions[2]!.text()).toBe((emitted as any)?.[2]);
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
             unselectedOptions.forEach((unselectedOption) => {
-                expect(unselectedOption.text()).not.toBe(emitted[2]);
+                expect(unselectedOption.text()).not.toBe((emitted as any)?.[2]);
             });
         }
     });
@@ -161,7 +164,7 @@ describe("FormSelectMany", () => {
             expect(unselectedCount.text()).toBe("(4)");
         }
 
-        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0];
+        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
         await firstOption.trigger("click");
         await emittedInput(wrapper);
 

@@ -125,7 +125,7 @@ describe("CreateForm", () => {
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(1);
-        expect(emitted[0][0]).toMatchObject(FAKE_OBJECT_STORE);
+        expect(emitted[0]![0]).toMatchObject(FAKE_OBJECT_STORE);
     });
 
     it("should indicate an error on failure", async () => {

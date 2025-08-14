@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 
 import { type CleanableItem, CleanupResult } from "./model";
 
@@ -53,7 +53,7 @@ const SUCCESS_RESULT = () => {
     );
 };
 async function mountCleanupResultDialogWith(result?: CleanupResult) {
-    const wrapper = mount(CleanupResultDialog as object, { propsData: { result, show: true }, localVue });
+    const wrapper = mount(CleanupResultDialog as any, { props: { result, show: true }, global: localVue.global });
     await flushPromises();
     return wrapper;
 }

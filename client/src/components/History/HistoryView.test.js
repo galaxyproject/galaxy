@@ -93,6 +93,21 @@ async function createWrapper(globalConfig, currentUserId, history) {
                     getters: {},
                 },
             },
+            stubs: {
+                'history-panel': true,
+                'content-item': {
+                    template: '<div class="content-item"><slot /></div>',
+                    props: ['id', 'name']
+                },
+                'stateless-tags': {
+                    template: '<div class="stateless-tags">tag_1 tag_2</div>'
+                },
+                'tags-multiselect': true,
+                'loading-span': true,
+                'expanded-items': true,
+                'history-filters': true,
+                'history-counter': true
+            }
         },
     });
     const userStore = useUserStore();

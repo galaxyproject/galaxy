@@ -34,7 +34,7 @@ describe("RepositoryDetails", () => {
         const globalConfig = getLocalVue();
         const pinia = createPinia();
         setActivePinia(pinia);
-        const wrapper = shallowMount(Index as object, {
+        const wrapper = shallowMount(Index as any, {
             props: {
                 repo: {
                     id: "id",

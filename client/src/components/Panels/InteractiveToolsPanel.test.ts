@@ -175,19 +175,21 @@ describe("InteractiveToolsPanel component", () => {
         jest.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(jest.fn());
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
-            pinia,
-            stubs: {
-                ActivityPanel: {
-                    template: '<div><slot name="header" /><slot /></div>',
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia, router],
+                stubs: {
+                    ActivityPanel: {
+                        template: '<div><slot name="header" /><slot /></div>',
+                    },
+                    DelayedInput: true,
+                    FontAwesomeIcon: true,
+                    UtcDate: true,
                 },
-                DelayedInput: true,
-                FontAwesomeIcon: true,
-                UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: jest.fn(),
+                mocks: {
+                    $router: {
+                        push: jest.fn(),
+                    },
                 },
             },
         });

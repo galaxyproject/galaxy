@@ -57,12 +57,13 @@ describe("ToolSearch", () => {
         };
 
         // Now add all filters in the advanced menu
-        Object.entries(filterInputs).forEach(([selector, value]) => {
+        for (const [selector, value] of Object.entries(filterInputs)) {
             const filterInput = wrapper.find(selector);
-            if (filterInput.vm && filterInput.props().type == "text") {
-                filterInput.setValue(value);
+            if (filterInput.exists() && filterInput.element) {
+                filterInput.element.value = value;
+                await filterInput.trigger('input');
             }
-        });
+        }
 
         // Test: we route to the list with filters
         const mockMethod = jest.fn();

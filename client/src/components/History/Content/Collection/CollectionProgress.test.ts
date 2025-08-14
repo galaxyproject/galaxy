@@ -11,11 +11,11 @@ const localVue = getLocalVue();
 async function mountComponent(dsc: object) {
     const jobStateSummary = new JobStateSummary(dsc);
 
-    const wrapper = mount(CollectionProgress as object, {
-        propsData: {
+    const wrapper = mount(CollectionProgress as any, {
+        props: {
             summary: jobStateSummary,
         },
-        localVue,
+        global: localVue.global,
     });
 
     await flushPromises();

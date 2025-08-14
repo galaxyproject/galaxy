@@ -2,7 +2,7 @@ import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -52,32 +52,34 @@ describe("Index", () => {
         });
         mockUnprivilegedToolsRequest(server, http);
         wrapper = shallowMount(Index as object, {
-            propsData: {
+            props: {
                 workflowId: "workflow_id",
                 initialVersion: 1,
                 workflowTags: ["moo", "cow"],
                 workflows: [],
                 toolbox: [],
             },
-            localVue,
-            pinia: testingPinia,
-            // mock out components that have exposed methods used by Index.vue.
-            stubs: {
-                ActivityBar: {
-                    template: "<div />",
-                    methods: {
-                        isActiveSideBar(name: string) {
-                            return name === "workflow-editor-tools";
+            global: {
+                ...localVue.global,
+                plugins: [testingPinia, ...(localVue.global?.plugins || [])],
+                // mock out components that have exposed methods used by Index.vue.
+                stubs: {
+                    ActivityBar: {
+                        template: "<div />",
+                        methods: {
+                            isActiveSideBar(name: string) {
+                                return name === "workflow-editor-tools";
+                            },
                         },
+                        expose: ["isActiveSideBar"],
                     },
-                    expose: ["isActiveSideBar"],
-                },
-                WorkflowGraph: {
-                    template: "<div />",
-                    methods: {
-                        fitWorkflow() {},
+                    WorkflowGraph: {
+                        template: "<div />",
+                        methods: {
+                            fitWorkflow() {},
+                        },
+                        expose: ["fitWorkflow"],
                     },
-                    expose: ["fitWorkflow"],
                 },
             },
         });

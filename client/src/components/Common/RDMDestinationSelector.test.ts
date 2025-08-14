@@ -30,7 +30,7 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
         }),
     );
 
-    const wrapper = mount(RDMDestinationSelector as object, {
+    const wrapper = mount(RDMDestinationSelector as any, {
         props: {
             fileSource,
         },
@@ -87,7 +87,7 @@ describe("RDMDestinationSelector", () => {
 
             const emitted = wrapper.emitted("onRecordSelected");
             expect(emitted).toBeTruthy();
-            expect(emitted?[0][0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
+            expect(emitted?.[0]?.[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
         });
     });
 
@@ -134,7 +134,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?[0][0]).toEqual(FAKE_ENTRY.uri);
+                expect(emitted?.[0]?.[0]).toEqual(FAKE_ENTRY.uri);
             });
         });
 
@@ -151,7 +151,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?[0][0]).toEqual(fakeRecordUri);
+                expect(emitted?.[0]?.[0]).toEqual(fakeRecordUri);
             });
         });
     });
@@ -163,14 +163,14 @@ describe("RDMDestinationSelector", () => {
     }
 
     async function setRDMSourceInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput) as VueWrapper;
+        const component = wrapper.findComponent(FilesInput);
         expect(component.attributes("placeholder")).toContain("source");
         component.vm.$emit("input", newValue);
         await flushPromises();
     }
 
     async function setRDMDirectoryInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput) as VueWrapper;
+        const component = wrapper.findComponent(FilesInput);
         expect(component.attributes("placeholder")).toContain("directory");
         component.vm.$emit("input", newValue);
         await flushPromises();

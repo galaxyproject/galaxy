@@ -74,7 +74,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         propsData = {
             jobs: jobs,
         };
-        wrapper = mount(JobStep as object, {
+        wrapper = mount(JobStep as any, {
             props: propsData,
             global: {
                 stubs: {
