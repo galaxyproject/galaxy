@@ -87,6 +87,7 @@
                     id="execute"
                     class="text-nowrap"
                     title="Run Tool"
+                    data-description="run tool button"
                     :disabled="!canMutateHistory"
                     size="small"
                     :wait="showExecuting"

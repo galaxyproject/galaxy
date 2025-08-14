@@ -1,29 +1,27 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import {
     faAngleDown,
     faAngleUp,
-    faCheck,
     faExclamationTriangle,
     faExternalLinkAlt,
-    faTimes,
     faUser,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
+import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
+
+import GButton from "../BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
-library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
-
+// TODO: Refactor props to use defineProps with types (best practices)
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     section: { type: String, required: true },
-    ontologies: { type: Array, default: null },
+    ontologies: { type: Array<string>, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -34,7 +32,11 @@ const props = defineProps({
     owner: { type: String, default: null },
 });
 
-const emit = defineEmits(["open"]);
+// TODO: For tool open emit, consider adding event as param to allow for opening tool in new tab
+const emit = defineEmits<{
+    (e: "open"): void;
+    (e: "apply-filter", filter: string, value: string): void;
+}>();
 
 const showHelp = ref(false);
 
@@ -46,6 +48,10 @@ const formattedToolHelp = computed(() => {
         return "";
     }
 });
+
+/** We add double quotes to the section filter since the backend Whoosh search
+ * requires it for exact matches, and the `Filtering` class only does single quotes. */
+const quotedSection = computed(() => (props.section ? `"${props.section}"` : ""));
 </script>
 
 <template>
@@ -53,8 +59,8 @@ const formattedToolHelp = computed(() => {
         <div class="top-bar bg-secondary px-2 py-1 rounded-right">
             <div class="py-1 d-flex flex-wrap flex-gapx-1">
                 <span>
-                    <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
-                    <FontAwesomeIcon v-else icon="fa-external-link-alt" fixed-width />
+                    <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
+                    <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
 
                     <GLink v-if="props.local" dark @click="() => emit('open')">
                         <b>{{ props.name }}</b>
@@ -67,64 +73,70 @@ const formattedToolHelp = computed(() => {
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
             <div class="d-flex align-items-start">
-                <ToolFavoriteButton :id="props.id" />
+                <div class="d-flex align-items-center flex-gapx-1">
+                    <ToolFavoriteButton :id="props.id" color="grey" />
 
-                <b-button
-                    v-if="props.local"
-                    class="text-nowrap"
-                    variant="primary"
-                    size="sm"
-                    @click="() => emit('open')">
-                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                    Open
-                </b-button>
-                <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
-                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                    Open
-                </b-button>
+                    <GButton
+                        v-if="props.local"
+                        class="text-nowrap"
+                        color="blue"
+                        size="small"
+                        @click="() => emit('open')">
+                        <FontAwesomeIcon :icon="faWrench" fixed-width />
+                        Open
+                    </GButton>
+                    <GButton v-else class="text-nowrap" color="blue" size="small" :href="props.link">
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                        Open
+                    </GButton>
+                </div>
             </div>
         </div>
 
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
+                    <b>Section:</b>
+                    <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
                 </span>
 
                 <span v-if="!props.local" class="tag info">
-                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     External
                 </span>
 
                 <span v-if="!props.workflowCompatible" class="tag warn">
-                    <FontAwesomeIcon icon="fa-exclamation-triangle" />
+                    <FontAwesomeIcon :icon="faExclamationTriangle" />
                     Not Workflow compatible
                 </span>
 
                 <span v-if="props.owner" class="tag success">
-                    <FontAwesomeIcon icon="fa-user" />
-                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                    <FontAwesomeIcon :icon="faUser" />
+                    <b>Owner:</b>
+                    <GLink thin @click="() => emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
                 </span>
 
                 <span v-if="props.ontologies && props.ontologies.length > 0">
                     <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
-                        <b-link :to="`/tools/list?ontology=${ontology}`">{{ ontology }}</b-link>
+                        <GLink thin @click="() => emit('apply-filter', 'ontology', ontology)">{{ ontology }}</GLink>
                     </span>
                 </span>
             </div>
 
+            <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-if="props.summary" v-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
                 <GLink v-if="!showHelp" @click="() => (showHelp = true)">
-                    <FontAwesomeIcon icon="fa-angle-down" />
+                    <FontAwesomeIcon :icon="faAngleDown" />
                     Show tool help
                 </GLink>
                 <GLink v-else @click="() => (showHelp = false)">
-                    <FontAwesomeIcon icon="fa-angle-up" />
+                    <FontAwesomeIcon :icon="faAngleUp" />
                     Hide tool help
                 </GLink>
 
+                <!-- eslint-disable-next-line vue/no-v-html -->
                 <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 
@@ -13,6 +13,7 @@ import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
 
+import GButton from "../BaseComponents/GButton.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 
@@ -22,7 +23,6 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
-    (e: "update:show-advanced", showAdvanced: boolean): void;
     (e: "update:panel-query", query: string): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
@@ -30,14 +30,11 @@ const emit = defineEmits<{
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
     useSearchWorker: { type: Boolean, default: true },
 });
-
-library.add(faEye, faEyeSlash);
 
 const queryFilter: Ref<string | null> = ref(null);
 const queryPending = ref(false);
@@ -48,14 +45,6 @@ const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
 
-const propShowAdvanced = computed({
-    get: () => {
-        return props.showAdvanced;
-    },
-    set: (val: boolean) => {
-        emit("update:show-advanced", val);
-    },
-});
 const query = computed({
     get: () => {
         return props.panelQuery.trim();
@@ -193,10 +182,8 @@ function onToggle() {
     <div class="unified-panel" data-description="panel toolbox">
         <div class="unified-panel-controls">
             <ToolSearch
-                :enable-advanced="!props.workflow"
                 :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
-                :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
                 :query="query"
@@ -204,31 +191,31 @@ function onToggle() {
                 :use-worker="useSearchWorker"
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
-            <section v-if="!propShowAdvanced">
+            <section>
                 <div v-if="hasResults && resultPanel" class="pb-2">
-                    <b-button size="sm" class="w-100" @click="onToggle">
+                    <GButton size="small" class="w-100 d-block" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />
                         <span class="mr-1">{{ buttonText }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-info w-100">Search term is too short</b-badge>
+                    <BBadge class="alert-info w-100">Search term is too short</BBadge>
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
-                    <b-badge class="alert-warning w-100">No results found</b-badge>
+                    <BBadge class="alert-warning w-100">No results found</BBadge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
-                    <b-badge class="alert-danger w-100">
+                    <BBadge class="alert-danger w-100">
                         Did you mean:
                         <i>
                             <a href="javascript:void(0)" @click="query = closestTerm">{{ closestTerm }}</a>
                         </i>
                         ?
-                    </b-badge>
+                    </BBadge>
                 </div>
             </section>
         </div>
-        <div v-if="!propShowAdvanced" class="unified-panel-body">
+        <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div v-if="localPanel" class="toolMenu">
                     <div v-if="props.workflow">
