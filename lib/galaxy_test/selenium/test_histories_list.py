@@ -89,7 +89,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         # Restore the history
         self.select_history_card_operation(self.history2_name, '[id^="g-card-action-restore-history-"]')
 
-        self.assert_histories_in_list([])
+        self.assert_histories_sorted_in_list([])
         self.components.histories.reset_input.wait_for_and_click()
 
         self.assert_histories_in_list([self.history2_name])
@@ -169,10 +169,10 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.components.histories.search_input.wait_for_and_send_keys(self.history2_name)
-        self.assert_histories_in_list([self.history2_name])
+        self.assert_histories_sorted_in_list([self.history2_name])
         self.components.histories.reset_input.wait_for_and_click()
         self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
-        self.assert_histories_in_list([])
+        self.assert_histories_sorted_in_list([])
 
     @selenium_test
     def test_advanced_search(self):
@@ -227,14 +227,14 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
-        self.assert_histories_in_list([self.history2_name], False)
+        self.assert_histories_sorted_in_list([self.history2_name], False)
 
     def _login(self):
         self.home()
         self.submit_login(self.user_email, retries=3)
 
     @retry_assertion_during_transitions
-    def assert_histories_in_list(self, expected_histories, sort_matters=True):
+    def assert_histories_sorted_in_list(self, expected_histories, sort_matters=True):
         actual_histories = self.get_history_titles(len(expected_histories))
         if not sort_matters:
             actual_histories = set(actual_histories)
