@@ -20,10 +20,10 @@ const TEST_VERSIONS = [
 ];
 const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
-suppressBootstrapVueWarnings();
-
 describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
+        suppressBootstrapVueWarnings();
+
         const pinia = createPinia();
         const localVue = getLocalVue(true);
 

@@ -21,11 +21,6 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const pinia = createPinia();
 
-// the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
-// better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-// stub out the Popover piece I think.
-suppressBootstrapVueWarnings();
-
 describe("ToolForm", () => {
     let wrapper;
     let axiosMock;
@@ -45,6 +40,11 @@ describe("ToolForm", () => {
                 );
             })
         );
+
+        // the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
+        // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
+        // stub out the Popover piece I think.
+        suppressBootstrapVueWarnings();
 
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {

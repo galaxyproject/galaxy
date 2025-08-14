@@ -21,8 +21,6 @@ jest.mock("stores/services/history.services");
 
 const { server, http } = useServerMock();
 
-suppressLucideVue2Deprecation();
-
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
     return {
@@ -100,6 +98,10 @@ async function createWrapper(localVue, currentUserId, history) {
 }
 
 describe("History center panel View", () => {
+    beforeEach(() => {
+        suppressLucideVue2Deprecation();
+    });
+
     function expectCorrectLayout(wrapper) {
         // HistoryFilters should exist in HistoryView
         expect(wrapper.find("[data-description='filter text input']").exists()).toBe(true);

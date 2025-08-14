@@ -7639,6 +7639,11 @@ jest-environment-node@^29.7.0:
     jest-mock "^29.7.0"
     jest-util "^29.7.0"
 
+jest-fail-on-console@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jest-fail-on-console/-/jest-fail-on-console-3.3.1.tgz#7d17e3a155cd0452b5be0d0906b6cb35e8594000"
+  integrity sha512-dmq/dmh5OBgJlD1MJdpznzwFQP8S7msf3ghTGWQLGhagWwHKzGtqXza76nuJUKOK7BdwqcTK6CCE49Xxv4ckUQ==
+
 jest-fixed-jsdom@^0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/jest-fixed-jsdom/-/jest-fixed-jsdom-0.0.2.tgz#2a15d2db64cf9276afd162c451ae727b89a8811e"
