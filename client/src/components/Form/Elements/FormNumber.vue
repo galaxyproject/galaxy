@@ -26,8 +26,8 @@
                     :state="showState ? (!currentValue && currentValue !== 0 ? (optional ? null : false) : true) : null"
                     @change="onInputChange"
                     @keypress="isNumberOrDecimal"
-                    @keydown.190.capture="onFloatInput"
-                    @keydown.110.capture="onFloatInput" />
+                    @keydown.period.capture="onFloatInput"
+                    @keydown.decimal.capture="onFloatInput" />
             </b-col>
             <b-col v-if="isRangeValid" class="pl-0">
                 <b-form-input v-model="currentValue" class="ui-input" :min="min" :max="max" :step="step" type="range" />
