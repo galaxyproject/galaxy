@@ -1,4 +1,3 @@
-
 /* This function merges the existing data with new incoming data. */
 export function mergeArray(id, payload, items, itemKey) {
     if (!items[id]) {
