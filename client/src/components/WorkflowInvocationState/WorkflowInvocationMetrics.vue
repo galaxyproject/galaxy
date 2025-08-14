@@ -2,14 +2,12 @@
 import { BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
-import { computed, ref, watch } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 
 import type { WorkflowJobMetric } from "@/api/invocations";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
-
-import { defineAsyncComponent } from "vue";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";

@@ -111,7 +111,6 @@ import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-
 // Async component for CustomToolEditor to reduce bundle size
 // NOTE: We use the full async component factory pattern instead of simple dynamic imports
 // (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4

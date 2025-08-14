@@ -367,7 +367,7 @@ function downloadSeededWorkbook() {
 
 const name = ref<string>("Sample Sheet for Workflow Input");
 if ("name" in props.initialElements) {
-    name.value = `${props.initialElements.name} (as sample sheet)` || name.value;
+    name.value = props.initialElements.name ? `${props.initialElements.name} (as sample sheet)` : name.value;
 }
 
 initialize();
