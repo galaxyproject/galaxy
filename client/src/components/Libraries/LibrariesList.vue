@@ -45,12 +45,12 @@
         <b-table
             id="libraries_list"
             ref="libraries_list"
+            v-model:sort-by="sortBy"
             no-sort-reset
             striped
             hover
             :fields="fields"
             :items="librariesList"
-            v-model:sort-by="sortBy"
             :per-page="perPage"
             :current-page="currentPage"
             show-empty
@@ -73,19 +73,19 @@
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
                     :ref="`description-${item.id}`"
+                    v-model:changed-value="item[newDescriptionProperty]"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.description"
-                    v-model:changed-value="item[newDescriptionProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
                     :ref="`synopsis-${item.id}`"
+                    v-model:changed-value="item[newSynopsisProperty]"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.synopsis"
-                    v-model:changed-value="item[newSynopsisProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">

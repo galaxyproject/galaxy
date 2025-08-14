@@ -7,5 +7,5 @@
 
 import { getRootFromIndexLink } from "./getRootFromIndexLink";
 
-// eslint-disable-next-line no-unused-vars, no-undef
+// eslint-disable-next-line no-undef
 __webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/static/dist/`;

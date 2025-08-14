@@ -1,6 +1,6 @@
-import { mount } from "@vue/test-utils";
 import { getLocalVue } from "@tests/jest/helpers";
-import { nextTick, type ExtractPropTypes } from "vue";
+import { mount } from "@vue/test-utils";
+import { type ExtractPropTypes,nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 

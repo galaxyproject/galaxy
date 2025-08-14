@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { Services } from "../services";
 import Details from "./Details";

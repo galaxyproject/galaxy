@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { nextTick } from "vue";
 import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
 import { Services } from "../services";
 import Categories from "./Categories";

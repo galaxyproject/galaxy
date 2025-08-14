@@ -1,5 +1,5 @@
-import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "@tests/jest/helpers";
+import { shallowMount } from "@vue/test-utils";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
