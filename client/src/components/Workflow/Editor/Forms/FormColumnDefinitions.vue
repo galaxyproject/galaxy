@@ -94,7 +94,7 @@ const emit = defineEmits(["onChange"]);
         </div>
         <FormCard
             v-for="(columnDefinition, index) in value"
-            v-bind:key="index"
+            :key="index"
             data-description="column definition block"
             class="card"
             :title="titleForColumnDefinition(index)">
