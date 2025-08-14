@@ -32,7 +32,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_history_view(self):
         self._login()
         self.navigate_to_histories_page()
-        self.select_grid_operation(self.history2_name, "View")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-view-history-"]')
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
@@ -57,7 +57,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.select_grid_operation("Unnamed history", "Rename")
+        self.select_history_card_operation("Unnamed history", '[id^="g-card-rename-history-"]')
 
         # Rename the history
         history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")
@@ -76,9 +76,8 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Delete the history
-        self.select_grid_operation(self.history2_name, "Delete")
-        alert = self.driver.switch_to.alert
-        alert.accept()
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-delete-history-"]', True)
+        self.components.histories.delete_history_confirm.wait_for_and_click()
 
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_list([self.history2_name], False)
@@ -88,9 +87,9 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
-        self.select_grid_operation(self.history2_name, "Restore")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-restore-history-"]')
 
-        self.assert_grid_histories_are([])
+        self.assert_histories_in_list([])
         self.components.histories.reset_input.wait_for_and_click()
 
         self.assert_histories_in_list([self.history2_name])
@@ -103,9 +102,8 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
         self.assert_histories_in_list([self.history4_name])
 
-        self.select_grid_operation(self.history4_name, "Delete Permanently")
-        alert = self.driver.switch_to.alert
-        alert.accept()
+        self.select_history_card_operation(self.history4_name, '[id^="g-card-action-purge-history-"]', True)
+        self.components.histories.delete_history_confirm.wait_for_and_click()
 
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_list([self.history4_name], False)
@@ -171,10 +169,10 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.components.histories.search_input.wait_for_and_send_keys(self.history2_name)
-        self.assert_grid_histories_are([self.history2_name])
+        self.assert_histories_in_list([self.history2_name])
         self.components.histories.reset_input.wait_for_and_click()
         self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
-        self.assert_grid_histories_are([])
+        self.assert_histories_in_list([])
 
     @selenium_test
     def test_advanced_search(self):
@@ -229,14 +227,14 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
-        self.assert_grid_histories_are([self.history2_name], False)
+        self.assert_histories_in_list([self.history2_name], False)
 
     def _login(self):
         self.home()
         self.submit_login(self.user_email, retries=3)
 
     @retry_assertion_during_transitions
-    def assert_grid_histories_are(self, expected_histories, sort_matters=True):
+    def assert_histories_in_list(self, expected_histories, sort_matters=True):
         actual_histories = self.get_history_titles(len(expected_histories))
         if not sort_matters:
             actual_histories = set(actual_histories)
