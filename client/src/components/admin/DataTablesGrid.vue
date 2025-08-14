@@ -23,7 +23,6 @@ export default {
     components: {
         "base-grid": BaseGrid,
     },
-    emits: ["changeview"],
     props: {
         isLoaded: {
             type: Boolean,
@@ -34,6 +33,7 @@ export default {
             required: true,
         },
     },
+    emits: ["changeview"],
 
     data() {
         return {

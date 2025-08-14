@@ -103,6 +103,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
 
 <template>
     <ScrollList
+        v-model:prop-scroll-top="scrollListScrollTop"
         :loader="loadInvocations"
         :item-key="(invocation) => invocation.id"
         :in-panel="props.inPanel"
@@ -111,8 +112,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         adjust-for-total-count-changes
         name="invocation"
         name-plural="invocations"
-        :load-disabled="!currentUser || currentUser.isAnonymous"
-        :prop-scroll-top.sync="scrollListScrollTop">
+        :load-disabled="!currentUser || currentUser.isAnonymous">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"

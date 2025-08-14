@@ -43,7 +43,6 @@ function math_inline(state, silent) {
     let match;
     let res;
     let pos;
-    let esc_count;
 
     if (state.src[state.pos] !== "$") {
         return false;

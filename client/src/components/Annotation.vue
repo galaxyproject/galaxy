@@ -49,6 +49,9 @@ export default {
             },
         },
     },
+    methods: {
+        localize,
+    },
 };
 </script>
 

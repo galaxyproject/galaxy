@@ -91,9 +91,9 @@ function userTitle(title: string) {
         <SelectorModal
             v-if="!props.minimal"
             id="selector-history-modal"
+            v-model:show-modal="showSwitchModal"
             :histories="histories"
             :additional-options="['center', 'multi']"
-            v-model:show-modal="showSwitchModal"
             @selectHistory="historyStore.setCurrentHistory($event.id)" />
     </div>
 </template>

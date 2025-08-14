@@ -85,9 +85,9 @@ defineExpose({ doQuery });
                 @change="onSelect" />
             <FormDataExtensions
                 v-if="extensions && extensions.length > 0"
+                v-model:formats-visible="formatsVisible"
                 :extensions="extensions"
-                formats-button-id="vis-create-ext"
-                v-model:formats-visible="formatsVisible" />
+                formats-button-id="vis-create-ext" />
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>

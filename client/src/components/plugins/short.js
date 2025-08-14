@@ -18,5 +18,5 @@ export default Vue.directive("short", {
         }
         el.classList.add("text-break");
         el.textContent = textContent;
-    }
+    },
 });

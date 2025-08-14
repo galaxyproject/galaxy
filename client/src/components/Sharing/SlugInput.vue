@@ -9,7 +9,6 @@ const emit = defineEmits<{
     (e: "change", newValue: string): void;
 }>();
 
-// eslint-disable-next-line vue/no-setup-props-destructure
 const initialSlug = props.slug;
 
 function onChange(value: string) {

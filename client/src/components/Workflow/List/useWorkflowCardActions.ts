@@ -112,7 +112,7 @@ export function useWorkflowCardActions(
             });
 
             toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update workflow bookmark status");
         } finally {
             refreshCallback();

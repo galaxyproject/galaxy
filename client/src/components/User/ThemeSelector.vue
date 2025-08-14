@@ -26,7 +26,7 @@ watch(
     () => isConfigLoaded.value,
     async () => {
         const themes = Object.keys(config.value.themes);
-        show.value = themes?.length > 1 ?? false;
+        show.value = (themes?.length ?? 0) > 1;
         if (!themes.includes(currentTheme.value)) {
             await setCurrentTheme(themes[0]);
         }

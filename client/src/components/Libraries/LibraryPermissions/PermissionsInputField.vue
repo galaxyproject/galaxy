@@ -48,7 +48,6 @@ export default {
     components: {
         Multiselect,
     },
-    emits: ["input"],
     props: {
         id: {
             type: String,
@@ -75,6 +74,7 @@ export default {
             required: true,
         },
     },
+    emits: ["input"],
     data() {
         return {
             permissions: undefined,

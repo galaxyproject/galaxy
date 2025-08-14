@@ -277,7 +277,7 @@ async function onBulkDelete() {
             Toast.success(`Deleted ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to delete some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -316,7 +316,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -417,14 +417,14 @@ onMounted(() => {
 
             <FilterMenu
                 id="workflow-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="workflows"
                 :filter-class="workflowFilters"
-                v-model:filter-text="filterText"
                 :loading="loading || overlay"
                 has-help
                 view="compact"
-                :placeholder="localize(searchPlaceHolder)"
-                v-model:show-advanced="showAdvanced">
+                :placeholder="localize(searchPlaceHolder)">
                 <template v-slot:menu-help-text>
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <div v-html="helpHtml(activeList, userStore.isAnonymous)"></div>

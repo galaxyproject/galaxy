@@ -117,31 +117,31 @@ const modalBodyClasses = computed(() => {
 <template>
     <GModal
         ref="modal"
+        v-model:show="propShowModal"
         size="small"
         fixed-height
-        v-model:show="propShowModal"
         :class="modalBodyClasses"
         :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
                 ref="filterMenuRef"
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                v-model:filter-text="filter"
-                :loading="busy"
-                v-model:show-advanced="showAdvanced" />
+                :loading="busy" />
         </BFormGroup>
 
         <HistoryList
             v-show="!showAdvanced"
+            v-model:show-modal="propShowModal"
+            v-model:loading="busy"
             :multiple="props.multiple"
             :selected-histories="selectedHistories"
             :additional-options="props.additionalOptions"
-            v-model:show-modal="propShowModal"
             in-modal
             :filter="filter"
-            v-model:loading="busy"
             @selectHistory="selectHistory"
             @setFilter="setFilterValue">
             <template v-slot:footer-button-area>

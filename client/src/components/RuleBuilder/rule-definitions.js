@@ -32,7 +32,7 @@ const applyRegex = function (regex, target, data, replacement, groupCount, allow
     let regExp;
     try {
         regExp = pyre(String(regex));
-    } catch (error) {
+    } catch {
         return { error: `Invalid regular expression specified.` };
     }
     let failedCount = 0;
@@ -519,7 +519,7 @@ const RULES = {
             var regExp;
             try {
                 regExp = pyre(regex);
-            } catch (error) {
+            } catch {
                 return { error: `Invalid regular expression specified.` };
             }
             const target = rule.target_column;

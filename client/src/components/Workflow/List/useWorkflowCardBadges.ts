@@ -1,6 +1,6 @@
 import { faLayerGroup, faList, faSpinner, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref } from "vue";
+import { computed, type Ref } from "vue";
 import { useRouter } from "vue-router";
 
 import type { WorkflowSummary } from "@/api/workflows";

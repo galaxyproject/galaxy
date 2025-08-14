@@ -25,7 +25,7 @@ export async function getVisualizations(): Promise<Array<TemplateEntry>> {
                 content: `{ "visualization_name": "${v.name}", "visualization_title": "${v.html}" }`,
             },
         }));
-    } catch (e) {
+    } catch {
         rethrowSimple("Failed to load Visualizations.");
     }
 }
