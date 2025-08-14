@@ -1,31 +1,39 @@
 import os
 from typing import (
+    Annotated,
     Optional,
     Union,
 )
 
 from fsspec.implementations.local import LocalFileSystem
+from pydantic import Field
 
 from galaxy.files.models import (
     AnyRemoteEntry,
     FilesSourceRuntimeContext,
+    StrictModel,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._fsspec import (
+    CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
 )
 
 
-class TempFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
+class TempFileSourceCommonProperties(StrictModel):
+    auto_mkdir: Annotated[
+        bool, Field(description="Whether to automatically create directories when writing files.")
+    ] = True
+
+
+class TempFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration, TempFileSourceCommonProperties):
     root_path: Union[str, TemplateExpansion]
-    auto_mkdir: bool = True
 
 
-class TempFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
+class TempFileSourceConfiguration(FsspecBaseFileSourceConfiguration, TempFileSourceCommonProperties):
     root_path: str
-    auto_mkdir: bool = True
 
 
 class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, TempFileSourceConfiguration]):
@@ -50,11 +58,15 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
         super().__init__(template_config)
         self._root_path = self.template_config.root_path
 
-    def _open_fs(self, context: FilesSourceRuntimeContext[TempFileSourceConfiguration]):
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[TempFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ):
         self._root_path = context.config.root_path
         return LocalFileSystem(
             auto_mkdir=context.config.auto_mkdir,
-            listings_expiry_time=context.config.listings_expiry_time,
+            **cache_options,
         )
 
     def _to_temp_path(self, path: str) -> str:
