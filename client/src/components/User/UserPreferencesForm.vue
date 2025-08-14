@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watchEffect } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
 import {
