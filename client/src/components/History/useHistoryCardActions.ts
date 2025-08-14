@@ -9,7 +9,8 @@ import {
     faUndo,
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
-import { computed, type Ref } from "vue";
+import type { ComputedRef, Ref } from "vue";
+import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
@@ -22,16 +23,43 @@ import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+/**
+ * Custom Vue composable for managing history card actions
+ *
+ * This composable provides action configurations for history cards, including
+ * delete, restore, share, import, and navigation actions.
+ * It handles the logic for each action and returns properly configured action
+ * objects for use with the GCard component.
+ *
+ * @param {Ref<AnyHistoryEntry>} history - Reactive reference to the history entry
+ * @param {boolean} archivedView - Whether the card is displayed in archived view
+ * @param {() => void} refreshCallBack - Callback function to refresh the parent list
+ * @returns {Object} Object containing action arrays for different action categories
+ *
+ * @example
+ * const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimaryActions } =
+ *   useHistoryCardActions(historyRef, false, () => refreshList());
+ */
 export function useHistoryCardActions(
     history: Ref<AnyHistoryEntry>,
     archivedView: boolean,
     refreshCallBack: () => void
-) {
+): {
+    historyCardExtraActions: CardAction[];
+    historyCardSecondaryActions: CardAction[];
+    historyCardPrimaryActions: ComputedRef<CardAction[]>;
+} {
     const { confirm } = useConfirmDialog();
 
     const historyStore = useHistoryStore();
 
-    async function onDeleteHistory(purge = false) {
+    /**
+     * Handles history deletion with optional permanent purge
+     * Shows confirmation dialog and executes deletion via history store
+     *
+     * @param {boolean} purge - Whether to permanently delete (purge) the history
+     */
+    async function onDeleteHistory(purge: boolean = false) {
         const confirmed = await confirm(
             `Are you sure you want to ${purge ? "permanently delete" : "delete"} this history?`,
             {
@@ -55,6 +83,10 @@ export function useHistoryCardActions(
         }
     }
 
+    /**
+     * Handles restoration of a deleted history
+     * Executes restoration via history store and shows success/error messages
+     */
     async function onRestore() {
         try {
             await historyStore.restoreHistory(history.value.id);
@@ -65,6 +97,12 @@ export function useHistoryCardActions(
         }
     }
 
+    /**
+     * Handles importing a copy of an archived history from its export record
+     * Shows confirmation dialog and creates a new history from the export snapshot
+     *
+     * @param {ArchivedHistorySummary} hti - The archived history to import
+     */
     async function onImportCopy(hti: ArchivedHistorySummary) {
         const confirmed = await confirm(
             localize(
@@ -111,6 +149,12 @@ export function useHistoryCardActions(
         );
     }
 
+    /**
+     * Handles restoration of an archived history back to active histories
+     * Shows different confirmation messages for purged vs non-purged histories
+     *
+     * @param {ArchivedHistorySummary} htr - The archived history to restore
+     */
     async function onRestoreHistory(htr: ArchivedHistorySummary) {
         const confirmMessage =
             htr.purged && htr.export_record_data
@@ -145,6 +189,11 @@ export function useHistoryCardActions(
         }
     }
 
+    /**
+     * Extra actions shown in the history card dropdown menu
+     * Includes destructive actions like delete and purge
+     * @type {CardAction[]}
+     */
     const historyCardExtraActions: CardAction[] = [
         {
             id: "delete",
@@ -164,6 +213,11 @@ export function useHistoryCardActions(
         },
     ];
 
+    /**
+     * Secondary actions shown as buttons on the history card
+     * Includes sharing and permission management actions
+     * @type {CardAction[]}
+     */
     const historyCardSecondaryActions: CardAction[] = [
         {
             id: "change-permissions",
@@ -184,7 +238,13 @@ export function useHistoryCardActions(
         },
     ];
 
-    const historyCardPrimaryActions = computed<CardAction[]>(() => {
+    /**
+     * Primary actions computed dynamically based on history state
+     * Includes restore, switch current, import copy, unarchive, and view actions
+     * Actions are shown/hidden based on history state and context
+     * @type {ComputedRef<CardAction[]>}
+     */
+    const historyCardPrimaryActions: ComputedRef<CardAction[]> = computed(() => {
         return [
             {
                 id: "restore",
