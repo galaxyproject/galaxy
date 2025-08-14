@@ -4770,3 +4770,94 @@ class Numpy(Binary):
             return dataset.peek
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
+
+
+class Safetensors(Binary):
+    """
+    safetensors is a new simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy).
+    It provides a secure way to store and load tensors without the security risks associated with pickle-based formats.
+    Safetensors files consist of a JSON header followed by tensor data.
+    more info at: https://github.com/huggingface/safetensors
+    """
+
+    file_ext = "safetensors"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def sniff(self, filename):
+        """
+        Determining if the file is in safetensors format
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('cellpose_model_safetensors.safetensors')
+        >>> Safetensors().sniff(fname)
+        True
+        >>> fname = get_test_fname('cellpose_model_pytorch_pickle.pth')
+        >>> Safetensors().sniff(fname)
+        False
+        """
+        try:
+            # Check if file has the right magic bytes/header
+            with open(filename, 'rb') as f:
+                # Safetensors files start with an 8-byte little-endian integer
+                # indicating the size of the JSON header
+                header_size_bytes = f.read(8)
+                if len(header_size_bytes) != 8:
+                    return False
+
+                header_size = struct.unpack('<Q', header_size_bytes)[0]
+
+                # Currently, there's a limit on the size of the header of 100MB to prevent parsing extremely large JSON headers
+                # In practice, safetensors headers are typically just a few KB to MB
+                # (containing tensor names, shapes, dtypes, and offsets - rarely exceeds 1-10MB even for large models)
+                # But in theory it is possible to have 100 MB header
+                # more info here: https://github.com/huggingface/safetensors?tab=readme-ov-file#benefits
+                if header_size == 0 or header_size > 10**8:  # 100MB max for JSON header
+                    return False
+
+                # CRITICAL: Check if header begins with '{' character (0x7B) as per safetensors spec
+                # This is required by the format and helps distinguish from other binary formats
+                # Only read 1 byte to avoid memory exhaustion from malicious header_size values
+                # more info here: https://github.com/huggingface/safetensors?tab=readme-ov-file#format
+                first_header_byte = f.read(1)
+                if len(first_header_byte) != 1 or first_header_byte[0] != 0x7B:
+                    return False
+
+                # Check if file is large enough to contain the full header
+                current_pos = f.tell()
+                f.seek(0, 2)  # Seek to end
+                file_size = f.tell()
+                f.seek(current_pos)  # Seek back
+
+                if file_size < 8 + header_size:
+                    return False
+
+                # Read the rest of the header (we already read 1 byte)
+                remaining_header_bytes = f.read(header_size - 1)
+                if len(remaining_header_bytes) != header_size - 1:
+                    return False
+
+                # Reconstruct full header
+                header_bytes = first_header_byte + remaining_header_bytes
+
+                header = json.loads(header_bytes.decode('utf-8'))
+
+                # Should be a dictionary with tensor information
+                if not isinstance(header, dict) or len(header) == 0:
+                    return False
+
+                # Basic validation: check if it looks like safetensors metadata
+                # Safetensors headers should have entries with data_offsets
+                has_valid_entries = False
+                for key, value in header.items():
+                    if key == "__metadata__":  # Special metadata key
+                        continue
+                    if isinstance(value, dict) and "data_offsets" in value:
+                        has_valid_entries = True
+                        break
+
+                return has_valid_entries
+
+        except Exception:
+            # Any exception during parsing means it's not a valid safetensors file
+            return False
