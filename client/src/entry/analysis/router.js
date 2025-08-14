@@ -106,7 +106,6 @@ import Login from "@/entry/analysis/modules/Login.vue";
 import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-
 // TODO: patchRouterPush was used with Vue Router 3 but VueRouter constructor
 // doesn't exist in Vue Router 4. Revisit if navigation duplicate warnings return.
 
