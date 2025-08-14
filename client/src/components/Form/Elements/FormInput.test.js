@@ -22,7 +22,7 @@ describe("FormInput", () => {
         const input = wrapper.find("input");
         expect(input.element.value).toBe("initial_value");
         input.element.value = "new_value";
-        await input.trigger('input');
+        await input.trigger("input");
         expect(input.element.value).toBe("new_value");
         expect(wrapper.emitted().input[0][0]).toBe("new_value");
     });
@@ -32,7 +32,7 @@ describe("FormInput", () => {
         const input = wrapper.find("textarea");
         expect(input.element.value).toBe("initial_value");
         input.element.value = "new_value";
-        await input.trigger('input');
+        await input.trigger("input");
         expect(input.element.value).toBe("new_value");
         expect(wrapper.emitted().input[0][0]).toBe("new_value");
     });

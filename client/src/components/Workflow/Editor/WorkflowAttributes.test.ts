@@ -57,9 +57,9 @@ describe("WorkflowAttributes", () => {
 
         const userTagsStore = useUserTagsStore();
         // Mock the userTags property directly
-        Object.defineProperty(userTagsStore, 'userTags', {
+        Object.defineProperty(userTagsStore, "userTags", {
             get: () => autocompleteTags,
-            configurable: true
+            configurable: true,
         });
         userTagsStore.onNewTagSeen = jest.fn();
         userTagsStore.onTagUsed = jest.fn();
@@ -80,7 +80,9 @@ describe("WorkflowAttributes", () => {
 
         for (let i = 0; i < version.length; i++) {
             const versionLabel = version[i]!.text();
-            const versionDate = versionLabel!.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
+            const versionDate = versionLabel!
+                .substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(","))
+                .trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }
 

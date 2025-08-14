@@ -9,7 +9,6 @@ import StatelessTags from "./StatelessTags";
 const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
-
 const globalConfig = getLocalVue();
 
 const mountWithProps = (props) => {
@@ -18,10 +17,11 @@ const mountWithProps = (props) => {
         global: {
             ...globalConfig.global,
             stubs: {
-                'headless-multiselect': {
-                    template: '<div><button class="toggle-button">Toggle</button><div class="headless-multiselect"><div class="headless-multiselect__option">name:named_user_tag</div><div class="headless-multiselect__option">abc</div><div class="headless-multiselect__option">my_tag</div><fieldset><input /></fieldset></div></div>'
-                }
-            }
+                "headless-multiselect": {
+                    template:
+                        '<div><button class="toggle-button">Toggle</button><div class="headless-multiselect"><div class="headless-multiselect__option">name:named_user_tag</div><div class="headless-multiselect__option">abc</div><div class="headless-multiselect__option">my_tag</div><fieldset><input /></fieldset></div></div>',
+                },
+            },
         },
     });
 };
@@ -119,7 +119,7 @@ describe("StatelessTags", () => {
         const multiselect = wrapper.find(selectors.multiselect);
         const input = multiselect.find(selectors.input);
         input.element.value = "new_tag";
-        await input.trigger('input');
+        await input.trigger("input");
         await wrapper.vm.$nextTick();
         multiselect.find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
@@ -138,7 +138,7 @@ describe("StatelessTags", () => {
         const multiselect = wrapper.find(selectors.multiselect);
         const input = multiselect.find(selectors.input);
         input.element.value = ":illegal_tag";
-        await input.trigger('input');
+        await input.trigger("input");
         await wrapper.vm.$nextTick();
 
         const option = multiselect.find(selectors.options);

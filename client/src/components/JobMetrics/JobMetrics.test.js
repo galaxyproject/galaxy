@@ -15,7 +15,6 @@ jest.mock("axios", () => ({
     },
 }));
 
-
 const globalConfig = getLocalVue();
 
 describe("JobMetrics/JobMetrics.vue", () => {

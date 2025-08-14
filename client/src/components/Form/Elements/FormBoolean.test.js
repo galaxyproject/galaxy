@@ -27,9 +27,9 @@ describe("FormBoolean", () => {
         expect(wrapper.emitted().input[1][0]).toBe(false);
         await wrapper.setProps({ value: true });
         expect(wrapper.emitted().input[2][0]).toBe(true);
-        await switchComponent.vm.$emit('input', false);
+        await switchComponent.vm.$emit("input", false);
         expect(wrapper.emitted().input[3][0]).toBe(false);
-        await switchComponent.vm.$emit('input', true);
+        await switchComponent.vm.$emit("input", true);
         expect(wrapper.emitted().input[4][0]).toBe(true);
     });
 });

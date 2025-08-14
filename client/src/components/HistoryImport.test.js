@@ -104,7 +104,7 @@ describe("HistoryImport.vue", () => {
     it("warns about shared history imports", async () => {
         const input = wrapper.find("input[type=url]");
         input.element.value = "https://usegalaxy.org/u/some_user/h/exported_history";
-        await input.trigger('input');
+        await input.trigger("input");
 
         await wait(210);
 

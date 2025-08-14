@@ -143,6 +143,11 @@ function userTitle(title: string) {
             </BBadge>
         </div>
 
-        <HistoryList v-show="!showAdvanced" v-model:loading="loading" multiple :filter="filter" @setFilter="setFilter" />
+        <HistoryList
+            v-show="!showAdvanced"
+            v-model:loading="loading"
+            multiple
+            :filter="filter"
+            @setFilter="setFilter" />
     </ActivityPanel>
 </template>

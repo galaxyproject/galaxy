@@ -37,7 +37,7 @@ describe("InteractiveToolsPanel component", () => {
 
     const globalConfig = getLocalVue();
     const router = injectTestRouter();
-    
+
     const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
         const pinia = createTestingPinia({
             createSpy: () => jest.fn(),

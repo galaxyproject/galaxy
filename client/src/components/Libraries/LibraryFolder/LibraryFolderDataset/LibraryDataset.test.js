@@ -26,18 +26,22 @@ const EXPECTED_DATASET_DATA = unrestrictedDatasetResponse;
 
 const mockDatatypesProvider = {
     render() {
-        return this.$slots.default ? this.$slots.default({
-            loading: false,
-            item: ["xml"],
-        }) : null;
+        return this.$slots.default
+            ? this.$slots.default({
+                  loading: false,
+                  item: ["xml"],
+              })
+            : null;
     },
 };
 const mockDbKeyProvider = {
     render() {
-        return this.$slots.default ? this.$slots.default({
-            loading: false,
-            item: ["?"],
-        }) : null;
+        return this.$slots.default
+            ? this.$slots.default({
+                  loading: false,
+                  item: ["?"],
+              })
+            : null;
     },
 };
 
@@ -78,8 +82,8 @@ async function mountLibraryDatasetWrapper(globalConfig, expectDatasetId, isAdmin
             stubs: {
                 DatatypesProvider: mockDatatypesProvider,
                 DbKeyProvider: mockDbKeyProvider,
-                SingleItemSelector: { template: '<div>selector</div>' },
-                'b-table': { 
+                SingleItemSelector: { template: "<div>selector</div>" },
+                "b-table": {
                     template: `<table>
                         <tbody>
                             <tr v-for="item in items" :key="item.name">
@@ -96,16 +100,17 @@ async function mountLibraryDatasetWrapper(globalConfig, expectDatasetId, isAdmin
                             </tr>
                         </tbody>
                     </table>`,
-                    props: ['fields', 'items', 'class', 'thead-class', 'striped', 'small']
+                    props: ["fields", "items", "class", "thead-class", "striped", "small"],
                 },
-                'b-form-input': { 
-                    template: '<input :value="modelValue || value" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-                    props: ['modelValue', 'value'],
-                    emits: ['update:modelValue']
+                "b-form-input": {
+                    template:
+                        '<input :value="modelValue || value" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+                    props: ["modelValue", "value"],
+                    emits: ["update:modelValue"],
                 },
-                'b-button': { 
-                    template: '<button @click="$emit(\'click\')"><slot></slot></button>',
-                    emits: ['click']
+                "b-button": {
+                    template: "<button @click=\"$emit('click')\"><slot></slot></button>",
+                    emits: ["click"],
                 },
             },
         },
@@ -157,11 +162,11 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
 
     it("should display dataset details in the table", async () => {
         const wrapper = await mountLibraryDatasetWrapper(globalConfig, UNRESTRICTED_DATASET_ID);
-        
+
         // Wait for table to be fully rendered
         await flushPromises();
         await wrapper.vm.$nextTick();
-        
+
         const table = wrapper.find(DATASET_TABLE);
         const tableHtml = table.html();
 
@@ -188,11 +193,11 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
         // TODO: This test needs more complex slot handling for edit mode
         // The Bootstrap-Vue rendering issue has been resolved for the other tests
         const wrapper = await mountLibraryDatasetWrapper(globalConfig, UNRESTRICTED_DATASET_ID);
-        
+
         // Wait for initial render
         await flushPromises();
         await wrapper.vm.$nextTick();
-        
+
         const modify_button = wrapper.find(MODIFY_BUTTON);
 
         expect(wrapper.find(DATASET_TABLE).html()).not.toContain("<input");

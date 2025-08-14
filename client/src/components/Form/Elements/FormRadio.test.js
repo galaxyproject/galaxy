@@ -24,7 +24,7 @@ describe("FormRadio", () => {
             options.push({ label: `label_${i}`, value: `value_${i}` });
         }
         await wrapper.setProps({ options });
-        
+
         // Test radio button selection by setting the currentValue
         for (let i = 0; i < n; i++) {
             wrapper.vm.currentValue = `value_${i}`;

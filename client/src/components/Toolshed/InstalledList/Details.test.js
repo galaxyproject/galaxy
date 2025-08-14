@@ -38,7 +38,7 @@ describe("Details", () => {
         // Since the mock resolves immediately, the loading state is already false
         await flushPromises();
         await wrapper.vm.$nextTick();
-        
+
         // After loading completes, verify the component shows repository details
         expect(wrapper.vm.loading).toBe(false);
         expect(wrapper.findAll(".alert").length).toBe(0);

@@ -23,7 +23,7 @@ describe("RulesInput", () => {
         const textInput = wrapper.find(".upload-rule-source-content");
         expect(textInput.element.value).toBe("");
         textInput.element.value = "a b c d";
-        await textInput.trigger('input');
+        await textInput.trigger("input");
         expect(textInput.element.value).toBe("a b c d");
         expect(wrapper.find("#btn-reset").classes()).not.toEqual(expect.arrayContaining(["disabled"]));
         await wrapper.find("#btn-reset").trigger("click");

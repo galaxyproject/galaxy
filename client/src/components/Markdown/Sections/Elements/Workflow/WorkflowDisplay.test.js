@@ -6,7 +6,6 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MountTarget from "./WorkflowDisplay";
 
-
 let axiosMock;
 
 function mountDefault() {

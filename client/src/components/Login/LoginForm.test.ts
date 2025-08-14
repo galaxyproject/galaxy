@@ -23,7 +23,7 @@ const SELECTORS = {
 async function mountLoginForm() {
     const testingPinia = createTestingPinia({ stubActions: false });
     setActivePinia(testingPinia);
-    
+
     const wrapper = mount(MountTarget as any, {
         props: {
             sessionCsrfToken: "sessionCsrfToken",

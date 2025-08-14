@@ -186,19 +186,13 @@ export function getLocalVue(instrumentLocalization = false) {
             el.setAttribute("data-mock-directive", binding.value || el.title);
         },
     };
-    
+
     const l = instrumentLocalization ? testLocalize : _l;
-    
+
     // Return global config object for Vue Test Utils v2
     return {
         global: {
-            plugins: [
-                createPinia(),
-                BootstrapVue,
-                [localizationPlugin, l],
-                vueRxShortcutPlugin,
-                iconPlugin,
-            ],
+            plugins: [createPinia(), BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin],
             directives: {
                 "b-tooltip": mockedDirective,
                 "b-popover": mockedDirective,
@@ -322,7 +316,7 @@ export function suppressErrorForCustomIcons() {
     }
     const originalError = console.error;
     jest.spyOn(console, "error").mockImplementation((msg) => {
-        if (msg && typeof msg === 'string' && msg.indexOf("Could not find one or more icon(s)") < 0) {
+        if (msg && typeof msg === "string" && msg.indexOf("Could not find one or more icon(s)") < 0) {
             originalError(msg);
         }
     });

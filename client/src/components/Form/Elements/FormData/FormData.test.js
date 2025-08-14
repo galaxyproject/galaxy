@@ -14,7 +14,6 @@ import MountTarget from "./FormData.vue";
 
 jest.mock("@/composables/filter");
 
-
 let eventStore;
 
 function createTarget(propsData) {
@@ -392,7 +391,9 @@ describe("FormData", () => {
         eventStore.setDragData({ id: "whatever", history_content_type: "dataset" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted("alert")[0][0]).toEqual("dataset is not a valid input for dataset collection parameter.");
+        expect(wrapper.emitted("alert")[0][0]).toEqual(
+            "dataset is not a valid input for dataset collection parameter."
+        );
     });
 
     it("rejects paired collection on list collection input", async () => {
@@ -474,7 +475,7 @@ describe("FormData", () => {
         );
         expect(checkLinked.props().checked).toBeTruthy();
         // Emit change event to uncheck the checkbox via Bootstrap-Vue component
-        await checkLinked.vm.$emit('input', false);
+        await checkLinked.vm.$emit("input", false);
         expect(wrapper.find(".custom-switch span").text()).toContain("Unlinked:");
         expect(wrapper.find(".custom-switch span").text()).toContain(
             "Dataset will be run against *all* other datasets."

@@ -4,7 +4,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import StatelessTags from "./StatelessTags";
 
 describe("Tags/StatelessTags.vue", () => {
-
     const testTags = ["abc", "def", "ghi"];
     let wrapper;
     let emitted;

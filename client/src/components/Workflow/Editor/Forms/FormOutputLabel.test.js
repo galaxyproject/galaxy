@@ -58,15 +58,15 @@ describe("FormOutputLabel", () => {
         const input = wrapper.find("input");
         const inputOther = wrapperOther.find("input");
         input.element.value = "new-label";
-        await input.trigger('input');
+        await input.trigger("input");
         expect(wrapper.find(".ui-form-error").exists()).toBe(false);
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
         inputOther.element.value = "other-label";
-        await inputOther.trigger('input');
+        await inputOther.trigger("input");
         expect(wrapper.find(".ui-form-error").exists()).toBe(false);
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
         input.element.value = "other-label";
-        await input.trigger('input');
+        await input.trigger("input");
         expect(wrapper.find(".ui-form-error").text()).toBe("Duplicate output label 'other-label' will be ignored.");
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
         expect(stepStore.workflowOutputs["new-label"].outputName).toBe("output-name");

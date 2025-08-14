@@ -10,7 +10,6 @@ import jobs from "./test/json/jobs.json";
 
 import JobStep from "./JobStep.vue";
 
-
 const { server, http } = useServerMock();
 
 const SELECTORS = {

@@ -108,7 +108,6 @@ jest.mock("@/stores/historyStore", () => {
 
 const { server, http } = useServerMock();
 
-
 /**
  * Mounts the WorkflowInvocationShare component with props/stores adjusted given the parameters
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
