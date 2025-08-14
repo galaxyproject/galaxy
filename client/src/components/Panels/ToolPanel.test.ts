@@ -105,7 +105,7 @@ describe("ToolPanel", () => {
 
         const pinia = createPinia();
         setActivePinia(pinia);
-        
+
         const wrapper = mount(ToolPanel as any, {
             props: {
                 workflow: false,
@@ -118,8 +118,8 @@ describe("ToolPanel", () => {
                 stubs: {
                     icon: { template: "<div></div>" },
                     ToolBox: { template: '<div data-description="panel toolbox"></div>' },
-                    'b-alert': { template: '<div><slot></slot></div>' },
-                    'b-badge': { template: '<div><slot></slot></div>' },
+                    "b-alert": { template: "<div><slot></slot></div>" },
+                    "b-badge": { template: "<div><slot></slot></div>" },
                 },
             },
         });

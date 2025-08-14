@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState, setActivePinia } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
-import { getLocalVue,suppressDebugConsole } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { watchHistoryOnce } from "./watchHistory";
 
@@ -53,7 +53,7 @@ describe("watchHistory", () => {
             axiosMock.restore();
         }
         axiosMock = new MockAdapter(axios);
-        
+
         pinia = createPinia();
         setActivePinia(pinia);
 
@@ -98,7 +98,7 @@ describe("watchHistory", () => {
             .onGet(`/history/current_history_json`)
             .replyOnce(200, historyData)
             .onGet(/api\/histories\/history-id\/contents?.*/)
-            .reply(200, historyItems)  // Use reply instead of replyOnce for multiple calls
+            .reply(200, historyItems) // Use reply instead of replyOnce for multiple calls
             .onGet(`/history/current_history_json`)
             .replyOnce(500);
 
@@ -133,7 +133,7 @@ describe("watchHistory", () => {
         await watchHistoryOnce();
         // We should have received the update and have at least the third item in the history
         const finalItems = wrapper.vm.getHistoryItems("history-id", "");
-        const hasThirdItem = finalItems.some(item => item.hid === 3);
+        const hasThirdItem = finalItems.some((item) => item.hid === 3);
         expect(hasThirdItem).toBe(true);
     });
 });

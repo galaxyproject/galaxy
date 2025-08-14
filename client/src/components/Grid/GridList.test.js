@@ -186,7 +186,7 @@ describe("GridList", () => {
         await wrapper.vm.$nextTick();
         const filterInput = wrapper.find("[data-description='filter text input']");
         filterInput.element.value = "filter query";
-        await filterInput.trigger('input');
+        await filterInput.trigger("input");
         jest.runAllTimers();
         await flushPromises();
         expect(testGrid.getData).toHaveBeenCalledTimes(2);

@@ -27,7 +27,6 @@ Services.mockImplementation(() => {
 });
 
 describe("Categories", () => {
-
     it("test categories loading", () => {
         const globalConfig = getLocalVue();
         const wrapper = mount(Categories, {

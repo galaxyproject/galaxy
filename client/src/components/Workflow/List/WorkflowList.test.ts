@@ -32,34 +32,34 @@ async function mountWorkflowList() {
 
     const wrapper = mount(WorkflowList as object, {
         props: {
-            activeList: "published" // Avoid the "my" filtering logic that causes the error
+            activeList: "published", // Avoid the "my" filtering logic that causes the error
         },
         global: {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia, router],
             stubs: {
-                'workflow-card': true,
-                'workflow-card-list': true,
-                'b-modal': true,
-                'b-alert': true,
-                'b-button': true,
-                'b-nav': true,
-                'b-nav-item': true,
-                'b-overlay': true,
-                'b-pagination': true,
-                'stateless-tags': true,
-                'tags-multiselect': true,
-                'tags-selection-dialog': true,
-                'filter-menu': true,
-                'list-header': true,
-                'heading': true,
-                'breadcrumb-heading': true,
-                'login-required': true,
-                'loading-span': true,
-                'workflow-list-actions': true,
-                'g-link': true,
-                'font-awesome-icon': true
-            }
+                "workflow-card": true,
+                "workflow-card-list": true,
+                "b-modal": true,
+                "b-alert": true,
+                "b-button": true,
+                "b-nav": true,
+                "b-nav-item": true,
+                "b-overlay": true,
+                "b-pagination": true,
+                "stateless-tags": true,
+                "tags-multiselect": true,
+                "tags-selection-dialog": true,
+                "filter-menu": true,
+                "list-header": true,
+                heading: true,
+                "breadcrumb-heading": true,
+                "login-required": true,
+                "loading-span": true,
+                "workflow-list-actions": true,
+                "g-link": true,
+                "font-awesome-icon": true,
+            },
         },
     });
 
@@ -102,8 +102,10 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }));
-            }),
+                return response.untyped(
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length })
+                );
+            })
         );
 
         const wrapper = await mountWorkflowList();
@@ -122,8 +124,10 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }));
-            }),
+                return response.untyped(
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length })
+                );
+            })
         );
 
         const wrapper = await mountWorkflowList();

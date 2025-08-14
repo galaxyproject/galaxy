@@ -45,8 +45,7 @@
                                         </td>
                                         <td>
                                             <template v-for="(part, part_idx) in row.tool_id" :key="part_idx">
-                                                <template v-if="part_idx > 0">/</template
-                                                ><span>{{ part }}</span>
+                                                <template v-if="part_idx > 0">/</template><span>{{ part }}</span>
                                             </template>
                                         </td>
                                         <td>

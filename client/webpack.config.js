@@ -123,10 +123,10 @@ module.exports = (env = {}, argv = {}) => {
                     options: {
                         compilerOptions: {
                             compatConfig: {
-                                MODE: 2
-                            }
-                        }
-                    }
+                                MODE: 2,
+                            },
+                        },
+                    },
                 },
                 {
                     test: /\.tsx?$/,

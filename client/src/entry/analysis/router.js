@@ -96,7 +96,6 @@ import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
-
 // Async component for CustomToolEditor to reduce bundle size
 // NOTE: We use the full async component factory pattern instead of simple dynamic imports
 // (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4

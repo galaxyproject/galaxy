@@ -17,12 +17,12 @@ describe("FormText", () => {
         const el = wrapper.find("input");
         expect(el.exists()).toBe(true);
         expect(el.attributes("type")).toBe("text");
-        
+
         await wrapper.setProps({ type: "password" });
         const elPassword = wrapper.find("input");
         expect(elPassword.exists()).toBe(true);
         expect(elPassword.attributes("type")).toBe("password");
-        
+
         await wrapper.setProps({ type: "anyothertype" });
         const elOtherType = wrapper.find("input");
         expect(elOtherType.exists()).toBe(true);

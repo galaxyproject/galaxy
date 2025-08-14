@@ -21,7 +21,6 @@ class ResizeObserver {
     disconnect = jest.fn();
 }
 
- 
 window.ResizeObserver = ResizeObserver;
 
 function propsForStep(step: Step) {

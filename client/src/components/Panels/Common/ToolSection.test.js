@@ -13,7 +13,6 @@ useConfig.mockReturnValue({
     isConfigLoaded: true,
 });
 
-
 function sectionIsOpened(wrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
 }

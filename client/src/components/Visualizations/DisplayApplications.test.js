@@ -8,7 +8,7 @@ describe("DisplayApplications", () => {
 
     beforeEach(() => {
         const globalConfig = getLocalVue();
-        
+
         // Create a Vue 3 compatible mock provider
         const mockData = {
             display_apps: [
@@ -39,7 +39,7 @@ describe("DisplayApplications", () => {
                 },
             ],
         };
-        
+
         wrapper = mount(DisplayApplications, {
             props: {
                 datasetId: "dataset-id",

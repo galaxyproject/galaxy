@@ -61,7 +61,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // enter a new path chunk
         const input = wrapper.find("#path-input-breadcrumb");
         input.element.value = path;
-        await input.trigger('input');
+        await input.trigger("input");
         expect(input.element.value).toBe(path);
 
         // Trigger the Enter keyup event to call addPath method

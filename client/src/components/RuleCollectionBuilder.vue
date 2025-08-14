@@ -161,7 +161,9 @@
                             v-model:display-rule-type="displayRuleType"
                             rule-type="add_column_substr"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector v-model:target="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector
+                                v-model:target="addColumnSubstrTarget"
+                                :col-headers="activeRuleColHeaders" />
                             <label>
                                 <select v-model="addColumnSubstrType">
                                     <option value="keep_prefix">Keep only prefix specified.</option>
@@ -236,7 +238,9 @@
                             v-model:display-rule-type="displayRuleType"
                             rule-type="add_filter_matches"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector v-model:target="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector
+                                v-model:target="addFilterMatchesTarget"
+                                :col-headers="activeRuleColHeaders" />
                             <input v-model="addFilterMatchesValue" type="text" />
                             <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterMatchesInvert" type="checkbox" />
@@ -247,7 +251,9 @@
                             v-model:display-rule-type="displayRuleType"
                             rule-type="add_filter_compare"
                             @saveRule="handleRuleSave">
-                            <ColumnSelector v-model:target="addFilterCompareTarget" :col-headers="activeRuleColHeaders" />
+                            <ColumnSelector
+                                v-model:target="addFilterCompareTarget"
+                                :col-headers="activeRuleColHeaders" />
                             <label>
                                 Filter out rows
                                 <select v-model="addFilterCompareType">

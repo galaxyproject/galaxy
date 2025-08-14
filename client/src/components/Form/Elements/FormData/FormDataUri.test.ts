@@ -1,4 +1,4 @@
-import { DOMWrapper,mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { DOMWrapper, mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { SINGULAR_DATA_URI, SINGULAR_FILE_URI, SINGULAR_LIST_URI } from "./testData/uriData";
@@ -24,7 +24,10 @@ function initWrapper(value: DataUri) {
     return wrapper;
 }
 
-function assertLocationIsFound(wrapper: VueWrapper<any> | DOMWrapper<Element>, uriData: DataUri | DataUriCollectionElement) {
+function assertLocationIsFound(
+    wrapper: VueWrapper<any> | DOMWrapper<Element>,
+    uriData: DataUri | DataUriCollectionElement
+) {
     if (!("location" in uriData)) {
         throw new Error("The DataUri type does not have a url property");
     }

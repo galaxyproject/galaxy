@@ -60,7 +60,7 @@ describe("ToolForm", () => {
 
         const pinia = createPinia();
         setActivePinia(pinia);
-        
+
         wrapper = mount(ToolForm, {
             props: {
                 id: "tool_id",

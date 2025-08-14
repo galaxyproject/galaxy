@@ -35,9 +35,9 @@ jest.mock("@/composables/config", () => ({
 function shallowMountLogin(routerQuery: Record<string, string | string[]> = {}) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
-    
+
     const router = injectTestRouter();
-    
+
     // Set up the currentRoute with the query parameters
     router.currentRoute.value = {
         path: "/",

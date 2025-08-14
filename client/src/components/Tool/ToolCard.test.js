@@ -65,13 +65,14 @@ describe("ToolCard", () => {
                     ToolVersionsButton: { template: "<div></div>" },
                     ToolTargetPreferredObjectStorePopover: { template: "<div></div>" },
                     ToolSelectPreferredObjectStore: { template: "<div></div>" },
-                    'b-button': true,
-                    'b-button-group': { template: '<div class="tool-card-buttons"><slot></slot></div>' },
-                    'b-dropdown': { 
-                        template: '<div class="tool-dropdown" title="Options"><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div></div>'
+                    "b-button": true,
+                    "b-button-group": { template: '<div class="tool-card-buttons"><slot></slot></div>' },
+                    "b-dropdown": {
+                        template:
+                            '<div class="tool-dropdown" title="Options"><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div></div>',
                     },
-                    'b-dropdown-item': true,
-                    'b-modal': true,
+                    "b-dropdown-item": true,
+                    "b-modal": true,
                 },
             },
         });

@@ -4,7 +4,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import ConfigureHeader from "./ConfigureHeader.vue";
 import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
-
 function mountComponent(props = {}) {
     const globalConfig = getLocalVue();
     return mount(ConfigureHeader, {
@@ -13,7 +12,8 @@ function mountComponent(props = {}) {
             ...globalConfig.global,
             stubs: {
                 BModal: {
-                    template: "<div><slot></slot><slot name='modal-header'></slot><slot name='modal-footer'></slot></div>",
+                    template:
+                        "<div><slot></slot><slot name='modal-header'></slot><slot name='modal-footer'></slot></div>",
                     props: ["visible"],
                 },
                 BButton: {

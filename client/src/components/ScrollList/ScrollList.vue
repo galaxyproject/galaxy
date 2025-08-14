@@ -38,7 +38,7 @@ interface Props<T> {
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
- 
+
 const props = withDefaults(defineProps<Props<T>>(), {
     loader: undefined,
     loadDisabled: false,
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 const scrollableDiv = ref<HTMLElement | null>(null);
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
- 
+
 const localItems = ref<T[]>(props.propItems || []);
 
 const localTotalItemCount = ref<number | undefined>(props.propTotalCount);

@@ -59,20 +59,26 @@ describe("Masthead.vue", () => {
                 plugins: [...globalConfig.global.plugins, testPinia],
                 stubs: {
                     Icon: true,
-                    MastheadItem: { 
-                        template: '<li class="nav-item"><a :id="id" :href="url" class="nav-link" @click="$emit(\'click\')"><span v-if="icon" class="sr-only">{{ tooltip || id }}</span><span v-if="icon" :class="icon"></span><span v-if="toggle" class="nav-note fa fa-check"></span><span v-if="!icon">{{ title }}</span><slot></slot></a></li>',
-                        props: ['id', 'url', 'icon', 'title', 'tooltip', 'target', 'toggle', 'disabled'],
-                        emits: ['click']
+                    MastheadItem: {
+                        template:
+                            '<li class="nav-item"><a :id="id" :href="url" class="nav-link" @click="$emit(\'click\')"><span v-if="icon" class="sr-only">{{ tooltip || id }}</span><span v-if="icon" :class="icon"></span><span v-if="toggle" class="nav-note fa fa-check"></span><span v-if="!icon">{{ title }}</span><slot></slot></a></li>',
+                        props: ["id", "url", "icon", "title", "tooltip", "target", "toggle", "disabled"],
+                        emits: ["click"],
                     },
-                    MastheadDropdown: { 
+                    MastheadDropdown: {
                         template: '<li class="nav-item"><a :id="id" class="nav-link"><slot></slot></a></li>',
-                        props: ['id', 'title', 'icon', 'tooltip', 'menu'],
-                        emits: ['click']
+                        props: ["id", "title", "icon", "tooltip", "menu"],
+                        emits: ["click"],
                     },
-                    QuotaMeter: { template: '<div></div>' },
-                    'b-navbar': { template: '<nav role="navigation" aria-label="Main" class="justify-content-between"><slot></slot></nav>' },
-                    'b-navbar-brand': { template: '<a class="ml-2 mr-2 p-0" title="homepage" aria-label="homepage"><slot></slot></a>' },
-                    'b-navbar-nav': { template: '<div><slot></slot></div>' },
+                    QuotaMeter: { template: "<div></div>" },
+                    "b-navbar": {
+                        template:
+                            '<nav role="navigation" aria-label="Main" class="justify-content-between"><slot></slot></nav>',
+                    },
+                    "b-navbar-brand": {
+                        template: '<a class="ml-2 mr-2 p-0" title="homepage" aria-label="homepage"><slot></slot></a>',
+                    },
+                    "b-navbar-nav": { template: "<div><slot></slot></div>" },
                 },
             },
         });

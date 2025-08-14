@@ -61,7 +61,7 @@ describe("ToolSearch", () => {
             const filterInput = wrapper.find(selector);
             if (filterInput.exists() && filterInput.element) {
                 filterInput.element.value = value;
-                await filterInput.trigger('input');
+                await filterInput.trigger("input");
             }
         }
 

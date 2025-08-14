@@ -7,7 +7,6 @@ import invocationData from "../Workflow/test/json/invocation.json";
 
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 
-
 const selectors = {
     invocationSummary: ".invocation-overview",
     bAlertStub: "balert-stub",

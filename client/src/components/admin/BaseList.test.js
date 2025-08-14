@@ -3,7 +3,6 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import BaseList from "./BaseList";
 
-
 describe("Categories", () => {
     const getter = async () => {
         return {

@@ -33,7 +33,7 @@ describe("FormOptionalText", () => {
         const el = wrapper.find("b-form-checkbox");
         expect(el.exists()).toBe(true);
         expect(el.attributes("modelvalue")).toBeFalsy();
-        
+
         await wrapper.setProps({ value: "" });
         // After setting empty string, should become checked (stays as b-form-checkbox)
         const elAfter = wrapper.find("b-form-checkbox");

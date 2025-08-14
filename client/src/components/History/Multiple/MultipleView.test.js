@@ -51,7 +51,7 @@ describe("MultipleView", () => {
 
         const pinia = createPinia();
         setActivePinia(pinia);
-        
+
         // Initialize stores before mounting
         const userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: USER_ID });
@@ -59,7 +59,7 @@ describe("MultipleView", () => {
         const historyStore = useHistoryStore();
         historyStore.setHistories(fakeSummaries);
         historyStore.setCurrentHistoryId(currentHistoryId);
-        
+
         const globalConfig = getLocalVue();
         const router = injectTestRouter();
         const wrapper = mount(MultipleView, {
@@ -67,11 +67,11 @@ describe("MultipleView", () => {
                 ...globalConfig.global,
                 plugins: [...globalConfig.global.plugins, pinia, router],
                 stubs: {
-                    'history-panel': true,
-                    'history-scroll-list': true,
-                    'b-list-group': true,
-                    'b-list-group-item': true,
-                    'icon': { template: "<div></div>" },
+                    "history-panel": true,
+                    "history-scroll-list": true,
+                    "b-list-group": true,
+                    "b-list-group-item": true,
+                    icon: { template: "<div></div>" },
                 },
             },
         });

@@ -97,10 +97,10 @@ describe("RoleForm.vue", () => {
         await flushPromises();
         const nameInput = wrapper.find("#role-name");
         nameInput.element.value = "Test Role";
-        await nameInput.trigger('input');
+        await nameInput.trigger("input");
         const descInput = wrapper.find("#role-description");
         descInput.element.value = "Test Description";
-        await descInput.trigger('input');
+        await descInput.trigger("input");
         wrapper.vm.groupIds = ["g1"];
         wrapper.vm.userIds = ["u1"];
         await wrapper.find("#role-submit").trigger("click");
@@ -116,10 +116,10 @@ describe("RoleForm.vue", () => {
         await flushPromises();
         const nameInput = wrapper.find("#role-name");
         nameInput.element.value = "Bad Role";
-        await nameInput.trigger('input');
+        await nameInput.trigger("input");
         const descInput = wrapper.find("#role-description");
         descInput.element.value = "Bad Description";
-        await descInput.trigger('input');
+        await descInput.trigger("input");
         await wrapper.find("#role-submit").trigger("click");
         await flushPromises();
         const alert = wrapper.findComponent({ name: "BAlert" });

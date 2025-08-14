@@ -98,33 +98,33 @@ async function mountDatasetView(tab = "preview", options = {}) {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia, router],
             stubs: {
-            // Only shallow stub certain components
-            "font-awesome-icon": true,
-            Heading: {
-                template: "<div><slot></slot></div>",
-                props: ["h1", "separator"],
-            },
-            BLink: {
-                template: "<a><slot></slot></a>",
-                props: ["to"],
-            },
-            BTabs: {
-                template: '<div class="tabs-container"><slot></slot></div>',
-                props: ["pills", "card", "lazy", "value"],
-            },
-            BTab: {
-                template: '<div class="tab-content"><slot></slot></div>',
-                props: ["title"],
-            },
-            DatasetDetails: true,
-            VisualizationsList: true,
-            DatasetAttributes: true,
-            DatasetError: true,
-            // Use a stub for the VisualizationFrame component
-            VisualizationFrame: {
-                template: '<div class="viz-frame"></div>',
-                props: ["datasetId", "visualization", "visualizationParams"],
-            },
+                // Only shallow stub certain components
+                "font-awesome-icon": true,
+                Heading: {
+                    template: "<div><slot></slot></div>",
+                    props: ["h1", "separator"],
+                },
+                BLink: {
+                    template: "<a><slot></slot></a>",
+                    props: ["to"],
+                },
+                BTabs: {
+                    template: '<div class="tabs-container"><slot></slot></div>',
+                    props: ["pills", "card", "lazy", "value"],
+                },
+                BTab: {
+                    template: '<div class="tab-content"><slot></slot></div>',
+                    props: ["title"],
+                },
+                DatasetDetails: true,
+                VisualizationsList: true,
+                DatasetAttributes: true,
+                DatasetError: true,
+                // Use a stub for the VisualizationFrame component
+                VisualizationFrame: {
+                    template: '<div class="viz-frame"></div>',
+                    props: ["datasetId", "visualization", "visualizationParams"],
+                },
             },
             mocks: {
                 $store: {
