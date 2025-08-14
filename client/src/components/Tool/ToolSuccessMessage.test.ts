@@ -1,4 +1,4 @@
-import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";

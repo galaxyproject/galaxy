@@ -1,4 +1,4 @@
-import { mount, shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import CreateInstance from "./CreateInstance.vue";

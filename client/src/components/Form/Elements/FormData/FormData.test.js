@@ -3,7 +3,6 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";

@@ -1,6 +1,5 @@
-import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import type Vue from "vue";
 
 import type { HDCASummary } from "@/api";
 

@@ -32,8 +32,8 @@
                     placeholder="enter directory name"
                     trim
                     @keyup.enter="addPath"
-                    @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture="removeLastPath" />
+                    @keydown.slash.capture.prevent.stop="addPath"
+                    @keydown.backspace.capture="removeLastPath" />
             </b-breadcrumb-item>
         </b-breadcrumb>
 
