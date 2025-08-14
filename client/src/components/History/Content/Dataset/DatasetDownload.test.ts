@@ -1,6 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
-import type Vue from "vue";
+import { mount, type VueWrapper } from "@vue/test-utils";
 
 import DatasetDownload from "./DatasetDownload.vue";
 

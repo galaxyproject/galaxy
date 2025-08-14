@@ -1,14 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { DOMWrapper, mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 
 import DatasetInformation from "./DatasetInformation.vue";
-
-const HDA_ID = "FOO_HDA_ID";
 
 interface DatasetResponse {
     id: string;
