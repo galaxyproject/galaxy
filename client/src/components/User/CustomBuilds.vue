@@ -146,7 +146,7 @@ chr5    152537259</pre
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { getGalaxyInstance } from "app";
 import axios from "axios";

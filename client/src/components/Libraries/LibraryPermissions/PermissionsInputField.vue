@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { Services } from "components/Libraries/LibraryPermissions/services";
 import Vue from "vue";
