@@ -6,6 +6,7 @@ import vue from "eslint-plugin-vue";
 import vueAccessibility from "eslint-plugin-vuejs-accessibility";
 import tseslint from "typescript-eslint";
 import vueParser from "vue-eslint-parser";
+import globals from "globals";
 
 const baseRules = {
     // Standard rules
@@ -118,17 +119,8 @@ export default [
             ecmaVersion: 2020,
             sourceType: "module",
             globals: {
-                window: "readonly",
-                document: "readonly",
-                console: "readonly",
-                process: "readonly",
-                Buffer: "readonly",
-                global: "readonly",
-                __dirname: "readonly",
-                __filename: "readonly",
-                module: "readonly",
-                require: "readonly",
-                exports: "readonly",
+                ...globals.browser,
+                ...globals.node,
             },
         },
         plugins: {
@@ -223,6 +215,14 @@ export default [
 
     // Ignore patterns
     {
-        ignores: ["dist/**", "src/libs/**", "src/nls/**", "src/legacy/**"],
+        ignores: [
+            "**/dist/**", 
+            "src/libs/**", 
+            "src/nls/**", 
+            "src/legacy/**",
+            "**/node_modules/**",
+            "build/**",
+            "*.min.js"
+        ],
     },
 ];
