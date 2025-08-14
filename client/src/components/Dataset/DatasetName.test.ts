@@ -1,14 +1,19 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 
 import DatasetName from "./DatasetName.vue";
 
 const globalConfig = getLocalVue();
 
 async function mountComponent(propsData: { item: { name: string; state: string } }) {
-    return shallowMount(DatasetName as object, {
+    return mount(DatasetName as object, {
         props: propsData,
-        global: globalConfig.global,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+            },
+        },
     });
 }
 
