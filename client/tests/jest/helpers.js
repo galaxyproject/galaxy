@@ -278,6 +278,14 @@ export function expectConfigurationRequest(http, config) {
     });
 }
 
+export function mockUnprivilegedToolsRequest(server, http) {
+    server.use(
+        http.get("/api/unprivileged_tools", ({ response }) => {
+            return response(200).json([]);
+        })
+    );
+}
+
 /**
  * Return a new mocked out router attached the specified localVue instance.
  */

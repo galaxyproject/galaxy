@@ -2,7 +2,7 @@ import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -32,14 +32,6 @@ const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof 
 const mockLoadWorkflow = loadWorkflow as jest.Mocked<typeof loadWorkflow>;
 const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
 
-function mockUnprivilegedToolsRequest() {
-    server.use(
-        http.get("/api/unprivileged_tools", ({ response }) => {
-            return response(200).json([]);
-        })
-    );
-}
-
 describe("Index", () => {
     let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
 
@@ -56,7 +48,7 @@ describe("Index", () => {
             value: null,
             writable: true,
         });
-        mockUnprivilegedToolsRequest();
+        mockUnprivilegedToolsRequest(server, http);
         wrapper = shallowMount(Index as object, {
             propsData: {
                 workflowId: "workflow_id",
