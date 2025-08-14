@@ -180,13 +180,13 @@ defineExpose({
 
                 <FilterMenu
                     v-if="props.filterClass"
+                    v-model:filter-text="filter"
+                    v-model:show-advanced="showAdvancedSearch"
                     :name="props.title"
                     class="w-100"
                     :placeholder="props.searchTitle || props.title"
                     :filter-class="props.filterClass"
-                    v-model:filter-text="filter"
-                    :loading="props.isBusy"
-                    v-model:show-advanced="showAdvancedSearch" />
+                    :loading="props.isBusy" />
 
                 <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
             </slot>

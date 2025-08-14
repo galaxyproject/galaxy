@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { BAlert, BLink } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router";
+import { RouterLink , useRouter } from "vue-router";
 
 import { canMutateHistory } from "@/api";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
