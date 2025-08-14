@@ -99,7 +99,7 @@ describe("SelectPreferredStore.vue", () => {
 
         await flushPromises();
 
-        const emitted = wrapper.emitted();
+        const emitted = wrapper.emitted() as Record<string, unknown[][]>;
         expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
     });
 
@@ -127,7 +127,7 @@ describe("SelectPreferredStore.vue", () => {
 
         await flushPromises();
 
-        const emitted = wrapper.emitted();
+        const emitted = wrapper.emitted() as Record<string, unknown[][]>;
         expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");
     });
 });

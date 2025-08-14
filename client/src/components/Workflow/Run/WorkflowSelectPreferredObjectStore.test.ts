@@ -52,7 +52,7 @@ describe("WorkflowSelectPreferredObjectStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const emitted = wrapper.emitted();
+        const emitted = wrapper.emitted() as Record<string, unknown[][]>;
         expect(emitted["updated"]?.[0]?.[1]).toBeFalsy();
     });
 });

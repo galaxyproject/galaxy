@@ -8,7 +8,7 @@ import BarChart from "./BarChart.vue";
 
 // Duplicated interface from BarChart.vue because of https://github.com/vuejs/core/issues/4294
 interface BarChartProps {
-    title: string;
+    title?: string;
     data: DataValuePoint[];
     description?: string;
     width?: number;
@@ -16,6 +16,7 @@ interface BarChartProps {
     enableTooltips?: boolean;
     enableSelection?: boolean;
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
+    valueFormatter?: (value: number) => string;
 }
 
 const TEST_DATA = [
@@ -26,10 +27,12 @@ const TEST_DATA = [
 function mountBarChartWrapper(props: BarChartProps) {
     const pinia = createTestingPinia();
     const localVue = getLocalVue();
-    return mount(BarChart as object, {
-        propsData: props,
-        localVue,
-        pinia,
+    return mount(BarChart as any, {
+        props: props,
+        global: {
+            ...localVue.global,
+            plugins: [...localVue.global.plugins, pinia],
+        },
     });
 }
 

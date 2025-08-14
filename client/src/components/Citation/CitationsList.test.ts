@@ -50,13 +50,14 @@ describe("CitationsList", () => {
         router.push("/histories/citations?id=test-id");
 
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 id: "test-id",
                 source: "histories",
             },
-            localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue.global,
+                plugins: [...(localVue.global?.plugins || []), pinia, router],
+            },
         });
 
         await flushPromises();

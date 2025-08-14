@@ -79,7 +79,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith();
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 
     it("should render only one broadcast at a time", async () => {
@@ -152,7 +152,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([expiredBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 
     it("should not render the broadcast when it has not been published yet", async () => {
@@ -163,6 +163,6 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([unpublishedBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 });

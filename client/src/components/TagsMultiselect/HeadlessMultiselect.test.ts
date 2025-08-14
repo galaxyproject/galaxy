@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { ExtractPropTypes, nextTick } from "vue";
+import { getLocalVue } from "@tests/jest/helpers";
+import { nextTick, type ExtractPropTypes } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
@@ -15,8 +15,8 @@ describe("HeadlessMultiselect", () => {
     type Props = ExtractPropTypes<typeof HeadlessMultiselect>;
     const mountWithProps = (props: Props) => {
         return mount(HeadlessMultiselect as any, {
-            propsData: props,
-            localVue,
+            props,
+            global: localVue.global,
             attachTo: document.body,
         });
     };
@@ -206,11 +206,12 @@ describe("HeadlessMultiselect", () => {
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
+            const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+            expect(emitted.input?.[0]?.[0]).toEqual(["name:named"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            expect(emitted.input?.[1]?.[0]).toEqual(["name:named_2"]);
             await close(wrapper);
         });
 
@@ -223,11 +224,12 @@ describe("HeadlessMultiselect", () => {
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
+            const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+            expect(emitted.input?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            expect(emitted.input?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });
 
@@ -241,7 +243,8 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("123");
             await keyPress(input, "Enter");
 
-            expect(wrapper.emitted()["addOption"]?.[0]?.[0]).toBe("123");
+            const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+            expect(emitted.addOption?.[0]?.[0]).toBe("123");
             await close(wrapper);
         });
 
@@ -254,11 +257,12 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = wrapper.findAll(selectors.option);
 
-            await options[0].trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
+            await options[0]!.trigger("click");
+            const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+            expect(emitted.input?.[0]?.[0]).toEqual(["name:named"]);
 
-            await options[1].trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            await options[1]!.trigger("click");
+            expect(emitted.input?.[1]?.[0]).toEqual(["name:named_2"]);
             await close(wrapper);
         });
 
@@ -271,11 +275,12 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = wrapper.findAll(selectors.option);
 
-            await options[0].trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
+            await options[0]!.trigger("click");
+            const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+            expect(emitted.input?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
-            await options[1].trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            await options[1]!.trigger("click");
+            expect(emitted.input?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });
     });

@@ -15,7 +15,14 @@ const globalConfig = getLocalVue();
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
         props,
-        global: globalConfig.global,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                'headless-multiselect': {
+                    template: '<div><button class="toggle-button">Toggle</button><div class="headless-multiselect"><div class="headless-multiselect__option">name:named_user_tag</div><div class="headless-multiselect__option">abc</div><div class="headless-multiselect__option">my_tag</div><fieldset><input /></fieldset></div></div>'
+                }
+            }
+        },
     });
 };
 
@@ -110,7 +117,9 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
         const multiselect = wrapper.find(selectors.multiselect);
-        await multiselect.find(selectors.input).setValue("new_tag");
+        const input = multiselect.find(selectors.input);
+        input.element.value = "new_tag";
+        await input.trigger('input');
         await wrapper.vm.$nextTick();
         multiselect.find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
@@ -127,7 +136,9 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
         const multiselect = wrapper.find(selectors.multiselect);
-        await multiselect.find(selectors.input).setValue(":illegal_tag");
+        const input = multiselect.find(selectors.input);
+        input.element.value = ":illegal_tag";
+        await input.trigger('input');
         await wrapper.vm.$nextTick();
 
         const option = multiselect.find(selectors.options);

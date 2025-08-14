@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { getFakeRegisteredUser } from "tests/test-data";
+import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -31,9 +31,35 @@ async function mountWorkflowList() {
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
+        props: {
+            activeList: "published" // Avoid the "my" filtering logic that causes the error
+        },
         global: {
             ...globalConfig.global,
             plugins: [...globalConfig.global.plugins, pinia, router],
+            stubs: {
+                'workflow-card': true,
+                'workflow-card-list': true,
+                'b-modal': true,
+                'b-alert': true,
+                'b-button': true,
+                'b-nav': true,
+                'b-nav-item': true,
+                'b-overlay': true,
+                'b-pagination': true,
+                'stateless-tags': true,
+                'tags-multiselect': true,
+                'tags-selection-dialog': true,
+                'filter-menu': true,
+                'list-header': true,
+                'heading': true,
+                'breadcrumb-heading': true,
+                'login-required': true,
+                'loading-span': true,
+                'workflow-list-actions': true,
+                'g-link': true,
+                'font-awesome-icon': true
+            }
         },
     });
 
@@ -60,7 +86,7 @@ describe("WorkflowList", () => {
     it("render empty workflow list", async () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
-                return response(200).json([]);
+                return response.untyped(HttpResponse.json({ data: [], totalMatches: 0 }));
             }),
         );
 
@@ -76,7 +102,7 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+                return response.untyped(HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }));
             }),
         );
 
@@ -96,7 +122,7 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+                return response.untyped(HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }));
             }),
         );
 

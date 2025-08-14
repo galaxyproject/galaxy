@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
@@ -29,7 +29,7 @@ const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
 ];
 
 function mountQuotaUsageSummaryWith(quotaUsages: QuotaUsage[]) {
-    const wrapper = shallowMount(QuotaUsageSummary as object, { propsData: { quotaUsages }, localVue });
+    const wrapper = shallowMount(QuotaUsageSummary as any, { props: { quotaUsages }, global: localVue.global });
     return wrapper;
 }
 

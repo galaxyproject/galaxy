@@ -87,15 +87,17 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
 
     const filters = hasFilters ? { deleted: false, visible: true, hid: "1" } : undefined;
 
-    const wrapper = mount(SwitchToHistoryLink as object, {
-        propsData: {
+    const wrapper = mount(SwitchToHistoryLink as any, {
+        props: {
             historyId: history.id,
             filters,
         },
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...localVue.global,
+            plugins: [pinia, ...(localVue.global?.plugins || [])],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 

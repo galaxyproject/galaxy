@@ -21,12 +21,14 @@ describe("RegisterForm", () => {
 
         const pinia = createTestingPinia();
 
-        wrapper = mount(MountTarget as object, {
-            propsData: {
+        wrapper = mount(MountTarget as any, {
+            props: {
                 sessionCsrfToken: "sessionCsrfToken",
             },
-            localVue,
-            pinia,
+            global: {
+                ...localVue.global,
+                plugins: [...localVue.global.plugins, pinia],
+            },
         });
     });
 
@@ -41,11 +43,11 @@ describe("RegisterForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
 
-        const usernameField = inputs[0];
+        const usernameField = inputs[0]!;
         expect(usernameField.attributes("type")).toBe("text");
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs[1];
+        const pwdField = inputs[1]!;
         expect(pwdField.attributes("type")).toBe("password");
         await pwdField.setValue("test_pwd");
 

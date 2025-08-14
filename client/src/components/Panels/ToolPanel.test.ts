@@ -106,7 +106,7 @@ describe("ToolPanel", () => {
         const pinia = createPinia();
         setActivePinia(pinia);
         
-        const wrapper = mount(ToolPanel as object, {
+        const wrapper = mount(ToolPanel as any, {
             props: {
                 workflow: false,
                 editorWorkflows: null,

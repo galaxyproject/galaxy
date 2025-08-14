@@ -1,7 +1,7 @@
 import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 
 import { withPrefix } from "@/utils/redirect";
 
@@ -20,12 +20,12 @@ describe("ChangePassword", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(MountTarget as object, {
-            propsData: {
+        wrapper = mount(MountTarget as any, {
+            props: {
                 messageText: "message_text",
                 messageVariant: "message_variant",
             },
-            localVue,
+            global: localVue.global,
         });
     });
 
@@ -40,12 +40,12 @@ describe("ChangePassword", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const firstPwdField = inputs[0];
+        const firstPwdField = inputs[0]!;
         expect(firstPwdField.attributes("type")).toBe("password");
 
         await firstPwdField.setValue("test_first_pwd");
 
-        const secondPwdField = inputs[1];
+        const secondPwdField = inputs[1]!;
         expect(secondPwdField.attributes("type")).toBe("password");
 
         await secondPwdField.setValue("test_second_pwd");

@@ -13,7 +13,7 @@ import UpgradeForm from "./UpgradeForm.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue(true);
-const router = injectTestRouter(localVue);
+const router = injectTestRouter();
 
 const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",
@@ -126,9 +126,9 @@ describe("UpgradeForm", () => {
         const submitElement = wrapper.find("#submit");
         submitElement.trigger("click");
         await flushPromises();
-        const route = wrapper.vm.$route;
-        expect(route.path).toBe("/object_store_instances/index");
-        expect(route.query.message).toBe("Upgraded storage location moo");
+        const route = wrapper.vm.$route as any;
+        expect(route?.path).toBe("/object_store_instances/index");
+        expect(route?.query?.message).toBe("Upgraded storage location moo");
     });
 
     it("should indicate an error on failure", async () => {
