@@ -202,7 +202,7 @@
     "@vitest/ui": "^4.1.11",
     "@vue/compiler-sfc": "^3.5.18",
     "@vue/test-utils": "^2.4.6",
-    "@vue/tsconfig": "^0.4.0",
+    "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "10.5.0",
     "buffer": "^6.0.3",
     "cpy-cli": "^5.0.0",
