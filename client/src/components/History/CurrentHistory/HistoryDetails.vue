@@ -24,7 +24,7 @@ const historyStore = useHistoryStore();
 
 function onSave(newDetails: HistorySummary) {
     const id = props.history.id;
-    historyStore.updateHistory({ ...newDetails, id });
+    historyStore.updateHistory(id, { ...newDetails });
 }
 
 const { config } = useConfig();

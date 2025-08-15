@@ -659,6 +659,39 @@ class NavigatesGalaxy(HasDriver):
         )
         popup_option.click()
 
+    def select_history_card_operation(self, card_name, action_selector, is_in_extra=False):
+        target_card = self.get_history_card(card_name)
+
+        if is_in_extra:
+            target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
+
+        action_chains = self.action_chains()
+        action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
+        action_chains.move_to_element(action_selector).click().perform()
+
+    def get_history_card(self, card_name):
+        card_list = self.components.histories.history_cards.all()
+        for card in card_list:
+            if card_name in card.text:
+                return card
+        raise AssertionError(f"Failed to find card with name [{card_name}]")
+
+    def get_history_titles(self, n_expected_histories):
+        names = []
+
+        if n_expected_histories:
+            self.wait_for_selector(".history-card-list")
+
+            history_names = self.components.histories.history_card_title.all()
+
+            for hn in history_names:
+                if hn.text.strip():
+                    names.append(hn.text.strip())
+        else:
+            self.wait_for_selector("#no-history-found")
+
+        return names
+
     def select_grid_cell(self, grid_name, item_name, column_index=3):
         cell = None
         grid = self.wait_for_selector(f"{grid_name} table")
@@ -675,13 +708,15 @@ class NavigatesGalaxy(HasDriver):
 
         return cell
 
-    def check_grid_rows(self, grid_name, item_names):
-        grid = self.wait_for_selector(grid_name)
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            item_name = td[1].text
-            if item_name in item_names:
-                checkbox = td[0].find_element(self.by.TAG_NAME, "input")
+    def toggle_card_selection_in_list(self, list_selector, item_names):
+        self.wait_for_selector(list_selector)
+
+        cards = self.components.histories.history_cards.all()
+
+        for card in cards:
+            card_name = card.find_element(self.by.CSS_SELECTOR, '[id^="g-card-title-link-history-"]').text
+            if card_name in item_names:
+                checkbox = card.find_element(self.by.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
                 self.driver.execute_script("$(arguments[0]).click();", checkbox)
 
@@ -1441,12 +1476,12 @@ class NavigatesGalaxy(HasDriver):
     def navigate_to_histories_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
-        self.components.histories.histories.wait_for_present()
+        self.components.histories.history_cards.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
-        self.components.shared_histories.tab.wait_for_and_click()
+        self.components.shared_histories.shared_tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()

@@ -12,7 +12,6 @@ import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, R
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
-import GridDatasets from "./GridElements/GridDatasets.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
@@ -454,9 +453,6 @@ watch(operationMessage, () => {
                                 <GridBoolean
                                     v-else-if="fieldEntry.type == 'boolean'"
                                     :value="rowData[fieldEntry.key]" />
-                                <GridDatasets
-                                    v-else-if="fieldEntry.type == 'datasets'"
-                                    :history-id="rowData[fieldEntry.key]" />
                                 <GridText
                                     v-else-if="fieldEntry.type == 'text'"
                                     :text="fieldText(fieldEntry, rowData)" />

@@ -10,6 +10,7 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
+import type { UpdateHistoryPayload } from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -426,7 +427,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return history;
     }
 
-    async function updateHistory({ id, ...update }: HistorySummary) {
+    async function updateHistory(id: string, update: UpdateHistoryPayload) {
         const savedHistory = (await updateHistoryFields(id, update)) as HistorySummaryExtended;
         setHistory(savedHistory);
     }
