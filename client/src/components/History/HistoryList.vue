@@ -19,7 +19,7 @@
  * <HistoryList activeList="shared" />
  */
 
-import { faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
@@ -63,6 +63,7 @@ type SelectedHistory = {
     id: string;
     name: string;
     published: boolean;
+    purged: boolean;
 };
 
 interface Props {
@@ -95,8 +96,9 @@ const listHeader = ref<typeof ListHeader | null>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
+const bulkPurgeLoading = ref(false);
 const historiesLoaded = ref<AnyHistoryEntry[]>([]);
-const selectedHistoryIds = ref<SelectedHistory[]>([]);
+const selectedHistories = ref<SelectedHistory[]>([]);
 
 /** Computed property that determines if the current view is "My Histories" */
 const myView = computed(() => props.activeList === "my");
@@ -137,6 +139,7 @@ const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "
 const noItems = computed(() => !loading.value && historiesLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted histories" : "Show deleted histories"));
+const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purged));
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
 const rawFilters = computed(() =>
@@ -169,7 +172,7 @@ function onToggleDeleted() {
  * @param {boolean} overlayLoading - Whether to show overlay loading instead of full loading
  * @param {boolean} silent - Whether to skip loading indicators
  */
-async function load(overlayLoading = false, silent = false) {
+async function load(overlayLoading: boolean = false, silent: boolean = false) {
     if (!silent) {
         if (overlayLoading) {
             overlay.value = true;
@@ -235,7 +238,7 @@ async function onPageChange(page: number) {
  * Validates and processes filter text, handling quoted strings and filter validation
  * @returns {string} The processed filter text
  */
-function validatedFilterText() {
+function validatedFilterText(): string {
     if (isSurroundedByQuotes.value) {
         // the `filterText` is surrounded by quotes, remove them
         return filterText.value.slice(1, -1);
@@ -252,12 +255,12 @@ function validatedFilterText() {
  * @param {SelectedHistory} h - The history object to toggle selection for
  */
 function onSelectHistory(h: SelectedHistory) {
-    const index = selectedHistoryIds.value.findIndex((selected) => selected.id === h.id);
+    const index = selectedHistories.value.findIndex((selected) => selected.id === h.id);
 
     if (index === -1) {
-        selectedHistoryIds.value.push(h);
+        selectedHistories.value.push(h);
     } else {
-        selectedHistoryIds.value.splice(index, 1);
+        selectedHistories.value.splice(index, 1);
     }
 }
 
@@ -266,13 +269,14 @@ function onSelectHistory(h: SelectedHistory) {
  * If all are selected, deselects all; otherwise selects all loaded histories
  */
 function onSelectAllHistories() {
-    if (selectedHistoryIds.value.length === historiesLoaded.value.length) {
-        selectedHistoryIds.value = [];
+    if (selectedHistories.value.length === historiesLoaded.value.length) {
+        selectedHistories.value = [];
     } else {
-        selectedHistoryIds.value = historiesLoaded.value.map((h) => ({
+        selectedHistories.value = historiesLoaded.value.map((h) => ({
             id: h.id,
             name: h.name,
             published: h.published,
+            purged: h.purged,
         }));
     }
 }
@@ -281,13 +285,13 @@ function onSelectAllHistories() {
  * Handles bulk deletion of selected histories
  * Shows confirmation dialog and processes deletion with proper error handling
  */
-async function onBulkDelete() {
-    const totalSelected = selectedHistoryIds.value.length;
-    const hasPublished = selectedHistoryIds.value.some((h) => h.published);
+async function onBulkDeleteOrPurge(purge: boolean = false) {
+    const totalSelected = selectedHistories.value.length;
+    const hasPublished = selectedHistories.value.some((h) => h.published);
 
     const confirmed = await confirm(
         `${hasPublished ? "Some of the selected histories are published and will be removed from public view. " : ""}
-            Are you sure you want to delete ${totalSelected} histories?`,
+            Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} histories?`,
         {
             id: "bulk-delete-histories",
             title: "Delete histories",
@@ -299,14 +303,19 @@ async function onBulkDelete() {
     );
 
     if (confirmed) {
-        const tmpSelected = [...selectedHistoryIds.value];
+        const tmpSelected = [...selectedHistories.value];
 
         try {
             overlay.value = true;
-            bulkDeleteOrRestoreLoading.value = true;
 
-            for (const h of selectedHistoryIds.value) {
-                await historyStore.deleteHistory(String(h.id));
+            if (purge) {
+                bulkPurgeLoading.value = true;
+            } else {
+                bulkDeleteOrRestoreLoading.value = true;
+            }
+
+            for (const h of selectedHistories.value) {
+                await historyStore.deleteHistory(String(h.id), purge);
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((ts) => ts.id === h.id),
@@ -314,15 +323,16 @@ async function onBulkDelete() {
                 );
             }
 
-            Toast.success(`Deleted ${totalSelected} histories.`);
+            Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
 
-            selectedHistoryIds.value = [];
+            selectedHistories.value = [];
         } catch (e) {
-            Toast.error(`Failed to delete some histories.`);
+            Toast.error(`Failed to ${purge ? "purge" : "delete"} some histories.`);
         } finally {
+            bulkPurgeLoading.value = false;
             bulkDeleteOrRestoreLoading.value = false;
 
-            selectedHistoryIds.value = tmpSelected;
+            selectedHistories.value = tmpSelected;
 
             await load(true);
         }
@@ -334,7 +344,7 @@ async function onBulkDelete() {
  * Shows confirmation dialog and processes restoration with proper error handling
  */
 async function onBulkRestore() {
-    const totalSelected = selectedHistoryIds.value.length;
+    const totalSelected = selectedHistories.value.length;
 
     const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} histories?`, {
         id: "bulk-restore-histories",
@@ -346,13 +356,13 @@ async function onBulkRestore() {
     });
 
     if (confirmed) {
-        const tmpSelected = [...selectedHistoryIds.value];
+        const tmpSelected = [...selectedHistories.value];
 
         try {
             overlay.value = true;
             bulkDeleteOrRestoreLoading.value = true;
 
-            for (const his of selectedHistoryIds.value) {
+            for (const his of selectedHistories.value) {
                 await historyStore.restoreHistory(his.id);
 
                 tmpSelected.splice(
@@ -363,13 +373,13 @@ async function onBulkRestore() {
 
             Toast.success(`Restored ${totalSelected} histories.`);
 
-            selectedHistoryIds.value = [];
+            selectedHistories.value = [];
         } catch (e) {
             Toast.error(`Failed to restore some histories.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
 
-            selectedHistoryIds.value = tmpSelected;
+            selectedHistories.value = tmpSelected;
 
             await load(true);
         }
@@ -388,14 +398,14 @@ function onToggleBulkTags() {
  * @param {string[]} tags - Array of tag strings to add to the selected histories
  */
 async function onBulkTagsAdd(tags: string[]) {
-    const tmpSelected = [...selectedHistoryIds.value];
-    const totalSelected = selectedHistoryIds.value.length;
+    const tmpSelected = [...selectedHistories.value];
+    const totalSelected = selectedHistories.value.length;
 
     try {
         overlay.value = true;
         bulkTagsLoading.value = true;
 
-        for (const his of selectedHistoryIds.value) {
+        for (const his of selectedHistories.value) {
             const prevTags = historiesLoaded.value.find((hl) => hl.id === his.id)?.tags || [];
 
             await updateHistoryFields(his.id, { tags: [...new Set([...prevTags, ...tags])] });
@@ -412,7 +422,7 @@ async function onBulkTagsAdd(tags: string[]) {
     } finally {
         bulkTagsLoading.value = false;
 
-        selectedHistoryIds.value = tmpSelected;
+        selectedHistories.value = tmpSelected;
 
         await load(true);
     }
@@ -425,7 +435,7 @@ async function onBulkTagsAdd(tags: string[]) {
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
-    selectedHistoryIds.value = [];
+    selectedHistories.value = [];
 
     await load(true);
 });
@@ -515,9 +525,9 @@ onMounted(async () => {
                 show-view-toggle
                 :show-select-all="myView"
                 :select-all-disabled="loading || overlay || noItems || noResults"
-                :all-selected="!!selectedHistoryIds.length && selectedHistoryIds.length === historiesLoaded.length"
+                :all-selected="!!selectedHistories.length && selectedHistories.length === historiesLoaded.length"
                 :indeterminate-selected="
-                    selectedHistoryIds.length > 0 && selectedHistoryIds.length < historiesLoaded.length
+                    selectedHistories.length > 0 && selectedHistories.length < historiesLoaded.length
                 "
                 @select-all="onSelectAllHistories">
                 <template v-slot:extra-filter>
@@ -585,7 +595,7 @@ onMounted(async () => {
                 :archived-view="archivedView"
                 :grid-view="currentListViewMode === 'grid'"
                 :selectable="myView"
-                :selected-history-ids="selectedHistoryIds"
+                :selected-history-ids="selectedHistories"
                 @refreshList="load"
                 @select="onSelectHistory"
                 @updateFilter="updateFilterValue"
@@ -593,7 +603,7 @@ onMounted(async () => {
         </BOverlay>
 
         <div class="d-flex mt-1 align-items-center">
-            <div v-if="myView && selectedHistoryIds.length" class="d-flex flex-gapx-1 w-100 position-absolute">
+            <div v-if="myView && selectedHistories.length" class="d-flex flex-gapx-1 w-100 position-absolute">
                 <BButton
                     v-if="!showDeleted"
                     id="history-list-footer-bulk-delete-button"
@@ -602,10 +612,10 @@ onMounted(async () => {
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
                     variant="primary"
-                    @click="onBulkDelete">
+                    @click="onBulkDeleteOrPurge">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
-                        Delete ({{ selectedHistoryIds.length }})
+                        Delete ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Deleting" />
                 </BButton>
@@ -620,9 +630,25 @@ onMounted(async () => {
                     @click="onBulkRestore">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
-                        Restore ({{ selectedHistoryIds.length }})
+                        Restore ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Restoring" />
+                </BButton>
+
+                <BButton
+                    v-if="showBulkPurge"
+                    id="history-list-footer-bulk-purge-button"
+                    v-b-tooltip.hover
+                    :title="bulkPurgeLoading ? 'Purging histories' : 'Purge selected histories'"
+                    :disabled="bulkPurgeLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="() => onBulkDeleteOrPurge(true)">
+                    <span v-if="!bulkPurgeLoading">
+                        <FontAwesomeIcon :icon="faBurn" fixed-width />
+                        Purge ({{ selectedHistories.length }})
+                    </span>
+                    <LoadingSpan v-else message="Purging" />
                 </BButton>
 
                 <BButton
@@ -636,7 +662,7 @@ onMounted(async () => {
                     @click="onToggleBulkTags">
                     <span v-if="!bulkTagsLoading">
                         <FontAwesomeIcon :icon="faTags" fixed-width />
-                        Add tags ({{ selectedHistoryIds.length }})
+                        Add tags ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
                 </BButton>
@@ -656,8 +682,8 @@ onMounted(async () => {
 
         <TagsSelectionDialog
             :show="showBulkAddTagsModal"
-            :title="`Add tags to ${selectedHistoryIds.length} selected history${
-                selectedHistoryIds.length > 1 ? 's' : ''
+            :title="`Add tags to ${selectedHistories.length} selected history${
+                selectedHistories.length > 1 ? 's' : ''
             }`"
             @cancel="onToggleBulkTags"
             @ok="onBulkTagsAdd" />
