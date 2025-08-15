@@ -6,7 +6,7 @@
         </div>
         <div v-else>
             <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
-            <span>{{ warningMessage | localize }}</span>
+            <span>{{ localize(warningMessage) }}</span>
             <div v-if="hasWarningItems" class="mt-2">
                 <div
                     v-for="(item, idx) in warningItems"
@@ -41,6 +41,7 @@ import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
+import { localize } from "utils/localization";
 
 import { dataAttributes } from "./modules/linting";
 
