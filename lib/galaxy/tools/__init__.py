@@ -2061,7 +2061,6 @@ class Tool(UsesDictVisibleKeys):
     ]:
         rerun_remap_job_id = _rerun_remap_job_id(request_context, incoming, self.id)
         set_dataset_matcher_factory(request_context, self)
-
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: list[ToolStateJobInstanceT]
@@ -2214,6 +2213,19 @@ class Tool(UsesDictVisibleKeys):
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
+
+        tags = incoming.get("tags", [])
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise exceptions.RequestParameterInvalidException("Tags must be a list of strings.")
+        if tags:
+            tag_handler = trans.tag_handler
+            for _, hda in execution_tracker.output_datasets:
+                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
+
+            for _, hdca in execution_tracker.output_collections:
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+            trans.sa_session.commit()
+
         # Raise an exception if there were jobs to execute and none of them were submitted,
         # if at least one is submitted or there are no jobs to execute - return aggregate
         # information including per-job errors. Arguably we should just always return the
