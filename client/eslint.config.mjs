@@ -147,6 +147,11 @@ export default [
                 sourceType: "module",
             },
         },
+        rules: {
+            // Override no-unused-vars for Vue files to use Vue-specific rule
+            "no-unused-vars": "off",
+            "vue/no-unused-vars": "error",
+        },
     },
 
     // TypeScript files configuration
@@ -192,6 +197,12 @@ export default [
                 ecmaVersion: 2020,
                 sourceType: "module",
             },
+        },
+        rules: {
+            // Override no-unused-vars for Vue files to use Vue-specific rule
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": "off",
+            "vue/no-unused-vars": "error",
         },
     },
 
