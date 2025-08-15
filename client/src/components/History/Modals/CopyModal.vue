@@ -99,7 +99,7 @@ async function copy(close: () => void) {
 </script>
 
 <template>
-    <BModal v-model="localShowModal" v-bind="$attrs" :title="title" title-tag="h2">
+    <BModal v-bind="$attrs" v-model="localShowModal" :title="title" title-tag="h2">
         <transition name="fade">
             <BAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you log in or register, you will lose your current history after copying

@@ -1,7 +1,7 @@
 <template>
     <div>
-        <ToolForm v-if="isTool && !isUpload" v-bind="toolParams" />
-        <WorkflowRun v-else-if="isWorkflow" v-bind="workflowParams" />
+        <ToolForm v-bind="toolParams" v-if="isTool && !isUpload" />
+        <WorkflowRun v-bind="workflowParams" v-else-if="isWorkflow" />
         <div v-else-if="isController" :src="controllerParams" />
         <CenterFrame v-else src="/welcome" />
     </div>
