@@ -155,14 +155,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         <div v-else>
             <BarChart
                 v-if="topTenHistoriesBySizeData"
+                v-bind="byteFormattingForChart"
                 :description="
                     localize(
                         'These are the 50 histories that take the most space on your storage. Click on a bar to see more information about the history.',
                     )
                 "
                 :data="topTenHistoriesBySizeData"
-                :enable-selection="true"
-                v-bind="byteFormattingForChart">
+                :enable-selection="true">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
                 </template>
@@ -180,6 +180,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             </BarChart>
             <BarChart
                 v-if="activeVsArchivedVsDeletedTotalSizeData"
+                v-bind="byteFormattingForChart"
                 :title="localize('Active vs Archived vs Deleted Total Size')"
                 :description="
                     localize(
@@ -188,7 +189,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"
                 :enable-selection="false"
-                v-bind="byteFormattingForChart" />
+                v-bind="byteFormattingForChart">
+                <template v-slot:tooltip="{ data }">
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
+                </template>
+            </BarChart>
         </div>
     </OverviewPage>
 </template>
