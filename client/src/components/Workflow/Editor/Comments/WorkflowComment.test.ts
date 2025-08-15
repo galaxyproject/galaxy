@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { mount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { suppressErrorForCustomIcons } from "tests/jest/helpers";
 import { nextTick, reactive, ref } from "vue";
