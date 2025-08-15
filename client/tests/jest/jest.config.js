@@ -14,6 +14,7 @@ const modulesToTransform = [
     "@fortawesome",
     "ro-crate-zip-explorer",
     "yaml",
+    "vue-multiselect",
 ].join("|");
 
 // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
@@ -21,7 +22,7 @@ const modulesToTransform = [
 // jest to work properly.  I think.
 
 const configOverride = {
-    "^.+.tsx?$": [
+    "^.+\\.tsx?$": [
         "ts-jest",
         {
             tsconfig: {
