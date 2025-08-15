@@ -165,6 +165,7 @@ function onStart() {
 
 <template>
     <Draggable
+        v-bind="$attrs"
         :root-offset="rootOffset"
         :position="props.position"
         :prevent-default="preventDefault"
@@ -173,7 +174,6 @@ function onStart() {
         :disabled="disabled"
         :snappable="snappable"
         :selected="selected"
-        v-bind="$attrs"
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"

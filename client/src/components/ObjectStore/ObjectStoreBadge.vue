@@ -64,7 +64,7 @@ const title = computed(() => {
             <FontAwesomeIcon v-if="badgeType == 'restricted'" :icon="faUserLock" :class="disadvantage" />
             <FontAwesomeIcon v-if="badgeType == 'user_defined'" :icon="faPlug" :class="neutral" />
             <FontAwesomeIcon v-if="badgeType == 'quota'" :icon="faChartLine" :class="disadvantage" />
-            <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faChartLine" :class="neutral" v-bind="shrink" />
+            <FontAwesomeIcon v-if="badgeType == 'no_quota'" v-bind="shrink" :icon="faChartLine" :class="neutral" />
             <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faBan" :class="[transparent, advantage]" />
             <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faCircleNotch" :class="advantage" />
             <FontAwesomeIcon v-if="badgeType == 'no_quota'" :icon="faCircleNotch" :class="advantage" flip="vertical" />
@@ -77,7 +77,7 @@ const title = computed(() => {
             <FontAwesomeIcon v-if="badgeType == 'short_term'" :icon="faRecycle" :class="disadvantage" />
 
             <FontAwesomeIcon v-if="badgeType == 'backed_up'" :icon="faArchive" :class="advantage" />
-            <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" :icon="faArchive" :class="neutral" v-bind="shrink" />
+            <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" v-bind="shrink" :icon="faArchive" :class="neutral" />
             <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" :icon="faBan" :class="[transparent, disadvantage]" />
             <FontAwesomeIcon v-if="badgeType == 'not_backed_up'" :icon="faCircleNotch" :class="disadvantage" />
             <FontAwesomeIcon
@@ -87,7 +87,7 @@ const title = computed(() => {
                 flip="vertical" />
 
             <FontAwesomeIcon v-if="badgeType == 'more_secure'" :icon="faKey" :class="advantage" />
-            <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faKey" :class="neutral" v-bind="shrink" />
+            <FontAwesomeIcon v-if="badgeType == 'less_secure'" v-bind="shrink" :icon="faKey" :class="neutral" />
             <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faBan" :class="[transparent, disadvantage]" />
             <FontAwesomeIcon v-if="badgeType == 'less_secure'" :icon="faCircleNotch" :class="disadvantage" />
             <FontAwesomeIcon
@@ -97,7 +97,7 @@ const title = computed(() => {
                 flip="vertical" />
 
             <FontAwesomeIcon v-if="badgeType == 'more_stable'" :icon="faShieldAlt" :class="advantage" />
-            <FontAwesomeIcon v-if="badgeType == 'less_stable'" :icon="faShieldAlt" :class="neutral" v-bind="shrink" />
+            <FontAwesomeIcon v-if="badgeType == 'less_stable'" v-bind="shrink" :icon="faShieldAlt" :class="neutral" />
             <FontAwesomeIcon v-if="badgeType == 'less_stable'" :icon="faBan" :class="[transparent, disadvantage]" />
             <FontAwesomeIcon v-if="badgeType == 'less_stable'" :icon="faCircleNotch" :class="disadvantage" />
             <FontAwesomeIcon

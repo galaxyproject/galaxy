@@ -56,7 +56,7 @@ watchEffect(() => {
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <FormGeneric v-if="formConfig" v-bind="formConfig" :trim-inputs="true" />
+        <FormGeneric v-bind="formConfig" v-if="formConfig" :trim-inputs="true" />
         <BAlert v-else-if="!loading" show variant="danger"> User preferences not found. </BAlert>
         <BAlert v-else-if="loading" show>
             <LoadingSpan message="Loading user preferences" />

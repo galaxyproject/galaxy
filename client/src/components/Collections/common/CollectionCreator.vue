@@ -210,8 +210,8 @@ watch(
                 </template>
                 <DefaultBox
                     v-if="uploadReady && configOptions"
-                    :effective-extensions="effectiveExtensions"
                     v-bind="configOptions"
+                    :effective-extensions="effectiveExtensions"
                     :has-callback="false"
                     :history-id="historyId"
                     :list-db-keys="listDbKeys"
