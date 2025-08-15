@@ -284,6 +284,7 @@ function onSelectAllHistories() {
 /**
  * Handles bulk deletion of selected histories
  * Shows confirmation dialog and processes deletion with proper error handling
+ * @param {boolean} purge - Whether to permanently purge histories instead of deleting
  */
 async function onBulkDeleteOrPurge(purge: boolean = false) {
     const totalSelected = selectedHistories.value.length;
@@ -294,8 +295,8 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
             Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} histories?`,
         {
             id: "bulk-delete-histories",
-            title: "Delete histories",
-            okTitle: "Delete histories",
+            title: purge ? "Purge histories" : "Delete histories",
+            okTitle: purge ? "Purge histories" : "Delete histories",
             okVariant: "danger",
             cancelVariant: "outline-primary",
             centered: true,
@@ -612,7 +613,7 @@ onMounted(async () => {
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
                     variant="primary"
-                    @click="onBulkDeleteOrPurge">
+                    @click="() => onBulkDeleteOrPurge()">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                         Delete ({{ selectedHistories.length }})
