@@ -19,12 +19,16 @@ export function usePopper(
     let closeHandler: ReturnType<typeof setTimeout> | undefined;
 
     const doOpen = () => {
-        closeHandler && clearTimeout(closeHandler);
+        if (closeHandler) {
+            clearTimeout(closeHandler);
+        }
         visible.value = true;
     };
     const doClose = () => {
         const delay = options.interactive ? DELAY_CLOSE : 0;
-        closeHandler && clearTimeout(closeHandler);
+        if (closeHandler) {
+            clearTimeout(closeHandler);
+        }
         closeHandler = setTimeout(() => (visible.value = false), delay);
     };
     const doCloseDocument = (e: Event) => {
