@@ -31,10 +31,8 @@ export const initSentry = (galaxy, config) => {
             },
         });
         if (email) {
-            Sentry.configureScope((scope) => {
-                scope.setUser({
-                    email: email,
-                });
+            Sentry.getCurrentScope().setUser({
+                email: email,
             });
         }
         galaxy.Sentry = Sentry;
