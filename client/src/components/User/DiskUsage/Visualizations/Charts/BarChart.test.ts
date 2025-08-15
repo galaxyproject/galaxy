@@ -174,7 +174,7 @@ describe("BarChart.vue", () => {
                     enableTooltips: true,
                 });
                 await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA[0]?.label);
+                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA.at(0)?.label);
             });
         });
 
@@ -228,7 +228,7 @@ describe("BarChart.vue", () => {
                     enableSelection: true,
                 });
                 await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA[0]?.label);
+                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA.at(0)?.label);
             });
         });
     });
