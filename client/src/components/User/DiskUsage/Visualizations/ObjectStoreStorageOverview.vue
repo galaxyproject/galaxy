@@ -77,12 +77,12 @@ function onUndelete(datasetId: string) {
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
+                v-bind="byteFormattingForChart"
                 :description="
                     localize(
                         'These are the 50 datasets that take the most space in this storage location. Click on a bar to see more information about the dataset.',
                     )
                 "
-                v-bind="byteFormattingForChart"
                 :enable-selection="true"
                 :data="topNDatasetsBySizeData">
                 <template v-slot:title>
