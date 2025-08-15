@@ -1,52 +1,42 @@
 import base64
 import logging
-from typing import Optional
 
-from typing_extensions import Unpack
-
-from galaxy.files import OptionalUserContext
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
 from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
+    DefaultBaseFilesSource,
     PluginKind,
 )
 
 log = logging.getLogger(__name__)
 
 
-class Base64FilesSource(BaseFilesSource):
+class Base64FilesSource(DefaultBaseFilesSource):
     plugin_type = "base64"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
-        kwds: FilesSourceProperties = dict(
+    def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
+        defaults = dict(
             id="_base64",
             label="Base64 encoded string",
             doc="Base64 string handler",
             writable=False,
         )
-        kwds.update(kwd)
-        props = self._parse_common_config_opts(kwds)
-        self._props = props
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
 
     def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
     ):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
     def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
     ):
         raise NotImplementedError()
 
@@ -55,12 +45,6 @@ class Base64FilesSource(BaseFilesSource):
             return len("base64://")
         else:
             return 0
-
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
 
 
 __all__ = ("Base64FilesSource",)

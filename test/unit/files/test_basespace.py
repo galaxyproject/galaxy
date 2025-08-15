@@ -34,4 +34,4 @@ def test_file_source():
     a_file = find(res, class_="File", name=os.path.basename(test_file))
     assert a_file
 
-    assert_realizes_as(file_sources, a_file["uri"], "a\n", user_context=user_context)
+    assert_realizes_as(file_sources, a_file.uri, "a\n", user_context=user_context)
