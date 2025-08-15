@@ -1,6 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { getLocalVue, injectTestRouter, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
