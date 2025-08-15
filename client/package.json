@@ -176,7 +176,7 @@
     "@typescript-eslint/parser": "^8.39.1",
     "@vue/compiler-sfc": "^3.5.18",
     "@vue/test-utils": "^2.4.6",
-    "@vue/tsconfig": "^0.4.0",
+    "@vue/tsconfig": "^0.7.0",
     "@vue/vue3-jest": "^29.2.6",
     "amdi18n-loader": "^0.9.4",
     "autoprefixer": "10.4.16",
