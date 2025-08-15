@@ -19,7 +19,6 @@ describe("FormBoolean", () => {
     });
 
     it("check initial value and value change", async () => {
-        const input = wrapper.find("input");
         const switchComponent = wrapper.findComponent(".custom-switch");
         expect(switchComponent.props().value).toBe(false);
         await wrapper.setProps({ value: "true" });
