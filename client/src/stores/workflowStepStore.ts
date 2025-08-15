@@ -150,6 +150,25 @@ interface StepInputMapOver {
 
 export type WorkflowStepStore = ReturnType<typeof useWorkflowStepStore>;
 
+export function createNewStep(
+    contentId: NewStep["content_id"],
+    name: NewStep["name"],
+    type: NewStep["type"],
+    position: NewStep["position"]
+) {
+    return {
+        name: name,
+        content_id: contentId,
+        input_connections: {},
+        type: type,
+        inputs: [],
+        outputs: [],
+        position: position,
+        post_job_actions: {},
+        tool_state: {},
+    } as NewStep;
+}
+
 export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (workflowId) => {
     const steps = ref<Steps>({});
     const stepMapOver = ref<{ [index: number]: CollectionTypeDescriptor }>({});
@@ -245,18 +264,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         type: NewStep["type"],
         position: NewStep["position"]
     ) {
-        const stepData: NewStep = {
-            name: name,
-            content_id: contentId,
-            input_connections: {},
-            type: type,
-            inputs: [],
-            outputs: [],
-            position: position,
-            post_job_actions: {},
-            tool_state: {},
-        };
-
+        const stepData = createNewStep(contentId, name, type, position);
         return addStep(stepData);
     }
 

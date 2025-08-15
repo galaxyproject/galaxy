@@ -16,24 +16,37 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
+import { faPlus, faSitemap } from "font-awesome-6";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { BoxSelect, Workflow } from "lucide-vue";
 import { storeToRefs } from "pinia";
-import { computed, toRefs, watch } from "vue";
+import { computed, nextTick, ref, toRefs, watch } from "vue";
 
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
+import type {
+    InputReconnectionMap,
+    OutputReconnectionMap,
+} from "@/components/Workflow/Editor/modules/convertOpenConnections";
+import { extractSubworkflow, type PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { getAppRoot } from "@/onload/loadConfig";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
 import { AutoLayoutAction } from "../Actions/stepActions";
 import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
+import SelectionToWorkflowReviewModal from "@/components/Workflow/Editor/Tools/SelectionToWorkflowReviewModal.vue";
 
 library.add(
     faMarkdown,
@@ -49,7 +62,7 @@ library.add(
     faTrash
 );
 
-const { toolbarStore, undoRedoStore, commentStore, workflowId } = useWorkflowStores();
+const { toolbarStore, undoRedoStore, commentStore, workflowId, stateStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -151,7 +164,125 @@ const toggleVisibilityButtonTitle = computed(() => {
     }
 });
 
-const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection } = useSelectionOperations();
+const {
+    anySelected,
+    selectedCountText,
+    deleteSelection,
+    deselectAll,
+    duplicateSelection,
+    copySelectionToNewWorkflow,
+    moveSelectionToSubworkflow,
+} = useSelectionOperations();
+
+const toWorkflowModal = ref<InstanceType<typeof GModal>>();
+const workflowCreatedModal = ref<InstanceType<typeof GModal>>();
+
+const newWorkflowURL = ref("about:blank");
+
+async function onClickCopy() {
+    const newTab = window.open("about:blank", "_blank");
+
+    const newWF = await copySelectionToNewWorkflow(newWorkflowName.value);
+
+    toWorkflowModal.value?.hideModal();
+
+    newWorkflowURL.value = `${getAppRoot(undefined, true)}/workflows/edit?id=${newWF.id}`;
+
+    if (newTab && !newTab.closed) {
+        newTab.location = newWorkflowURL.value;
+        newTab.focus();
+    } else {
+        await nextTick();
+        workflowCreatedModal.value?.showModal();
+    }
+}
+
+const newWorkflowName = ref("");
+
+function openToWorkflowModal() {
+    const workflowName = stateStore.name;
+    newWorkflowName.value = `Extracted from ${workflowName}`;
+
+    toWorkflowModal.value?.showModal();
+}
+
+const reviewModal = ref<InstanceType<typeof SelectionToWorkflowReviewModal>>();
+
+const workflowExtractionData = ref<{
+    partialWorkflow: PartialWorkflow;
+    inputReconnectionMap: InputReconnectionMap;
+    outputReconnectionMap: OutputReconnectionMap;
+    expandedSteps: Set<number>;
+} | null>(null);
+
+async function onClickExtract() {
+    workflowExtractionData.value = await extractSubworkflow(workflowId, newWorkflowName.value);
+
+    await nextTick();
+
+    toWorkflowModal.value?.hideModal();
+    workflowCreatedModal.value?.hideModal();
+
+    reviewModal.value?.showModal();
+}
+
+function onRenameExtract(name: string) {
+    assertDefined(workflowExtractionData.value);
+    workflowExtractionData.value.partialWorkflow.name = name;
+    newWorkflowName.value = name;
+}
+
+function onCancelExtract() {
+    workflowExtractionData.value = null;
+}
+
+function onRenameInputExtract(id: number, to: string) {
+    assertDefined(workflowExtractionData.value);
+
+    const step = workflowExtractionData.value.partialWorkflow.steps[id];
+    assertDefined(step);
+
+    step.label = to;
+
+    const connection = workflowExtractionData.value.inputReconnectionMap.find(
+        ({ label: _, connection }) => connection.id === id
+    );
+
+    if (connection) {
+        connection.label = to;
+    }
+}
+
+function onRenameOutputExtract(id: number, name: string, to: string) {
+    assertDefined(workflowExtractionData.value);
+
+    const step = workflowExtractionData.value.partialWorkflow.steps[id];
+    assertDefined(step);
+
+    const output = step.workflow_outputs?.find((o) => o.output_name === name);
+    assertDefined(output);
+
+    output.label = to;
+
+    const mappedConnection = workflowExtractionData.value.outputReconnectionMap.find(
+        ({ connection, internalOutputName }) => connection.id === id && internalOutputName === name
+    );
+
+    if (mappedConnection) {
+        mappedConnection.connection.output_name = to;
+    }
+}
+
+async function onOkExtract() {
+    const { partialWorkflow, inputReconnectionMap, outputReconnectionMap } = ensureDefined(
+        workflowExtractionData.value
+    );
+
+    await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
+    workflowExtractionData.value = null;
+}
+
+const workflowNameValid = computed(() => newWorkflowName.value.trim() !== "");
 
 function autoLayout() {
     undoRedoStore.applyAction(new AutoLayoutAction(workflowId));
@@ -298,17 +429,69 @@ function autoLayout() {
             <div v-if="anySelected" class="selection-options">
                 <span>{{ selectedCountText }}</span>
 
-                <GButtonGroup>
-                    <GButton class="button" title="clear selection" @click="deselectAll">
-                        Clear <FontAwesomeIcon icon="fa-times" />
+                <span class="d-flex flex-gapx-1">
+                    <GButtonGroup>
+                        <GButton class="button" title="clear selection" @click="deselectAll">
+                            Clear <FontAwesomeIcon icon="fa-times" />
+                        </GButton>
+                        <GButton class="button" title="duplicate selected" @click="duplicateSelection">
+                            Duplicate <FontAwesomeIcon icon="fa-clone" />
+                        </GButton>
+                        <GButton class="button" title="delete selected" @click="deleteSelection">
+                            Delete <FontAwesomeIcon icon="fa-trash" />
+                        </GButton>
+                    </GButtonGroup>
+
+                    <GButton class="button" title="move or copy selected to workflow" @click="openToWorkflowModal">
+                        To Workflow... <FontAwesomeIcon :icon="faSitemap" />
                     </GButton>
-                    <GButton class="button" title="duplicate selected" @click="duplicateSelection">
-                        Duplicate <FontAwesomeIcon icon="fa-clone" />
-                    </GButton>
-                    <GButton class="button" title="delete selected" @click="deleteSelection">
-                        Delete <FontAwesomeIcon icon="fa-trash" />
-                    </GButton>
-                </GButtonGroup>
+                </span>
+
+                <GModal id="selection-to-workflow-modal" ref="toWorkflowModal" title="Selection To Workflow">
+                    <GFormLabel
+                        class="mb-2"
+                        title="New Workflow Name"
+                        :state="workflowNameValid ? null : false"
+                        invalid-feedback="please provide a name">
+                        <GFormInput v-model="newWorkflowName" />
+                    </GFormLabel>
+
+                    <div class="d-flex flex-column flex-gapy-1">
+                        <GButton
+                            title="Create a new workflow from the selected steps and comments"
+                            :disabled="!workflowNameValid"
+                            @click="onClickCopy">
+                            Copy selection into new Workflow
+                            <FontAwesomeIcon :icon="faPlus" />
+                        </GButton>
+                        <GButton
+                            title="Move the selected steps and comments into a new sub-workflow"
+                            :disabled="!workflowNameValid"
+                            @click="onClickExtract">
+                            Move selection to Sub-Workflow
+                            <FontAwesomeIcon :icon="faSitemap" />
+                        </GButton>
+                    </div>
+                </GModal>
+
+                <GModal ref="workflowCreatedModal" title="New Workflow Created">
+                    <span> Open the new workflow <GLink :href="newWorkflowURL">here</GLink>. </span>
+                </GModal>
+
+                <SelectionToWorkflowReviewModal
+                    v-if="workflowExtractionData"
+                    ref="reviewModal"
+                    :workflow="workflowExtractionData.partialWorkflow"
+                    :workflow-name="newWorkflowName"
+                    :workflow-name-valid="workflowNameValid"
+                    :input-map="workflowExtractionData.inputReconnectionMap"
+                    :output-map="workflowExtractionData.outputReconnectionMap"
+                    :expanded-steps="workflowExtractionData.expandedSteps"
+                    @ok="onOkExtract"
+                    @rename="onRenameExtract"
+                    @cancel="onCancelExtract"
+                    @renameInput="onRenameInputExtract"
+                    @renameOutput="onRenameOutputExtract" />
             </div>
 
             <div
