@@ -219,6 +219,8 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         # Insert a tag
         tags_cell = self.get_history_card(self.history2_name).find_element(By.CSS_SELECTOR, ".stateless-tags")
         self.add_tag(tags_cell, self.history2_tags[0])
