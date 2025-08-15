@@ -3,9 +3,7 @@ import logging
 import os
 import socket
 import tempfile
-from typing import (
-    Optional,
-)
+from typing import Optional
 from urllib.parse import urlparse
 
 from galaxy.exceptions import (
@@ -17,7 +15,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     NoMatchingFileSource,
 )
-from galaxy.files.sources import FilesSourceOptions
+from galaxy.files.models import FilesSourceOptions
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,

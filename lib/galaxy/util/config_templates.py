@@ -5,8 +5,11 @@ This is capturing code shared by file source templates and object store template
 
 import logging
 import os
+from collections.abc import Iterable
+from copy import deepcopy
 from typing import (
     Any,
+    Callable,
     cast,
     Dict,
     List,
@@ -24,9 +27,11 @@ from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
     ConfigDict,
+    create_model,
     RootModel,
     ValidationError,
 )
+from pydantic.fields import FieldInfo
 from typing_extensions import (
     Literal,
     NotRequired,
@@ -608,3 +613,43 @@ def read_oauth2_info_from_configuration(
 # but injected dynamically. Currently only `oauth2_access_token`.
 class ImplicitConfigurationParameters(TypedDict):
     oauth2_access_token: NotRequired[str]
+
+
+M = TypeVar("M", bound="BaseModel")
+
+
+# TODO: This is a workaround to make all fields optional.
+#       It should be removed when Python/pydantic supports this feature natively.
+# https://github.com/pydantic/pydantic/issues/1673
+def partial_model(
+    include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> Callable[[Type[M]], Type[M]]:
+    """Decorator to make all model fields optional"""
+
+    if exclude is None:
+        exclude = []
+
+    def decorator(model: Type[M]) -> Type[M]:
+        def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
+            new = deepcopy(field)
+            new.default = default
+            new.annotation = Optional[field.annotation or Any]  # type:ignore[assignment]
+            return new.annotation, new
+
+        if include is None:
+            fields: Iterable[tuple[str, FieldInfo]] = model.model_fields.items()
+        else:
+            fields = ((k, v) for k, v in model.model_fields.items() if k in include)
+
+        return create_model(
+            model.__name__,
+            __base__=model,
+            __module__=model.__module__,
+            **{
+                field_name: make_optional(field_info)
+                for field_name, field_info in fields
+                if exclude is None or field_name not in exclude
+            },
+        )  # type:ignore[call-overload]
+
+    return decorator

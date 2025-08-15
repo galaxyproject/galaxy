@@ -92,11 +92,30 @@ def __load_plugins_from_element(
             template = "Failed to find plugin of type [%s] in available plugin types %s"
             message = template % (plugin_type, str(plugins_dict.keys()))
             raise Exception(message)
-
-        plugin = plugin_klazz(**plugin_kwds)
+        plugin = __create_plugin_instance(plugin_klazz, plugin_kwds)
         plugins.append(plugin)
 
     return plugins
+
+
+def __as_configurable_plugin_instance(obj: Any) -> Optional[Type]:
+    """Check if the class implements the configurable plugin pattern."""
+    try:
+        if isinstance(obj, type) and hasattr(obj, "build_template_config"):
+            return obj
+    except TypeError:
+        pass
+    return None
+
+
+def __create_plugin_instance(plugin_class: Type[T], plugin_kwds: Dict[str, Any]) -> T:
+    """Create an instance of the plugin class with the provided keyword arguments."""
+    configurable_instance = __as_configurable_plugin_instance(plugin_class)
+    if configurable_instance:
+        plugin_template_config = configurable_instance.build_template_config(**plugin_kwds)
+        return configurable_instance(template_config=plugin_template_config)
+    else:
+        return plugin_class(**plugin_kwds)
 
 
 def __load_plugins_from_dicts(
@@ -129,7 +148,8 @@ def __load_plugins_from_dicts(
         if extra_kwds:
             plugin_kwds = plugin_kwds.copy()
             plugin_kwds.update(extra_kwds)
-        plugin = plugins_dict[plugin_type](**plugin_kwds)
+        plugin_class = plugins_dict[plugin_type]
+        plugin = __create_plugin_instance(plugin_class, plugin_kwds)
         plugins.append(plugin)
 
     return plugins

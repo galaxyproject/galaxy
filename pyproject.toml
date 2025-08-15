@@ -107,6 +107,7 @@ dependencies = [
     "WebOb>=1.8.9",  # Python 3.13 support
     "Whoosh",
     "zipstream-new",
+    "fsspec>=2025.7.0",
 ]
 
 [project.urls]
