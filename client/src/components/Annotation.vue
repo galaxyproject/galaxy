@@ -38,9 +38,6 @@ export default {
         value: { type: String, required: false, default: "" },
         tooltipPlacement: { type: String, required: false, default: "left" },
     },
-    methods: {
-        localize,
-    },
     computed: {
         annotation: {
             get() {
@@ -52,6 +49,9 @@ export default {
                 }
             },
         },
+    },
+    methods: {
+        localize,
     },
 };
 </script>
