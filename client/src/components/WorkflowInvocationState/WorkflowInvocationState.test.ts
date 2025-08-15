@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount, VueWrapper } from "@vue/test-utils";
+import { shallowMount, VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
