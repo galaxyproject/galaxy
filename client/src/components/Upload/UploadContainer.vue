@@ -181,14 +181,14 @@ defineExpose({
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <CompositeBox
+                v-bind="$attrs"
                 :effective-extensions="effectiveExtensions"
                 :default-db-key="defaultDbKey"
                 :file-sources-configured="fileSourcesConfigured"
                 :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
-                :list-db-keys="listDbKeys"
-                v-bind="$attrs" />
+                :list-db-keys="listDbKeys" />
         </BTab>
         <BTab
             v-if="showCollection"
@@ -198,15 +198,16 @@ defineExpose({
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput
+                v-bind="$attrs"
                 :file-sources-configured="fileSourcesConfigured"
                 :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
-                :history-id="currentHistoryId"
-                v-bind="$attrs" />
+                :history-id="currentHistoryId" />
         </BTab>
         <DefaultBox
             v-if="showRegular || showCollection"
             v-show="regularTabActive || collectionTabActive"
+            v-bind="$attrs"
             :id="collectionTabActive ? 'collection' : 'regular'"
             ref="regular"
             :chunk-upload-size="chunkUploadSize"
@@ -220,7 +221,6 @@ defineExpose({
             :list-db-keys="listDbKeys"
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
-            v-bind="$attrs"
             @progress="progress" />
     </BTabs>
     <div v-else>
