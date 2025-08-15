@@ -160,8 +160,8 @@ function dismiss() {
                 <div class="action-links">
                     <BButton
                         v-for="(actionLink, index) in displayedBroadcast.content.action_links"
-                        :key="`${displayedBroadcast.id}-${index}`"
                         v-bind="actionLinkBind(actionLink.link)"
+                        :key="`${displayedBroadcast.id}-${index}`"
                         :variant="displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'">
                         {{ actionLink.action_name }}
                     </BButton>
