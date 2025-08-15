@@ -229,6 +229,8 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         self.assert_histories_sorted_in_list([self.history2_name], False)
 
     def _login(self):
