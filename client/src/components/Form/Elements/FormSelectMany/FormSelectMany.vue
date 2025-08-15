@@ -377,7 +377,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
                     @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
-                    <slot name="label-area" v-bind="{ option, selected: false }">
+                    <slot v-bind="{ option, selected: false }" name="label-area">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -412,7 +412,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
                     @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
-                    <slot name="label-area" v-bind="{ option, selected: true }">
+                    <slot v-bind="{ option, selected: true }" name="label-area">
                         {{ option.label }}
                     </slot>
                 </button>
