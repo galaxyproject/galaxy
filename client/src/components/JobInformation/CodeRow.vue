@@ -72,7 +72,7 @@ export default {
                 codeDiv.scrollTop = codeDiv.scrollHeight;
             }
             this.lastPos = codeDiv.scrollHeight;
-        } catch (exception) {
+        } catch {
             console.debug("Code div is not present");
         }
     },

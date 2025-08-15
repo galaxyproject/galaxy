@@ -184,7 +184,7 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
         }
         const result = await operation.fetchItems(options);
         return result;
-    } catch (error) {
+    } catch {
         return [];
     }
 }
