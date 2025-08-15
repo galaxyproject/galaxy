@@ -65,8 +65,6 @@ import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/Create
 import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
-import { patchRouterPush } from "./router-push";
-
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";

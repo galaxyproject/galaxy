@@ -1,7 +1,6 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
-import { useRouter } from "vue-router";
 
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
@@ -13,7 +12,6 @@ import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
-const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 

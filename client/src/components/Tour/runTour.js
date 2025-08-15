@@ -20,7 +20,7 @@ function getElement(selector) {
     if (selector) {
         try {
             return document.querySelector(selector);
-        } catch (error) {
+        } catch {
             throw Error(`Invalid selector. ${selector}`);
         }
     }

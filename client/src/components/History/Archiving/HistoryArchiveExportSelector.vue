@@ -97,7 +97,7 @@ async function updateExports() {
                 exportErrorMessage.value = "The history export request failed. Please try again later.";
             }
         }
-    } catch (e) {
+    } catch {
         exportErrorMessage.value = "The request to get your history exports records failed. Please check back later.";
     }
 }
