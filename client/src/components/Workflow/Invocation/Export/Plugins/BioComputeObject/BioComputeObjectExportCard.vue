@@ -80,7 +80,7 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <button class="btn btn-primary">{{ "Submit" | localize }}</button>
+                            <button class="btn btn-primary">{{ localize("Submit") }}</button>
                         </div>
                     </form>
                 </div>
@@ -93,6 +93,7 @@
 import axios from "axios";
 import { getRootFromIndexLink } from "onload";
 import { getAppRoot } from "onload/loadConfig";
+import { localize } from "utils/localization";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 export default {

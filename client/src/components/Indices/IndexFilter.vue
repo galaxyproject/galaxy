@@ -7,7 +7,7 @@
                     name="query"
                     :value="debouncedValue"
                     autocomplete="off"
-                    :placeholder="placeholder | localize"
+                    :placeholder="localize(placeholder)"
                     data-description="filter index input"
                     class="search-query index-filter-query"
                     :size="size"
@@ -45,6 +45,7 @@ import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
+import { localize } from "utils/localization";
 
 library.add(faTimes, faQuestion);
 
