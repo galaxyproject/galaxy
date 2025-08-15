@@ -21,11 +21,15 @@ const modulesToTransform = [
 // jest to work properly.  I think.
 
 const configOverride = {
-    "^.+.tsx?$": [
+    "^.+\\.tsx?$": [
         "ts-jest",
         {
             tsconfig: {
                 verbatimModuleSyntax: false,
+                module: "commonjs",
+                moduleResolution: "node",
+                esModuleInterop: true,
+                allowSyntheticDefaultImports: true,
             },
         },
     ],
