@@ -6263,6 +6263,7 @@ export interface components {
             /**
              * Region
              * @description Name of the region in the cloud service provider that the object belongs to.
+             * @example us-east-1
              */
             region?: string | null;
             /** @description Type of the access method. */
@@ -6278,6 +6279,7 @@ export interface components {
             /**
              * Headers
              * @description An optional list of headers to include in the HTTP request to `url`. These headers can be used to provide auth tokens required to fetch the object bytes.
+             * @example Authorization: Basic Z2E0Z2g6ZHJz
              */
             headers?: string[] | null;
             /**
@@ -7068,16 +7070,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -7102,11 +7107,13 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
              * URI root
              * @description The URI root used by this type of plugin.
+             * @example gximport://
              */
             uri_root: string;
             /**
@@ -7117,6 +7124,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -7204,6 +7212,7 @@ export interface components {
              * @description The digest method used to create the checksum.
              *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
+             * @example sha-256
              */
             type: string;
         };
@@ -7691,6 +7700,7 @@ export interface components {
             /**
              * Drs Uri
              * @description A list of full DRS identifier URI paths that may be used to obtain the object. These URIs may be external to this DRS instance.
+             * @example drs://drs.example.org/314159
              */
             drs_uri?: string[] | null;
             /**
@@ -7719,6 +7729,7 @@ export interface components {
             /**
              * Name
              * @description The name of the entry to create.
+             * @example my_new_entry
              */
             name: string;
             /**
@@ -7894,6 +7905,7 @@ export interface components {
             /**
              * View
              * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
+             * @example element
              */
             view?: components["schemas"]["InvocationSerializationView"] | null;
         };
@@ -7965,6 +7977,12 @@ export interface components {
             /**
              * List of metrics to be recorded.
              * @default []
+             * @example {
+             *       "args": "{\"test\":\"value\"}",
+             *       "level": 0,
+             *       "namespace": "test-source",
+             *       "time": "2021-01-23T18:25:43.511Z"
+             *     }
              */
             metrics: components["schemas"]["Metric"][];
         };
@@ -8233,11 +8251,13 @@ export interface components {
             /**
              * Name
              * @description The name of the created entry.
+             * @example my_new_entry
              */
             name: string;
             /**
              * URI
              * @description The URI of the created entry.
+             * @example gxfiles://my_new_entry
              */
             uri: string;
         };
@@ -9152,6 +9172,9 @@ export interface components {
              * @default [
              *       "data"
              *     ]
+             * @example txt
+             * @example tabular
+             * @example tiff
              */
             extensions: string[];
             /** Help */
@@ -9234,6 +9257,7 @@ export interface components {
             /**
              * Extension
              * @description The dataset file extension.
+             * @example txt
              */
             extension: string;
             /** Extensions */
@@ -9529,16 +9553,19 @@ export interface components {
             /**
              * Source
              * @description Source type for conversion
+             * @example bam
              */
             source: string;
             /**
              * Target
              * @description Target type for conversion
+             * @example bai
              */
             target: string;
             /**
              * Tool identifier
              * @description The converter tool identifier
+             * @example CONVERTER_Bam_Bai_0
              */
             tool_id: string;
         };
@@ -9562,6 +9589,7 @@ export interface components {
             /**
              * Description URL
              * @description The URL to a detailed description for this datatype
+             * @example https://wiki.galaxyproject.org/Learn/Datatypes#Bed
              */
             description_url: string | null;
             /**
@@ -9578,6 +9606,7 @@ export interface components {
             /**
              * Extension
              * @description The data type’s Dataset file extension
+             * @example bed
              */
             extension: string;
             /**
@@ -9591,16 +9620,19 @@ export interface components {
             /**
              * Definition
              * @description The EDAM definition
+             * @example Entry (gene) format of the NCBI database.
              */
             definition: string | null;
             /**
              * Label
              * @description The EDAM label
+             * @example NCBI gene report format
              */
             label: string | null;
             /**
              * Prefix IRI
              * @description The EDAM prefixed Resource Identifier
+             * @example format_1782
              */
             prefix_IRI: string;
         };
@@ -9609,11 +9641,17 @@ export interface components {
             /**
              * Datatype
              * @description The datatype extension this visualization applies to
+             * @example bam
+             * @example h5
+             * @example vcf
              */
             datatype: string;
             /**
              * Visualization
              * @description The visualization plugin to use
+             * @example igv
+             * @example trackster
+             * @example vitessce
              */
             visualization: string;
         };
@@ -10158,6 +10196,7 @@ export interface components {
             /**
              * Mime Type
              * @description A string providing the mime-type of the `DrsObject`.
+             * @example application/json
              */
             mime_type?: string | null;
             /**
@@ -10170,6 +10209,7 @@ export interface components {
              * Self Uri
              * @description A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.
              *     The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
+             * @example drs://drs.example.org/314159
              */
             self_uri: string;
             /**
@@ -10392,6 +10432,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -10980,16 +11021,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -11014,6 +11058,7 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
@@ -11024,6 +11069,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -11591,6 +11637,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type?: string | null;
             /**
@@ -11627,6 +11674,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension?: string | null;
             /**
@@ -11754,6 +11802,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -11846,6 +11895,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type: string;
             /**
@@ -11882,6 +11932,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -12014,6 +12065,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12112,6 +12164,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12201,6 +12254,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -12254,6 +12308,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12402,6 +12457,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12558,6 +12614,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12693,6 +12750,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13543,6 +13601,7 @@ export interface components {
             /**
              * Target
              * @description Specifies where to open the linked document.
+             * @example _blank
              */
             target: string;
             /**
@@ -14921,6 +14980,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -15098,6 +15158,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -15360,6 +15421,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -16290,6 +16352,7 @@ export interface components {
             /**
              * Create Time Pretty
              * @description Nice time representation of the creation date.
+             * @example 2 months ago
              */
             create_time_pretty: string;
             /**
@@ -16348,26 +16411,31 @@ export interface components {
              * Details URL
              * Format: uri
              * @description URL to the SPDX json details for this license
+             * @example http://spdx.org/licenses/Apache-2.0.json
              */
             detailsUrl: string;
             /**
              * Deprecated License
              * @description True if the entire license is deprecated
+             * @example false
              */
             isDeprecatedLicenseId: boolean;
             /**
              * OSI approved
              * @description Indicates if the [OSI](https://opensource.org/) has approved the license
+             * @example true
              */
             isOsiApproved: boolean;
             /**
              * Identifier
              * @description SPDX Identifier
+             * @example Apache-2.0
              */
             licenseId: string;
             /**
              * Name
              * @description Full name of the license
+             * @example Apache License 2.0
              */
             name: string;
             /**
@@ -16378,6 +16446,7 @@ export interface components {
             /**
              * Reference
              * @description Reference to the HTML format for the license file
+             * @example ./Apache-2.0.html
              */
             reference: string;
             /**
@@ -16393,12 +16462,14 @@ export interface components {
             /**
              * SPDX URL
              * Format: uri
+             * @example https://spdx.org/licenses/Apache-2.0.html
              */
             spdxUrl: string;
             /**
              * URL
              * Format: uri
              * @description License URL
+             * @example http://www.apache.org/licenses/LICENSE-2.0
              */
             url: string;
         };
@@ -16541,6 +16612,7 @@ export interface components {
             /**
              * Timestamp
              * @description The timestamp in ISO format.
+             * @example 2021-01-23T18:25:43.511Z
              */
             time: string;
         };
@@ -18877,36 +18949,43 @@ export interface components {
             /**
              * Contacturl
              * @description URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).
+             * @example mailto:support@example.com
              */
             contactUrl?: string | null;
             /**
              * Createdat
              * @description Timestamp describing when the service was first deployed and available (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             createdAt?: string | null;
             /**
              * Description
              * @description Description of the service. Should be human readable and provide information about the service.
+             * @example This service provides...
              */
             description?: string | null;
             /**
              * Documentationurl
              * @description URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.
+             * @example https://docs.myservice.example.com
              */
             documentationUrl?: string | null;
             /**
              * Environment
              * @description Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.
+             * @example test
              */
             environment?: string | null;
             /**
              * Id
              * @description Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.
+             * @example org.ga4gh.myservice
              */
             id: string;
             /**
              * Name
              * @description Name of this service. Should be human readable.
+             * @example My project
              */
             name: string;
             /** @description Organization providing the service */
@@ -18915,11 +18994,13 @@ export interface components {
             /**
              * Updatedat
              * @description Timestamp describing when the service was last updated (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             updatedAt?: string | null;
             /**
              * Version
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
+             * @example 1.0.0
              */
             version: string;
         };
@@ -18928,16 +19009,19 @@ export interface components {
             /**
              * Artifact
              * @description Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.
+             * @example beacon
              */
             artifact: string;
             /**
              * Group
              * @description Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).
+             * @example org.ga4gh
              */
             group: string;
             /**
              * Version
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
+             * @example 1.0.0
              */
             version: string;
         };
@@ -19240,6 +19324,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -19933,6 +20018,10 @@ export interface components {
             /**
              * Columns
              * @description A list of column names
+             * @example value
+             * @example dbkey
+             * @example name
+             * @example path
              */
             columns: string[];
             /**
@@ -19943,11 +20032,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -19956,11 +20047,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -19980,6 +20073,9 @@ export interface components {
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
+             * @example {
+             *       "file.txt": 136
+             *     }
              */
             files: {
                 [key: string]: number;
@@ -19987,11 +20083,13 @@ export interface components {
             /**
              * Fingerprint
              * @description SHA1 Hash
+             * @example 22b45237a85c2b3f474bf66888c534387ffe0ced
              */
             fingerprint: string;
             /**
              * Model class
              * @description The name of class modelling this tool data field
+             * @example TabularToolDataField
              */
             model_class: string;
             /**
@@ -20005,6 +20103,7 @@ export interface components {
             /**
              * Values
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
+             * @example value	dbkey	name	path
              */
             values: string;
         };
@@ -20712,6 +20811,24 @@ export interface components {
         /**
          * UpdateUserNotificationPreferencesRequest
          * @description Contains the new notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UpdateUserNotificationPreferencesRequest: {
             /**
@@ -21036,6 +21153,24 @@ export interface components {
         /**
          * UserNotificationPreferences
          * @description Contains the full notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UserNotificationPreferences: {
             /**
@@ -21191,6 +21326,7 @@ export interface components {
             /**
              * Container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
@@ -21207,6 +21343,7 @@ export interface components {
             /**
              * Id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
@@ -21217,6 +21354,7 @@ export interface components {
             /**
              * License
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
@@ -21251,11 +21389,13 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
              * Version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
             /** Xrefs */
@@ -21273,6 +21413,7 @@ export interface components {
             /**
              * Container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
@@ -21289,6 +21430,7 @@ export interface components {
             /**
              * Id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
@@ -21299,6 +21441,7 @@ export interface components {
             /**
              * License
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
@@ -21333,11 +21476,13 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
              * Version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
             /** Xrefs */
@@ -22177,11 +22322,13 @@ export interface components {
             /**
              * Name
              * @description Name of external reference
+             * @example PubChem-compound
              */
             name: string;
             /**
              * Namespace
              * @description External resource vendor prefix
+             * @example pubchem.compound
              */
             namespace: string;
         };
@@ -22190,12 +22337,14 @@ export interface components {
             /**
              * Name
              * @description Name of the organization responsible for the service
+             * @example My organization
              */
             name: string;
             /**
              * Url
              * Format: uri
              * @description URL of the website of the organization (RFC 3986 format)
+             * @example https://example.com
              */
             url: string;
         };
