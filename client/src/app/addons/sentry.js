@@ -32,10 +32,8 @@ export async function initSentry(Galaxy, router) {
             },
         });
         if (email) {
-            Sentry.configureScope((scope) => {
-                scope.setUser({
-                    email: email,
-                });
+            Sentry.getCurrentScope().setUser({
+                email: email,
             });
         }
         Galaxy.Sentry = Sentry;
