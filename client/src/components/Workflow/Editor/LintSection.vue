@@ -40,8 +40,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 import { localize } from "utils/localization";
+import Vue from "vue";
 
 import { dataAttributes } from "./modules/linting";
 

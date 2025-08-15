@@ -56,17 +56,16 @@ jest.mock("@/stores/workflowStore", () => {
     };
 });
 
-(jest.mock("@/stores/historyStore"),
-    () => {
-        const originalModule = jest.requireActual("@/stores/historyStore");
-        return {
-            ...originalModule,
-            useHistoryStore: () => ({
-                ...originalModule.useHistoryStore(),
-                getHistoryById: jest.fn().mockImplementation(() => TEST_HISTORY),
-            }),
-        };
-    });
+jest.mock("@/stores/historyStore", () => {
+    const originalModule = jest.requireActual("@/stores/historyStore");
+    return {
+        ...originalModule,
+        useHistoryStore: () => ({
+            ...originalModule.useHistoryStore(),
+            getHistoryById: jest.fn().mockImplementation(() => TEST_HISTORY),
+        }),
+    };
+});
 
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
