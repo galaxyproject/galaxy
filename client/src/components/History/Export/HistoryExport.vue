@@ -65,7 +65,7 @@ const history = ref<AnyHistory>();
 const isLoadingHistory = ref(true);
 
 const historyName = computed(() => history.value?.name ?? props.historyId);
-const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
+const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value[0] : null));
 const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : []));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const isBusy = computed(() => isLoadingRecords.value || isPreparingDownload.value || isExportTaskRunning.value);

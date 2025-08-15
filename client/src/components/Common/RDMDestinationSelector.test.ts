@@ -71,7 +71,7 @@ describe("RDMDestinationSelector", () => {
             const emitted = wrapper.emitted("onRecordSelected");
 
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+            expect(emitted && emitted[0][0]).toEqual(FAKE_ENTRY.uri);
         });
     });
 
@@ -87,7 +87,7 @@ describe("RDMDestinationSelector", () => {
 
             const emitted = wrapper.emitted("onRecordSelected");
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
+            expect(emitted && emitted[0][0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
         });
     });
 
@@ -134,7 +134,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+                expect(emitted && emitted[0][0]).toEqual(FAKE_ENTRY.uri);
             });
         });
 
@@ -151,7 +151,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(fakeRecordUri);
+                expect(emitted && emitted[0][0]).toEqual(fakeRecordUri);
             });
         });
     });
