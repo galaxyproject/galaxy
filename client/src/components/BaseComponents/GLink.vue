@@ -67,6 +67,7 @@ const linkElementRef = useResolveElement(linkRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="$attrs"
         ref="linkRef"
         class="g-link"
         :class="styleClasses"
@@ -75,7 +76,6 @@ const linkElementRef = useResolveElement(linkRef);
         :href="!props.disabled ? (props.to ?? props.href) : ''"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
-        v-bind="$attrs"
         @click="onClick">
         <slot></slot>
 

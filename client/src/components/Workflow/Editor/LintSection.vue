@@ -18,9 +18,9 @@
                     @mouseleave="onMouseLeave(item)">
                     <a
                         href="#"
+                        v-bind="dataAttributes(item)"
                         class="scrolls"
                         :data-item-index="idx"
-                        v-bind="dataAttributes(item)"
                         @click="onClick(item)">
                         <FontAwesomeIcon v-if="item.autofix" icon="magic" class="mr-1" />
                         <FontAwesomeIcon v-else icon="search" class="mr-1" />

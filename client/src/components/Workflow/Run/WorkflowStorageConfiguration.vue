@@ -1,9 +1,9 @@
 <template>
     <span class="workflow-storage-indicators">
         <b-button
+            v-bind="buttonProps"
             id="workflow-storage-indicator-primary"
             class="workflow-storage-indicator workflow-storage-indicator-primary"
-            v-bind="buttonProps"
             @click="showPreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
             Primary Storage
@@ -14,9 +14,9 @@
             :invocation-preferred-object-store-id="selectedObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
+            v-bind="modalProps"
             v-model="showPreferredObjectStoreModal"
             :title="primaryModalTitle"
-            v-bind="modalProps"
             size="lg"
             scrollable
             centered
@@ -28,8 +28,8 @@
         </b-modal>
         <b-button
             v-if="splitObjectStore"
-            id="workflow-storage-indicator-intermediate"
             v-bind="buttonProps"
+            id="workflow-storage-indicator-intermediate"
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
             @click="showIntermediatePreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
@@ -42,9 +42,9 @@
             :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
+            v-bind="modalProps"
             v-model="showIntermediatePreferredObjectStoreModal"
             :title="intermediateModalTitle"
-            v-bind="modalProps"
             size="lg"
             scrollable
             centered

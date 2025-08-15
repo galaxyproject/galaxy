@@ -58,7 +58,7 @@
                 >
             </template>
             <template v-for="(index, name) in $slots" :key="name" v-slot:[name]="data">
-                <slot :name="name" v-bind="data"></slot>
+                <slot v-bind="data" :name="name"></slot>
             </template>
         </b-table>
     </div>

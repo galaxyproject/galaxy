@@ -142,14 +142,14 @@ function onUndelete(datasetId: string) {
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
+                v-bind="byteFormattingForChart"
                 :description="
                     localize(
                         `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
                     )
                 "
                 :data="topNDatasetsBySizeData"
-                :enable-selection="true"
-                v-bind="byteFormattingForChart">
+                :enable-selection="true">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
                     <BInputGroup size="sm" :class="inputGroupClasses">
@@ -223,14 +223,14 @@ function onUndelete(datasetId: string) {
 
             <BarChart
                 v-if="activeVsDeletedTotalSizeData"
+                v-bind="byteFormattingForChart"
                 :title="localize('Active vs Deleted Total Size')"
                 :description="
                     localize(
                         'This graph shows the total size of your datasets in this history, split between active and deleted datasets.',
                     )
                 "
-                :data="activeVsDeletedTotalSizeData"
-                v-bind="byteFormattingForChart">
+                :data="activeVsDeletedTotalSizeData">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
                         v-if="data"
