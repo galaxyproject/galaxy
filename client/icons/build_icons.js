@@ -101,7 +101,7 @@ function makeMarkdown(iconDefinitions) {
     content += "---\n\n";
 
     iconDefinitions.forEach((icon) => {
-        content += `-   \`<FontAwesomeIcon :icon="['${icon.prefix}', '${icon.iconName}']" />\`\n`;
+        content += `- \`<FontAwesomeIcon :icon="['${icon.prefix}', '${icon.iconName}']" />\`\n`;
     });
 
     content += "\n---\n";
