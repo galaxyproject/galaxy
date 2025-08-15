@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setActivePinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
