@@ -28,9 +28,9 @@ global.TransformStream = class TransformStream {
                     read() {
                         return Promise.resolve({ done: true });
                     },
-                    releaseLock() {}
+                    releaseLock() {},
                 };
-            }
+            },
         };
         this.writable = {
             getWriter() {
@@ -41,9 +41,9 @@ global.TransformStream = class TransformStream {
                     close() {
                         return Promise.resolve();
                     },
-                    releaseLock() {}
+                    releaseLock() {},
                 };
-            }
+            },
         };
     }
 };
@@ -68,42 +68,33 @@ jest.mock("vue", () => {
 and this makes the tag tests work correctly */
 global.setImmediate = global.setTimeout;
 
-// Store original MutationObserver to wrap it with error handling
-const OriginalMutationObserver = global.MutationObserver;
-
-// Wrap MutationObserver to catch errors from vue2-teleport after tests complete
-global.MutationObserver = class WrappedMutationObserver extends OriginalMutationObserver {
-    constructor(callback) {
-        const wrappedCallback = (mutations, observer) => {
-            try {
-                callback(mutations, observer);
-            } catch (error) {
-                // Silently ignore errors from vue2-teleport after tests are done
-                // These errors occur when teleport tries to access DOM elements that no longer exist
-                if (error.message && error.message.includes("querySelector") && 
-                    error.stack && error.stack.includes("teleport")) {
-                    // Ignore teleport-related querySelector errors
-                    return;
-                }
-                // Re-throw other errors
-                throw error;
-            }
-        };
-        super(wrappedCallback);
-    }
-};
-
-// Clean up after each test to prevent async operations from interfering
-afterEach(() => {
-    // Clear all timers
-    jest.clearAllTimers();
-    
-    // Wait a tick to allow any pending DOM mutations to complete
-    return new Promise(resolve => setImmediate(resolve));
-});
-
 // Always mock the following imports
 jest.mock("@/composables/hashedUserId");
 jest.mock("@/composables/userLocalStorage");
 
+// Filter out specific vue2-teleport errors before failOnConsole processes them
+// These are harmless cleanup errors that occur after tests complete
+const originalConsoleError = console.error;
+console.error = (...args) => {
+    const errorArg = args[0];
+
+    // Check if this is the specific vue2-teleport querySelector error
+    if (
+        errorArg &&
+        typeof errorArg === "object" &&
+        errorArg.detail &&
+        errorArg.detail.message &&
+        errorArg.detail.message.includes("Cannot read properties of undefined (reading 'querySelector')") &&
+        errorArg.detail.stack &&
+        errorArg.detail.stack.includes("teleport.umd.js")
+    ) {
+        // This is the harmless vue2-teleport cleanup error - don't pass it to failOnConsole
+        return;
+    }
+
+    // For all other errors, use the original console.error (which failOnConsole will intercept)
+    originalConsoleError.apply(console, args);
+};
+
+// Enable failOnConsole for all other console errors/warnings
 failOnConsole();
