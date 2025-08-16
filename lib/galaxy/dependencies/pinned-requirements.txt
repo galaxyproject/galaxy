@@ -2,7 +2,7 @@
 #    uv export --frozen --no-annotate --no-hashes --no-dev
 a2wsgi==1.10.10
 adal==1.2.7
-aiobotocore==2.24.0
+aiobotocore==2.24.1
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.15
@@ -36,7 +36,7 @@ cachecontrol==0.14.3
 celery==5.5.3
 certifi==2025.8.3
 cffi==1.17.1
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
 circus==0.19.0
 click==8.1.8 ; python_full_version < '3.10'
 click==8.2.1 ; python_full_version >= '3.10'
@@ -66,7 +66,7 @@ email-validator==2.2.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
 fastapi-slim==0.116.1
-filelock==3.18.0
+filelock==3.19.1
 fissix==24.4.24
 frozenlist==1.7.0
 fs==2.4.16
@@ -110,7 +110,7 @@ mistune==3.0.2
 mrcfile==1.5.4
 msal==1.33.0
 msgpack==1.1.1
-multidict==6.6.3
+multidict==6.6.4
 mypy-extensions==1.1.0
 networkx==3.2.1 ; python_full_version < '3.10'
 networkx==3.4.2 ; python_full_version == '3.10.*'
@@ -121,7 +121,7 @@ numpy==2.2.6 ; python_full_version == '3.10.*'
 numpy==2.3.2 ; python_full_version >= '3.11'
 oauthlib==3.3.1
 openpyxl==3.1.5
-orjson==3.11.1
+orjson==3.11.2
 oyaml==1.0
 packaging==24.2 ; python_full_version < '3.10'
 packaging==25.0 ; python_full_version >= '3.10'
@@ -143,7 +143,7 @@ pydantic-core==2.33.2
 pydantic-tes==0.2.0
 pydot==4.0.1
 pyeventsystem==0.1.0
-pyfaidx==0.8.1.4
+pyfaidx==0.8.2
 pygments==2.19.2
 pyjwt==2.10.1
 pykwalify==1.8.0
@@ -187,7 +187,7 @@ sniffio==1.3.1
 social-auth-core==4.7.0
 sortedcontainers==2.4.0
 spython==0.3.14
-sqlalchemy==2.0.42
+sqlalchemy==2.0.43
 sqlparse==0.5.3
 starlette==0.47.2
 starlette-context==0.4.0
@@ -218,7 +218,7 @@ wcwidth==0.2.13
 webencodings==0.5.1
 webob==1.8.9
 whoosh==2.7.4
-wrapt==1.17.2
+wrapt==1.17.3
 yacman==0.9.3
 yarl==1.20.1
 zipp==3.23.0 ; python_full_version < '3.10'
