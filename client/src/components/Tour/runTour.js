@@ -27,22 +27,34 @@ function getElement(selector) {
 }
 
 // wait for element
-function waitForElement(selector, resolve, reject, tries) {
-    if (selector) {
-        const el = getElement(selector);
-        const rect = el?.getBoundingClientRect();
-        const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
-        if (el && isVisible) {
-            resolve();
-        } else if (tries > 0) {
-            setTimeout(() => {
-                waitForElement(selector, resolve, reject, tries - 1);
-            }, delay);
+function waitForElement(selector, resolve, reject, tries, prerequisite) {
+    try {
+        if (selector) {
+            const el = getElement(selector);
+            const rect = el?.getBoundingClientRect();
+            const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
+            if (el && isVisible) {
+                resolve();
+            } else if (tries > 0) {
+                // First, try to click the prerequisite element if it exists
+                if (prerequisite) {
+                    const prereqEl = getElement(prerequisite);
+                    if (prereqEl) {
+                        prereqEl.click();
+                    }
+                }
+
+                setTimeout(() => {
+                    waitForElement(selector, resolve, reject, tries - 1);
+                }, delay);
+            } else {
+                throw Error(`Element not found. ${selector}`);
+            }
         } else {
-            throw Error(`Element not found. ${selector}`);
+            resolve();
         }
-    } else {
-        resolve();
+    } catch (error) {
+        reject(error);
     }
 }
 
@@ -87,9 +99,10 @@ function mountTour(props) {
  * Runs a Tour by identifier or from provided data.
  * @param {String} Unique Tour identifier (for api request)
  * @param {Object} Tour data
+ * @param {Function} routePush function to handle route changes
  * @returns mounted instance
  */
-export async function runTour(tourId, tourData = null) {
+export async function runTour(tourId, tourData = null, routePush = undefined) {
     if (!tourData) {
         tourData = await getTourData(tourId);
     }
@@ -102,7 +115,7 @@ export async function runTour(tourId, tourData = null) {
             onBefore: async () => {
                 return new Promise((resolve, reject) => {
                     // wait for element before continuing tour
-                    waitForElement(step.element, resolve, reject, attempts);
+                    waitForElement(step.element, resolve, reject, attempts, step.prerequisite);
                 }).then(() => {
                     // pre-actions
                     let preclick = step.preclick;
@@ -113,16 +126,21 @@ export async function runTour(tourId, tourData = null) {
                     doInsert(step.element, step.textinsert);
                 });
             },
-            onNext: () => {
-                // post-actions
-                let postclick = step.postclick;
-                if (postclick === true) {
-                    postclick = [step.element];
-                }
-                doClick(postclick);
+            onNext: async () => {
+                return new Promise((resolve, reject) => {
+                    // wait for element before continuing tour
+                    waitForElement(step.element, resolve, reject, attempts, step.prerequisite);
+                }).then(() => {
+                    // post-actions
+                    let postclick = step.postclick;
+                    if (postclick === true) {
+                        postclick = [step.element];
+                    }
+                    doClick(postclick);
+                });
             },
         });
     });
     const requirements = tourData.requirements || [];
-    return mountTour({ steps, requirements });
+    return mountTour({ steps, requirements, routePush });
 }

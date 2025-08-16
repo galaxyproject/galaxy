@@ -51,20 +51,25 @@ steps:
     - title: "Tools"
       component: _.left_panel
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
+      # Ensure tool activity panel is open
+      prerequisite: "#activity-tools"
 
     - title: "Tool categories"
       component: tools.title
       intro: "Tools are grouped into categories to make them easier to find."
+      prerequisite: "#activity-tools"
 
     - title: "Tool search bar"
       component: tools.search
       intro: "You can search for tools by keywords."
       textinsert: 'filter'
+      prerequisite: "#activity-tools"
 
     - title: "Select a tool"
       component: tool_panel.tool_link(tool_id=Filter1)
       intro: "Select and load a tool for your analysis by clicking the underlined link."
       postclick: true
+      prerequisite: "#activity-tools"
 
     - title: "Filter Tool"
       component: _.center_panel
@@ -90,16 +95,20 @@ steps:
       intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
               A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
+      # Ensure history panel is open
+      prerequisite: ".collapse-button.closed.right.show"
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
+      prerequisite: ".collapse-button.closed.right.show"
 
     - title: "View dataset"
       element: "#current-history-panel div.content-item .display-btn"
       intro: "View your dataset by clicking the eye button."
       postclick: true
+      prerequisite: ".collapse-button.closed.right.show"
 
     - title: "Dataset information"
       component: dataset_view.details_tab
@@ -113,10 +122,12 @@ steps:
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item .delete-btn"
       intro: "Delete your dataset by clicking the trash-button."
+      prerequisite: ".collapse-button.closed.right.show"
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
+      prerequisite: ".collapse-button.closed.right.show"
 
     - title: "Analyze data"
       component: masthead.home

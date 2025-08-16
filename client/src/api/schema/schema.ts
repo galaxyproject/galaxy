@@ -20283,6 +20283,11 @@ export interface components {
              */
             preclick?: boolean | string[] | null;
             /**
+             * Prerequisite
+             * @description CSS selector for an element that can be clicked to ensure the step element is then shown
+             */
+            prerequisite?: string | null;
+            /**
              * Text-insert
              * @description Text to insert if element is a text box (e.g. tool search or upload)
              */
