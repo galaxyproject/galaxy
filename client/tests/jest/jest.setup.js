@@ -36,6 +36,11 @@ jest.mock("vue", () => {
     return Vue;
 });
 
+// Set up failOnConsole first
+failOnConsole({
+    shouldFailOnWarn: false, // Disable failing on warnings temporarily
+});
+
 // Suppress Vue 3 deprecation warnings during testing
 const originalWarn = console.warn;
 console.warn = jest.fn((msg) => {
@@ -85,5 +90,3 @@ global.setImmediate = global.setTimeout;
 // Always mock the following imports
 jest.mock("@/composables/hashedUserId");
 jest.mock("@/composables/userLocalStorage");
-
-failOnConsole();

@@ -290,6 +290,31 @@ export function mockUnprivilegedToolsRequest(server, http) {
 }
 
 /**
+ * Mock the current user API request with a test user
+ * @param {Object} server - MSW server instance
+ * @param {Object} http - MSW http instance
+ * @param {Object} userOverrides - Optional overrides for the user object
+ */
+export function mockCurrentUserRequest(server, http, userOverrides = {}) {
+    const defaultUser = {
+        id: "test-user-id",
+        email: "test@example.com",
+        username: "testuser",
+        is_admin: false,
+        preferences: {
+            favorites: JSON.stringify({ tools: [] }),
+        },
+        ...userOverrides,
+    };
+    
+    server.use(
+        http.get("/api/users/:userId", ({ response }) => {
+            return response(200).json(defaultUser);
+        })
+    );
+}
+
+/**
  * Return a new mocked out router for Vue 3.
  */
 export function injectTestRouter() {
