@@ -1,6 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { dispatchEvent, getLocalVue, injectTestRouter, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import {
+    dispatchEvent,
+    getLocalVue,
+    injectTestRouter,
+    mockCurrentUserRequest,
+    mockUnprivilegedToolsRequest,
+} from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useConfig } from "@/composables/config";
@@ -50,6 +56,8 @@ describe("ActivityBar", () => {
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);
+        mockCurrentUserRequest(server, http);
+        
         wrapper = mount(mountTarget, {
             global: {
                 ...globalConfig.global,
