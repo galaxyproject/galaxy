@@ -157,22 +157,24 @@
                 </b-col>
                 <b-col cols="1.5">
                     <table>
-                        <tr>
-                            <td class="m-0 p-0">
-                                <b-form-input
-                                    id="paginationPerPage"
-                                    v-model="perPage"
-                                    class="pagination-input-field"
-                                    autocomplete="off"
-                                    type="number"
-                                    onkeyup="this.value|=0;if(this.value<1)this.value=1" />
-                            </td>
-                            <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text"
-                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
-                                >
-                            </td>
-                        </tr>
+                        <tbody>
+                            <tr>
+                                <td class="m-0 p-0">
+                                    <b-form-input
+                                        id="paginationPerPage"
+                                        v-model="perPage"
+                                        class="pagination-input-field"
+                                        autocomplete="off"
+                                        type="number"
+                                        onkeyup="this.value|=0;if(this.value<1)this.value=1" />
+                                </td>
+                                <td class="text-muted ml-1 paginator-text">
+                                    <span class="pagination-total-pages-text"
+                                        >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
+                                    >
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </b-col>
             </b-row>
