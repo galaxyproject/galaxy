@@ -17,8 +17,8 @@
                     @focusout="onMouseLeave(item)"
                     @mouseleave="onMouseLeave(item)">
                     <a
-                        href="#"
                         v-bind="dataAttributes(item)"
+                        href="#"
                         class="scrolls"
                         :data-item-index="idx"
                         @click="onClick(item)">
