@@ -243,19 +243,21 @@
 
                 <b-col cols="1.5">
                     <table>
-                        <tr>
-                            <td class="m-0 p-0">
-                                <b-form-input
-                                    id="paginationPerPage"
-                                    v-model="perPage"
-                                    class="pagination-input-field"
-                                    autocomplete="off"
-                                    type="number" />
-                            </td>
-                            <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
-                            </td>
-                        </tr>
+                        <tbody>
+                            <tr>
+                                <td class="m-0 p-0">
+                                    <b-form-input
+                                        id="paginationPerPage"
+                                        v-model="perPage"
+                                        class="pagination-input-field"
+                                        autocomplete="off"
+                                        type="number" />
+                                </td>
+                                <td class="text-muted ml-1 paginator-text">
+                                    <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </b-col>
             </b-row>
