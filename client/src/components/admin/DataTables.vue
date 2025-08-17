@@ -3,9 +3,9 @@
         <h1 id="data-tables-heading" class="h-lg">Data Tables</h1>
         <message :message="message" :status="status"></message>
         <component
-            v-if="status !== 'error'"
             v-bind="currentProps"
             :is="currentView"
+            v-if="status !== 'error'"
             @changeview="showDataManager"
             @reloaddatamanager="reloadDataManager">
         </component>
