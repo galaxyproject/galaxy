@@ -30,13 +30,14 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
         return userCredentialsForTools.value[toolId];
     }
 
-    async function fetchAllUserCredentialsForTool(toolId: string): Promise<UserCredentials[]> {
+    async function fetchAllUserCredentialsForTool(toolId: string, toolVersion: string): Promise<UserCredentials[]> {
         const userId = ensureUserIsRegistered();
 
         const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
             params: {
                 path: { user_id: userId },
                 query: {
+                    source_version: toolVersion,
                     source_type: "tool",
                     source_id: toolId,
                 },
