@@ -249,11 +249,11 @@ function checkQuery(q: string) {
             post({
                 type: "searchToolsByKeys",
                 payload: {
-                    tools: toRaw(props.toolsList),
+                    tools: props.toolsList,
                     keys: KEYS,
                     query: q,
                     panelView: props.currentPanelView,
-                    currentPanel: toRaw(props.currentPanel),
+                    currentPanel: props.currentPanel,
                 },
             });
         }
@@ -262,9 +262,28 @@ function checkQuery(q: string) {
     }
 }
 
+// Deep conversion of reactive objects to plain objects for web worker
+function deepToRaw<T>(sourceObj: T): T {
+    const objectIterator = (input: any): any => {
+        if (Array.isArray(input)) {
+            return input.map((item) => objectIterator(item));
+        } else if (input !== null && typeof input === "object") {
+            const target = toRaw(input);
+            const output: any = {};
+            for (const key in target) {
+                output[key] = objectIterator(target[key]);
+            }
+            return output;
+        }
+        return input;
+    };
+    return objectIterator(sourceObj);
+}
+
 function post(message: object) {
     if (props.useWorker) {
-        searchWorker.value?.postMessage(message);
+        // Deep convert the entire message to a plain object to avoid proxy cloning issues
+        searchWorker.value?.postMessage(deepToRaw(message));
     } else {
         nextTick(() => {
             handlePost({ data: message as SearchEventData });
