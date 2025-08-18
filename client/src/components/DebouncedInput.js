@@ -42,16 +42,17 @@ export default {
         }
     },
     render() {
-        return (
-            this.$slots.default &&
-            this.$slots.default({
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
                 value: this.value,
                 input: (e) => {
                     // Vue Bootstrap does not conform to the standard
                     // event object format, so check there first
                     this.incomingValue = e && e.target ? e.target.value : e;
                 },
-            })
-        );
+            });
+        }
+        return null;
     },
 };

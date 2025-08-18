@@ -59,14 +59,15 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             }
         },
         render() {
-            return (
-                this.$slots.default &&
-                this.$slots.default({
+            const slot = this.$slots.default;
+            if (slot) {
+                return slot({
                     loading: this.loading,
                     result: this.result,
                     error: this.error,
-                })
-            );
+                });
+            }
+            return null;
         },
         methods: {
             update(attributes) {

@@ -1,14 +1,15 @@
 const MockUserHistories = (currentHistory = { id: "xyz" }, histories = [{ id: "abc" }], historiesLoading = false) => ({
     render() {
-        return (
-            this.$slots.default &&
-            this.$slots.default({
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
                 currentHistory: currentHistory,
                 histories: histories,
                 historiesLoading: historiesLoading,
                 handlers: {},
-            })
-        );
+            });
+        }
+        return null;
     },
 });
 

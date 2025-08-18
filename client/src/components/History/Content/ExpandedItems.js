@@ -48,14 +48,15 @@ export default {
         }
     },
     render() {
-        return (
-            this.$slots.default &&
-            this.$slots.default({
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
                 isExpanded: this.isExpanded,
                 setExpanded: this.setExpanded,
                 collapseAll: this.reset,
                 expandedCount: this.expandedCount,
-            })
-        );
+            });
+        }
+        return null;
     },
 };
