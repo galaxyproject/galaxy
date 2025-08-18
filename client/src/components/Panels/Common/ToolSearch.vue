@@ -2,8 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
-import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, toRaw, watch } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, onUnmounted, type PropType, watch } from "vue";
 
 import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -180,9 +179,9 @@ function checkQuery(q: string) {
             post({
                 type: "searchTools",
                 payload: {
-                    tools: toRaw(props.toolsList),
+                    tools: props.toolsList,
                     query: q,
-                    currentPanel: toRaw(props.currentPanel),
+                    currentPanel: props.currentPanel,
                 },
             });
         }
@@ -204,63 +203,6 @@ function post(message: object) {
 
 <template>
     <div v-if="searchWorker || !props.useWorker">
-        <FilterMenu
-            v-if="props.enableAdvanced"
-            v-model:filter-text="localFilterText"
-            v-model:show-advanced="propShowAdvanced"
-            :class="!propShowAdvanced && 'mb-3'"
-            name="Tools"
-            :placeholder="props.placeholder"
-            :debounce-delay="200"
-            :filter-class="ToolFilters"
-            has-help
-            :loading="props.queryPending"
-            menu-type="separate"
-            @on-search="onAdvancedSearch">
-            <template v-slot:menu-help-text>
-                <div>
-                    <p>
-                        You can use this Advanced Tool Search Panel to find tools by applying search filters, with the
-                        results showing up in the center panel.
-                    </p>
-
-                    <p>
-                        <i>
-                            (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
-                            according filter)
-                        </i>
-                    </p>
-
-                    <p>The available tool search filters are:</p>
-                    <dl>
-                        <dt><code>name</code></dt>
-                        <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
-                        <dt><code>section</code></dt>
-                        <dd>The tool section is based on the default tool panel view</dd>
-                        <dt><code>ontology</code></dt>
-                        <dd>
-                            This is the EDAM ontology term that is associated with the tool. Example inputs:
-                            <i>"topic_3174"</i> or <i>"operation_0324"</i>
-                        </dd>
-                        <dt><code>id</code></dt>
-                        <dd>The tool id (taken from its XML)</dd>
-                        <dt><code>owner</code></dt>
-                        <dd>
-                            For the tools that have been installed from the
-                            <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
-                            , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
-                            repository <b>owner</b>.
-                        </dd>
-                        <dt><code>help text</code></dt>
-                        <dd>
-                            This is like a keyword search: you can search for keywords that might exist in a tool's help
-                            text. An example input:
-                            <i>"genome, RNA, minimap"</i>
-                        </dd>
-                    </dl>
-                </div>
-            </template>
-        </FilterMenu>
         <DelayedInput
             class="mb-3"
             :value="props.query"
