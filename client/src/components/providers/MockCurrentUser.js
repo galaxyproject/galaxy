@@ -1,11 +1,12 @@
 const MockCurrentUser = (fakeUser) => ({
     render() {
-        return (
-            this.$slots.default &&
-            this.$slots.default({
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
                 user: fakeUser,
-            })
-        );
+            });
+        }
+        return null;
     },
 });
 
