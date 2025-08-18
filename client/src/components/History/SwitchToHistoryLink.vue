@@ -74,7 +74,7 @@ async function onClick(event: MouseEvent, history: HistorySummary) {
     if (!eventStore.isCtrlKey(event) && historyStore.currentHistoryId === history.id) {
         return;
     }
-    if (!!eventStore.isCtrlKey(event) && canSwitch.value) {
+    if (!eventStore.isCtrlKey(event) && canSwitch.value) {
         if (props.filters) {
             historyStore.applyFilters(history.id, props.filters);
         } else {
