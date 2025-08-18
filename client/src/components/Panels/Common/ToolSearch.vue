@@ -2,7 +2,8 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
-import { onMounted, onUnmounted, type PropType, watch } from "vue";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, toRaw, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -179,9 +180,9 @@ function checkQuery(q: string) {
             post({
                 type: "searchTools",
                 payload: {
-                    tools: props.toolsList,
+                    tools: toRaw(props.toolsList),
                     query: q,
-                    currentPanel: props.currentPanel,
+                    currentPanel: toRaw(props.currentPanel),
                 },
             });
         }
