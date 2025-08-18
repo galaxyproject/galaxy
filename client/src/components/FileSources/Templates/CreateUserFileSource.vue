@@ -23,7 +23,7 @@ const currentListView = computed(() => userStore.currentListViewPreferences.file
 const templates = computed(() => fileSourceTemplatesStore.latestTemplates);
 
 function handleOAuth2Redirect() {
-    const { error } = router.currentRoute.query;
+    const { error } = router.currentRoute.value?.query || {};
 
     if (error) {
         if (error === "access_denied") {
