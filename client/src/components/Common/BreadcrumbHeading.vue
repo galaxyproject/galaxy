@@ -19,7 +19,7 @@ const props = defineProps<Props>();
 const router = useRouter();
 
 function isPathActive(path: RouteLocationRaw): boolean {
-    return router.currentRoute.path === router.resolve(path).route.path;
+    return router.currentRoute.value?.path === router.resolve(path).path;
 }
 </script>
 

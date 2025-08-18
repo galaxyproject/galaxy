@@ -34,8 +34,8 @@ const router = useRouter();
 const loading = ref(true);
 
 const model = computed<UserPreferencesModel | undefined>(() => {
-    if (router.currentRoute.params.id) {
-        return getUserPreferencesModel(router.currentRoute.params.id);
+    if (router.currentRoute.value?.params?.id) {
+        return getUserPreferencesModel(router.currentRoute.value.params.id);
     } else if (isRegisteredUser(currentUser.value)) {
         return getUserPreferencesModel(currentUser.value.id);
     } else {
