@@ -263,10 +263,10 @@ serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
 
 files-sources-lint: ## Validate file sources configuration
-	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py
 
 files-sources-lint-verbose: ## Validate file sources configuration (verbose)
-	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python ../scripts/lint_file_sources_config.py --verbose
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py --verbose
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
