@@ -1,4 +1,3 @@
-import { h } from "@vue/compat";
 import { loadSet, saveSet } from "utils/setCache";
 
 export default {
@@ -49,25 +48,17 @@ export default {
         }
     },
     render() {
-        // In Vue 3 compat mode, scoped slots work differently
+        // In Vue 3, this.$slots.default is always a function
         if (!this.$slots.default) {
             return null;
         }
         
-        try {
-            // Call the slot function with props
-            const vnodes = this.$slots.default({
-                isExpanded: this.isExpanded,
-                setExpanded: this.setExpanded,
-                collapseAll: this.reset,
-                expandedCount: this.expandedCount,
-            });
-            
-            // Return the vnodes directly
-            return vnodes;
-        } catch (e) {
-            console.error('ExpandedItems slot error:', e);
-            return null;
-        }
+        // Call the slot function with the scoped slot props
+        return this.$slots.default({
+            isExpanded: this.isExpanded,
+            setExpanded: this.setExpanded,
+            collapseAll: this.reset,
+            expandedCount: this.expandedCount,
+        });
     },
 };
