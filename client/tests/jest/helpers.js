@@ -306,11 +306,11 @@ export function mockCurrentUserRequest(server, http, userOverrides = {}) {
         },
         ...userOverrides,
     };
-    
+
     server.use(
         http.get("/api/users/:userId", ({ response }) => {
             return response(200).json(defaultUser);
-        })
+        }),
     );
 }
 
