@@ -10,6 +10,7 @@ import {
     type UserCredentials,
 } from "@/api/users";
 import { SECRET_PLACEHOLDER, useUserCredentialsStore } from "@/stores/userCredentials";
+import { useUserStore } from "@/stores/userStore";
 
 import { useToolCredentials } from "./toolCredentials";
 
@@ -26,6 +27,7 @@ export function useUserToolCredentials(
     toolVersion: string,
     toolCredentialsDefinition: ServiceCredentialsDefinition[]
 ) {
+    const userStore = useUserStore();
     const userCredentialsStore = useUserCredentialsStore();
 
     // Use the tool credentials composable for credential definitions
@@ -180,17 +182,19 @@ export function useUserToolCredentials(
      * Check if all required credentials are set by the user
      */
     function areRequiredSetByUser(credentials: UserCredentials): boolean {
-        const selectedGroup = credentials.groups[credentials.current_group_name];
-        if (!selectedGroup) {
+        if (!credentials.groups || !credentials.current_group_name) {
             return false;
         }
+
+        const selectedGroup = credentials.groups[credentials.current_group_name];
+
         return (
             credentials.credential_definitions.variables.every((v) => {
-                const variable = selectedGroup.variables.find((dv) => v.name === dv.name);
+                const variable = selectedGroup?.variables.find((dv) => v.name === dv.name);
                 return v.optional || (variable ? variable.is_set : false);
             }) &&
             credentials.credential_definitions.secrets.every((s) => {
-                const secret = selectedGroup.secrets.find((ds) => s.name === ds.name);
+                const secret = selectedGroup?.secrets.find((ds) => s.name === ds.name);
                 return s.optional || (secret ? secret.is_set : false);
             })
         );
@@ -200,17 +204,19 @@ export function useUserToolCredentials(
      * Check if all credentials (required and optional) are set by the user
      */
     function areAllSetByUser(credentials: UserCredentials): boolean {
-        const selectedGroup = credentials.groups[credentials.current_group_name];
-        if (!selectedGroup) {
+        if (!credentials.groups || !credentials.current_group_name) {
             return false;
         }
+
+        const selectedGroup = credentials.groups[credentials.current_group_name];
+
         return (
             credentials.credential_definitions.variables.every((v) => {
-                const variable = selectedGroup.variables.find((dv) => v.name === dv.name);
+                const variable = selectedGroup?.variables.find((dv) => v.name === dv.name);
                 return variable?.is_set ?? false;
             }) &&
             credentials.credential_definitions.secrets.every((s) => {
-                const secret = selectedGroup.secrets.find((ds) => s.name === ds.name);
+                const secret = selectedGroup?.secrets.find((ds) => s.name === ds.name);
                 return secret?.is_set ?? false;
             })
         );
@@ -220,12 +226,16 @@ export function useUserToolCredentials(
      * Fetch or check user credentials for the tool
      */
     async function checkUserCredentials() {
-        busyMessage.value = "Checking your credentials...";
+        if (userStore.isAnonymous) {
+            return;
+        }
+
+        busyMessage.value = "Checking your credentials";
         isBusy.value = true;
         try {
             userCredentials.value =
                 userCredentialsStore.getAllUserCredentialsForTool(toolId) ??
-                (await userCredentialsStore.fetchAllUserCredentialsForTool(toolId));
+                (await userCredentialsStore.fetchAllUserCredentialsForTool(toolId, toolVersion));
         } catch (error) {
             console.error("Error checking user credentials", error);
             throw error;
@@ -238,7 +248,7 @@ export function useUserToolCredentials(
      * Save user credentials for the tool
      */
     async function saveUserCredentials(providedCredentials: CreateSourceCredentialsPayload) {
-        busyMessage.value = "Saving your credentials...";
+        busyMessage.value = "Saving your credentials";
         isBusy.value = true;
         try {
             userCredentials.value = await userCredentialsStore.saveUserCredentialsForTool(providedCredentials);
@@ -255,7 +265,7 @@ export function useUserToolCredentials(
      * Delete a credentials group for a specific service
      */
     async function deleteCredentialsGroup(serviceIdentifier: ServiceCredentialsIdentifier, groupName: string) {
-        busyMessage.value = "Updating your credentials...";
+        busyMessage.value = "Updating your credentials";
         isBusy.value = true;
         try {
             await userCredentialsStore.deleteCredentialsGroupForTool(toolId, serviceIdentifier, groupName);
