@@ -2,6 +2,8 @@
  * Renderless component, used to debounce various types of form inputs
  */
 
+import { ref, watch, onBeforeMount, onUnmounted } from "vue";
+import { Subject } from "rxjs";
 import { debounceTime, distinctUntilChanged, filter, finalize } from "rxjs/operators";
 
 export default {
@@ -9,50 +11,72 @@ export default {
         value: { required: true },
         delay: { type: Number, required: false, default: 500 },
     },
-    data() {
-        return {
-            previousEmit: null,
-            incomingValue: null,
-        };
-    },
-    methods: {
-        sendUpdate(val) {
-            if (val !== this.previousEmit) {
-                this.$emit("input", val);
-                this.previousEmit = val;
+    emits: ["input"],
+    setup(props, { slots, emit }) {
+        const previousEmit = ref(null);
+        const incomingValue = ref(null);
+        const subscription = ref(null);
+        const subject = ref(null);
+
+        function sendUpdate(val) {
+            if (val !== previousEmit.value) {
+                emit("input", val);
+                previousEmit.value = val;
             }
-        },
-    },
-    watch: {
-        incomingValue(val) {
-            if (this.delay === 0) {
-                this.sendUpdate(val);
-            }
-        },
-    },
-    beforeMount() {
-        if (this.delay !== 0) {
-            const debounced$ = this.watch$("incomingValue").pipe(
-                debounceTime(this.delay),
-                distinctUntilChanged(),
-                filter((val) => val !== null && val !== this.value),
-                finalize(() => this.sendUpdate(this.incomingValue)),
-            );
-            this.$subscribeTo(debounced$, (val) => this.sendUpdate(val));
         }
-    },
-    render() {
-        const slot = this.$slots.default;
-        if (slot) {
-            return slot({
-                value: this.value,
+
+        // Watch for immediate changes when delay is 0
+        watch(incomingValue, (val) => {
+            if (props.delay === 0) {
+                sendUpdate(val);
+            }
+        });
+
+        onBeforeMount(() => {
+            if (props.delay !== 0) {
+                // Create a subject for incoming values
+                subject.value = new Subject();
+                
+                const debounced$ = subject.value.pipe(
+                    debounceTime(props.delay),
+                    distinctUntilChanged(),
+                    filter((val) => val !== null && val !== props.value),
+                    finalize(() => sendUpdate(incomingValue.value))
+                );
+                
+                subscription.value = debounced$.subscribe((val) => sendUpdate(val));
+            }
+        });
+
+        onUnmounted(() => {
+            // Clean up subscription
+            if (subscription.value) {
+                subscription.value.unsubscribe();
+            }
+            if (subject.value) {
+                subject.value.complete();
+            }
+        });
+
+        // Watch for changes to incomingValue and push to subject
+        watch(incomingValue, (val) => {
+            if (props.delay !== 0 && subject.value && val !== null) {
+                subject.value.next(val);
+            }
+        });
+
+        return () => {
+            if (!slots.default) {
+                return null;
+            }
+            return slots.default({
+                value: props.value,
                 input: (e) => {
                     // Vue Bootstrap does not conform to the standard
                     // event object format, so check there first
-                    this.incomingValue = e && e.target ? e.target.value : e;
+                    incomingValue.value = e && e.target ? e.target.value : e;
                 },
             });
-        }
-        return null;
+        };
     },
 };
