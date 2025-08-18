@@ -1,28 +1,20 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useInfiniteScroll } from "@vueuse/core";
-import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
+import { faListAlt } from "@fortawesome/free-regular-svg-icons";
+import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
-import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import localize from "@/utils/localization";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
-import TextSummary from "../Common/TextSummary.vue";
-import HistoryIndicators from "./HistoryIndicators.vue";
-import Heading from "@/components/Common/Heading.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
+import GCard from "@/components/Common/GCard.vue";
+import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -54,11 +46,7 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare);
-
 const busy = ref(false);
-const showAdvanced = ref(false);
-const scrollableDiv = ref<HTMLElement | null>(null);
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
@@ -68,39 +56,12 @@ const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
 const validFilter = computed(() => props.filter && props.filter.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
 
-// check if we have scrolled to the top or bottom of the scrollable div
-const { arrived, scrollTop } = useAnimationFrameScroll(scrollableDiv);
-const isScrollable = ref(false);
-useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
-    isScrollable.value = scrollSize.height >= clientSize.height + 1;
-});
-const scrolledTop = computed(() => !isScrollable.value || arrived.top);
-const scrolledBottom = computed(() => !isScrollable.value || arrived.bottom);
-
 onMounted(async () => {
-    useInfiniteScroll(scrollableDiv.value, () => loadMore());
     // if mounted with a filter, load histories for filter
     if (props.filter !== "" && validFilter.value) {
         await loadMore(true);
     }
 });
-
-onUnmounted(() => {
-    // Remove the infinite scrolling behavior
-    useInfiniteScroll(scrollableDiv.value, () => {});
-});
-
-/** if screen size is as such that a scroller is not rendered,
- * we load enough histories so that a scroller is rendered
- */
-watch(
-    () => isScrollable.value,
-    (scrollable: boolean) => {
-        if (!scrollable && !allLoaded.value) {
-            loadMore();
-        }
-    }
-);
 
 watch(
     () => props.filter,
@@ -186,10 +147,6 @@ function historyClicked(history: HistorySummary) {
     }
 }
 
-function scrollToTop() {
-    scrollableDiv.value?.scrollTo({ top: 0, behavior: "smooth" });
-}
-
 const router = useRouter();
 
 function setCurrentHistory(history: HistorySummary) {
@@ -223,150 +180,143 @@ async function loadMore(noScroll = false) {
         busy.value = false;
     }
 }
+
+function getHistoryBadges(history: HistorySummary) {
+    return [
+        {
+            id: "items",
+            label: `${history.count} items`,
+            title: "Amount of items in history",
+        },
+    ];
+}
+
+function getHistorySecondaryActions(history: HistorySummary) {
+    const actions: CardAction[] = [];
+    if (props.additionalOptions.includes("set-current")) {
+        actions.push({
+            id: "set-current",
+            label: "Set as current",
+            icon: faSignInAlt,
+            title: "Set this history as the current history",
+            handler: () => setCurrentHistory(history),
+        });
+    }
+    if (props.additionalOptions.includes("multi")) {
+        actions.push({
+            id: "multi",
+            label: "Open in multi-view",
+            icon: faColumns,
+            title: "Open in multi-view",
+            handler: () => openInMulti(history),
+        });
+    }
+    if (props.additionalOptions.includes("center")) {
+        actions.push({
+            id: "center",
+            label: "Open in center panel",
+            icon: faListAlt,
+            title: "Open in center panel",
+            handler: () => setCenterPanelHistory(history),
+        });
+    }
+    return actions;
+}
+
+function getHistoryTitleBadges(history: HistorySummary) {
+    const badges: CardBadge[] = [];
+    if (props.multiple && !isMultiviewPanel.value && history.id === currentHistoryId.value) {
+        badges.push({
+            id: "current",
+            label: "Current",
+            title: "This is the current history",
+            variant: "primary",
+        });
+    }
+    if (history.purged) {
+        badges.push({
+            id: "purged",
+            label: "",
+            title: "Permanently deleted",
+            icon: faBurn,
+            variant: "warning",
+        });
+    } else if (history.deleted) {
+        badges.push({
+            id: "deleted",
+            label: "",
+            title: "Deleted",
+            icon: faTrash,
+            variant: "danger",
+        });
+    }
+    if (history.archived && userOwnsHistory(currentUser.value, history)) {
+        badges.push({
+            id: "archived",
+            label: "",
+            title: "Archived",
+            icon: faArchive,
+        });
+    }
+    if (props.multiple && !isMultiviewPanel.value && isPinned(history.id)) {
+        badges.push({
+            id: "pinned",
+            label: isActiveItem(history) ? "currently pinned" : "will be unpinned",
+            title: "This history is currently pinned in the multi-history view",
+            variant: "info",
+        });
+    }
+    return badges;
+}
 </script>
 
 <template>
-    <div :class="isMultiviewPanel ? 'unified-panel' : 'flex-column-overflow'">
-        <div class="unified-panel-controls">
+    <ScrollList
+        :item-key="(history) => history.id"
+        :in-panel="!props.inModal"
+        :prop-items="filtered"
+        :prop-total-count="totalHistoryCount"
+        :prop-busy="busy"
+        name="history"
+        name-plural="histories"
+        :load-disabled="Boolean(props.filter)"
+        @load-more="loadMore">
+        <template v-slot:search>
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>
             <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
-        </div>
+        </template>
 
-        <div
-            class="scroll-list-container"
-            :class="{
-                'in-panel': isMultiviewPanel,
-                'scrolled-top': scrolledTop,
-                'scrolled-bottom': scrolledBottom,
-            }">
-            <div
-                v-show="!showAdvanced"
-                ref="scrollableDiv"
-                :class="{
-                    'scroll-list': !hasNoResults,
-                    'in-panel': isMultiviewPanel,
-                    'in-modal': props.inModal,
-                    toolMenuContainer: isMultiviewPanel,
-                }"
-                role="list">
-                <BListGroup>
-                    <BListGroupItem
-                        v-for="history in filtered"
-                        :key="history.id"
-                        :data-pk="history.id"
-                        button
-                        :class="{
-                            current: history.id === currentHistoryId,
-                            'panel-item': isMultiviewPanel,
-                        }"
-                        :active="isActiveItem(history)"
-                        @click="() => historyClicked(history)">
-                        <div class="overflow-auto w-100">
-                            <div :class="!isMultiviewPanel ? 'd-flex justify-content-between align-items-center' : ''">
-                                <div v-if="!isMultiviewPanel">
-                                    <Heading h3 inline bold size="text">
-                                        <span>{{ history.name }}</span>
-                                        <i v-if="history.id === currentHistoryId">(Current)</i>
-                                    </Heading>
-                                    <i
-                                        v-if="props.multiple && isPinned(history.id)"
-                                        title="This history is currently pinned in the multi-history view">
-                                        (currently pinned)
-                                    </i>
-                                </div>
-                                <TextSummary v-else component="h4" :description="history.name" one-line-summary />
-                                <HistoryIndicators :history="history" include-count />
-                            </div>
+        <template v-slot:item="{ item: history }">
+            <GCard
+                :id="`history-${history.id}`"
+                :data-pk="history.id"
+                button
+                :current="!(props.multiple && !isMultiviewPanel) && history.id === currentHistoryId"
+                clickable
+                :active="isActiveItem(history)"
+                :selectable="props.multiple"
+                :selected="isActiveItem(history)"
+                :select-title="isMultiviewPanel ? 'Pin history' : 'Add/remove history from selection'"
+                :badges="getHistoryBadges(history)"
+                :secondary-actions="getHistorySecondaryActions(history)"
+                :tags="history.tags"
+                :max-visible-tags="isMultiviewPanel ? 1 : 10"
+                :title="history.name"
+                title-size="text"
+                :title-badges="getHistoryTitleBadges(history)"
+                :title-n-lines="2"
+                :description="isMultiviewPanel ? undefined : history.annotation || undefined"
+                :update-time="history.update_time"
+                @select="historyClicked(history)"
+                @tagClick="setFilterValue('tag', $event)"
+                @title-click="historyClicked(history)"
+                @click="() => historyClicked(history)" />
+        </template>
 
-                            <p v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</p>
-
-                            <StatelessTags
-                                v-if="history.tags.length > 0"
-                                class="my-1"
-                                :value="history.tags"
-                                :disabled="true"
-                                :max-visible-tags="isMultiviewPanel ? 1 : 10"
-                                @tag-click="setFilterValue('tag', $event)" />
-
-                            <div
-                                v-if="props.additionalOptions.length > 0"
-                                class="d-flex justify-content-end align-items-center mt-1">
-                                <BButtonGroup>
-                                    <BButton
-                                        v-if="
-                                            props.additionalOptions.includes('set-current') &&
-                                            currentHistoryId !== history.id
-                                        "
-                                        v-b-tooltip.noninteractive.hover
-                                        :title="localize('Set as current history')"
-                                        variant="link"
-                                        class="p-0 px-1"
-                                        @click.stop="() => setCurrentHistory(history)">
-                                        <FontAwesomeIcon :icon="faSignInAlt" />
-                                    </BButton>
-
-                                    <BButton
-                                        v-if="props.additionalOptions.includes('multi')"
-                                        v-b-tooltip.noninteractive.hover
-                                        :title="localize('Open in multi-view')"
-                                        variant="link"
-                                        class="p-0 px-1"
-                                        @click.stop="() => openInMulti(history)">
-                                        <FontAwesomeIcon :icon="faColumns" />
-                                    </BButton>
-
-                                    <BButton
-                                        v-if="props.additionalOptions.includes('center')"
-                                        v-b-tooltip.noninteractive.hover
-                                        :title="localize('Open in center panel')"
-                                        variant="link"
-                                        class="p-0 px-1"
-                                        @click.stop="() => setCenterPanelHistory(history)">
-                                        <FontAwesomeIcon :icon="faListAlt" />
-                                    </BButton>
-                                </BButtonGroup>
-                            </div>
-                        </div>
-                        <div v-if="isMultiviewPanel">
-                            <FontAwesomeIcon v-if="isActiveItem(history)" :icon="faCheckSquare" size="lg" />
-                            <FontAwesomeIcon v-else :icon="faSquare" size="lg" />
-                        </div>
-                    </BListGroupItem>
-                    <div>
-                        <div v-if="allLoaded || props.filter !== ''" class="list-end my-2">
-                            <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
-                            <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
-                        </div>
-                        <BOverlay :show="busy" opacity="0.5" />
-                    </div>
-                </BListGroup>
-            </div>
-            <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
-        </div>
-
-        <div :class="!isMultiviewPanel && 'd-flex flex-row mt-3'">
-            <div
-                v-if="!allLoaded"
-                class="mr-auto d-flex justify-content-center align-items-center"
-                :class="isMultiviewPanel && 'mt-1'">
-                <i class="mr-1">Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                <BButton
-                    v-if="!props.filter"
-                    v-b-tooltip.noninteractive.hover
-                    data-description="load more histories button"
-                    size="sm"
-                    :title="localize('Load More')"
-                    variant="link"
-                    @click="loadMore()">
-                    <FontAwesomeIcon :icon="faArrowDown" />
-                </BButton>
-            </div>
-
-            <div v-if="props.inModal" class="ml-auto">
-                <slot name="modal-button-area"></slot>
-            </div>
-        </div>
-    </div>
+        <template v-slot:footer-button-area>
+            <slot name="footer-button-area"></slot>
+        </template>
+    </ScrollList>
 </template>

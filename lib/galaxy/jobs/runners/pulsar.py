@@ -12,7 +12,6 @@ import subprocess
 from time import sleep
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -365,7 +364,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+                    compute_environment.materialized_objects
+                ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -431,7 +432,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 client_outputs=self.__client_outputs(client, job_wrapper),
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
-                tool=job_wrapper.tool,
+                tool=job_wrapper.tool if job_wrapper.tool and job_wrapper.tool.tool_dir else None,
                 config_files=config_files,
                 dependencies_description=dependencies_description,
                 env=env,
@@ -449,9 +450,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
-            # Flush with change_state.
-            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=False, job=job)
-            job_wrapper.change_state(model.Job.states.QUEUED, job=job)
+            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=True, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
@@ -497,7 +496,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if rewrite_parameters:
                 compute_environment = PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
                 prepare_kwds["compute_environment"] = compute_environment
-            job_wrapper.prepare(**prepare_kwds)
+
+            if job_wrapper.prepare(**prepare_kwds) is False:
+                return command_line, client, remote_job_config, compute_environment, remote_container
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
@@ -929,7 +930,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         remote_job_config,
         compute_environment: Optional["PulsarComputeEnvironment"] = None,
     ):
-        metadata_kwds: Dict[str, Any] = {}
+        metadata_kwds: dict[str, Any] = {}
         if remote_metadata:
             working_directory = remote_job_config["working_directory"]
             metadata_directory = remote_job_config["metadata_directory"]
@@ -1059,7 +1060,7 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
 
 
-KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
+KUBERNETES_DESTINATION_DEFAULTS: dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
 
 
 class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
@@ -1067,7 +1068,7 @@ class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
     poll = True  # Poll so we can check API for pod IP for ITs.
 
 
-TES_DESTINATION_DEFAULTS: Dict[str, Any] = {
+TES_DESTINATION_DEFAULTS: dict[str, Any] = {
     "tes_url": PARAMETER_SPECIFICATION_REQUIRED,
     **COEXECUTION_DESTINATION_DEFAULTS,
 }

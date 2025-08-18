@@ -25,6 +25,7 @@ SEARCH_FOR = [
     "user_file_source_form_full_webdav.png",
     "user_file_source_form_full_elabftw.png",
     "user_file_source_form_full_invenio.png",
+    "user_file_source_form_full_rspace.png",
 ]
 
 

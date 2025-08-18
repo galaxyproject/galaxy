@@ -1,28 +1,44 @@
 <template>
     <ActivityPanel title="Best Practices Review">
         <template v-if="showRefactor" v-slot:header>
-            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
+            <GLink class="refactor-button" @click="onRefactor"> Try to automatically fix issues. </GLink>
         </template>
         <LintSection
+            data-description="linting has annotation"
             :okay="checkAnnotation"
-            success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
             :warning-message="bestPracticeWarningAnnotation"
-            attribute-link="Annotate your Workflow."
+            attribute-link="Describe your Workflow."
             @onClick="onAttributes('annotation')" />
         <LintSection
+            :okay="checkAnnotationLength"
+            :success-message="annotationLengthSuccessMessage"
+            :warning-message="bestPracticeWarningAnnotationLength"
+            attribute-link="Shorten your Workflow Description."
+            @onClick="onAttributes('annotation')" />
+        <LintSection
+            :okay="checkReadme"
+            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            :warning-message="bestPracticeWarningReadme"
+            attribute-link="Provide Readme for your Workflow."
+            @onClick="onAttributes('readme')" />
+        <LintSection
+            data-description="linting has creator"
             :okay="checkCreator"
             success-message="This workflow defines creator information."
             :warning-message="bestPracticeWarningCreator"
             attribute-link="Provide Creator Details."
             @onClick="onAttributes('creator')" />
         <LintSection
+            data-description="linting has license"
             :okay="checkLicense"
             success-message="This workflow defines a license."
             :warning-message="bestPracticeWarningLicense"
             attribute-link="Specify a License."
             @onClick="onAttributes('license')" />
         <LintSection
+            data-description="linting formal inputs"
             success-message="Workflow parameters are using formal input parameters."
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
@@ -32,6 +48,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUntypedParameter" />
         <LintSection
+            data-description="linting connected"
             success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
@@ -40,6 +57,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="onFixDisconnectedInput" />
         <LintSection
+            data-description="linting input metadata"
             success-message="All workflow inputs have labels and annotations."
             warning-message="Some workflow inputs are missing labels and/or annotations:"
             :warning-items="warningMissingMetadata"
@@ -47,6 +65,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="openAndFocus" />
         <LintSection
+            data-description="linting output labels"
             success-message="This workflow has outputs and they all have valid labels."
             warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
@@ -75,8 +94,10 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
     bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
@@ -87,6 +108,7 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
@@ -100,6 +122,7 @@ export default {
         FontAwesomeIcon,
         LintSection,
         ActivityPanel,
+        GLink,
     },
     props: {
         untypedParameters: {
@@ -111,6 +134,10 @@ export default {
             required: true,
         },
         annotation: {
+            type: String,
+            default: null,
+        },
+        readme: {
             type: String,
             default: null,
         },
@@ -136,8 +163,10 @@ export default {
     data() {
         return {
             bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningAnnotationLength: bestPracticeWarningAnnotationLength,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
         };
     },
     computed: {
@@ -148,6 +177,23 @@ export default {
         },
         checkAnnotation() {
             return !!this.annotation;
+        },
+        checkAnnotationLength() {
+            const annotation = this.annotation;
+            if (annotation && annotation.length > 250) {
+                return false;
+            }
+            return true;
+        },
+        annotationLengthSuccessMessage() {
+            if (this.annotation) {
+                return "This workflow has a short description of appropriate length.";
+            } else {
+                return "This workflow does not have a short description.";
+            }
+        },
+        checkReadme() {
+            return !!this.readme;
         },
         checkLicense() {
             return !!this.license;

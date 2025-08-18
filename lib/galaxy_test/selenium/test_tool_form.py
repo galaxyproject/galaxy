@@ -1,8 +1,6 @@
 import json
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 import pytest
@@ -119,7 +117,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("text_repeat")
 
-        def assert_input_order(inputs: List[str]):
+        def assert_input_order(inputs: list[str]):
             for index, input in enumerate(inputs):
                 parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
                 parameter_value = parameter_input.wait_for_value()
@@ -139,8 +137,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         assert_input_order(["Text B", "Text C", "Text A"])
         self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
         assert_input_order(["Text C", "Text B", "Text A"])
-        self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
-        assert_input_order(["Text C", "Text B", "Text A"])
+        # no longer clickable, don't need to check the no-op here anymore.
+        # self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        # assert_input_order(["Text C", "Text B", "Text A"])
 
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(1)
@@ -387,6 +386,22 @@ class TestLoggedInToolForm(SeleniumTestCase):
         self.screenshot("tool_apply_rules_example_4_final")
 
     @selenium_test
+    def test_run_apply_rules_paired_unpaired_flatten(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    @managed_history
+    def test_run_apply_rules_create_paired_or_unpaired_list(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    def test_run_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
+        self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
+
+    @selenium_test
     @managed_history
     @skip_if_github_down
     @pytest.mark.gtn_screenshot
@@ -535,7 +550,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
+    def _apply_rules_and_check(self, example: dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()

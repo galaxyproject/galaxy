@@ -7,7 +7,6 @@ and from bootstrapped tool sheds.
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.model.tool_shed_install import ToolShedRepository
@@ -26,7 +25,7 @@ def test_against_production_shed(tmp_path: Path):
 
     install_target = StandaloneInstallationTarget(tmp_path)
     install_manager = InstallRepositoryManager(install_target)
-    install_options: Dict[str, Any] = {}
+    install_options: dict[str, Any] = {}
     install_manager.install(
         DEFAULT_TOOL_SHED_URL,
         repo_name,

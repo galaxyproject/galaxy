@@ -1,58 +1,76 @@
-<script setup>
-import { BRow } from "bootstrap-vue";
+<script setup lang="ts">
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { useRouter } from "vue-router/composables";
 
-defineProps({
-    id: {
-        type: String,
-        default: null,
-    },
-    icon: {
-        type: String,
-        default: "fa-gear",
-    },
-    title: {
-        type: String,
-        default: "Title not available.",
-    },
-    description: {
-        type: String,
-        default: "Description not available.",
-    },
-    to: {
-        type: String,
-        default: null,
-    },
-    badge: {
-        type: String,
-        default: null,
-    },
-});
-</script>
-<template>
-    <BRow class="ml-3 mb-1">
-        <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
-        <div class="pref-content pr-1">
-            <b-badge v-if="!!badge" variant="danger">
-                {{ badge }}
-            </b-badge>
-            <router-link v-if="to" :id="id" :to="to">
-                <b v-localize>{{ title }}</b>
-            </router-link>
-            <a v-else :id="id" href="#" @click="$emit('click')">
-                <b v-localize>{{ title }}</b>
-            </a>
-            <div class="form-text text-muted">
-                {{ description }}
-            </div>
-            <slot />
-        </div>
-    </BRow>
-</template>
-<style scoped>
-.pref-content {
-    width: calc(100% - 3rem);
+import GCard from "@/components/Common/GCard.vue";
+
+interface Props {
+    id: string;
+    icon: IconDefinition;
+    title: string;
+    description: string;
+    to?: string;
+    badge?: string;
+    dangerZone?: boolean;
 }
-.pref-icon {
-    width: 3rem;
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "click"): void;
+}>();
+
+const router = useRouter();
+
+function onClick() {
+    if (props.to) {
+        router.push(props.to);
+    } else {
+        emit("click");
+    }
+}
+</script>
+
+<template>
+    <GCard
+        :id="props.id"
+        class="user-preference-element"
+        :class="{ 'danger-zone': !!dangerZone }"
+        :container-class="[dangerZone ? 'danger-zone' : '']"
+        :title-icon="{ icon: props.icon }"
+        :title="props.title"
+        :description="props.description"
+        full-description
+        :to="props.to"
+        clickable
+        grid-view
+        @click="onClick" />
+</template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.user-preference-element {
+    :deep(.g-card-content h1) {
+        color: $brand-primary;
+    }
+
+    :deep(.g-card-content [id*="title-link"]) {
+        color: $brand-primary;
+    }
+}
+
+.danger-zone {
+    :deep(.g-card-content) {
+        border-color: $brand-danger;
+    }
+
+    :deep(.g-card-content h1) {
+        color: $brand-danger;
+    }
+
+    :deep(.g-card-content [id*="title-link"]) {
+        color: $brand-danger;
+    }
 }
 </style>

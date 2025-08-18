@@ -85,31 +85,108 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return new CollectionTypeDescription(`${this.collectionType}:${other.collectionType}`);
     }
     canMatch(other: CollectionTypeDescriptor) {
+        const otherCollectionType = other.collectionType;
         if (other === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
         if (other === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
         }
-        return other.collectionType == this.collectionType;
+        if (otherCollectionType === "paired" && this.collectionType == "paired_or_unpaired") {
+            return true;
+        }
+        if (this.collectionType.endsWith(":paired_or_unpaired")) {
+            const asPlainList = this.collectionType.slice(0, -":paired_or_unpaired".length);
+            if (otherCollectionType === asPlainList) {
+                return true;
+            }
+            const asPairedList = `${asPlainList}:paired`;
+            if (otherCollectionType === asPairedList) {
+                return true;
+            }
+        }
+        return otherCollectionType == this.collectionType;
     }
     canMapOver(other: CollectionTypeDescriptor) {
         if (!other.collectionType || other.collectionType === "any") {
             return false;
         }
         if (this.rank <= other.rank) {
+            if (other.collectionType == "paired_or_unpaired") {
+                // this can be thought of as a subcollection of anything except a pair
+                // since it would match a pair exactly
+                return !this.collectionType.endsWith("paired");
+            }
+            if (other.collectionType.endsWith(":paired_or_unpaired")) {
+                return !this.collectionType.endsWith(":paired");
+            }
             // Cannot map over self...
             return false;
         }
         const requiredSuffix = other.collectionType;
-        return this._endsWith(this.collectionType, requiredSuffix);
+        const directMatch = this._endsWith(this.collectionType, `:${requiredSuffix}`);
+        if (directMatch) {
+            return true;
+        }
+        // this really needs to be extended to include anything suffixed with :paired_or_unpaired
+        if (requiredSuffix == "paired_or_unpaired") {
+            // anything can be mapped over this since it can always act a dataset
+            return true;
+        } else if (requiredSuffix.endsWith(":paired_or_unpaired")) {
+            const higherRanksRequired = requiredSuffix.substring(0, requiredSuffix.lastIndexOf(":"));
+            let higherRanks: string;
+            if (this.collectionType.endsWith(":paired")) {
+                higherRanks = this.collectionType.substring(0, this.collectionType.lastIndexOf(":"));
+            } else {
+                higherRanks = this.collectionType;
+            }
+            return this._endsWith(higherRanks, higherRanksRequired);
+        }
+        return false;
     }
     effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescriptor {
+        const thisCollectionType = this.collectionType;
         if (other.collectionType && this.canMapOver(other)) {
             const otherCollectionType = other.collectionType;
-            const effectiveCollectionType = this.collectionType.substring(
+            // needs to be extended to include ending in :paired_or_unpaired.
+            if (otherCollectionType.endsWith("paired_or_unpaired")) {
+                if (otherCollectionType == "paired_or_unpaired") {
+                    if (thisCollectionType.endsWith("list")) {
+                        // the elements of the inner most list are consumed by the
+                        // paired_or_unpaired input.
+                        return new CollectionTypeDescription(thisCollectionType);
+                    }
+                    return new CollectionTypeDescription(
+                        thisCollectionType.substring(0, thisCollectionType.lastIndexOf(":"))
+                    );
+                } else if (thisCollectionType.endsWith(":paired") || thisCollectionType.endsWith(":list")) {
+                    // otherCollectionType endswith :paired_or_unpaired
+                    let currentCollectionType = thisCollectionType;
+                    let currentOther = otherCollectionType;
+                    while (currentOther.lastIndexOf(":") !== -1) {
+                        currentOther = currentOther.substring(0, currentOther.lastIndexOf(":"));
+                        currentCollectionType = currentCollectionType.substring(
+                            0,
+                            currentCollectionType.lastIndexOf(":")
+                        );
+                    }
+                    // and strip the last rank off for the remaining currentOther if
+                    // the paired_or_unpaired consumed the inner paired collection
+                    if (thisCollectionType.endsWith(":paired")) {
+                        currentCollectionType = currentCollectionType.substring(
+                            0,
+                            currentCollectionType.lastIndexOf(":")
+                        );
+                    } else {
+                        // this was a list so paired_or_unpaired will consume the datasets of the
+                        // inner list and we can just stop here.
+                    }
+                    return new CollectionTypeDescription(currentCollectionType);
+                }
+            }
+            const effectiveCollectionType = thisCollectionType.substring(
                 0,
-                this.collectionType.length - otherCollectionType.length - 1
+                thisCollectionType.length - otherCollectionType.length - 1
             );
             return new CollectionTypeDescription(effectiveCollectionType);
         }
@@ -126,5 +203,16 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
     }
     _endsWith(str: string, suffix: string) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
+}
+
+const collectionTypeRegex =
+    /^((list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*|sample_sheet|sample_sheet:paired|sample_sheet:record|sample_sheet:paired_or_unpaired)$/;
+
+export function isValidCollectionTypeStr(collectionType: string | undefined) {
+    if (collectionType) {
+        return collectionTypeRegex.test(collectionType);
+    } else {
+        return true;
     }
 }

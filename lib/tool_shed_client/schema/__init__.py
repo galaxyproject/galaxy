@@ -1,10 +1,7 @@
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -18,6 +15,8 @@ from typing_extensions import (
     Literal,
     TypedDict,
 )
+
+from galaxy.tool_util_models import ParsedTool
 
 
 class Repository(BaseModel):
@@ -43,13 +42,13 @@ class DetailedRepository(Repository):
 
 
 class RepositoryPermissions(BaseModel):
-    allow_push: List[str]
+    allow_push: list[str]
     can_manage: bool  # can the requesting user manage the repository
     can_push: bool
 
 
 class RepositoryRevisionReadmes(RootModel):
-    root: Dict[str, str]
+    root: dict[str, str]
 
 
 class CreateUserRequest(BaseModel):
@@ -94,7 +93,7 @@ class GetOrderedInstallableRevisionsRequest(BaseModel):
 
 
 class OrderedInstallableRevisions(RootModel):
-    root: List[str]
+    root: list[str]
 
 
 RepositoryType = Literal[
@@ -115,7 +114,7 @@ class CreateRepositoryRequest(BaseModel):
         alias="type",
         title="Type",
     )
-    category_ids: Optional[Union[List[str], str]] = Field(
+    category_ids: Optional[Union[list[str], str]] = Field(
         ...,
         alias="category_ids[]",
         title="Category IDs",
@@ -134,7 +133,7 @@ class UpdateRepositoryRequest(BaseModel):
     description: Optional[str] = None
     remote_repository_url: Optional[str] = None
     homepage_url: Optional[str] = None
-    category_ids: Optional[List[str]] = Field(
+    category_ids: Optional[list[str]] = Field(
         None,
         alias="category_ids",
         title="Category IDs",
@@ -173,9 +172,9 @@ class RepositoryTool(BaseModel):
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List["RepositoryDependency"]
-    tools: Optional[List["RepositoryTool"]] = None
-    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
+    repository_dependencies: list["RepositoryDependency"]
+    tools: Optional[list["RepositoryTool"]] = None
+    invalid_tools: list[str]  # added for rendering list of invalid tools in 2.0 frontend
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -198,7 +197,7 @@ class RepositoryDependency(RepositoryRevisionMetadata):
 
 
 class RepositoryMetadata(RootModel):
-    root: Dict[str, RepositoryRevisionMetadata]
+    root: dict[str, RepositoryRevisionMetadata]
 
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
@@ -222,7 +221,27 @@ class ResetMetadataOnRepositoryRequest(BaseModel):
 
 class ResetMetadataOnRepositoryResponse(BaseModel):
     status: str  # TODO: enum...
-    repository_status: List[str]
+    repository_status: list[str]
+    start_time: str
+    stop_time: str
+
+
+# Ugh - use with care - param descriptions scraped from older version of the API.
+class ResetMetadataOnRepositoriesRequest(BaseModel):
+    my_writable: bool = Field(
+        False,
+        description="""if the API key is associated with an admin user in the Tool Shed, setting this param value
+to True will restrict resetting metadata to only repositories that are writable by the user
+in addition to those repositories of type tool_dependency_definition.  This param is ignored
+if the current user is not an admin user, in which case this same restriction is automatic.""",
+    )
+    encoded_ids_to_skip: Optional[list[str]] = Field(
+        None, description="a list of encoded repository ids for repositories that should not be processed"
+    )
+
+
+class ResetMetadataOnRepositoriesResponse(BaseModel):
+    repository_status: list[str]
     start_time: str
     stop_time: str
 
@@ -243,7 +262,7 @@ class ToolSearchHitTool(BaseModel):
 
 class ToolSearchHit(BaseModel):
     tool: ToolSearchHitTool
-    matched_terms: Dict[str, Any]
+    matched_terms: dict[str, Any]
     score: float
 
 
@@ -253,7 +272,7 @@ class ToolSearchResults(BaseModel):
     page: str
     page_size: str
     hostname: str
-    hits: List[ToolSearchHit]
+    hits: list[ToolSearchHit]
 
     def find_search_hit(self, repository: Repository) -> Optional[ToolSearchHit]:
         matching_hit: Optional[ToolSearchHit] = None
@@ -268,10 +287,22 @@ class ToolSearchResults(BaseModel):
         return matching_hit
 
 
+IndexSortByType = Literal["name", "create_time"]
+
+
 class RepositoryIndexRequest(BaseModel):
+    filter: Optional[str] = None
     owner: Optional[str] = None
     name: Optional[str] = None
     deleted: str = "false"
+    category_id: Optional[str] = None
+    sort_by: Optional[IndexSortByType] = "name"
+    sort_desc: Optional[bool] = False
+
+
+class RepositoryPaginatedIndexRequest(RepositoryIndexRequest):
+    page: int = 1
+    page_size: int = 10
 
 
 class RepositoriesByCategory(BaseModel):
@@ -279,11 +310,11 @@ class RepositoriesByCategory(BaseModel):
     name: str
     description: str
     repository_count: int
-    repositories: List[Repository]
+    repositories: list[Repository]
 
 
 class RepositoryIndexResponse(RootModel):
-    root: List[Repository]
+    root: list[Repository]
 
 
 class RepositorySearchRequest(BaseModel):
@@ -318,7 +349,16 @@ class RepositorySearchResults(BaseModel):
     page: str
     page_size: str
     hostname: str
-    hits: List[RepositorySearchHit]
+    hits: list[RepositorySearchHit]
+
+
+# align with the search version of this to some degree but fix some things also
+class PaginatedRepositoryIndexResults(BaseModel):
+    total_results: int
+    page: int
+    page_size: int
+    hostname: str
+    hits: list[Repository]
 
 
 class GetInstallInfoRequest(BaseModel):
@@ -355,12 +395,12 @@ class RepositoryMetadataInstallInfoDict(TypedDict):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidToolDict]
+    valid_tools: list[ValidToolDict]
 
 
 # So hard to type this... the keys are repo names and the elements
 # are tuples that have been list-ified.
-ExtraRepoInfo = Dict[str, List]
+ExtraRepoInfo = dict[str, list]
 # {
 #     "add_column": [
 #         "add_column hello",
@@ -378,8 +418,8 @@ class EmptyDict(TypedDict):
     pass
 
 
-LegacyInstallInfoTuple = Tuple[
-    Optional[Dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
+LegacyInstallInfoTuple = tuple[
+    Optional[dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
 ]
 
 
@@ -390,7 +430,7 @@ class RepositoryExtraInstallInfo(BaseModel):
     changeset_revision: str
     ctx_rev: str
     repository_owner: str
-    repository_dependencies: Optional[Dict] = None
+    repository_dependencies: Optional[dict] = None
     # tool dependencies not longer work so don't transmit them in v2?
     # tool_dependencies: Optional[Dict]
 
@@ -428,7 +468,7 @@ class ValidTool(BaseModel):
         return ValidTool(**as_dict)
 
     @staticmethod
-    def from_legacy_list(as_dicts: List[ValidToolDict]) -> List["ValidTool"]:
+    def from_legacy_list(as_dicts: list[ValidToolDict]) -> list["ValidTool"]:
         return [ValidTool.from_legacy_dict(d) for d in as_dicts]
 
 
@@ -442,7 +482,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidTool]
+    valid_tools: list[ValidTool]
     # no longer used, don't transmit.
     # has_repository_dependencies_only_if_compiling_contained_td: bool
     # includes_datatypes: bool
@@ -499,3 +539,7 @@ class Version(BaseModel):
     version_major: str
     version: str
     api_version: str = "v1"
+
+
+class ShedParsedTool(ParsedTool):
+    repository_revision: Optional[RepositoryRevisionMetadata] = None

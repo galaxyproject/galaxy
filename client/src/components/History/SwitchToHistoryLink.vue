@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,6 +12,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faArchive, faBurn);
@@ -24,9 +24,15 @@ const userStore = useUserStore();
 interface Props {
     historyId: string;
     filters?: Record<string, string | boolean>;
+    inline?: boolean;
+    thin?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    filters: undefined,
+    inline: false,
+    thin: true,
+});
 
 const history = computed(() => historyStore.getHistoryById(props.historyId));
 
@@ -52,8 +58,15 @@ const linkTitle = computed(() => {
     if (historyStore.currentHistoryId === props.historyId) {
         return "This is your current history";
     } else {
-        return `<b>${actionText.value}</b><br>${history.value?.name}`;
+        return `${actionText.value} "${history.value?.name}"`;
     }
+});
+
+const tag = computed(() => {
+    if (props.inline) {
+        return "span";
+    }
+    return "div";
 });
 
 async function onClick(event: MouseEvent, history: HistorySummary) {
@@ -81,26 +94,30 @@ function viewHistoryInNewTab(history: HistorySummary) {
     const routeData = router.resolve(`/histories/view?id=${history.id}`);
     window.open(routeData.href, "_blank");
 }
+
+const linkClass = computed(() => {
+    return props.inline ? ["history-link-inline"] : ["history-link"];
+});
 </script>
 
 <template>
-    <div>
+    <component :is="tag">
         <LoadingSpan v-if="!history" />
-        <div v-else class="history-link" data-description="switch to history link">
-            <BLink
-                v-b-tooltip.hover.top.noninteractive.html
+        <component :is="tag" v-else :class="linkClass" data-description="switch to history link">
+            <GLink
+                class="history-link-click"
+                tooltip
+                :thin="thin"
                 data-description="switch to history link"
-                class="truncate"
-                href="#"
                 :title="linkTitle"
                 @click.stop="onClick($event, history)">
                 {{ history.name }}
-            </BLink>
+            </GLink>
 
             <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
             <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />
-        </div>
-    </div>
+        </component>
+    </component>
 </template>
 
 <style scoped>

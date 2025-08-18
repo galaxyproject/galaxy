@@ -8,9 +8,6 @@ projects (e.g. gxformat2).
 
 import re
 from typing import (
-    cast,
-    Dict,
-    List,
     Union,
 )
 
@@ -25,50 +22,50 @@ class DynamicArguments:
 
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
-SHARED_ARGUMENTS: List[str] = ["collapse"]
-VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
-    "history_link": ["history_id"],
-    "history_dataset_display": ["input", "output", "history_dataset_id"],
-    "history_dataset_embedded": ["input", "output", "history_dataset_id"],
-    "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
-    "history_dataset_as_table": [
-        "input",
-        "output",
-        "history_dataset_id",
-        "path",
-        "title",
-        "footer",
-        "show_column_headers",
-        "compact",
-    ],
-    "history_dataset_peek": ["input", "output", "history_dataset_id"],
-    "history_dataset_info": ["input", "output", "history_dataset_id"],
-    "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
-    "history_dataset_index": ["input", "output", "history_dataset_id", "path"],
-    "history_dataset_name": ["input", "output", "history_dataset_id"],
-    "history_dataset_type": ["input", "output", "history_dataset_id"],
-    "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
-    "workflow_display": ["workflow_id", "workflow_checkpoint"],
-    "workflow_license": ["workflow_id"],
-    "workflow_image": ["workflow_id", "size", "workflow_checkpoint"],
-    "job_metrics": ["step", "job_id", "implicit_collection_jobs_id"],
-    "job_parameters": ["step", "job_id", "implicit_collection_jobs_id"],
-    "tool_stderr": ["step", "job_id", "implicit_collection_jobs_id"],
-    "tool_stdout": ["step", "job_id", "implicit_collection_jobs_id"],
+SHARED_ARGUMENTS: list[str] = ["collapse"]
+VALID_ARGUMENTS: dict[str, Union[list[str], DynamicArguments]] = {
     "generate_galaxy_version": [],
     "generate_time": [],
+    "history_dataset_as_image": ["history_dataset_id", "input", "invocation_id", "output", "path"],
+    "history_dataset_as_table": [
+        "compact",
+        "footer",
+        "history_dataset_id",
+        "input",
+        "invocation_id",
+        "output",
+        "path",
+        "show_column_headers",
+        "title",
+    ],
+    "history_dataset_collection_display": ["history_dataset_collection_id", "input", "invocation_id", "output"],
+    "history_dataset_display": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_dataset_embedded": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_dataset_index": ["history_dataset_id", "input", "invocation_id", "output", "path"],
+    "history_dataset_info": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_dataset_link": ["history_dataset_id", "input", "invocation_id", "output", "path", "label"],
+    "history_dataset_name": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_dataset_peek": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_dataset_type": ["history_dataset_id", "input", "invocation_id", "output"],
+    "history_link": ["history_id", "invocation_id"],
     "instance_access_link": [],
-    "instance_resources_link": [],
-    "instance_help_link": [],
-    "instance_support_link": [],
     "instance_citation_link": [],
-    "instance_terms_link": [],
+    "instance_help_link": [],
     "instance_organization_link": [],
-    "visualization": DYNAMIC_ARGUMENTS,
-    # Invocation Flavored Markdown
+    "instance_resources_link": [],
+    "instance_support_link": [],
+    "instance_terms_link": [],
+    "invocation_inputs": ["invocation_id"],
+    "invocation_outputs": ["invocation_id"],
     "invocation_time": ["invocation_id"],
-    "invocation_outputs": [],
-    "invocation_inputs": [],
+    "job_metrics": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
+    "job_parameters": ["footer", "implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
+    "tool_stderr": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
+    "tool_stdout": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
+    "visualization": DYNAMIC_ARGUMENTS,
+    "workflow_display": ["invocation_id", "workflow_checkpoint", "workflow_id"],
+    "workflow_image": ["invocation_id", "workflow_checkpoint", "workflow_id", "size"],
+    "workflow_license": ["invocation_id", "workflow_id"],
 }
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>{})".format("|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS))
@@ -141,10 +138,9 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 if function_calls > 1:
                     invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)", line_no)
                 container = func_call_match.group("container")
-                valid_args_raw = VALID_ARGUMENTS[container]
-                if isinstance(valid_args_raw, DynamicArguments):
+                valid_args = VALID_ARGUMENTS[container]
+                if isinstance(valid_args, DynamicArguments):
                     continue
-                valid_args = cast(List[str], valid_args_raw)
 
                 first_arg_call = func_call_match.group("firstargcall")
 

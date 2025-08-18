@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import (
     Path,
@@ -7,7 +6,6 @@ from fastapi import (
     Response,
 )
 
-from galaxy.tool_util.models import ParsedTool
 from galaxy.tool_util.parameters import (
     RequestToolState,
     to_json_schema_string,
@@ -24,7 +22,10 @@ from tool_shed.managers.trs import (
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.shed_index import build_index
-from tool_shed_client.schema import BuildSearchIndexResponse
+from tool_shed_client.schema import (
+    BuildSearchIndexResponse,
+    ShedParsedTool,
+)
 from tool_shed_client.schema.trs import (
     Tool,
     ToolClass,
@@ -34,9 +35,9 @@ from tool_shed_client.schema.trs_service_info import Service
 from . import (
     depends,
     DependsOnTrans,
-    RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
+    ToolSearchPageQueryParam,
     ToolsIndexQueryParam,
 )
 
@@ -73,7 +74,7 @@ class FastAPITools:
     def index(
         self,
         q: str = ToolsIndexQueryParam,
-        page: int = RepositorySearchPageQueryParam,
+        page: int = ToolSearchPageQueryParam,
         page_size: int = RepositorySearchPageSizeQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ):
@@ -107,7 +108,7 @@ class FastAPITools:
         return service_info(self.app, request.url)
 
     @router.get("/api/ga4gh/trs/v2/toolClasses", operation_id="tools__trs_tool_classes")
-    def tool_classes(self) -> List[ToolClass]:
+    def tool_classes(self) -> list[ToolClass]:
         return tool_classes()
 
     @router.get(
@@ -140,7 +141,7 @@ class FastAPITools:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
-    ) -> List[ToolVersion]:
+    ) -> list[ToolVersion]:
         return get_tool(trans, tool_id).versions
 
     @router.get(
@@ -153,7 +154,7 @@ class FastAPITools:
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
-    ) -> ParsedTool:
+    ) -> ShedParsedTool:
         return parsed_tool_model_cached_for(trans, tool_id, tool_version)
 
     @router.get(

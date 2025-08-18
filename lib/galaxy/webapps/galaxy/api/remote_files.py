@@ -4,7 +4,7 @@ API operations on remote files.
 
 import logging
 from typing import (
-    List,
+    Annotated,
     Optional,
 )
 
@@ -13,7 +13,6 @@ from fastapi import (
     Response,
 )
 from fastapi.param_functions import Query
-from typing_extensions import Annotated
 
 from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
@@ -161,8 +160,8 @@ class FastAPIRemoteFiles:
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
-        include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
-        exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
+        include_kind: Annotated[Optional[list[PluginKind]], IncludeKindQueryParam] = None,
+        exclude_kind: Annotated[Optional[list[PluginKind]], ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         return self.manager.get_files_source_plugins(

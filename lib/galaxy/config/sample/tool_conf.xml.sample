@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox monitor="true">
   <section id="getext" name="Get Data">
+    <tool file="data_source/diced.xml" />
     <tool file="data_source/upload.xml" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <!-- <tool file="data_source/ucsc_tablebrowser_test.xml" /> -->
@@ -31,8 +32,13 @@
     <tool file="${model_tools_path}/unzip_collection.xml" />
     <tool file="${model_tools_path}/zip_collection.xml" />
     <tool file="${model_tools_path}/filter_failed_collection.xml" />
+    <tool file="${model_tools_path}/filter_failed_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/filter_empty_collection.xml" />
+    <tool file="${model_tools_path}/filter_empty_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/filter_null.xml" />
+    <tool file="${model_tools_path}/filter_null_1.1.0.xml" />
+    <tool file="${model_tools_path}/keep_success_collection.xml" />
+    <tool file="${model_tools_path}/keep_success_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/flatten_collection.xml" />
     <tool file="${model_tools_path}/merge_collection.xml" />
     <tool file="${model_tools_path}/relabel_from_file.xml" />
@@ -45,6 +51,7 @@
     <tool file="${model_tools_path}/apply_rules.xml" />
     <tool file="${model_tools_path}/build_list.xml" />
     <tool file="${model_tools_path}/build_list_1.2.0.xml" />
+    <tool file="${model_tools_path}/sample_sheet_to_tabular.xml" />
     <tool file="${model_tools_path}/extract_dataset.xml" />
     <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
   </section>
@@ -125,7 +132,6 @@
     <tool file="maf/vcf_to_maf_customtrack.xml" />
   </section>
   <section id="hgv" name="Phenotype Association">
-    <tool file="phenotype_association/sift.xml" />
     <tool file="phenotype_association/linkToGProfile.xml" />
     <tool file="phenotype_association/linkToDavid.xml" />
     <tool file="phenotype_association/ldtools.xml" />
@@ -148,6 +154,7 @@
     <tool file="interactive/interactivetool_openrefine.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />
     <tool file="interactive/interactivetool_rstudio.xml" />
+    <tool file="interactive/interactivetool_rstudio_bioc_3.20.xml" />
   </section>
   -->
 </toolbox>

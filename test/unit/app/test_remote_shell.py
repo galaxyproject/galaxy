@@ -2,7 +2,6 @@ import os
 import unittest
 from typing import (
     Any,
-    Dict,
 )
 
 try:
@@ -21,7 +20,7 @@ from galaxy.util.unittest import TestCase
 class TestCliInterface(TestCase):
     ssh_keys: SSHKeys
     username: str
-    shell_params: Dict[str, Any]
+    shell_params: dict[str, Any]
     cli_interface: CliInterface
 
     @classmethod

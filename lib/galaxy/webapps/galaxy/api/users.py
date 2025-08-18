@@ -7,9 +7,10 @@ import json
 import logging
 import re
 from typing import (
+    Annotated,
     Any,
-    List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -21,7 +22,6 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -34,13 +34,17 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
+    Dataset,
     FormDefinition,
+    FormValues,
     HistoryDatasetAssociation,
     Role,
+    User,
     UserAddress,
     UserObjectstoreUsage,
     UserQuotaUsage,
 )
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema import APIKeyModel
 from galaxy.schema.schema import (
     AnonUserModel,
@@ -88,6 +92,9 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.users import UsersService
+
+if TYPE_CHECKING:
+    from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -164,7 +171,7 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: "SessionRequestContext" = DependsOnTrans,
     ):
         """This route will be removed in a future version.
 
@@ -186,7 +193,7 @@ class FastAPIUsers:
     def recalculate_disk_usage_by_user_id(
         self,
         user_id: UserIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: "SessionRequestContext" = DependsOnTrans,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
@@ -202,7 +209,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -297,7 +304,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserQuotaUsage]:
+    ) -> list[UserQuotaUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
@@ -313,7 +320,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserObjectstoreUsage]:
+    ) -> list[UserObjectstoreUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             return user.dictify_objectstore_usage()
         else:
@@ -476,16 +483,14 @@ class FastAPIUsers:
             )
         else:
             # Have everything needed; create new build.
-            build_dict = {"name": name}
+            build_dict: dict[str, Any] = {"name": name}
             if len_type in ["text", "file"]:
                 # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation(
-                    extension="len", create_dataset=True, sa_session=trans.sa_session
-                )
+                new_len = HistoryDatasetAssociation(extension="len", create_dataset=True, sa_session=trans.sa_session)
                 trans.sa_session.add(new_len)
                 new_len.name = name
                 new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
+                new_len.state = Dataset.states.OK
                 new_len.info = "custom build .len file"
                 try:
                     trans.app.object_store.create(new_len.dataset)
@@ -552,7 +557,7 @@ class FastAPIUsers:
                 if (
                     chrom_count_dataset
                     and not chrom_count_dataset.deleted
-                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
+                    and chrom_count_dataset.state == HistoryDatasetAssociation.states.OK
                 ):
                     chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
                     dbkey["count"] = chrom_count
@@ -639,7 +644,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
@@ -692,6 +697,7 @@ class FastAPIUsers:
         payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
+        assert user_to_update is not None
         purge = payload and payload.purge or purge
         if trans.user_is_admin:
             if purge:
@@ -717,7 +723,7 @@ class FastAPIUsers:
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        user = trans.sa_session.query(trans.model.User).get(user_id)
+        user = trans.sa_session.query(User).get(user_id)
         if not user:
             raise exceptions.ObjectNotFound("User not found for given id.")
         if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
@@ -977,7 +983,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             for item in payload:
                 if item.startswith(prefix):
                     user_info_values[item[len(prefix) :]] = payload[item]
-            form_values = trans.model.FormValues(user_info_form, user_info_values)
+            form_values = FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
 
@@ -1085,9 +1091,18 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        roles = user.all_roles()
+
+        def get_role_tuples():
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_tuples = set()
+            for role in user.all_roles():
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuples.add((displayed_name, role.id))
+            return list(role_tuples)
+
+        role_tuples = get_role_tuples()
         inputs = []
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             inputs.append(
                 {
                     "type": "select",
@@ -1096,7 +1111,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "name": index,
                     "label": action.action,
                     "help": action.description,
-                    "options": list({(r.name, r.id) for r in roles}),
+                    "options": role_tuples,
                     "value": [a.role.id for a in user.default_permissions if a.action == action.action],
                 }
             )
@@ -1110,7 +1125,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         payload = payload or {}
         user = self._get_user(trans, id)
         permissions = {}
-        for index, action in trans.app.model.Dataset.permitted_actions.items():
+        for index, action in Dataset.permitted_actions.items():
             action_id = trans.app.security_agent.get_action(action.action).action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)

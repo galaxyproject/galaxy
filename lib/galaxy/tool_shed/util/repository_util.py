@@ -4,11 +4,8 @@ import re
 import shutil
 from typing import (
     Any,
-    cast,
-    Dict,
-    List,
     Optional,
-    Tuple,
+    TYPE_CHECKING,
     Union,
 )
 from urllib.error import HTTPError
@@ -17,9 +14,8 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     false,
-    or_,
 )
-from sqlalchemy.orm import joinedload
+from typing_extensions import TypeIs
 
 from galaxy import util
 from galaxy.model.base import check_database_connection
@@ -32,6 +28,10 @@ from galaxy.util.tool_shed import (
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 
+if TYPE_CHECKING:
+    from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+    from galaxy.tool_shed.tools.data_table_manager import RequiredAppT
+
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
@@ -41,7 +41,7 @@ def check_for_updates(
     tool_shed_registry: Registry,
     install_model_context: install_model_scoped_session,
     repository_id: Optional[int] = None,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     message = ""
     status = "ok"
     if repository_id is None:
@@ -86,7 +86,7 @@ def check_for_updates(
 
 def _check_or_update_tool_shed_status_for_installed_repository(
     tool_shed_registry: Registry, install_model_context: install_model_scoped_session, repository: ToolShedRepository
-) -> Tuple[bool, bool]:
+) -> tuple[bool, bool]:
     updated = False
     tool_shed_status_dict = get_tool_shed_status_for(tool_shed_registry, repository)
     if tool_shed_status_dict:
@@ -104,7 +104,7 @@ def _check_or_update_tool_shed_status_for_installed_repository(
 
 
 def create_or_update_tool_shed_repository(
-    app,
+    app: "InstallationTarget",
     name,
     description,
     installed_changeset_revision,
@@ -114,7 +114,7 @@ def create_or_update_tool_shed_repository(
     metadata_dict=None,
     current_changeset_revision=None,
     owner="",
-    dist_to_shed=False,
+    dist_to_shed: bool = False,
 ):
     """
     Update a tool shed repository record in the Galaxy database with the new information received.
@@ -242,40 +242,16 @@ def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
     return file_path
 
 
-def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
-    installing_repository_ids = []
-    new_status = app.install_model.ToolShedRepository.installation_status.NEW
-    cloning_status = app.install_model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = (
-        app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    )
-    loading_datatypes_status = app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in app.install_model.context.query(app.install_model.ToolShedRepository).filter(
-        or_(
-            app.install_model.ToolShedRepository.status == new_status,
-            app.install_model.ToolShedRepository.status == cloning_status,
-            app.install_model.ToolShedRepository.status == setting_tool_versions_status,
-            app.install_model.ToolShedRepository.status == installing_dependencies_status,
-            app.install_model.ToolShedRepository.status == loading_datatypes_status,
-        )
-    ):
-        installing_repository_ids.append(app.security.encode_id(tool_shed_repository.id))
-    if as_string:
-        return ",".join(installing_repository_ids)
-    return installing_repository_ids
-
-
 def get_installed_repository(
-    app,
-    tool_shed=None,
-    name=None,
-    owner=None,
-    changeset_revision=None,
-    installed_changeset_revision=None,
-    repository_id=None,
-    from_cache=False,
-):
+    app: "InstallationTarget",
+    tool_shed: Optional[str] = None,
+    name: Optional[str] = None,
+    owner: Optional[str] = None,
+    changeset_revision: Optional[str] = None,
+    installed_changeset_revision: Optional[str] = None,
+    repository_id: Optional[int] = None,
+    from_cache: bool = False,
+) -> ToolShedRepository:
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
@@ -286,7 +262,7 @@ def get_installed_repository(
     if from_cache:
         tsr_cache = getattr(app, "tool_shed_repository_cache", None)
         if tsr_cache:
-            return app.tool_shed_repository_cache.get_installed_repository(
+            return tsr_cache.get_installed_repository(
                 tool_shed=tool_shed,
                 name=name,
                 owner=owner,
@@ -312,7 +288,7 @@ def get_installed_repository(
     return query.filter(and_(*clause_list)).first()
 
 
-def get_installed_tool_shed_repository(app, id):
+def get_installed_tool_shed_repository(app: "InstallationTarget", id):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
     rval = []
     if isinstance(id, list):
@@ -327,7 +303,7 @@ def get_installed_tool_shed_repository(app, id):
     return rval[0]
 
 
-def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
+def get_prior_import_or_install_required_dict(app: "InstallationTarget", tsr_ids: list[str], repo_info_dicts):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies,
     and in Galaxy when a repository and its dependencies are being installed.  Return a
@@ -336,7 +312,7 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
     must be imported or installed prior to the repository associated with the tsr_id key.
     """
     # Initialize the dictionary.
-    prior_import_or_install_required_dict = {}
+    prior_import_or_install_required_dict: dict[str, list[str]] = {}
     for tsr_id in tsr_ids:
         prior_import_or_install_required_dict[tsr_id] = []
     # Inspect the repository dependencies for each repository about to be installed and populate the dictionary.
@@ -356,16 +332,15 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
     return prior_import_or_install_required_dict
 
 
-ToolDependenciesDictT = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
-OldRepositoryTupleT = Tuple[str, str, str, str, str, ToolDependenciesDictT]
-RepositoryTupleT = Tuple[str, str, str, str, str, Optional[Any], ToolDependenciesDictT]
+ToolDependenciesDictT = dict[str, Union[dict[str, Any], list[dict[str, Any]]]]
+OldRepositoryTupleT = tuple[str, str, str, str, str, ToolDependenciesDictT]
+RepositoryTupleT = tuple[str, str, str, str, str, Optional[Any], ToolDependenciesDictT]
 AnyRepositoryTupleT = Union[OldRepositoryTupleT, RepositoryTupleT]
 
 
 def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> RepositoryTupleT:
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len(repo_info_tuple) == 6:
-        old_repo_info = cast(OldRepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -373,10 +348,9 @@ def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> Reposi
             ctx_rev,
             repository_owner,
             tool_dependencies,
-        ) = old_repo_info
+        ) = repo_info_tuple
         repository_dependencies = None
     elif len(repo_info_tuple) == 7:
-        repo_info = cast(RepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -385,7 +359,7 @@ def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> Reposi
             repository_owner,
             repository_dependencies,
             tool_dependencies,
-        ) = repo_info
+        ) = repo_info_tuple
     return (
         description,
         repository_clone_url,
@@ -401,7 +375,7 @@ def get_repository_admin_role_name(repository_name, repository_owner):
     return f"{repository_name}_{repository_owner}_admin"
 
 
-def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):
+def get_repository_and_repository_dependencies_from_repo_info_dict(app: "InstallationTarget", repo_info_dict):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
     repository_name = list(repo_info_dict.keys())[0]
     repo_info_tuple = repo_info_dict[repository_name]
@@ -414,53 +388,11 @@ def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_inf
         repository_dependencies,
         tool_dependencies,
     ) = get_repo_info_tuple_contents(repo_info_tuple)
-    if hasattr(app, "install_model"):
-        # In a tool shed client (Galaxy, or something install repositories like Galaxy)
-        tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
-        repository = get_repository_for_dependency_relationship(
-            app, tool_shed, repository_name, repository_owner, changeset_revision
-        )
-    else:
-        # We're in the tool shed.
-        repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
-    return repository, repository_dependencies
-
-
-def get_repository_by_id(app, id):
-    """Get a repository from the database via id."""
-    if is_tool_shed_client(app):
-        return app.install_model.context.query(app.install_model.ToolShedRepository).get(app.security.decode_id(id))
-    else:
-        sa_session = app.model.session
-        return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
-
-
-def get_repository_by_name_and_owner(app, name, owner, eagerload_columns=None):
-    """Get a repository from the database via name and owner"""
-    repository_query = get_repository_query(app)
-    if is_tool_shed_client(app):
-        return repository_query.filter(
-            and_(
-                app.install_model.ToolShedRepository.name == name,
-                app.install_model.ToolShedRepository.owner == owner,
-            )
-        ).first()
-    # We're in the tool shed.
-    q = repository_query.filter(
-        and_(
-            app.model.Repository.name == name,
-            app.model.User.username == owner,
-            app.model.Repository.user_id == app.model.User.id,
-        )
+    tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
+    repository = get_repository_for_dependency_relationship(
+        app, tool_shed, repository_name, repository_owner, changeset_revision
     )
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.first()
-
-
-def get_repository_by_name(app, name):
-    """Get a repository from the database via name."""
-    return get_repository_query(app).filter_by(name=name).first()
+    return repository, repository_dependencies
 
 
 def get_repository_dependency_types(repository_dependencies):
@@ -502,7 +434,7 @@ def get_repository_dependency_types(repository_dependencies):
     return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 
-def get_repository_for_dependency_relationship(app, tool_shed, name, owner, changeset_revision):
+def get_repository_for_dependency_relationship(app: "InstallationTarget", tool_shed, name, owner, changeset_revision):
     """
     Return an installed tool_shed_repository database record that is defined by either the current changeset
     revision or the installed_changeset_revision.
@@ -516,32 +448,37 @@ def get_repository_for_dependency_relationship(app, tool_shed, name, owner, chan
     repository = get_installed_repository(
         app=app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=changeset_revision
     )
-    if not repository:
+    if repository:
+        return repository
+    repository = get_installed_repository(
+        app=app, tool_shed=tool_shed, name=name, owner=owner, changeset_revision=changeset_revision
+    )
+    if repository:
+        return repository
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
+    assert tool_shed_url
+    repository_clone_url = os.path.join(tool_shed_url, "repos", owner, name)
+    repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
+    repository, pcr = repository_was_previously_installed(app, tool_shed_url, name, repo_info_tuple)
+    if repository:
+        return repository
+    # The received changeset_revision is no longer installable, so get the next changeset_revision
+    # in the repository's changelog in the tool shed that is associated with repository_metadata.
+    params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
+    pathspec = ["repository", "next_installable_changeset_revision"]
+    text = util.url_get(
+        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+    )
+    if text:
         repository = get_installed_repository(
-            app=app, tool_shed=tool_shed, name=name, owner=owner, changeset_revision=changeset_revision
+            app=app, tool_shed=tool_shed, name=name, owner=owner, changeset_revision=text
         )
-    if not repository:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
-        repository_clone_url = os.path.join(tool_shed_url, "repos", owner, name)
-        repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
-        repository, pcr = repository_was_previously_installed(app, tool_shed_url, name, repo_info_tuple)
-    if not repository:
-        # The received changeset_revision is no longer installable, so get the next changeset_revision
-        # in the repository's changelog in the tool shed that is associated with repository_metadata.
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
-        params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
-        pathspec = ["repository", "next_installable_changeset_revision"]
-        text = util.url_get(
-            tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-        )
-        if text:
-            repository = get_installed_repository(
-                app=app, tool_shed=tool_shed, name=name, owner=owner, changeset_revision=text
-            )
     return repository
 
 
-def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repository_dependencies):
+def get_repository_ids_requiring_prior_import_or_install(
+    app: "InstallationTarget", tsr_ids: list[str], repository_dependencies
+):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies,
     and in Galaxy when a repository and its dependencies are being installed.  Inspect the
@@ -552,7 +489,7 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     and whose associated repositories must be imported / installed prior to the dependent
     repository associated with the received repository_dependencies.
     """
-    prior_tsr_ids = []
+    prior_tsr_ids: list[str] = []
     if repository_dependencies:
         for key, rd_tups in repository_dependencies.items():
             if key in ["description", "root_key"]:
@@ -577,14 +514,11 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
                 # of the dependent repository's tool dependency.
                 if not util.asbool(only_if_compiling_contained_td):
                     if util.asbool(prior_installation_required):
-                        if is_tool_shed_client(app):
-                            # We store the port, if one exists, in the database.
-                            tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
-                            repository = get_repository_for_dependency_relationship(
-                                app, tool_shed, name, owner, changeset_revision
-                            )
-                        else:
-                            repository = get_repository_by_name_and_owner(app, name, owner)
+                        # We store the port, if one exists, in the database.
+                        tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
+                        repository = get_repository_for_dependency_relationship(
+                            app, tool_shed, name, owner, changeset_revision
+                        )
                         if repository:
                             encoded_repository_id = app.security.encode_id(repository.id)
                             if encoded_repository_id in tsr_ids:
@@ -607,20 +541,6 @@ def get_repository_owner_from_clone_url(repository_clone_url):
     return get_repository_owner(tmp_url)
 
 
-def get_repository_query(app):
-    if is_tool_shed_client(app):
-        query = app.install_model.context.query(app.install_model.ToolShedRepository)
-    else:
-        query = app.model.context.query(app.model.Repository)
-    return query
-
-
-def get_role_by_id(app, role_id):
-    """Get a Role from the database by id."""
-    sa_session = app.model.session
-    return sa_session.query(app.model.Role).get(app.security.decode_id(role_id))
-
-
 def get_tool_shed_from_clone_url(repository_clone_url):
     tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
     return tmp_url.split("/repos/")[0].rstrip("/")
@@ -635,7 +555,7 @@ def get_tool_shed_repository_by_id(app, repository_id) -> ToolShedRepository:
 def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedRepository):
     tool_shed_url = tool_shed_registry.get_tool_shed_url(str(repository.tool_shed))
     assert tool_shed_url
-    params: Dict[str, Any] = dict(
+    params: dict[str, Any] = dict(
         name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision
     )
     pathspec = ["repository", "status_for_installed_repository"]
@@ -680,7 +600,7 @@ def get_tool_shed_status_for_installed_repository(app, repository: ToolShedRepos
     return get_tool_shed_status_for(tool_shed_registry, repository)
 
 
-def is_tool_shed_client(app):
+def is_tool_shed_client(app: "RequiredAppT") -> TypeIs["InstallationTarget"]:
     """
     The tool shed and clients to the tool (i.e. Galaxy) require a lot
     of similar functionality in this file but with small differences. This
@@ -690,7 +610,9 @@ def is_tool_shed_client(app):
     return hasattr(app, "install_model")
 
 
-def repository_was_previously_installed(app, tool_shed_url, repository_name, repo_info_tuple, from_tip=False):
+def repository_was_previously_installed(
+    app: "InstallationTarget", tool_shed_url: str, repository_name, repo_info_tuple, from_tip: bool = False
+):
     """
     Find out if a repository is already installed into Galaxy - there are several scenarios where this
     is necessary.  For example, this method will handle the case where the repository was previously
@@ -699,7 +621,8 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
     updating the one that was previously installed.  We'll look in the database instead of on disk since
     the repository may be currently uninstalled.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    base_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    assert base_url
     (
         description,
         repository_clone_url,
@@ -729,9 +652,7 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
         from_tip=str(from_tip),
     )
     pathspec = ["repository", "previous_changeset_revisions"]
-    text = util.url_get(
-        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-    )
+    text = util.url_get(base_url, auth=app.tool_shed_registry.url_auth(base_url), pathspec=pathspec, params=params)
     if text:
         changeset_revisions = util.listify(text)
         for previous_changeset_revision in changeset_revisions:
@@ -773,23 +694,17 @@ __all__ = (
     "extract_components_from_tuple",
     "generate_tool_shed_repository_install_dir",
     "get_absolute_path_to_file_in_repository",
-    "get_ids_of_tool_shed_repositories_being_installed",
     "get_installed_repository",
     "get_installed_tool_shed_repository",
     "get_prior_import_or_install_required_dict",
     "get_repo_info_tuple_contents",
     "get_repository_admin_role_name",
     "get_repository_and_repository_dependencies_from_repo_info_dict",
-    "get_repository_by_id",
-    "get_repository_by_name",
-    "get_repository_by_name_and_owner",
     "get_repository_dependency_types",
     "get_repository_for_dependency_relationship",
     "get_repository_ids_requiring_prior_import_or_install",
     "get_repository_owner",
     "get_repository_owner_from_clone_url",
-    "get_repository_query",
-    "get_role_by_id",
     "get_tool_shed_from_clone_url",
     "get_tool_shed_repository_by_id",
     "get_tool_shed_status_for_installed_repository",

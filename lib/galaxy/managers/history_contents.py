@@ -7,8 +7,6 @@ import json
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from sqlalchemy import (
@@ -168,8 +166,8 @@ class HistoryContentsManager(base.SortableManager):
         statement: Select = (
             select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.session().execute(statement).fetchall()
-        return dict(counts)
+        counts = self.app.model.session.execute(statement).fetchall()
+        return dict(counts)  # type:ignore[arg-type]
 
     def active_counts(self, history):
         """
@@ -236,7 +234,7 @@ class HistoryContentsManager(base.SortableManager):
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map: Dict[str, List[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
+        id_map: dict[str, list[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -336,7 +334,7 @@ class HistoryContentsManager(base.SortableManager):
         # pull column from class by name or override with kwargs if listed there, then label
         for column_name in self.common_columns:
             if column_name in kwargs:
-                column = kwargs.get(column_name, None)
+                column = kwargs[column_name]
             elif column_name == "model_class":
                 column = literal(component_class.__name__)
             else:
@@ -416,7 +414,7 @@ class HistoryContentsManager(base.SortableManager):
             .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
-            .options(joinedload(component_class.tags))  # type: ignore[attr-defined]
+            .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         result = self._session().scalars(stmt).unique()
@@ -473,7 +471,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, Serializer] = {
+        serializers: dict[str, Serializer] = {
             "type_id": self.serialize_type_id,
             "history_id": self.serialize_id,
             "dataset_id": self.serialize_id_or_skip,

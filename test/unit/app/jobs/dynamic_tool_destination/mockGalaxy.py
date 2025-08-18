@@ -9,9 +9,6 @@ class Job:
         self.param_values = {}
         self.parameters = []
 
-    def get_param_values(self, app, ignore_errors=False):
-        return self.param_values
-
     def set_arg_value(self, key, value):
         self.param_values[key] = value
 
@@ -60,6 +57,9 @@ class Tool:
 
     def add_tool_dependency(self, dependency):
         self.installed_tool_dependencies.append(dependency)
+
+    def get_param_values(self, job: Job, ignore_errors=False):
+        return job.param_values
 
 
 class ToolDependency:

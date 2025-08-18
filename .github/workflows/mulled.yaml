@@ -5,11 +5,13 @@ on:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,11 +22,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8']
+        python-version: ['3.9']
     steps:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

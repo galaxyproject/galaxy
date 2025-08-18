@@ -54,13 +54,14 @@ USE_LOCAL_DEFAULT = False
 
 
 def conda_link() -> str:
+    arch = platform.machine()
     if IS_OS_X:
-        if "arm64" in platform.platform():
+        if "arm64" in arch:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh"
         else:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh"
     else:
-        if "arm64" in platform.platform():
+        if "arm64" in arch or "aarch64" in arch:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
         else:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
@@ -89,7 +90,7 @@ class CondaContext(installable.InstallableContext):
     def __init__(
         self,
         conda_prefix: Optional[str] = None,
-        conda_exec: Optional[str] = None,
+        conda_exec: Optional[Union[str, List[str]]] = None,
         shell_exec: Optional[Callable[..., int]] = None,
         debug: bool = False,
         ensure_channels: Union[str, List[str]] = "",
@@ -192,11 +193,12 @@ class CondaContext(installable.InstallableContext):
 
     def is_conda_installed(self) -> bool:
         """
-        Check if conda_exec exists
+        Check if conda_info() works
         """
-        if os.path.exists(self.conda_exec):
+        try:
+            self.conda_info()
             return True
-        else:
+        except Exception:
             return False
 
     def can_install_conda(self) -> bool:
@@ -206,6 +208,7 @@ class CondaContext(installable.InstallableContext):
         If conda_exec equals conda_prefix/bin/conda, we can install conda if either conda_prefix
         does not exist or is empty.
         """
+        assert isinstance(self.conda_exec, str), "conda_exec is not a str"
         conda_exec = os.path.abspath(self.conda_exec)
         conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, "bin/conda"))
         if conda_exec == conda_prefix_plus_exec:

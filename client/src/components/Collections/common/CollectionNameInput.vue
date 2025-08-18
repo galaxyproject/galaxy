@@ -28,6 +28,10 @@ watch(
 watch(name, (newValue) => {
     emit("input", newValue);
 });
+
+function updateName(v: string) {
+    name.value = v;
+}
 </script>
 
 <template>
@@ -37,11 +41,12 @@ watch(name, (newValue) => {
         label-for="collection-name">
         <BFormInput
             id="collection-name"
-            v-model="name"
+            :value="name"
             class="collection-name"
             :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
             size="sm"
             required
-            :state="!name ? false : null" />
+            :state="!name ? false : null"
+            @update="updateName" />
     </BFormGroup>
 </template>

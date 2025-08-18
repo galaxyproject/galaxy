@@ -1,15 +1,15 @@
-import { faPlay, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
-import { type WorkflowInvocation } from "@/api/invocations";
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import type { WorkflowInvocation } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -51,7 +51,7 @@ export async function getData(
     fetchHistoriesAndWorkflows(data);
     const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches];
+    return [data, totalMatches] as const;
 }
 
 /**
@@ -131,9 +131,9 @@ const fields: FieldArray = [
     },
     {
         key: "execute",
-        title: "Run",
+        title: "Rerun",
         type: "button",
-        icon: faPlay,
+        icon: faRedo,
         condition: (data) => {
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
@@ -144,8 +144,7 @@ const fields: FieldArray = [
         },
         handler: (data) => {
             const invocation = data as WorkflowInvocation;
-            const workflowStore = useWorkflowStore();
-            emit(`/workflows/run?id=${workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id)}`);
+            emit(`/workflows/rerun?invocation_id=${invocation.id}`);
         },
         converter: () => "",
     },

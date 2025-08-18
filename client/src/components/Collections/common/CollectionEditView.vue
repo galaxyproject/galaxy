@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faSave, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BButton, BSpinner, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BSpinner, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -18,6 +18,7 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
 import SuitableConvertersTab from "@/components/Collections/common/SuitableConvertersTab.vue";
@@ -121,8 +122,8 @@ async function clickedSave(attribute: string, newValue: any) {
 
     const dbKey = newValue.id as string;
 
-    const { error } = await GalaxyApi().POST("/api/dataset_collections/{id}/copy", {
-        params: { path: { id: props.collectionId } },
+    const { error } = await GalaxyApi().POST("/api/dataset_collections/{hdca_id}/copy", {
+        params: { path: { hdca_id: props.collectionId } },
         body: { dbkey: dbKey },
     });
     if (error) {
@@ -215,7 +216,7 @@ async function saveAttrs() {
 
 <template>
     <div aria-labelledby="collection-edit-view-heading">
-        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="lg">
             {{ localize("Edit Collection Attributes") }}
         </Heading>
 
@@ -244,10 +245,10 @@ async function saveAttrs() {
                     @onChange="onAttribute" />
 
                 <div class="mt-2">
-                    <BButton id="dataset-attributes-default-save" variant="primary" @click="saveAttrs">
+                    <GButton id="dataset-attributes-default-save" color="blue" @click="saveAttrs">
                         <FontAwesomeIcon :icon="faSave" class="mr-1" />
                         {{ localize("Save") }}
-                    </BButton>
+                    </GButton>
                 </div>
             </BTab>
             <BTab

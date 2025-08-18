@@ -5,7 +5,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 
 import { GalaxyApi, type HDADetailed, isAdminUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { type JobDetails } from "@/api/jobs";
+import type { JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";

@@ -6,13 +6,26 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
 
-function buildFingerprint(cnf) {
+/**
+ * Builds a fingerprint for the file upload.
+ * This fingerprint is used to identify the file upload and resume it if necessary.
+ * In case of a ReadableStream reader, the fingerprint is built from the `metadata` object
+ * since the stream reader does not have this information.
+ */
+function buildFingerprint(cnf, metadata) {
     return async (file) => {
-        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
+        return [
+            "tus-br",
+            file.name ?? metadata?.name,
+            file.type ?? metadata?.type,
+            file.size ?? metadata?.size,
+            file.lastModified ?? metadata?.lastModified,
+            cnf.data.history_id,
+        ].join("-");
     };
 }
 
-export function sendPayload(payload, cnf) {
+export function sendPayload(payload, cnf = {}) {
     axios
         .post(`${getAppRoot()}api/tools/fetch`, payload)
         .then((response) => {
@@ -34,11 +47,13 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         return sendPayload(data, cnf);
     }
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
-    const upload = new tus.Upload(uploadable, {
+    const uploadInput = uploadable.isStream ? uploadable.stream.getReader() : uploadable;
+    const upload = new tus.Upload(uploadInput, {
         endpoint: tusEndpoint,
         retryDelays: [0, 3000, 10000],
-        fingerprint: buildFingerprint(cnf),
+        fingerprint: buildFingerprint(cnf, uploadable),
         chunkSize: chunkSize,
+        uploadSize: uploadable.size,
         storeFingerprintForResuming: false,
         onError: function (err) {
             const status = err.originalResponse?.getStatus();

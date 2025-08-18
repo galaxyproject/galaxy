@@ -69,6 +69,7 @@ class TaskedJobRunner(BaseJobRunner):
                 self.sa_session.add(task)
             self.sa_session.commit()
             # Must flush prior to the creation and queueing of task wrappers.
+            assert self.app.job_manager.job_handler.dispatcher
             for task in tasks:
                 tw = TaskWrapper(task, job_wrapper.queue)
                 task_wrappers.append(tw)
@@ -136,10 +137,11 @@ class TaskedJobRunner(BaseJobRunner):
         # to retrieve a job's list of tasks.
         job = job_wrapper.get_job()
         tasks = job.get_tasks()
+        assert self.app.job_manager.job_handler.dispatcher
         if len(tasks) > 0:
             for task in tasks:
                 log.debug(f"Killing task's job {task.id}")
-                self.app.job_manager.job_handler.dispatcher.stop(task)
+                self.app.job_manager.job_handler.dispatcher.stop(task, job_wrapper=job_wrapper)
 
         # There were no subtasks, so just kill the job. We'll touch
         # this if the tasks runner is used but the tool does not use

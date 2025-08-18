@@ -11,9 +11,7 @@ from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -27,6 +25,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.exc import NoResultFound
+from webob.exc import HTTPException
 
 from galaxy import util
 from galaxy.exceptions import (
@@ -39,6 +38,7 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
+from galaxy.model import History
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -61,6 +61,13 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
+
+try:
+    import galaxy.web_client
+
+    default_static_dist_dir = os.path.join(os.path.dirname(galaxy.web_client.__file__), "dist")
+except ImportError:
+    default_static_dist_dir = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
@@ -194,6 +201,9 @@ class WebApplication(base.WebApplication):
             )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
+        if not isinstance(e, HTTPException):
+            # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
+            log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
         if isinstance(e, TypeError):
             method_signature = inspect.signature(method)
             required_parameters = {
@@ -303,7 +313,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: Dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -322,7 +332,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
-        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -906,7 +916,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return history
 
     def set_history(self, history):
-        if history and not history.deleted:
+        if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
         self.sa_session.commit()
@@ -920,6 +930,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
+        assert self.galaxy_session
 
         # Just return the current history if one exists and is not deleted.
         history = self.galaxy_session.current_history
@@ -929,11 +940,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # Look for an existing history that has the default name, is not
         # deleted, and is empty. If this exists, we associate it with the
         # current session and return it.
-        user = self.galaxy_session.user
-        if user:
-            stmt = select(self.app.model.History).filter_by(
-                user=user, name=self.app.model.History.default_name, deleted=False
-            )
+        if user := self.galaxy_session.user:
+            stmt = select(History).filter_by(user=user, name=History.default_name, deleted=False)
             unnamed_histories = self.sa_session.scalars(stmt)
             for history in unnamed_histories:
                 if history.empty:
@@ -957,12 +965,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not user:
             return None
         try:
-            stmt = (
-                select(self.app.model.History)
-                .filter_by(user=user, deleted=False)
-                .order_by(self.app.model.History.update_time.desc())
-                .limit(1)
-            )
+            stmt = select(History).filter_by(user=user, deleted=False).order_by(History.update_time.desc()).limit(1)
             recent_history = self.sa_session.scalars(stmt).first()
         except NoResultFound:
             return None
@@ -975,7 +978,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         its associated user (if set).
         """
         # Create new history
-        history = self.app.model.History()
+        history = History()
         if name:
             history.name = name
         # Associate with session
@@ -1159,7 +1162,9 @@ def build_url_map(app, global_conf, **local_conf):
     # Define static mappings from config
     static_dir = get_static_from_config("static_dir", "static/")
     static_dir_bare = static_dir.directory.rstrip("/")
+    static_dist_dir = get_static_from_config("static_dist_dir", default_static_dist_dir or f"{static_dir_bare}/dist/")
     urlmap["/static"] = static_dir
+    urlmap["/static/dist"] = static_dist_dir
     urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
     urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", f"{static_dir_bare}/scripts/")
 

@@ -1,4 +1,3 @@
-import sys
 from functools import partial
 from typing import (
     Callable,
@@ -6,7 +5,6 @@ from typing import (
     Optional,
 )
 
-import pytest
 import yaml
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -37,9 +35,6 @@ from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_framework_tool,
 )
 from galaxy.util.resources import resource_string
-
-if sys.version_info < (3, 8):  # noqa: UP036
-    pytest.skip(reason="Pydantic tool parameter models require python3.8 or higher", allow_module_level=True)
 
 
 def specification_object():

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import { BAlert, BButton } from "bootstrap-vue";
 import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
-import { filesDialog } from "utils/data";
+import { filesDialog } from "utils/dataModals";
 import { urlData } from "utils/url";
 import { computed, ref } from "vue";
 
@@ -149,7 +149,7 @@ function inputRemote() {
             </BButton>
             <BButton @click="inputRemote">
                 <FontAwesomeIcon icon="fa-folder-open" />
-                <span v-localize>Choose remote file</span>
+                <span v-localize>Choose from repository</span>
             </BButton>
             <BButton
                 id="btn-build"

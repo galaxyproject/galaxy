@@ -1,9 +1,7 @@
 import os
 from typing import (
     cast,
-    List,
     Optional,
-    Type,
 )
 from unittest import SkipTest
 from uuid import uuid4
@@ -53,10 +51,10 @@ SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my file source"
 
 
 class Config:
-    file_source_templates: Optional[List[RawTemplateConfig]] = None
+    file_source_templates: Optional[list[RawTemplateConfig]] = None
     file_source_templates_config_file: Optional[str] = None
 
-    def __init__(self, templates: List[RawTemplateConfig]):
+    def __init__(self, templates: list[RawTemplateConfig]):
         self.file_source_templates = templates
 
 
@@ -398,7 +396,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         match = self.file_sources.find_best_match(user_file_source.uri_root)
         assert not match
 
-    def _uri_roots(self) -> List[str]:
+    def _uri_roots(self) -> list[str]:
         sources_as_dicts = self.file_sources.user_file_sources_to_dicts(
             False,
             cast(FileSourcesUserContext, self.trans),
@@ -824,7 +822,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert sec_val in ["", None]
 
     def _assert_modify_throws_exception(
-        self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload, exception_type: Type
+        self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload, exception_type: type[Exception]
     ):
         exception_thrown = False
         try:

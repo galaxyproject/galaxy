@@ -4,10 +4,7 @@ Manager and Serializer for libraries.
 
 import logging
 from typing import (
-    Dict,
     Optional,
-    Set,
-    Tuple,
 )
 
 from sqlalchemy.exc import (
@@ -20,6 +17,7 @@ from galaxy import exceptions
 from galaxy.managers.folders import FolderManager
 from galaxy.model import (
     Library,
+    LibraryFolder,
     Role,
 )
 from galaxy.model.db.library import (
@@ -29,6 +27,7 @@ from galaxy.model.db.library import (
     get_library_ids,
     get_library_permissions_by_role,
 )
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -73,8 +72,8 @@ class LibraryManager:
         if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException("Only administrators can create libraries.")
         else:
-            library = trans.app.model.Library(name=name, description=description, synopsis=synopsis)
-            root_folder = trans.app.model.LibraryFolder(name=name, description="")
+            library = Library(name=name, description=description, synopsis=synopsis)
+            root_folder = LibraryFolder(name=name, description="")
             library.root_folder = root_folder
             trans.sa_session.add_all((library, root_folder))
             trans.sa_session.commit()
@@ -131,7 +130,7 @@ class LibraryManager:
         trans.sa_session.commit()
         return library
 
-    def list(self, trans, deleted: Optional[bool] = False) -> Tuple[Query, Dict[str, Set]]:
+    def list(self, trans, deleted: Optional[bool] = False) -> tuple[Query, dict[str, set]]:
         """
         Return a list of libraries from the DB.
 
@@ -213,7 +212,7 @@ class LibraryManager:
         else:
             return library
 
-    def get_library_dict(self, trans, library: Library, prefetched_ids: Optional[Dict[str, Set]] = None) -> dict:
+    def get_library_dict(self, trans, library: Library, prefetched_ids: Optional[dict[str, set]] = None) -> dict:
         """
         Return library data in the form of a dictionary.
 
@@ -273,35 +272,35 @@ class LibraryManager:
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        access_library_role_list = [
-            (access_role.name, trans.security.encode_id(access_role.id))
-            for access_role in self.get_access_roles(trans, library)
-        ]
-        modify_library_role_list = [
-            (modify_role.name, trans.security.encode_id(modify_role.id))
-            for modify_role in self.get_modify_roles(trans, library)
-        ]
-        manage_library_role_list = [
-            (manage_role.name, trans.security.encode_id(manage_role.id))
-            for manage_role in self.get_manage_roles(trans, library)
-        ]
-        add_library_item_role_list = [
-            (add_role.name, trans.security.encode_id(add_role.id)) for add_role in self.get_add_roles(trans, library)
-        ]
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+        access_roles = self.get_access_roles(trans, library)
+        modify_roles = self.get_modify_roles(trans, library)
+        manage_roles = self.get_manage_roles(trans, library)
+        add_roles = self.get_add_roles(trans, library)
+
+        def make_tuples(roles: set):
+            tuples = []
+            for role in roles:
+                # use role name for non-private roles, and user.email from private rules
+                displayed_name = private_role_emails.get(role.id, role.name)
+                role_tuple = (displayed_name, trans.security.encode_id(role.id))
+                tuples.append(role_tuple)
+            return tuples
+
         return dict(
-            access_library_role_list=access_library_role_list,
-            modify_library_role_list=modify_library_role_list,
-            manage_library_role_list=manage_library_role_list,
-            add_library_item_role_list=add_library_item_role_list,
+            access_library_role_list=make_tuples(access_roles),
+            modify_library_role_list=make_tuples(modify_roles),
+            manage_library_role_list=make_tuples(manage_roles),
+            add_library_item_role_list=make_tuples(add_roles),
         )
 
-    def get_access_roles(self, trans, library: Library) -> Set[Role]:
+    def get_access_roles(self, trans, library: Library) -> set[Role]:
         """
         Load access roles for all library permissions
         """
         return set(library.get_access_roles(trans.app.security_agent))
 
-    def get_modify_roles(self, trans, library: Library) -> Set[Role]:
+    def get_modify_roles(self, trans, library: Library) -> set[Role]:
         """
         Load modify roles for all library permissions
         """
@@ -311,7 +310,7 @@ class LibraryManager:
             )
         )
 
-    def get_manage_roles(self, trans, library: Library) -> Set[Role]:
+    def get_manage_roles(self, trans, library: Library) -> set[Role]:
         """
         Load manage roles for all library permissions
         """
@@ -321,7 +320,7 @@ class LibraryManager:
             )
         )
 
-    def get_add_roles(self, trans, library: Library) -> Set[Role]:
+    def get_add_roles(self, trans, library: Library) -> set[Role]:
         """
         Load add roles for all library permissions
         """

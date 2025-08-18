@@ -15,8 +15,9 @@ const selectors = {
     invocationSummary: ".invocation-overview",
     bAlertStub: "balert-stub",
     spanElement: "span",
-    invocationReportTab: '[titleitemclass="invocation-report-tab"]',
-    invocationExportTab: '[titleitemclass="invocation-export-tab"]',
+    invocationDebugTab: ".invocation-debug-tab",
+    invocationReportTab: ".invocation-report-tab",
+    invocationExportTab: ".invocation-export-tab",
     fullPageHeading: "anonymous-stub[h1='true']",
 };
 
@@ -32,6 +33,18 @@ const invocationById = {
     "non-terminal-jobs": {
         ...invocationData,
         id: "non-terminal-jobs",
+    },
+    "non-terminal-populated-state": {
+        ...invocationData,
+        id: "non-terminal-populated-state",
+    },
+    "non-terminal-error-jobs": {
+        ...invocationData,
+        id: "non-terminal-error-jobs",
+    },
+    "terminal-error-jobs": {
+        ...invocationData,
+        id: "terminal-error-jobs",
     },
 };
 
@@ -51,12 +64,30 @@ const invocationJobsSummaryById = {
             running: 1,
         },
     },
+    "non-terminal-populated-state": {
+        ...invocationDataJobsSummary,
+        populated_state: "new",
+    },
+    "non-terminal-error-jobs": {
+        ...invocationDataJobsSummary,
+        states: {
+            running: 1,
+            error: 1,
+        },
+    },
+    "terminal-error-jobs": {
+        ...invocationDataJobsSummary,
+        states: {
+            ok: 1,
+            error: 1,
+        },
+    },
 };
 
 // Mock the invocation store to return the expected invocation data given the invocation ID
 jest.mock("@/stores/invocationStore", () => {
     const originalModule = jest.requireActual("@/stores/invocationStore");
-    const mockFetchInvocationForId = jest.fn().mockImplementation((fetchParams) => {
+    const mockFetchInvocationById = jest.fn().mockImplementation((fetchParams) => {
         if (fetchParams.id === "error-invocation") {
             throw new Error("User does not own specified item.");
         }
@@ -72,10 +103,22 @@ jest.mock("@/stores/invocationStore", () => {
             getInvocationJobsSummaryById: jest.fn().mockImplementation((invocationId) => {
                 return invocationJobsSummaryById[invocationId];
             }),
-            fetchInvocationForId: mockFetchInvocationForId,
+            getInvocationStepJobsSummaryById: jest.fn().mockImplementation(() => {
+                return [
+                    {
+                        id: "job-id",
+                        model: "Job",
+                        populated_state: "ok",
+                        states: {
+                            ok: 1,
+                        },
+                    },
+                ];
+            }),
+            fetchInvocationById: mockFetchInvocationById,
             fetchInvocationJobsSummaryForId: mockFetchInvocationJobsSummaryForId,
         }),
-        mockFetchInvocationForId,
+        mockFetchInvocationById,
         mockFetchInvocationJobsSummaryForId,
     };
 });
@@ -163,6 +206,15 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(1);
     });
 
+    it("determines that job states are not terminal with non-terminal populated state for summary", async () => {
+        const wrapper = await mountWorkflowInvocationState("non-terminal-populated-state");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+
+        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
+        assertInvocationFetched(1);
+        assertJobsSummaryFetched(1);
+    });
+
     it("determines that errored invocation fetches are handled correctly", async () => {
         const wrapper = await mountWorkflowInvocationState("error-invocation");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
@@ -195,6 +247,20 @@ describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state
     });
 });
 
+describe("WorkflowInvocationState check 'Debug' tab", () => {
+    it("does not exist for non-terminal invocation", async () => {
+        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+        expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(false);
+    });
+
+    it("exists for terminal invocation", async () => {
+        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
+        expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(true);
+    });
+});
+
 /**
  * This is a somewhat hacky way to determine if the invocation and job states are terminal without
  * exposing the internals of the component. This is just to restore the previous behavior of the test
@@ -207,8 +273,8 @@ function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
 
 /** Asserts that the invocation was fetched in the store the given number of times */
 function assertInvocationFetched(count = 1) {
-    const { mockFetchInvocationForId } = jest.requireMock("@/stores/invocationStore");
-    expect(mockFetchInvocationForId).toHaveBeenCalledTimes(count);
+    const { mockFetchInvocationById } = jest.requireMock("@/stores/invocationStore");
+    expect(mockFetchInvocationById).toHaveBeenCalledTimes(count);
 }
 
 /** Asserts that the jobs summary was fetched in the store the given number of times */

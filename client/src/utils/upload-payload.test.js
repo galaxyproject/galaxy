@@ -1,4 +1,4 @@
-import { isUrl, uploadPayload } from "./upload-payload.js";
+import { uploadPayload } from "./upload-payload.js";
 
 describe("uploadPayload", () => {
     test("basic validation", () => {
@@ -26,19 +26,12 @@ describe("uploadPayload", () => {
         ).toThrow("Invalid url: xyz://test.me.1");
     });
 
-    test("url detection", () => {
-        expect(isUrl("xyz://")).toBeFalsy();
-        expect(isUrl("ftp://")).toBeTruthy();
-        expect(isUrl("http://")).toBeTruthy();
-    });
-
     test("regular payload", () => {
         const p = uploadPayload(
             [
                 { fileContent: " fileContent ", fileMode: "new", fileName: "1" },
                 {
                     dbKey: "dbKey2",
-                    deferred: true,
                     extension: "extension2",
                     fileData: { size: 1 },
                     fileMode: "local",
@@ -66,12 +59,21 @@ describe("uploadPayload", () => {
                     spaceToTab: false,
                     toPosixLines: false,
                 },
+                {
+                    dbKey: "dbKey5",
+                    extension: "extension5",
+                    fileData: { size: 1 },
+                    fileMode: "local",
+                    fileName: "Galaxy5-[PreviousGalaxyFile].bed",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
             ],
             "historyId"
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: [{ size: 1 }],
+            files: [{ size: 1 }, { size: 1 }],
             history_id: "historyId",
             targets: [
                 {
@@ -79,7 +81,6 @@ describe("uploadPayload", () => {
                     elements: [
                         {
                             dbkey: "?",
-                            deferred: undefined,
                             ext: "auto",
                             name: "1",
                             paste_content: " fileContent ",
@@ -89,7 +90,6 @@ describe("uploadPayload", () => {
                         },
                         {
                             dbkey: "dbKey2",
-                            deferred: true,
                             ext: "extension2",
                             name: "2",
                             space_to_tab: true,
@@ -126,6 +126,14 @@ describe("uploadPayload", () => {
                             to_posix_lines: false,
                             url: "http://test.me",
                         },
+                        {
+                            dbkey: "dbKey5",
+                            ext: "extension5",
+                            name: "PreviousGalaxyFile",
+                            space_to_tab: true,
+                            src: "files",
+                            to_posix_lines: true,
+                        },
                     ],
                 },
             ],
@@ -138,12 +146,21 @@ describe("uploadPayload", () => {
                 { fileContent: "fileContent", fileMode: "new", fileName: "1" },
                 {
                     dbKey: "dbKey",
-                    deferred: true,
                     extension: "extension",
                     fileContent: "fileContent",
                     fileData: "fileData",
                     fileMode: "local",
                     fileName: "2",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
+                {
+                    dbKey: "dbKey2",
+                    extension: "extension2",
+                    fileContent: "fileContent",
+                    fileData: "fileData",
+                    fileMode: "local",
+                    fileName: "Galaxy2-[PreviousGalaxyFile].bed",
                     spaceToTab: true,
                     toPosixLines: true,
                 },
@@ -153,7 +170,7 @@ describe("uploadPayload", () => {
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: ["fileData"],
+            files: ["fileData", "fileData"],
             history_id: "historyId",
             targets: [
                 {
@@ -164,7 +181,6 @@ describe("uploadPayload", () => {
                                 items: [
                                     {
                                         dbkey: "?",
-                                        deferred: undefined,
                                         ext: "auto",
                                         name: "1",
                                         paste_content: "fileContent",
@@ -174,9 +190,16 @@ describe("uploadPayload", () => {
                                     },
                                     {
                                         dbkey: "dbKey",
-                                        deferred: true,
                                         ext: "extension",
                                         name: "2",
+                                        space_to_tab: true,
+                                        src: "files",
+                                        to_posix_lines: true,
+                                    },
+                                    {
+                                        dbkey: "dbKey2",
+                                        ext: "extension2",
+                                        name: "PreviousGalaxyFile",
                                         space_to_tab: true,
                                         src: "files",
                                         to_posix_lines: true,

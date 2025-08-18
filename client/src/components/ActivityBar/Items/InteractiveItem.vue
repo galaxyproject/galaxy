@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -35,7 +35,6 @@ const tooltip = computed(() =>
 
 <template>
     <ActivityItem
-        v-if="totalCount > 0"
         :id="id"
         :activity-bar-id="props.activityBarId"
         :icon="icon"

@@ -19,10 +19,14 @@ from galaxy.files.templates.models import (
     InvenioFileSourceTemplateConfiguration,
     PosixFileSourceConfiguration,
     PosixFileSourceTemplateConfiguration,
+    RSpaceFileSourceConfiguration,
+    RSpaceFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
     WebdavFileSourceConfiguration,
     WebdavFileSourceTemplateConfiguration,
+    ZenodoFileSourceConfiguration,
+    ZenodoFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
@@ -69,6 +73,10 @@ class_to_diagram = {
     eLabFTWFileSourceConfiguration: "file_source_elabftw_configuration",
     InvenioFileSourceTemplateConfiguration: "file_source_invenio_configuration_template",
     InvenioFileSourceConfiguration: "file_source_invenio_configuration",
+    ZenodoFileSourceTemplateConfiguration: "file_source_zenodo_configuration_template",
+    ZenodoFileSourceConfiguration: "file_source_zenodo_configuration",
+    RSpaceFileSourceTemplateConfiguration: "file_source_rspace_configuration_template",
+    RSpaceFileSourceConfiguration: "file_source_rspace_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():

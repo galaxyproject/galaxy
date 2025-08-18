@@ -91,6 +91,15 @@
                             </label>
                         </RuleComponent>
                         <RuleComponent
+                            rule-type="add_column_from_sample_sheet_index"
+                            :display-rule-type.sync="displayRuleType"
+                            @saveRule="handleRuleSave">
+                            <label>
+                                {{ l("Value") }}
+                                <input v-model="addColumnSampleSheetIndexValue" type="number" min="0" />
+                            </label>
+                        </RuleComponent>
+                        <RuleComponent
                             rule-type="add_column_group_tag_value"
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
@@ -131,6 +140,10 @@
                             <label v-if="addColumnRegexType == 'replacement'">
                                 {{ l("Replacement Expression") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
+                            </label>
+                            <label v-b-tooltip.hover>
+                                <input v-model="addColumnRegexAllowUnmatched" type="checkbox" />
+                                {{ l("Allow regular expression unmatched.") }}
                             </label>
                         </RuleComponent>
                         <RuleComponent
@@ -307,24 +320,39 @@
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a
-                                        v-for="target in unmappedTargets"
+                                        v-for="target in basicUnmappedTargets"
                                         :key="target"
                                         :index="target"
                                         class="dropdown-item"
                                         href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)"
+                                        >{{ mappingTargets()[target].label }}</a
+                                    >
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><h6 class="dropdown-header">Advanced</h6></li>
+                                    <a
+                                        v-for="target in advancedUnmappedTargets"
+                                        :key="target"
+                                        :index="target"
+                                        class="dropdown-item"
+                                        href="javascript:void(0)"
+                                        :title="mappingTargets()[target].help"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
                                     >
                                 </div>
-                                <b-button
+                                <GButton
                                     v-if="!hasActiveMappingEdit"
-                                    v-b-tooltip.hover.bottom
+                                    tooltip
+                                    tooltip-placement="bottom"
                                     :title="titleApplyColumnDefinitions"
                                     class="rule-mapping-ok"
-                                    @click="displayRuleType = null"
-                                    >{{ l("Apply") }}</b-button
-                                >
+                                    @click="displayRuleType = null">
+                                    {{ l("Apply") }}
+                                </GButton>
                             </div>
                         </div>
                         <div v-if="displayRuleType == null" class="rule-summary">
@@ -432,6 +460,10 @@
                                             rule-type="add_column_metadata"
                                             @addNewRule="addNewRule" />
                                         <RuleTargetComponent
+                                            v-if="sampleSheetMetadataAvailable"
+                                            rule-type="add_column_from_sample_sheet_index"
+                                            @addNewRule="addNewRule" />
+                                        <RuleTargetComponent
                                             v-if="hasTagsMetadata"
                                             rule-type="add_column_group_tag_value"
                                             @addNewRule="addNewRule" />
@@ -452,25 +484,34 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
+                        v-if="gridImplementation === 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
                         stretch-h="all"></HotTable>
+                    <RuleGrid
+                        v-else
+                        id="hot-table"
+                        ref="hotTable"
+                        height="400px"
+                        :data="hotData.data"
+                        :col-headers="colHeadersDisplay"
+                        stretch-h="all"></RuleGrid>
                 </div>
             </div>
         </RuleModalMiddle>
         <RuleModalFooter v-if="ruleView == 'source'">
-            <b-button v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
-                l("Cancel")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
-                l("Reset")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
-                l("Apply")
-            }}</b-button>
+            <GButton tooltip :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">
+                {{ l("Cancel") }}
+            </GButton>
+            <GButton tooltip :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </GButton>
+            <GButton tooltip :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">
+                {{ l("Apply") }}
+            </GButton>
         </RuleModalFooter>
         <RuleModalFooter v-else-if="ruleView == 'normal'">
             <template v-slot:inputs>
@@ -504,28 +545,29 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
-                <b-button
-                    :help="titleCancel"
+            <b-row v-if="mode == 'modal'" class="mx-auto">
+                <GButton
+                    tooltip
+                    :title="titleCancel"
                     class="creator-cancel-btn rule-btn-cancel"
                     tabindex="-1"
-                    @click="cancel"
-                    >{{ l("Cancel") }}</b-button
-                >
+                    @click="cancel">
+                    {{ l("Cancel") }}
+                </GButton>
 
                 <TooltipOnHover class="menu-option" :title="titleReset">
-                    <b-button class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
-                        l("Reset")
-                    }}</b-button>
+                    <GButton class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">
+                        {{ l("Reset") }}
+                    </GButton>
                 </TooltipOnHover>
                 <TooltipOnHover class="menu-option" :disabled="!validInput" :title="titleFinish">
-                    <b-button
+                    <GButton
                         class="create-collection rule-btn-okay"
-                        variant="primary"
+                        color="blue"
                         :disabled="!validInput"
-                        @click="createCollection"
-                        >{{ finishButtonTitle }}</b-button
-                    >
+                        @click="createCollection">
+                        {{ finishButtonTitle }}
+                    </GButton>
                 </TooltipOnHover>
             </b-row>
         </RuleModalFooter>
@@ -545,8 +587,8 @@
                 )
             }}
         </RuleModalHeader>
-        <RuleModalFooter>
-            <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
+        <RuleModalFooter v-if="mode == 'modal'">
+            <GButton class="creator-cancel-btn" tabindex="-1" @click="cancel"> {{ l("Close") }} </GButton>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'error'" class="rule-collection-builder">
@@ -555,18 +597,19 @@
         <RuleModalMiddle>
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
-        <RuleModalFooter>
-            <b-button v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
+        <RuleModalFooter v-if="mode == 'modal'">
+            <GButton tooltip :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
                 l("Close")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
-                l("Okay")
-            }}</b-button>
+            }}</GButton>
+            <GButton tooltip :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{ l("Okay") }}</GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>
+
 <script>
 import HotTable from "@handsontable/vue";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
+import { fetch, fetchJobErrorMessage } from "api/tools";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -576,6 +619,7 @@ import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInpu
 import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleGrid from "components/RuleBuilder/RuleGrid";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
@@ -585,14 +629,16 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
-import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+
+import GButton from "./BaseComponents/GButton.vue";
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);
@@ -612,6 +658,7 @@ export default {
     components: {
         TooltipOnHover,
         HotTable,
+        RuleGrid,
         RuleComponent,
         RuleTargetComponent,
         SavedRulesSelector,
@@ -624,6 +671,7 @@ export default {
         RuleModalMiddle,
         RuleModalFooter,
         Select2,
+        GButton,
     },
     mixins: [SaveRules],
     props: {
@@ -656,24 +704,41 @@ export default {
             required: false,
             type: Object,
         },
+        initialMapping: {
+            // only respected if elementsType is raw currently - other element types have their own default behaviors that make sense (e.g. assigning ftp paths to a URI implicitly)
+            required: false,
+            type: Array,
+        },
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
             default: true,
         },
-        // Callbacks sent in by modal code.
+        // Callbacks sent in by modal code, optional if mode is not modal
         oncancel: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         oncreate: {
-            required: true,
+            required: false,
             type: Function,
+            default: null,
         },
         ftpUploadSite: {
             type: String,
             required: false,
             default: null,
+        },
+        gridImplementation: {
+            type: String,
+            required: false,
+            default: "aggrid",
+        },
+        mode: {
+            type: String,
+            required: false,
+            default: "modal", // set to wizard to use embedded formatting
         },
     },
     data: function () {
@@ -690,6 +755,8 @@ export default {
                 mapping = [{ type: "url", columns: [0] }];
             } else if (this.elementsType == "datasets") {
                 mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else if (this.initialMapping) {
+                mapping = this.initialMapping;
             } else {
                 mapping = [];
             }
@@ -777,8 +844,10 @@ export default {
             addColumnRegexExpression: "",
             addColumnRegexReplacement: null,
             addColumnRegexGroupCount: null,
+            addColumnRegexAllowUnmatched: false,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnSampleSheetIndexValue: 0,
             addColumnGroupTagValueValue: "",
             addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
@@ -924,6 +993,18 @@ export default {
             }
             return targets;
         },
+        basicUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return !MAPPING_TARGETS[target].advanced;
+            });
+        },
+        advancedUnmappedTargets() {
+            const unmappedTargets = this.unmappedTargets;
+            return unmappedTargets.filter((target) => {
+                return MAPPING_TARGETS[target].advanced;
+            });
+        },
         colHeaders() {
             const { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
@@ -958,12 +1039,34 @@ export default {
             }
             return asDict;
         },
+        sampleSheetMetadataAvailable() {
+            if (this.elementsType !== "collection_contents") {
+                return false;
+            }
+            if (this.initialElements !== null) {
+                const collectionType = this.initialElements.collection_type;
+                const collectionTypeRanks = collectionType.split(":");
+                return collectionTypeRanks[0] == "sample_sheet";
+            } else {
+                // input type unknown right? just have to allow it
+                return true;
+            }
+        },
         metadataOptions() {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
                 let collectionType;
+                // true iff there aren't multiple levels of list identifiers - so we can simplify the display
+                let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
+                    if (
+                        collectionType == "list:paired" ||
+                        collectionType == "list" ||
+                        collectionType.startsWith("sample_sheet")
+                    ) {
+                        flatishList = true;
+                    }
                 } else {
                     // give a bunch of different options if not constrained with given input
                     collectionType = "list:list:list:paired";
@@ -971,11 +1074,20 @@ export default {
                 const collectionTypeRanks = collectionType.split(":");
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
-                    if (collectionTypeRank == "list") {
-                        // TODO: drop the numeral at the end if only flat list
-                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                    if (collectionTypeRank == "list" || collectionTypeRank == "sample_sheet") {
+                        if (flatishList) {
+                            metadataOptions["identifier" + index] = _l("List Identifier");
+                            metadataOptions["index" + index] = _l("List Index");
+                        } else {
+                            metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                            metadataOptions["index" + index] = _l("List Index ") + (parseInt(index) + 1);
+                        }
+                    } else if (collectionTypeRank == "record") {
+                        metadataOptions["identifier" + index] = _l("Record Identifier");
+                        metadataOptions["index" + index] = _l("Record Index");
                     } else {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
+                        metadataOptions["index" + index] = _l("Paired Index (0 or 1)");
                     }
                 }
                 metadataOptions["tags"] = _l("Tags");
@@ -1009,6 +1121,13 @@ export default {
                     collectionType += ":paired";
                 } else {
                     collectionType = "paired";
+                }
+            }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                if (collectionType) {
+                    collectionType += ":paired_or_unpaired";
+                } else {
+                    collectionType = "paired_or_unpaired";
                 }
             }
             return collectionType;
@@ -1157,6 +1276,9 @@ export default {
                 }
             }
         },
+        validInput: function (newState) {
+            this.$emit("validInput", newState);
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1202,13 +1324,20 @@ export default {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
                 });
         }
+        // is this comparable to watch immediate in newer Vue code?, I just need that event to
+        // to flair if it is initially okay also.
+        if (this.validInput) {
+            this.$emit("validInput", true);
+        }
     },
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
         // Vue.nextTick() didn't work here.
-        setTimeout(() => {
-            this.$refs.hotTable.$el.click();
-        }, 200);
+        if (this.gridImplementation === "hot") {
+            setTimeout(() => {
+                this.$refs.hotTable.$el.click();
+            }, 200);
+        }
     },
     methods: {
         restoreRules(event) {
@@ -1329,11 +1458,11 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            refreshContentsWrapper();
+            startWatchingHistory();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
-            const jobId = response.data.jobs[0].id;
+            const jobId = response;
             const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
@@ -1345,8 +1474,12 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    refreshContentsWrapper();
-                    this.oncreate();
+                    startWatchingHistory();
+                    this.$emit("onCreate", jobResponse.data);
+                    if (this.oncreate) {
+                        // legacy non-event handling
+                        this.oncreate();
+                    }
                 }
             };
             const doJobCheck = () => {
@@ -1356,14 +1489,8 @@ export default {
         },
         doFullJobCheck(jobId) {
             const handleJobShow = (jobResponse) => {
-                const stderr = jobResponse.data.stderr;
-                if (stderr) {
-                    let errorMessage = "An error was encountered while running your upload job. ";
-                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
-                        errorMessage +=
-                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
-                    }
-                    errorMessage += "Upload job completed with standard error: " + stderr;
+                const errorMessage = fetchJobErrorMessage(jobResponse.data);
+                if (errorMessage) {
                     this.errorMessage = errorMessage;
                 }
             };
@@ -1373,7 +1500,7 @@ export default {
             this.state = "error";
             if (error.response) {
                 console.log(error.response);
-                this.errorMessage = error.response.data.err_msg;
+                this.errorMessage = errorMessageAsString(error);
             } else {
                 console.log(error);
                 this.errorMessage = "Unknown error encountered: " + error;
@@ -1398,6 +1525,9 @@ export default {
                 });
             }
         },
+        attemptCreate() {
+            this.createCollection();
+        },
         createCollection() {
             const asJson = {
                 rules: this.rules,
@@ -1415,21 +1545,36 @@ export default {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    const deferreds = Object.entries(elements).map(([name, els]) => {
-                        // This looks like a promise but it is not one because creationFn and
-                        // oncreate are references to function from the backbone models which means
-                        // they are expecting their arguments in a different order. So, looks like,
-                        // jQuery.Deferred and therefore jQuery are still dependencies
-                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                    });
-                    const promises = deferreds.map(deferredToPromise);
-                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    if (this.creationFn) {
+                        const deferreds = Object.entries(elements).map(([name, els]) => {
+                            // This looks like a promise but it is not one because creationFn and
+                            // oncreate are references to function from the backbone models which means
+                            // they are expecting their arguments in a different order. So, looks like,
+                            // jQuery.Deferred and therefore jQuery are still dependencies
+                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                        });
+                        const promises = deferreds.map(deferredToPromise);
+                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    } else {
+                        const request = Object.entries(elements).map(([name, els]) => {
+                            return {
+                                name,
+                                elementIdentifiers: els,
+                                collectionType: collectionType,
+                                hideSourceItems,
+                            };
+                        });
+                        this.$emit("onAttemptCreate", request);
+                    }
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
                 if (this.state !== "error") {
                     this.saveRulesFn(this.ruleSourceJson);
-                    this.oncreate();
+                    this.$emit("onCreate");
+                    if (this.oncreate) {
+                        this.oncreate();
+                    }
                 }
             } else {
                 const Galaxy = getGalaxyInstance();
@@ -1463,14 +1608,12 @@ export default {
                 }
 
                 if (this.state !== "error") {
-                    axios
-                        .post(`${getAppRoot()}api/tools/fetch`, {
-                            history_id: historyId,
-                            targets: targets,
-                            auto_decompress: true,
-                        })
-                        .then(this.refreshAndWait)
-                        .catch(this.renderFetchError);
+                    const fetchPayload = {
+                        history_id: historyId,
+                        targets: targets,
+                        auto_decompress: true,
+                    };
+                    fetch(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
                 }
             }
         },
@@ -1482,6 +1625,9 @@ export default {
             }
             if (this.mappingAsDict.paired_identifier) {
                 identifierColumns.push(this.mappingAsDict.paired_identifier.columns[0]);
+            }
+            if (this.mappingAsDict.paired_or_unpaired_identifier) {
+                identifierColumns.push(this.mappingAsDict.paired_or_unpaired_identifier.columns[0]);
             }
             return identifierColumns;
         },
@@ -1537,15 +1683,24 @@ export default {
                         let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
-                            if (collectionTypeAtDepth === "paired") {
+                            if (["paired", "paired_or_unpaired"].indexOf(collectionTypeAtDepth) > -1) {
                                 if (["f", "1", "r1", "forward"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "forward";
                                 } else if (["r", "2", "r2", "reverse"].indexOf(identifier.toLowerCase()) > -1) {
                                     identifier = "reverse";
+                                } else if (
+                                    collectionTypeAtDepth == "paired_or_unpaired" &&
+                                    ["unpaired", "u"].indexOf(identifier.toLowerCase()) > -1
+                                ) {
+                                    // assert collectionTypeAtDepth == paired_or_unpaired
+                                    identifier = "unpaired";
                                 } else {
                                     this.state = "error";
-                                    this.errorMessage =
-                                        "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    const allowedIndicators = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"];
+                                    if (collectionTypeAtDepth == "paired_or_unpaired") {
+                                        allowedIndicators.push("unpaired", "u");
+                                    }
+                                    this.errorMessage = `Unknown indicator (${identifier}) of paired status encountered - only values of (${allowedIndicators}) are allowed.`;
                                     return;
                                 }
                             }
@@ -1582,6 +1737,29 @@ export default {
                             }
                         }
                     }
+                }
+
+                // Recursively descend elements to handle "paired_or_unpaired" collections
+                const updateUnpairedIdentifiers = (elements) => {
+                    for (const value of Object.values(elements)) {
+                        if (typeof value !== "object" || value === null) {
+                            continue;
+                        }
+                        if (value.src === "new_collection" && value.collection_type === "paired_or_unpaired") {
+                            const subElements = value.elements;
+                            if (subElements["forward"] && !subElements["reverse"]) {
+                                subElements["unpaired"] = subElements["forward"];
+                                delete subElements["forward"];
+                            }
+                        }
+                        if (value.elements) {
+                            updateUnpairedIdentifiers(value.elements);
+                        }
+                    }
+                };
+
+                if (collectionType.endsWith("paired_or_unpaired")) {
+                    updateUnpairedIdentifiers(elements);
                 }
 
                 elementsByName[collectionName] = elements;
@@ -1640,26 +1818,47 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_) {
+        populateElementsFromCollectionDescription(
+            elements,
+            collectionType,
+            parentIdentifiers_,
+            parentIndices_,
+            parentColumns_
+        ) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
+            const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
             let sources = [];
-            for (const element of elements) {
+            for (const index in elements) {
+                const element = elements[index];
                 const elementObject = element.object;
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
+                const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                let columns = parentColumns_;
+                if (!columns && collectionType.startsWith("sample_sheet")) {
+                    columns = element.columns ? element.columns : [];
+                }
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
                     data.push([]);
-                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    const source = {
+                        identifiers: identifiers,
+                        indices: indices,
+                        dataset: elementObject,
+                        tags: elementObject.tags,
+                        columns: columns,
+                    };
                     sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     const elementObj = this.populateElementsFromCollectionDescription(
                         elementObject.elements,
                         restCollectionType,
-                        identifiers
+                        identifiers,
+                        indices,
+                        columns
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;
@@ -1736,6 +1935,24 @@ export default {
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
             }
+            const hashTypes = [
+                { key: "hash_md5", function: "MD5" },
+                { key: "hash_sha1", function: "SHA1" },
+                { key: "hash_sha256", function: "SHA256" },
+                { key: "hash_sha515", function: "SHA512" },
+            ];
+
+            hashTypes.forEach(({ key, function: hashFunction }) => {
+                if (mappingAsDict[key]) {
+                    const hashColumn = mappingAsDict[key].columns[0];
+                    const hash = data[dataIndex][hashColumn];
+                    if (res.hashes === undefined) {
+                        res["hashes"] = [];
+                    }
+                    res["hashes"].push({ hash_function: hashFunction, hash_value: hash });
+                }
+            });
+
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;

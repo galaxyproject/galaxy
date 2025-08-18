@@ -1,5 +1,5 @@
 /** Adds window manager masthead icon and functionality **/
-import "winbox/dist/css/winbox.min.css";
+import "winbox/src/css/winbox.css";
 
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
@@ -26,14 +26,17 @@ export class WindowManager {
     }
 
     /** Add and display a new window based on options. */
-    add(options) {
-        const url = withPrefix(options.url);
+    add(options, layout = 10, margin = 20, index = 850) {
+        const url = this._build_url(withPrefix(options.url), { hide_panels: true, hide_masthead: true });
+        const x = this.counter * margin;
+        const y = (this.counter % layout) * margin;
         this.counter++;
-        const boxUrl = this._build_url(url, { hide_panels: true, hide_masthead: true });
         WinBox.new({
+            index: index,
             title: options.title || "Window",
-            url: boxUrl,
-            index: 850,
+            url: url,
+            x: x,
+            y: y,
             onclose: () => {
                 this.counter--;
             },

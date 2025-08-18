@@ -14,16 +14,12 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolForm from "./ToolForm.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const pinia = createPinia();
-
-// the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
-// better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-// stub out the Popover piece I think.
-suppressBootstrapVueWarnings();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -44,6 +40,11 @@ describe("ToolForm", () => {
                 );
             })
         );
+
+        // the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
+        // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
+        // stub out the Popover piece I think.
+        suppressBootstrapVueWarnings();
 
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
@@ -85,8 +86,8 @@ describe("ToolForm", () => {
 
     it("shows props", async () => {
         await flushPromises();
-        const button = wrapper.find(".btn-primary");
-        expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
+        const button = wrapper.findComponent(GButton);
+        expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");

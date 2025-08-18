@@ -13,14 +13,11 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Iterable
 from json import dumps
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -375,7 +372,7 @@ class DynamicCompressedArchive(CompressedArchive):
     compressed_format: str
     uncompressed_datatype_instance: Data
 
-    def matches_any(self, target_datatypes: List[Any]) -> bool:
+    def matches_any(self, target_datatypes: list[Any]) -> bool:
         """Treat two aspects of compressed datatypes separately."""
         compressed_target_datatypes = []
         uncompressed_target_datatypes = []
@@ -414,6 +411,7 @@ class CompressedZipArchive(CompressedArchive):
     """
 
     file_ext = "zip"
+    display_behavior = "download"  # Archive files trigger downloads
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -660,7 +658,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Merges BAM files
 
@@ -930,11 +928,12 @@ class Bam(BamNative):
             index_file = dataset.metadata.spec[spec_key].param.new_file(
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
+        extra_threads = int(os.environ.get("GALAXY_SLOTS", 1)) - 1
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())
+            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
         else:
-            pysam.index(index_flag, "-o", index_file.get_file_name(), dataset.get_file_name())
+            pysam.index(index_flag, "-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
         dataset.metadata.bam_index = index_file
 
     def sniff(self, filename: str) -> bool:
@@ -1114,7 +1113,7 @@ class CRAM(Binary):
             if self.set_index_file(dataset, index_file):
                 dataset.metadata.cram_index = index_file
 
-    def get_cram_version(self, filename: str) -> Tuple[int, int]:
+    def get_cram_version(self, filename: str) -> tuple[int, int]:
         try:
             with open(filename, "rb") as fh:
                 header = bytearray(fh.read(6))
@@ -1124,8 +1123,9 @@ class CRAM(Binary):
             return -1, -1
 
     def set_index_file(self, dataset: HasFileName, index_file) -> bool:
+        extra_threads = int(os.environ.get("GALAXY_SLOTS", 1)) - 1
         try:
-            pysam.index("-o", index_file.get_file_name(), dataset.get_file_name())
+            pysam.index("-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
@@ -1612,7 +1612,10 @@ class Anndata(H5):
                 obs = get_index_value(tmp)
                 # Determine cell labels
                 if obs is not None:
-                    dataset.metadata.obs_names = [n.decode() for n in obs]
+                    # This is super expensive because the number of observations is unbounded.
+                    # https://github.com/galaxyproject/tools-iuc/blob/8341270dd36185ebf59d15282bc79f1215e936a4/tools/anndata/import.xml#L53
+                    # seems to be the only tool to consume this in the IUC. drop and make tool compute this?
+                    dataset.metadata.obs_names = [util.unicodify(n) for n in obs]
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
@@ -2204,7 +2207,7 @@ class H5MLM(H5):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(dataset, to_ext, headers, **kwd)
 
-        out_dict: Dict = {}
+        out_dict: dict = {}
         try:
             with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
@@ -3173,11 +3176,27 @@ class NcbiTaxonomySQlite(SQlite):
 
 
 @build_sniff_from_prefix
+class Docx(Binary):
+    """Class for Word 2007 (docx) files"""
+
+    file_ext = "docx"
+    compressed = True
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Docx is compressed in zip format and must not be uncompressed in Galaxy.
+        return (
+            file_prefix.compressed_mime_type
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+
+@build_sniff_from_prefix
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
 
     file_ext = "xlsx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
@@ -3190,6 +3209,7 @@ class ExcelXls(Binary):
 
     file_ext = "excel.xls"
     edam_format = "format_3468"
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.mime_type == self.get_mime()

@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
 import GenericElement from "./GenericElement";
@@ -15,6 +15,8 @@ describe("GenericElement", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         wrapper = mount(GenericElement, {
             propsData: {
                 dsc: {

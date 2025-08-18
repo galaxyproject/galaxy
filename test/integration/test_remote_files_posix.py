@@ -17,15 +17,8 @@ from galaxy_test.driver.integration_setup import (
 
 class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(
-            config,
-            cls,
-            required_role_expression=REQUIRED_ROLE_EXPRESSION,
-            required_group_expression=REQUIRED_GROUP_EXPRESSION,
-        )
+    required_role_expression = REQUIRED_ROLE_EXPRESSION
+    required_group_expression = REQUIRED_GROUP_EXPRESSION
 
     def setUp(self):
         super().setUp()
@@ -113,14 +106,7 @@ class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.Inte
 class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(
-            config,
-            cls,
-            prefer_links=True,
-        )
+    prefer_links = True
 
     def setUp(self):
         super().setUp()
@@ -144,6 +130,7 @@ class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integratio
             assert content == "a\n", content
             stmt = select(Dataset).order_by(Dataset.create_time.desc()).limit(1)
             dataset = self._app.model.session.execute(stmt).unique().scalar_one()
+            assert dataset.external_filename is not None
             assert dataset.external_filename.endswith("/root/a")
             assert os.path.exists(dataset.external_filename)
             assert open(dataset.external_filename).read() == "a\n"

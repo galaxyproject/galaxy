@@ -1,11 +1,9 @@
 import logging
+from collections.abc import Generator
 from datetime import datetime
 from typing import (
     Any,
-    Generator,
-    List,
     Optional,
-    Tuple,
 )
 
 from pydantic import (
@@ -46,7 +44,7 @@ class Metric(BaseModel):
 
 
 class CreateMetricsPayload(BaseModel):
-    metrics: List[Metric] = Field(
+    metrics: list[Metric] = Field(
         default=[],
         title="List of metrics to be recorded.",
         examples=[
@@ -55,7 +53,7 @@ class CreateMetricsPayload(BaseModel):
     )
 
 
-TimeSeriesTuple = Tuple[str, datetime, Any]
+TimeSeriesTuple = tuple[str, datetime, Any]
 TimeSeriesTupleGenerator = Generator[TimeSeriesTuple, None, None]
 
 
@@ -93,7 +91,7 @@ class MetricsManager:
         return response
 
     def _parse_metrics(
-        self, metrics: Optional[List[Metric]] = None, user_id=None, session_id=None
+        self, metrics: Optional[list[Metric]] = None, user_id=None, session_id=None
     ) -> TimeSeriesTupleGenerator:
         """
         Return a generator yielding the each given metric as a tuple:

@@ -19,11 +19,9 @@ import os
 import re
 import shutil
 import tempfile
+from re import Match
 from typing import (
     Any,
-    Dict,
-    List,
-    Match,
     Optional,
 )
 
@@ -66,22 +64,45 @@ from .markdown_parse import (
 
 log = logging.getLogger(__name__)
 
+# Matches galaxy block attributes
 ARG_VAL_CAPTURED_REGEX = r"""(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')"""
 OUTPUT_LABEL_PATTERN = re.compile(rf"output=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 INPUT_LABEL_PATTERN = re.compile(rf"input=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+INVOCATION_ID_PATTERN = re.compile(rf"invocation_id=\s*({ARG_VAL_CAPTURED_REGEX})\s*(?:,\s*)?")
 STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
-SIZE_PATTERN = re.compile(rf"size=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
-# STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
+
+# Matches encoded and unencoded ids in galaxy blocks
 UNENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
 )
 ENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
 )
-INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
-GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re.DOTALL)
-VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
+
+# Matches blocks of various types
+GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re.DOTALL)
+VISUALIZATION_FENCED_BLOCK = re.compile(r"^```\s*visualization+\n\s*(.*?)^```", re.MULTILINE | re.DOTALL)
+
+# Match invocation ids in json blocks
+INVOCATION_ID_JSON_PATTERN = re.compile(r'("invocation_id"\s*:\s*)"([^"]*)"')
+
+
+def process_invocation_ids(f, workflow_markdown: str) -> str:
+    """Finds all invocation ids in JSONs inside visualization blocks and applies f to them."""
+
+    def replace_invocation_id(match):
+        """Replaces only the invocation_id value while preserving the JSON structure."""
+        original_id = match.group(2)
+        new_id = f(original_id)
+        return f'{match.group(1)}"{new_id}"'
+
+    def process_block(block_match):
+        """Processes a matched block and replaces invocation_id inside it."""
+        block_content = block_match.group(0)
+        return re.sub(INVOCATION_ID_JSON_PATTERN, replace_invocation_id, block_content)
+
+    return re.sub(VISUALIZATION_FENCED_BLOCK, process_block, workflow_markdown)
 
 
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
@@ -98,6 +119,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         return (line, False)
 
     internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
 
@@ -109,84 +131,89 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collection_manager
 
-        def _check_object(object_id, line):
-            if object_id is None:
-                raise MalformedContents(f"Missing object identifier [{line}].")
-
         def _remap(container, line):
-            line, object_id, encoded_id = self._encode_line(trans, line)
+            line, object_type, object_id, encoded_id = self._encode_line(trans, line)
+            rval = None
             if container == "history_link":
-                _check_object(object_id, line)
-                history = history_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_history_link(line, history)
+                if object_id is not None and object_type == "history_id":
+                    history = history_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_history_link(line, history)
             elif container == "history_dataset_display":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_link":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_index":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_embedded(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_embedded(line, hda)
             elif container == "history_dataset_as_image":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_as_image(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_as_image(line, hda)
             elif container == "history_dataset_as_table":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_as_table(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_as_table(line, hda)
             elif container == "history_dataset_peek":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_peek(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_peek(line, hda)
             elif container == "history_dataset_info":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_info(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_info(line, hda)
             elif container == "history_dataset_type":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_type(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_type(line, hda)
             elif container == "history_dataset_name":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_name(line, hda)
+                if object_id is not None and object_type == "history_dataset_id":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
-                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
-                workflow_version = None if not workflow_version_str else int(workflow_version_str)
-                rval = self.handle_workflow_display(line, stored_workflow, workflow_version)
+                if encoded_id is not None and object_type == "workflow_id":
+                    stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                    workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
+                    workflow_version = None if not workflow_version_str else int(workflow_version_str)
+                    rval = self.handle_workflow_display(line, stored_workflow, workflow_version)
             elif container == "workflow_image":
-                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
-                workflow_version = None if not workflow_version_str else int(workflow_version_str)
-                rval = self.handle_workflow_image(line, stored_workflow, workflow_version)
+                if encoded_id is not None and object_type == "workflow_id":
+                    stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                    workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
+                    workflow_version = None if not workflow_version_str else int(workflow_version_str)
+                    rval = self.handle_workflow_image(line, stored_workflow, workflow_version)
             elif container == "workflow_license":
-                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                rval = self.handle_workflow_license(line, stored_workflow)
+                if encoded_id is not None and object_type == "workflow_id":
+                    stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                    rval = self.handle_workflow_license(line, stored_workflow)
             elif container == "history_dataset_collection_display":
-                hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
-                rval = self.handle_dataset_collection_display(line, hdca)
+                if encoded_id is not None and object_type == "history_dataset_collection_id":
+                    hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
+                    rval = self.handle_dataset_collection_display(line, hdca)
             elif container == "tool_stdout":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stdout(line, job)
+                if object_id is not None and object_type == "job_id":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stderr(line, job)
+                if object_id is not None and object_type == "job_id":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_job_parameters(line, job)
+                if object_id is not None and object_type == "job_id":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_job_parameters(line, job)
             elif container == "job_metrics":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_job_metrics(line, job)
+                if object_id is not None and object_type == "job_id":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_job_metrics(line, job)
             elif container == "generate_galaxy_version":
                 version = trans.app.config.version_major
                 rval = self.handle_generate_galaxy_version(line, version)
@@ -207,6 +234,9 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "instance_citation_link":
                 url = trans.app.config.citation_url
                 rval = self.handle_instance_citation_link(line, url)
+            elif container == "instance_citation_bibtex":
+                url = trans.app.config.citation_bibtex
+                rval = self.handle_instance_citation_bibtex(line, url)
             elif container == "instance_terms_link":
                 url = trans.app.config.terms_url
                 rval = self.handle_instance_terms_link(line, url)
@@ -214,13 +244,26 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 title = trans.app.config.organization_name
                 url = trans.app.config.organization_url
                 rval = self.handle_instance_organization_link(line, title, url)
+            elif container == "invocation_inputs":
+                if object_id is not None and object_type == "invocation_id":
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_inputs(line, invocation)
+            elif container == "invocation_outputs":
+                if object_id is not None and object_type == "invocation_id":
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_outputs(line, invocation)
             elif container == "invocation_time":
-                invocation = workflow_manager.get_invocation(
-                    trans, object_id, check_ownership=False, check_accessible=True
-                )
-                rval = self.handle_invocation_time(line, invocation)
+                if object_id is not None and object_type == "invocation_id":
+                    invocation = workflow_manager.get_invocation(
+                        trans, object_id, check_ownership=False, check_accessible=True
+                    )
+                    rval = self.handle_invocation_time(line, invocation)
             elif container == "visualization":
-                rval = None
+                rval = self.handle_visualization(line)
             else:
                 raise MalformedContents(f"Unknown Galaxy Markdown directive encountered [{container}].")
             if rval is not None:
@@ -239,13 +282,15 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         return export_markdown
 
     def _encode_line(self, trans, line):
+        object_type = None
         object_id = None
         encoded_id = None
         if id_match := re.search(UNENCODED_ID_PATTERN, line):
+            object_type = id_match.group(1)
             object_id = int(id_match.group(2))
             encoded_id = trans.security.encode_id(object_id)
-            line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
-        return line, object_id, encoded_id
+            line = line.replace(id_match.group(), f"{object_type}={encoded_id}")
+        return line, object_type, object_id, encoded_id
 
     @abc.abstractmethod
     def handle_history_link(self, line, history):
@@ -344,6 +389,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_instance_citation_bibtex(self, line, url):
+        pass
+
+    @abc.abstractmethod
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -352,7 +401,19 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_invocation_time(self, line, date):
+    def handle_invocation_time(self, line, invocation):
+        pass
+
+    @abc.abstractmethod
+    def handle_invocation_inputs(self, line, invocation):
+        pass
+
+    @abc.abstractmethod
+    def handle_invocation_outputs(self, line, invocation):
+        pass
+
+    @abc.abstractmethod
+    def handle_visualization(self, line):
         pass
 
     @abc.abstractmethod
@@ -453,6 +514,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_instance_citation_link(self, line, url):
         pass
 
+    def handle_instance_citation_bibtex(self, line, url):
+        pass
+
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -463,6 +527,15 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
             "%Y-%m-%d, %H:%M:%S"
         )
+
+    def handle_invocation_inputs(self, line, invocation):
+        pass
+
+    def handle_invocation_outputs(self, line, invocation):
+        pass
+
+    def handle_visualization(self, line):
+        pass
 
     def handle_dataset_type(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
@@ -495,10 +568,12 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
         "generate_time": now().isoformat(),
         "generate_version": trans.app.config.version_major,
     }
+
     # Walk Galaxy directives inside the Galaxy Markdown and collect dict-ified data
     # needed to render this efficiently.
     directive_handler = ReadyForExportMarkdownDirectiveHandler(trans, extra_rendering_data)
     export_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
     return export_markdown, extra_rendering_data
 
 
@@ -645,7 +720,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
-        metrics_by_plugin: Dict[str, Dict[str, Any]] = {}
+        metrics_by_plugin: dict[str, dict[str, Any]] = {}
         for job_metric in job_metrics:
             plugin = job_metric["plugin"]
             if plugin not in metrics_by_plugin:
@@ -707,6 +782,9 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_instance_citation_link(self, line, url):
         return self._handle_link(url)
 
+    def handle_instance_citation_bibtex(self, line, url):
+        return self._handle_link(url)
+
     def handle_instance_terms_link(self, line, url):
         return self._handle_link(url)
 
@@ -724,6 +802,15 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_invocation_time(self, line, invocation):
         content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
         return (content, True)
+
+    def handle_invocation_inputs(self, line, invocation):
+        return ("*Invocation inputs not implemented*", True)
+
+    def handle_invocation_outputs(self, line, invocation):
+        return ("*Invocation outputs not implemented*", True)
+
+    def handle_visualization(self, line):
+        return ("*Visualization inputs not implemented*", True)
 
     def handle_dataset_name(self, line, hda):
         if hda.name:
@@ -746,7 +833,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
     directive_handler = ToBasicMarkdownDirectiveHandler(trans)
-    plain_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    resolved_invocations_markdown = resolve_invocation_markdown(trans, internal_galaxy_markdown)
+    plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
     return plain_markdown
 
 
@@ -756,7 +844,7 @@ def to_html(basic_markdown: str) -> str:
     return html
 
 
-def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> bytes:
+def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> bytes:
     """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
@@ -826,7 +914,61 @@ def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: 
     return to_pdf_raw(branded_markdown, css_paths=css_paths)
 
 
-def resolve_invocation_markdown(trans, invocation, workflow_markdown):
+def populate_invocation_markdown(trans, invocation, workflow_markdown):
+    """
+    Resolve invocation objects to convert markdown to 'internal' representation.
+
+    Add the invocation_id to the relevant attributes where required.
+    Avoid making irreversible changes to the markdown, as this could compromise the interchangeability between
+    workflow reports and pages. In future updates, the `invocation_id` may be migrated from the markdown to a
+    dedicated database relationship column for better management.
+
+    Specifically:
+    - Convert references to abstract workflow parts into attributes that include invocation-specific
+    details, such as invocation_id. For example:
+        - `output=name` becomes `invocation_id=<id>, output=name`
+        - `input=name` becomes `invocation_id=<id>, input=name`
+        - `step=name` becomes `invocation_id=<id>, step=name `
+
+    Additionally, expand/convert workflow invocation-specific container sections into their
+    corresponding Galaxy markdown representations. These sections include:
+    - invocation_inputs
+    - invocation_outputs
+    - invocation_workflow
+    """
+
+    def _remap(container, line):
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
+        if not invocation_id_match:
+            for instance_directive in [
+                "history_link",
+                "invocation_inputs",
+                "invocation_outputs",
+                "invocation_time",
+                "workflow_display",
+                "workflow_image",
+                "workflow_license",
+            ]:
+                if container == instance_directive:
+                    return (
+                        f"{instance_directive}(invocation_id={invocation.id})\n",
+                        False,
+                    )
+
+            output_match = re.search(OUTPUT_LABEL_PATTERN, line)
+            input_match = re.search(INPUT_LABEL_PATTERN, line)
+            step_match = re.search(STEP_LABEL_PATTERN, line)
+            if input_match or output_match or step_match:
+                line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
+
+        return (line, False)
+
+    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
+    return galaxy_markdown
+
+
+def resolve_invocation_markdown(trans, workflow_markdown):
     """Resolve invocation objects to convert markdown to 'internal' representation.
 
     Replace references to abstract workflow parts with actual galaxy object IDs corresponding
@@ -838,71 +980,83 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
     Also expand/convert workflow invocation specific container sections into actual Galaxy
     markdown - these containers include: invocation_inputs, invocation_outputs, invocation_workflow.
-    Hopefully this list will be expanded to include invocation_qc.
+    Hopefully this list will be expanded to include invocation_qc and step_output.
     """
-    # TODO: convert step outputs?
-    # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
 
-    def _section_remap(container, line):
-        section_markdown = ""
-        if container == "invocation_outputs":
-            for output_assoc in invocation.output_associations:
-                if not output_assoc.workflow_output.label:
-                    continue
-
-                if output_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Output Dataset: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_display(output="{output_assoc.workflow_output.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Output Dataset Collection: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_collection_display(output="{output_assoc.workflow_output.label}")
-```
-"""
-        elif container == "invocation_inputs":
-            for input_assoc in invocation.input_associations:
-                if not input_assoc.workflow_step.label:
-                    continue
-
-                if input_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Input Dataset: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_display(input="{input_assoc.workflow_step.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Input Dataset Collection: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_collection_display(input={input_assoc.workflow_step.label})
-```
-"""
+    def get_invocation(trans, line):
+        workflow_manager = trans.app.workflow_manager
+        if invocation_id_match := re.search(INVOCATION_ID_PATTERN, line):
+            invocation_id = invocation_id_match.group(1)
+            invocation = workflow_manager.get_invocation(
+                trans, invocation_id, check_ownership=False, check_accessible=True
+            )
+            return invocation
         else:
-            return line, False
-        return section_markdown, True
+            return None
 
     def _remap(container, line):
-        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
-            if container == workflow_instance_directive:
-                stored_workflow_id = invocation.workflow.stored_workflow.id
-                workflow_version = invocation.workflow.version
-                return (
-                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
-                    False,
-                )
-        if container == "workflow_license":
+        invocation = get_invocation(trans, line)
+        if invocation is None:
+            return line, False
+
+        if container == "invocation_outputs":
+            section_markdown = ""
+            for output_assoc in invocation.output_associations:
+                if output_assoc.workflow_output.label:
+                    if output_assoc.history_content_type == "dataset":
+                        section_markdown += (
+                            f"#### Output Dataset: {output_assoc.workflow_output.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_display(output="{output_assoc.workflow_output.label}")\n'
+                            "```\n"
+                        )
+                    else:
+                        section_markdown += (
+                            f"#### Output Dataset Collection: {output_assoc.workflow_output.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_collection_display(output="{output_assoc.workflow_output.label}")\n'
+                            "```\n"
+                        )
+            return section_markdown, True
+        elif container == "invocation_inputs":
+            section_markdown = ""
+            for input_assoc in invocation.input_associations:
+                if input_assoc.workflow_step.label:
+                    if input_assoc.history_content_type == "dataset":
+                        section_markdown += (
+                            f"#### Input Dataset: {input_assoc.workflow_step.label}\n"
+                            "```galaxy\n"
+                            f'history_dataset_display(input="{input_assoc.workflow_step.label}")\n'
+                            "```\n"
+                        )
+                    else:
+                        section_markdown += (
+                            f"#### Input Dataset Collection: {input_assoc.workflow_step.label}\n"
+                            "```galaxy\n"
+                            f"history_dataset_collection_display(input={input_assoc.workflow_step.label})\n"
+                            "```\n"
+                        )
+            return section_markdown, True
+        elif container == "invocation_time":
+            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+        elif container == "history_link":
+            return (f"history_link(history_id={invocation.history.id})\n", False)
+        elif container == "workflow_license":
             stored_workflow_id = invocation.workflow.stored_workflow.id
             return (
                 f"workflow_license(workflow_id={stored_workflow_id})\n",
                 False,
             )
-        if container == "history_link":
-            return (f"history_link(history_id={invocation.history.id})\n", False)
-        if container == "invocation_time":
-            return (f"invocation_time(invocation_id={invocation.id})\n", False)
+        elif container in ["workflow_display", "workflow_image"]:
+            stored_workflow_id = invocation.workflow.stored_workflow.id
+            workflow_version = invocation.workflow.version
+            return (
+                f"{container}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
+                False,
+            )
+
         ref_object_type = None
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
         step_match = re.search(STEP_LABEL_PATTERN, line)
@@ -943,13 +1097,73 @@ history_dataset_collection_display(input={input_assoc.workflow_step.label})
                 else:
                     ref_object_type = "history_dataset_collection"
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+            if invocation_id_match is not None:
+                line = line.replace(invocation_id_match.group(), "")
+        return line, False
+
+    workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    return workflow_markdown
+
+
+def resolve_job_markdown(trans, job, job_markdown):
+    """Resolve job objects to convert tool markdown to 'internal' representation.
+
+    Replace references to abstract workflow parts with actual galaxy object IDs corresponding
+    to the actual executed workflow. For instance:
+
+        convert output=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert input=name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
+        convert argument-less job directives to job
+    """
+    io_dicts = job.io_dicts()
+
+    def _remap(container, line):
+        if container == "history_link":
+            return (f"history_link(history_id={job.history.id})\n", False)
+        elif container == "tool_stdout":
+            return (f"tool_stdout(job_id={job.id})\n", False)
+        elif container == "tool_stderr":
+            return (f"tool_stderr(job_id={job.id})\n", False)
+        elif container == "job_parameters":
+            return (f"job_parameters(job_id={job.id})\n", False)
+        elif container == "job_metrics":
+            return (f"job_metrics(job_id={job.id})\n", False)
+        ref_object_type = None
+
+        def find_non_empty_group(match):
+            for group in match.groups():
+                if group:
+                    return group
+
+        target_match: Optional[Match]
+        ref_object: Optional[Any]
+        if output_match := re.search(OUTPUT_LABEL_PATTERN, line):
+            target_match = output_match
+            name = find_non_empty_group(target_match)
+            if name in io_dicts.out_data:
+                ref_object = io_dicts.out_data[name]
+            elif name in io_dicts.out_collections:
+                ref_object = io_dicts.out_collections[name]
+            else:
+                raise Exception("Unknown exception")
+        elif input_match := re.search(INPUT_LABEL_PATTERN, line):
+            target_match = input_match
+            name = find_non_empty_group(target_match)
+            ref_object = io_dicts.inp_data[name]
+        else:
+            target_match = None
+            ref_object = None
+        if ref_object:
+            assert target_match  # tell type system, this is set when ref_object is set
+            if ref_object_type is None:
+                if ref_object.history_content_type == "dataset":
+                    ref_object_type = "history_dataset"
+                else:
+                    ref_object_type = "history_dataset_collection"
+            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
-    workflow_markdown = _remap_galaxy_markdown_calls(
-        _section_remap,
-        workflow_markdown,
-    )
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, job_markdown)
     return galaxy_markdown
 
 
@@ -1016,8 +1230,8 @@ def _validate(*args, **kwds):
 
 __all__ = (
     "internal_galaxy_markdown_to_pdf",
+    "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
-    "resolve_invocation_markdown",
     "to_basic_markdown",
 )

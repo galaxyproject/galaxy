@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
 import { reactive, ref } from "vue";
 
-import type { Workflow } from "@/components/Workflow/workflows.services";
+import type { WorkflowSummary } from "@/api/workflows";
 
 import type { SelectedWorkflow } from "./types";
 
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowRename from "./WorkflowRename.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
 interface Props {
-    workflows: Workflow[];
+    workflows: WorkflowSummary[];
     gridView?: boolean;
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
+    compact?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
 }
@@ -27,12 +29,13 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: true,
     publishedView: false,
     editorView: false,
+    compact: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
 });
 
 const emit = defineEmits<{
-    (e: "select", workflow: Workflow): void;
+    (e: "select", workflow: WorkflowSummary): void;
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
@@ -55,7 +58,7 @@ const showPreview = ref(false);
 
 function onRenameClose() {
     showRename.value = false;
-    emit("refreshList", true);
+    emit("refreshList", true, true);
 }
 
 function onRename(id: string, name: string) {
@@ -70,19 +73,21 @@ function onPreview(id: string) {
 }
 
 // TODO: clean-up types, as soon as better Workflow type is available
-function onInsert(workflow: Workflow) {
-    emit("insertWorkflow", workflow.latest_workflow_id as any, workflow.name as any);
+function onInsert(workflow: WorkflowSummary) {
+    emit("insertWorkflow", workflow.latest_workflow_id, workflow.name);
 }
 
-function onInsertSteps(workflow: Workflow) {
-    emit("insertWorkflowSteps", workflow.id as any, workflow.number_of_steps as any);
+function onInsertSteps(workflow: WorkflowSummary) {
+    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
 }
+
+const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </script>
 
 <template>
-    <div class="workflow-card-list" :class="{ grid: props.gridView }">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
         <WorkflowCard
-            v-for="workflow in props.workflows"
+            v-for="workflow in workflows"
             :key="workflow.id"
             :workflow="workflow"
             :selectable="!publishedView && !editorView"
@@ -92,8 +97,8 @@ function onInsertSteps(workflow: Workflow) {
             :filterable="props.filterable"
             :published-view="props.publishedView"
             :editor-view="props.editorView"
+            :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
-            class="workflow-card"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -101,8 +106,7 @@ function onInsertSteps(workflow: Workflow) {
             @rename="onRename"
             @preview="onPreview"
             @insert="onInsert(workflow)"
-            @insertSteps="onInsertSteps(workflow)">
-        </WorkflowCard>
+            @insertSteps="onInsertSteps(workflow)" />
 
         <WorkflowRename
             :id="modalOptions.rename.id"
@@ -110,15 +114,29 @@ function onInsertSteps(workflow: Workflow) {
             :name="modalOptions.rename.name"
             @close="onRenameClose" />
 
-        <BModal
-            v-model="showPreview"
-            ok-only
-            size="xl"
+        <GModal
+            :show.sync="showPreview"
+            size="large"
+            title="Workflow Preview"
             hide-header
-            dialog-class="workflow-card-preview-modal w-auto"
+            fixed-height
+            class="workflow-card-preview-modal"
             centered>
-            <WorkflowPublished v-if="showPreview" :id="modalOptions.preview.id" quick-view />
-        </BModal>
+            <template v-slot:header>
+                <WorkflowPublishedButtons
+                    v-if="workflowPublished?.workflowInfo"
+                    :id="modalOptions.preview.id"
+                    :workflow-info="workflowPublished?.workflowInfo" />
+            </template>
+
+            <WorkflowPublished
+                v-if="showPreview"
+                :id="modalOptions.preview.id"
+                ref="workflowPublished"
+                :show-heading="false"
+                :show-buttons="false"
+                quick-view />
+        </GModal>
     </div>
 </template>
 
@@ -136,30 +154,6 @@ function onInsertSteps(workflow: Workflow) {
 @import "_breakpoints.scss";
 
 .workflow-card-list {
-    overflow: auto;
-    container: card-list / inline-size;
-    display: flex;
-    flex-wrap: wrap;
-
-    .workflow-card {
-        width: 100%;
-    }
-
-    &.grid {
-        // it is overwriting the base non used css for the grid class
-        padding-top: 0 !important;
-
-        .workflow-card {
-            width: calc(100% / 3);
-
-            @container card-list (max-width: #{$breakpoint-xl}) {
-                width: calc(100% / 2);
-            }
-
-            @container card-list (max-width: #{$breakpoint-sm}) {
-                width: 100%;
-            }
-        }
-    }
+    container: cards-list / inline-size;
 }
 </style>

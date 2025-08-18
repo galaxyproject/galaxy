@@ -11,7 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
-import { type ToolSearchKeys } from "../utilities";
+import type { ToolSearchKeys } from "../utilities";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -80,7 +80,7 @@ const localFilterText = computed({
         return props.query !== null ? props.query : "";
     },
     set: (newVal: any) => {
-        if (newVal.trim() || props.query.trim()) {
+        if (newVal && (newVal.trim() || props.query.trim())) {
             checkQuery(newVal);
         }
     },
@@ -278,7 +278,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div v-if="searchWorker || !props.userWorker">
+    <div v-if="searchWorker || !props.useWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"

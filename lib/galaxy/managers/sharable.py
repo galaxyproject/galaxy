@@ -13,10 +13,8 @@ A sharable Galaxy object:
 import logging
 from typing import (
     Any,
-    List,
     Optional,
-    Set,
-    Type,
+    TypeVar,
 )
 
 from slugify import slugify
@@ -54,12 +52,14 @@ from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
 log = logging.getLogger(__name__)
+# Only model classes that have `users_shared_with` field
+U = TypeVar("U", model.History, model.Page, model.StoredWorkflow, model.Visualization)
 
 
 class SharableModelManager(
-    base.ModelManager,
-    secured.OwnableManagerMixin,
-    secured.AccessibleManagerMixin,
+    base.ModelManager[U],
+    secured.OwnableManagerMixin[U],
+    secured.AccessibleManagerMixin[U],
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):
@@ -67,7 +67,7 @@ class SharableModelManager(
     # base.DeleteableModelMixin? (all four are deletable)
 
     #: the model used for UserShareAssociations with this model
-    user_share_model: Type[UserShareAssociation]
+    user_share_model: type[UserShareAssociation]
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
     SINGLE_CHAR_ABBR: Optional[str] = None
@@ -79,7 +79,7 @@ class SharableModelManager(
         self.tag_handler = app[GalaxyTagHandler]
 
     # .... has a user
-    def by_user(self, user: User, **kwargs: Any) -> List[Any]:
+    def by_user(self, user: User, **kwargs: Any) -> list[Any]:
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
@@ -245,7 +245,7 @@ class SharableModelManager(
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users: Set[User], errors: Set[str], option: Optional[SharingOptions] = None
+        self, trans, item, users: set[User], errors: set[str], option: Optional[SharingOptions] = None
     ) -> Optional[ShareWithExtra]:
         """Returns optional extra information about the shareability of the given item.
 
@@ -260,7 +260,7 @@ class SharableModelManager(
         contained associated with the given item.
         """
 
-    def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
+    def update_current_sharing_with_users(self, item, new_users_shared_with: set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
         users and removing missing ones."""
         current_shares = self.get_share_assocs(item)

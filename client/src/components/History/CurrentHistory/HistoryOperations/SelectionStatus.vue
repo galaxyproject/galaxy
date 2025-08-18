@@ -24,8 +24,14 @@ function resetSelection() {
 
 <template>
     <BButtonGroup size="sm">
-        <BButton v-if="hasSelection" variant="link" data-test-id="clear-btn" @click="resetSelection">
-            <span class="fa fa-fw fa-times" title="Clear selection" />
+        <BButton
+            v-if="hasSelection"
+            v-b-tooltip.hover
+            title="Clear selection"
+            variant="link"
+            data-test-id="clear-btn"
+            @click="resetSelection">
+            <span class="fa fa-fw fa-times" />
         </BButton>
 
         <BButton v-else variant="link" data-test-id="select-all-btn" @click="selectAll">

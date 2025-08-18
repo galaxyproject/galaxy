@@ -1,5 +1,5 @@
-import { type ObjectStoreTemplateType } from "@/api/objectStores";
-import { type ObjectStoreTemplateSummaries } from "@/api/objectStores.templates";
+import type { ObjectStoreTemplateType } from "@/api/objectStores";
+import type { ObjectStoreTemplateSummaries } from "@/api/objectStores.templates";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
 import { setupTestPinia } from "./testUtils";

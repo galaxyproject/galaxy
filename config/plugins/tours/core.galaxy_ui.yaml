@@ -91,27 +91,28 @@ steps:
               A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
-    - title: "View dataset"
-      element: "#current-history-panel div.content-item .display-btn"
-      intro: "View your dataset by clicking the eye button."
-
-    - title: "Rename dataset"
-      element: "#current-history-panel div.content-item .edit-btn"
-      intro: "Rename your dataset by clicking the pencil button."
-
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
 
+    - title: "View dataset"
+      element: "#current-history-panel div.content-item .display-btn"
+      intro: "View your dataset by clicking the eye button."
+      postclick: true
+
+    - title: "Dataset information"
+      component: dataset_view.details_tab
+      intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
+      preclick: true
+
+    - title: "Rename dataset"
+      component: dataset_view.edit_tab
+      intro: "Rename your dataset by clicking the pencil button."
+
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item .delete-btn"
       intro: "Delete your dataset by clicking the trash-button."
-
-    - title: "Dataset information"
-      element: "#current-history-panel div.content-item .params-btn"
-      intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
-      preclick: true
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
@@ -125,7 +126,7 @@ steps:
     - title: "Workflow"
       component: workflows.activity
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
-    
+
     - title: "Visualization"
       component: visualization.activity
       intro: "Galaxy offers a lot of visualizations to review your data!"

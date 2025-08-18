@@ -9,13 +9,15 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
+import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
-import { type BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -105,25 +107,27 @@ function onActionClick(link: string) {
                     <UtcDate class="mr-2" :date="notification.create_time" mode="elapsed" />
                 </span>
 
-                <BInputGroup v-if="!hasExpired">
-                    <BButton
+                <GButtonGroup v-if="!hasExpired">
+                    <GButton
                         id="edit-broadcast-button"
-                        v-b-tooltip.hover
-                        variant="link"
+                        tooltip
+                        color="blue"
+                        transparent
                         title="Edit broadcast"
                         @click="onEditClick">
                         <FontAwesomeIcon :icon="faEdit" />
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         id="delete-button"
-                        v-b-tooltip.hover
-                        variant="link"
+                        tooltip
+                        color="blue"
+                        transparent
                         title="Delete broadcast"
                         @click="onForceExpirationClick">
                         <FontAwesomeIcon :icon="faTrash" />
-                    </BButton>
-                </BInputGroup>
+                    </GButton>
+                </GButtonGroup>
             </BRow>
         </BRow>
 
@@ -136,15 +140,15 @@ function onActionClick(link: string) {
                 </BRow>
 
                 <BRow no-gutters>
-                    <BButton
+                    <GButton
                         v-for="actionLink in notification.content.action_links"
                         :key="actionLink.action_name"
                         class="mr-1"
                         :title="actionLink.action_name"
-                        variant="primary"
+                        color="blue"
                         @click="onActionClick(actionLink.link)">
                         {{ actionLink.action_name }}
-                    </BButton>
+                    </GButton>
                 </BRow>
             </BCol>
 

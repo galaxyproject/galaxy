@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { useMarkdown } from "@/composables/markdown";
+
 import type { WizardReturnType, WizardStep } from "./useWizard";
 
 interface Props {
@@ -17,9 +19,23 @@ interface Props {
     /**
      * The title of the wizard.
      *
-     * @default "Generic Wizard"
+     * This is displayed at the top of the wizard.
+     *
+     * The default component can be replaced by a slot named `header` or it can be excluded
+     * as a property to skip the wizard all together.
+     *
+     * @default ""
      */
     title?: string;
+
+    /**
+     * Optional description of the wizard.
+     *
+     * This is displayed below the title. It supports Markdown.
+     *
+     * The default description behavior can be replaced by a slot named `description`.
+     */
+    description?: string;
 
     /**
      * The label for the submit button.
@@ -37,20 +53,49 @@ interface Props {
      * @default false
      */
     isBusy?: boolean;
+
+    /**
+     * The component to use as the container for the wizard.
+     *
+     * Can be either a BootstrapVue card or a div.
+     *
+     * @default "BCard"
+     */
+    containerComponent?: "BCard" | "div";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     use: undefined,
-    title: "Generic Wizard",
+    title: undefined,
+    description: undefined,
     submitButtonLabel: "Submit",
     isBusy: false,
+    containerComponent: "BCard",
 });
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+
+function dynamicIsLast() {
+    if (props.use.isLast.value) {
+        return true;
+    }
+
+    let nextStepIndex = props.use.index.value + 1;
+    let nextStepName = props.use.stepNames.value.at(nextStepIndex);
+
+    while (nextStepName && props.use.steps.value[nextStepName]?.isSkippable()) {
+        nextStepIndex++;
+        nextStepName = props.use.stepNames.value.at(nextStepIndex);
+    }
+
+    return !nextStepName;
+}
 
 const emit = defineEmits(["submit"]);
 
 function goNext() {
     if (props.use.current.value.isValid()) {
-        if (props.use.isLast.value) {
+        if (dynamicIsLast()) {
             emit("submit");
         }
 
@@ -113,13 +158,29 @@ const stepsGridColumnsTemplate = computed(() => {
 const steps = computed<[string, WizardStep][]>(() => {
     return Object.entries(props.use.steps.value);
 });
+
+const bodyStyle = computed(() => {
+    const width = props.use.current.value.width;
+    if (width) {
+        return { width: width };
+    } else {
+        return {};
+    }
+});
 </script>
 
 <template>
-    <BCard class="wizard-container">
-        <BCardTitle>
-            <h2>{{ title }}</h2>
-        </BCardTitle>
+    <component :is="props.containerComponent" class="wizard-container">
+        <slot name="header">
+            <BCardTitle v-if="title">
+                <h2>{{ title }}</h2>
+            </BCardTitle>
+        </slot>
+
+        <slot name="description">
+            <div v-if="props.description" v-html="renderMarkdown(props.description)" />
+        </slot>
+
         <BCardBody v-if="props.use?.steps?.value" class="wizard">
             <BCard>
                 <BCardBody class="wizard-steps">
@@ -134,7 +195,7 @@ const steps = computed<[string, WizardStep][]>(() => {
                             :disabled="(!allStepsBeforeAreValid(i) && props.use.isBefore(id)) || isBusy"
                             @click="props.use.goTo(id)">
                             <FontAwesomeIcon v-if="isStepDone(i)" :icon="faCheck" />
-                            <FontAwesomeIcon v-else-if="props.use.isLast && isBusy" :icon="faSpinner" spin />
+                            <FontAwesomeIcon v-else-if="dynamicIsLast() && isBusy" :icon="faSpinner" spin />
                             <span v-else>{{ determineDisplayStepIndex(i) }}</span>
                         </button>
                         <div class="step-label" v-text="step.label" />
@@ -146,7 +207,7 @@ const steps = computed<[string, WizardStep][]>(() => {
             <div class="step-content">
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
-                <div class="step-body">
+                <div class="step-body w-100" :style="bodyStyle">
                     <slot>
                         <p>
                             Missing body for step <b>{{ props.use.current.value.label }}</b>
@@ -162,16 +223,16 @@ const steps = computed<[string, WizardStep][]>(() => {
                 <button
                     class="go-next-btn"
                     :disabled="!props.use.current.value.isValid() || isBusy"
-                    :class="props.use.isLast.value ? 'btn-primary' : ''"
+                    :class="dynamicIsLast() ? 'btn-primary' : ''"
                     @click="goNext">
-                    {{ props.use.isLast.value ? submitButtonLabel : "Next" }}
+                    {{ dynamicIsLast() ? submitButtonLabel : "Next" }}
                 </button>
             </div>
         </BCardBody>
-    </BCard>
+    </component>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 @import "theme/blue.scss";
 
 .wizard {

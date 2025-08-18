@@ -1,7 +1,7 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
-import { type DatasetCollectionAttributes } from "@/api";
+import type { DatasetCollectionAttributes } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import { useCollectionAttributesStore } from "./collectionAttributesStore";
@@ -26,7 +26,7 @@ describe("collectionAttributesStore", () => {
         setActivePinia(createPinia());
 
         server.use(
-            http.get("/api/dataset_collections/{id}/attributes", ({ response }) => {
+            http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {
                 return response(200).json(fetchCollectionAttributesMock());
             })
         );

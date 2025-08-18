@@ -13,14 +13,15 @@ import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
-import { JobStateSummary } from "./Collection/JobStateSummary";
-import { getContentItemState, type StateMap, STATES } from "./model/states";
+import { getContentItemState, type State, STATES } from "./model/states";
+import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentOptions from "./ContentOptions.vue";
@@ -90,12 +91,13 @@ const eventStore = useEventStore();
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
 
-const jobState = computed(() => {
-    return new JobStateSummary(props.item);
+const itemIsRunningInteractiveTool = computed(() => {
+    // If our dataset id is in the entrypOintStore it's a running it
+    return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
 });
 
 const contentId = computed(() => {
-    return `dataset-${props.item.id}`;
+    return isCollection.value ? `collection-${props.item.id}` : `dataset-${props.item.id}`;
 });
 
 const contentCls = computed(() => {
@@ -131,7 +133,7 @@ const hasStateIcon = computed(() => {
     return contentState.value && contentState.value.icon;
 });
 
-const state = computed<keyof StateMap>(() => {
+const state = computed<State>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
     }
@@ -157,7 +159,7 @@ const tagsDisabled = computed(() => {
 });
 
 const isCollection = computed(() => {
-    return "collection_type" in props.item;
+    return "collection_type" in props.item || props.item.element_type === "dataset_collection";
 });
 
 const itemUrls = computed<ItemUrls>(() => {
@@ -171,8 +173,12 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
+    let display = `/datasets/${id}`;
+    if (props.item.extension == "tool_markdown") {
+        display = `/datasets/${id}/report`;
+    }
     return {
-        display: `/datasets/${id}/preview`,
+        display: display,
         edit: `/datasets/${id}/edit`,
         showDetails: `/datasets/${id}/details`,
         reportError: `/datasets/${id}/error`,
@@ -254,15 +260,33 @@ function onDisplay() {
         const url = entryPointsForHda[0]?.target;
         window.open(url, "_blank");
     } else {
+        const Galaxy = getGalaxyInstance();
+        const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
+
+        // Build the display URL with displayOnly query param if needed
+        let displayUrl = itemUrls.value.display;
+        if (isWindowManagerActive && displayUrl) {
+            displayUrl += displayUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true";
+        }
+
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
+            const options: RouterPushOptions = {
+                force: true,
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name, force: true });
-        } else if (itemUrls.value.display) {
+            router.push(displayUrl, options);
+        } else if (displayUrl) {
+            const options: RouterPushOptions = {
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name });
+            router.push(displayUrl, options);
         }
     }
 }
@@ -289,6 +313,10 @@ function onDragEnd() {
 
 function onEdit() {
     router.push(itemUrls.value.edit!);
+}
+
+function onView() {
+    router.push(itemUrls.value.view!);
 }
 
 function onShowCollectionInfo() {
@@ -395,6 +423,7 @@ function unexpandedClick(event: Event) {
                 <span class="align-self-start btn-group">
                     <BButton
                         v-if="item.sub_items?.length && !isSubItem"
+                        v-b-tooltip.hover
                         title="Show converted items"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"
@@ -413,8 +442,13 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :is-running-interactive-tool="itemIsRunningInteractiveTool"
+                        :interactive-tool-id="
+                            itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''
+                        "
                         @delete="onDelete"
                         @display="onDisplay"
+                        @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
                         @undelete="onUndelete"
@@ -424,13 +458,7 @@ function unexpandedClick(event: Event) {
         </div>
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
-            <CollectionDescription
-                v-if="!isDataset"
-                class="px-2 pb-2 cursor-pointer"
-                :job-state-summary="jobState"
-                :collection-type="item.collection_type"
-                :element-count="item.element_count"
-                :elements-datatypes="item.elements_datatypes" />
+            <CollectionDescription v-if="!isDataset" class="px-2 pb-2 cursor-pointer" :hdca="item" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"

@@ -1,11 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import { generateNewBroadcast } from "./test.utils";
 
@@ -33,7 +33,7 @@ async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
         })
     );
 
-    const wrapper = shallowMount(BroadcastsList as object, {
+    const wrapper = mount(BroadcastsList as object, {
         localVue,
         pinia,
         stubs: {

@@ -6,7 +6,7 @@ import { hasDetails } from "@/api";
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
-import { type ItemUrls } from ".";
+import type { ItemUrls } from ".";
 
 import DatasetActions from "./DatasetActions.vue";
 import DatasetMiscInfo from "./DatasetMiscInfo.vue";

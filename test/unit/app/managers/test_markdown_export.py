@@ -278,7 +278,7 @@ invocation_time(invocation_id=1)
 ```
 """
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
         result = self._to_basic(example)
         expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
         assert f"\n    {expectedtime}" in result
@@ -375,10 +375,15 @@ history_dataset_display(history_dataset_id=2)
 history_dataset_collection_display(history_dataset_collection_id=1)
 ```
 """
-        # Patch out url_for since we haven't initialized an app.
+        # Mock the HDCASerializer to return a dummy serialized view
         from galaxy.managers.hdcas import HDCASerializer
 
-        with mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"):
+        mock_hdca_view = {"id": "encoded_id_1", "name": "cool name", "collection_type": "paired"}
+
+        with (
+            mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"),
+            mock.patch.object(HDCASerializer, "serialize_to_view", return_value=mock_hdca_view),
+        ):
             export, extra_data = self._ready_export(example)
         assert "history_dataset_collections" in extra_data
         assert len(extra_data.get("history_dataset_collections")) == 1

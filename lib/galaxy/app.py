@@ -9,10 +9,7 @@ import time
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from beaker.cache import CacheManager
@@ -188,7 +185,7 @@ app = None
 
 
 class HaltableContainer(Container):
-    haltables: List[Tuple[str, Callable]]
+    haltables: list[tuple[str, Callable]]
 
     def __init__(self) -> None:
         super().__init__()
@@ -593,7 +590,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.job_config = self._register_singleton(jobs.JobConfiguration)
 
         # Setup infrastructure for short term storage manager.
-        short_term_storage_config_kwds: Dict[str, Any] = {}
+        short_term_storage_config_kwds: dict[str, Any] = {}
         short_term_storage_config_kwds["short_term_storage_directory"] = self.config.short_term_storage_dir
         short_term_storage_default_duration = self.config.short_term_storage_default_duration
         short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
@@ -608,7 +605,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[type-abstract]
 
         # Tag handler
-        self.tag_handler = self._register_singleton(GalaxyTagHandler)
+        tag_handler = GalaxyTagHandler(self.model.context)
+        self.tag_handler = self._register_singleton(GalaxyTagHandler, tag_handler)
         self.user_manager = self._register_singleton(UserManager)
         self._register_singleton(GalaxySessionManager)
         self.hda_manager = self._register_singleton(HDAManager)
@@ -787,7 +785,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.datatypes_registry.load_external_metadata_tool(self.toolbox)
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
-        self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(
             VisualizationsRegistry,

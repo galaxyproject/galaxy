@@ -1,10 +1,7 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -63,7 +60,7 @@ class WorkflowsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: WorkflowIndexPayload,
         include_total_count: bool = False,
-    ) -> Tuple[List[Dict[str, Any]], Optional[int]]:
+    ) -> tuple[list[dict[str, Any]], Optional[int]]:
         user = trans.user
         missing_tools = payload.missing_tools
         query, total_matches = self._workflows_manager.index_query(trans, payload, include_total_count)
@@ -124,7 +121,7 @@ class WorkflowsService(ServiceBase):
         trans,
         workflow_id,
         payload: InvokeWorkflowPayload,
-    ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
+    ) -> Union[WorkflowInvocationResponse, list[WorkflowInvocationResponse]]:
         if trans.anonymous:
             raise exceptions.AuthenticationRequired("You need to be logged in to run workflows.")
         trans.check_user_activation()
@@ -147,7 +144,11 @@ class WorkflowsService(ServiceBase):
             tool
             for tool in tools
             if not trans.app.toolbox.has_tool(
-                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
+                tool["tool_id"],
+                tool_version=tool["tool_version"],
+                tool_uuid=tool["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
             )
         ]
         if missing_tools:

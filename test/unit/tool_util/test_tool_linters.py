@@ -1107,6 +1107,23 @@ VALID_CENTER_OF_MASS = """
     </tests>
 </tool>
 """
+ASSERTS_STRING_COERCION = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name" format="ome.tiff"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="data_name">
+               <assert_contents>
+                    <!-- channels is defined as an integer, so coercion from string must be applied on validation -->
+                    <has_image_channels channels="3" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+"""
 TESTS_VALID = """
 <tool id="id" name="name">
     <outputs>
@@ -1589,13 +1606,23 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_boolean_param(lint_ctx):
+def test_inputs_boolean_param_duplicate_labels(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_boolean_param_swapped_labels(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_SWAPPED_LABELS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
 
 
@@ -2328,6 +2355,12 @@ def test_tests_asserts(lint_ctx):
     assert len(lint_ctx.error_messages) == 9
 
 
+def test_tests_asserts_string_coercion(lint_ctx):
+    tool_source = get_xml_tool_source(ASSERTS_STRING_COERCION)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert len(lint_ctx.warn_messages) == 0, lint_ctx.warn_messages
+
+
 def test_tests_assertion_models_valid(lint_ctx):
     tool_source = get_xml_tool_source(VALID_CENTER_OF_MASS)
     run_lint_module(lint_ctx, tests, tool_source)
@@ -2412,8 +2445,10 @@ VALID_DATATYPES = """
         <param name="adata" type="data" format="txt"/>
         <param name="bdata" type="data" format="invalid,fasta,custom"/>
         <param name="fdata" type="data" format="fasta.gz"/>
+        <param name="auto_input" type="data" format="auto"/>
     </inputs>
     <outputs>
+        <data name="autoformat" format="auto"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -2428,6 +2463,7 @@ VALID_DATATYPES = """
         <test>
             <param name="adata" ftype="txt"/>
             <param name="bdata" ftype="invalid"/>
+            <param name="auto_test_input" ftype="auto"/>
         </test>
     </tests>
 </tool>
@@ -2465,7 +2501,8 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 6
+    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert len(lint_ctx.error_messages) == 8
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">

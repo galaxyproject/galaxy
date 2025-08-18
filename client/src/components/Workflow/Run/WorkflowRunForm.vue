@@ -8,14 +8,39 @@
         </BAlert>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-            <ButtonSpinner
-                id="run-workflow"
-                class="float-right"
-                title="Run Workflow"
-                :disabled="!canRunOnHistory"
-                :wait="showExecuting"
-                @onClick="onExecute" />
+            <div class="float-right d-flex flex-gapx-1">
+                <b-button
+                    v-if="!disableSimpleForm"
+                    v-b-tooltip.hover.noninteractive
+                    variant="link"
+                    class="text-decoration-none"
+                    title="Use simplified run form instead"
+                    @click="$emit('showSimple')">
+                    <span class="fas fa-arrow-left" /> Simple Form
+                </b-button>
+                <ButtonSpinner
+                    id="run-workflow"
+                    title="Run Workflow"
+                    :disabled="!canRunOnHistory"
+                    :wait="showExecuting"
+                    @onClick="onExecute" />
+            </div>
         </div>
+        <BAlert v-if="disableSimpleFormReason" show variant="warning">
+            This is the legacy workflow run form.
+            <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
+                This workflow contains parameters in tool steps that require advanced handling. The simplified form does
+                not support these parameters.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasDisconnectedInputs'">
+                One or more tools in this workflow have required inputs that are not connected to other steps. The
+                simplified form cannot handle disconnected runtime inputs.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasWorkflowResourceParameters'">
+                This workflow is configured with resource request parameters. The simplified form does not support
+                workflows with resource options.
+            </span>
+        </BAlert>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
@@ -26,7 +51,7 @@
                 <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
             </template>
         </FormCard>
-        <FormCard v-if="reuseAllowed(currentUser)" title="Job re-use Options">
+        <FormCard title="Job re-use Options">
             <template v-slot:body>
                 <FormElement
                     v-model="useCachedJobs"
@@ -65,7 +90,6 @@ import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
-import { allowCachedJobs } from "components/Tool/utilities";
 import { mapState } from "pinia";
 
 import { useHistoryStore } from "@/stores/historyStore";
@@ -94,6 +118,14 @@ export default {
         canMutateCurrentHistory: {
             type: Boolean,
             required: true,
+        },
+        disableSimpleForm: {
+            type: Boolean,
+            default: false,
+        },
+        disableSimpleFormReason: {
+            type: String,
+            default: undefined,
         },
     },
     data() {
@@ -161,9 +193,6 @@ export default {
         },
     },
     methods: {
-        reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
-        },
         getReplaceParams(inputs) {
             return getReplacements(inputs, this.stepData, this.wpData);
         },

@@ -21,7 +21,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         workflow_cards = self.workflow_card_elements()
         assert len(workflow_cards) == 1
 
-        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, ".workflow-name")
+        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, '[id^="g-card-title-"] a')
         assert "TestWorkflow1 (imported from URL)" in first_workflow_card.text, first_workflow_card.text
 
     @selenium_test
@@ -210,3 +210,25 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         self.workflow_index_open()
         self.components.workflows.workflows_list_empty.wait_for_visible()
+
+    @selenium_test
+    def test_workflow_bookmark_filtering(self):
+        self.workflow_index_open()
+        # Import 2 workflows
+        self._workflow_import_from_url()
+        self._workflow_import_from_url()
+        self._assert_showing_n_workflows(2)
+        # Rename and bookmark one
+        self.workflow_rename("forbookmark")
+        self.workflow_bookmark_by_name("forbookmark")
+
+        # Filter by bookmark
+        self.workflow_index_search_for("is:bookmarked")
+        self._assert_showing_n_workflows(1)
+        self.screenshot("workflow_manage_bookmark_search")
+
+        # clear filter
+        self.components.workflows.clear_filter.wait_for_and_click()
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == "", curr_value
+        self._assert_showing_n_workflows(2)

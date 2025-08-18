@@ -8,6 +8,7 @@ import historiesPublishedGridConfig from "@/components/Grid/configs/historiesPub
 import historiesSharedGridConfig from "@/components/Grid/configs/historiesShared";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
@@ -31,16 +32,17 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Histories</Heading>
             <div v-if="!userStore.isAnonymous">
-                <BButton
-                    size="sm"
-                    variant="outline-primary"
+                <GButton
+                    size="small"
+                    color="blue"
+                    outline
                     to="/histories/import"
                     data-description="grid action import new history">
                     <Icon :icon="faPlus" />
                     <span v-localize>Import History</span>
-                </BButton>
+                </GButton>
             </div>
         </div>
         <BNav pills justified class="mb-2">

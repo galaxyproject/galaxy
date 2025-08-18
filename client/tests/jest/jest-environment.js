@@ -19,5 +19,19 @@ export default class CustomJSDOMEnvironment extends JSDOMEnvironment {
 
         // FIXME https://github.com/jsdom/jsdom/issues/3363
         this.global.structuredClone = structuredClone;
+
+        if (!this.global.HTMLDialogElement.prototype.showModal) {
+            this.global.HTMLDialogElement.prototype.showModal = function () {
+                this.open = true;
+            };
+        }
+
+        // FIXME https://github.com/jsdom/jsdom/issues/3294
+        if (!this.global.HTMLDialogElement.prototype.close) {
+            this.global.HTMLDialogElement.prototype.close = function (returnValue) {
+                this.open = false;
+                this.returnValue = returnValue;
+            };
+        }
     }
 }

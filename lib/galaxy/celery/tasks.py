@@ -112,10 +112,11 @@ def purge_datasets(
 def materialize(
     hda_manager: HDAManager,
     request: MaterializeDatasetInstanceTaskRequest,
+    sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
     """Materialize datasets using HDAManager."""
-    hda_manager.materialize(request)
+    hda_manager.materialize(request, sa_session())
 
 
 @galaxy_task(action="set metadata for job")
@@ -502,8 +503,7 @@ def send_notification_to_recipients_async(
 @galaxy_task(action="dispatch pending notifications")
 def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""
-    count = notification_manager.dispatch_pending_notifications_via_channels()
-    if count:
+    if count := notification_manager.dispatch_pending_notifications_via_channels():
         log.info(f"Successfully dispatched {count} notifications.")
 
 

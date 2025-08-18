@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from typing import (
+    List,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -66,7 +67,7 @@ def parse_tool_version_with_defaults(
             # For backward compatibility, some tools may not have versions yet.
             version = "1.0.0"
         else:
-            raise Exception(f"Missing tool 'version' for tool with id '{id}' at '{tool_source}'")
+            raise ValueError(f"Missing tool 'version' for tool with id '{id}' at '{tool_source}'")
     return version
 
 
@@ -119,3 +120,16 @@ class ParameterParseException(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
+
+
+def multiple_select_value_split(values: Union[str, List[str]]) -> List[str]:
+    # used to split simple strings into lists from both tool XML and from the API for consistency
+    value_list = []
+    if not isinstance(values, list):
+        values = values.split("\n")
+    for value in values:
+        for value_split in str(value).split(","):
+            value_split = value_split.strip()
+            if value_split:
+                value_list.append(value_split)
+    return value_list

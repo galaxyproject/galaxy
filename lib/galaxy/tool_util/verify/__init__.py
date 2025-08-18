@@ -113,8 +113,11 @@ def verify(
     if attributes is not None and attributes.get("md5", None) is not None:
         expected_checksum_type = "md5"
         expected_checksum = attributes.get("md5")
-    elif attributes is not None and attributes.get("checksum", None) is not None:
-        checksum_value = attributes.get("checksum", None)
+    elif attributes is not None and attributes.get("checksum") is not None:
+        checksum_value = attributes.get("checksum")
+        assert (
+            checksum_value is not None
+        )  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
         expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
 
     if expected_checksum_type:
@@ -284,7 +287,7 @@ def get_compressed_formats(attributes):
     return None if decompress else []
 
 
-def files_diff(file1, file2, attributes=None):
+def files_diff(file1: str, file2: str, attributes=None):
     """Check the contents of 2 files for differences."""
     attributes = attributes or {}
 
@@ -301,9 +304,9 @@ def files_diff(file1, file2, attributes=None):
         compressed_formats = get_compressed_formats(attributes)
         is_pdf = False
         try:
-            with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file2, compressed_formats=compressed_formats, mode="r") as fh:
                 history_data = fh.readlines()
-            with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file1, compressed_formats=compressed_formats, mode="r") as fh:
                 local_file = fh.readlines()
         except UnicodeDecodeError:
             if file1.endswith(".pdf") or file2.endswith(".pdf"):

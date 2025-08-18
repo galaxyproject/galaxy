@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     getInvocationExportPluginByType,
@@ -278,8 +279,8 @@ More information about how to set up an account and submit data to a BCODB serve
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
-            label: "Remote File Source",
-            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available remote file sources here. You will be able to re-import it later as long as it remains available on the remote server.
+            label: "Repository",
+            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available repositories. You will be able to re-import it later as long as it remains available on the remote server.
 
 Examples of remote sources include Amazon S3, Azure Storage, Google Drive... and other public or personal file sources that you have setup access to.`,
         });
@@ -320,6 +321,11 @@ function resetWizard() {
     Object.assign(exportData, initialExportData);
     wizard.goTo("select-format");
 }
+
+onUnmounted(() => {
+    taskMonitor.stopWaitingForTask();
+    stsMonitor.stopWaitingForTask();
+});
 </script>
 
 <template>
@@ -348,7 +354,7 @@ function resetWizard() {
                         :key="plugin.id"
                         :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
-                        :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.exportPluginFormat == plugin.id)"
                         @click="exportData.exportPluginFormat = plugin.id">
                         <BCardTitle>
                             <b>{{ plugin.title }}</b>
@@ -371,7 +377,7 @@ function resetWizard() {
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
                         :data-invocation-export-destination="target.destination"
-                        :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.destination === target.destination)"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"
                         :header="target.label"
@@ -386,7 +392,7 @@ function resetWizard() {
                 <BFormGroup
                     id="fieldset-directory"
                     label-for="directory"
-                    :description="`Select a 'remote files' directory to export ${resource} to.`"
+                    :description="`Select a 'repository' to export ${resource} to.`"
                     class="mt-3">
                     <FilesInput
                         id="directory"
@@ -499,6 +505,7 @@ function resetWizard() {
     height: auto;
     width: auto;
     max-height: 100px;
+    max-width: 100%;
     max-inline-size: -webkit-fill-available;
 }
 </style>

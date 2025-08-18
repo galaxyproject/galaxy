@@ -34,7 +34,7 @@ def _ensure_valid_pattern(expression):
     re.compile(expression)
 
 
-def apply_regex(regex, target, data, replacement=None, group_count=None):
+def apply_regex(regex, target, data, replacement=None, group_count=None, allow_unmatched: bool = False):
     pattern = re.compile(regex)
 
     def new_row(row):
@@ -42,17 +42,30 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
-
-            if group_count:
-                if len(match.groups()) != group_count:
-                    raise Exception("Problem applying regular expression, wrong number of groups found.")
-
-                result = row + list(match.groups())
+                if allow_unmatched:
+                    new_columns = [""]
+                    if group_count:
+                        new_columns = ["" for _ in range(group_count)]
+                    result = row + new_columns
+                else:
+                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
             else:
-                result = row + [match.group(0)]
+                if group_count:
+                    if len(match.groups()) != group_count:
+                        raise Exception("Problem applying regular expression, wrong number of groups found.")
+
+                    result = row + list(match.groups())
+                else:
+                    result = row + [match.group(0)]
         else:
-            result = row + [pattern.search(source).expand(replacement)]
+            match = pattern.search(source)
+            if match:
+                result = row + [match.expand(replacement)]
+            else:
+                if allow_unmatched:
+                    result = row + [""]
+                else:
+                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
 
         return result
 
@@ -89,6 +102,13 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
             new_rows = []
             for index, row in enumerate(data):
                 new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+
+        elif rule_value.startswith("index"):
+            element_index = int(rule_value[len("index") :])
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + [str(sources[index]["indices"][element_index])])
 
         elif rule_value == "tags":
 
@@ -173,7 +193,12 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
         replacement = rule.get("replacement")
         group_count = rule.get("group_count")
 
-        return apply_regex(expression, target, data, replacement, group_count), sources
+        allow_unmatched = False
+        if "allow_unmatched" in rule:
+            _ensure_rule_contains_keys(rule, {"allow_unmatched": bool})
+            allow_unmatched = rule["allow_unmatched"]
+
+        return apply_regex(expression, target, data, replacement, group_count, allow_unmatched=allow_unmatched), sources
 
 
 class AddColumnRownumRuleDefinition(BaseRuleDefinition):
@@ -248,6 +273,29 @@ class AddColumnSubstrRuleDefinition(BaseRuleDefinition):
             return row + [original_value[start:end]]
 
         return list(map(new_row, data)), sources
+
+
+class AddColumnFromSampleSheetByIndex(BaseRuleDefinition):
+    rule_type = "add_column_from_sample_sheet_index"
+
+    def validate_rule(self, rule):
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "value": int,
+            },
+        )
+
+    def apply(self, rule, data, sources):
+        sample_sheet_column_index = rule["value"]
+
+        new_rows = []
+        for index, row in enumerate(data):
+            source = sources[index]
+            columns = source["columns"]
+            new_rows.append(row + [columns[sample_sheet_column_index]])
+
+        return new_rows, sources
 
 
 class RemoveColumnsRuleDefinition(BaseRuleDefinition):
@@ -571,6 +619,8 @@ class RuleSet:
             identifier_columns.extend(mapping_as_dict["list_identifiers"]["columns"])
         if "paired_identifier" in mapping_as_dict:
             identifier_columns.append(mapping_as_dict["paired_identifier"]["columns"][0])
+        if "paired_or_unpaired_identifier" in mapping_as_dict:
+            identifier_columns.append(mapping_as_dict["paired_or_unpaired_identifier"]["columns"][0])
 
         return identifier_columns
 
@@ -584,6 +634,11 @@ class RuleSet:
                 collection_type += ":paired"
             else:
                 collection_type = "paired"
+        if "paired_or_unpaired_identifier" in mapping_as_dict:
+            if collection_type:
+                collection_type += ":paired_or_unpaired"
+            else:
+                collection_type = "paired_or_unpaired"
         return collection_type
 
     @property
@@ -604,6 +659,7 @@ RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnRownumRuleDefinition,
     AddColumnValueRuleDefinition,
     AddColumnSubstrRuleDefinition,
+    AddColumnFromSampleSheetByIndex,
     RemoveColumnsRuleDefinition,
     AddFilterRegexRuleDefinition,
     AddFilterCountRuleDefinition,

@@ -10,7 +10,11 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.model import Role
+from galaxy.model import (
+    Dataset,
+    Role,
+)
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -29,6 +33,7 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
 )
+from galaxy.webapps.galaxy.services.histories import HistoriesService
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -38,6 +43,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     slug_builder: SlugBuilder = depends(SlugBuilder)
+    service: HistoriesService = depends(HistoriesService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -133,13 +139,20 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
-            all_roles = trans.user.all_roles()
+            all_roles = set(trans.user.all_roles())
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             current_actions = history.default_permissions
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+            for action_key, action in Dataset.permitted_actions.items():
                 in_roles = set()
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
+
+                role_tuples = []
+                for role in all_roles:
+                    displayed_name = private_role_emails.get(role.id, role.name)
+                    role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
+
                 inputs.append(
                     {
                         "type": "select",
@@ -149,7 +162,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         "name": action_key,
                         "label": action.action,
                         "help": action.description,
-                        "options": [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                        "options": role_tuples,
                         "value": [trans.security.encode_id(role.id) for role in in_roles],
                     }
                 )
@@ -157,7 +170,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         else:
             self.history_manager.error_unless_mutable(history)
             permissions = {}
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+            for action_key, action in Dataset.permitted_actions.items():
                 in_roles = payload.get(action_key) or []
                 in_roles = [trans.sa_session.get(Role, trans.security.decode_id(x)) for x in in_roles]
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles
@@ -201,8 +214,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 ):
                     # If it's not private to me, and I can manage it, set fixed private permissions.
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
+
+            importable = history.importable
+            link_access = self.service.shareable_service.disable_link_access(trans, history_id)
         return {
-            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
+            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}.",
+            "sharing_status_changed": importable != link_access.importable,
         }
 
     # ......................................................................... actions/orig. async

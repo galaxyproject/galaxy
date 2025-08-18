@@ -14,8 +14,6 @@ import tempfile
 from json import dumps
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -253,10 +251,10 @@ class TabularData(Text):
     def make_html_peek_header(
         self,
         dataset: DatasetProtocol,
-        skipchars: Optional[List] = None,
-        column_names: Optional[List] = None,
+        skipchars: Optional[list] = None,
+        column_names: Optional[list] = None,
         column_number_format: str = "%s",
-        column_parameter_alias: Optional[Dict] = None,
+        column_parameter_alias: Optional[dict] = None,
         **kwargs,
     ) -> str:
         if skipchars is None:
@@ -306,7 +304,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -411,7 +409,7 @@ class Tabular(TabularData):
 
     file_ext = "tabular"
 
-    def get_column_names(self, first_line: str) -> Optional[List[str]]:
+    def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return None
 
     def set_meta(
@@ -514,7 +512,7 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
-        column_types: List = []
+        column_types: list = []
         first_line_column_types = []
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
@@ -602,7 +600,7 @@ class SraManifest(Tabular):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
-    def get_column_names(self, first_line: str) -> Optional[List[str]]:
+    def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return first_line.strip().split("\t")
 
 
@@ -855,7 +853,7 @@ class Sam(Tabular, _BamOrSam):
             _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
@@ -1066,7 +1064,7 @@ class BaseVcf(Tabular):
             dataset.metadata.sample_names = line.split()[9:]
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
@@ -1237,7 +1235,7 @@ class Eland(Tabular):
         ]
 
     def make_html_table(
-        self, dataset: DatasetProtocol, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+        self, dataset: DatasetProtocol, skipchars: Optional[list] = None, peek: Optional[list] = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
@@ -1504,6 +1502,46 @@ class CSV(BaseCSV):
     file_ext = "csv"
     dialect = csv.excel  # This is the default
     strict_width = False  # Previous csv type did not check column width
+
+
+@build_sniff_from_prefix
+class GeoCSV(CSV):
+    """
+    CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
+    https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv
+    """
+
+    file_ext = "geocsv"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoCSV"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Looks for CSV with latitude/longitude headers.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('2.csv')
+        >>> GeoCSV().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.geocsv')
+        >>> GeoCSV().sniff(fname)
+        True
+        """
+        try:
+            with open(file_prefix.filename) as f:
+                # Read first line as header
+                header = f.readline().strip()
+                if not header or "," not in header:
+                    return False
+                fields = [col.strip().lower() for col in header.split(",")]
+                has_lat = any(col in fields for col in ["lat", "latitude"])
+                has_lon = any(col in fields for col in ["lon", "lng", "longitude"])
+                return has_lat and has_lon
+        except Exception:
+            return False
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1988,3 +2026,100 @@ class Psl(Tabular):
                     break
         if count > 0:
             return True
+
+
+@build_sniff_from_prefix
+class FourDNPairs(Tabular):
+    """
+    `4dn_pairs` is a simple tabular format used to store DNA contact pairs detected in Hi-C experiments.
+    The format is defined and maintained by the 4DN (4D Nucleome) Consortium.
+
+    Specification: https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the column name "pair_type"
+
+    Sniffing will return False if:
+      - A non-header line (not starting with "#") is encountered before matching the criteria
+      - The file is compressed (e.g., .gz)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs' )
+    >>> FourDNPairs().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs.gz' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    """
+
+    file_ext = "4dn_pairs"
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if line.rstrip().endswith("pair_type"):
+                    return True
+                else:
+                    break
+        return False
+
+
+@build_sniff_from_prefix
+class FourDNPairsam(Tabular):
+    """
+    The `.pairsam` format is an extension of the standard `.pairs` format, defined by the `pairtools` toolkit.
+    It builds on the pairtools-specific variant of `.pairs` by adding two additional columns—`sam1` and `sam2`—
+    which contain the alignment records from which each Hi-C contact pair was derived.
+
+    Specification: https://pairtools.readthedocs.io/en/latest/formats.html#pairsam
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the tab-separated fields: "pair_type\tsam1\tsam2"
+
+    Sniffing will return False if:
+      - A non-header line (i.e., one not starting with "#") appears before a valid header is matched
+      - The file is compressed (e.g., ends in `.gz`)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
+    >>> FourDNPairsam().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.4dn_pairsam.gz' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    """
+
+    file_ext = "4dn_pairsam"
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if re.search(r"pair_type[\t ]+sam1[\t ]+sam2$", line.rstrip()):
+                    return True
+                else:
+                    break
+        return False

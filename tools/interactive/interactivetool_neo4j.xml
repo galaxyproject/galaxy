@@ -1,4 +1,5 @@
 <tool id="interactive_tool_neo4j" tool_type="interactive" name="Neo4j (Graph Database)" version="0.1">
+    <icon src="neo4j.png" />
     <requirements>
         <container type="docker">quay.io/sanbi-sa/neo_ie:3.1.9</container>
     </requirements>

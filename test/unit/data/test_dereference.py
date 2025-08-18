@@ -54,4 +54,9 @@ def test_dereference_to_posix():
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "foobar.txt"
     assert hda.dataset.sources[0].source_uri == TEST_BASE64_URI
-    assert hda.dataset.sources[0].transform[0]["action"] == "space_to_tab"
+    assert hda.dataset.sources[0].requested_transform[0]["action"] == "datatype_groom"
+    assert hda.dataset.sources[0].requested_transform[1]["action"] == "spaces_to_tabs"
+    assert hda.dataset.state == hda.states.DEFERRED
+    # all deferred datasets post 25.1 should have empty transforms, requested_transform
+    # is used to track transforms that should be applied when the dataset is ready.
+    assert hda.dataset.sources[0].transform is None

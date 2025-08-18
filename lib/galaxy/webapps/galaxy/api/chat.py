@@ -4,12 +4,12 @@ API Controller providing Chat functionality
 
 import logging
 from typing import (
+    Annotated,
     Optional,
     Union,
 )
 
 from fastapi import Path
-from typing_extensions import Annotated
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
@@ -18,7 +18,10 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import ChatPayload
+from galaxy.schema.schema import (
+    ChatPayload,
+    ChatResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -60,8 +63,11 @@ class ChatAPI:
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> str:
-        """We're off to ask the wizard"""
+    ) -> ChatResponse:
+        """We're off to ask the wizard and return a JSON response"""
+        # Initialize response structure
+        result = {"response": "", "error_code": 0, "error_message": ""}
+
         # Currently job-based chat exchanges are the only ones supported,
         # and will only have the one message.
         job = self.job_manager.get_accessible_job(trans, job_id)
@@ -71,18 +77,35 @@ class ChatAPI:
             # asking follow-up questions.
             existing_response = self.chat_manager.get(trans, job.id)
             if existing_response and existing_response.messages[0]:
-                return existing_response.messages[0].message
+                return ChatResponse(
+                    response=existing_response.messages[0].message,
+                    error_code=0,
+                    error_message="",
+                )
 
         self._ensure_openai_configured()
 
         messages = self._build_messages(payload, trans)
-        response = self._call_openai(messages)
-        answer = response.choices[0].message.content
 
-        if job:
-            self.chat_manager.create(trans, job.id, answer)
-
-        return answer
+        try:
+            # We never want this to just blow up and return *nothing*, so catch common errors and provide friendly responses.
+            response = self._call_openai(messages)
+            answer = response.choices[0].message.content
+            result["response"] = answer
+            if job:
+                self.chat_manager.create(trans, job.id, answer)
+        except openai.RateLimitError:
+            result["response"] = (
+                "Our AI assistant is experiencing high demand right now. Please try again in a few minutes, or contact an administrator if this persists."
+            )
+            result["error_code"] = 429
+            result["error_message"] = "Rate limit exceeded"
+        except Exception:
+            result["error_code"] = 500
+            result["error_message"] = (
+                "Something unexpected happened. An error has been logged and administrators will look into it. Please try again later."
+            )
+        return ChatResponse(**result)
 
     @router.put("/api/chat/{job_id}/feedback")
     def feedback(
@@ -101,9 +124,11 @@ class ChatAPI:
         """Ensure OpenAI is available and configured with an API key."""
         if openai is None:
             raise ConfigurationError("OpenAI is not installed. Please install openai to use this feature.")
-        if self.config.openai_api_key is None:
+        if self.config.ai_api_key is None:
             raise ConfigurationError("OpenAI is not configured for this instance.")
-        openai.api_key = self.config.openai_api_key
+        openai.api_key = self.config.ai_api_key
+        if self.config.ai_api_base_url is not None:
+            openai.base_url = self.config.ai_api_base_url
 
     def _get_system_prompt(self) -> str:
         """Get the system prompt for OpenAI."""
@@ -115,28 +140,22 @@ class ChatAPI:
             {"role": "system", "content": self._get_system_prompt()},
             {"role": "user", "content": payload.query},
         ]
-
-        user_msg = self._get_user_context_message(trans)
-        if user_msg:
-            messages.append({"role": "system", "content": user_msg})
-
         return messages
-
-    def _get_user_context_message(self, trans: ProvidesUserContext) -> str:
-        """Generate a user context message based on the user's information."""
-        user = trans.user
-        if user:
-            log.debug(f"CHATGPTuser: {user.username}")
-            return f"You will address the user as {user.username}"
-        return "You will address the user as Anonymous User"
 
     def _call_openai(self, messages: list):
         """Send a chat request to OpenAI and handle exceptions."""
         try:
             return openai.chat.completions.create(
-                model=self.config.openai_model,
+                model=self.config.ai_model,
                 messages=messages,
             )
-        except Exception as e:
-            log.error(f"Error calling OpenAI: {e}")
+        except openai.APIConnectionError:
+            log.exception("OpenAI API Connection Error")
+            raise ConfigurationError("An error occurred while connecting to OpenAI.")
+        except openai.RateLimitError as e:
+            # Wizard quota likely exceeded
+            log.exception(f"A 429 status code was received; OpenAI rate limit exceeded.: ${e}")
+            raise
+        except Exception:
+            # For anything else, it's likely a configuration issue and admins should be notified.
             raise ConfigurationError("An error occurred while communicating with OpenAI.")

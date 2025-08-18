@@ -7,9 +7,8 @@ reproduce a specific view in a Galaxy visualization.
 
 import logging
 from typing import (
-    Dict,
-    List,
-    Tuple,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import (
@@ -44,6 +43,9 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+
 log = logging.getLogger(__name__)
 
 
@@ -59,7 +61,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class VisualizationManager(sharable.SharableModelManager):
+class VisualizationManager(sharable.SharableModelManager[model.Visualization]):
     """
     Handle operations outside and between visualizations and other models.
     """
@@ -76,7 +78,7 @@ class VisualizationManager(sharable.SharableModelManager):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: VisualizationIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[List[model.Visualization], int]:
+    ) -> tuple["ScalarResult[model.Visualization]", Union[int, None]]:
         show_deleted = payload.deleted
         show_own = payload.show_own
         show_published = payload.show_published
@@ -171,7 +173,7 @@ class VisualizationManager(sharable.SharableModelManager):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
+        return trans.sa_session.scalars(stmt), total_matches
 
 
 class VisualizationSerializer(sharable.SharableModelSerializer):
@@ -192,7 +194,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
 
     def add_serializers(self):
         super().add_serializers()
-        serializers: Dict[str, base.Serializer] = {}
+        serializers: dict[str, base.Serializer] = {}
         self.serializers.update(serializers)
 
 

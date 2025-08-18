@@ -12,7 +12,7 @@ import { assertDefined } from "@/utils/assertions";
 import { useD3Zoom } from "./composables/d3Zoom";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Vector } from "./modules/geometry";
+import type { Rectangle, Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -21,6 +21,7 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
@@ -37,6 +38,8 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Number, default: undefined },
+    populatedInputs: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -54,6 +57,14 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     props.initialPosition
 );
 
+watch(
+    () => transform.value,
+    () => {
+        stateStore.position[0] = transform.value.x;
+        stateStore.position[1] = transform.value.y;
+    }
+);
+
 const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
     elementBounding,
     scale,
@@ -62,6 +73,10 @@ const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundi
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
 function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    if (!Object.keys(props.steps).length) {
+        // If there are no steps, we cannot fit the workflow.
+        return;
+    }
     const aabb = getWorkflowBoundingBox();
     aabb.expand(padding);
 
@@ -149,10 +164,19 @@ const canvasStyle = computed(() => {
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
 
+const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
+
+function moveToAndHighlightRegion(bounds: Rectangle) {
+    const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
+    areaHighlight.value?.show(bounds);
+    moveTo(centerPosition);
+}
+
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
+    moveToAndHighlightRegion,
 });
 </script>
 
@@ -169,7 +193,7 @@ defineExpose({
             id="canvas-container"
             ref="canvas"
             class="canvas-content"
-            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
             @drop.prevent
             @dragover.prevent>
             <AdaptiveGrid
@@ -197,6 +221,7 @@ defineExpose({
                     :scale="scale"
                     :readonly="readonly"
                     :is-invocation="props.isInvocation"
+                    :populated-inputs="props.populatedInputs"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -212,6 +237,7 @@ defineExpose({
                     :readonly="readonly"
                     :root-offset="elementBounding"
                     @pan-by="panBy" />
+                <AreaHighlight ref="areaHighlight" />
             </div>
         </div>
         <WorkflowMinimap
@@ -236,11 +262,6 @@ defineExpose({
         left: 0px;
         top: 0px;
         overflow: hidden;
-
-        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
-        &.fixed-window-height {
-            height: 60vh;
-        }
     }
 
     .node-area {

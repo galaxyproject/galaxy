@@ -5,6 +5,7 @@
         :enable_beta_markdown_export="config.enable_beta_markdown_export"
         :export-link="exportUrl"
         :download-endpoint="stsUrl(config)"
+        direct-download-link
         @onEdit="onEdit" />
 </template>
 
@@ -64,7 +65,7 @@ export default {
             window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
         },
         stsUrl(config) {
-            return `${this.dataUrl}/prepare_download`;
+            return `${this.dataUrl}.pdf`;
         },
     },
 };

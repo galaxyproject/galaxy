@@ -2,7 +2,6 @@ import os
 import random
 import uuid
 from tempfile import NamedTemporaryFile
-from typing import List
 
 import pytest
 from sqlalchemy import (
@@ -11,9 +10,8 @@ from sqlalchemy import (
 )
 
 import galaxy.datatypes.registry
-import galaxy.model
-import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model import mapping
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -27,7 +25,7 @@ from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
-galaxy.model.set_datatypes_registry(datatypes_registry)
+model.set_datatypes_registry(datatypes_registry)
 
 DB_URI = "sqlite:///:memory:"
 # docker run -e POSTGRES_USER=galaxy -p 5432:5432 -d postgres
@@ -114,8 +112,8 @@ class TestMappings(BaseModelTestCase):
         random.shuffle(elements)
         for item in elements:
             self.persist(item)
-        forward_hdas: List[model.HistoryDatasetAssociation] = []
-        reverse_hdas: List[model.HistoryDatasetAssociation] = []
+        forward_hdas: list[model.HistoryDatasetAssociation] = []
+        reverse_hdas: list[model.HistoryDatasetAssociation] = []
         for i, dataset_instance in enumerate(list_pair.dataset_instances):
             if i % 2:
                 reverse_hdas.append(dataset_instance)
@@ -190,7 +188,11 @@ class TestMappings(BaseModelTestCase):
         assert c2.dataset_elements == [dce1, dce2]
         assert c2.dataset_action_tuples == []
         assert c2.populated_optimized
-        assert c2.dataset_states_and_extensions_summary == ({"new"}, {"txt", "bam"})
+        summary = c2.dataset_states_and_extensions_summary
+        extensions = summary.extensions
+        states = summary.states
+        assert states == {"new": 2}
+        assert extensions == ["bam", "txt"]
         assert c2.element_identifiers_extensions_paths_and_metadata_files == [
             [
                 ("inner_list", "forward"),
@@ -202,7 +204,11 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
-        assert c3.dataset_states_and_extensions_summary == (set(), set())
+        summary_c3 = c3.dataset_states_and_extensions_summary
+        dbkeys_c3 = summary_c3.dbkeys
+        extensions_c3 = summary_c3.extensions
+        assert not dbkeys_c3
+        assert not extensions_c3
 
         stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
         result = self.model.session.execute(stmt).all()
@@ -269,7 +275,6 @@ class TestMappings(BaseModelTestCase):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute
         # states and flushing in SQL Alchemy is very subtle and it is good to have a executable
         # reference for how it behaves in the context of Galaxy objects.
-        model = self.model
         user = model.User(email=random_email(), password="password")
         galaxy_session = model.GalaxySession()
         galaxy_session_other = model.GalaxySession()
@@ -305,7 +310,7 @@ class TestMappings(BaseModelTestCase):
         self._non_empty_flush()
         if session().in_transaction():
             session.commit()
-        assert expected_id == galaxy.model.cached_id(galaxy_model_object)
+        assert expected_id == model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Keeping the following failed experiments here for future reference,
@@ -333,7 +338,7 @@ class TestMappings(BaseModelTestCase):
         session.flush()
         if session().in_transaction():
             session.commit()
-        assert galaxy.model.cached_id(galaxy_model_object_new)
+        assert model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
         # Verify a targeted flush prevent expiring unrelated objects.
@@ -458,7 +463,7 @@ class TestMappings(BaseModelTestCase):
         def check_private_role(private_role, email):
             assert private_role.type == model.Role.types.PRIVATE
             assert len(private_role.users) == 1
-            assert private_role.name == email
+            assert private_role.name == model.Role.default_name(model.Role.types.PRIVATE)
 
         email = "rule_user_1@example.com"
         u = model.User(email=email, password="password")
@@ -580,14 +585,14 @@ class TestMappings(BaseModelTestCase):
 
         with pytest.raises(Exception) as exec_info:
             self._make_owned(security_agent, u_from, d1)
-        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+        assert model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_make_private_objectstore_dataset_shared(self):
         security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, _ = self._three_users("cannot_make_private_shared")
 
-        h = self.model.History(name="History for Prevent Sharing", user=u_from)
-        d1 = self.model.HistoryDatasetAssociation(
+        h = model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h, create_dataset=True, sa_session=self.model.session
         )
         self.persist(h, d1)
@@ -597,14 +602,14 @@ class TestMappings(BaseModelTestCase):
 
         with pytest.raises(Exception) as exec_info:
             security_agent.privately_share_dataset(d1.dataset, [u_to])
-        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+        assert model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_set_dataset_permisson_on_private(self):
         security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, _ = self._three_users("cannot_set_permissions_on_private")
 
-        h = self.model.History(name="History for Prevent Sharing", user=u_from)
-        d1 = self.model.HistoryDatasetAssociation(
+        h = model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h, create_dataset=True, sa_session=self.model.session
         )
         self.persist(h, d1)
@@ -617,14 +622,14 @@ class TestMappings(BaseModelTestCase):
 
         with pytest.raises(Exception) as exec_info:
             security_agent.set_dataset_permission(d1.dataset, {access_action: [role]})
-        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+        assert model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_make_private_dataset_public(self):
         security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, u_other = self._three_users("cannot_make_private_dataset_public")
 
-        h = self.model.History(name="History for Annotation", user=u_from)
-        d1 = self.model.HistoryDatasetAssociation(
+        h = model.History(name="History for Annotation", user=u_from)
+        d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h, create_dataset=True, sa_session=self.model.session
         )
         self.persist(h, d1)
@@ -634,7 +639,7 @@ class TestMappings(BaseModelTestCase):
 
         with pytest.raises(Exception) as exec_info:
             security_agent.make_dataset_public(d1.dataset)
-        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+        assert model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"
@@ -667,7 +672,7 @@ class TestMappings(BaseModelTestCase):
 
     def new_hda(self, history, **kwds):
         object_store_id = kwds.pop("object_store_id", None)
-        hda = self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
+        hda = model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
         if object_store_id is not None:
             hda.dataset.object_store_id = object_store_id
         return history.add_dataset(hda)
@@ -686,8 +691,8 @@ class TestPostgresMappings(TestMappings):
 
 
 def _invocation_for_workflow(user, workflow):
-    h1 = galaxy.model.History(name="WorkflowHistory1", user=user)
-    workflow_invocation = galaxy.model.WorkflowInvocation()
+    h1 = model.History(name="WorkflowHistory1", user=user)
+    workflow_invocation = model.WorkflowInvocation()
     workflow_invocation.workflow = workflow
     workflow_invocation.history = h1
     workflow_invocation.state = "new"
@@ -695,10 +700,10 @@ def _invocation_for_workflow(user, workflow):
 
 
 def _workflow_from_steps(user, steps):
-    stored_workflow = galaxy.model.StoredWorkflow()
+    stored_workflow = model.StoredWorkflow()
     add_object_to_object_session(stored_workflow, user)
     stored_workflow.user = user
-    workflow = galaxy.model.Workflow()
+    workflow = model.Workflow()
     if steps:
         for step in steps:
             if get_object_session(step):

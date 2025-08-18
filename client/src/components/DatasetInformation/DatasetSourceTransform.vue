@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type DatasetTransform } from "@/api";
+import type { DatasetTransform } from "@/api";
 
 const TRANSFORM_ACTION_DESCRIPTIONS = {
     to_posix_lines: {
@@ -18,13 +18,13 @@ const TRANSFORM_ACTION_DESCRIPTIONS = {
     },
 };
 
-const DATATYPE_GROOMING_DESCRIPTIONS = {
-    bam: "The supplied BAM was coordinate-sorted using pysam.",
-    "qname_sorted.bam": "The supplied BAM was 'queryname' sorted using pysam.",
-    "qname_input_sorted.bam": "The supplied BAM was 'queryname' sorted using pysam.",
-    "isa-tab": "The supplied compressed file was converted to an ISA-TAB composite dataset.",
-    "isa-json": "The supplied compressed file was converted to an ISA-JSON composite dataset.",
-};
+const DATATYPE_GROOMING_DESCRIPTIONS = new Map<string, string>([
+    ["bam", "The supplied BAM was coordinate-sorted using pysam."],
+    ["qname_sorted.bam", "The supplied BAM was 'queryname' sorted using pysam."],
+    ["qname_input_sorted.bam", "The supplied BAM was 'queryname' sorted using pysam."],
+    ["isa-tab", "The supplied compressed file was converted to an ISA-TAB composite dataset."],
+    ["isa-json", "The supplied compressed file was converted to an ISA-JSON composite dataset."],
+]);
 
 const UNKNOWN_ACTION_DESCRIPTION = {
     short: "Unknown action.",
@@ -51,9 +51,9 @@ function actionShortDescription(transformAction: DatasetTransform) {
 
 function actionLongDescription(transformAction: DatasetTransform) {
     let longDescription = actionDescription(transformAction).long || "";
-
-    if (transformAction.action == "datatype_groom") {
-        const datatypeDescription = DATATYPE_GROOMING_DESCRIPTIONS[transformAction.datatype_ext];
+    const datatypeExt = transformAction.datatype_ext;
+    if (transformAction.action == "datatype_groom" && datatypeExt && DATATYPE_GROOMING_DESCRIPTIONS.has(datatypeExt)) {
+        const datatypeDescription: string | undefined = DATATYPE_GROOMING_DESCRIPTIONS.get(datatypeExt);
 
         if (datatypeDescription) {
             longDescription += " " + datatypeDescription;

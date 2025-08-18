@@ -8,7 +8,7 @@ tags:
 steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 
-    - title: "Upload data"
+    - title: "Open the Upload Dialog"
       component: upload.start
       intro: |
             At first we upload some data into your Galaxy history.<br>
@@ -16,23 +16,26 @@ steps:
       postclick: true
 
     - title: "Upload your data"
-      element: "#btn-new"
+      component: upload.create_button
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
       postclick: true
 
     - title: "Insert URLs"
-      element: ".upload-text-content"
+      component: upload.paste_content(n=0)
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       textinsert: |
         https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "#regular #btn-start"
+      component: upload.start_button
       intro: "Upload the data into your Galaxy <b>History</b>."
-      postclick:
-        - "#regular #btn-start"
-        - "#regular #btn-close"
+      postclick: true
+
+    - title: Close Upload
+      component: upload.close_button
+      intro: Hit the close button to close the upload dialog.
+      postclick: true
 
     - title: "History"
       element: "#current-history-panel"
@@ -49,19 +52,19 @@ steps:
 
     - element: "#current-history-panel div.content-item .download-btn"
       title: "Download your dataset"
-      intro: "You can download every dataset by using the floppy disc symbol."
-
-    - element: "#current-history-panel div.content-item .params-btn"
-      title: "Even more information"
-      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
-      preclick: true
+      intro: "You can download every dataset by using the floppy disk symbol."
 
     - element: "#current-history-panel div.content-item .display-btn"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
       preclick: true
 
-    - element: "#current-history-panel div.content-item .edit-btn"
+    - component: dataset_view.details_tab
+      title: "Even more information"
+      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
+      preclick: true
+
+    - component: dataset_view.edit_tab
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
       preclick: true

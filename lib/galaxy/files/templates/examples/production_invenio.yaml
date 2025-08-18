@@ -2,9 +2,8 @@
   version: 0
   name: InvenioRDM
   description: |
-      InvenioRDM is a research data management platform that allows you to store, share, and publish research data. It is
-      built on top of the Invenio framework and is designed to be highly customizable. This template configuration allows you
-      to connect to an InvenioRDM instance of your choice.
+      [InvenioRDM](https://inveniosoftware.org) is a research data management platform that allows you to store, share, and publish research data. It is
+      built on top of the Invenio framework and is designed to be highly customizable. Here, you can connect to an InvenioRDM instance of your choice.
   variables:
       url:
           label: InvenioRDM instance endpoint (e.g. https://invenio.example.com)

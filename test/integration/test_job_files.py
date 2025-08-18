@@ -18,7 +18,6 @@ API has gone too far.
 import io
 import os
 import tempfile
-from typing import Dict
 
 import requests
 from sqlalchemy import select
@@ -136,11 +135,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert path
 
         upload_url = self._api_url(f"job_files/resumable_upload?job_key={job_key}", use_key=False)
-        headers: Dict[str, str] = {}
+        headers: dict[str, str] = {}
         my_client = client.TusClient(upload_url, headers=headers)
 
         storage = None
-        metadata: Dict[str, str] = {}
+        metadata: dict[str, str] = {}
         t_file = tempfile.NamedTemporaryFile("w")
         t_file.write("some initial text data")
         t_file.flush()

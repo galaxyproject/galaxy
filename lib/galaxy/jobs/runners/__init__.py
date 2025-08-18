@@ -17,7 +17,6 @@ from queue import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -267,7 +266,7 @@ class BaseJobRunner:
         """
         return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
-    def parse_destination_params(self, params: Dict[str, Any]):
+    def parse_destination_params(self, params: dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 
@@ -297,7 +296,9 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            if job_wrapper.prepare() is False:
+                # job cache
+                return False
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
@@ -412,12 +413,8 @@ class BaseJobRunner:
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
-                if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    stmt = (
-                        select(self.app.model.JobToOutputDatasetAssociation)
-                        .filter_by(job=job, dataset=dataset)
-                        .limit(1)
-                    )
+                if isinstance(dataset, model.HistoryDatasetAssociation):
+                    stmt = select(model.JobToOutputDatasetAssociation).filter_by(job=job, dataset=dataset).limit(1)
                     joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
@@ -607,6 +604,7 @@ class BaseJobRunner:
     def mark_as_resubmitted(self, job_state: "JobState", info: Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
+            assert self.app.job_manager.job_handler.dispatcher
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 

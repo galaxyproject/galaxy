@@ -5,7 +5,7 @@ import { GalaxyApi } from "@/api";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -87,7 +87,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: PageEntry) => {
+            emit(`/pages/list_published?f-username=${data.username}`);
+        },
     },
 ];
 
@@ -97,6 +100,7 @@ const fields: FieldArray = [
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
     slug: { handler: contains("slug"), menuItem: false },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**

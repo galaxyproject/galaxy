@@ -122,6 +122,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="icon" type="Icon" minOccurs="0"/>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1"/>
@@ -202,11 +203,11 @@ for the list of behavior changes associated with profile versions.
       <xs:attribute name="license" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies any full URI or a
-a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
-wrapper. The tool wrapper version can be indepedent of the underlying tool. This
-license covers the tool XML and associated scripts shipped with the tool.
+            a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
+            wrapper. The tool wrapper version can be independent of the underlying tool. This
+            license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as [schema.org/license](https://schema.org/license) property.
+            This is interpreted as [schema.org/license](https://schema.org/license) property.
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -242,6 +243,16 @@ this attribute defined the HTTP request method to use when communicating with an
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+  <xs:complexType name="Icon">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Icon image associated with the tool. Ideally, this should be a square PNG image with maximum dimensions of 512x512 pixels.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="src" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Relative path to the icon image. It must be contained within the tool directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Macros">
     <xs:annotation>
       <xs:documentation xml:lang="en">Frequently, tools may require the same XML
@@ -736,7 +747,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText or Markdown. Included here is only an overview of a subset of features. For more information see [the RST site](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html) or the [Markdown site](https://www.markdownguide.org/basic-syntax/).
 
 tag | details
 --- | -------
@@ -1580,6 +1591,13 @@ attribute name is not included, the functional test framework will attempt to
 determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="class" type="Class">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This attribute name should be included
+only with parameter of ``type`` ``data`` for the tool. If this attribute name is not included the test framework will
+assume that the dataset is a file. Set this to ``Directory`` to interpret and upload the value as a directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Specifies a ``dbkey`` value for the
@@ -1619,14 +1637,25 @@ non-optional composite inputs must be specified as part of the ``param``.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="TestCollectionField" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+JSON that describes the fields of a collection. Only use if ``collection_type`` is ``record`` or
+some extension of that.
+
+]]></xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
   <xs:complexType name="TestCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en">Definition of a collection for test input.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="fields" type="TestCollectionField" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="element" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="xs:string" use="required">
+    <xs:attribute name="type" type="CollectionType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
@@ -4359,7 +4388,7 @@ Here is an example command section that handles the above sample input:
       ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
       echo '$input' > '$output' ## The ouput will be the source URI of the input.
   #else:
-      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## Here, the input is a regular dataset or a materialized dataset in case of a
       ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
       cp '$input' '$output' ## The output will be a copy of the input content.
 </command>
@@ -6125,6 +6154,78 @@ on Human (hg18)``.
 </outputs>
 ```
 
+### Markdown Outputs
+
+Tools can produce Markdown reports enhanced with the Galaxy Markdown syntax. This
+allows using Markdown directives to provide rich displays of tool inputs and outputs.
+
+```
+<outputs>
+    <data format="tool_markdown" name="output_report" label="Report for Analysis" />
+</outputs>
+```
+
+For an overview of standard Markdown visit the [commonmark.org tutorial](https://commonmark.org/help/tutorial/).
+
+The Galaxy extensions to Markdown are represented as code blocks, these blocks start with the line
+
+
+    ```galaxy
+
+and end with the line
+
+    ```
+
+and have a command (or directive) with arguments between these lines. These arguments reference parts of your tool's job such as
+inputs and outputs by label.
+
+#### History Contents Commands
+
+These commands reference a dataset or dataset collection. For instance, the following examples would display
+the dataset collection metadata and would embed a dataset into the document as an image.
+
+These elements are referenced by input or output labels for the tool.
+
+Example:
+
+    ```galaxy
+    history_dataset_collection_display(output=mapped_bams)
+    ```
+
+Example:
+
+    ```galaxy
+    history_dataset_as_image(output=normalized_result_plot)
+    ```
+
+$directive_list:history_dataset_display,history_dataset_collection_display,history_dataset_as_image,history_dataset_as_table,history_dataset_peek,history_dataset_info
+
+#### Job Commands
+
+These commands implicitly reference the Galaxy job associated with the tool execution.
+
+Example:
+
+    ```galaxy
+    tool_stdout()
+    ```
+
+$directive_list:tool_stderr,tool_stdout,job_metrics,job_parameters
+
+#### Example Tools
+
+A few potential paradigms for build reports for tools have examples included.
+[markdown_report_simple.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_simple.xml)
+demonstrates simply linking to the other outputs of a tool and builds the document
+itself with a Galaxy ``configfile``. [markdown_report_extra_files.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_extra_files.xml)
+builds the report with a configfile just like that first example but demonstrates
+copying data and images into the ``extra_files`` directory of the report. This variant
+is useful if the number or types of files being produced is variable or if it is important
+the outputs linked in the reports are not stand-alone outputs of the tool. Finally,
+[markdown_report_from_script.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_from_script.xml)
+demonstrates you don't need to build the file in Galaxy's XML - you can build it with
+a wrapper script or standalone application.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -6242,10 +6343,11 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
   <xs:complexType name="OutputFilter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code
+``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
-tool ultimately creates. If the code, when executed, returns ``True``,
-the output dataset is retained. In these code blocks the tool parameters appear
+tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``. 
+In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
 conditionals are accessed using a dictionary named after the conditional. Boolean
@@ -7108,8 +7210,10 @@ paths for data or collection inputs set the ``data_style`` attribute to ``paths`
 To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
-Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
-and the other elements the identifiers of the collections containing the dataset.
+Note that the ``element_identifier`` field matches the type of input, which means for simple data inputs ``element_identifier`` is a string,
+for multiple="true" data inputs ``element_identifier`` is a list of strings corresponding to the element identifiers of each dataset passed to the input.
+For dataset collections the element identifier is a list of strings with as many items in the list as the nesting level of the collection (i.e. 1 for list, 2 for list:list, 3 for list:list:list etc),
+where the first item represents the outermost element identifier and the innermost item represents the innermost element identifier of the collection.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -7690,23 +7794,23 @@ for a list of supported formats.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tool files may declare one
 citations element. Each citations element can contain one or more citation tag
-elements - each of which specifies tool citation information using either a DOI
+elements - each of which specifies tool reference information using either a DOI
 or a BibTeX entry.
 
-These citations will appear at the bottom of the tool form in a formatted way
+These references will appear at the bottom of the tool form in a formatted way,
 but the user will have to option to select RAW BibTeX for copying and pasting as
 well. Likewise, the history menu includes an option allowing users to aggregate
-all such citations across an analysis in a list of citations.
+all such references across an analysis in a list of references.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
 https://doi.org/ and cached.
 
 ```xml
 <citations>
-   <!-- Example of annotating a citation using a DOI. -->
+   <!-- Example of annotating a reference using a DOI. -->
    <citation type="doi">10.1093/bioinformatics/btq281</citation>
 
-   <!-- Example of annotating a citation using a BibTex entry. -->
+   <!-- Example of annotating a reference using a BibTex entry. -->
    <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
    author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
    title = {An interior-point method for large-scale l1-regularized logistic regression},
@@ -7726,10 +7830,6 @@ following commits adding this to the
 [phenotype association tools](https://bitbucket.org/galaxy/galaxy-central/commits/39c983151fe328ff5d415f6da81ce5b21a7e18a4),
 [MAF suite](https://bitbucket.org/galaxy/galaxy-central/commits/60f63d6d4cb7b73286f3c747e8acaa475e4b6fa8),
 and [MACS2 suite](https://github.com/jmchilton/galaxytools/commit/184971dea73e236f11e82b77adb5cab615b8391b).
-
-This feature was added to the August 2014 release of Galaxy, tools annotated
-with citations will work in older releases of Galaxy but no citation information
-will be available to the end user.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -7739,14 +7839,14 @@ will be available to the end user.
   <xs:complexType name="Citation">
     <xs:annotation>
       <xs:documentation xml:lang="en">Each citations element can contain one or
-more ``citation`` tag elements - each of which specifies tool citation
+more ``citation`` tag elements - each of which specifies tool reference
 information using either a DOI or a BibTeX entry.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="CitationType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of citation - currently ``doi``
+            <xs:documentation xml:lang="en">Type of reference - currently ``doi``
 and ``bibtex`` are the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7755,7 +7855,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="CitationType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of reference represented.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bibtex"/>
@@ -8090,7 +8190,6 @@ favour of a ``has_size`` assertion.</xs:documentation>
       </xs:simpleType>
     </xs:union>
   </xs:simpleType>
-  
   <xs:simpleType name="Format">
     <xs:restriction base="xs:string">
       <xs:pattern value="[0-9a-z._-]+"/>
@@ -8101,7 +8200,12 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
     </xs:restriction>
   </xs:simpleType>
-  
+  <xs:simpleType name="Class">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="File"/>
+      <xs:enumeration value="Directory"/>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -8155,15 +8259,14 @@ A tool can have any number of EDAM operation references.
     <xs:annotation gxdocs:best_practices="tool-cross-references-bio-tools">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
-A tool can refer multiple reference IDs.
+A tool can link to multiple external catalog IDs.
 
 ```xml
    <!-- Example: this tool is dada2 -->
    <xrefs>
-       <xref type="bio.tools">dada2</xref>
-       <xref type="bioconductor">dada2</xref>
+       <xref type="bio.tools">dada2</xref> <!-- https://bio.tools/dada2 -->
+       <xref type="bioconductor">dada2</xref> <!-- https://bioconductor.org/packages/dada2 -->
    </xrefs>
-   <!-- https://bio.tools/dada2 -->
 ```
 
 ]]></xs:documentation>
@@ -8175,14 +8278,14 @@ A tool can refer multiple reference IDs.
   </xs:complexType>
   <xs:complexType name="xref">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
-information according to a catalog.</xs:documentation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies a link to
+an external catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="singleLineString">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
+            <xs:documentation xml:lang="en">Type of catalog - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -8191,7 +8294,7 @@ the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="xrefType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of catalog.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
@@ -8225,7 +8328,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="CollectionTypeList">
@@ -8233,7 +8336,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:,](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="InputsConfigfileDatastyleType">

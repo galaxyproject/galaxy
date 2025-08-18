@@ -1,18 +1,18 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 
-import {
-    type ExportObjectRequestMetadata,
-    type ExportObjectResultMetadata,
-    type ModelStoreFormat,
-    type ObjectExportTaskResponse,
-    type StoreExportPayload,
+import type {
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
+    ModelStoreFormat,
+    ObjectExportTaskResponse,
+    StoreExportPayload,
 } from "@/api";
 
 export interface ExportParams {
-    readonly modelStoreFormat: ModelStoreFormat;
-    readonly includeFiles: boolean;
-    readonly includeDeleted: boolean;
-    readonly includeHidden: boolean;
+    modelStoreFormat: ModelStoreFormat;
+    includeFiles: boolean;
+    includeDeleted: boolean;
+    includeHidden: boolean;
 }
 
 export interface ExportRecord {
@@ -30,7 +30,7 @@ export interface ExportRecord {
     readonly isStsDownload: boolean;
     readonly canDownload: boolean;
     readonly modelStoreFormat: ModelStoreFormat;
-    readonly exportParams?: ExportParams;
+    readonly exportParams?: Readonly<ExportParams>;
     readonly duration?: number | null;
     readonly canExpire: boolean;
     readonly isPermanent: boolean;

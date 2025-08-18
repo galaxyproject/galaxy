@@ -2,8 +2,6 @@ import logging
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -39,6 +37,7 @@ from tool_shed.webapp.model import (
     RepositoryMetadata,
     User,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
     # why is mypy making me re-annotate these things from the base class, it didn't
     # when they were in the same file
-    invalid_file_tups: List[InvalidFileT]
+    invalid_file_tups: list[InvalidFileT]
     repository_clone_url: Optional[str]
 
     def __init__(
@@ -60,7 +59,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         repository: Optional[Repository] = None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[Dict[str, Any]] = None,
+        shed_config_dict: Optional[dict[str, Any]] = None,
         relative_install_dir=None,
         repository_files_dir=None,
         resetting_all_metadata_on_repository=False,
@@ -101,7 +100,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         self.invalid_file_tups = []
         self.sa_session = trans.app.model.session
 
-    def initial_metadata_dict(self) -> Dict[str, Any]:
+    def initial_metadata_dict(self) -> dict[str, Any]:
         return {}
 
     def set_repository(
@@ -503,7 +502,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = False
         else:
-            repository_metadata = self.app.model.RepositoryMetadata(
+            repository_metadata = RepositoryMetadata(
                 repository_id=self.repository.id,
                 changeset_revision=changeset_revision,
                 metadata=metadata_dict,
@@ -551,7 +550,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+                required_repository = get_repository_by_name_and_owner(self.app.model.context, name, owner)
                 repository_type_class = self.app.repository_types_registry.get_class_by_label(required_repository.type)
                 return isinstance(repository_type_class, TipOnly)
         return False
@@ -793,7 +792,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
-        changeset_revisions: List[Optional[str]] = []
+        changeset_revisions: list[Optional[str]] = []
         # When a new repository_metadata record is created, it always uses the values of
         # metadata_changeset_revision and metadata_dict.
         metadata_changeset_revision = None
@@ -1050,7 +1049,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         return status, error_message
 
 
-def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> List[str]:
+def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> list[str]:
     changeset_revisions_that_contain_tools = []
     for changeset in repo.changelog:
         changeset_revision = str(repo[changeset])

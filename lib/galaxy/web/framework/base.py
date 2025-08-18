@@ -16,6 +16,7 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
+from typing import NoReturn
 from urllib.parse import urljoin
 
 import routes
@@ -505,7 +506,7 @@ class Response:
     def get_content_type(self):
         return self.headers.get("content-type", None)
 
-    def send_redirect(self, url):
+    def send_redirect(self, url: str) -> NoReturn:
         """
         Send an HTTP redirect response to (target `url`)
         """

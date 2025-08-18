@@ -6,8 +6,6 @@ import wave
 from functools import lru_cache
 from typing import (
     cast,
-    List,
-    Tuple,
 )
 
 from galaxy.datatypes.binary import Binary
@@ -38,11 +36,16 @@ magic_number = {
         "offset": 4,
         "string": ["ftypisom", "ftypmp42", "ftypMSNV"],
     },
+    "m4a": {
+        "offset": 4,
+        "string": ["ftypM4A "],
+    },
     "flv": {"offset": 0, "string": ["FLV"]},
     "mkv": {"offset": 0, "hex": ["1A 45 DF A3"]},
     "webm": {"offset": 0, "hex": ["1A 45 DF A3"]},
     "mov": {"offset": 4, "string": ["ftypqt", "moov"]},
     "wav": {"offset": 8, "string": ["WAVE"]},
+    "flac": {"offset": 0, "string": ["fLaC"]},
     "mp3": {
         "offset": 0,
         "hex": [
@@ -112,14 +115,15 @@ def _get_file_format_from_magic_number(filename: str, file_ext: str):
     with open(filename, "rb") as f:
         f.seek(cast(int, magic_number[file_ext]["offset"]))
         head = f.read(8)
+        string_check, hex_check = False, False
         if "string" in magic_number[file_ext]:
             string_check = any(
                 head.startswith(string_code.encode("iso-8859-1"))
-                for string_code in cast(List[str], magic_number[file_ext]["string"])
+                for string_code in cast(list[str], magic_number[file_ext]["string"])
             )
         if "hex" in magic_number[file_ext]:
             hex_check = any(
-                head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(List[str], magic_number[file_ext]["hex"])
+                head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(list[str], magic_number[file_ext]["hex"])
             )
         return string_check or hex_check
 
@@ -239,7 +243,7 @@ class Video(Binary):
         no_value=0,
     )
 
-    def _get_resolution(self, streams: List) -> Tuple[int, int, float]:
+    def _get_resolution(self, streams: list) -> tuple[int, int, float]:
         for stream in streams:
             if stream["codec_type"] == "video":
                 w = stream["width"]
@@ -297,6 +301,23 @@ class Mp4(Video):
             metadata, streams = ffprobe(filename)
             return "mp4" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "mp4")
         return _get_file_format_from_magic_number(filename, "mp4")
+
+
+class M4a(Audio):
+    """
+    Class that reads M4A audio file.
+    >>> from galaxy.datatypes.sniff import sniff_with_cls
+    >>> sniff_with_cls(M4a, 'audio_3.m4a')
+    True
+    """
+
+    file_ext = "m4a"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "m4a" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "m4a")
+        return _get_file_format_from_magic_number(filename, "m4a")
 
 
 class Flv(Video):
@@ -391,6 +412,16 @@ class Ogg(Audio):
             metadata, streams = ffprobe(filename)
             return "ogg" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "ogg")
+
+
+class Flac(Audio):
+    file_ext = "flac"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "flac" in metadata["format_name"].split(",")
+        return _get_file_format_from_magic_number(filename, "flac")
 
 
 class Webm(Video):

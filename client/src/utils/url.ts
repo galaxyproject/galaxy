@@ -10,6 +10,32 @@ export interface UrlDataOptions {
     errorSimplify?: boolean;
 }
 
+export const USER_FILE_PREFIX = "gxuserfiles://";
+// TODO: File sources can register custom URI schemes post https://github.com/galaxyproject/galaxy/pull/15497,
+// as such this list should probably be calculated on that backend for correctness.
+export const URI_PREFIXES = [
+    "base64://",
+    "http://",
+    "https://",
+    "ftp://",
+    "file://",
+    "gxfiles://",
+    "gximport://",
+    "gxuserimport://",
+    USER_FILE_PREFIX,
+    "gxftp://",
+    "drs://",
+    "invenio://",
+    "zenodo://",
+    "dataverse://",
+    "elabftw://",
+    "zip://",
+];
+
+export function isUrl(content: string): boolean {
+    return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
+}
+
 export async function urlData<R>({ url, headers, params, errorSimplify = true }: UrlDataOptions): Promise<R> {
     try {
         headers = headers || {};

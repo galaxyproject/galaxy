@@ -1,5 +1,5 @@
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.output_models import from_tool_source
+from galaxy.tool_util.parser.output_objects import from_tool_source
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 
 

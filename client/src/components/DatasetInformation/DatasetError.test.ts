@@ -2,9 +2,10 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import type { components } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
@@ -13,12 +14,38 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
+
 const { server, http } = useServerMock();
+
+type RegexJobMessage = components["schemas"]["RegexJobMessage"];
 
 async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
+    const error1: RegexJobMessage = {
+        desc: "message_1",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
+    const error2: RegexJobMessage = {
+        desc: "message_2",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
 
     server.use(
+        expectConfigurationRequest(http, {}),
         http.get("/api/datasets/{dataset_id}", ({ response }) => {
             // We need to use untyped here because this endpoint is not
             // described in the OpenAPI spec due to its complexity for now.
@@ -35,7 +62,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 tool_id: "tool_id",
                 tool_stderr: "tool_stderr",
                 job_stderr: "job_stderr",
-                job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
+                job_messages: [error1, error2],
                 user_email,
                 create_time: "2021-01-01T00:00:00",
                 update_time: "2021-01-01T00:00:00",
@@ -112,10 +139,10 @@ describe("DatasetError", () => {
             })
         );
 
-        const FormAndSubmitButton = "#dataset-error-form";
+        const FormAndSubmitButton = "#email-report-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-        const submitButton = "#dataset-error-submit";
+        const submitButton = "#email-report-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
 
         await wrapper.find(submitButton).trigger("click");

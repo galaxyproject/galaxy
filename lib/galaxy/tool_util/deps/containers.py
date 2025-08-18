@@ -18,6 +18,7 @@ from galaxy.util import (
     asbool,
     plugin_config,
 )
+from . import container_resolvers
 from .container_classes import (
     Container,
     CONTAINER_CLASSES,
@@ -345,9 +346,7 @@ class ContainerRegistry:
         return default_resolvers
 
     def __resolvers_dict(self) -> Dict[str, Type["ContainerResolver"]]:
-        import galaxy.tool_util.deps.container_resolvers
-
-        return plugin_config.plugins_dict(galaxy.tool_util.deps.container_resolvers, "resolver_type")
+        return plugin_config.plugins_dict(container_resolvers, "resolver_type")
 
     def get_resolution_cache(self) -> ResolutionCache:
         cache = ResolutionCache()

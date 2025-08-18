@@ -1,8 +1,6 @@
 import json
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -23,7 +21,6 @@ from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
     EncodedJobParameterHistoryItem,
-    JobMetricCollection,
     JobState,
     JobSummary,
     Model,
@@ -46,7 +43,7 @@ class JobInputSummary(Model):
 # TODO: Use Tuple again when `make update-client-api-schema` supports them
 class JobErrorSummary(Model):
     # messages: List[Union[Tuple[str, str], List[str]]]
-    messages: List[List[str]] = Field(
+    messages: list[list[str]] = Field(
         default=...,
         title="Error messages",
         description="The error messages for the specified job.",
@@ -106,7 +103,7 @@ class SearchJobsPayload(Model):
         title="Tool ID",
         description="The tool ID related to the job.",
     )
-    inputs: Dict[str, Any] = Field(
+    inputs: dict[str, Any] = Field(
         default=...,
         title="Inputs",
         description="The inputs of the job.",
@@ -171,12 +168,12 @@ class EncodedJobDetails(JobSummary):
             "The specific parameters depend on the tool itself."
         ),
     )
-    inputs: Dict[str, EncodedDatasetJobInfo] = Field(
+    inputs: dict[str, EncodedDatasetJobInfo] = Field(
         {},
         title="Inputs",
         description="Dictionary mapping all the tool inputs (by name) to the corresponding data references.",
     )
-    outputs: Dict[str, EncodedDatasetJobInfo] = Field(
+    outputs: dict[str, EncodedDatasetJobInfo] = Field(
         {},
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) to the corresponding data references.",
@@ -186,7 +183,7 @@ class EncodedJobDetails(JobSummary):
         title="Copied from Job-ID",
         description="Reference to cached job if job execution was cached.",
     )
-    output_collections: Dict[str, EncodedHdcaSourceId] = Field(
+    output_collections: dict[str, EncodedHdcaSourceId] = Field(
         default={},
         title="Output collections",
         description="",
@@ -230,72 +227,21 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: Optional[Union[List[Optional[EncodedJobParameterHistoryItem]], float, int, bool, str]] = Field(
+    value: Optional[Union[list[Optional[EncodedJobParameterHistoryItem]], float, int, bool, str]] = Field(
         default=None, title="Value", description="The values of the job parameter", union_mode="left_to_right"
     )
     notes: Optional[str] = Field(default=None, title="Notes", description="Notes associated with the job parameter.")
 
 
 class JobDisplayParametersSummary(Model):
-    parameters: List[JobParameter] = Field(
+    parameters: list[JobParameter] = Field(
         default=..., title="Parameters", description="The parameters of the job in a nested format."
     )
     has_parameter_errors: bool = Field(
         default=..., title="Has parameter errors", description="The job has parameter errors"
     )
-    outputs: Dict[str, List[JobOutput]] = Field(
+    outputs: dict[str, list[JobOutput]] = Field(
         default=...,
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.",
-    )
-
-
-class ShowFullJobResponse(EncodedJobDetails):
-    tool_stdout: Optional[str] = Field(
-        default=None,
-        title="Tool Standard Output",
-        description="The captured standard output of the tool executed by the job.",
-    )
-    tool_stderr: Optional[str] = Field(
-        default=None,
-        title="Tool Standard Error",
-        description="The captured standard error of the tool executed by the job.",
-    )
-    job_stdout: Optional[str] = Field(
-        default=None,
-        title="Job Standard Output",
-        description="The captured standard output of the job execution.",
-    )
-    job_stderr: Optional[str] = Field(
-        default=None,
-        title="Job Standard Error",
-        description="The captured standard error of the job execution.",
-    )
-    stdout: Optional[str] = Field(  # Redundant? it seems to be (tool_stdout + "\n" + job_stdout)
-        default=None,
-        title="Standard Output",
-        description="Combined tool and job standard output streams.",
-    )
-    stderr: Optional[str] = Field(  # Redundant? it seems to be (tool_stderr + "\n" + job_stderr)
-        default=None,
-        title="Standard Error",
-        description="Combined tool and job standard error streams.",
-    )
-    job_messages: Optional[List[Any]] = Field(
-        default=None,
-        title="Job Messages",
-        description="List with additional information and possible reasons for a failed job.",
-    )
-    dependencies: Optional[List[Any]] = Field(
-        default=None,
-        title="Job dependencies",
-        description="The dependencies of the job.",
-    )
-    job_metrics: Optional[JobMetricCollection] = Field(
-        default=None,
-        title="Job Metrics",
-        description=(
-            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
-            "Only administrators can see these metrics."
-        ),
     )

@@ -1,6 +1,6 @@
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import { type GalaxyConfiguration } from "@/stores/configurationStore";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import type Filtering from "@/utils/filtering";
 
 export interface Action {
@@ -63,6 +63,7 @@ export interface Operation {
     icon: IconDefinition;
     condition?: (data: RowData, config: GalaxyConfiguration) => boolean;
     handler: (data: RowData) => OperationHandlerReturn;
+    loading?: (data: RowData, config: GalaxyConfiguration) => boolean;
 }
 
 interface OperationHandlerMessage {

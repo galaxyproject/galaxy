@@ -11,6 +11,8 @@ from typing import (
     Optional,
 )
 
+import mako
+
 from galaxy import (
     di,
     quota,
@@ -64,9 +66,14 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
-from galaxy.util import StructuredExecutionTimer
+from galaxy.util import (
+    galaxy_directory,
+    StructuredExecutionTimer,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.web_stack import ApplicationStack
+
+glx_dir = galaxy_directory()
 
 
 # =============================================================================
@@ -260,8 +267,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.version_major = "19.09"
 
         # set by MockDir
-        self.enable_tool_document_cache = False
-        self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.external_chown_script = None
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0
@@ -288,10 +293,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.max_discovered_files = 10000
         self.display_builtin_converters = True
         self.enable_notification_system = True
-
-    @property
-    def config_dict(self):
-        return self.dict()
+        self.config_dict = self.dict()
 
     def __getattr__(self, name):
         # Handle the automatic [option]_set options: for tests, assume none are set
@@ -331,7 +333,13 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
+        self.request: Any = Bunch(
+            headers={},
+            is_body_readable=False,
+            host="request.host",
+            host_url="request.host_url",
+            url_path="mock/url/path",
+        )
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -370,6 +378,9 @@ class MockTrans:
         self.history = history
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
+        if template_lookup is None:
+            template_path = os.path.join(glx_dir, "templates")
+            template_lookup = mako.lookup.TemplateLookup(directories=template_path)
         template = template_lookup.get_template(filename)
         kwargs.update(h=MockTemplateHelpers())
         return template.render(**kwargs)
@@ -435,7 +446,7 @@ class MockTemplateHelpers:
         pass
 
     def dumps(*kwargs):
-        return {}
+        return kwargs
 
     def js(*js_files):
         pass

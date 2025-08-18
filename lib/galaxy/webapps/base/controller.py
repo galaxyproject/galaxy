@@ -17,7 +17,6 @@ from webob.exc import (
 
 from galaxy import (
     exceptions,
-    model,
     security,
     util,
     web,
@@ -39,11 +38,14 @@ from galaxy.managers.sharable import (
     SlugBuilder,
 )
 from galaxy.model import (
+    Dataset,
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    LibraryDatasetPermissions,
+    StoredWorkflow,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
@@ -246,7 +248,6 @@ class JSAppLauncher(BaseUIController):
         "email",
         "username",
         "is_admin",
-        "tags_used",
         "total_disk_usage",
         "nice_total_disk_usage",
         "quota_percent",
@@ -590,7 +591,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
             if action not in library_dataset_actions:
                 for role in dataset_permissions_roles:
-                    ldps = trans.model.LibraryDatasetPermissions(action, library_dataset, role)
+                    ldps = LibraryDatasetPermissions(action, library_dataset, role)
                     ldps = [ldps] if not isinstance(ldps, list) else ldps
                     for ldp in ldps:
                         trans.sa_session.add(ldp)
@@ -633,7 +634,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict(trans, io_details=True)
         tool_param_values = {p.name: p.value for p in job.parameters}
-        tool_param_values = tool.params_from_strings(tool_param_values, trans.app, ignore_errors=True)
+        tool_param_values = tool.params_from_strings(tool_param_values, ignore_errors=True)
 
         # Only get values for simple inputs for now.
         inputs_dict = [i for i in tool_dict["inputs"] if i["type"] not in ["data", "hidden_data", "conditional"]]
@@ -658,8 +659,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                unencoded_id = track_dict.get("dataset_id")
-                if unencoded_id:
+                if unencoded_id := track_dict.get("dataset_id"):
                     encoded_id = trans.security.encode_id(unencoded_id)
                 else:
                     encoded_id = track_dict["dataset"]["id"]
@@ -798,7 +798,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                 error("You are not allowed to access this dataset")
 
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+            if check_state and data.state == Dataset.states.UPLOAD:
                 return trans.show_error_message(
                     "Please wait until this dataset finishes uploading " + "before attempting to view it."
                 )
@@ -882,7 +882,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
@@ -893,10 +893,10 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored: model.StoredWorkflow):
+    def _import_shared_workflow(self, trans, stored: StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
-        imported_stored = model.StoredWorkflow()
+        imported_stored = StoredWorkflow()
         imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
@@ -1086,38 +1086,6 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
         return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
-
-    def get_user_tags_used(self, trans, user=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-
-        user defaults to trans.user.
-        Returns an empty list if no user is given and trans.user is anonymous.
-        """
-        # TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
-        user = user or trans.user
-        if not user:
-            return []
-
-        # get all the taggable model TagAssociations
-        tag_models = [v.tag_assoc_class for v in trans.tag_handler.item_tag_assoc_info.values()]
-        # create a union of subqueries for each for this user - getting only the tname and user_value
-        all_tags_query = None
-        for tag_model in tag_models:
-            subq = trans.sa_session.query(tag_model.user_tname, tag_model.user_value).filter(
-                tag_model.user == trans.user
-            )
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
-
-        # if nothing init'd the query, bail
-        if all_tags_query is None:
-            return []
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tags = all_tags_query.distinct().all()
-        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
 
 
 class UsesExtendedMetadataMixin(SharableItemSecurityMixin):

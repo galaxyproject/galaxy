@@ -1,8 +1,6 @@
-import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 
-import { type AnyUser } from "@/api";
-import { useUserStore } from "@/stores/userStore";
+import type { AnyUser } from "@/api";
 
 import { usePersistentRef } from "./persistentRef";
 
@@ -24,7 +22,7 @@ function createSalt(): string {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
 
-    return bufferToString(bytes);
+    return bufferToString(bytes.buffer);
 }
 
 const currentHash = ref<string | null>(null);
@@ -33,15 +31,8 @@ let unhashedId: string | null = null;
 /**
  * One way hashed ID of the current User
  */
-export function useHashedUserId(user?: Ref<AnyUser>) {
-    let currentUser: Ref<AnyUser>;
-
-    if (user) {
-        currentUser = user;
-    } else {
-        const { currentUser: currentUserRef } = storeToRefs(useUserStore());
-        currentUser = currentUserRef;
-    }
+export function useHashedUserId(user: Ref<AnyUser>) {
+    const currentUser: Ref<AnyUser> = user;
 
     // salt the local store, to make a user untraceable by id across different clients
     const localStorageSalt = usePersistentRef("local-storage-salt", createSalt());

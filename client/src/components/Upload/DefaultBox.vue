@@ -1,88 +1,64 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
-import { filesDialog } from "utils/data";
-import Vue, { computed, ref } from "vue";
+import Vue, { computed, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
+import type { HDASummary } from "@/api";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
+import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
+import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipExplorer";
+import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
-import { defaultModel } from "./model.js";
+import type { ComponentSize } from "../BaseComponents/componentVariants";
+import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
-import CollectionCreatorModal from "../Collections/CollectionCreatorModal.vue";
+import GButton from "../BaseComponents/GButton.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSelectExtension from "./UploadSelectExtension.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
-library.add(faCopy, faEdit, faFolderOpen, faLaptop);
+const router = useRouter();
 
-const props = defineProps({
-    chunkUploadSize: {
-        type: Number,
-        required: true,
-    },
-    defaultDbKey: {
-        type: String,
-        required: true,
-    },
-    defaultExtension: {
-        type: String,
-        required: true,
-    },
-    effectiveExtensions: {
-        type: Array,
-        required: true,
-    },
-    fileSourcesConfigured: {
-        type: Boolean,
-        required: true,
-    },
-    ftpUploadSite: {
-        type: String,
-        default: null,
-    },
-    historyId: {
-        type: String,
-        required: true,
-    },
-    multiple: {
-        type: Boolean,
-        default: true,
-    },
-    hasCallback: {
-        type: Boolean,
-        default: false,
-    },
-    lazyLoad: {
-        type: Number,
-        default: 150,
-    },
-    listDbKeys: {
-        type: Array,
-        required: true,
-    },
-    isCollection: {
-        type: Boolean,
-        default: false,
-    },
-    disableFooter: {
-        type: Boolean,
-        default: false,
-    },
-    emitUploaded: {
-        type: Boolean,
-        default: false,
-    },
+interface Props {
+    chunkUploadSize: number;
+    defaultDbKey: string;
+    defaultExtension: string;
+    effectiveExtensions: ExtensionDetails[];
+    fileSourcesConfigured: boolean;
+    ftpUploadSite?: string;
+    historyId: string;
+    multiple?: boolean;
+    hasCallback?: boolean;
+    lazyLoad?: number;
+    listDbKeys: DbKey[];
+    isCollection?: boolean;
+    disableFooter?: boolean;
+    emitUploaded?: boolean;
+    size?: ComponentSize;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    ftpUploadSite: undefined,
+    multiple: true,
+    lazyLoad: 150,
+    size: "medium",
+    isCollection: false,
 });
 
-const emit = defineEmits(["dismiss", "progress", "uploaded"]);
+const emit = defineEmits<{
+    (e: "dismiss"): void;
+    (e: "progress", value: number | null, variant?: string): void;
+    (e: "uploaded", value: HDASummary[]): void;
+}>();
 
 const collectionModalShow = ref(false);
-const collectionSelection = ref([]);
-const collectionType = ref("list");
+const collectionType = ref<CollectionBuilderType>("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
 const counterRunning = ref(0);
@@ -91,14 +67,24 @@ const extension = ref(props.defaultExtension);
 const dbKey = ref(props.defaultDbKey);
 const queueStopping = ref(false);
 const uploadCompleted = ref(0);
-const uploadFile = ref(null);
-const uploadItems = ref({});
+const uploadFile = ref<HTMLInputElement | null>(null);
+const uploadItems = ref<Record<string, UploadItem>>({});
 const uploadSize = ref(0);
 const queue = ref(createUploadQueue());
+const selectedItemsForModal = ref<HDASummary[]>([]);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
+const creatingPairedType = computed(
+    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value)
+);
 const enableBuild = computed(
-    () => !isRunning.value && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
+    () =>
+        !isRunning.value &&
+        counterAnnounce.value == 0 &&
+        counterSuccess.value > 0 &&
+        uploadedHistoryItemsReady.value &&
+        uploadedHistoryItemsOk.value.length > 0 &&
+        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0)
 );
 const enableReset = computed(() => !isRunning.value && counterNonRunning.value > 0);
 const enableStart = computed(() => !isRunning.value && counterAnnounce.value > 0);
@@ -110,13 +96,20 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
+const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo } = monitorUploadedHistoryItems(
+    uploadValues as Ref<UploadItem[]>,
+    historyId,
+    enableStart,
+    creatingPairedType
+);
+
 function createUploadQueue() {
     return new UploadQueue({
         announce: eventAnnounce,
         chunkSize: props.chunkUploadSize,
         complete: eventComplete,
         error: eventError,
-        get: (index) => uploadItems.value[index],
+        get: (index: string) => uploadItems.value[index],
         multiple: props.multiple,
         progress: eventProgress,
         success: eventSuccess,
@@ -125,7 +118,7 @@ function createUploadQueue() {
 }
 
 /** Add files to queue */
-function addFiles(files, immediate = false) {
+function addFiles(files: FileList, immediate = false) {
     if (!isRunning.value) {
         if (immediate || !props.multiple) {
             eventReset();
@@ -138,16 +131,32 @@ function addFiles(files, immediate = false) {
     }
 }
 
+function addFileFromInput(eventTarget: EventTarget | null) {
+    if (!eventTarget) {
+        return;
+    }
+    const { files } = eventTarget as HTMLInputElement;
+    if (files) {
+        addFiles(files);
+    }
+}
+
 /** A new file has been announced to the upload queue */
-function eventAnnounce(index, file) {
+function eventAnnounce(index: string, file: UploadFile) {
     counterAnnounce.value++;
+    const mode = file.mode || "local";
+    let deferred: boolean | undefined = false;
+    if (mode === "local") {
+        deferred = undefined;
+    }
     const uploadModel = {
         ...defaultModel,
         id: index,
         dbKey: dbKey.value,
         extension: extension.value,
         fileData: file,
-        fileMode: file.mode || "local",
+        fileMode: mode,
+        deferred: deferred,
         fileName: file.name,
         filePath: file.path,
         fileSize: file.size,
@@ -156,28 +165,13 @@ function eventAnnounce(index, file) {
     Vue.set(uploadItems.value, index, uploadModel);
 }
 
-/** Populates collection builder with uploaded files */
+/** Populates and opens collection builder with uploaded files, or emits uploads */
 async function eventBuild(openModal = false) {
-    try {
-        collectionSelection.value = [];
-        uploadValues.value.forEach((model) => {
-            const outputs = model.outputs;
-            if (outputs) {
-                Object.entries(outputs).forEach((output) => {
-                    const outputDetails = output[1];
-                    collectionSelection.value.push(outputDetails);
-                });
-            } else {
-                console.debug("Warning, upload response does not contain outputs.", model);
-            }
-        });
-        if (openModal) {
-            collectionModalShow.value = true;
-        } else {
-            emit("uploaded", collectionSelection.value);
-        }
-    } catch (err) {
-        console.error(err);
+    if (openModal) {
+        selectedItemsForModal.value = uploadedHistoryItemsOk.value;
+        collectionModalShow.value = true;
+    } else {
+        emit("uploaded", uploadedHistoryItemsOk.value);
     }
     counterRunning.value = 0;
     eventReset();
@@ -201,51 +195,65 @@ function eventCreate() {
 }
 
 /** Error */
-function eventError(index, message) {
+function eventError(index: string, message: string) {
     const it = uploadItems.value[index];
-    it.percentage = 100;
-    it.status = "error";
-    it.info = message;
-    uploadCompleted.value += it.fileSize * 100;
-    counterAnnounce.value--;
-    counterError.value++;
-    emit("progress", uploadPercentage(100, it.fileSize), "danger");
+    if (it) {
+        it.percentage = 100;
+        it.status = "error";
+        it.info = message;
+        uploadCompleted.value += it.fileSize * 100;
+        counterAnnounce.value--;
+        counterError.value++;
+        emit("progress", uploadPercentage(100, it.fileSize), "danger");
+    }
 }
 
 /** Update model */
-function eventInput(index, newData) {
+function eventInput(index: string, newData: Partial<UploadItem>) {
     const it = uploadItems.value[index];
-    Object.entries(newData).forEach(([key, value]) => {
-        it[key] = value;
-    });
+    if (it) {
+        Object.entries(newData).forEach(([key, value]) => {
+            (it as any)[key] = value;
+        });
+    }
 }
 
 /** Reflect upload progress */
-function eventProgress(index, percentage) {
+function eventProgress(index: string, percentage: number) {
     const it = uploadItems.value[index];
-    it.percentage = percentage;
-    emit("progress", uploadPercentage(percentage, it.fileSize));
+    if (it) {
+        it.percentage = percentage;
+        emit("progress", uploadPercentage(percentage, it.fileSize));
+    }
 }
 
 /** Remove model from upload list */
-function eventRemove(index) {
+function eventRemove(index: string) {
     const it = uploadItems.value[index];
-    var status = it.status;
-    if (status == "success") {
-        counterSuccess.value--;
-    } else if (status == "error") {
-        counterError.value--;
-    } else {
-        counterAnnounce.value--;
+    if (it) {
+        var status = it.status;
+        if (status == "success") {
+            counterSuccess.value--;
+        } else if (status == "error") {
+            counterError.value--;
+        } else {
+            counterAnnounce.value--;
+        }
+        Vue.delete(uploadItems.value, index);
+        queue.value.remove(index);
     }
-    Vue.delete(uploadItems.value, index);
-    queue.value.remove(index);
+}
+
+async function eventExplore(archiveSource: ArchiveSource) {
+    await router.push({ name: "ZipImportWizard" });
+    archiveExplorerEventBus.emit("set-archive-source", archiveSource);
+    emit("dismiss");
 }
 
 /** Show remote files dialog or FTP files */
 function eventRemoteFiles() {
     filesDialog(
-        (items) => {
+        (items: UploadFile[]) => {
             queue.value.add(
                 items.map((item) => {
                     const rval = {
@@ -258,7 +266,11 @@ function eventRemoteFiles() {
                 })
             );
         },
-        { multiple: true }
+        { multiple: true },
+        (route: string) => {
+            router.push(route);
+            emit("dismiss");
+        }
     );
 }
 
@@ -277,15 +289,17 @@ function eventReset() {
 }
 
 /** Success */
-function eventSuccess(index, incoming) {
+function eventSuccess(index: string, incoming: any) {
     var it = uploadItems.value[index];
-    it.percentage = 100;
-    it.status = "success";
-    it.outputs = incoming.outputs || incoming.data.outputs || {};
-    emit("progress", uploadPercentage(100, it.fileSize));
-    uploadCompleted.value += it.fileSize * 100;
-    counterAnnounce.value--;
-    counterSuccess.value++;
+    if (it) {
+        it.percentage = 100;
+        it.status = "success";
+        it.outputs = incoming.outputs || incoming.data.outputs || {};
+        emit("progress", uploadPercentage(100, it.fileSize));
+        uploadCompleted.value += it.fileSize * 100;
+        counterAnnounce.value--;
+        counterSuccess.value++;
+    }
 }
 
 /** Start upload process */
@@ -320,19 +334,21 @@ function eventStop() {
 }
 
 /** Display warning */
-function eventWarning(index, message) {
+function eventWarning(index: string, message: string) {
     const it = uploadItems.value[index];
-    it.status = "warning";
-    it.info = message;
+    if (it) {
+        it.status = "warning";
+        it.info = message;
+    }
 }
 
 /** Update collection type */
-function updateCollectionType(newCollectionType) {
+function updateCollectionType(newCollectionType: CollectionBuilderType) {
     collectionType.value = newCollectionType;
 }
 
 /* Update extension type for all entries */
-function updateExtension(newExtension) {
+function updateExtension(newExtension: string) {
     extension.value = newExtension;
     uploadValues.value.forEach((model) => {
         if (model.status === "init" && model.extension === props.defaultExtension) {
@@ -342,7 +358,7 @@ function updateExtension(newExtension) {
 }
 
 /** Update reference dataset for all entries */
-function updateDbKey(newDbKey) {
+function updateDbKey(newDbKey: string) {
     dbKey.value = newDbKey;
     uploadValues.value.forEach((model) => {
         if (model.status === "init" && model.dbKey === props.defaultDbKey) {
@@ -352,7 +368,7 @@ function updateDbKey(newDbKey) {
 }
 
 /** Calculate percentage of all queued uploads */
-function uploadPercentage(percentage, size) {
+function uploadPercentage(percentage: number, size: number) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
@@ -369,7 +385,7 @@ defineExpose({
         <div class="upload-header">
             <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
             <div v-else-if="counterAnnounce === 0">
-                <div v-if="hasBrowserSupport">&nbsp;</div>
+                <div v-if="!!hasBrowserSupport">&nbsp;</div>
                 <div v-else>
                     Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.
                 </div>
@@ -383,7 +399,7 @@ defineExpose({
         </div>
         <UploadBox @add="addFiles">
             <div v-show="showHelper" class="upload-helper">
-                <FontAwesomeIcon class="mr-1" icon="fa-copy" />
+                <FontAwesomeIcon class="mr-1" :icon="faCopy" />
                 <span v-localize>Drop files here</span>
             </div>
             <div v-show="!showHelper">
@@ -394,19 +410,21 @@ defineExpose({
                     :db-key="uploadItem.dbKey"
                     :deferred="uploadItem.deferred"
                     :extension="uploadItem.extension"
+                    :file-data="isLocalFile(uploadItem.fileData) ? uploadItem.fileData : undefined"
                     :file-content="uploadItem.fileContent"
                     :file-mode="uploadItem.fileMode"
                     :file-name="uploadItem.fileName"
                     :file-size="uploadItem.fileSize"
-                    :info="uploadItem.info"
-                    :list-extensions="!isCollection && listExtensions.length > 1 ? listExtensions : null"
-                    :list-db-keys="!isCollection && listDbKeys.length > 1 ? listDbKeys : null"
+                    :info="uploadItem.info || undefined"
+                    :list-extensions="!isCollection && listExtensions.length > 1 ? listExtensions : undefined"
+                    :list-db-keys="!isCollection && listDbKeys.length > 1 ? listDbKeys : undefined"
                     :percentage="uploadItem.percentage"
                     :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
                     :to-posix-lines="uploadItem.toPosixLines"
                     @remove="eventRemove"
-                    @input="eventInput" />
+                    @input="eventInput"
+                    @explore="eventExplore" />
                 <div
                     v-if="uploadValues.length > lazyLoad"
                     v-localize
@@ -415,7 +433,13 @@ defineExpose({
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>
-            <input ref="uploadFile" type="file" :multiple="multiple" @change="addFiles($event.target.files)" />
+            <label class="sr-only" for="upload-file">Uploaded File</label>
+            <input
+                id="upload-file"
+                ref="uploadFile"
+                type="file"
+                :multiple="multiple"
+                @change="addFileFromInput($event.target)" />
         </UploadBox>
         <div v-if="!disableFooter" class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
@@ -447,65 +471,92 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <slot name="footer" />
-        <div class="upload-buttons d-flex justify-content-end">
-            <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
-                <FontAwesomeIcon icon="fa-laptop" />
+        <div
+            class="d-flex justify-content-end flex-wrap"
+            :class="{
+                'upload-buttons': !disableFooter,
+                'flex-gapx-1': disableFooter,
+            }">
+            <GButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
+                <FontAwesomeIcon :icon="faLaptop" />
                 <span v-localize>Choose local file</span>
-            </BButton>
-            <BButton v-if="hasRemoteFiles" id="btn-remote-files" :disabled="!enableSources" @click="eventRemoteFiles">
-                <FontAwesomeIcon icon="fa-folder-open" />
-                <span v-localize>Choose remote files</span>
-            </BButton>
-            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
-                <FontAwesomeIcon icon="fa-edit" />
+            </GButton>
+            <GButton
+                v-if="hasRemoteFiles"
+                id="btn-remote-files"
+                :size="size"
+                :disabled="!enableSources"
+                @click="eventRemoteFiles">
+                <FontAwesomeIcon :icon="faFolderOpen" />
+                <span v-localize>Choose from repository</span>
+            </GButton>
+            <GButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
+                <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste/Fetch data</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-start"
+                :size="size"
                 :disabled="!enableStart"
                 title="Start"
                 :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
                 <span v-localize>Start</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="isCollection"
                 id="btn-build"
+                :size="size"
                 :disabled="!enableBuild"
+                :tooltip="!enableBuild && Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Build is not available'"
                 title="Build"
-                :variant="enableBuild ? 'primary' : null"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(true)">
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
                 <span v-localize>Build</span>
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="emitUploaded"
                 id="btn-emit"
+                :size="size"
                 :disabled="!enableBuild"
-                title="Use Uploaded Files"
-                :variant="enableBuild ? 'primary' : null"
+                :tooltip="Boolean(historyItemsStateInfo?.message)"
+                :disabled-title="historyItemsStateInfo?.message || 'Upload Valid Files to Use'"
+                :title="historyItemsStateInfo?.message || 'Use Uploaded Files'"
+                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
                 @click="() => eventBuild(false)">
-                <slot name="emit-btn-txt">
-                    <span v-localize>Use Uploaded</span>
-                </slot>
-                ({{ counterSuccess }})
-            </BButton>
-            <BButton id="btn-stop" title="Pause" :disabled="!isRunning" @click="eventStop">
+                <FontAwesomeIcon
+                    v-if="historyItemsStateInfo?.icon"
+                    :icon="historyItemsStateInfo.icon"
+                    :spin="historyItemsStateInfo.spin" />
+                <span v-localize>Use Uploaded</span>
+                <span v-if="uploadedHistoryItemsOk.length < counterSuccess">
+                    ({{ uploadedHistoryItemsOk.length }}/{{ counterSuccess }})
+                </span>
+                <span v-else> ({{ counterSuccess }}) </span>
+            </GButton>
+            <GButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
-            </BButton>
-            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="eventReset">
+            </GButton>
+            <GButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
                 <span v-localize>Reset</span>
-            </BButton>
-            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
+            </GButton>
+            <GButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Cancel</span>
                 <span v-else v-localize>Close</span>
-            </BButton>
+            </GButton>
         </div>
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
-            :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
+            :extended-collection-type="{}"
+            :selected-items="selectedItemsForModal"
+            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

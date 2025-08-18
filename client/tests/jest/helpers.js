@@ -10,9 +10,9 @@ import { PiniaVuePlugin } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
+import VueRouter from "vue-router";
 
 import _short from "@/components/plugins/short";
-import VueRouter from "vue-router";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -183,7 +183,9 @@ export const wait = (n) => {
 export function getLocalVue(instrumentLocalization = false) {
     const localVue = createLocalVue();
     const mockedDirective = {
-        bind() {},
+        bind(el, binding) {
+            el.setAttribute("data-mock-directive", binding.value || el.title);
+        },
     };
     localVue.use(PiniaVuePlugin);
     localVue.use(BootstrapVue);
@@ -276,6 +278,14 @@ export function expectConfigurationRequest(http, config) {
     });
 }
 
+export function mockUnprivilegedToolsRequest(server, http) {
+    server.use(
+        http.get("/api/unprivileged_tools", ({ response }) => {
+            return response(200).json([]);
+        })
+    );
+}
+
 /**
  * Return a new mocked out router attached the specified localVue instance.
  */
@@ -290,10 +300,33 @@ export function suppressDebugConsole() {
 }
 
 export function suppressBootstrapVueWarnings() {
+    const originalWarn = console.warn;
     jest.spyOn(console, "warn").mockImplementation(
         jest.fn((msg) => {
             if (msg.indexOf("BootstrapVue warn") < 0) {
-                console.warn(msg);
+                originalWarn(msg);
+            }
+        })
+    );
+}
+
+export function suppressErrorForCustomIcons() {
+    const originalError = console.error;
+    jest.spyOn(console, "error").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("Could not find one or more icon(s)") < 0) {
+                originalError(msg);
+            }
+        })
+    );
+}
+
+export function suppressLucideVue2Deprecation() {
+    const originalWarn = console.warn;
+    jest.spyOn(console, "warn").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("[Lucide Vue] This package will be deprecated") < 0) {
+                originalWarn(msg);
             }
         })
     );

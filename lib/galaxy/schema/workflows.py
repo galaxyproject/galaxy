@@ -1,9 +1,7 @@
 import json
 from typing import (
+    Annotated,
     Any,
-    cast,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -13,7 +11,6 @@ from pydantic import (
     Field,
     field_validator,
 )
-from typing_extensions import Annotated
 
 from galaxy.schema.schema import (
     AnnotationField,
@@ -81,8 +78,7 @@ def validateInputsBy(inputsBy: Optional[str]) -> Optional[str]:
     if inputsBy is not None:
         if not isinstance(inputsBy, str):
             raise ValueError(f"Invalid type for inputsBy {inputsBy}")
-        inputsByStr = cast(str, inputsBy)
-        inputsByArray: List[str] = inputsByStr.split("|")
+        inputsByArray: list[str] = inputsBy.split("|")
         for inputsByItem in inputsByArray:
             if inputsByItem not in VALID_INPUTS_BY_ITEMS:
                 raise ValueError(f"Invalid inputsBy delineation {inputsByItem}")
@@ -164,24 +160,24 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
             return json.loads(v)
         return v
 
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: Optional[dict[str, Any]] = Field(
         {},
         title=STEP_PARAMETERS_TITLE,
         description=STEP_PARAMETERS_DESCRIPTION,
     )
-    inputs: Optional[Dict[str, Any]] = Field(
+    inputs: Optional[dict[str, Any]] = Field(
         None,
         title="Inputs",
         description="Specify values for formal inputs to the workflow",
     )
-    ds_map: Optional[Dict[str, Dict[str, Any]]] = Field(
+    ds_map: Optional[dict[str, dict[str, Any]]] = Field(
         {},
         title="Legacy Dataset Map",
         description="An older alternative to specifying inputs using database IDs, do not use this and use inputs instead",
         deprecated=True,
     )
-    resource_params: Optional[Dict[str, Any]] = ResourceParametersField
-    replacement_params: Optional[Dict[str, Any]] = ReplacementParametersField
+    resource_params: Optional[dict[str, Any]] = ResourceParametersField
+    replacement_params: Optional[dict[str, Any]] = ReplacementParametersField
     no_add_to_history: Optional[bool] = Field(
         False,
         title="No Add to History",
@@ -217,10 +213,10 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     version: int = Field(
         ..., title="Version", description="The version of the workflow represented by an incremental number."
     )
-    inputs: Dict[int, WorkflowInput] = Field(
+    inputs: dict[int, WorkflowInput] = Field(
         {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
     )
-    creator: Optional[List[Union[Person, Organization]]] = Field(
+    creator: Optional[list[Union[Person, Organization]]] = Field(
         None,
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
@@ -230,7 +226,10 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator deleted",
         description="Whether the creator of this Workflow has been deleted.",
     )
-    steps: Dict[
+    doi: Optional[list[str]] = Field(
+        None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
+    steps: dict[
         int,
         Annotated[
             Union[
@@ -258,12 +257,22 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Email Hash",
         description="The hash of the email of the creator of this workflow",
     )
+    readme: Optional[str] = Field(
+        ...,
+        title="Readme",
+        description="The detailed markdown readme of the workflow.",
+    )
+    help: Optional[str] = Field(
+        ...,
+        title="Help",
+        description="The detailed help text for how to use the workflow and debug problems with it.",
+    )
     slug: Optional[str] = Field(
         ...,
         title="Slug",
         description="The slug of the workflow.",
     )
-    source_metadata: Optional[Dict[str, Any]] = Field(
+    source_metadata: Optional[dict[str, Any]] = Field(
         ...,
         title="Source Metadata",
         description="The source metadata of the workflow.",

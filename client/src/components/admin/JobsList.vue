@@ -8,18 +8,21 @@
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
         <p>
-            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
-            completed jobs (in 'error' or 'ok' states).
+            Unfinished jobs (in the 'new', 'queued', 'running', or 'waiting' states) and finished jobs (in 'error' or
+            'ok' states) are displayed below.
         </p>
         <p>
-            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
-            will be displayed to the user as: "This job was stopped by an administrator:
+            You may choose to stop some of the unfinished jobs and provide the user with a message. Your stop message
+            will be displayed to the user as:
+        </p>
+        <p>
+            "This job was stopped by an administrator:
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
+                <b-form-group>
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
@@ -35,7 +38,7 @@
                         </b-input-group>
                     </b-form-group>
                 </b-form>
-                <b-form-group description="Use strings or regular expressions to search jobs.">
+                <b-form-group>
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
             </b-col>
@@ -50,6 +53,12 @@
                             <b-btn type="submit">Submit</b-btn>
                         </b-input-group-append>
                     </b-input-group>
+                </b-form-group>
+                <b-form-group
+                    description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
+                    <b-form-checkbox id="send-notification" v-model="sendNotification" switch>
+                        Send a warning notification to users
+                    </b-form-checkbox>
                 </b-form-group>
             </b-form>
         </transition>
@@ -96,14 +105,16 @@
 </template>
 
 <script>
+import { NON_TERMINAL_STATES } from "api/jobs";
 import axios from "axios";
 import JobsTable from "components/admin/JobsTable";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
 import { jobsProvider } from "components/providers/JobProvider";
-import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
+
+import { GalaxyApi } from "@/api";
 
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
@@ -167,6 +178,7 @@ export default {
             showAllRunning: false,
             titleSearch: `search jobs`,
             helpHtml: helpHtml,
+            sendNotification: false,
         };
     },
     computed: {
@@ -174,7 +186,12 @@ export default {
             return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
         },
         runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+            let message = `These jobs are unfinished`;
+            if (!this.showAllRunning) {
+                message += ` and have had their state updated in the previous ${this.cutoffMin} minutes`;
+            }
+            message += `. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+            return message;
         },
         finishedNoJobsMessage() {
             return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
@@ -229,7 +246,7 @@ export default {
             this.busy = true;
             const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.state = "running";
+                params.state = NON_TERMINAL_STATES;
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
@@ -257,8 +274,69 @@ export default {
         onRefresh() {
             this.update();
         },
+        async sendNotificationToUsers() {
+            const cancelReason = this.stopMessage || "No reason provided";
+            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            // Group jobs by user
+            const userJobsMap = jobsToCancel.reduce((acc, job) => {
+                if (job.user_id) {
+                    if (!acc[job.user_id]) {
+                        acc[job.user_id] = [];
+                    }
+                    acc[job.user_id].push(job);
+                }
+                return acc;
+            }, {});
+            const userIds = Object.keys(userJobsMap);
+            const totalUsers = userIds.length;
+            let numSuccess = 0;
+            const errors = [];
+            for (const userId of userIds) {
+                const jobs = userJobsMap[userId];
+                const notificationMessage = `The following jobs (${jobs
+                    .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
+                    .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`;
+
+                const { error } = await GalaxyApi().POST("/api/notifications", {
+                    body: {
+                        notification: {
+                            source: "admin",
+                            variant: "warning",
+                            category: "message",
+                            content: {
+                                category: "message",
+                                subject: "Jobs Cancelled by Admin",
+                                message: notificationMessage,
+                            },
+                        },
+                        recipients: {
+                            user_ids: [userId],
+                        },
+                    },
+                });
+                if (error) {
+                    errors.push(error);
+                } else {
+                    numSuccess++;
+                }
+            }
+
+            if (errors.length) {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
+                this.status = "warning";
+            } else {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
+                this.status = "success";
+            }
+        },
+        getJobViewLink(jobId) {
+            return `${getAppRoot()}jobs/${jobId}/view`;
+        },
         onStopJobs() {
             axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
+                if (this.sendNotification) {
+                    this.sendNotificationToUsers();
+                }
                 this.update();
                 this.selectedStopJobIds = [];
                 this.stopMessage = "";

@@ -123,6 +123,8 @@ describe("HeadlessMultiselect", () => {
 
             expect(options.at(0).find("span").text()).toBe("bc");
             expect(options.at(1).find("span").text()).toBe("abc");
+
+            await close(wrapper);
         });
 
         it("allows for switching the highlighted value", async () => {
@@ -149,6 +151,8 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "ArrowUp");
             highlighted = wrapper.find(selectors.highlighted);
             expect(highlighted.find("span").text()).toBe("#named_2");
+
+            await close(wrapper);
         });
 
         it("resets the highlighted option on input", async () => {
@@ -169,6 +173,8 @@ describe("HeadlessMultiselect", () => {
 
             highlighted = wrapper.find(selectors.highlighted);
             expect(highlighted.find("span").text()).toBe("a");
+
+            await close(wrapper);
         });
 
         it("shows if the input value is valid", async () => {
@@ -184,6 +190,7 @@ describe("HeadlessMultiselect", () => {
 
             await input.setValue("invalid");
             expect(() => wrapper.get(selectors.invalid)).not.toThrow();
+            await close(wrapper);
         });
     });
 
@@ -202,6 +209,7 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            await close(wrapper);
         });
 
         it("deselects options via keyboard", async () => {
@@ -218,6 +226,7 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            await close(wrapper);
         });
 
         it("allows for adding new options", async () => {
@@ -231,6 +240,7 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "Enter");
 
             expect(wrapper.emitted()["addOption"]?.[0]?.[0]).toBe("123");
+            await close(wrapper);
         });
 
         it("selects options with mouse", async () => {
@@ -247,6 +257,7 @@ describe("HeadlessMultiselect", () => {
 
             await options.at(1).trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            await close(wrapper);
         });
 
         it("deselects options with mouse", async () => {
@@ -263,6 +274,7 @@ describe("HeadlessMultiselect", () => {
 
             await options.at(1).trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            await close(wrapper);
         });
     });
 });

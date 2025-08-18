@@ -3,21 +3,17 @@
 from .factory import (
     get_input_source,
     get_tool_source,
-    get_tool_source_from_representation,
 )
 from .interface import (
     RequiredFiles,
     ToolSource,
-    XrefDict,
 )
 from .output_objects import ToolOutputCollectionPart
 
 __all__ = (
     "get_input_source",
     "get_tool_source",
-    "get_tool_source_from_representation",
     "RequiredFiles",
     "ToolOutputCollectionPart",
     "ToolSource",
-    "XrefDict",
 )

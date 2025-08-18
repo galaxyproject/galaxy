@@ -1,24 +1,30 @@
 <script setup lang="ts">
-import { faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPlay, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { useRouter } from "vue-router/composables";
 
-import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowSummary } from "@/api/workflows";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import type { Workflow } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { copyWorkflow } from "./workflows.services";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
+import LoadingSpan from "../LoadingSpan.vue";
+
+const router = useRouter();
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
@@ -26,6 +32,7 @@ interface Props {
     runDisabled?: boolean;
     runWaiting?: boolean;
     success?: boolean;
+    validRerun?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,20 +43,15 @@ const emit = defineEmits<{
     (e: "on-execute"): void;
 }>();
 
-const { workflow, error } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 
-const { currentUser, isAnonymous } = storeToRefs(useUserStore());
-const owned = computed(() => {
-    if (isRegisteredUser(currentUser.value) && workflow.value) {
-        return currentUser.value.username === workflow.value.owner;
-    } else {
-        return false;
-    }
-});
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const importErrorMessage = ref<string | null>(null);
-const importedWorkflow = ref<Workflow | null>(null);
+const importedWorkflow = ref<WorkflowSummary | null>(null);
 const workflowImportedAttempted = ref(false);
+
+const { confirm } = useConfirmDialog();
 
 async function onImport() {
     if (!workflow.value || !workflow.value.owner) {
@@ -57,7 +59,7 @@ async function onImport() {
     }
     try {
         const wf = await copyWorkflow(workflow.value.id, workflow.value.owner);
-        importedWorkflow.value = wf as unknown as Workflow;
+        importedWorkflow.value = wf;
     } catch (error) {
         importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
     } finally {
@@ -74,10 +76,49 @@ const workflowImportTitle = computed(() => {
         return localize("Login to import this workflow");
     } else if (workflowImportedAttempted.value) {
         return localize("Workflow imported");
+    } else if (workflow.value?.deleted) {
+        return localize("This workflow has been deleted");
     } else {
         return localize("Import this workflow");
     }
 });
+
+const executeButtonTooltip = computed(() => {
+    if (props.runDisabled) {
+        return localize("Fix the errors in the workflow before running it");
+    } else if (props.validRerun) {
+        return localize("Rerun this workflow with the original inputs");
+    } else {
+        return localize("Execute this workflow");
+    }
+});
+
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+async function rerunWorkflow() {
+    if (!props.invocation) {
+        return;
+    }
+    if (props.invocation.history_id === currentHistoryId.value) {
+        router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
+        return;
+    }
+    const confirmed = await confirm(
+        localize(
+            "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?"
+        ),
+        {
+            id: "change-history-rerun-workflow",
+            title: localize("Change History and Rerun Workflow"),
+            okTitle: localize("Change History and Rerun"),
+            okVariant: "primary",
+        }
+    );
+
+    if (confirmed) {
+        router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
+    }
+}
 </script>
 
 <template>
@@ -95,74 +136,88 @@ const workflowImportTitle = computed(() => {
 
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
-        <div class="position-relative mb-2">
-            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded">
-                <div class="d-flex align-items-center flex-gapx-1">
-                    <div class="flex-grow-1" data-description="workflow heading">
-                        <div>
-                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                            <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
-                            <span>(Version: {{ workflow.version + 1 }})</span>
-                        </div>
-                    </div>
-                    <BButtonGroup>
-                        <BButton
+        <div class="position-relative">
+            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
+                <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" data-description="workflow heading">
+                    <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                    <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
+                    <span>(Version: {{ workflow.version + 1 }})</span>
+                </div>
+                <div class="d-flex flex-gapx-1 align-self-baseline">
+                    <GButtonGroup data-button-group>
+                        <GButton
                             v-if="owned && workflow"
-                            v-b-tooltip.hover.noninteractive.html
-                            size="sm"
-                            :title="
-                                !workflow.deleted
-                                    ? `<b>Edit</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
-                            "
-                            variant="link"
+                            tooltip
+                            data-button-edit
+                            transparent
+                            color="blue"
+                            size="small"
+                            title="Edit Workflow"
+                            disabled-title="This workflow has been deleted."
                             :disabled="workflow.deleted"
                             :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
-                        </BButton>
+                        </GButton>
                         <AsyncButton
                             v-else
-                            v-b-tooltip.hover.noninteractive
                             data-description="import workflow button"
-                            size="sm"
+                            transparent
+                            color="blue"
+                            size="small"
                             :disabled="isAnonymous || workflowImportedAttempted"
                             :title="workflowImportTitle"
                             :icon="faUpload"
-                            variant="link"
                             :action="onImport">
                         </AsyncButton>
 
                         <slot name="workflow-title-actions" />
-                    </BButtonGroup>
+                    </GButtonGroup>
                     <ButtonSpinner
                         v-if="!props.invocation"
                         id="run-workflow"
+                        class="text-nowrap"
                         data-description="execute workflow button"
                         :wait="runWaiting"
                         :disabled="runDisabled"
-                        size="sm"
-                        title="Run Workflow"
+                        size="small"
+                        :tooltip="executeButtonTooltip"
+                        :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
                         @onClick="emit('on-execute')" />
-                    <WorkflowRunButton
-                        v-else
-                        :id="workflow.id"
-                        data-description="route to workflow run button"
-                        variant="link"
-                        :title="
-                            !workflow.deleted
-                                ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        :disabled="workflow.deleted"
-                        force
-                        full
-                        :version="workflow.version" />
+                    <GButtonGroup v-else>
+                        <GButton
+                            title="Run Workflow"
+                            disabled-title="This workflow has been deleted."
+                            data-button-run
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            :to="`/workflows/run?id=${workflow.id}&version=${workflow.version}`">
+                            <FontAwesomeIcon :icon="faPlay" fixed-width />
+                            <span v-localize>Run</span>
+                        </GButton>
+                        <GButton
+                            title="Rerun Workflow with same inputs"
+                            disabled-title="This workflow has been deleted."
+                            data-button-rerun
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            @click="rerunWorkflow">
+                            <FontAwesomeIcon :icon="faRedo" fixed-width />
+                            <span v-localize>Rerun</span>
+                        </GButton>
+                    </GButtonGroup>
                 </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>
             </div>
+            <BAlert v-else-if="loading" variant="info" show>
+                <LoadingSpan message="Loading workflow details" />
+            </BAlert>
         </div>
     </div>
 </template>

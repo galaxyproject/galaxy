@@ -1,11 +1,8 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
-import galaxy.model
 from galaxy.util import (
     asbool,
     listify,
@@ -36,7 +33,7 @@ class VisualizationsConfigParser:
     """
 
     #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script", "chart"]
+    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script"]
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
@@ -75,12 +72,12 @@ class VisualizationsConfigParser:
             log.info("Visualizations plugin disabled: %s. Skipping...", returned["name"])
             return None
 
-        # record the embeddable flag - defaults to true
-        returned["embeddable"] = True
+        # record the embeddable flag - defaults to False
+        returned["embeddable"] = False
         if "embeddable" in xml_tree.attrib:
             returned["embeddable"] = asbool(xml_tree.attrib.get("embeddable"))
 
-        # record the visible flag - defaults to true
+        # record the visible flag - defaults to False
         returned["hidden"] = False
         if "hidden" in xml_tree.attrib:
             returned["hidden"] = asbool(xml_tree.attrib.get("hidden"))
@@ -88,6 +85,10 @@ class VisualizationsConfigParser:
         # a (for now) text description of what the visualization does
         description = xml_tree.find("description")
         returned["description"] = description.text.strip() if description is not None else None
+
+        # help text of what the visualization does
+        help = xml_tree.find("help")
+        returned["help"] = help.text if help is not None else None
 
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
@@ -120,7 +121,7 @@ class VisualizationsConfigParser:
         # param modifiers provide extra information for other params (e.g. hda_ldda='hda' -> dataset_id is an hda id)
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
-        param_modifiers: Dict[str, Any] = {}
+        param_modifiers: dict[str, Any] = {}
         param_modifier_elements = param_confs.findall("param_modifier") if param_confs is not None else []
         for param_modifier_conf in param_modifier_elements:
             param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
@@ -159,6 +160,10 @@ class VisualizationsConfigParser:
         if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
 
+        # load optional tags specifiers
+        if (tag_section := xml_tree.find("tags")) is not None:
+            returned["tags"] = ListParser(tag_section)
+
         # load tracks specifiers (allow 'groups' section for backward compatibility)
         if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
             returned["tracks"] = ListParser(tracks_section)
@@ -166,6 +171,10 @@ class VisualizationsConfigParser:
         # load settings specifiers
         if (settings_section := xml_tree.find("settings")) is not None:
             returned["settings"] = ListParser(settings_section)
+
+        # load tests specifiers
+        if (test_section := xml_tree.find("tests")) is not None:
+            returned["tests"] = ListParser(test_section)
 
         return returned
 
@@ -208,7 +217,6 @@ class DataSourceParser:
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = ["Visualization", "HistoryDatasetAssociation", "LibraryDatasetDatasetAssociation"]
-    ATTRIBUTE_SPLIT_CHAR = "."
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
     ALLOWED_DATA_SOURCE_ATTRIBUTES = ["datatype"]
@@ -248,29 +256,9 @@ class DataSourceParser:
             raise ParsingException("data_source entry requires a model_class")
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
-            # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
             raise ParsingException(f"Invalid data_source model_class: {xml_tree.text}")
 
-        # look up the model from the model module returning an empty data_source if not found
-        model_class = getattr(galaxy.model, xml_tree.text, None)
-        return model_class
-
-    def _build_getattr_lambda(self, attr_name_list):
-        """
-        Recursively builds a compound lambda function of getattr's
-        from the attribute names given in `attr_name_list`.
-        """
-        if len(attr_name_list) == 0:
-            # identity - if list is empty, return object itself
-            return lambda o: o
-
-        next_attr_name = attr_name_list[-1]
-        if len(attr_name_list) == 1:
-            # recursive base case
-            return lambda o: getattr(o, next_attr_name)
-
-        # recursive case
-        return lambda o: getattr(self._build_getattr_lambda(attr_name_list[:-1])(o), next_attr_name)
+        return xml_tree.text
 
     def parse_tests(self, xml_tree_list):
         """
@@ -281,7 +269,7 @@ class DataSourceParser:
         # tests should NOT include expensive operations: reading file data, running jobs, etc.
         # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
         # currently tests are or'd only (could be and'd or made into compound boolean tests)
-        tests: List[Dict[str, Any]] = []
+        tests: list[dict[str, Any]] = []
         if not xml_tree_list:
             return tests
 
@@ -295,17 +283,13 @@ class DataSourceParser:
                     test_elem.text,
                 )
                 continue
+
+            # collect test attribute
+            test_attr = test_elem.get("test_attr")
+
+            # collect expected test result
             test_result = test_result.strip()
 
-            # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
-            # TODO: too dangerous - constrain these to some allowed list
-            # TODO: does this err if no test_attr - it should...
-            test_attr = test_elem.get("test_attr")
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
-            # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
-
-            # build a lambda function that gets the desired attribute to test
-            getter = self._build_getattr_lambda(test_attr)
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
@@ -313,43 +297,15 @@ class DataSourceParser:
             # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
             # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
             # deferred data_sources.
-            allow_uri_if_protocol = []
+            allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
 
-            # test functions should be sent an object to test, and the parsed result expected from the test
-            if test_type == "isinstance":
-                allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
-
-                # is test_attr attribute an instance of result
-                # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                def test_fn(o, result, getter=getter):
-                    return isinstance(getter(o), result)
-
-            elif test_type == "has_dataprovider":
-                # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                def test_fn(o, result, getter=getter):
-                    return hasattr(getter(o), "has_dataprovider") and getter(o).has_dataprovider(result)
-
-            elif test_type == "has_attribute":
-                # does the object itself have attr in 'result' (no equivalence checking)
-                def test_fn(o, result, getter=getter):
-                    return hasattr(getter(o), result)
-
-            elif test_type == "not_eq":
-
-                def test_fn(o, result, getter=getter):
-                    return str(getter(o)) != result
-
-            else:
-                # default to simple (string) equilavance (coercing the test_attr to a string)
-                def test_fn(o, result, getter=getter):
-                    return str(getter(o)) == result
-
+            # append serializable test details for evaluation in registry
             tests.append(
                 {
+                    "attr": test_attr,
                     "type": test_type,
                     "result": test_result,
                     "result_type": test_result_type,
-                    "fn": test_fn,
                     "allow_uri_if_protocol": allow_uri_if_protocol,
                 }
             )
@@ -362,7 +318,7 @@ class DataSourceParser:
         the registry to convert the data_source into one or more appropriate
         params for the visualization.
         """
-        to_param_dict: Dict[str, Any] = {}
+        to_param_dict: dict[str, Any] = {}
         if not xml_tree_list:
             return to_param_dict
 
@@ -378,21 +334,10 @@ class DataSourceParser:
             if assign is not None:
                 param["assign"] = assign
 
-            # param_attr is the attribute of the object (that the visualization will be applied to)
-            #   that should be converted into a query param (e.g. param_attr="id" -> dataset_id)
-            # TODO:?? use the build attr getter here?
-            # simple (1 lvl) attrs for now
+            # param_attr is the attribute of the object that the visualization will be applied to
             param_attr = element.get("param_attr")
             if param_attr is not None:
                 param["param_attr"] = param_attr
-            # element must have either param_attr or assign? what about no params (the object itself)
-            if not param_attr and not assign:
-                raise ParsingException("to_param requires either assign or param_attr attributes: %s", param_name)
-
-            # TODO: consider making the to_param name an attribute (param="hda_ldda") and the text what would
-            #           be used for the conversion - this would allow CDATA values to be passed
-            # <to_param param="json" type="assign"><![CDATA[{ "one": 1, "two": 2 }]]></to_param>
-
             if param:
                 to_param_dict[param_name] = param
 

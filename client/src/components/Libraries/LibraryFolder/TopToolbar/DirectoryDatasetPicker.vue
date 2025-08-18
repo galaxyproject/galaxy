@@ -13,7 +13,7 @@ import {
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
+import type { Option } from "@/components/Form/Elements/FormDrilldown/utilities";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
 import { useDbKeyStore } from "@/stores/dbKeyStore";

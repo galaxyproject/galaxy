@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { type HistorySummary } from "@/api";
+import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -27,7 +27,6 @@ const { server, http } = useServerMock();
 const TEST_HISTORY_ID = "test-history-id";
 const TEST_HISTORY = {
     id: TEST_HISTORY_ID,
-    name: "fake-history-name",
     archived: false,
 };
 
@@ -45,7 +44,7 @@ async function mountComponentWithHistory(history?: HistorySummary) {
     // this is a work-around
     jest.spyOn(historyStore, "getHistoryById").mockImplementation((_history_id: string) => history as HistorySummary);
 
-    const wrapper = shallowMount(HistoryArchiveWizard, {
+    const wrapper = shallowMount(HistoryArchiveWizard as object, {
         propsData: { historyId: TEST_HISTORY_ID },
         localVue,
         pinia,
@@ -61,13 +60,6 @@ describe("HistoryArchiveWizard.vue", () => {
                 return response(200).json([]);
             })
         );
-    });
-
-    it("should render the history name in the header", async () => {
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
-
-        const header = wrapper.find("h1");
-        expect(header.text()).toContain(TEST_HISTORY.name);
     });
 
     it("should render only the simple archival mode when no writeable file sources are available", async () => {

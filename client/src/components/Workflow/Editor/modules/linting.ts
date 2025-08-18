@@ -1,7 +1,7 @@
-import { type DatatypesMapperModel } from "@/components/Datatypes/model";
-import { type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
-import { type useWorkflowStores } from "@/composables/workflowStores";
-import { type Step, type Steps } from "@/stores/workflowStepStore";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import type { useWorkflowStores } from "@/composables/workflowStores";
+import type { Step, Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { terminalFactory } from "./terminals";
@@ -13,14 +13,19 @@ interface LintState {
     name?: string;
     inputName?: string;
     autofix?: boolean;
+    data?: Record<string, string>;
 }
 
 export const bestPracticeWarningAnnotation =
-    "This workflow is not annotated. Providing an annotation helps workflow executors understand the purpose and usage of the workflow.";
+    "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
+export const bestPracticeWarningAnnotationLength =
+    "This workflow includes a very long short description. The best practice is to break up long descriptions of a workflow into readme and help text and keep the short description field a relatively brief description of the workflow appropriate for displaying in lists of workflows.";
 export const bestPracticeWarningCreator =
     "This workflow does not specify creator(s). This is important metadata for workflows that will be published and/or shared to help workflow executors know how to cite the workflow authors.";
 export const bestPracticeWarningLicense =
     "This workflow does not specify a license. This is important metadata for workflows that will be published and/or shared to help workflow executors understand how it may be used.";
+export const bestPracticeWarningReadme =
+    "This workflow does not provide a readme. Providing a detailed readme helps workflow executors understand the details, purpose, and limitations of the workflow.";
 
 export function getDisconnectedInputs(
     steps: Steps = {},
@@ -57,23 +62,41 @@ export function getMissingMetadata(steps: Steps) {
             const noAnnotation = !step.annotation;
             const noLabel = !step.label;
             let warningLabel = null;
+            const data = {
+                "missing-label": "false",
+                "missing-annotation": "false",
+            };
             if (noLabel && noAnnotation) {
                 warningLabel = "Missing a label and annotation";
+                data["missing-label"] = "true";
+                data["missing-annotation"] = "true";
             } else if (noLabel) {
                 warningLabel = "Missing a label";
+                data["missing-label"] = "true";
             } else if (noAnnotation) {
                 warningLabel = "Missing an annotation";
+                data["missing-annotation"] = "true";
             }
             if (warningLabel) {
                 inputs.push({
                     stepId: step.id,
                     stepLabel: step.label || step.content_id || step.name,
                     warningLabel: warningLabel,
+                    data: data,
                 });
             }
         }
     });
     return inputs;
+}
+
+export function dataAttributes(action: LintState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(action.data || {})) {
+        result[`data-${key}`] = value;
+    }
+
+    return result;
 }
 
 export function getUnlabeledOutputs(steps: Steps) {

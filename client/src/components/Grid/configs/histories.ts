@@ -11,15 +11,15 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
+import type { HistorySortByLiteral } from "@/api";
 import { GalaxyApi } from "@/api";
-import { type HistorySortByLiteral } from "@/api";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type BatchOperationArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, BatchOperationArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -158,6 +158,10 @@ const fields: FieldArray = [
                 handler: (data: HistoryEntry) => {
                     const historyStore = useHistoryStore();
                     historyStore.setCurrentHistory(String(data.id));
+                },
+                loading: () => {
+                    const historyStore = useHistoryStore();
+                    return historyStore.changingCurrentHistory;
                 },
             },
             {
@@ -329,7 +333,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         menuItem: true,
     },
     purged: {
-        placeholder: "Purged entries",
+        placeholder: "Purged",
         type: Boolean,
         boolType: "is",
         handler: equals("purged", "purged", toBool),

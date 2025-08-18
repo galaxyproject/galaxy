@@ -1,25 +1,20 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBug } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard } from "bootstrap-vue";
+import { BAlert, BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { GalaxyApi, type HDADetailed, isRegisteredUser } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { type JobDetails, type JobInputSummary } from "@/api/jobs";
+import type { JobDetails, JobInputSummary } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
-import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import EmailReportForm from "../Common/EmailReportForm.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
-import FormElement from "@/components/Form/FormElement.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
-
-library.add(faBug);
 
 interface Props {
     datasetId: string;
@@ -28,26 +23,16 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const { currentUser, isAnonymous } = storeToRefs(userStore);
+const { isAnonymous } = storeToRefs(userStore);
 
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 const { config, isConfigLoaded } = useConfig();
 
-const message = ref("");
 const jobLoading = ref(true);
 const errorMessage = ref("");
 const datasetLoading = ref(false);
 const jobDetails = ref<JobDetails>();
 const jobProblems = ref<JobInputSummary>();
-const resultMessages = ref<string[][]>([]);
 const dataset = ref<HDADetailed>();
-
-const showForm = computed(() => {
-    const noResult = !resultMessages.value.length;
-    const hasError = resultMessages.value.some((msg) => msg[1] === "danger");
-
-    return noResult || hasError;
-});
 
 const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured && !isAnonymous.value);
 
@@ -97,20 +82,20 @@ async function getJobProblems(jobId: string) {
     jobProblems.value = data;
 }
 
-async function submit(dataset?: HDADetailed, userEmailJob?: string | null) {
-    if (!dataset) {
+async function submit(message: string): Promise<string[][] | undefined> {
+    if (!dataset.value) {
         errorMessage.value = "No dataset found.";
         return;
     }
 
     const { data, error } = await GalaxyApi().POST("/api/jobs/{job_id}/error", {
         params: {
-            path: { job_id: dataset.creating_job },
+            path: { job_id: dataset.value.creating_job },
         },
         body: {
-            dataset_id: dataset.id,
-            message: message.value,
-            email: userEmailJob,
+            dataset_id: dataset.value.id,
+            message: message,
+            email: jobDetails.value?.user_email,
         },
     });
 
@@ -119,21 +104,12 @@ async function submit(dataset?: HDADetailed, userEmailJob?: string | null) {
         return;
     }
 
-    resultMessages.value = data.messages;
+    return data.messages;
 }
 
 function onMissingJobId() {
     errorMessage.value = "No job ID found for this dataset.";
 }
-
-const userEmail = computed<string | null>(() => {
-    const user = currentUser.value;
-    if (isRegisteredUser(user)) {
-        return user.email;
-    } else {
-        return null;
-    }
-});
 
 onMounted(async () => {
     await getDatasetDetails();
@@ -155,7 +131,11 @@ onMounted(async () => {
             {{ errorMessage }}
         </BAlert>
 
-        <div v-if="!datasetLoading && !jobLoading && dataset && jobDetails">
+        <BAlert v-if="datasetLoading || jobLoading" variant="info" show>
+            <LoadingSpan :message="localize('Loading dataset error details')" />
+        </BAlert>
+
+        <div v-else-if="!datasetLoading && !jobLoading && dataset && jobDetails">
             <div class="page-container edit-attr">
                 <div class="response-message"></div>
             </div>
@@ -220,31 +200,7 @@ onMounted(async () => {
                 </b>
             </p>
 
-            <h4 class="mb-3 h-md">Issue Report</h4>
-            <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
-                <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
-            </BAlert>
-
-            <div v-if="showForm" id="dataset-error-form">
-                <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
-                <span v-if="userEmail">{{ userEmail }}</span>
-                <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
-
-                <FormElement
-                    id="dataset-error-message"
-                    v-model="message"
-                    :area="true"
-                    title="Please provide detailed information on the activities leading to this issue:" />
-
-                <BButton
-                    id="dataset-error-submit"
-                    variant="primary"
-                    class="mt-3"
-                    @click="submit(dataset, jobDetails?.user_email)">
-                    <FontAwesomeIcon :icon="faBug" class="mr-1" />
-                    Report
-                </BButton>
-            </div>
+            <EmailReportForm :submit="submit" />
         </div>
     </div>
 </template>

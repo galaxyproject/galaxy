@@ -72,6 +72,7 @@ export default {
                 case "dce":
                     return "DatasetCollectionElementProvider";
                 default:
+                    // Failed on LDDAs https://github.com/galaxyproject/galaxy/issues/19687
                     throw Error(`Unknown element src ${this.itemSrc}`);
             }
         },

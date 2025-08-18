@@ -34,18 +34,27 @@ simpleversioning_versions = [
     # Additional versions added below
 ]
 
-# Used for determining the latest stable release so the banner can be added to older releases.
-_stable = None
 # Use tags to determine versions - a stable version will have a branch before it's released, but not a tag.
 tags = check_output(("git", "tag")).decode().splitlines()
-for _tag in reversed(tags):
-    if _tag.startswith("v") and _tag.count(".") == 1:
-        # this version is released
-        _ver = _tag[1:]
-        if not _stable:
-            _stable = _ver
-        if Version(_ver) >= MIN_DOC_VERSION:
-            simpleversioning_versions.append({"id": f"release_{_ver}", "name": _ver})
+found_versions = []
+for _tag in sorted(tags, reverse=True):
+    if not _tag.startswith("v"):
+        continue
+    _ver_parts = _tag[1:].split(".")
+    if len(_ver_parts) == 1:
+        # No "."
+        continue
+    # Keep only major and minor version numbers
+    _ver = ".".join(_ver_parts[:2])
+    if Version(_ver) < MIN_DOC_VERSION:
+        continue
+    if _ver in found_versions:
+        continue
+    found_versions.append(_ver)
+    simpleversioning_versions.append({"id": f"release_{_ver}", "name": _ver})
+
+# The latest stable release
+_stable = found_versions[0] if found_versions else None
 
 if re.fullmatch(r"release_\d{2}\.\d{1,2}", TARGET_GIT_BRANCH):
     if _stable:

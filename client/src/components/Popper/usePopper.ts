@@ -5,19 +5,42 @@ export type Trigger = "click" | "hover" | "none";
 
 const defaultTrigger: Trigger = "hover";
 
+const DELAY_CLOSE = 50;
+
 export function usePopper(
     reference: Ref<HTMLElement>,
     popper: Ref<HTMLElement>,
-    options: { placement?: Placement; trigger?: Trigger }
+    options: { interactive?: boolean; placement?: Placement; trigger?: Trigger }
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
     const visible = ref(false);
     const listeners: Array<{ target: EventTarget; event: string; handler: EventListener }> = [];
 
-    const doOpen = () => (visible.value = true);
-    const doClose = () => (visible.value = false);
-    const doCloseForDocument = (e: Event) => {
+    let closeHandler: ReturnType<typeof setTimeout> | undefined;
+
+    const doOpen = () => {
+        closeHandler && clearTimeout(closeHandler);
+        visible.value = true;
+    };
+    const doClose = () => {
+        const delay = options.interactive ? DELAY_CLOSE : 0;
+        closeHandler && clearTimeout(closeHandler);
+        closeHandler = setTimeout(() => (visible.value = false), delay);
+    };
+    const doCloseDocument = (e: Event) => {
         if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
+            visible.value = false;
+        }
+    };
+    const doCloseElement = (event: Event) => {
+        const target = event.target as Element;
+        if (target && target.closest(".popper-close")) {
+            visible.value = false;
+        }
+    };
+    const doCloseEscape = (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key === "Escape") {
             visible.value = false;
         }
     };
@@ -31,12 +54,22 @@ export function usePopper(
         instance.value = createPopper(reference.value, popper.value, {
             placement: options.placement ?? "bottom",
             strategy: "absolute",
+            modifiers: [
+                {
+                    name: "offset",
+                    options: {
+                        offset: [0, 5],
+                    },
+                },
+            ],
         });
 
         const trigger = options.trigger ?? defaultTrigger;
         if (trigger === "click") {
             addEventListener(reference.value, "click", doOpen);
-            addEventListener(document, "click", doCloseForDocument);
+            addEventListener(popper.value, "click", doCloseElement);
+            addEventListener(document, "click", doCloseDocument);
+            addEventListener(document, "keydown", doCloseEscape);
         } else if (trigger === "hover") {
             addEventListener(reference.value, "mouseover", doOpen);
             addEventListener(reference.value, "mouseout", doClose);

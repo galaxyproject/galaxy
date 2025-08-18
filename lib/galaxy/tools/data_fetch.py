@@ -8,10 +8,7 @@ import tempfile
 from io import StringIO
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 import bdbag.bdbag_api
@@ -55,7 +52,7 @@ def do_fetch(
     request_path: str,
     working_directory: str,
     registry: Registry,
-    file_sources_dict: Optional[Dict] = None,
+    file_sources_dict: Optional[dict] = None,
 ):
     assert os.path.exists(request_path)
     with open(request_path) as f:
@@ -87,7 +84,7 @@ def _request_to_galaxy_json(upload_config: "UploadConfig", request):
     return {"__unnamed_outputs": fetched_targets}
 
 
-def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
+def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
     destination = target.get("destination", None)
     assert destination, "No destination defined."
 
@@ -133,6 +130,8 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
 
     if "collection_type" in target:
         fetched_target["collection_type"] = target["collection_type"]
+    if "column_definitions" in target:
+        fetched_target["column_definitions"] = target["column_definitions"]
     if "name" in target:
         fetched_target["name"] = target["name"]
 
@@ -151,6 +150,8 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
             target_metadata["created_from_basename"] = created_from_basename
         if "error_message" in src_item:
             target_metadata["error_message"] = src_item["error_message"]
+        if row := src_item.get("row", None):
+            target_metadata["row"] = row
         return target_metadata
 
     def _resolve_item(item):
@@ -159,21 +160,28 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         registry = upload_config.registry
         datatype = registry.get_datatype_by_extension(requested_ext)
         composite = item.pop("composite", None)
+        validated_metadata = {}
         if datatype and datatype.composite_type:
             composite_type = datatype.composite_type
             assert composite_type == "auto_primary_file", "basic composite uploads not yet implemented"
+            provided_metadata = item.get("metadata")
+            if provided_metadata:
+                for key, value in provided_metadata.items():
+                    metadata_element = datatype.metadata_spec.get(key)
+                    if metadata_element and metadata_element.set_in_upload:
+                        validated_metadata[key] = value
 
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
-            metadata = {
+            metadata = item.get("metadata") or {
                 composite_file.substitute_name_with_metadata: datatype.metadata_spec[
                     composite_file.substitute_name_with_metadata
                 ].default
                 for composite_file in datatype.composite_files.values()
                 if composite_file.substitute_name_with_metadata
             }
-            name = item.get("name") or "Composite Dataset"
+            name = metadata.get("base_name") or item.get("name") or "Composite Dataset"
             metadata["base_name"] = name
             dataset = Bunch(
                 name=name,
@@ -187,7 +195,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
             )
             extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
-            rval: Dict[str, Any] = {
+            rval: dict[str, Any] = {
                 "name": name,
                 "filename": primary_file,
                 "ext": requested_ext,
@@ -196,6 +204,8 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 "hashes": [],
                 "extra_files": extra_files_path,
             }
+            if validated_metadata:
+                rval["metadata"] = validated_metadata
             _copy_and_validate_simple_attributes(item, rval)
             composite_items = composite.get("elements", [])
             keys = list(writable_files.keys())
@@ -289,6 +299,12 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         space_to_tab = upload_config.get_option(item, "space_to_tab")
         auto_decompress = upload_config.get_option(item, "auto_decompress")
 
+        requested_transform = [{"action": "datatype_groom"}]
+        if space_to_tab:
+            requested_transform.append({"action": "spaces_to_tabs"})
+        if to_posix_lines:
+            requested_transform.append({"action": "to_posix_lines"})
+        source_dict["requested_transform"] = requested_transform
         effective_state = "ok"
         if not deferred and not error_message:
             in_place = item.get("in_place", default_in_place)
@@ -375,14 +391,10 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 assert path
                 datatype.groom_dataset_content(path)
 
+            # if length is 0, we should probably persist the empty list? -John
             if len(transform) > 0:
                 source_dict["transform"] = transform
         elif not error_message:
-            transform = []
-            if to_posix_lines:
-                transform.append({"action": "to_posix_lines"})
-            if space_to_tab:
-                transform.append({"action": "spaces_to_tabs"})
             effective_state = "deferred"
             registry = upload_config.registry
             ext = sniff.guess_ext_from_file_name(name, registry=registry, requested_ext=requested_ext)
@@ -434,7 +446,7 @@ def _bagit_to_items(directory):
     return items
 
 
-def _decompress_target(upload_config: "UploadConfig", target: Dict[str, Any]):
+def _decompress_target(upload_config: "UploadConfig", target: dict[str, Any]):
     elements_from_name, elements_from_path, _ = _has_src_to_path(upload_config, target, is_dataset=False)
     # by default Galaxy will check for a directory with a single file and interpret that
     # as the new root for expansion, this is a good user experience for uploading single
@@ -460,8 +472,8 @@ def elements_tree_map(f, items):
 
 
 def _directory_to_items(directory):
-    items: List[Dict[str, Any]] = []
-    dir_elements: Dict[str, Any] = {}
+    items: list[dict[str, Any]] = []
+    dir_elements: dict[str, Any] = {}
     for root, dirs, files in os.walk(directory):
         if root in dir_elements:
             target = dir_elements[root]
@@ -495,11 +507,11 @@ def _has_src_to_name(item) -> Optional[str]:
 
 def _has_src_to_path(
     upload_config: "UploadConfig",
-    item: Dict[str, Any],
+    item: dict[str, Any],
     is_dataset: bool = False,
     link_data_only: bool = False,
     link_data_only_explicitly_set: bool = False,
-) -> Tuple[str, str, bool]:
+) -> tuple[str, str, bool]:
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")
@@ -580,11 +592,11 @@ def get_file_sources(working_directory, file_sources_as_dict=None):
 class UploadConfig:
     def __init__(
         self,
-        request: Dict[str, Any],
+        request: dict[str, Any],
         registry: Registry,
         working_directory: str,
         allow_failed_collections: bool,
-        file_sources_dict: Optional[Dict] = None,
+        file_sources_dict: Optional[dict] = None,
     ):
         self.registry = registry
         self.working_directory = working_directory
@@ -646,7 +658,7 @@ class UploadConfig:
         return new_path
 
 
-def _link_data_only(has_config_dict) -> Tuple[bool, bool]:
+def _link_data_only(has_config_dict) -> tuple[bool, bool]:
     if "link_data_only" in has_config_dict:
         link_data_only_raw = has_config_dict["link_data_only"]
         if not isinstance(link_data_only_raw, bool):

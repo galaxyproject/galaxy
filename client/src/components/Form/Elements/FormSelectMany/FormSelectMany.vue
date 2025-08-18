@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft, faLongArrowAltRight, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
-import { BButton, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
@@ -12,7 +11,7 @@ import { useHighlight } from "./useHighlight";
 import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
 
-library.add(faLongArrowAltLeft, faLongArrowAltRight, faTimes);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 type SelectValue = Record<string, unknown> | string | number | null;
 
@@ -321,28 +320,30 @@ const selectedCount = computed(() => {
                     :class="{ hidden: searchValue === '' }"
                     title="Clear search"
                     @click="searchValue = ''">
-                    <FontAwesomeIcon icon="fa-times" />
+                    <FontAwesomeIcon :icon="faTimes" />
                 </button>
             </fieldset>
 
-            <BButton
+            <GButton
                 class="toggle-button case-sensitivity"
-                :variant="caseSensitive ? 'primary' : 'outline-primary'"
+                outline
+                color="blue"
+                :pressed.sync="caseSensitive"
+                :aria-pressed="`${caseSensitive}`"
                 role="switch"
-                :aria-checked="`${caseSensitive}`"
-                title="case sensitive"
-                @click="caseSensitive = !caseSensitive">
+                title="case sensitive">
                 Aa
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="toggle-button use-regex"
-                :variant="useRegex ? 'primary' : 'outline-primary'"
+                outline
+                color="blue"
+                :pressed.sync="useRegex"
+                :aria-pressed="`${useRegex}`"
                 role="switch"
-                :aria-checked="`${useRegex}`"
-                title="use regex"
-                @click="useRegex = !useRegex">
+                title="use regex">
                 .*
-            </BButton>
+            </GButton>
         </fieldset>
 
         <div class="options-box border rounded mt-2">
@@ -350,11 +351,17 @@ const selectedCount = computed(() => {
                 <span>
                     Unselected
                     <span class="font-weight-normal unselected-count"> ({{ unselectedCount }}) </span>
+                    <slot name="column-heading-end" />
                 </span>
-                <BButton class="selection-button select" :title="selectText" variant="primary" @click="selectAll">
+                <GButton
+                    class="selection-button select"
+                    data-description="select many select all"
+                    :title="selectText"
+                    color="blue"
+                    @click="selectAll">
                     {{ selectText }}
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
-                </BButton>
+                    <FontAwesomeIcon :icon="faLongArrowAltRight" />
+                </GButton>
             </div>
 
             <div
@@ -370,7 +377,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
                     @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: false }">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -384,11 +391,12 @@ const selectedCount = computed(() => {
                 <span>
                     Selected
                     <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
+                    <slot name="column-heading-end" />
                 </span>
-                <BButton class="selection-button deselect" :title="deselectText" variant="primary" @click="deselectAll">
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
+                <GButton class="selection-button deselect" :title="deselectText" color="blue" @click="deselectAll">
+                    <FontAwesomeIcon :icon="faLongArrowAltLeft" />
                     {{ deselectText }}
-                </BButton>
+                </GButton>
             </div>
 
             <div
@@ -404,7 +412,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
                     @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: true }">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -466,6 +474,7 @@ const selectedCount = computed(() => {
     }
 
     .toggle-button {
+        display: block;
         padding-left: 0;
         padding-right: 0;
     }

@@ -75,12 +75,12 @@ describe("ExportForm.vue", () => {
 
     function expectExportButtonDisabled() {
         expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeTruthy();
+        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeTruthy();
     }
 
     function expectExportButtonEnabled() {
         expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeFalsy();
+        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeFalsy();
     }
 
     async function setNameInput(newValue: string) {

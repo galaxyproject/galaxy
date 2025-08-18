@@ -3,15 +3,18 @@ import os
 from json import dumps
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    Dataset,
+    DatasetInstance,
     History,
+    HistoryDatasetAssociation,
     Job,
+    LibraryDatasetDatasetAssociation,
     User,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -76,10 +79,10 @@ class SetMetadataToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[Dict[str, Any]],
+        incoming: Optional[dict[str, Any]],
         overwrite: bool = True,
         history: Optional[History] = None,
-        job_params: Optional[Dict[str, Any]] = None,
+        job_params: Optional[dict[str, Any]] = None,
     ):
         trans.check_user_activation()
         session = trans.get_galaxy_session()
@@ -105,10 +108,10 @@ class SetMetadataToolAction(ToolAction):
         session_id: Optional[int],
         history_id: Optional[int],
         user: Optional[User] = None,
-        incoming: Optional[Dict[str, Any]] = None,
+        incoming: Optional[dict[str, Any]] = None,
         overwrite: bool = True,
         history: Optional[History] = None,
-        job_params: Optional[Dict[str, Any]] = None,
+        job_params: Optional[dict[str, Any]] = None,
     ):
         """
         Execute using application.
@@ -118,12 +121,12 @@ class SetMetadataToolAction(ToolAction):
             # Why are we looping here and not just using a fixed input name? Needed?
             if not name.startswith("input"):
                 continue
-            if isinstance(value, app.model.HistoryDatasetAssociation):
-                dataset = value
+            if isinstance(value, HistoryDatasetAssociation):
+                dataset: DatasetInstance = value
                 dataset_name = name
                 type = "hda"
                 break
-            elif isinstance(value, app.model.LibraryDatasetDatasetAssociation):
+            elif isinstance(value, LibraryDatasetDatasetAssociation):
                 dataset = value
                 dataset_name = name
                 type = "ldda"
@@ -134,7 +137,7 @@ class SetMetadataToolAction(ToolAction):
         sa_session = app.model.context
 
         # Create the job object
-        job = app.model.Job()
+        job = Job()
         job.galaxy_version = app.config.version_major
         job.session_id = session_id
         job.history_id = history_id
@@ -175,7 +178,7 @@ class SetMetadataToolAction(ToolAction):
             sa_session,
             exec_dir=None,
             tmp_dir=job_working_dir,
-            dataset_files_path=app.model.Dataset.file_path,
+            dataset_files_path=Dataset.file_path,
             output_fnames=input_paths,
             config_root=app.config.root,
             config_file=app.config.config_file,

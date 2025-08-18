@@ -4,7 +4,7 @@ import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type Citation } from ".";
+import type { Citation } from ".";
 
 library.add(faExternalLinkAlt);
 
@@ -41,7 +41,7 @@ const citationHtml = computed(() => {
         <span v-html="citationHtml" />
 
         <a v-if="link" :href="link" target="_blank">
-            Visit Citation
+            Visit reference
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </a>
     </div>

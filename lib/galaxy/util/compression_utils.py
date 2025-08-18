@@ -4,7 +4,6 @@ import io
 import logging
 import lzma
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
@@ -12,9 +11,9 @@ from types import TracebackType
 from typing import (
     Any,
     cast,
-    Generator,
     IO,
     Iterable,
+    Iterator,
     List,
     Optional,
     overload,
@@ -148,7 +147,7 @@ def get_fileobj_raw(
         return compressed_format, fh
 
 
-def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
+def file_iter(fname: str, sep: Optional[Any] = None) -> Iterator[List[str]]:
     """
     This generator iterates over a file and yields its lines
     splitted via the C{sep} parameter. Skips empty lines and lines starting with
@@ -193,10 +192,10 @@ class CompressedFile:
 
     def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
-        if tarfile.is_tarfile(file_path):
-            self.file_type = "tar"
-        elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
+        if zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
+        elif tarfile.is_tarfile(file_path):
+            self.file_type = "tar"
         else:
             raise Exception("File must be valid zip or tar file.")
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -409,13 +408,13 @@ class FastZipFile(zipfile.ZipFile):
 # modified from shutil._make_zipfile
 def make_fast_zipfile(
     base_name: str,
-    base_dir: str,
+    base_dir: StrPath,
     verbose: int = 0,
     dry_run: int = 0,
     logger: Optional[logging.Logger] = None,
     owner: Optional[str] = None,
     group: Optional[str] = None,
-    root_dir: Optional[str] = None,
+    root_dir: Optional[StrPath] = None,
 ) -> str:
     """Create a zip file from all the files under 'base_dir'.
 
@@ -441,10 +440,6 @@ def make_fast_zipfile(
             if root_dir is not None:
                 base_dir = os.path.join(root_dir, base_dir)
             base_dir = os.path.normpath(base_dir)
-            if arcname != os.curdir:
-                zf.write(base_dir, arcname)
-                if logger is not None:
-                    logger.info("adding '%s'", base_dir)
             for dirpath, dirnames, filenames in os.walk(base_dir):
                 arcdirpath = dirpath
                 if root_dir is not None:
@@ -468,6 +463,3 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
-
-
-shutil.register_archive_format("fastzip", make_fast_zipfile)

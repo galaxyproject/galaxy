@@ -11,7 +11,7 @@ const { isOnlyPreference } = useStorageLocationConfiguration();
 interface Props {
     historyId: string;
     historyPreferredObjectStoreId?: string;
-    user: { preferred_object_store_id: string };
+    user: { preferred_object_store_id?: string | null };
 }
 
 const props = defineProps<Props>();
@@ -19,16 +19,16 @@ const props = defineProps<Props>();
 const preferredObjectStoreId = computed(() => {
     let id = props.historyPreferredObjectStoreId;
     if (!id) {
-        id = props.user.preferred_object_store_id;
+        id = props.user.preferred_object_store_id ?? undefined;
     }
     return id;
 });
 
 const title = computed(() => {
     if (isOnlyPreference.value) {
-        return "Preferred Storage Location";
+        return "Preferred Storage";
     } else {
-        return "Storage Location";
+        return "Storage";
     }
 });
 </script>
@@ -40,15 +40,15 @@ const title = computed(() => {
             <p>
                 <b
                     >This option only affects new datasets created in this history. Existing history datasets will
-                    remain at their current storage location.</b
+                    remain at their current storage.</b
                 >
             </p>
 
             <p v-if="historyPreferredObjectStoreId" class="history-preferred-object-store-inherited">
-                This storage location has been set at the history level.
+                This storage has been set at the history level.
             </p>
             <p v-else class="history-preferred-object-store-not-inherited">
-                This storage location has been inherited from your user preferences (set in
+                This storage has been inherited from your user preferences (set in
                 <router-link to="/user">User -> Preferences</router-link> -> {{ title }}). If that option is updated,
                 this history will target that new default.
             </p>

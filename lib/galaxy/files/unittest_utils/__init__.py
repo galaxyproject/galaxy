@@ -2,7 +2,6 @@ import os
 import tempfile
 from typing import (
     Optional,
-    Tuple,
 )
 
 from galaxy.files import (
@@ -37,7 +36,7 @@ def setup_root():
     return tmp, root
 
 
-def write_file_fixtures(tmp: str, root: str) -> Tuple[str, str]:
+def write_file_fixtures(tmp: str, root: str) -> tuple[str, str]:
     if not os.path.exists(root):
         os.mkdir(root)
     os.symlink(os.path.join(tmp, "b"), os.path.join(root, "unsafe"))

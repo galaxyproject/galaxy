@@ -29,7 +29,7 @@
         </b-modal>
         <ActivityBar
             ref="activityBar"
-            :default-activities="workflowEditorActivities"
+            :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false"
@@ -45,12 +45,10 @@
                 <ToolPanel
                     v-if="isActiveSideBar('workflow-editor-tools')"
                     workflow
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
                     @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -59,6 +57,7 @@
                     v-else-if="isActiveSideBar('workflow-best-practices')"
                     :untyped-parameters="parameters"
                     :annotation="annotation"
+                    :readme="readme"
                     :creator="creator"
                     :license="license"
                     :steps="steps"
@@ -91,12 +90,24 @@
                     :versions="versions"
                     :license="license"
                     :creator="creator"
+                    :doi="doi"
+                    :logo-url="logoUrl"
+                    :help="help"
+                    :readme-active.sync="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
                     @creator="onCreator"
+                    @doi="onDoi"
                     @update:nameCurrent="setName"
-                    @update:annotationCurrent="setAnnotation" />
+                    @update:annotationCurrent="setAnnotation"
+                    @update:logoUrlCurrent="setLogoUrl"
+                    @update:helpCurrent="setHelp" />
+                <UserToolPanel
+                    v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
+                    :in-workflow-editor="true"
+                    in-panel
+                    @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -105,6 +116,7 @@
                 :markdown-text="report.markdown"
                 mode="report"
                 :title="'Workflow Report: ' + name"
+                :labels="getLabels"
                 :steps="steps"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
@@ -129,15 +141,6 @@
                         <span class="editor-title" :title="name"
                             >{{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
-                            <b-button
-                                v-if="hasChanges"
-                                id="workflow-save-button"
-                                class="py-1 px-2"
-                                variant="link"
-                                :title="saveWorkflowTitle"
-                                @click="saveOrCreate">
-                                <FontAwesomeIcon :icon="faSave" />
-                            </b-button>
                         </span>
                     </span>
 
@@ -154,10 +157,29 @@
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon icon="fa-arrow-right" />
                         </b-button>
+                        <b-button
+                            id="workflow-save-button"
+                            class="py-1 px-2"
+                            variant="link"
+                            :disabled="!hasChanges"
+                            :title="saveWorkflowTitle"
+                            @click="saveOrCreate">
+                            <FontAwesomeIcon :icon="faSave" />
+                        </b-button>
                     </b-button-group>
                 </div>
+
+                <ReadmeEditor
+                    v-if="readmeActive"
+                    class="p-2"
+                    :readme="readme"
+                    :name="name"
+                    :logo-url="logoUrl"
+                    @exit="readmeActive = false"
+                    @update:readmeCurrent="setReadme" />
+
                 <WorkflowGraph
-                    v-if="!datatypesMapperLoading"
+                    v-else-if="!datatypesMapperLoading"
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
@@ -201,6 +223,7 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useMagicKeys } from "@/composables/useMagicKeys";
@@ -209,8 +232,10 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { textify } from "@/utils/utils";
 
 import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
@@ -218,14 +243,16 @@ import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflo
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { getWorkflowInputs } from "./modules/inputs";
+import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
-import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import NodeInspector from "./NodeInspector.vue";
+import ReadmeEditor from "./ReadmeEditor.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
@@ -234,7 +261,9 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
+import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 
@@ -246,6 +275,7 @@ export default {
         MarkdownEditor,
         SaveChangesModal,
         StateUpgradeModal,
+        ReadmeEditor,
         ToolPanel,
         WorkflowAttributes,
         WorkflowLint,
@@ -257,6 +287,8 @@ export default {
         WorkflowPanel,
         NodeInspector,
         InputPanel,
+        UserToolPanel,
+        SearchPanel,
     },
     props: {
         workflowId: {
@@ -270,14 +302,6 @@ export default {
         workflowTags: {
             type: Array,
             default: () => [],
-        },
-        moduleSections: {
-            type: Array,
-            required: true,
-        },
-        dataManagers: {
-            type: Array,
-            required: true,
         },
     },
     setup(props, { emit }) {
@@ -337,7 +361,8 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "set license",
+            "license"
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -351,11 +376,23 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "set creator",
+            "creator"
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
             setCreatorHandler.set(creator.value, newCreator);
+        }
+
+        const doi = ref(null);
+        const setDoiHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (doi.value = value),
+            showAttributes,
+            "set DOI"
+        );
+        function setDoi(newDoi) {
+            setDoiHandler.set(doi.value, newDoi);
         }
 
         const annotation = ref(null);
@@ -363,7 +400,8 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify annotation"
+            "modify short description",
+            "annotation"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -372,15 +410,60 @@ export default {
             }
         }
 
-        const tags = ref([]);
-
-        watch(
-            () => props.workflowTags,
-            (newTags) => {
-                tags.value = [...newTags];
+        const readme = ref(null);
+        const readmeActive = ref(false);
+        const setReadmeHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (readme.value = value),
+            (args) => {
+                readmeActive.value = true;
+                showAttributes(args);
             },
-            { immediate: true }
+            "modify readme"
         );
+        function setReadme(newReadme) {
+            if (readme.value !== newReadme) {
+                setReadmeHandler.set(readme.value, newReadme);
+            }
+        }
+        // If we switch to the report, we want to close the readme editor
+        // TODO: Maybe do this for other activities as well? E.g. inputs, tools...
+        watch(
+            () => reportActive.value,
+            (newReportActive) => {
+                if (newReportActive) {
+                    readmeActive.value = false;
+                }
+            }
+        );
+
+        const help = ref(null);
+        const setHelpHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (help.value = value),
+            showAttributes,
+            "modify help"
+        );
+        function setHelp(newHelp) {
+            if (help.value !== newHelp) {
+                setHelpHandler.set(help.value, newHelp);
+            }
+        }
+
+        const logoUrl = ref(null);
+        const setLogoUrlHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (logoUrl.value = value),
+            showAttributes,
+            "modify logo url"
+        );
+        function setLogoUrl(newLogoUrl) {
+            if (logoUrl.value !== newLogoUrl) {
+                setLogoUrlHandler.set(logoUrl.value, newLogoUrl);
+            }
+        }
+
+        const tags = ref([]);
 
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
@@ -391,6 +474,7 @@ export default {
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
             setTagsHandler.set(tags.value, newTags);
+            hasChanges.value = true;
         }
 
         watch(
@@ -422,6 +506,23 @@ export default {
         const { hasChanges } = storeToRefs(stateStore);
         const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
+        const hasDuplicateOutputs = computed(() => stepStore.duplicateLabels.size > 0);
+
+        const hasErrors = computed(() => hasInvalidConnections.value || hasDuplicateOutputs.value);
+
+        const errorText = computed(() => {
+            const texts = [];
+
+            if (hasInvalidConnections.value) {
+                texts.push("invalid connections");
+            }
+
+            if (hasDuplicateOutputs.value) {
+                texts.push("duplicate output labels");
+            }
+
+            return `Workflow has ${textify(texts, "and")}`;
+        });
 
         stepStore.$subscribe((_mutation, _state) => {
             if (!initialLoading.value) {
@@ -465,10 +566,10 @@ export default {
             }))
         );
 
+        const getLabels = computed(() => fromSteps(steps.value));
+
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value
-                ? "Workflow has invalid connections, review and remove invalid connections"
-                : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
         );
 
         useActivityLogic(
@@ -481,21 +582,46 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const unprivilegedToolStore = useUnprivilegedToolStore();
+        const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+        const workflowActivities = computed(() =>
+            workflowEditorActivities.filter(
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
+            )
+        );
+
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
         return {
             id,
             name,
             parameters,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
             report,
             license,
+            getLabels,
             setLicense,
             creator,
             setCreator,
+            doi,
+            setDoi,
             annotation,
             setAnnotation,
+            readme,
+            setReadme,
+            readmeActive,
+            help,
+            setHelp,
+            logoUrl,
+            // make component look like an API workflow with logo_url alias for logoUrl
+            logo_url: logoUrl,
+            setLogoUrl,
             tags,
             setTags,
             rightPanelElement,
@@ -503,6 +629,9 @@ export default {
             connectionStore,
             hasChanges,
             hasInvalidConnections,
+            hasDuplicateOutputs,
+            hasErrors,
+            errorText,
             stepStore,
             steps,
             comments,
@@ -526,6 +655,7 @@ export default {
             saveWorkflowTitle,
             confirm,
             inputs,
+            workflowActivities,
         };
     },
     data() {
@@ -551,7 +681,6 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
-            workflowEditorActivities,
             faTimes,
             faCog,
             faSave,
@@ -578,6 +707,21 @@ export default {
         },
         name(newName, oldName) {
             if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+        readme(newReadme, oldReadme) {
+            if (newReadme != oldReadme) {
+                this.hasChanges = true;
+            }
+        },
+        help(newHelp, oldHelp) {
+            if (newHelp != oldHelp) {
+                this.hasChanges = true;
+            }
+        },
+        logoUrl(newLogoUrl, oldLogoUrl) {
+            if (newLogoUrl != oldLogoUrl) {
                 this.hasChanges = true;
             }
         },
@@ -677,8 +821,8 @@ export default {
                 position: defaultPosition(this.graphOffset, this.transform),
             });
         },
-        onInsertTool(tool_id, tool_name) {
-            this._insertStep(tool_id, tool_name, "tool");
+        onInsertTool(tool_id, tool_name, toolUuid) {
+            this._insertStep(tool_id, tool_name, "tool", undefined, toolUuid);
         },
         async onInsertModule(module_id, module_name, state) {
             this._insertStep(module_name, module_name, module_id, state);
@@ -689,7 +833,7 @@ export default {
         copyIntoWorkflow(id) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow({ id }).then((data) => {
+            getWorkflowFull(id).then((data) => {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
@@ -748,9 +892,9 @@ export default {
             this.$router.push("/workflows/edit");
         },
         async saveOrCreate() {
-            if (this.hasInvalidConnections) {
+            if (this.hasErrors) {
                 const confirmed = await this.confirm(
-                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
@@ -939,7 +1083,7 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        async _insertStep(contentId, name, type, state) {
+        async _insertStep(contentId, name, type, state, toolUuid) {
             const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,
@@ -951,13 +1095,14 @@ export default {
             const stepData = action.getNewStepData();
 
             const response = await getModule(
-                { name, type, content_id: contentId, tool_state: state },
+                { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
                 stepData.id,
                 this.stateStore.setLoadingState
             );
 
             const updatedStep = {
                 ...stepData,
+                tool_uuid: toolUuid,
                 tool_state: response.tool_state,
                 inputs: response.inputs,
                 outputs: response.outputs,
@@ -976,6 +1121,15 @@ export default {
             if (data.annotation !== undefined) {
                 this.annotation = data.annotation;
             }
+            if (data.readme !== undefined) {
+                this.readme = data.readme;
+            }
+            if (data.help !== undefined) {
+                this.help = data.help;
+            }
+            if (data.logo_url !== undefined) {
+                this.logoUrl = data.logo_url;
+            }
             if (data.version !== undefined) {
                 this.version = data.version;
             }
@@ -986,8 +1140,10 @@ export default {
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
+            this.tags = data.tags;
             this.license = data.license;
             this.creator = data.creator;
+            this.doi = data.doi;
             getVersions(this.id).then((versions) => {
                 this.versions = versions;
             });
@@ -1000,7 +1156,7 @@ export default {
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
-                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {
@@ -1023,6 +1179,12 @@ export default {
             if (this.creator != creator) {
                 this.hasChanges = true;
                 this.setCreator(creator);
+            }
+        },
+        onDoi(doi) {
+            if (this.doi != doi) {
+                this.hasChanges = true;
+                this.setDoi(doi);
             }
         },
         onInsertedStateMessages(insertedStateMessages) {
@@ -1077,7 +1239,8 @@ export default {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
     width: 100%;
 }
 </style>

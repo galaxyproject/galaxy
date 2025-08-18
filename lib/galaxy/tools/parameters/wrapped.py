@@ -1,9 +1,9 @@
 from collections import UserDict
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
-    Sequence,
+    Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -11,6 +11,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     SelectToolParameter,
+    ToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
@@ -30,18 +31,23 @@ from galaxy.util.permutations import (
     split_flattened_repeat_key,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+    from galaxy.tools._types import ToolStateJobInstancePopulatedT
+    from galaxy.tools.parameters import ToolInputsT
+
 PARAMS_UNWRAPPED = object()
 
 
-class LegacyUnprefixedDict(UserDict):
+class LegacyUnprefixedDict(UserDict[str, Any]):
     """Track and provide access to prefixed and unprefixed tool parameter values."""
 
     # It used to be valid to access members of conditionals without specifying the conditional.
     # This dict provides a fallback when dict lookup fails using those old rules
 
-    def __init__(self, dict=None, **kwargs):
-        self._legacy_mapping: Dict[str, str] = {}
-        super().__init__(dict, **kwargs)
+    def __init__(self, initialdata=None, **kwargs):
+        self._legacy_mapping: dict[str, str] = {}
+        super().__init__(initialdata, **kwargs)
 
     def set_legacy_alias(self, new_key: str, old_key: str):
         self._legacy_mapping[old_key] = new_key
@@ -66,7 +72,13 @@ def copy_identifiers(source, destination):
 
 
 class WrappedParameters:
-    def __init__(self, trans, tool, incoming, input_datasets=None):
+    def __init__(
+        self,
+        trans,
+        tool: "Tool",
+        incoming: "ToolStateJobInstancePopulatedT",
+        input_datasets: Optional[LegacyUnprefixedDict] = None,
+    ):
         self.trans = trans
         self.tool = tool
         self.incoming = incoming
@@ -81,12 +93,12 @@ class WrappedParameters:
             self._params = params
         return self._params
 
-    def wrap_values(self, inputs, input_values, skip_missing_values=False):
+    def wrap_values(self, inputs: "ToolInputsT", input_values: dict, skip_missing_values: bool = False):
         trans = self.trans
         tool = self.tool
         incoming = self.incoming
 
-        element_identifier_mapper = ElementIdentifierMapper(self._input_datasets)
+        element_identifier_mapper = ElementIdentifierMapper(self._input_datasets.data if self._input_datasets else None)
 
         # Wrap tool inputs as necessary
         for input in inputs.values():
@@ -135,10 +147,11 @@ class WrappedParameters:
                     name=input.name,
                 )
             else:
+                assert isinstance(input, ToolParameter)
                 input_values[input.name] = InputValueWrapper(input, value, incoming, tool.profile)
 
 
-def make_dict_copy(from_dict):
+def make_dict_copy(from_dict: dict):
     """
     Makes a copy of input dictionary from_dict such that all values that are dictionaries
     result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle
@@ -156,7 +169,7 @@ def make_dict_copy(from_dict):
     return copy_from_dict
 
 
-def make_list_copy(from_list):
+def make_list_copy(from_list: list):
     new_list = []
     for value in from_list:
         if isinstance(value, dict):
@@ -168,7 +181,7 @@ def make_list_copy(from_list):
     return new_list
 
 
-def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
+def process_key(incoming_key: str, incoming_value: Any, d: dict[str, Any]):
     key_parts = incoming_key.split("|")
     if len(key_parts) == 1:
         # Regular parameter
@@ -180,7 +193,7 @@ def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
         # Repeat
         input_name, index = split_flattened_repeat_key(key_parts[0])
         d.setdefault(input_name, [])
-        newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
+        newlist: list[dict[Any, Any]] = [{} for _ in range(index + 1)]
         d[input_name].extend(newlist[len(d[input_name]) :])
         subdict = d[input_name][index]
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
@@ -198,7 +211,7 @@ def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
     E.g. "cond|repeat_0|paramA" -> ["cond", "repeat", 0, "paramA"].
     Return value can be used with `boltons.iterutils.get_path`.
     """
-    path: List[Union[str, int]] = []
+    path: list[Union[str, int]] = []
     key_parts = key.split("|")
     if len(key_parts) == 1:
         return key_parts
@@ -212,8 +225,8 @@ def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
     return path
 
 
-def flat_to_nested_state(incoming: Dict[str, Any]):
-    nested_state: Dict[str, Any] = {}
+def flat_to_nested_state(incoming: dict[str, Any]):
+    nested_state: dict[str, Any] = {}
     for key, value in incoming.items():
         process_key(key, value, nested_state)
     return nested_state

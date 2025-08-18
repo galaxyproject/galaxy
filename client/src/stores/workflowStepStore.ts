@@ -1,11 +1,13 @@
 import { computed, del, ref, set } from "vue";
 
-import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
-import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
+import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
+import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { defineScopedStore } from "./scopedStore";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
+import type { Connection } from "./workflowStoreTypes";
 
 interface StepPosition {
     top: number;
@@ -35,9 +37,11 @@ export interface PostJobActions {
 }
 
 export interface DataOutput {
+    valid?: boolean;
     extensions: string[];
     name: string;
     optional: boolean;
+    type?: "data";
 }
 
 export interface CollectionOutput extends Omit<DataOutput, "type"> {
@@ -71,6 +75,8 @@ export interface DataStepInput extends BaseStepInput {
 export interface DataCollectionStepInput extends BaseStepInput {
     input_type: "dataset_collection";
     collection_types: string[];
+    fields: FieldDict[];
+    column_definitions: SampleSheetColumnDefinitions;
 }
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
@@ -102,6 +108,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_id?: string;
+    tool_uuid?: string;
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;

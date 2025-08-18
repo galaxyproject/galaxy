@@ -7,7 +7,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const breadcrumbItems = [{ title: "Storage Dashboard", to: "StorageDashboard" }, { title: props.title }];
+const breadcrumbItems = [{ title: "Storage Dashboard", to: { name: "StorageDashboard" } }, { title: props.title }];
 </script>
 
 <template>
