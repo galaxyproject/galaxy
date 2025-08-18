@@ -5,20 +5,34 @@ import { nextTick } from "vue";
 import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, toRaw, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
+import { searchToolsByKeys } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
+import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
+import type { ToolSearchKeys } from "../utilities";
+
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const router = useRouter();
+
+// Note: These are ordered by result priority (exact matches very top; words matches very bottom)
+const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
+
+const FAVORITES = ["#favs", "#favorites", "#favourites"];
 const MIN_QUERY_LENGTH = 3;
 
 const props = defineProps({
     currentPanelView: {
         type: String,
         required: true,
+    },
+    enableAdvanced: {
+        type: Boolean,
+        default: false,
     },
     placeholder: {
         type: String,
@@ -29,6 +43,10 @@ const props = defineProps({
         default: null,
     },
     queryPending: {
+        type: Boolean,
+        default: false,
+    },
+    showAdvanced: {
         type: Boolean,
         default: false,
     },
@@ -47,6 +65,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
+    (e: "update:show-advanced", showAdvanced: boolean): void;
     (
         e: "onResults",
         filtered: string[] | null,
@@ -56,19 +75,69 @@ const emit = defineEmits<{
     (e: "onQuery", query: string): void;
 }>();
 
+const localFilterText = computed({
+    get: () => {
+        return props.query !== null ? props.query : "";
+    },
+    set: (newVal: any) => {
+        if (newVal && (newVal.trim() || props.query.trim())) {
+            checkQuery(newVal);
+        }
+    },
+});
+
+const propShowAdvanced = computed({
+    get: () => {
+        return props.showAdvanced;
+    },
+    set: (val: boolean) => {
+        emit("update:show-advanced", val);
+    },
+});
+const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(() => {
+    return {
+        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        section: {
+            placeholder: "section",
+            type: String,
+            handler: contains("section"),
+            datalist: sectionNames,
+            menuItem: true,
+        },
+        ontology: {
+            placeholder: "EDAM ontology",
+            type: String,
+            handler: contains("ontology"),
+            datalist: ontologyList.value,
+            menuItem: true,
+        },
+        id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
+        owner: { placeholder: "repository owner", type: String, handler: contains("owner"), menuItem: true },
+        help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
+    };
+});
+const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
+
 const { currentFavorites } = storeToRefs(useUserStore());
 const toolStore = useToolStore();
 const { searchWorker } = storeToRefs(toolStore);
 
-interface RequestPayload {
+const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
+const ontologyList = computed(() =>
+    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
+);
+
+interface RequestPaylod {
     tools: Tool[];
+    keys: ToolSearchKeys;
     query: string;
+    panelView: string;
     currentPanel: Record<string, Tool | ToolSection>;
 }
 
 interface SearchEventQuery {
-    type: "searchTools";
-    payload: RequestPayload;
+    type: "searchToolsByKeys";
+    payload: RequestPaylod;
 }
 
 interface SearchEventClear {
@@ -110,9 +179,9 @@ interface ResponsePayload {
 
 function handlePost(event: SearchEvent) {
     const { type } = event.data;
-    if (type === "searchTools") {
-        const { tools, query, currentPanel } = event.data.payload;
-        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel);
+    if (type === "searchToolsByKeys") {
+        const { tools, keys, query, panelView, currentPanel } = event.data.payload;
+        const { results, resultPanel, closestTerm } = searchToolsByKeys(tools, keys, query, panelView, currentPanel);
         // send the result back to the main thread
         onMessage({
             data: {
@@ -165,7 +234,7 @@ onUnmounted(() => {
 watch(
     () => currentFavorites.value.tools,
     () => {
-        if (FAVORITES_KEYS.includes(props.query)) {
+        if (FAVORITES.includes(props.query)) {
             post({ type: "favoriteTools" });
         }
     },
@@ -174,15 +243,17 @@ watch(
 function checkQuery(q: string) {
     emit("onQuery", q);
     if (q.trim() && q.trim().length >= MIN_QUERY_LENGTH) {
-        if (FAVORITES_KEYS.includes(q)) {
+        if (FAVORITES.includes(q)) {
             post({ type: "favoriteTools" });
         } else {
             post({
-                type: "searchTools",
+                type: "searchToolsByKeys",
                 payload: {
-                    tools: toRaw(props.toolsList),
+                    tools: props.toolsList,
+                    keys: KEYS,
                     query: q,
-                    currentPanel: toRaw(props.currentPanel),
+                    panelView: props.currentPanelView,
+                    currentPanel: props.currentPanel,
                 },
             });
         }
@@ -191,14 +262,37 @@ function checkQuery(q: string) {
     }
 }
 
+// Deep conversion of reactive objects to plain objects for web worker
+function deepToRaw<T>(sourceObj: T): T {
+    const objectIterator = (input: any): any => {
+        if (Array.isArray(input)) {
+            return input.map((item) => objectIterator(item));
+        } else if (input !== null && typeof input === "object") {
+            const target = toRaw(input);
+            const output: any = {};
+            for (const key in target) {
+                output[key] = objectIterator(target[key]);
+            }
+            return output;
+        }
+        return input;
+    };
+    return objectIterator(sourceObj);
+}
+
 function post(message: object) {
     if (props.useWorker) {
-        searchWorker.value?.postMessage(message);
+        // Deep convert the entire message to a plain object to avoid proxy cloning issues
+        searchWorker.value?.postMessage(deepToRaw(message));
     } else {
         nextTick(() => {
             handlePost({ data: message as SearchEventData });
         });
     }
+}
+
+function onAdvancedSearch(filters: any) {
+    router.push({ path: "/tools/list", query: filters });
 }
 </script>
 
@@ -262,6 +356,7 @@ function post(message: object) {
             </template>
         </FilterMenu>
         <DelayedInput
+            v-else
             class="mb-3"
             :value="props.query"
             :delay="200"
