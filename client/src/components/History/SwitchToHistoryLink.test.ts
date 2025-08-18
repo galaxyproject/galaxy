@@ -52,6 +52,15 @@ jest.mock("@/stores/historyStore", () => {
     };
 });
 
+// Mock the event store to track ctrlKey presses
+jest.mock("@/stores/eventStore", () => {
+    return {
+        useEventStore: () => ({
+            isCtrlKey: jest.fn((event: MouseEvent) => event.ctrlKey),
+        }),
+    };
+});
+
 /** Clear up and initialize all mocks for the jest. */
 function initializeMocks() {
     mockSetCurrentHistory.mockClear();
@@ -137,6 +146,14 @@ async function expectActionForHistory(
     expect(mockSetCurrentHistory).toHaveBeenCalledTimes(setsCurrentHistory ? 1 : 0);
     expect(mockApplyFilters).toHaveBeenCalledTimes(setsFilters ? 1 : 0);
     expect(mockWindowOpen).toHaveBeenCalledTimes(opensInNewTab ? 1 : 0);
+
+    // Click with ctrl key pressed down this time
+    await wrapper.find(selectors.historyLinkButton).trigger("click", { ctrlKey: true });
+
+    // None of the other click operations are called (counts remain as is), but we always open the history in a new tab
+    expect(mockSetCurrentHistory).toHaveBeenCalledTimes(setsCurrentHistory ? 1 : 0);
+    expect(mockApplyFilters).toHaveBeenCalledTimes(setsFilters ? 1 : 0);
+    expect(mockWindowOpen).toHaveBeenCalledTimes(opensInNewTab ? 2 : 1); // Ctrl+Click opens in new tab
 }
 
 describe("SwitchToHistoryLink", () => {
