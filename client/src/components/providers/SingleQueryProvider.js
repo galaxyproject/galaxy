@@ -1,6 +1,6 @@
 import hash from "object-hash";
-import { ref, computed, onMounted, onUnmounted } from "vue";
 import { LastQueue } from "utils/lastQueue";
+import { computed, onMounted, onUnmounted,ref } from "vue";
 
 /**
  * Composable for converting attributes from kebab-case to camelCase
@@ -60,13 +60,6 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             const loading = computed(() => result.value === null);
             const cacheKey = computed(() => hash(attrs || {}));
             
-            function update(newAttributes) {
-                for (const attrname in newAttributes) {
-                    attributes.value[attrname] = newAttributes[attrname];
-                }
-                doQuery();
-            }
-            
             function doQuery() {
                 let lookupPromise;
                 if (props.useCache) {
@@ -107,9 +100,6 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                     clearTimeout(timeoutId.value);
                 }
             });
-            
-            // Expose update method for external use
-            const exposed = { update };
             
             return () => {
                 if (!slots.default) {
