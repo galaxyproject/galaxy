@@ -108,6 +108,11 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
         return self._inp_data[input_name]
 
 
+def copy_collection_metadata_from_target_dict(hdca, target: dict):
+    if "column_definitions" in target:
+        hdca.collection.column_definitions = target["column_definitions"]
+
+
 def collect_dynamic_outputs(
     job_context: "BaseJobContext",
     output_collections: dict[str, Any],
@@ -144,8 +149,7 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
-                if "column_definitions" in unnamed_output_dict:
-                    hdca.collection.column_definitions = unnamed_output_dict["column_definitions"]
+                copy_collection_metadata_from_target_dict(hdca, unnamed_output_dict)
                 output_collections[name] = hdca
                 job_context.add_dataset_collection(hdca)
             error_message = unnamed_output_dict.get("error_message")

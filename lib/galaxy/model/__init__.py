@@ -7341,6 +7341,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             type=self.collection_type,
             populated_state=self.populated_state,
             populated_state_message=self.populated_state_message,
+            column_definitions=self.column_definitions,
             elements=[e.serialize(id_encoder, serialization_options) for e in self.elements],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
