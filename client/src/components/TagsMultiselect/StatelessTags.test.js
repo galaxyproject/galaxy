@@ -104,7 +104,7 @@ describe("StatelessTags", () => {
 
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
-        visibleOptions.wrappers.forEach((option, i) => {
+        visibleOptions.forEach((option, i) => {
             expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });

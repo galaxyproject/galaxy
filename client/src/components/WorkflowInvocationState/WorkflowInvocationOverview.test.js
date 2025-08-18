@@ -15,7 +15,7 @@ const workflowData = {
     version: 0,
 };
 const selectors = {
-    bAlertStub: "balert-stub",
+    bAlert: ".alert",
 };
 const alertMessages = {
     unOwned: "Workflow is neither importable, nor owned by or shared with current user",
@@ -73,14 +73,16 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
     it("displays an alert for an unowned workflow", async () => {
         const wrapper = await loadWrapper({ ...invocationData, workflow_id: "unowned-workflow" });
         expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.bAlert);
+        expect(alert.exists()).toBeTruthy();
         expect(alert.text()).toContain(alertMessages.unOwned);
     });
 
     it("displays an alert for a nonexistant workflow", async () => {
         const wrapper = await loadWrapper({ ...invocationData, workflow_id: "nonexistant-workflow" });
         expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.bAlert);
+        expect(alert.exists()).toBeTruthy();
         expect(alert.text()).toContain(alertMessages.nonExistent);
     });
 });
