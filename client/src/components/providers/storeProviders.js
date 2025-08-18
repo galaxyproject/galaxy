@@ -1,9 +1,10 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
-import { ref, watch, onMounted, computed } from "vue";
 import { useDbKeyStore } from "stores/dbKeyStore";
-import { useDatatypeStore } from "../../stores/datatypeStore";
 import { prependPath } from "utils/redirect";
+import { onMounted, ref, watch } from "vue";
+
+import { useDatatypeStore } from "../../stores/datatypeStore";
 
 // Composable for simple provider functionality
 export function useSimpleProvider(props, { slots }, urlGetter) {
