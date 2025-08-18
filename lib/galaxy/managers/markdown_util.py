@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import tempfile
+from datetime import datetime
 from re import Match
 from typing import (
     Any,
@@ -58,6 +59,7 @@ from galaxy.util.markdown import literal_via_fence
 from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import (
+    EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
     validate_galaxy_markdown,
 )
@@ -118,7 +120,19 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
             line = line.replace(id_match.group(), f"{id_match.group(1)}={decoded_id}")
         return (line, False)
 
+    def _remap_embed_container(match):
+        object_id: Optional[str] = None
+
+        whole_match = match.group()
+        if id_match := re.search(ENCODED_ID_PATTERN, whole_match):
+            object_id = id_match.group(2)
+            decoded_id = trans.security.decode_id(object_id)
+            whole_match = whole_match.replace(id_match.group(), f"{id_match.group(1)}={decoded_id}")
+
+        return whole_match
+
     internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, internal_markdown)
     internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
@@ -278,8 +292,80 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 line, *_ = self._encode_line(trans, line)
                 return self.handle_error(container, line, str(e))
 
-        export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
-        return export_markdown
+        def _remap_embed_container(match):
+            container = match.group("container")
+            object_id: Optional[int] = None
+            encoded_id: Optional[str] = None
+
+            if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
+                object_id = int(id_match.group(2))
+                encoded_id = trans.security.encode_id(object_id)
+            if container == "history_dataset_type":
+                _check_object(object_id, match.group(0))
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                return hda.extension or "data"
+            elif container == "history_dataset_name":
+                _check_object(object_id, match.group(0))
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                return hda.name or ""
+            elif container == "workflow_license":
+                _check_object(object_id, match.group(0))
+                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                return _workflow_license_as_simple_markdown(stored_workflow)
+            elif container == "invocation_time":
+                _check_object(object_id, match.group(0))
+                invocation = workflow_manager.get_invocation(trans, object_id)
+                return _database_time_to_str(invocation.create_time)
+            elif container == "generate_time":
+                return now().isoformat()
+            elif container == "generate_galaxy_version":
+                version = trans.app.config.version_major
+                return version
+            elif container == "instance_access_link":
+                url = trans.app.config.instance_access_url
+                return _link_to_markdown(url)
+            elif container == "instance_resources_link":
+                url = trans.app.config.instance_resource_url
+                return _link_to_markdown(url)
+            elif container == "instance_help_link":
+                url = trans.app.config.helpsite_url
+                return _link_to_markdown(url)
+            elif container == "instance_support_link":
+                url = trans.app.config.support_url
+                return _link_to_markdown(url)
+            elif container == "instance_citation_link":
+                url = trans.app.config.citation_url
+                return _link_to_markdown(url)
+            elif container == "instance_terms_link":
+                url = trans.app.config.terms_url
+                return _link_to_markdown(url)
+            elif container == "instance_organization_link":
+                title = trans.app.config.organization_name
+                url = trans.app.config.organization_url
+                return _link_to_markdown(url, title)
+            else:
+                raise MalformedContents(f"Unknown embedded Galaxy Markdown directive encountered [{container}].")
+
+        export_markdown_raw_embed = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
+
+        def _remap_embed_container_ids(match):
+            object_id: Optional[str] = None
+
+            whole_match = match.group()
+            if id_match := re.search(UNENCODED_ID_PATTERN, whole_match):
+                object_id = id_match.group(2)
+                encoded_id = trans.security.encode_id(object_id)
+                whole_match = whole_match.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
+
+            return whole_match
+
+        export_markdown = _remap_galaxy_markdown_embedded_containers(
+            _remap_embed_container_ids, export_markdown_raw_embed
+        )
+        export_markdown_embed_expanded = _remap_galaxy_markdown_embedded_containers(
+            _remap_embed_container, export_markdown_raw_embed
+        )
+        return export_markdown, export_markdown_embed_expanded
 
     def _encode_line(self, trans, line):
         object_type = None
@@ -524,8 +610,8 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
-            "%Y-%m-%d, %H:%M:%S"
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = _database_time_to_str(
+            invocation.create_time
         )
 
     def handle_invocation_inputs(self, line, invocation):
@@ -572,9 +658,9 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     # Walk Galaxy directives inside the Galaxy Markdown and collect dict-ified data
     # needed to render this efficiently.
     directive_handler = ReadyForExportMarkdownDirectiveHandler(trans, extra_rendering_data)
-    export_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
+    export_markdown, export_markdown_embed_expanded = directive_handler.walk(trans, internal_galaxy_markdown)
     export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
-    return export_markdown, extra_rendering_data
+    return export_markdown, export_markdown_embed_expanded, extra_rendering_data
 
 
 class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
@@ -674,15 +760,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (markdown, True)
 
     def handle_workflow_license(self, line, stored_workflow):
-        # workflow_manager = self.trans.app.workflow_manager
-        license_manager = LicensesManager()
-        markdown = "*No license specified.*"
-        if license_id := stored_workflow.latest_workflow.license:
-            try:
-                license_metadata = license_manager.get_license_by_id(license_id)
-                markdown = f"[{license_metadata.name}]({license_metadata.url})"
-            except ObjectNotFound:
-                markdown = f"Unknown license ({license_id})"
+        markdown = _workflow_license_as_simple_markdown(stored_workflow)
         return (f"\n\n{markdown}\n\n", True)
 
     def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
@@ -792,15 +870,11 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return self._handle_link(url, title)
 
     def _handle_link(self, url, title=None):
-        if not url:
-            content = "*Not configured, please contact Galaxy admin*"
-            return (content, True)
-        elif not title:
-            title = url
-        return (f"[{title}]({url})", True)
+        content = _link_to_markdown(url, title)
+        return (content, True)
 
     def handle_invocation_time(self, line, invocation):
-        content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
+        content = literal_via_fence(_database_time_to_str(invocation.create_time))
         return (content, True)
 
     def handle_invocation_inputs(self, line, invocation):
@@ -834,7 +908,7 @@ def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
     directive_handler = ToBasicMarkdownDirectiveHandler(trans)
     resolved_invocations_markdown = resolve_invocation_markdown(trans, internal_galaxy_markdown)
-    plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
+    _, plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
     return plain_markdown
 
 
@@ -1167,6 +1241,36 @@ def resolve_job_markdown(trans, job, job_markdown):
     return galaxy_markdown
 
 
+def _workflow_license_as_simple_markdown(stored_workflow):
+    license_manager = LicensesManager()
+    markdown = "*No license specified.*"
+    if license_id := stored_workflow.latest_workflow.license:
+        try:
+            license_metadata = license_manager.get_license_by_id(license_id)
+            markdown = f"[{license_metadata.name}]({license_metadata.url})"
+        except ObjectNotFound:
+            markdown = f"Unknown license ({license_id})"
+    return markdown
+
+
+def _check_object(object_id: Optional[int], line: str) -> None:
+    if object_id is None:
+        raise MalformedContents(f"Missing object identifier [{line}].")
+
+
+def _database_time_to_str(database_time: datetime) -> str:
+    return database_time.strftime("%Y-%m-%d, %H:%M:%S")
+
+
+def _link_to_markdown(url: Optional[str], title: Optional[str] = None):
+    if not url:
+        content = "*Link not configured, please contact Galaxy admin*"
+        return content
+    elif not title:
+        title = url
+    return f"[{title}]({url})"
+
+
 def _remap_galaxy_markdown_containers(func, markdown):
     new_markdown = markdown
 
@@ -1183,6 +1287,28 @@ def _remap_galaxy_markdown_containers(func, markdown):
             else:
                 start_pos = match.start(1)
                 end_pos = match.end(1)
+            start_pos = start_pos + searching_from
+            end_pos = end_pos + searching_from
+            new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
+            searching_from = start_pos + len(replacement)
+        else:
+            break
+
+    return new_markdown
+
+
+def _remap_galaxy_markdown_embedded_containers(func, markdown):
+    new_markdown = markdown
+
+    searching_from = 0
+    while True:
+        from_markdown = new_markdown[searching_from:]
+        match = re.search(EMBED_DIRECTIVE_REGEX, from_markdown)
+        if match is not None:
+            replacement = func(match)
+            start_pos = match.start()
+            end_pos = match.end()
+
             start_pos = start_pos + searching_from
             end_pos = end_pos + searching_from
             new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
