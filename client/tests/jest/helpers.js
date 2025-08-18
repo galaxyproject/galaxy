@@ -189,14 +189,21 @@ export function getLocalVue(instrumentLocalization = false) {
 
     const l = instrumentLocalization ? testLocalize : _l;
 
+    // Create a basic router for tests
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [],
+    });
+
     // Return global config object for Vue Test Utils v2
     return {
         global: {
-            plugins: [createPinia(), BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin],
+            plugins: [createPinia(), router, BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin],
             directives: {
                 "b-tooltip": mockedDirective,
                 "b-popover": mockedDirective,
             },
+            stubs: {},
         },
     };
 }
@@ -323,6 +330,20 @@ export function injectTestRouter() {
         routes: [],
     });
     return router;
+}
+
+/**
+ * Get local Vue config with router included
+ */
+export function getLocalVueWithRouter(instrumentLocalization = false) {
+    const config = getLocalVue(instrumentLocalization);
+    const router = injectTestRouter();
+    return {
+        global: {
+            ...config.global,
+            plugins: [...config.global.plugins, router],
+        },
+    };
 }
 
 export function suppressDebugConsole() {

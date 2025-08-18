@@ -1,5 +1,5 @@
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 
@@ -32,7 +32,6 @@ const SELECTORS = {
 };
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 describe("ToolSuccessMessage", () => {
     let wrapper: VueWrapper<any>;
@@ -45,7 +44,6 @@ describe("ToolSuccessMessage", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
                 stubs: {
                     FontAwesomeIcon: true,
                 },

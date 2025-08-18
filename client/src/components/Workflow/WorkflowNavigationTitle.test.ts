@@ -87,7 +87,9 @@ async function mountWorkflowNavigationTitle(
     }
 
     const pinia = createTestingPinia();
-    const router = injectTestRouter();
+    // Replace the default pinia with testing pinia
+    const plugins = [...globalConfig.global.plugins];
+    plugins[0] = pinia; // First plugin is pinia
     const wrapper = mount(WorkflowNavigationTitle as object, {
         props: {
             invocation,
@@ -95,7 +97,7 @@ async function mountWorkflowNavigationTitle(
         },
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins,
         },
     });
 

@@ -53,6 +53,10 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
         const pinia = createTestingPinia();
+        
+        // Replace the default pinia with testing pinia
+        const plugins = [...globalConfig.global.plugins];
+        plugins[0] = pinia; // First plugin is pinia
 
         wrapper = mount(DatasetInformation as object, {
             props: {
@@ -60,7 +64,7 @@ describe("DatasetInformation/DatasetInformation", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, pinia],
+                plugins,
             },
         });
 
