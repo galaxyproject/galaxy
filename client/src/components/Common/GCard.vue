@@ -359,7 +359,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-b-tooltip.hover.noninteractive
                                                 :title="localize(title.title)"
                                                 :class="{ 'g-card-title-truncate': props.titleNLines }"
-                                                @click.stop.prevent="title.handler">
+                                                @click.stop.prevent="title.handler && title.handler()">
                                                 {{ title.label }}
                                             </BLink>
                                             <template v-else>
@@ -406,7 +406,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             :title="localize(badge.title)"
                                             :variant="badge.variant || 'secondary'"
                                             :to="badge.to"
-                                            @click.stop="badge.handler">
+                                            @click.stop="badge.handler && badge.handler()">
                                             <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
                                             {{ localize(badge.label) }}
                                         </BBadge>
@@ -504,7 +504,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 :variant="badge.variant || 'secondary'"
                                                 :to="badge.to"
                                                 :href="badge.href"
-                                                @click.stop="badge.handler">
+                                                @click.stop="badge.handler && badge.handler()">
                                                 <FontAwesomeIcon
                                                     v-if="badge.icon"
                                                     :icon="badge.icon"
@@ -531,7 +531,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 :href="indicator.href"
                                                 :disabled="indicator.disabled"
                                                 :target="indicator.externalLink ? '_blank' : undefined"
-                                                @click.stop="indicator.handler">
+                                                @click.stop="indicator.handler && indicator.handler()">
                                                 <FontAwesomeIcon
                                                     v-if="indicator.icon"
                                                     :icon="indicator.icon"
@@ -621,7 +621,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             :to="sa.to"
                                             :href="sa.href"
                                             :target="sa.externalLink ? '_blank' : undefined"
-                                            @click.stop="sa.handler">
+                                            @click.stop="sa.handler && sa.handler()">
                                             <FontAwesomeIcon
                                                 v-if="sa.icon"
                                                 :icon="sa.icon"
@@ -654,7 +654,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                     'inline-icon-button': pa.inline,
                                                     [String(pa.class)]: pa.class,
                                                 }"
-                                                @click.stop="pa.handler">
+                                                @click.stop="pa.handler && pa.handler()">
                                                 <FontAwesomeIcon
                                                     v-if="pa.icon"
                                                     :icon="pa.icon"
