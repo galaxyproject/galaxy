@@ -379,8 +379,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(() => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    if (router.currentRoute.value?.query?.owner) {
+        updateFilterValue("user", `'${router.currentRoute.value.query.owner}'`);
     }
     load();
 });
