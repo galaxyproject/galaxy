@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BButton, BModal } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { BModal } from "bootstrap-vue";
+import { computed, onMounted } from "vue";
 
 import {
     type CreateSourceCredentialsPayload,
@@ -12,6 +12,7 @@ import {
     type SourceCredentialsDefinition,
     type UserCredentials,
 } from "@/api/users";
+import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { SECRET_PLACEHOLDER } from "@/stores/userCredentials";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
@@ -19,15 +20,11 @@ import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials
 interface ManageToolCredentialsProps {
     toolId: string;
     toolVersion: string;
-    toolCredentialsDefinition: SourceCredentialsDefinition;
-    toolUserCredentials?: UserCredentials[];
+    toolCredentialsDefinition: ServiceCredentialsDefinition[];
+    sourceCredentialsDefinition: SourceCredentialsDefinition;
 }
 
-const props = withDefaults(defineProps<ManageToolCredentialsProps>(), {
-    toolUserCredentials: () => [],
-});
-
-const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCredentials());
+const props = defineProps<ManageToolCredentialsProps>();
 
 const emit = defineEmits<{
     (e: "onUpdateCredentialsList", data?: UserCredentials[]): void;
@@ -46,17 +43,24 @@ const sourceData = computed<{
     sourceVersion: props.toolVersion,
 }));
 
+const providedCredentials = computed<CreateSourceCredentialsPayload>(() => {
+    return initializeCredentials();
+});
+
 function saveCredentials() {
-    // TODO: Select
+    if (!providedCredentials.value) {
+        return;
+    }
+
     emit("save-credentials", providedCredentials.value);
 }
 
 function initializeCredentials(): CreateSourceCredentialsPayload {
     const serviceCredentials = [];
-    for (const key of props.toolCredentialsDefinition.services.keys()) {
+    for (const key of props.sourceCredentialsDefinition.services.keys()) {
         const userCredentialForService = getUserCredentialsForService(key);
 
-        const currentGroup = userCredentialForService?.current_group_name ?? "default";
+        const currentGroup = userCredentialForService?.current_group_name;
         const definition = getServiceCredentialsDefinition(key);
         const groups = buildGroupsFromUserCredentials(definition, userCredentialForService);
         const credential: ServiceCredentialPayload = {
@@ -68,13 +72,12 @@ function initializeCredentials(): CreateSourceCredentialsPayload {
         serviceCredentials.push(credential);
     }
 
-    const providedCredentials: CreateSourceCredentialsPayload = {
+    return {
         source_type: "tool",
         source_id: props.toolId,
         source_version: props.toolVersion,
         credentials: serviceCredentials,
     };
-    return providedCredentials;
 }
 
 function buildGroupsFromUserCredentials(
@@ -99,19 +102,6 @@ function buildGroupsFromUserCredentials(
             };
             groups.push(newGroup);
         }
-    } else {
-        const defaultGroup: ServiceGroupPayload = {
-            name: "default",
-            variables: definition.variables.map((variable) => ({
-                name: variable.name,
-                value: null,
-            })),
-            secrets: definition.secrets.map((secret) => ({
-                name: secret.name,
-                value: null,
-            })),
-        };
-        groups.push(defaultGroup);
     }
     return groups;
 }
@@ -120,6 +110,7 @@ function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: Servi
     const credentialFound = providedCredentials.value.credentials.find(
         (c) => c.name === credential.name && c.version === credential.version
     );
+
     if (credentialFound) {
         credentialFound.groups.push(newSet);
     }
@@ -129,6 +120,7 @@ function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, group
     const credentialFound = providedCredentials.value.credentials.find(
         (c) => c.name === serviceId.name && c.version === serviceId.version
     );
+
     if (credentialFound) {
         credentialFound.groups = credentialFound.groups.filter((g) => g.name !== groupName);
         emit("delete-credentials-group", serviceId, groupName);
@@ -143,21 +135,27 @@ function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: Servi
             (c) => c.name === credential.name && c.version === credential.version
         );
         if (credentialFound) {
-            credentialFound.current_group = newSet?.name;
+            credentialFound.current_group = newSet.name;
         }
     }
 }
 
 function getServiceCredentialsDefinition(key: string): ServiceCredentialsDefinition {
-    const definition = props.toolCredentialsDefinition.services.get(key);
+    const definition = props.sourceCredentialsDefinition.services.get(key);
     if (!definition) {
         throw new Error(`No definition found for credential service '${key}' in tool ${props.toolId}`);
     }
     return definition;
 }
 
+const { userCredentials, checkUserCredentials } = useUserToolCredentials(
+    props.toolId,
+    props.toolVersion,
+    props.toolCredentialsDefinition
+);
+
 function getUserCredentialsForService(key: string): UserCredentials | undefined {
-    return props.toolUserCredentials.find((c) => getKeyFromCredentialsIdentifier(c) === key);
+    return userCredentials.value?.find((c) => getKeyFromCredentialsIdentifier(c) === key);
 }
 
 function hasUserProvided(credential: ServiceCredentialPayload): boolean {
@@ -167,6 +165,10 @@ function hasUserProvided(credential: ServiceCredentialPayload): boolean {
 function onUpdateCredentialsList(data?: UserCredentials[]) {
     emit("onUpdateCredentialsList", data);
 }
+
+onMounted(async () => {
+    await checkUserCredentials();
+});
 </script>
 
 <template>
@@ -180,6 +182,10 @@ function onUpdateCredentialsList(data?: UserCredentials[]) {
         size="lg"
         modal-class="manage-tool-credentials-modal"
         body-class="manage-tool-credentials-body"
+        ok-title="Select Credentials"
+        cancel-title="Close"
+        cancel-variant="outline-danger"
+        @ok="saveCredentials"
         @close="emit('close')">
         <p>
             Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
@@ -196,17 +202,10 @@ function onUpdateCredentialsList(data?: UserCredentials[]) {
                 :is-provided-by-user="hasUserProvided(credential)"
                 class="mb-2"
                 @update-credentials-list="onUpdateCredentialsList"
-                @new-credentials-set="onNewCredentialsSet"
+                @new-credentials-set="(newSet) => onNewCredentialsSet(credential, newSet)"
                 @delete-credentials-group="onDeleteCredentialsGroup"
-                @update-current-set="onCurrentSetChange" />
+                @update-current-set="(updatedSet) => onCurrentSetChange(credential, updatedSet)" />
         </div>
-
-        <template v-slot:modal-footer>
-            <div class="manage-tool-credentials-footer">
-                <BButton variant="outline-danger" @click="emit('close')">Discard</BButton>
-                <BButton class="btn-primary" @click="saveCredentials">Select Credentials1</BButton>
-            </div>
-        </template>
     </BModal>
 </template>
 
