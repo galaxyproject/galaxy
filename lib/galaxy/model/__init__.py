@@ -12148,7 +12148,7 @@ class UserCredentials(Base):
     source_version: Mapped[str] = mapped_column()
     name: Mapped[str] = mapped_column()
     version: Mapped[str] = mapped_column()
-    current_group_id: Mapped[int] = mapped_column(
+    current_group_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
     )
     create_time: Mapped[datetime] = mapped_column(default=now)

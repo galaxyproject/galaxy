@@ -162,9 +162,12 @@ class CredentialsManager:
         user_credentials_id: DecodedDatabaseIdField,
         group_name: Optional[str] = None,
     ) -> None:
-        group_name = group_name or "default"
         existing_user_credentials = self.get_user_credentials(user_id, user_credentials_id=user_credentials_id)
         for user_credentials, credentials_group, _ in existing_user_credentials:
+            if group_name is None:
+                user_credentials.current_group_id = None
+                self.session.add(user_credentials)
+                break
             if credentials_group.name == group_name:
                 user_credentials.current_group_id = credentials_group.id
                 self.session.add(user_credentials)

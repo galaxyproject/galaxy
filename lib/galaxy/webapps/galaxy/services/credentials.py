@@ -89,13 +89,10 @@ class CredentialsService:
             raise ObjectNotFound("No credentials found.")
         rows_to_delete: CredentialsModelsList = []
         for user_credentials, credentials_group, credential in existing_user_credentials:
-            if group_id:
-                if credentials_group.name == "default":
-                    raise RequestParameterInvalidException("Cannot delete the default group.")
-                if credentials_group.id == user_credentials.current_group_id:
-                    self.credentials_manager.update_current_group(user.id, user_credentials.id, "default")
-            else:
+            if not group_id:
                 rows_to_delete.append(user_credentials)
+            elif credentials_group.id == user_credentials.current_group_id:
+                self.credentials_manager.update_current_group(user.id, user_credentials.id, None)
             rows_to_delete.extend([credentials_group, credential])
         self.credentials_manager.delete_rows(rows_to_delete)
 

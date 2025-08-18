@@ -49,7 +49,7 @@ class UserCredentialsResponse(Model):
     version: str
     label: str
     description: str
-    current_group_name: str
+    current_group_name: Optional[str] = None
     credential_definitions: CredentialDefinitionsResponse
     groups: Dict[str, CredentialGroupResponse]
 
@@ -72,7 +72,7 @@ class ServiceGroupPayload(Model):
 class ServiceCredentialPayload(Model):
     name: str
     version: str
-    current_group: Optional[str] = "default"  # The selected group, the one that would be used when running the service
+    current_group: Optional[str] = None
     groups: List[ServiceGroupPayload]  # All provided groups, including the selected one
 
 

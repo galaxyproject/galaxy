@@ -19983,11 +19983,8 @@ export interface components {
         };
         /** ServiceCredentialPayload */
         ServiceCredentialPayload: {
-            /**
-             * Current Group
-             * @default default
-             */
-            current_group: string | null;
+            /** Current Group */
+            current_group?: string | null;
             /** Groups */
             groups: components["schemas"]["ServiceGroupPayload"][];
             /** Name */
@@ -22119,7 +22116,7 @@ export interface components {
         UserCredentialsResponse: {
             credential_definitions: components["schemas"]["CredentialDefinitionsResponse"];
             /** Current Group Name */
-            current_group_name: string;
+            current_group_name?: string | null;
             /** Description */
             description: string;
             /** Groups */

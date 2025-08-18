@@ -106,7 +106,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         # Check group is deleted
         list_user_credentials = self._check_credentials_exist()
         assert len(list_user_credentials[0]["groups"]) == 1
-        assert list_user_credentials[0]["current_group_name"] == "default"
+        assert list_user_credentials[0]["current_group_name"] is None
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_provide_credential_invalid_group(self):
@@ -152,13 +152,25 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         self._assert_status_code_is(response, 400)
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
-    def test_cannot_delete_default_credential_group(self):
+    def test_delete_default_credential_group(self):
         created_user_credentials = self._provide_user_credentials()
         user_credentials_id = created_user_credentials[0]["id"]
         default_group = created_user_credentials[0]["groups"]["default"]
         group_id = default_group["id"]
         response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{group_id}")
-        self._assert_status_code_is(response, 400)
+        self._assert_status_code_is(response, 204)
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_unset_current_group(self):
+        payload = self._build_credentials_payload()
+        self._provide_user_credentials(payload)
+        list_user_credentials = self._check_credentials_exist()
+        assert list_user_credentials[0]["current_group_name"] == "default"
+
+        payload["credentials"][0]["current_group"] = None
+        self._provide_user_credentials(payload)
+        list_user_credentials = self._check_credentials_exist()
+        assert list_user_credentials[0]["current_group_name"] is None
 
     def _provide_user_credentials(self, payload=None, status_code=200):
         payload = payload or self._build_credentials_payload()
