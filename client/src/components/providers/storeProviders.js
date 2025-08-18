@@ -35,7 +35,7 @@ export function useSimpleProvider(props, { slots }, urlGetter) {
                 load();
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     // Return render function

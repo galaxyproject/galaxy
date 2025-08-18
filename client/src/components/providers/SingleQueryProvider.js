@@ -1,6 +1,6 @@
 import hash from "object-hash";
 import { LastQueue } from "utils/lastQueue";
-import { computed, onMounted, onUnmounted,ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 /**
  * Composable for converting attributes from kebab-case to camelCase
@@ -14,9 +14,9 @@ function useAttributes(attrs) {
         }
         return result;
     };
-    
+
     const attributes = computed(() => toCamelCase(attrs));
-    
+
     return { attributes, toCamelCase };
 }
 
@@ -32,7 +32,7 @@ function useAttributes(attrs) {
  */
 export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
-    
+
     return {
         props: {
             useCache: {
@@ -54,12 +54,12 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             const error = ref(null);
             const timeoutId = ref(null);
             const queue = new LastQueue(props.autoTime);
-            
+
             const { attributes } = useAttributes(attrs);
-            
+
             const loading = computed(() => result.value === null);
             const cacheKey = computed(() => hash(attrs || {}));
-            
+
             function doQuery() {
                 let lookupPromise;
                 if (props.useCache) {
@@ -90,17 +90,17 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                     },
                 );
             }
-            
+
             onMounted(() => {
                 doQuery();
             });
-            
+
             onUnmounted(() => {
                 if (timeoutId.value) {
                     clearTimeout(timeoutId.value);
                 }
             });
-            
+
             return () => {
                 if (!slots.default) {
                     return null;

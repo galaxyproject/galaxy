@@ -57,7 +57,7 @@ describe("ActivityBar", () => {
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);
         mockCurrentUserRequest(server, http);
-        
+
         wrapper = mount(mountTarget, {
             global: {
                 ...globalConfig.global,

@@ -1,5 +1,5 @@
 import { loadSet, saveSet } from "utils/setCache";
-import { computed, onBeforeMount,ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 export default {
     props: {
@@ -34,7 +34,7 @@ export default {
                 if (newKey !== oldKey) {
                     reset();
                 }
-            }
+            },
         );
 
         watch(items, (newSet) => {
