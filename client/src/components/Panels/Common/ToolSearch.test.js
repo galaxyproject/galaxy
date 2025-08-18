@@ -2,16 +2,20 @@ import "jest-location-mock";
 
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import ToolSearch from "./ToolSearch";
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 describe("ToolSearch", () => {
     it("test tools advanced filter panel navigation", async () => {
         const pinia = createPinia();
+
+        // Replace the default pinia with the new pinia
+        const plugins = [...globalConfig.global.plugins];
+        plugins[0] = pinia; // First plugin is pinia
+
         const wrapper = mount(ToolSearch, {
             props: {
                 currentPanelView: "default",
@@ -23,7 +27,7 @@ describe("ToolSearch", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, pinia, router],
+                plugins,
                 stubs: {
                     icon: { template: "<div></div>" },
                 },

@@ -1,12 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import {
-    dispatchEvent,
-    getLocalVue,
-    injectTestRouter,
-    mockCurrentUserRequest,
-    mockUnprivilegedToolsRequest,
-} from "tests/jest/helpers";
+import { dispatchEvent, getLocalVue, mockCurrentUserRequest, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useConfig } from "@/composables/config";
@@ -52,7 +46,11 @@ describe("ActivityBar", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-        const router = injectTestRouter();
+
+        // Replace the default pinia with testing pinia
+        const plugins = [...globalConfig.global.plugins];
+        plugins[0] = pinia; // First plugin is pinia
+
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);
@@ -61,7 +59,7 @@ describe("ActivityBar", () => {
         wrapper = mount(mountTarget, {
             global: {
                 ...globalConfig.global,
-                plugins: [...(globalConfig.global?.plugins || []), pinia, router],
+                plugins,
                 stubs: {
                     FontAwesomeIcon: true,
                 },

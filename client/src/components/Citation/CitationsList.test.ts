@@ -3,13 +3,11 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/jest/mockHistoryBreadcrumbs";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import VueRouter from "vue-router";
 
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -46,7 +44,11 @@ describe("CitationsList", () => {
     beforeEach(async () => {
         const pinia = createTestingPinia();
 
-        const router = new VueRouter();
+        // Replace the default pinia with testing pinia
+        const plugins = [...localVue.global.plugins];
+        plugins[0] = pinia; // First plugin is pinia
+        const router = plugins[1]; // Second plugin is router
+
         router.push("/histories/citations?id=test-id");
 
         wrapper = mount(MountTarget as object, {
@@ -56,7 +58,7 @@ describe("CitationsList", () => {
             },
             global: {
                 ...localVue.global,
-                plugins: [...(localVue.global?.plugins || []), pinia, router],
+                plugins,
             },
         });
 

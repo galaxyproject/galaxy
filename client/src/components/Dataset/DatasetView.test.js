@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -29,7 +29,6 @@ jest.mock("@/stores/datatypeVisualizationsStore", () => ({
 
 const DATASET_ID = "dataset_id";
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 // Mock dataset
 const mockDataset = {
@@ -86,6 +85,11 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
+    // Replace the default pinia with testing pinia
+    const plugins = [...globalConfig.global.plugins];
+    plugins[0] = pinia; // First plugin is pinia
+    const router = plugins[1]; // Second plugin is router
+
     router.push = jest.fn();
     router.replace = jest.fn();
 
@@ -96,7 +100,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
         },
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins,
             stubs: {
                 // Only shallow stub certain components
                 "font-awesome-icon": true,
@@ -150,6 +154,11 @@ async function mountLoadingDatasetView() {
     };
     const pinia = setupPinia(datasetStore);
 
+    // Replace the default pinia with testing pinia
+    const plugins = [...globalConfig.global.plugins];
+    plugins[0] = pinia; // First plugin is pinia
+    const router = plugins[1]; // Second plugin is router
+
     router.push = jest.fn();
     router.replace = jest.fn();
 
@@ -160,7 +169,7 @@ async function mountLoadingDatasetView() {
         ...globalConfig,
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins,
             stubs: {
                 Heading: true,
                 BLink: true,
