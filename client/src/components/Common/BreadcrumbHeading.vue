@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import type { RouteLocationRaw } from "vue-router";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 import localize from "@/utils/localization";
@@ -17,9 +17,10 @@ interface Props {
 const props = defineProps<Props>();
 
 const router = useRouter();
+const route = useRoute();
 
 function isPathActive(path: RouteLocationRaw): boolean {
-    return router.currentRoute.value?.path === router.resolve(path).path;
+    return route.path === router.resolve(path).path;
 }
 </script>
 
