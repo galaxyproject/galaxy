@@ -579,6 +579,8 @@ def workflow_run_config_to_request(
                 subworkflow_run_config,
                 subworkflow,
             )
+            if subworkflow_invocation.state is None:
+                subworkflow_invocation.state = WorkflowInvocation.states.NEW
             workflow_invocation.attach_subworkflow_invocation_for_step(
                 step,
                 subworkflow_invocation,
