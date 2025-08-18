@@ -38,6 +38,8 @@ const buildDate = new Date();
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
+    // Detect if running under webpack-dev-server
+    const isDevServer = argv.$0 && argv.$0.includes("webpack-dev-server");
 
     let minimizations = {};
     if (targetEnv == "production") {
@@ -323,6 +325,9 @@ module.exports = (env = {}, argv = {}) => {
             buildDependencies: {
                 config: [__filename],
             },
+            // Use different cache directories for dev server vs regular build
+            // to prevent conflicts when switching between modes
+            name: isDevServer ? "dev-server" : "build",
         },
         devServer: {
             client: {
