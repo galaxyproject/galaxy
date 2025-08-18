@@ -4,7 +4,7 @@
 
 import { Subject } from "rxjs";
 import { debounceTime, distinctUntilChanged, filter, finalize } from "rxjs/operators";
-import { onBeforeMount, onUnmounted,ref, watch } from "vue";
+import { onBeforeMount, onUnmounted, ref, watch } from "vue";
 
 export default {
     props: {
@@ -36,14 +36,14 @@ export default {
             if (props.delay !== 0) {
                 // Create a subject for incoming values
                 subject.value = new Subject();
-                
+
                 const debounced$ = subject.value.pipe(
                     debounceTime(props.delay),
                     distinctUntilChanged(),
                     filter((val) => val !== null && val !== props.value),
-                    finalize(() => sendUpdate(incomingValue.value))
+                    finalize(() => sendUpdate(incomingValue.value)),
                 );
-                
+
                 subscription.value = debounced$.subscribe((val) => sendUpdate(val));
             }
         });
