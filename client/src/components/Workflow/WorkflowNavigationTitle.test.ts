@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";

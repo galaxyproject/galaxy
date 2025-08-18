@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 
@@ -36,7 +36,10 @@ function shallowMountLogin(routerQuery: Record<string, string | string[]> = {}) 
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const router = injectTestRouter();
+    // Replace the default pinia with testing pinia
+    const plugins = [...globalConfig.global.plugins];
+    plugins[0] = pinia; // First plugin is pinia
+    const router = plugins[1]; // Second plugin is router
 
     // Set up the currentRoute with the query parameters
     router.currentRoute.value = {
@@ -55,7 +58,7 @@ function shallowMountLogin(routerQuery: Record<string, string | string[]> = {}) 
         props: {},
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins,
         },
     });
 }
