@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 const breadcrumbItems = [{ title: "Workflows" }];
 
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 
@@ -381,8 +382,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(() => {
-    if (router.currentRoute.value?.query?.owner) {
-        updateFilterValue("user", `'${router.currentRoute.value.query.owner}'`);
+    if (route.query?.owner) {
+        updateFilterValue("user", `'${route.query.owner}'`);
     }
     load();
 });
