@@ -122,6 +122,7 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                     options: {
                         compilerOptions: {
+                            whitespace: "preserve",
                             compatConfig: {
                                 MODE: 2,
                             },
