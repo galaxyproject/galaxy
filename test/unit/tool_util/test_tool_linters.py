@@ -20,6 +20,7 @@ from galaxy.tool_util.linters import (
     general,
     help,
     inputs,
+    inputs_used,
     output,
     stdio,
     tests,
@@ -1954,9 +1955,8 @@ def test_inputs_repeats(lint_ctx):
 
 def test_inputs_used_parameter_in_command(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_USED_PARAMETER_IN_COMMAND)
-    run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Found 20 input parameters." in lint_ctx.info_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, inputs_used, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert "Param input [hey_a_missing_parameter] not found in command or configfiles." in lint_ctx.error_messages
@@ -1966,9 +1966,8 @@ def test_inputs_used_parameter_in_command(lint_ctx):
 
 def test_inputs_used_other(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_USED_OTHER)
-    run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Found 5 input parameters." in lint_ctx.info_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, inputs_used, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert (
         "Param input [variable_in_template_token] only used in a template macro, use a macro token instead."
@@ -1996,9 +1995,8 @@ def test_inputs_used_other(lint_ctx):
 
 def test_inputs_used_parameter_in_command_with_inputs(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_USED_PARAMETER_IN_COMMAND_WITH_INPUTS)
-    run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Found 2 input parameters." in lint_ctx.info_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, inputs_used, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert (
@@ -2010,9 +2008,8 @@ def test_inputs_used_parameter_in_command_with_inputs(lint_ctx):
 
 def test_inputs_used_parameter_in_command_with_inputs2(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_USED_PARAMETER_IN_COMMAND_WITH_INPUTS2)
-    run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Found 1 input parameters." in lint_ctx.info_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, inputs_used, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert (
@@ -2024,9 +2021,8 @@ def test_inputs_used_parameter_in_command_with_inputs2(lint_ctx):
 
 def test_inputs_used_parameter_syntax_error(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_USED_PARAMETER_SYNTAX_ERROR)
-    run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Found 1 input parameters." in lint_ctx.info_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, inputs_used, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert (
