@@ -35,6 +35,9 @@ class MemoryFilesSource(
     required_module = MemoryFileSystem
     required_package = "fsspec"
 
+    template_config_class = FsspecBaseFileSourceTemplateConfiguration
+    resolved_config_class = FsspecBaseFileSourceConfiguration
+
     def _open_fs(
         self,
         context: FilesSourceRuntimeContext[FsspecBaseFileSourceConfiguration],
