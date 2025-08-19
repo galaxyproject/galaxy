@@ -273,7 +273,7 @@ def administrative_delete_datasets(
     stop = time.time()
     print()
     print(f"Marked {deleted_instance_count} dataset instances as deleted")
-    print("Total elapsed time: ", stop - start)
+    print(f"Total elapsed time: {stop - start:.3f} seconds")
     print("##########################################")
 
 
