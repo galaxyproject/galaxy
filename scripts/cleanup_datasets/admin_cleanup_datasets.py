@@ -235,14 +235,14 @@ def administrative_delete_datasets(
             .select_from(
                 sa.join(model.User.__table__, model.History.__table__).join(model.HistoryDatasetAssociation.__table__)
             )
-            .set_label_style()
+            .set_label_style(sa.LABEL_STYLE_DEFAULT)
         )
 
         for result in app.sa_session.execute(user_query):
-            user_notifications[result[model.User.__table__.c.email]].append(
+            user_notifications[result._mapping[model.User.__table__.c.email]].append(
                 (
-                    result[model.HistoryDatasetAssociation.__table__.c.name],
-                    result[model.History.__table__.c.name],
+                    result._mapping[model.HistoryDatasetAssociation.__table__.c.name],
+                    result._mapping[model.History.__table__.c.name],
                 )
             )
             deleted_instance_count += 1
