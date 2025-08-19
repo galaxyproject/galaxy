@@ -244,7 +244,7 @@ def file_source_type_is_browsable(target_type: type["BaseFilesSource"]) -> bool:
 class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     """A base class for file sources that can resolve a template configuration to a specific configuration.
 
-    Implementations of this class should define 2 configuration models and assing them to the
+    Implementations of this class should define 2 configuration models and assign them to the
     `template_config_class` and `resolved_config_class` class variables.
 
     The `template_config_class` should be a subclass of `BaseFileSourceTemplateConfiguration` and
