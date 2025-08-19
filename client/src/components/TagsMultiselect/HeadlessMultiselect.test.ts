@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import { type ExtractPropTypes, nextTick } from "vue";
+import { nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
@@ -11,8 +11,15 @@ describe("HeadlessMultiselect", () => {
 
     const localVue = getLocalVue();
 
-    // Extract props type from the Vue component using Vue's utility
-    type Props = ExtractPropTypes<typeof HeadlessMultiselect>;
+    // Define props type based on the component's prop definitions
+    type Props = {
+        options: Array<string>;
+        selected: Array<string>;
+        maxShownOptions?: number;
+        placeholder?: string;
+        id?: string;
+        validator?: (option: string) => boolean;
+    };
     const mountWithProps = (props: Props) => {
         return mount(HeadlessMultiselect as any, {
             props,

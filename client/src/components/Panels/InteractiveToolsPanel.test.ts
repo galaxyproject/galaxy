@@ -159,6 +159,7 @@ describe("InteractiveToolsPanel component", () => {
             stubActions: false,
         });
         setActivePinia(pinia);
+        const globalConfig = getLocalVue({ withPinia: false });
 
         // Set up entry points before mounting
         const entryPointStore = useEntryPointStore();
