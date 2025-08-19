@@ -1,4 +1,4 @@
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -53,6 +53,19 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
 async function setAllItemsChecked(wrapper: VueWrapper<any>) {
     await wrapper.find(SELECT_ALL_CHECKBOX).setValue(true);
     await flushPromises();
+}
+
+// Helper function for filtering DOM wrappers in Vue Test Utils v2
+function withNameFilter(wrapperArray: ReturnType<VueWrapper<any>["findAll"]>) {
+    return {
+        childSelectorHasText: (selector: string, str: string) =>
+            wrapperArray.filter((wrapper: DOMWrapper<Element>, _index: number) =>
+                wrapper.find(selector).text().match(str),
+            ),
+
+        hasText: (str: string) =>
+            wrapperArray.filter((wrapper: DOMWrapper<Element>, _index: number) => wrapper.text().match(str)),
+    };
 }
 
 describe("ReviewCleanupDialog.vue", () => {
@@ -111,14 +124,4 @@ describe("ReviewCleanupDialog.vue", () => {
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeTruthy();
         expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
     });
-
-    // Helper function for filtering DOM wrappers in Vue Test Utils v2
-    function withNameFilter(wrapperArray: ReturnType<typeof wrapper.findAll>) {
-        return {
-            childSelectorHasText: (selector: string, str: string) =>
-                wrapperArray.filter((i) => i.find(selector).text().match(str)),
-
-            hasText: (str: string) => wrapperArray.filter((i) => i.text().match(str)),
-        };
-    }
 });
