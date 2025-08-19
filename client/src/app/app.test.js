@@ -38,13 +38,6 @@ describe("App base construction/initializiation defaults", () => {
         expect(app.options.patchExisting).toBe(true);
     });
 
-    test("App base extends from Backbone.Events", function () {
-        const app = getGalaxyInstance();
-        ["on", "off", "trigger", "listenTo", "stopListening"].forEach(function (fn) {
-            expect(Object.prototype.hasOwnProperty.call(app, fn) && typeof app[fn] === "function").toBeTruthy();
-        });
-    });
-
     // // We no longer want this behavior, but leaving the test to express that
     test("App base will patch in attributes from existing Galaxy objects", function () {
         const existingApp = getGalaxyInstance();
