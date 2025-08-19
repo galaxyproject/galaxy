@@ -1,90 +1,93 @@
 import urllib.parse
-
-from galaxy.files import OptionalUserContext
+from typing import Union
 
 try:
     from fs.ftpfs import FTPFS
 except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
-from typing import (
-    cast,
-    Optional,
-)
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class FTPFilesSourceProperties(FilesSourceProperties, total=False):
-    host: str
-    port: int
-    user: str
-    passwd: str
+class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    host: Union[str, TemplateExpansion] = ""
+    port: Union[int, TemplateExpansion] = 21
+    user: Union[str, TemplateExpansion] = "anonymous"
+    passwd: Union[str, TemplateExpansion] = ""
+    acct: Union[str, TemplateExpansion] = ""
+    timeout: Union[int, TemplateExpansion] = 10
+    proxy: Union[str, TemplateExpansion, None] = None
+    tls: Union[bool, TemplateExpansion] = False
 
 
-class FtpFilesSource(PyFilesystem2FilesSource):
+class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
+    host: str = ""
+    port: int = 21
+    user: str = "anonymous"
+    passwd: str = ""
+    acct: str = ""
+    timeout: int = 10
+    proxy: Union[str, None] = None
+    tls: bool = False
+
+
+class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration, FTPFileSourceConfiguration]):
     plugin_type = "ftp"
     required_module = FTPFS
     required_package = "fs.ftpfs"
 
-    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, opts.extra_props or {} if opts else {})
-        handle = FTPFS(**{**props, **extra_props})
-        return handle
+    template_config_class = FTPFileSourceTemplateConfiguration
+    resolved_config_class = FTPFileSourceConfiguration
+
+    def _open_fs(self, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]):
+        if FTPFS is None:
+            raise self.required_package_exception
+
+        config = context.config
+        return FTPFS(
+            host=config.host,
+            port=config.port,
+            user=config.user,
+            passwd=config.passwd,
+            timeout=config.timeout,
+            acct=config.acct,
+            tls=config.tls,
+            proxy=config.proxy,
+        )
 
     def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]
     ):
-        extra_props: FTPFilesSourceProperties
-        if opts and opts.extra_props:
-            extra_props = cast(FTPFilesSourceProperties, opts.extra_props)
-        else:
-            opts = FilesSourceOptions()
-            extra_props = {}
-        path, opts.extra_props = self._get_props_and_rel_path(extra_props, source_path)
-        super()._realize_to(path, native_path, user_context=user_context, opts=opts)
+        path = self._parse_url_and_get_path(source_path, context.config)
+        super()._realize_to(path, native_path, context)
 
     def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]
     ):
-        extra_props: FTPFilesSourceProperties
-        if opts and opts.extra_props:
-            extra_props = cast(FTPFilesSourceProperties, opts.extra_props)
-        else:
-            opts = FilesSourceOptions()
-            extra_props = {}
-        path, opts.extra_props = self._get_props_and_rel_path(extra_props, target_path)
-        super()._write_from(path, native_path, user_context=user_context, opts=opts)
+        path = self._parse_url_and_get_path(target_path, context.config)
+        super()._write_from(path, native_path, context)
 
-    def _get_props_and_rel_path(
-        self, extra_props: FTPFilesSourceProperties, url: str
-    ) -> tuple[str, FTPFilesSourceProperties]:
-        host = self._props.get("host")
-        port = self._props.get("port")
-        user = self._props.get("user")
-        passwd = self._props.get("passwd")
+    def _parse_url_and_get_path(self, url: str, config: FTPFileSourceConfiguration) -> str:
+        host = config.host
+        port = config.port
+        user = config.user
+        passwd = config.passwd
         rel_path = url
         if url.startswith(f"ftp://{host or ''}"):
             props = self._extract_url_props(url)
-            extra_props["host"] = host or props["host"]
-            extra_props["port"] = port or props["port"]
-            extra_props["user"] = user or props["user"]
-            extra_props["passwd"] = passwd or props["passwd"]
+            config.host = host or props["host"]
+            config.port = port or props["port"]
+            config.user = user or props["user"]
+            config.passwd = passwd or props["passwd"]
             rel_path = props["path"] or url
-        return rel_path, extra_props
+        return rel_path
 
     def _extract_url_props(self, url: str):
         result = urllib.parse.urlparse(url)
@@ -97,8 +100,9 @@ class FtpFilesSource(PyFilesystem2FilesSource):
         }
 
     def score_url_match(self, url: str):
-        host = self._props.get("host")
-        port = self._props.get("port")
+        # We need to use template_config here because this is called before the template is expanded.
+        host = self.template_config.host
+        port = self.template_config.port
         if host and port and url.startswith(f"ftp://{host}:{port}"):
             return len(f"ftp://{host}:{port}")
         # For security, we need to ensure that a partial match doesn't work e.g. ftp://{host}something/myfiles

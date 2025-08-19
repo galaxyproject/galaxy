@@ -1,15 +1,15 @@
 import time
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
     FileSourcesUserContext,
 )
-from galaxy.files.sources import FilesSourceOptions
-from galaxy.files.sources.http import HTTPFilesSourceProperties
+from galaxy.files.models import (
+    FilesSourceOptions,
+    PartialFilesSourceProperties,
+)
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -106,13 +106,12 @@ def fetch_drs_to_file(
         access_url, access_headers = _get_access_info(get_url, access_method, headers=headers)
         opts = FilesSourceOptions()
         if access_method["type"] == "https":
-            extra_props: HTTPFilesSourceProperties = {
+            extra_props = {
                 "http_headers": access_headers or {},
                 "fetch_url_allowlist": fetch_url_allowlist or [],
             }
-            opts.extra_props = extra_props
-        else:
-            opts.extra_props = {}
+            opts.extra_props = PartialFilesSourceProperties(**extra_props)
+
         try:
             file_sources = (
                 user_context.file_sources

@@ -39,10 +39,8 @@ from galaxy.files import (
     ConfiguredFileSourcesConf,
     UserDefinedFileSources,
 )
-from galaxy.files.plugins import (
-    FileSourcePluginLoader,
-    FileSourcePluginsConfig,
-)
+from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager

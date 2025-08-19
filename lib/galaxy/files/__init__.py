@@ -12,7 +12,6 @@ from typing import (
 from galaxy import exceptions
 from galaxy.files.sources import (
     BaseFilesSource,
-    FilesSourceProperties,
     PluginKind,
 )
 from galaxy.util.dictifiable import Dictifiable
@@ -45,7 +44,7 @@ class NoMatchingFileSource(Exception):
 
 
 class UserDefinedFileSources(Protocol):
-    """Entry-point for Galaxy to inject user-defined object stores.
+    """Entry-point for Galaxy to inject user-defined file sources.
 
     Supplied object of this class is used to write out concrete
     description of file sources when serializing all file sources
@@ -65,13 +64,14 @@ class UserDefinedFileSources(Protocol):
         browsable_only: Optional[bool] = False,
         include_kind: Optional[set[PluginKind]] = None,
         exclude_kind: Optional[set[PluginKind]] = None,
-    ) -> list[FilesSourceProperties]:
+    ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         # config_dicts: List[FilesSourceProperties] = []
         # for file_source in self.user_file_sources():
         #     as_dict = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
         #     config_dicts.append(as_dict)
         # return config_dicts
+        return []
 
 
 class NullUserDefinedFileSources(UserDefinedFileSources):
@@ -89,7 +89,7 @@ class NullUserDefinedFileSources(UserDefinedFileSources):
         browsable_only: Optional[bool] = False,
         include_kind: Optional[set[PluginKind]] = None,
         exclude_kind: Optional[set[PluginKind]] = None,
-    ) -> list[FilesSourceProperties]:
+    ) -> list[dict[str, Any]]:
         return []
 
 
@@ -156,7 +156,7 @@ class ConfiguredFileSources:
                 for file_source in file_sources:
                     if file_source.plugin_type == plugin_type:
                         return
-                stock_file_source_conf_dict.append({"type": plugin_type})
+                stock_file_source_conf_dict.append({"type": plugin_type, "id": f"stock_{plugin_type}"})
 
             _ensure_loaded("http")
             _ensure_loaded("base64")
@@ -257,8 +257,8 @@ class ConfiguredFileSources:
         browsable_only: Optional[bool] = False,
         include_kind: Optional[set[PluginKind]] = None,
         exclude_kind: Optional[set[PluginKind]] = None,
-    ) -> list[FilesSourceProperties]:
-        rval: list[FilesSourceProperties] = []
+    ) -> list[dict[str, Any]]:
+        rval: list[dict[str, Any]] = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
                 continue

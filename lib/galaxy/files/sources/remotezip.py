@@ -5,9 +5,6 @@ from dataclasses import (
     fields,
 )
 from struct import unpack
-from typing import (
-    Optional,
-)
 from urllib.parse import (
     parse_qs,
     unquote,
@@ -15,14 +12,15 @@ from urllib.parse import (
 )
 
 import requests
-from typing_extensions import Unpack
 
-from galaxy.files import OptionalUserContext
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
 from galaxy.files.uris import validate_uri_access
 from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
+    DefaultBaseFilesSource,
     PluginKind,
 )
 
@@ -51,48 +49,39 @@ The following parameters are required and assumed to be known in advance:
 """
 
 
-class RemoteZipFilesSource(BaseFilesSource):
+class RemoteZipFilesSource(DefaultBaseFilesSource):
     plugin_type = "remoteZip"
     plugin_kind = PluginKind.stock
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
-        kwds: FilesSourceProperties = {
-            "id": "extract",
-            "label": "Remote ZIP extractor",
-            "doc": DOC_TEMPLATE,
-            "writable": False,
-            "browsable": False,
-        }
-        kwds.update(kwd)
-        props = self._parse_common_config_opts(kwds)
-        self._props = props
+    def __init__(self, template_config: BaseFileSourceTemplateConfiguration):
+        defaults = dict(
+            id="extract",
+            label="Remote ZIP extractor",
+            doc=DOC_TEMPLATE,
+            writable=False,
+            browsable=False,
+        )
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
 
     @property
     def _allowlist(self):
         return self._file_sources_config.fetch_url_allowlist
 
     def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
     ):
         params = extract_query_parameters(source_path)
         file_extract_params = validate_params(params)
         validate_uri_access(
             file_extract_params.source,
-            user_context.is_admin if user_context else False,
+            context.user_data.is_admin,
             self._allowlist or [],
         )
         stream_and_decompress(file_extract_params, native_path)
 
     def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
     ):
         raise NotImplementedError()
 
@@ -101,12 +90,6 @@ class RemoteZipFilesSource(BaseFilesSource):
             return len("zip://")
         else:
             return 0
-
-    def _serialization_props(self, user_context: OptionalUserContext = None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
 
 
 def extract_query_parameters(url: str) -> dict[str, str]:

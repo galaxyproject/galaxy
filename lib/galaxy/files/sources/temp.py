@@ -1,12 +1,25 @@
-from typing import Optional
+from typing import Union
 
 from fs.osfs import OSFS
 
-from . import FilesSourceOptions
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class TempFilesSource(PyFilesystem2FilesSource):
+class TempFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    root_path: Union[str, TemplateExpansion]
+
+
+class TempFileSourceConfiguration(BaseFileSourceConfiguration):
+    root_path: str
+
+
+class TempFilesSource(PyFilesystem2FilesSource[TempFileSourceTemplateConfiguration, TempFileSourceConfiguration]):
     """A FilesSource plugin for temporary file systems.
 
     Used for testing and other temporary file system needs.
@@ -16,14 +29,16 @@ class TempFilesSource(PyFilesystem2FilesSource):
 
     plugin_type = "temp"
     required_module = OSFS
+    required_package = "fs.osfs"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props = opts.extra_props or {} if opts else {}
-        # We use OSFS here because using TempFS or MemoryFS would wipe out the files
-        # every time we instantiate a new handle, which happens on every request.
-        handle = OSFS(**{**props, **extra_props})
-        return handle
+    template_config_class = TempFileSourceTemplateConfiguration
+    resolved_config_class = TempFileSourceConfiguration
+
+    def _open_fs(self, context: FilesSourceRuntimeContext[TempFileSourceConfiguration]):
+        if OSFS is None:
+            raise self.required_package_exception
+
+        return OSFS(root_path=context.config.root_path)
 
     def get_scheme(self) -> str:
         return "temp"
