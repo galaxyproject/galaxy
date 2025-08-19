@@ -1,7 +1,7 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -18,12 +18,12 @@ const ACTION_LINK_SELECTOR = "#create-action-link";
 const SUBMIT_BUTTON_SELECTOR = "#broadcast-submit";
 const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 
-const globalConfig = getLocalVue();
-const router = injectTestRouter();
-
 async function mountBroadcastForm(props?: object) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
+
+    const globalConfig = getLocalVue({ withPinia: false });
+    const router = globalConfig.global.plugins[0]; // Router is first when pinia is excluded
 
     const mockRouter = {
         push: jest.fn(),
@@ -36,7 +36,7 @@ async function mountBroadcastForm(props?: object) {
         },
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins: [...globalConfig.global.plugins, pinia],
             stubs: {
                 FontAwesomeIcon: true,
             },

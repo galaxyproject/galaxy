@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, injectTestRouter, wait } from "tests/jest/helpers";
+import { getLocalVue, wait } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { waitOnJob } from "@/components/JobStates/wait";
@@ -8,7 +8,6 @@ import { waitOnJob } from "@/components/JobStates/wait";
 import HistoryImport from "./HistoryImport.vue";
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 const TEST_JOB_ID = "job123789";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
@@ -46,7 +45,7 @@ describe("HistoryImport.vue", () => {
             props: {},
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
         await flushPromises();

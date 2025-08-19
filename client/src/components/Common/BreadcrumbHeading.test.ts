@@ -1,4 +1,4 @@
-import { getLocalVue, injectTestRouter } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { nextTick } from "vue";
@@ -13,16 +13,12 @@ const BETA_CLASS = ".breadcrumb-heading-header-beta";
 
 const globalConfig = getLocalVue();
 
-async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = injectTestRouter();
-
-    await router.push(routePath);
-
+async function mountComponent(items: BreadcrumbItem[] = [], _routePath: string = "/home", slotContent: string = "") {
     const wrapper = mount(BreadcrumbHeading as object, {
         ...globalConfig,
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, router],
+            plugins: [...globalConfig.global.plugins],
         },
         props: {
             items,

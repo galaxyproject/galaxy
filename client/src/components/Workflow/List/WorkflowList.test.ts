@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
 import { getFakeRegisteredUser } from "tests/test-data";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -11,9 +11,6 @@ import { useUserStore } from "@/stores/userStore";
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
-
-const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 const { server, http } = useServerMock();
 
@@ -30,13 +27,15 @@ async function mountWorkflowList() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
+    const globalConfig = getLocalVue({ withPinia: false });
+
     const wrapper = mount(WorkflowList as object, {
         props: {
             activeList: "published", // Avoid the "my" filtering logic that causes the error
         },
         global: {
             ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins, pinia, router],
+            plugins: [...globalConfig.global.plugins, pinia],
             stubs: {
                 "workflow-card": true,
                 "workflow-card-list": true,

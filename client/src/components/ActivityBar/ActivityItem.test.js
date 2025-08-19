@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./ActivityItem.vue";
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 describe("ActivityItem", () => {
     let wrapper;
@@ -25,7 +24,7 @@ describe("ActivityItem", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...(globalConfig.global?.plugins || []), createTestingPinia(), router],
+                plugins: [...(globalConfig.global?.plugins || []), createTestingPinia()],
                 stubs: {
                     FontAwesomeIcon: true,
                 },

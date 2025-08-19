@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, injectTestRouter, suppressLucideVue2Deprecation } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -12,7 +12,6 @@ jest.mock("components/History/model/queries");
 const { server, http } = useServerMock();
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
@@ -59,7 +58,7 @@ describe("ContentItem", () => {
             ...globalConfig,
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, createTestingPinia(), router],
+                plugins: [...globalConfig.global.plugins, createTestingPinia()],
                 stubs: {
                     DatasetDetails: true,
                     vueTagsInput: false,

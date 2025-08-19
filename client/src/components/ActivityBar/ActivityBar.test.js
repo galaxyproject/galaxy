@@ -21,8 +21,6 @@ jest.mock("vue-router", () => ({
 }));
 
 const { server, http } = useServerMock();
-const globalConfig = getLocalVue();
-
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
         anonymous: true,
@@ -46,10 +44,7 @@ describe("ActivityBar", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-
-        // Replace the default pinia with testing pinia
-        const plugins = [...globalConfig.global.plugins];
-        plugins[0] = pinia; // First plugin is pinia
+        const globalConfig = getLocalVue({ withPinia: false });
 
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
@@ -59,7 +54,7 @@ describe("ActivityBar", () => {
         wrapper = mount(mountTarget, {
             global: {
                 ...globalConfig.global,
-                plugins,
+                plugins: [...globalConfig.global.plugins, pinia],
                 stubs: {
                     FontAwesomeIcon: true,
                 },

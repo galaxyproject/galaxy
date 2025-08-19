@@ -180,7 +180,13 @@ export const wait = (n) => {
 };
 
 // Gets Vue Test Utils global configuration for Vue 3
-export function getLocalVue(instrumentLocalization = false) {
+export function getLocalVue(options = {}) {
+    // options can be a boolean for backward compatibility with old instrumentLocalization flag
+    if (typeof options === "boolean") {
+        options = { instrumentLocalization: options };
+    }
+    const { instrumentLocalization = false, withPinia = true } = options;
+
     const mockedDirective = {
         beforeMount(el, binding) {
             el.setAttribute("data-mock-directive", binding.value || el.title);
@@ -195,10 +201,15 @@ export function getLocalVue(instrumentLocalization = false) {
         routes: [],
     });
 
+    const plugins = [router, BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin];
+    if (withPinia) {
+        plugins.unshift(createPinia());
+    }
+
     // Return global config object for Vue Test Utils v2
     return {
         global: {
-            plugins: [createPinia(), router, BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin],
+            plugins: plugins,
             directives: {
                 "b-tooltip": mockedDirective,
                 "b-popover": mockedDirective,

@@ -28,7 +28,6 @@ jest.mock("@/stores/datatypeVisualizationsStore", () => ({
 }));
 
 const DATASET_ID = "dataset_id";
-const globalConfig = getLocalVue();
 
 // Mock dataset
 const mockDataset = {
@@ -84,11 +83,8 @@ async function mountDatasetView(tab = "preview", options = {}) {
         },
     };
     const pinia = setupPinia(datasetStore);
-
-    // Replace the default pinia with testing pinia
-    const plugins = [...globalConfig.global.plugins];
-    plugins[0] = pinia; // First plugin is pinia
-    const router = plugins[1]; // Second plugin is router
+    const globalConfig = getLocalVue({ withPinia: false });
+    const router = globalConfig.global.plugins[0]; // Router is first when pinia is excluded
 
     router.push = jest.fn();
     router.replace = jest.fn();
@@ -100,7 +96,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
         },
         global: {
             ...globalConfig.global,
-            plugins,
+            plugins: [...globalConfig.global.plugins, pinia],
             stubs: {
                 // Only shallow stub certain components
                 "font-awesome-icon": true,
@@ -153,11 +149,8 @@ async function mountLoadingDatasetView() {
         storedDatasets: {},
     };
     const pinia = setupPinia(datasetStore);
-
-    // Replace the default pinia with testing pinia
-    const plugins = [...globalConfig.global.plugins];
-    plugins[0] = pinia; // First plugin is pinia
-    const router = plugins[1]; // Second plugin is router
+    const globalConfig = getLocalVue({ withPinia: false });
+    const router = globalConfig.global.plugins[0]; // Router is first when pinia is excluded
 
     router.push = jest.fn();
     router.replace = jest.fn();
@@ -169,7 +162,7 @@ async function mountLoadingDatasetView() {
         ...globalConfig,
         global: {
             ...globalConfig.global,
-            plugins,
+            plugins: [...globalConfig.global.plugins, pinia],
             stubs: {
                 Heading: true,
                 BLink: true,

@@ -59,8 +59,6 @@ jest.mock("@/stores/workflowStore", () => {
     };
 });
 
-const globalConfig = getLocalVue();
-
 /**
  * Mounts the WorkflowNavigationTitle component with props/stores adjusted given the parameters
  * @param version The version of the component to mount (`run_form` or `invocation` view)
@@ -87,9 +85,8 @@ async function mountWorkflowNavigationTitle(
     }
 
     const pinia = createTestingPinia();
-    // Replace the default pinia with testing pinia
-    const plugins = [...globalConfig.global.plugins];
-    plugins[0] = pinia; // First plugin is pinia
+    const globalConfig = getLocalVue({ withPinia: false });
+
     const wrapper = mount(WorkflowNavigationTitle as object, {
         props: {
             invocation,
@@ -97,7 +94,7 @@ async function mountWorkflowNavigationTitle(
         },
         global: {
             ...globalConfig.global,
-            plugins,
+            plugins: [...globalConfig.global.plugins, pinia],
         },
     });
 

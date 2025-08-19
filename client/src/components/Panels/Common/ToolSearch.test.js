@@ -6,15 +6,10 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToolSearch from "./ToolSearch";
 
-const globalConfig = getLocalVue();
-
 describe("ToolSearch", () => {
     it("test tools advanced filter panel navigation", async () => {
         const pinia = createPinia();
-
-        // Replace the default pinia with the new pinia
-        const plugins = [...globalConfig.global.plugins];
-        plugins[0] = pinia; // First plugin is pinia
+        const globalConfig = getLocalVue({ withPinia: false });
 
         const wrapper = mount(ToolSearch, {
             props: {
@@ -27,7 +22,7 @@ describe("ToolSearch", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins,
+                plugins: [...globalConfig.global.plugins, pinia],
                 stubs: {
                     icon: { template: "<div></div>" },
                 },

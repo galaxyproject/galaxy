@@ -37,8 +37,6 @@ const datasetResponse: DatasetResponse = {
     file_name: "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat",
 };
 
-const globalConfig = getLocalVue();
-
 describe("DatasetInformation/DatasetInformation", () => {
     let wrapper: VueWrapper<any>;
     let axiosMock: MockAdapter;
@@ -53,10 +51,7 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
         const pinia = createTestingPinia();
-
-        // Replace the default pinia with testing pinia
-        const plugins = [...globalConfig.global.plugins];
-        plugins[0] = pinia; // First plugin is pinia
+        const globalConfig = getLocalVue({ withPinia: false });
 
         wrapper = mount(DatasetInformation as object, {
             props: {
@@ -64,7 +59,7 @@ describe("DatasetInformation/DatasetInformation", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins,
+                plugins: [...globalConfig.global.plugins, pinia],
             },
         });
 
