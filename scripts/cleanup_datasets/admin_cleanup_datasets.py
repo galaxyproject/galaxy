@@ -55,7 +55,9 @@ from mako.template import Template
 from sqlalchemy import (
     and_,
     false,
+    select,
 )
+from sqlalchemy.orm import aliased
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
@@ -196,24 +198,26 @@ def administrative_delete_datasets(
 ):
     # Marks dataset history association deleted and email users
     start = time.time()
+    session = app.sa_session
+
+    # Aliases for ORM‑mapped classes
+    HDA = aliased(app.model.HistoryDatasetAssociation)
+    Hist = aliased(app.model.History)
+    User = aliased(app.model.User)
+    Dataset = aliased(app.model.Dataset)
+
     # Get HDAs older than cutoff time (ignore tool_id at this point)
-    # We really only need the id column here, but sqlalchemy barfs when
-    # trying to select only 1 column
     hda_ids_query = (
-        sa.select(model.HistoryDatasetAssociation.__table__.c.id, model.HistoryDatasetAssociation.__table__.c.deleted)
-        .where(
-            and_(
-                model.Dataset.__table__.c.deleted == false(),
-                model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-                model.HistoryDatasetAssociation.__table__.c.deleted == false(),
-            )
-        )
-        .select_from(sa.outerjoin(model.Dataset.__table__, model.HistoryDatasetAssociation.__table__))
+        select(HDA.id)
+        .join(Dataset, Dataset.id == HDA.dataset_id, isouter=True)
+        .where(and_(
+            Dataset.deleted.is_(False),
+            HDA.update_time < cutoff_time,
+            HDA.deleted.is_(False)))
     )
 
     # Add all datasets associated with Histories to our list
-    hda_ids = []
-    hda_ids.extend([row.id for row in app.sa_session.execute(hda_ids_query)])
+    hda_ids = session.execute(hda_ids_query).scalars().all()
 
     # Now find the tool_id that generated the dataset (even if it was copied)
     tool_matched_ids = []
@@ -229,32 +233,29 @@ def administrative_delete_datasets(
 
     # Process each of the Dataset objects
     for hda_id in hda_ids:
-        user_query = (
-            sa.select(model.HistoryDatasetAssociation.__table__, model.History.__table__, model.User.__table__)
-            .where(and_(model.HistoryDatasetAssociation.__table__.c.id == hda_id))
-            .select_from(
-                sa.join(model.User.__table__, model.History.__table__).join(model.HistoryDatasetAssociation.__table__)
-            )
-            .set_label_style(sa.LABEL_STYLE_DEFAULT)
-        )
+        # Bind hda_id for current iteration
+        rows = session.execute(
+            select(User.email, HDA.name, Hist.name)
+            .join(Hist, Hist.user_id == User.id)
+            .join(HDA, HDA.history_id == Hist.id)
+            .where(HDA.id == hda_id)
+        ).all()
 
-        for result in app.sa_session.execute(user_query):
-            user_notifications[result._mapping[model.User.__table__.c.email]].append(
-                (
-                    result._mapping[model.HistoryDatasetAssociation.__table__.c.name],
-                    result._mapping[model.History.__table__.c.name],
-                )
-            )
+        for email, dataset_name, history_name in rows:
+            user_notifications[email].append((dataset_name, history_name))
             deleted_instance_count += 1
+
             if not info_only and not email_only:
                 # Get the HistoryDatasetAssociation objects
-                hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = session.get(app.model.HistoryDatasetAssociation, hda_id)
                 if not hda.deleted:
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
-                    app.sa_session.add(hda)
+                    session.add(hda)
                     print(f"Marked HistoryDatasetAssociation id {hda.id} as deleted")
-                app.sa_session().commit()
+
+        if not info_only and not email_only:
+            session.commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
