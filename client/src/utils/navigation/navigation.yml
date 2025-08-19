@@ -483,7 +483,7 @@ histories:
     history_cards: '.history-card-list .g-card'
     history_card_title: '[id^="g-card-title-link-history-"]'
     history_card_select: 'input[id^="g-card-select-history-"]'
-    import_button: '[data-description="grid action import new history"]'
+    import_button: '[data-description="header action import new history"]'
     reset_input: '#history-list-filter [data-description="reset query"]'
     search_input: '#history-list-filter input.search-query[data-description="filter text input"]'
     delete_history_confirm: '#delete-history .btn.btn-danger'

@@ -460,7 +460,7 @@ onMounted(async () => {
                     color="blue"
                     outline
                     to="/histories/import"
-                    data-description="grid action import new history">
+                    data-description="header action import new history">
                     <FontAwesomeIcon :icon="faPlus" />
                     Import History
                 </GButton>
