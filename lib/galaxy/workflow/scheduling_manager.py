@@ -177,7 +177,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self,
         workflow_invocation: model.WorkflowInvocation,
         request_params,
-        flush=True,
+        flush: bool = True,
         initial_state: Optional[InvocationState] = None,
     ):
         initial_state = initial_state or model.WorkflowInvocation.states.NEW
