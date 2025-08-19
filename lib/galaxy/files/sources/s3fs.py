@@ -45,6 +45,7 @@ class S3FSFileSourceConfiguration(BaseFileSourceConfiguration):
     bucket: Optional[str] = None
     secret: Optional[str] = None
     key: Optional[str] = None
+    listings_expiry_time: Optional[int] = None
 
 
 class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
@@ -64,7 +65,7 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
             key=config.key,
             secret=config.secret,
             client_kwargs=client_kwargs,
-            listings_expiry_time=config.file_sources_config.listings_expiry_time,
+            listings_expiry_time=config.listings_expiry_time or config.file_sources_config.listings_expiry_time,
         )
         return fs
 
