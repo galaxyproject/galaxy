@@ -97,7 +97,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
     def __init__(self, template_config: FsspecTemplateConfigType):
         self.ensure_required_dependency()
         super().__init__(template_config)
-        self.template_config.listings_expiry_time = self._initialize_listings_expiry(template_config)
+        self._initialize_listings_expiry()
 
     @property
     def required_package_exception(self) -> Exception:
@@ -107,9 +107,11 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         if self.required_module is None:
             raise self.required_package_exception
 
-    def _initialize_listings_expiry(self, template_config: FsspecTemplateConfigType):
-        """Use general config listings expiry time if not explicitly set in the template config."""
-        return template_config.listings_expiry_time or template_config.file_sources_config.listings_expiry_time
+    def _initialize_listings_expiry(self):
+        """Fallback to general config listings expiry time if not explicitly set in the template config."""
+        self.template_config.listings_expiry_time = (
+            self.template_config.listings_expiry_time or self.template_config.file_sources_config.listings_expiry_time
+        )
 
     @abc.abstractmethod
     def _open_fs(
@@ -193,7 +195,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         fs = self._open_fs(context, cache_options)
         fs.put_file(native_path, target_path)
 
-    def _file_info_to_dict(self, dir_path: str, info: dict) -> AnyRemoteEntry:
+    def _file_info_to_entry(self, dir_path: str, info: dict) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
         name = os.path.basename(info["name"])
         path = os.path.join(dir_path, name)
@@ -226,9 +228,9 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # so we can safely cast the result.
             dirs = cast(dict[str, dict], dirs)
             files = cast(dict[str, dict], files)
-            to_dict = functools.partial(self._file_info_to_dict, str(p))
-            res.extend(map(to_dict, dirs.values()))
-            res.extend(map(to_dict, files.values()))
+            to_entry = functools.partial(self._file_info_to_entry, str(p))
+            res.extend(map(to_entry, dirs.values()))
+            res.extend(map(to_entry, files.values()))
             count += len(dirs) + len(files)
             if count >= MAX_ITEMS_LIMIT:
                 self._on_listing_exceeded()
@@ -251,7 +253,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         # values so we can safely cast the result.
         matched_paths = cast(dict[str, dict], fs.glob(glob_pattern, detail=True))
         for file_path, info in matched_paths.items():
-            entries_list.append(self._file_info_to_dict(str(file_path), info))
+            entries_list.append(self._file_info_to_entry(str(file_path), info))
         return entries_list
 
     def _list_directory(self, fs: AbstractFileSystem, path: str) -> list[AnyRemoteEntry]:
@@ -261,7 +263,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         for entry in entries:
             entry_path = entry.get("name", entry.get("path", ""))
             if entry_path:  # Only process entries with valid paths
-                entries_list.append(self._file_info_to_dict(entry_path, entry))
+                entries_list.append(self._file_info_to_entry(entry_path, entry))
         return entries_list
 
     def _apply_pagination(
