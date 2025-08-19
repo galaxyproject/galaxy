@@ -1,8 +1,12 @@
-import tempfile
+"""
+Improved test for TempFilesSource using the decorator-based generic test suite.
 
-import pytest
+This demonstrates the new approach that eliminates code duplication while
+maintaining individual test execution and proper pytest reporting.
+"""
 
-from galaxy.exceptions import RequestParameterInvalidException
+from typing import Any
+
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources import BaseFilesSource
 from galaxy.files.sources.temp import TempFilesSource
@@ -10,9 +14,9 @@ from galaxy.files.unittest_utils import (
     setup_root,
     TestConfiguredFileSources,
 )
-from ._util import (
-    assert_realizes_contains,
-    user_context_fixture,
+from ._base import (
+    BaseFileSourceTestSuite,
+    generate_file_source_tests,
 )
 
 ROOT_URI = "temp://test1"
@@ -24,201 +28,42 @@ TEMP_PLUGIN = {
 }
 
 
-@pytest.fixture(scope="session")
-def file_sources() -> TestConfiguredFileSources:
-    file_sources = _configured_file_sources()
-    return file_sources
+@generate_file_source_tests
+class TestTempFilesSource(BaseFileSourceTestSuite):
+    """
+    Test suite for TempFilesSource using the decorator-based generic test framework.
 
+    The @generate_file_source_tests decorator automatically creates individual
+    test functions for each test method in BaseFileSourceTestSuite.
+    """
 
-@pytest.fixture(scope="session")
-def temp_file_source(file_sources: TestConfiguredFileSources) -> BaseFilesSource:
-    file_source_pair = file_sources.get_file_source_path(ROOT_URI)
-    file_source = file_source_pair.file_source
-    assert isinstance(file_source, TempFilesSource)
-    return file_source
+    @property
+    def root_uri(self) -> str:
+        return ROOT_URI
 
+    @property
+    def plugin_config(self) -> dict[str, Any]:
+        return TEMP_PLUGIN
 
-def test_file_source(file_sources: TestConfiguredFileSources):
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/a", "a")
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/b", "b")
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/c", "c")
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/d", "d")
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/e", "e")
-    assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/sub1/f", "f")
+    def get_configured_file_sources(self) -> TestConfiguredFileSources:
+        """Create and return configured file sources with test data."""
+        tmp, root = setup_root()
+        file_sources_config = FileSourcePluginsConfig()
+        plugin = self.plugin_config.copy()
+        plugin["root_path"] = root
+        file_sources = TestConfiguredFileSources(
+            file_sources_config, conf_dict={self.plugin_config["id"]: plugin}, test_root=root
+        )
 
+        # Populate with test data
+        file_source = self.get_file_source_instance(file_sources)
+        self.populate_test_scenario(file_source)
 
-def test_list(temp_file_source: BaseFilesSource):
-    assert_list_names(temp_file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
-    assert_list_names(temp_file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
+        return file_sources
 
-
-def test_list_recursive(temp_file_source: BaseFilesSource):
-    expected_names = ["a", "b", "c", "dir1", "d", "e", "sub1", "f"]
-    assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
-
-
-def test_pagination(temp_file_source: BaseFilesSource):
-    # Pagination is only supported for non-recursive listings.
-    recursive = False
-    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
-    assert count == 4
-    assert len(root_lvl_entries) == 4
-
-    # Get first entry
-    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
-    assert count == 4
-    assert len(result) == 1
-    assert result[0] == root_lvl_entries[0]
-
-    # Get second entry
-    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=1)
-    assert count == 4
-    assert len(result) == 1
-    assert result[0] == root_lvl_entries[1]
-
-    # Get second and third entry
-    result, count = temp_file_source.list("/", recursive=recursive, limit=2, offset=1)
-    assert count == 4
-    assert len(result) == 2
-    assert result[0] == root_lvl_entries[1]
-    assert result[1] == root_lvl_entries[2]
-
-    # Get last three entries
-    result, count = temp_file_source.list("/", recursive=recursive, limit=3, offset=1)
-    assert count == 4
-    assert len(result) == 3
-    assert result[0] == root_lvl_entries[1]
-    assert result[1] == root_lvl_entries[2]
-    assert result[2] == root_lvl_entries[3]
-
-
-def test_search(temp_file_source: BaseFilesSource):
-    # Search is only supported for non-recursive listings.
-    recursive = False
-    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
-    assert count == 4
-    assert len(root_lvl_entries) == 4
-
-    result, count = temp_file_source.list("/", recursive=recursive, query="a")
-    assert count == 1
-    assert len(result) == 1
-    assert result[0].name == "a"
-
-    result, count = temp_file_source.list("/", recursive=recursive, query="b")
-    assert count == 1
-    assert len(result) == 1
-    assert result[0].name == "b"
-
-    result, count = temp_file_source.list("/", recursive=recursive, query="c")
-    assert count == 1
-    assert len(result) == 1
-    assert result[0].name == "c"
-
-    # Searching for 'd' at root level should return the directory 'dir1' but not the file 'd'
-    # as it is not a direct child of the root.
-    result, count = temp_file_source.list("/", recursive=recursive, query="d")
-    assert count == 1
-    assert len(result) == 1
-    assert result[0].name == "dir1"
-
-    # Searching for 'e' at root level should not return anything.
-    result, count = temp_file_source.list("/", recursive=recursive, query="e")
-    assert count == 0
-    assert len(result) == 0
-
-    result, count = temp_file_source.list("/dir1", recursive=recursive, query="e")
-    assert count == 1
-    assert len(result) == 1
-    assert result[0].name == "e"
-
-
-def test_query_with_empty_string(temp_file_source: BaseFilesSource):
-    recursive = False
-    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
-    assert count == 4
-    assert len(root_lvl_entries) == 4
-
-    result, count = temp_file_source.list("/", recursive=recursive, query="")
-    assert count == 4
-    assert len(result) == 4
-    assert result == root_lvl_entries
-
-
-def test_pagination_not_supported_raises(temp_file_source: BaseFilesSource):
-    TempFilesSource.supports_pagination = False
-    recursive = False
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
-    assert "Pagination is not supported" in str(exc_info.value)
-    TempFilesSource.supports_pagination = True
-
-
-def test_pagination_parameters_non_negative(temp_file_source: BaseFilesSource):
-    recursive = False
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, limit=-1, offset=0)
-    assert "Limit must be greater than 0" in str(exc_info.value)
-
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, limit=0, offset=0)
-    assert "Limit must be greater than 0" in str(exc_info.value)
-
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, limit=1, offset=-1)
-    assert "Offset must be greater than or equal to 0" in str(exc_info.value)
-
-
-def test_search_not_supported_raises(temp_file_source: BaseFilesSource):
-    TempFilesSource.supports_search = False
-    recursive = False
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, query="a")
-    assert "Server-side search is not supported by this file source" in str(exc_info.value)
-    TempFilesSource.supports_search = True
-
-
-def test_sorting_not_supported_raises(temp_file_source: BaseFilesSource):
-    recursive = False
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        temp_file_source.list("/", recursive=recursive, sort_by="name")
-    assert "Server-side sorting is not supported by this file source" in str(exc_info.value)
-
-
-def _populate_test_scenario(file_source: BaseFilesSource):
-    """Create a directory structure in the file source."""
-    user_context = user_context_fixture()
-
-    _upload_to(file_source, "/a", content="a", user_context=user_context)
-    _upload_to(file_source, "/b", content="b", user_context=user_context)
-    _upload_to(file_source, "/c", content="c", user_context=user_context)
-    _upload_to(file_source, "/dir1/d", content="d", user_context=user_context)
-    _upload_to(file_source, "/dir1/e", content="e", user_context=user_context)
-    _upload_to(file_source, "/dir1/sub1/f", content="f", user_context=user_context)
-
-
-def _upload_to(file_source: BaseFilesSource, target_uri: str, content: str, user_context=None):
-    with tempfile.NamedTemporaryFile(mode="w") as f:
-        f.write(content)
-        f.flush()
-        file_source.write_from(target_uri, f.name, user_context=user_context)
-
-
-def assert_list_names(file_source: BaseFilesSource, uri: str, recursive: bool, expected_names: list[str]):
-    result, count = file_source.list(uri, recursive=recursive)
-    assert count == len(expected_names)
-    assert sorted([entry.name for entry in result]) == sorted(expected_names)
-    return result
-
-
-def _configured_file_sources() -> TestConfiguredFileSources:
-    tmp, root = setup_root()
-    file_sources_config = FileSourcePluginsConfig()
-    plugin = TEMP_PLUGIN
-    plugin["root_path"] = root
-    file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={TEMP_PLUGIN["id"]: plugin}, test_root=root)
-    file_source_pair = file_sources.get_file_source_path(ROOT_URI)
-    temp_source = file_source_pair.file_source
-    assert isinstance(temp_source, TempFilesSource)
-    _populate_test_scenario(temp_source)
-
-    return file_sources
+    def get_file_source_instance(self, file_sources: TestConfiguredFileSources) -> BaseFilesSource:
+        """Return the TempFilesSource instance."""
+        file_source_pair = file_sources.get_file_source_path(self.root_uri)
+        file_source = file_source_pair.file_source
+        assert isinstance(file_source, TempFilesSource)
+        return file_source
