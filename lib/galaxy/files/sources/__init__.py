@@ -589,10 +589,6 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         if self.requires_groups and not BooleanExpressionEvaluator.is_valid_expression(self.requires_groups):
             raise ConfigurationError(_get_error_msg_for("requires_groups"))
 
-    def _is_templated(self, value) -> bool:
-        """Check if a property value is templated."""
-        return isinstance(value, str) and value.startswith("${") and value.endswith("}")
-
 
 def uri_join(*args: str) -> str:
     # url_join doesn't work with non-standard scheme
