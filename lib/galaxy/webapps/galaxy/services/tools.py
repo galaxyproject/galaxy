@@ -25,16 +25,23 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.tools import (
+    get_tool_from_trans,
+    ToolRunReference,
+)
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
     User,
 )
 from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
     FetchDataFormPayload,
     FetchDataPayload,
     FilesPayload,
+    TargetsAdapter,
 )
+from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
@@ -43,6 +50,41 @@ from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_ta
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+ToolRunPayload = dict[str, Any]
+JobCreateResponse = dict[str, Any]
+
+
+def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    tool: Optional[Tool] = None
+    if tool_ref.tool_uuid and trans.user:
+        tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
+    if not tool:
+        tool_id = tool_ref.tool_id
+        tool_uuid = tool_ref.tool_uuid
+        tool_version = tool_ref.tool_version
+        tool = trans.app.toolbox.get_tool(
+            tool_id=tool_id,
+            tool_uuid=tool_uuid,
+            tool_version=tool_version,
+        )
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
+    return tool
+
+
+def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    if trans.user_is_bootstrap_admin:
+        raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
+
+    if tool_ref.tool_id is None and tool_ref.tool_uuid is None:
+        raise exceptions.RequestParameterMissingException("Must specify a valid tool_id to use this endpoint.")
+
+    tool = get_tool_from_trans(trans, tool_ref)
+    if not tool.allow_user_access(trans.user):
+        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+    return tool
 
 
 class ToolsService(ServiceBase):
@@ -58,12 +100,34 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def data_landing_to_tool_landing(
+        self,
+        trans: ProvidesUserContext,
+        data_landing_payload: CreateDataLandingPayload,
+    ) -> CreateToolLandingRequestPayload:
+        request_version = "1"
+        payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        validate_and_normalize_targets(trans, payload, set_internal_fields=False)
+        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
+        request_state = {
+            "request_version": request_version,
+            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
+            "file_count": "0",
+        }
+        return CreateToolLandingRequestPayload(
+            tool_id="__DATA_FETCH__",
+            tool_version=None,
+            request_state=request_state,
+            client_secret=data_landing_payload.client_secret,
+            public=data_landing_payload.public,
+        )
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[list[UploadFile]] = None,
-    ):
+    ) -> JobCreateResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
@@ -90,7 +154,7 @@ class ToolsService(ServiceBase):
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
         request = dumps(clean_payload)
-        create_payload = {
+        create_payload: ToolRunPayload = {
             "tool_id": "__DATA_FETCH__",
             "history_id": history_id,
             "inputs": {
@@ -102,42 +166,15 @@ class ToolsService(ServiceBase):
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
-        if trans.user_is_bootstrap_admin:
-            raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
+    def _create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
         action = payload.get("action")
         if action == "rerun":
             raise Exception("'rerun' action has been deprecated")
 
-        # Get tool.
-        tool_version = payload.get("tool_version")
-        tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        get_kwds = dict(
-            tool_id=tool_id,
-            tool_uuid=tool_uuid,
-            tool_version=tool_version,
+        tool_run_reference = ToolRunReference(
+            payload.get("tool_id"), payload.get("tool_uuid"), payload.get("tool_version")
         )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
-
-        tool: Optional[Tool] = None
-        if tool_uuid and trans.user:
-            tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-        if not tool:
-            tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool:
-            log.debug(f"Not found tool with kwds [{get_kwds}]")
-            raise exceptions.ToolMissingException("Tool not found.")
-        if not tool.allow_user_access(trans.user):
-            raise exceptions.ItemAccessibilityException("Tool not accessible.")
-        if self.config.user_activation_on:
-            if not trans.user:
-                log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
-            elif not trans.user.active:
-                log.warning(
-                    f'User "{trans.user.email}" attempts to execute tool, but account activation is turned on and user account is not active.'
-                )
+        tool = validate_tool_for_running(trans, tool_run_reference)
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -205,7 +242,7 @@ class ToolsService(ServiceBase):
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> JobCreateResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}

@@ -559,14 +559,19 @@ export function getRouter(Galaxy) {
                     {
                         path: "tool_landings/:uuid",
                         component: ToolLanding,
-                        props: true,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: Boolean(route.query.public),
+                            secret: route.query.client_secret,
+                        }),
+                        beforeEnter: requireAuth,
                     },
                     {
                         path: "workflow_landings/:uuid",
                         component: WorkflowLanding,
                         props: (route) => ({
                             uuid: route.params.uuid,
-                            public: route.query.public.toLowerCase() === "true",
+                            public: (route.query.public || "").toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
                         beforeEnter: requireAuth,

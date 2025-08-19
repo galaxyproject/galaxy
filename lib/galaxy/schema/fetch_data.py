@@ -8,10 +8,12 @@ from typing import (
 )
 
 from pydantic import (
+    AliasChoices,
     ConfigDict,
     Field,
     field_validator,
     Json,
+    TypeAdapter,
 )
 from typing_extensions import (
     Literal,
@@ -23,7 +25,10 @@ from galaxy.schema.schema import (
     SampleSheetColumnDefinitions,
     SampleSheetRow,
 )
+from galaxy.schema.terms import HelpTerms
 from galaxy.schema.types import CoercedStringType
+
+HELP_TERMS = HelpTerms()
 
 
 class FetchBaseModel(Model):
@@ -37,7 +42,7 @@ class ElementsFromType(str, Enum):
     directory = "directory"
 
 
-AutoDecompressField = Field(False, description="Decompress compressed data before sniffing?")
+AutoDecompressField = Field(False, description=HELP_TERMS.get_term("galaxy.dataFetch.auto_decompress"))
 
 
 class BaseFetchDataTarget(FetchBaseModel):
@@ -115,22 +120,22 @@ class FetchDatasetHash(Model):
 
 class BaseDataElement(FetchBaseModel):
     name: Optional[CoercedStringType] = None
-    dbkey: str = Field("?")
-    info: Optional[str] = None
-    ext: str = Field("auto")
-    space_to_tab: bool = False
-    to_posix_lines: bool = False
-    deferred: bool = False
-    tags: Optional[list[str]] = None
+    dbkey: str = Field("?", description=HELP_TERMS.get_term("galaxy.dataFetch.dbkey"))
+    info: Optional[str] = Field(None, description=HELP_TERMS.get_term("galaxy.dataFetch.info"))
+    ext: str = Field("auto", description=HELP_TERMS.get_term("galaxy.dataFetch.ext"))
+    space_to_tab: bool = Field(False, description=HELP_TERMS.get_term("galaxy.dataFetch.space_to_tab"))
+    to_posix_lines: bool = Field(False, description=HELP_TERMS.get_term("galaxy.dataFetch.to_posix_lines"))
+    deferred: bool = Field(False, description=HELP_TERMS.get_term("galaxy.dataFetch.deferred"))
+    tags: Optional[list[str]] = Field(None, description=HELP_TERMS.get_term("galaxy.dataFetch.tags"))
     created_from_basename: Optional[str] = None
     extra_files: Optional[ExtraFiles] = None
     auto_decompress: bool = AutoDecompressField
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
     collection_type: Optional[str] = None
-    MD5: Optional[str] = None
-    SHA1: Optional[str] = Field(None, alias="SHA-1")
-    SHA256: Optional[str] = Field(None, alias="SHA-256")
-    SHA512: Optional[str] = Field(None, alias="SHA-512")
+    MD5: Optional[str] = Field(None, description=HELP_TERMS.get_term("galaxy.dataFetch.MD5"))
+    SHA1: Optional[str] = Field(None, alias="SHA-1", description=HELP_TERMS.get_term("galaxy.dataFetch.SHA1"))
+    SHA256: Optional[str] = Field(None, alias="SHA-256", description=HELP_TERMS.get_term("galaxy.dataFetch.SHA256"))
+    SHA512: Optional[str] = Field(None, alias="SHA-512", description=HELP_TERMS.get_term("galaxy.dataFetch.SHA512"))
     hashes: Optional[list[FetchDatasetHash]] = None
     description: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
@@ -144,7 +149,7 @@ class FileDataElement(BaseDataElement):
 
 class PastedDataElement(BaseDataElement):
     src: Literal["pasted"]
-    paste_content: CoercedStringType = Field(..., description="Content to upload")
+    paste_content: CoercedStringType = Field(..., description=HELP_TERMS.get_term("galaxy.dataFetch.paste_content"))
 
 
 class UrlDataElement(BaseDataElement):
@@ -175,13 +180,13 @@ class ItemsFromModel(Model):
 class FtpImportTarget(BaseCollectionTarget):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
 
 
 class PathDataElement(BaseDataElement):
     src: Literal["path"]
     path: str
-    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, validation_alias=AliasChoices("items_from", "elements_from"))
     link_data_only: Optional[bool] = None
 
 
@@ -192,16 +197,18 @@ class CompositeDataElement(BaseDataElement):
 
 
 class CompositeItems(FetchBaseModel):
-    items: list[
+    elements: list[
         Union[FileDataElement, PastedDataElement, UrlDataElement, PathDataElement, ServerDirElement, FtpImportElement]
-    ] = Field(..., alias="elements")
+    ] = Field(..., validation_alias=AliasChoices("elements", "items"))
 
 
 CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
-    items: list[Union["AnyElement", "NestedElement"]] = Field(..., alias="elements")
+    elements: list[Union["AnyElement", "NestedElement"]] = Field(
+        ..., validation_alias=AliasChoices("elements", "items")
+    )
 
 
 AnyElement = Annotated[
@@ -240,7 +247,7 @@ class BaseDataTarget(BaseFetchDataTarget):
 
 
 class DataElementsTarget(BaseDataTarget):
-    items: list[Union[AnyElement, NestedElement]] = Field(..., alias="elements")
+    elements: list[Union[AnyElement, NestedElement]] = Field(..., validation_alias=AliasChoices("elements", "items"))
 
 
 class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
@@ -248,11 +255,11 @@ class DataElementsFromTarget(BaseDataTarget, ItemsFromModel):
 
 
 class HdcaDataItemsTarget(BaseCollectionTarget):
-    items: list[Union[AnyElement2, NestedElement]] = Field(..., alias="elements")
+    elements: list[Union[AnyElement2, NestedElement]] = Field(..., validation_alias=AliasChoices("elements", "items"))
 
 
 class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
-    items_from: ElementsFromType = Field(..., alias="elements_from")
+    items_from: ElementsFromType = Field(..., validation_alias=AliasChoices("items_from", "elements_from"))
 
 
 class FilesPayload(Model):
@@ -283,9 +290,26 @@ Targets = list[
 ]
 
 
+TargetsAdapter = TypeAdapter(Targets)
+
+
 class FetchDataPayload(BaseDataPayload):
     targets: Targets
 
 
 class FetchDataFormPayload(BaseDataPayload):
     targets: Union[Json[Targets], Targets]
+
+
+class DataLandingRequestState(Model):
+    targets: Targets
+
+
+# Vaguely matches the schema.schema.ToolLandingState but we don't allow data_fetch to be called directly
+# via the tool API so we have a more specific model here.
+class CreateDataLandingPayload(Model):
+    request_state: DataLandingRequestState
+    client_secret: Optional[str] = None
+    public: bool = False
+
+    model_config = ConfigDict(extra="forbid")

@@ -50,10 +50,13 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_elements(self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value")
-        request_json = param_values[1].text
+        param_values = self.driver.find_element(
+            self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree"
+        )
+        request_json = param_values.get_attribute("data-request-json")
+        assert request_json
         for data in paste_content:
-            assert f'"paste_content": "{data}"' in request_json
+            assert f'"paste_content":"{data}"' in request_json
 
     @selenium_test
     def test_upload_simplest(self):
