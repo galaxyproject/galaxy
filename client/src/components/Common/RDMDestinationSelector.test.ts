@@ -163,16 +163,16 @@ describe("RDMDestinationSelector", () => {
     }
 
     async function setRDMSourceInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput);
+        const component = wrapper.findComponent(FilesInput as any);
         expect(component.attributes("placeholder")).toContain("source");
-        component.vm.$emit("input", newValue);
+        await component.vm.$emit("input", newValue);
         await flushPromises();
     }
 
     async function setRDMDirectoryInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput);
+        const component = wrapper.findComponent(FilesInput as any);
         expect(component.attributes("placeholder")).toContain("directory");
-        component.vm.$emit("input", newValue);
+        await component.vm.$emit("input", newValue);
         await flushPromises();
     }
 

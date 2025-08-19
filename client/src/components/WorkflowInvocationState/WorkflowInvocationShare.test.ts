@@ -166,13 +166,13 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare();
 
         // Initially, the modal is not visible and opens when the button is clicked
-        const modalComponent = wrapper.findComponent(GModal) as VueWrapper<any>;
+        const modalComponent = wrapper.findComponent(GModal as any) as VueWrapper<any>;
         expect(modalComponent.vm.$props?.show).toBeFalsy();
         await openShareModal(wrapper);
         expect(modalComponent.vm.$props?.show).toBeTruthy();
 
-        expect(wrapper.findComponent(GModal).text()).toContain(TEST_WORKFLOW.name);
-        expect(wrapper.findComponent(GModal).text()).toContain(TEST_HISTORY.name);
+        expect(wrapper.findComponent(GModal as any).text()).toContain(TEST_WORKFLOW.name);
+        expect(wrapper.findComponent(GModal as any).text()).toContain(TEST_HISTORY.name);
     });
 
     it("shares the workflow and history when the share button is clicked, and copies link", async () => {
@@ -181,7 +181,7 @@ describe("WorkflowInvocationShare", () => {
         await openShareModal(wrapper);
 
         // Click the share button in the modal
-        wrapper.findComponent(GModal).vm.$emit("ok");
+        wrapper.findComponent(GModal as any).vm.$emit("ok");
         await flushPromises();
 
         // We have 2 toasts
@@ -200,14 +200,14 @@ describe("WorkflowInvocationShare", () => {
     it("renders nothing when the user does not own the workflow", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(false);
         expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
-        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
+        expect(wrapper.findComponent(GModal as any).exists()).toBeFalsy();
     });
 
     it("just copies link and does not open modal if both workflow and history are already shareable", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        const modalComponent = wrapper.findComponent(GModal) as VueWrapper<any>;
+        const modalComponent = wrapper.findComponent(GModal as any) as VueWrapper<any>;
         expect(modalComponent.vm.$props?.show).toBeFalsy();
         await openShareModal(wrapper);
         expect(modalComponent.vm.$props?.show).toBeFalsy();
