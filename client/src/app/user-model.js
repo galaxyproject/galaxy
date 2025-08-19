@@ -42,30 +42,8 @@ class User {
         return this.get("is_admin");
     }
 
-    updatePreferences(name, new_value) {
-        const prefs = { ...(this.get("preferences") || {}) };
-        prefs[name] = JSON.stringify(new_value);
-        this.set("preferences", prefs);
-    }
-
-    getFavorites() {
-        const prefs = this.get("preferences") || {};
-        if (prefs.favorites) {
-            return JSON.parse(prefs.favorites);
-        } else {
-            return { tools: [] };
-        }
-    }
-
-    updateFavorites(object_type, new_favorites) {
-        const favorites = this.getFavorites();
-        favorites[object_type] = new_favorites[object_type];
-        this.updatePreferences("favorites", favorites);
-    }
-
-    async loadFromApi(idOrCurrent = CURRENT_ID_STR, options = {}) {
-        const url =
-            idOrCurrent === CURRENT_ID_STR ? `${this.urlRoot()}/${CURRENT_ID_STR}` : `${this.urlRoot()}/${idOrCurrent}`;
+    async loadFromApi(idOrCurrent = CURRENT_ID_STR) {
+        const url = `${this.urlRoot()}/${idOrCurrent}`;
         try {
             const response = await fetch(url, { credentials: "same-origin" });
             const data = await response.json();
@@ -73,15 +51,8 @@ class User {
             if (!this.attributes.preferences) {
                 this.attributes.preferences = {};
             }
-            if (options.success) {
-                options.success(this, data);
-            }
         } catch (error) {
-            if (options.error) {
-                options.error(this, error);
-            } else {
-                console.error(error);
-            }
+            console.error(error);
         }
     }
 
@@ -101,12 +72,6 @@ class User {
             userInfo.push(this.get("email"));
         }
         return `User(${userInfo.join(":")})`;
-    }
-
-    static getCurrentUserFromApi(options) {
-        const currentUser = new User();
-        currentUser.loadFromApi(CURRENT_ID_STR, options);
-        return currentUser;
     }
 }
 
