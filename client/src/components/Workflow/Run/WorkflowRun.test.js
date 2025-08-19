@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { getRunData } from "./services";
 import sampleRunData1 from "./testdata/run1.json";
@@ -30,7 +30,6 @@ jest.mock("./WorkflowRunSuccess");
 describe("WorkflowRun.vue", () => {
     let wrapper;
     const globalConfig = getLocalVue();
-    const router = injectTestRouter();
     const run1WorkflowId = "ebab00128497f9d7";
 
     beforeEach(() => {
@@ -41,7 +40,7 @@ describe("WorkflowRun.vue", () => {
             props: props,
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, pinia, router],
+                plugins: [...globalConfig.global.plugins, pinia],
             },
         });
     });

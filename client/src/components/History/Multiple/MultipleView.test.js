@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -61,11 +61,10 @@ describe("MultipleView", () => {
         historyStore.setCurrentHistoryId(currentHistoryId);
 
         const globalConfig = getLocalVue();
-        const router = injectTestRouter();
         const wrapper = mount(MultipleView, {
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, pinia, router],
+                plugins: [...globalConfig.global.plugins, pinia],
                 stubs: {
                     "history-panel": true,
                     "history-scroll-list": true,

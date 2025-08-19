@@ -6,7 +6,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { useInteractiveToolsStore } from "stores/interactiveToolsStore";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import InteractiveTools from "./InteractiveTools";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse.json";
@@ -18,8 +18,6 @@ jest.mock("@/utils/simple-error", () => ({
 }));
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
-    const globalConfig = getLocalVue();
-    const router = injectTestRouter();
     let wrapper;
     let testPinia;
     let axiosMock;
@@ -45,10 +43,11 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         });
         setActivePinia(testPinia);
 
+        const globalConfig = getLocalVue({ withPinia: false });
         wrapper = mount(InteractiveTools, {
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, testPinia, router],
+                plugins: [...globalConfig.global.plugins, testPinia],
             },
         });
 

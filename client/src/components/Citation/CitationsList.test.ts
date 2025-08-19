@@ -7,8 +7,6 @@ import flushPromises from "flush-promises";
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
 
-const localVue = getLocalVue(true);
-
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
         config: {
@@ -43,11 +41,8 @@ describe("CitationsList", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia();
-
-        // Replace the default pinia with testing pinia
-        const plugins = [...localVue.global.plugins];
-        plugins[0] = pinia; // First plugin is pinia
-        const router = plugins[1]; // Second plugin is router
+        const localVue = getLocalVue({ instrumentLocalization: true, withPinia: false });
+        const router = localVue.global.plugins[0]; // Router is first when pinia is excluded
 
         router.push("/histories/citations?id=test-id");
 
@@ -58,7 +53,7 @@ describe("CitationsList", () => {
             },
             global: {
                 ...localVue.global,
-                plugins,
+                plugins: [...localVue.global.plugins, pinia],
             },
         });
 

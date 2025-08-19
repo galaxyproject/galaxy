@@ -1,11 +1,10 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
 import CarbonEmissions from "./CarbonEmissions";
 
 const globalConfig = getLocalVue();
-const router = injectTestRouter();
 
 const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;
@@ -32,7 +31,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
@@ -59,7 +58,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
@@ -80,7 +79,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
@@ -108,7 +107,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
@@ -132,7 +131,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
         const locationText = wrapper.find("#location-explanation").element;
@@ -156,7 +155,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
@@ -180,7 +179,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             },
             global: {
                 ...globalConfig.global,
-                plugins: [...globalConfig.global.plugins, router],
+                plugins: [...globalConfig.global.plugins],
             },
         });
 
