@@ -11,10 +11,13 @@ import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/wor
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import type { SelectedWorkflow } from "./types";
+import { useWorkflowCardActions } from "./useWorkflowCardActions";
+import type WorkflowCard from "./WorkflowCard.vue";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -53,7 +56,6 @@ const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
 const workflowsLoaded = ref<WorkflowSummary[]>([]);
-const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -96,6 +98,51 @@ const indeterminateSelected = computed(() => selectedWorkflowIds.value.length > 
 const allSelected = computed(
     () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length
 );
+// TODO: fix this variable name, it's not a list of ids, rather is a list of SelectedWorkflows
+const selectedWorkflowIds = computed<SelectedWorkflow[]>(() => {
+    const ids = Array.from(selectedItems.value.keys());
+    const selectedWfs = workflowsLoaded.value.filter((w) => ids.includes(w.id));
+    return selectedWfs.map((w) => ({
+        id: w.id,
+        name: w.name,
+        published: w.published,
+    }));
+});
+
+const {
+    selectedItems,
+    selectAllInCurrentQuery,
+    isSelected,
+    setSelected,
+    resetSelection,
+    itemRefs,
+    initSelectedItem,
+    onClick,
+    onKeyDown,
+} = useSelectedItems<WorkflowSummary, typeof WorkflowCard>({
+    scopeKey: computed(() => `${props.activeList}-workflows-${filterText.value}`),
+    getItemKey: (item) => item.id,
+    filterText: filterText,
+    totalItemsInQuery: computed(() => totalWorkflows.value ?? 0),
+    allItems: workflowsLoaded,
+    filterClass: workflowFilters.value,
+    selectable: computed(() => !published.value && !sharedWithMe.value),
+    onDelete: async (item) => {
+        const { deleteWorkflow: deleteInModal } = useWorkflowCardActions(
+            computed(() => item),
+            false,
+            false,
+            () => load(true),
+            () => {},
+            () => {}
+        );
+        deleteInModal();
+    },
+    expectedKeyDownClass: "workflow-card",
+    getAttributeForRangeSelection(item) {
+        return `g-card-${item.id}`;
+    },
+});
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -183,27 +230,15 @@ function validatedFilterText() {
     return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
-function onSelectWorkflow(w: SelectedWorkflow) {
-    const index = selectedWorkflowIds.value.findIndex((selected) => selected.id === w.id);
-
-    if (index === -1) {
-        selectedWorkflowIds.value.push(w);
-    } else {
-        selectedWorkflowIds.value.splice(index, 1);
-    }
+function onSelectWorkflow(w: WorkflowSummary) {
+    setSelected(w, !isSelected(w));
 }
 
 function onSelectAllWorkflows() {
     if (selectedWorkflowIds.value.length === workflowsLoaded.value.length) {
-        selectedWorkflowIds.value = [];
+        resetSelection();
     } else {
-        selectedWorkflowIds.value = workflowsLoaded.value.map((w: any) => {
-            return {
-                id: w.id,
-                name: w.name,
-                published: w.published,
-            };
-        });
+        selectAllInCurrentQuery();
     }
 }
 
@@ -239,13 +274,13 @@ async function onBulkDelete() {
 
             Toast.success(`Deleted ${totalSelected} workflows.`);
 
-            selectedWorkflowIds.value = [];
+            resetSelection();
         } catch (e) {
             Toast.error(`Failed to delete some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
 
-            selectedWorkflowIds.value = tmpSelected;
+            selectTmpSelected(tmpSelected);
 
             await load(true);
         }
@@ -278,15 +313,24 @@ async function onBulkRestore() {
 
             Toast.success(`Restored ${totalSelected} workflows.`);
 
-            selectedWorkflowIds.value = [];
+            resetSelection();
         } catch (e) {
             Toast.error(`Failed to restore some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
 
-            selectedWorkflowIds.value = tmpSelected;
+            selectTmpSelected(tmpSelected);
 
             await load(true);
+        }
+    }
+}
+
+function selectTmpSelected(tmpSelected: SelectedWorkflow[]) {
+    for (const selectedWf of tmpSelected) {
+        const workflow = workflowsLoaded.value.find((w) => w.id === selectedWf.id);
+        if (workflow) {
+            setSelected(workflow, true);
         }
     }
 }
@@ -320,7 +364,7 @@ async function onBulkTagsAdd(tags: string[]) {
     } finally {
         bulkTagsLoading.value = false;
 
-        selectedWorkflowIds.value = tmpSelected;
+        selectTmpSelected(tmpSelected);
 
         await load(true);
     }
@@ -329,7 +373,7 @@ async function onBulkTagsAdd(tags: string[]) {
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
-    selectedWorkflowIds.value = [];
+    resetSelection();
 
     await load(true);
 });
@@ -380,6 +424,7 @@ onMounted(() => {
                 :placeholder="searchPlaceHolder"
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
+                    <!-- eslint-disable-next-line vue/no-v-html -->
                     <div v-html="helpHtml(activeList)"></div>
                 </template>
             </FilterMenu>
@@ -464,6 +509,11 @@ onMounted(() => {
                 :published-view="published"
                 :grid-view="currentListViewMode === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
+                :item-refs="itemRefs"
+                :range-select-anchor="initSelectedItem"
+                clickable
+                @on-workflow-card-click="onClick"
+                @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
