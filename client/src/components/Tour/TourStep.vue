@@ -2,7 +2,7 @@
     <div
         ref="tour-element"
         class="tour-element"
-        :class="{ 'tour-element-sticky': !targetElement, 'tour-has-title': !!step.title }">
+        :class="{ 'tour-element-sticky': !targetElementVisible, 'tour-has-title': !!step.title }">
         <div v-if="step.title" class="tour-header">
             <div class="tour-title" v-html="step.title"></div>
         </div>
@@ -46,13 +46,21 @@ export default {
             }
             return null;
         },
+        targetElementVisible() {
+            const el = this.targetElement;
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                return rect && rect.width > 0 && rect.height > 0;
+            }
+            return false;
+        },
     },
     mounted() {
         this.createStep();
     },
     methods: {
         createStep() {
-            if (this.targetElement) {
+            if (this.targetElement && this.targetElementVisible) {
                 createPopper(this.targetElement, this.$refs["tour-element"], {
                     modifiers: [
                         {
