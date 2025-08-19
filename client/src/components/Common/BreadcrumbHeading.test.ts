@@ -11,15 +11,36 @@ const ACTIVE_CLASS = ".breadcrumb-heading-header-active";
 const INACTIVE_CLASS = ".breadcrumb-heading-header-inactive";
 const BETA_CLASS = ".breadcrumb-heading-header-beta";
 
-const globalConfig = getLocalVue();
+// Mock the router composables
+const mockUseRoute = jest.fn();
+const mockUseRouter = jest.fn();
 
-async function mountComponent(items: BreadcrumbItem[] = [], _routePath: string = "/home", slotContent: string = "") {
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
+    useRoute: () => mockUseRoute(),
+    useRouter: () => mockUseRouter(),
+}));
+
+async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
+    const globalConfig = getLocalVue({ withPinia: false });
+
+    // Setup route mock
+    mockUseRoute.mockReturnValue({
+        path: routePath,
+    });
+
+    // Setup router mock
+    mockUseRouter.mockReturnValue({
+        resolve: (to: any) => {
+            if (typeof to === "string") {
+                return { path: to };
+            }
+            return { path: to.path || "/" };
+        },
+    });
+
     const wrapper = mount(BreadcrumbHeading as object, {
         ...globalConfig,
-        global: {
-            ...globalConfig.global,
-            plugins: [...globalConfig.global.plugins],
-        },
         props: {
             items,
         },
@@ -29,11 +50,16 @@ async function mountComponent(items: BreadcrumbItem[] = [], _routePath: string =
     });
 
     await flushPromises();
+    await nextTick();
 
     return wrapper;
 }
 
 describe("BreadcrumbHeading.vue", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     it("renders a single breadcrumb item without link when no 'to' property", async () => {
         const items = [{ title: "Home" }];
 
