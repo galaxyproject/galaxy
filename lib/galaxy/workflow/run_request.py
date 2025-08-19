@@ -523,6 +523,7 @@ def workflow_run_config_to_request(
     workflow_invocation = WorkflowInvocation()
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
+    workflow_invocation.state = WorkflowInvocation.states.NEW
     ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:
@@ -579,8 +580,6 @@ def workflow_run_config_to_request(
                 subworkflow_run_config,
                 subworkflow,
             )
-            if subworkflow_invocation.state is None:
-                subworkflow_invocation.state = WorkflowInvocation.states.NEW
             workflow_invocation.attach_subworkflow_invocation_for_step(
                 step,
                 subworkflow_invocation,
