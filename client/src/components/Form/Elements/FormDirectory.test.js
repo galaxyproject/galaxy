@@ -150,7 +150,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // should be the same name plus additional item
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
         // find newly added chunk
-        const addedChunk = wrapper.findAll("li.breadcrumb-item button").wrappers.find((e) => e.text() === validPath);
+        const addedChunk = wrapper.findAll("li.breadcrumb-item button").find((e) => e.text() === validPath);
 
         await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);
 

@@ -67,7 +67,7 @@ describe("History Navigation", () => {
 
         const dropDown = wrapper.find("*[data-description='history options']");
         const optionElements = dropDown.findAll("bdropdownitem-stub");
-        const optionTexts = optionElements.wrappers.map((el) => el.text());
+        const optionTexts = optionElements.map((el) => el.text());
 
         expect(optionTexts).toStrictEqual(expectedOptions);
     });
@@ -80,11 +80,11 @@ describe("History Navigation", () => {
 
         const dropDown = wrapper.find("*[data-description='history options']");
         const enabledOptionElements = dropDown.findAll("bdropdownitem-stub:not([disabled])");
-        const enabledOptionTexts = enabledOptionElements.wrappers.map((el) => el.text());
+        const enabledOptionTexts = enabledOptionElements.map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);
 
         const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
-        const disabledOptionTexts = disabledOptionElements.wrappers.map((el) => el.text());
+        const disabledOptionTexts = disabledOptionElements.map((el) => el.text());
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 
@@ -97,7 +97,7 @@ describe("History Navigation", () => {
         const dropDown = wrapper.find("*[data-description='history options']");
         const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
 
-        disabledOptionElements.wrappers.forEach((option) => {
+        disabledOptionElements.forEach((option) => {
             expect((option.attributes("title") as string).toLowerCase()).toContain("log in");
         });
     });
