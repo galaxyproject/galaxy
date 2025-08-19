@@ -9000,6 +9000,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     states = InvocationState
     non_terminal_states = [states.NEW, states.READY]
 
+    def __strict_check_before_flush__(self):
+        if self.state is None:
+            raise Exception("Workflow invocation without state, this should not happen")
+
     def get_last_workflow_invocation_step_update_time(self) -> Optional[datetime]:
         session = required_object_session(self)
         stmt = select(func.max(WorkflowInvocationStep.update_time)).where(
@@ -9331,7 +9335,8 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     def to_dict(self, view="collection", value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if rval["state"] is None:
-            # bugs could result in no state being set
+            # this shouldn't happen anymore, likely fixed in https://github.com/galaxyproject/galaxy/pull/20784
+            log.warning(f"Encountered workflow invocation [{self.id}] with no state set")
             rval["state"] = self.states.FAILED
         if view == "element":
             steps = []
