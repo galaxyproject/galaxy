@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, toRaw } from "vue";
 
 import type { Color } from "@/components/Workflow/Editor/Comments/colors";
 import {
@@ -111,7 +111,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         select = false,
     ) => {
         commentsArray.forEach((comment) => {
-            const newComment = structuredClone(comment);
+            const newComment = structuredClone(toRaw(comment));
             newComment.position[0] += defaultPosition[0];
             newComment.position[1] += defaultPosition[1];
 

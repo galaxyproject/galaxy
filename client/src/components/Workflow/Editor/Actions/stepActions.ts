@@ -1,3 +1,5 @@
+import { toRaw } from "vue";
+
 import { replaceLabel } from "@/components/Markdown/parse";
 import { autoLayout } from "@/components/Workflow/Editor/modules/layout";
 import { useToast } from "@/composables/toast";
@@ -140,9 +142,9 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     ) {
         const step = stepStore.getStep(stepId);
         assertDefined(step);
-        const fromOutputs = structuredClone(step.workflow_outputs);
+        const fromOutputs = structuredClone(toRaw(step.workflow_outputs));
 
-        super(stepStore, stepId, "workflow_outputs", fromOutputs, structuredClone(toOutputs));
+        super(stepStore, stepId, "workflow_outputs", fromOutputs, structuredClone(toRaw(toOutputs)));
 
         this.fromLabel = fromValue;
         this.toLabel = toValue;
@@ -236,8 +238,8 @@ export class SetDataAction extends UpdateStepAction {
             const otherValue = to[key as keyof Step] as any;
 
             if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
-                fromPartial[key as keyof Step] = structuredClone(value);
-                toPartial[key as keyof Step] = structuredClone(otherValue);
+                fromPartial[key as keyof Step] = structuredClone(toRaw(value));
+                toPartial[key as keyof Step] = structuredClone(toRaw(otherValue));
             }
         });
 
@@ -325,8 +327,10 @@ export class RemoveStepAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.connectionStore = connectionStore;
-        this.step = structuredClone(step);
-        this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
+        this.step = structuredClone(toRaw(step));
+        const connections = this.connectionStore.getConnectionsForStep(this.step.id);
+        // Deep clone to avoid proxy issues
+        this.connections = JSON.parse(JSON.stringify(toRaw(connections)));
     }
 
     get name() {
@@ -340,8 +344,12 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(this.step), false, false);
-        this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
+        this.stepStore.addStep(structuredClone(toRaw(this.step)), false, false);
+        this.connections.forEach((connection) => {
+            // Ensure connection is a plain object
+            const plainConnection = JSON.parse(JSON.stringify(connection));
+            this.connectionStore.addConnection(plainConnection);
+        });
         this.stateStore.hasChanges = true;
     }
 }
@@ -370,7 +378,7 @@ export class CopyStepAction extends UndoRedoAction {
     }
 
     run() {
-        const newStep = this.stepStore.addStep(structuredClone(this.step));
+        const newStep = this.stepStore.addStep(structuredClone(toRaw(this.step)));
         this.stepId = newStep.id;
         this.stateStore.hasChanges = true;
     }
@@ -668,7 +676,7 @@ export function useStepActions(
         const fromPartial: Partial<Step> = {};
 
         Object.keys(toPartial).forEach((key) => {
-            fromPartial[key as keyof Step] = structuredClone(fromStep[key as keyof Step]) as any;
+            fromPartial[key as keyof Step] = structuredClone(toRaw(fromStep[key as keyof Step])) as any;
         });
 
         const action = new UpdateStepAction(stepStore, stateStore, id, fromPartial, toPartial);
