@@ -109,7 +109,6 @@ const hideMessage = useDebounceFn(() => {
 // selection references
 const {
     allSelected,
-    initSelectedItem,
     itemRefs,
     selectedItems: selected,
     isSelected,
@@ -119,6 +118,7 @@ const {
     selectAllInCurrentQuery,
     selectionSize,
     setSelected,
+    isRangeSelectAnchor,
 } = useSelectedItems<RowData, typeof HTMLTableRowElement>({
     scopeKey: computed(() => `grid-${props.gridConfig.id}`),
     getItemKey: props.gridConfig.getItemKey || getItemKey,
@@ -138,14 +138,6 @@ const {
     expectedKeyDownClass: "grid-data-tbody",
 });
 const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selectionSize.value));
-
-function isRangeSelectAnchor(rowData: RowData): boolean {
-    if (initSelectedItem.value) {
-        const itemKey = props.gridConfig.getItemKey ?? getItemKey;
-        return itemKey(rowData) === itemKey(initSelectedItem.value);
-    }
-    return false;
-}
 
 function getItemKey(item: RowData): string {
     if (item && typeof item === "object" && "id" in item) {
