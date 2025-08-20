@@ -7,6 +7,8 @@ import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bo
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
+
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import HelpText from "../Help/HelpText.vue";
@@ -67,11 +69,6 @@ const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
 
-// selection references
-const selected = ref(new Set<RowData>());
-const selectedAll = computed(() => gridData.value.length === selected.value.size);
-const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selected.value.size));
-
 // expand references
 const expanded = ref(new Set<RowData>());
 
@@ -108,6 +105,46 @@ const hasInvalidFilters = computed(
 const hideMessage = useDebounceFn(() => {
     operationMessage.value = "";
 }, props.delay);
+
+// selection references
+const {
+    allSelected,
+    itemRefs,
+    selectedItems: selected,
+    isSelected,
+    onClick,
+    onKeyDown,
+    resetSelection,
+    selectAllInCurrentQuery,
+    selectionSize,
+    setSelected,
+    isRangeSelectAnchor,
+} = useSelectedItems<RowData, typeof HTMLTableRowElement>({
+    scopeKey: computed(() => `grid-${props.gridConfig.id}`),
+    getItemKey: props.gridConfig.getItemKey || getItemKey,
+    filterText: filterText,
+    totalItemsInQuery: computed(() => totalRows.value),
+    allItems: gridData,
+    filterClass: filterClass,
+    selectable: computed(() => Boolean(props.gridConfig.batch)),
+    onDelete: (item) => {
+        // TODO: Is this a naive way to find the delete operation?
+        const fieldEntry = props.gridConfig.fields.find((f) => f.type === "operations");
+        const operation = fieldEntry?.operations?.find((o) => o.title === "Delete");
+        if (operation) {
+            operation.handler(item);
+        }
+    },
+    expectedKeyDownClass: "grid-data-tbody",
+});
+const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selectionSize.value));
+
+function getItemKey(item: RowData): string {
+    if (item && typeof item === "object" && "id" in item) {
+        return String(item.id);
+    }
+    return JSON.stringify(item);
+}
 
 /**
  * Manually set filter value, used for tags and `SharingIndicators`
@@ -159,7 +196,7 @@ function fieldTitle(fieldEntry: FieldEntry): string | null {
  */
 async function getGridData() {
     resultsLoading.value = true;
-    selected.value = new Set();
+    resetSelection();
     if (props.gridConfig) {
         if (hasInvalidFilters.value) {
             // there are invalid filters, so we don't want to search
@@ -247,24 +284,6 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
 function onFilter(filter?: string) {
     if (filter) {
         applyFilter(filter, true);
-    }
-}
-
-// Select multiple rows
-function onSelect(rowData: RowData) {
-    if (selected.value.has(rowData)) {
-        selected.value.delete(rowData);
-    } else {
-        selected.value.add(rowData);
-    }
-    selected.value = new Set(selected.value);
-}
-
-function onSelectAll(current: boolean): void {
-    if (current) {
-        selected.value = new Set(gridData.value);
-    } else {
-        selected.value = new Set();
     }
 }
 
@@ -396,9 +415,9 @@ watch(operationMessage, () => {
                     <th v-if="!!gridConfig.batch">
                         <BFormCheckbox
                             class="m-2"
-                            :checked="selectedAll"
+                            :checked="allSelected"
                             :indeterminate="selectedIndeterminate"
-                            @change="onSelectAll" />
+                            @change="selectAllInCurrentQuery" />
                     </th>
                     <th
                         v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
@@ -424,14 +443,25 @@ watch(operationMessage, () => {
                         <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
                     </th>
                 </thead>
-                <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
+                <tbody
+                    v-for="(rowData, rowIndex) in gridData"
+                    :id="gridConfig.getItemKey ? gridConfig.getItemKey(rowData) : getItemKey(rowData)"
+                    :ref="itemRefs[gridConfig.getItemKey ? gridConfig.getItemKey(rowData) : getItemKey(rowData)]"
+                    :key="rowIndex"
+                    class="grid-data-tbody"
+                    :class="{ 'range-select-anchor-item': isRangeSelectAnchor(rowData) }"
+                    data-description="grid item"
+                    tabindex="0"
+                    role="row"
+                    @keydown="onKeyDown(rowData, $event)"
+                    @click="onClick(rowData, $event)">
                     <tr :class="{ 'grid-dark-row': rowIndex % 2 }">
                         <td v-if="!!gridConfig.batch">
                             <BFormCheckbox
-                                :checked="selected.has(rowData)"
+                                :checked="isSelected(rowData)"
                                 class="m-2 cursor-pointer"
                                 data-description="grid selected"
-                                @change="onSelect(rowData)" />
+                                @change="setSelected(rowData, !isSelected(rowData))" />
                         </td>
                         <td
                             v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
@@ -517,16 +547,16 @@ watch(operationMessage, () => {
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
                         <GButton
                             v-if="
-                                selected.size > 0 &&
-                                (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
+                                selectionSize > 0 &&
+                                (!batchOperation.condition || batchOperation.condition(Array.from(selected.values())))
                             "
                             class="mr-2"
                             size="small"
                             color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
-                            @click="onBatchOperation(batchOperation, Array.from(selected))">
+                            @click="onBatchOperation(batchOperation, Array.from(selected.values()))">
                             <Icon :icon="batchOperation.icon" class="mr-1" />
-                            <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
+                            <span v-localize>{{ batchOperation.title }} ({{ selectionSize }})</span>
                         </GButton>
                     </div>
                 </div>
@@ -567,5 +597,11 @@ watch(operationMessage, () => {
 }
 .grid-dark-row {
     background: $gray-200;
+}
+
+.grid-data-tbody {
+    &.range-select-anchor-item {
+        box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
 }
 </style>
