@@ -7,10 +7,11 @@ import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -86,6 +87,8 @@ const props = defineProps({
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
+const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
+
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
 }
@@ -142,6 +145,12 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 const canGenerateTours = computed(() =>
     Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
 );
+
+onMounted(() => {
+    if (props.options.credentials) {
+        setToolCredentialsDefinition(props.id, props.version, props.options.credentials);
+    }
+});
 </script>
 
 <template>
@@ -203,8 +212,7 @@ const canGenerateTours = computed(() =>
                 v-if="props.options.credentials && !props.editorView"
                 class="mt-2"
                 :tool-id="props.id"
-                :tool-version="props.version"
-                :tool-credentials-definition="props.options.credentials" />
+                :tool-version="props.version" />
 
             <BAlert
                 v-else-if="props.options.credentials && props.editorView"
