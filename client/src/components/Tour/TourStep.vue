@@ -12,9 +12,23 @@
                 <button class="tour-button tour-end" @click.prevent="$emit('end')">Close</button>
             </div>
             <div v-else-if="isPlaying">
+                <button
+                    v-if="waitingOnElement"
+                    v-b-tooltip.hover
+                    :title="`Waiting for ${waitingOnElement}`"
+                    class="btn btn-link btn-sm">
+                    <FontAwesomeIcon :icon="faSpinner" spin />
+                </button>
                 <button class="tour-button tour-stop" @click.prevent="$emit('play', false)">Stop</button>
             </div>
             <div v-else>
+                <button
+                    v-if="waitingOnElement"
+                    v-b-tooltip.hover
+                    :title="`Waiting for ${waitingOnElement}`"
+                    class="btn btn-link btn-sm">
+                    <FontAwesomeIcon :icon="faSpinner" spin />
+                </button>
                 <button class="tour-button tour-end" @click.prevent="$emit('end')">End Tour</button>
                 <button class="tour-button tour-play" @click.prevent="$emit('play', true)">Play</button>
                 <button class="tour-button tour-next" @click.prevent="$emit('next')">Continue</button>
@@ -25,9 +39,14 @@
 </template>
 
 <script>
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createPopper } from "@popperjs/core";
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         step: {
             type: Object,
@@ -38,6 +57,15 @@ export default {
         isLast: {
             type: Boolean,
         },
+        waitingOnElement: {
+            type: String,
+            default: null,
+        },
+    },
+    data() {
+        return {
+            faSpinner,
+        };
     },
     computed: {
         targetElement() {

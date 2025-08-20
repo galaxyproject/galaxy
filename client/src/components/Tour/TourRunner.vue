@@ -21,6 +21,7 @@ const emit = defineEmits(["end-tour"]);
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
 const ready = ref(false);
+const waitingOnElement = ref<string | null>(null);
 
 async function initialize() {
     try {
@@ -85,20 +86,25 @@ function getElement(selector: string) {
  */
 async function waitForElement(selector: string, tries: number): Promise<Element | null> {
     if (!selector) {
+        waitingOnElement.value = null;
         return null;
     }
+
+    waitingOnElement.value = selector;
 
     const el = getElement(selector);
     const rect = el?.getBoundingClientRect();
     const isVisible = !!(rect && rect.width > 0 && rect.height > 0);
 
     if (el && isVisible) {
+        waitingOnElement.value = null;
         return el;
     } else if (tries > 0) {
         // Wait and try again
         await new Promise((resolve) => setTimeout(resolve, DELAY));
         return waitForElement(selector, tries - 1);
     } else {
+        waitingOnElement.value = null;
         throw new Error(`Element not found. ${selector}`);
     }
 }
@@ -136,6 +142,7 @@ function doInsert(selector: string, value: string) {
         :tour-id="props.tourId"
         :steps="steps"
         :requirements="requirements"
+        :waiting-on-element="waitingOnElement"
         :on-before="onBefore"
         :on-next="onNext"
         @end-tour="emit('end-tour')" />

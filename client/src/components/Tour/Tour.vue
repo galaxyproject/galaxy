@@ -33,6 +33,7 @@ const props = defineProps<{
     steps: (TourStepType | TourStepWithActions)[];
     requirements: TourRequirements;
     tourId?: string;
+    waitingOnElement?: string | null;
     onBefore?: (step: TourStepType) => Promise<void>;
     onNext?: (step: TourStepType) => Promise<void>;
 }>();
@@ -293,6 +294,7 @@ function modalDismiss(ok = true) {
             :step="currentStep"
             :is-playing="isPlaying"
             :is-last="isLast"
+            :waiting-on-element="waitingOnElement"
             @next="next"
             @end="endTour"
             @play="play" />
