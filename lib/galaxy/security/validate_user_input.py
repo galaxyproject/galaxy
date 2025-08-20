@@ -85,6 +85,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     Validates the email format.
     Checks whether the domain is blocklisted in the disposable domains configuration.
     Checks whether the email address is banned.
+    Optionally checks if email exists.
     """
     if (user and user.email == email) or (email == "" and allow_empty):
         return ""
