@@ -15,7 +15,7 @@
                 <button class="tour-button tour-stop" @click.prevent="$emit('play', false)">Stop</button>
             </div>
             <div v-else>
-                <button class="tour-button tour-end" @click.prevent="$emit('end')">Cancel</button>
+                <button class="tour-button tour-end" @click.prevent="$emit('end')">End Tour</button>
                 <button class="tour-button tour-play" @click.prevent="$emit('play', true)">Play</button>
                 <button class="tour-button tour-next" @click.prevent="$emit('next')">Continue</button>
             </div>
