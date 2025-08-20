@@ -3,8 +3,7 @@ import { computed, ref, set } from "vue";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import type { CreateSourceCredentialsPayload, ServiceCredentialsIdentifier, UserCredentials } from "@/api/users";
-
-import { useUserStore } from "./userStore";
+import { useUserStore } from "@/stores/userStore";
 
 export const SECRET_PLACEHOLDER = "********";
 
@@ -20,14 +19,14 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
 
     const currentUserCredentialsForTools = computed(() => userCredentialsForTools.value);
 
-    function getKey(toolId: string): string {
+    function getKey(toolId: string, toolVersion: string): string {
         const userId = ensureUserIsRegistered();
-        return `${userId}-${toolId}`;
+        return `${userId}-${toolId}-${toolVersion}`;
     }
 
-    function getAllUserCredentialsForTool(toolId: string): UserCredentials[] | undefined {
+    function getAllUserCredentialsForTool(toolId: string, toolVersion: string): UserCredentials[] | undefined {
         ensureUserIsRegistered();
-        return userCredentialsForTools.value[toolId];
+        return userCredentialsForTools.value[getKey(toolId, toolVersion)];
     }
 
     async function fetchAllUserCredentialsForTool(toolId: string, toolVersion: string): Promise<UserCredentials[]> {
@@ -48,7 +47,7 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
             throw Error(`Failed to fetch user credentials for tool ${toolId}: ${error.err_msg}`);
         }
 
-        const key = getKey(toolId);
+        const key = getKey(toolId, toolVersion);
         set(userCredentialsForTools.value, key, data);
         return data;
     }
@@ -58,6 +57,7 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
     ): Promise<UserCredentials[]> {
         const userId = ensureUserIsRegistered();
         const toolId = providedCredentials.source_id;
+        const toolVersion = providedCredentials.source_version;
 
         removeSecretPlaceholders(providedCredentials);
 
@@ -72,21 +72,21 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
             throw Error(`Failed to save user credentials for tool ${toolId}: ${error.err_msg}`);
         }
 
-        const key = getKey(toolId);
+        const key = getKey(toolId, toolVersion);
         set(userCredentialsForTools.value, key, data);
         return data;
     }
 
     async function deleteCredentialsGroupForTool(
         toolId: string,
+        toolVersion: string,
         serviceIdentifier: ServiceCredentialsIdentifier,
         groupName: string
     ): Promise<void> {
         const userId = ensureUserIsRegistered();
-        const key = getKey(toolId);
+        const key = getKey(toolId, toolVersion);
         const credentials = userCredentialsForTools.value[key];
 
-        console.log("user cred store", toolId, serviceIdentifier, groupName);
         if (credentials) {
             const serviceCredentials = credentials.find(
                 (credential) =>
