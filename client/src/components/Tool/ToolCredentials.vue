@@ -4,14 +4,7 @@ import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import {
-    type CreateSourceCredentialsPayload,
-    type ServiceCredentialsDefinition,
-    type ServiceCredentialsIdentifier,
-    type SourceCredentialsDefinition,
-    transformToSourceCredentials,
-    type UserCredentials,
-} from "@/api/users";
+import type { CreateSourceCredentialsPayload, ServiceCredentialsIdentifier, UserCredentials } from "@/api/users";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserCredentialsStore } from "@/stores/userCredentials";
@@ -24,14 +17,12 @@ import ManageToolCredentials from "@/components/User/Credentials/ManageToolCrede
 interface Props {
     toolId: string;
     toolVersion: string;
-    toolCredentialsDefinition: ServiceCredentialsDefinition[];
 }
 
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
 const userCredentialsStore = useUserCredentialsStore();
-
 const {
     isBusy,
     hasUserProvidedRequiredCredentials,
@@ -39,14 +30,10 @@ const {
     hasSomeOptionalCredentials,
     hasSomeRequiredCredentials,
     checkUserCredentials,
-} = useUserToolCredentials(props.toolId, props.toolVersion, props.toolCredentialsDefinition);
+} = useUserToolCredentials(props.toolId, props.toolVersion);
 
 const busyMessage = ref<string>("");
 const userCredentials = ref<UserCredentials[] | undefined>(undefined);
-
-const sourceCredentialsDefinition = computed<SourceCredentialsDefinition>(() => {
-    return transformToSourceCredentials(props.toolId, props.toolCredentialsDefinition);
-});
 
 const provideCredentialsButtonTitle = computed(() => {
     return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
@@ -78,7 +65,7 @@ async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPa
 async function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, groupName: string) {
     busyMessage.value = "Updating your credentials";
     try {
-        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, serviceId, groupName);
+        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, props.toolVersion, serviceId, groupName);
     } catch (e) {
         Toast.error(`Error deleting user credentials group: ${errorMessageAsString(e)}`);
     }
@@ -163,8 +150,6 @@ onMounted(async () => {
             v-if="showModal"
             :tool-id="props.toolId"
             :tool-version="props.toolVersion"
-            :tool-credentials-definition="props.toolCredentialsDefinition"
-            :source-credentials-definition="sourceCredentialsDefinition"
             @onUpdateCredentialsList="onUpdateUserCredentials"
             @delete-credentials-group="onDeleteCredentialsGroup"
             @save-credentials="onSavedCredentials"
