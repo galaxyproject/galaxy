@@ -279,20 +279,31 @@ def administrative_delete_datasets(
 
 
 def _get_tool_id_for_hda(app, hda_id):
-    # TODO Some datasets don't seem to have an entry in jtod or a copied_from
     if hda_id is None:
         return None
-    job = (
-        app.sa_session.query(model.Job)
-        .join(model.JobToOutputDatasetAssociation)
-        .filter(model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
-        .first()
+
+    # Aliases for ORM‑mapped classes
+    Job = aliased(app.model.Job)
+    JTODA = aliased(app.model.JobToOutputDatasetAssociation)
+    HDA = aliased(app.model.HistoryDatasetAssociation)
+
+    session = app.sa_session
+
+    job_query = (
+        select(Job.tool_id)
+        .join(JTODA, JTODA.job_id == Job.id)
+        .where(JTODA.dataset_id == hda_id)
     )
-    if job is not None:
-        return job.tool_id
-    else:
-        hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
-        return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
+
+    tool_id = session.execute(job_query).scalars().first()
+    if tool_id is not None:
+        return tool_id
+
+    hda = session.get(app.model.HistoryDatasetAssociation, hda_id)
+    if hda is None:
+        return None
+
+    return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
 
 
 if __name__ == "__main__":
