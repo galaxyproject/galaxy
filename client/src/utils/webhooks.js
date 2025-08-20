@@ -1,7 +1,7 @@
 import axios from "axios";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import Utils from "utils/utils";
+import { appendScriptStyle } from "utils/utils";
 
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -39,7 +39,7 @@ const WebhookView = Backbone.View.extend({
 
     render: function (model) {
         this.$el.html(`<div id="${model.id}"></div>`);
-        Utils.appendScriptStyle(model);
+        appendScriptStyle(model);
         return this;
     },
 });
