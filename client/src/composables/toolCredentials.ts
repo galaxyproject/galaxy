@@ -1,10 +1,7 @@
 import { computed, readonly, ref } from "vue";
 
-import {
-    type ServiceCredentialsDefinition,
-    type SourceCredentialsDefinition,
-    transformToSourceCredentials,
-} from "@/api/users";
+import type { SourceCredentialsDefinition } from "@/api/users";
+import { transformToSourceCredentials } from "@/api/users";
 
 /**
  * Vue composable for managing tool credentials and source credentials definitions.
@@ -17,9 +14,9 @@ import {
  * @param toolId - The ID of the tool
  * @param toolCredentialsDefinition - Array of service credentials definitions from the tool
  */
-export function useToolCredentials(toolId: string, toolCredentialsDefinition: ServiceCredentialsDefinition[]) {
+export function useToolCredentials(toolId: string, toolVersion: string) {
     const sourceCredentialsDefinition = ref<SourceCredentialsDefinition>(
-        transformToSourceCredentials(toolId, toolCredentialsDefinition)
+        transformToSourceCredentials(toolId, toolVersion)
     );
 
     /**
