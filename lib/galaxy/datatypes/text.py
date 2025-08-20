@@ -13,8 +13,8 @@ from typing import (
     Optional,
 )
 
-import yaml
 import json_stream
+import yaml
 
 from galaxy.datatypes.data import (
     get_file_peek,
