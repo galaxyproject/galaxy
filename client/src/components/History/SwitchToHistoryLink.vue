@@ -44,22 +44,20 @@ const canSwitch = computed(
         userOwnsHistory(userStore.currentUser, history.value)
 );
 
-const actionText = computed(() => {
-    if (canSwitch.value) {
-        if (props.filters) {
-            return "Show in history";
-        }
-        return "Switch to";
-    }
-    return "View in new tab";
-});
-
 const linkTitle = computed(() => {
+    if (props.filters && history.value && userOwnsHistory(userStore.currentUser, history.value)) {
+        return "Show in history";
+    }
+
     if (historyStore.currentHistoryId === props.historyId) {
         return "This is your current history";
-    } else {
-        return `${actionText.value} "${history.value?.name}"`;
     }
+
+    if (canSwitch.value) {
+        return "Switch to this history";
+    }
+
+    return "View in new tab";
 });
 
 const tag = computed(() => {
@@ -71,22 +69,35 @@ const tag = computed(() => {
 
 async function onClick(event: MouseEvent, history: HistorySummary) {
     const eventStore = useEventStore();
-    if (!eventStore.isCtrlKey(event) && historyStore.currentHistoryId === history.id) {
+    // Always open in new tab for ctrl+click
+    if (eventStore.isCtrlKey(event)) {
+        viewHistoryInNewTab(history);
         return;
     }
-    if (!eventStore.isCtrlKey(event) && canSwitch.value) {
-        if (props.filters) {
-            historyStore.applyFilters(history.id, props.filters);
-        } else {
-            try {
-                await historyStore.setCurrentHistory(history.id);
-            } catch (error) {
-                Toast.error(errorMessageAsString(error));
-            }
+
+    try {
+        // Apply filters if available and user owns history
+        if (props.filters && userOwnsHistory(userStore.currentUser, history)) {
+            await historyStore.applyFilters(history.id, props.filters);
+            return;
         }
-        return;
+
+        // If current history is selected, do nothing
+        if (historyStore.currentHistoryId === history.id) {
+            return;
+        }
+
+        // Switch to history if possible
+        if (canSwitch.value) {
+            await historyStore.setCurrentHistory(history.id);
+            return;
+        }
+
+        // Fallback to open in new tab
+        viewHistoryInNewTab(history);
+    } catch (error) {
+        Toast.error(errorMessageAsString(error));
     }
-    viewHistoryInNewTab(history);
 }
 
 function viewHistoryInNewTab(history: HistorySummary) {
