@@ -1,5 +1,7 @@
-import { type components, GalaxyApi } from "@/api";
+import type { components } from "@/api";
+import { GalaxyApi } from "@/api";
 import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export { type QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
@@ -42,13 +44,15 @@ export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
 export type UserCredentials = components["schemas"]["UserCredentialsResponse"];
 export type ServiceVariableDefinition = components["schemas"]["CredentialDefinitionResponse"];
 
-export function transformToSourceCredentials(
-    toolId: string,
-    toolCredentialsDefinition: ServiceCredentialsDefinition[]
-): SourceCredentialsDefinition {
+export function transformToSourceCredentials(toolId: string, toolVersion: string): SourceCredentialsDefinition {
+    const { getToolCredentialsDefinitions } = useToolCredentialsDefinitionsStore();
+
+    const toolCredentialsDefinitions = getToolCredentialsDefinitions(toolId, toolVersion);
+
     const services = new Map(
-        toolCredentialsDefinition.map((service) => [getKeyFromCredentialsIdentifier(service), service])
+        toolCredentialsDefinitions?.map((service) => [getKeyFromCredentialsIdentifier(service), service])
     );
+
     return {
         sourceType: "tool",
         sourceId: toolId,
