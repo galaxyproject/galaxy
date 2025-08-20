@@ -15,6 +15,7 @@ import { faX, faXmark } from "font-awesome-6";
 import { computed, ref } from "vue";
 
 import type {
+    CreateSourceCredentialsPayload,
     ServiceCredentialPayload,
     ServiceCredentialsDefinition,
     ServiceGroupPayload,
@@ -24,6 +25,7 @@ import type {
 import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
+import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserCredentialsStore } from "@/stores/userCredentials";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -33,14 +35,10 @@ import GCard from "@/components/Common/GCard.vue";
 type CredentialType = "variable" | "secret";
 
 interface Props {
-    credentialDefinition: ServiceCredentialsDefinition;
+    toolId: string;
+    toolVersion: string;
     credentialPayload: ServiceCredentialPayload;
-    isProvidedByUser: boolean;
-    sourceData: {
-        sourceId: string;
-        sourceType: "tool";
-        sourceVersion: string;
-    };
+    serviceCredentialsDefinition: ServiceCredentialsDefinition;
 }
 
 const props = defineProps<Props>();
@@ -55,9 +53,10 @@ const { confirm } = useConfirmDialog();
 
 const userCredentialsStore = useUserCredentialsStore();
 
+const { hasUserProvidedAllCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
+
 const isBusy = ref(false);
 const saveButtonText = ref("Save");
-const isNewSet = ref(false);
 
 const selectedSet = computed<ServiceGroupPayload | undefined>(() =>
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
@@ -65,9 +64,11 @@ const selectedSet = computed<ServiceGroupPayload | undefined>(() =>
 
 const isExpanded = ref(false);
 
-const serviceName = computed<string>(() => props.credentialDefinition.label || props.credentialDefinition.name);
+const serviceName = computed<string>(
+    () => props.serviceCredentialsDefinition.label || props.serviceCredentialsDefinition.name
+);
 
-const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
+const availableSets = computed<ServiceGroupPayload[]>(() => props.credentialPayload.groups);
 
 function generateUniqueName(template: string, sets: ServiceGroupPayload[]): string {
     let name = template;
@@ -80,7 +81,7 @@ function generateUniqueName(template: string, sets: ServiceGroupPayload[]): stri
 }
 
 function getVariableDefinition(name: string, type: CredentialType): ServiceVariableDefinition {
-    const definition = props.credentialDefinition[type === "variable" ? "variables" : "secrets"].find(
+    const definition = props.serviceCredentialsDefinition[type === "variable" ? "variables" : "secrets"].find(
         (variable) => variable.name === name
     );
     if (!definition) {
@@ -104,15 +105,19 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
 function onCreateNewSet() {
     const newSet: ServiceGroupPayload = {
         name: generateUniqueName("new credential", props.credentialPayload.groups),
-        variables: selectedSet.value?.variables.map((variable) => ({ ...variable, value: null })) || [],
-        secrets: selectedSet.value?.secrets.map((secret) => ({ ...secret, value: null, alreadySet: false })) || [],
+        variables: props.serviceCredentialsDefinition.variables.map((variable) => ({
+            name: variable.name,
+            value: null,
+        })),
+        secrets: props.serviceCredentialsDefinition.secrets.map((secret) => ({
+            name: secret.name,
+            value: null,
+        })),
     };
 
     emit("new-credentials-set", newSet);
 
-    isNewSet.value = true;
-
-    onDiscardSet(newSet.name);
+    onEditSet(newSet.name);
 }
 
 function onCurrentSetChange(selectedSet?: ServiceGroupPayload) {
@@ -130,7 +135,8 @@ async function onDeleteSet(setToDelete: ServiceGroupPayload) {
 
     if (confirmed && setToDelete) {
         await userCredentialsStore.deleteCredentialsGroupForTool(
-            props.sourceData.sourceId,
+            props.toolId,
+            props.toolVersion,
             props.credentialPayload,
             setToDelete.name
         );
@@ -138,16 +144,14 @@ async function onDeleteSet(setToDelete: ServiceGroupPayload) {
 }
 
 function onDiscardSet(setName: string) {
-    editSet.value = { ...editSet.value };
-
     delete editSet.value[setName];
+
+    editSet.value = { ...editSet.value };
 }
 
 const editSet = ref<Record<string, { data: ServiceGroupPayload }>>({});
 
 function onEditSet(setName: string) {
-    isNewSet.value = false;
-
     editSet.value = {
         ...editSet.value,
         [setName]: { data: { ...availableSets.value.find((set) => set.name === setName)! } },
@@ -164,10 +168,10 @@ async function onSaveSet(setName: string) {
             return;
         }
 
-        const toSend = {
-            source_id: props.sourceData.sourceId,
-            source_type: props.sourceData.sourceType,
-            source_version: props.sourceData.sourceVersion,
+        const toSend: CreateSourceCredentialsPayload = {
+            source_id: props.toolId,
+            source_type: "tool",
+            source_version: props.toolVersion,
             credentials: [{ ...props.credentialPayload, groups: [editSet.value[setName].data] }],
         };
 
@@ -293,7 +297,7 @@ function onNameInput(setName: string, value?: string) {
                 </span>
 
                 <span class="text-muted selected-set-info">
-                    <span v-if="isProvidedByUser && selectedSet">
+                    <span v-if="hasUserProvidedAllCredentials && selectedSet">
                         Using: <b>{{ selectedSet?.name }}</b>
                     </span>
                     <span v-else> No credentials set</span>
@@ -301,12 +305,13 @@ function onNameInput(setName: string, value?: string) {
             </BButton>
         </div>
 
-        <BCollapse :id="`accordion-${credentialDefinition.name}`" v-model="isExpanded" class="px-2">
+        <BCollapse :id="`accordion-${serviceCredentialsDefinition.name}`" v-model="isExpanded" class="px-2">
             <div class="d-flex flex-column align-items-center mt-2">
-                <span class="text-md">{{ credentialDefinition.description }}</span>
+                <span class="text-md">{{ serviceCredentialsDefinition.description }}</span>
 
                 <GCard
                     v-for="avs in availableSets"
+                    :id="`set-${avs.name}`"
                     :key="avs.name"
                     :title="avs.name"
                     :selected="selectedSet?.name === avs.name && !editSet[avs.name]"
