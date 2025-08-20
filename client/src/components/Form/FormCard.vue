@@ -27,8 +27,7 @@
             <ToolCredentials
                 v-if="credentialInfo?.toolId"
                 :tool-id="credentialInfo.toolId"
-                :tool-version="credentialInfo.toolVersion"
-                :tool-credentials-definition="credentialInfo.toolCredentials" />
+                :tool-version="credentialInfo.toolVersion" />
             <slot name="body" />
         </div>
     </div>
