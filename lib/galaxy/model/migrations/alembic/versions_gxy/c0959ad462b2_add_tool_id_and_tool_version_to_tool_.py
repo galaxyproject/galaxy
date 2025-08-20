@@ -14,6 +14,7 @@ from sqlalchemy import (
 from galaxy.model.migrations.util import (
     add_column,
     drop_column,
+    transaction,
 )
 
 # revision identifiers, used by Alembic.
@@ -29,10 +30,12 @@ tool_version_column = "tool_version"
 
 
 def upgrade():
-    add_column(table_name, Column(tool_id_column, String(255), nullable=False))
-    add_column(table_name, Column(tool_version_column, String(255), nullable=True))
+    with transaction():
+        add_column(table_name, Column(tool_id_column, String(255), nullable=False))
+        add_column(table_name, Column(tool_version_column, String(255), nullable=True))
 
 
 def downgrade():
-    drop_column(table_name, tool_version_column)
-    drop_column(table_name, tool_id_column)
+    with transaction():
+        drop_column(table_name, tool_version_column)
+        drop_column(table_name, tool_id_column)
