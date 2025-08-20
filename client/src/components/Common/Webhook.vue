@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+
 import { appendScriptStyle } from "@/utils/utils";
 import { loadWebhooks, pickWebhook } from "@/utils/webhooks";
-import { onMounted, ref } from "vue";
 
 interface Props {
     type: string;
