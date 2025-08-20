@@ -25,7 +25,6 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
     const { config, isConfigLoaded } = useConfig();
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
-
     if (!user_id && isRegisteredUser(currentUser.value)) {
         user_id = currentUser.value?.id;
     }

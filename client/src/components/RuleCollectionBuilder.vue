@@ -688,7 +688,7 @@ export default {
             required: false,
             default: "datasets",
         },
-        // required if elementsType is "datasets" - hook into Backbone code for creating
+        // required if elementsType is "datasets" - hook into backbone code for creating
         // collections from HDAs, etc...
         creationFn: {
             required: false,
