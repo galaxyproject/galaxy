@@ -1,5 +1,5 @@
 """
-Improved test for TempFilesSource using the decorator-based generic test suite.
+Improved test for MemoryFilesSource using the decorator-based generic test suite.
 
 This demonstrates the new approach that eliminates code duplication while
 maintaining individual test execution and proper pytest reporting.
@@ -9,29 +9,26 @@ from typing import Any
 
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources import BaseFilesSource
-from galaxy.files.sources.temp import TempFilesSource
-from galaxy.files.unittest_utils import (
-    setup_root,
-    TestConfiguredFileSources,
-)
+from galaxy.files.sources.memory import MemoryFilesSource
+from galaxy.files.unittest_utils import TestConfiguredFileSources
 from ._base import (
     BaseFileSourceTestSuite,
     generate_file_source_tests,
 )
 
-ROOT_URI = "temp://test1"
-TEMP_PLUGIN = {
-    "type": "temp",
+ROOT_URI = "memory://test1"
+MEMORY_PLUGIN = {
+    "type": "memory",
     "id": "test1",
-    "doc": "Test temporal file source",
+    "doc": "Test memory file source",
     "writable": True,
 }
 
 
 @generate_file_source_tests
-class TestTempFilesSource(BaseFileSourceTestSuite):
+class TestMemoryFilesSource(BaseFileSourceTestSuite):
     """
-    Test suite for TempFilesSource using the decorator-based generic test framework.
+    Test suite for MemoryFilesSource using the decorator-based generic test framework.
 
     The @generate_file_source_tests decorator automatically creates individual
     test functions for each test method in BaseFileSourceTestSuite.
@@ -43,16 +40,14 @@ class TestTempFilesSource(BaseFileSourceTestSuite):
 
     @property
     def plugin_config(self) -> dict[str, Any]:
-        return TEMP_PLUGIN
+        return MEMORY_PLUGIN
 
     def get_configured_file_sources(self) -> TestConfiguredFileSources:
         """Create and return configured file sources with test data."""
-        tmp, root = setup_root()
         file_sources_config = FileSourcePluginsConfig()
         plugin = self.plugin_config.copy()
-        plugin["root_path"] = root
         file_sources = TestConfiguredFileSources(
-            file_sources_config, conf_dict={self.plugin_config["id"]: plugin}, test_root=root
+            file_sources_config, conf_dict={self.plugin_config["id"]: plugin}, test_root=None
         )
 
         # Populate with test data
@@ -62,8 +57,8 @@ class TestTempFilesSource(BaseFileSourceTestSuite):
         return file_sources
 
     def get_file_source_instance(self, file_sources: TestConfiguredFileSources) -> BaseFilesSource:
-        """Return the TempFilesSource instance."""
+        """Return the MemoryFilesSource instance."""
         file_source_pair = file_sources.get_file_source_path(self.root_uri)
         file_source = file_source_pair.file_source
-        assert isinstance(file_source, TempFilesSource)
+        assert isinstance(file_source, MemoryFilesSource)
         return file_source
