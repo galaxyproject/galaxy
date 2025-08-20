@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
@@ -14,6 +15,8 @@ interface HistoryDatasetPermissionsProps {
     noRedirect?: boolean;
 }
 const props = defineProps<HistoryDatasetPermissionsProps>();
+
+const route = useRoute();
 
 const loading = ref(true);
 
@@ -67,7 +70,7 @@ const { onSuccess, onError } = useCallbacks(init);
 
 <template>
     <div>
-        <BreadcrumbHeading :items="breadcrumbItems" />
+        <BreadcrumbHeading v-if="route.path === '/histories/permissions'" :items="breadcrumbItems" />
 
         <DatasetPermissionsForm
             :loading="loading"
