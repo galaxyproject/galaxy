@@ -28,7 +28,6 @@ import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
-import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -68,6 +67,7 @@ import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
+import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
@@ -530,8 +530,10 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "tours/:tourId",
-                        component: TourRunner,
-                        props: true,
+                        component: CenterFrame,
+                        props: (route) => ({
+                            src: "/welcome",
+                        }),
                     },
                     {
                         path: "rules",

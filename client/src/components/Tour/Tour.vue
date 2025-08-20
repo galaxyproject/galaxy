@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { isAdminUser, isAnonymousUser } from "@/api";
+import type { TourRequirements, TourStep as TourStepType } from "@/api/tours";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -15,12 +17,29 @@ import TourStep from "./TourStep.vue";
 /** Popup display duration when auto-playing the tour */
 const PLAY_DELAY = 3000;
 
+/** A `TourStep` (from backend schema) but with additional before and next actions
+ *
+ * This is there for the legacy `runTour` mounting method (used in webhooks) which provides its own
+ * `onBefore` and `onNext` hooks for each step.
+ *
+ * For when `TourRunner` is parent, we simply use the prop `onBefore` and `onNext` methods and the `TourStep` type.
+ */
+type TourStepWithActions = TourStepType & {
+    onBefore?: () => Promise<void>;
+    onNext?: () => Promise<void>;
+};
+
 const props = defineProps<{
-    steps: { title: string; content: string; onNext?: () => Promise<void>; onBefore?: () => Promise<void> }[];
-    requirements: string[];
-    /** A way to use the vue-router which won't be available in this component locally (because we mount it in `runTour`). */
-    routePush?: (path: string) => void;
+    steps: (TourStepType | TourStepWithActions)[];
+    requirements: TourRequirements;
+    tourId?: string;
+    onBefore?: (step: TourStepType) => Promise<void>;
+    onNext?: (step: TourStepType) => Promise<void>;
 }>();
+
+const emit = defineEmits(["end-tour"]);
+
+const router = useRouter();
 
 const currentIndex = ref(-1);
 const errorMessage = ref("");
@@ -46,6 +65,7 @@ const modalContents = computed<{
     variant: "danger" | "info";
     loading?: boolean;
     okText?: string;
+    cancelText?: "End Tour";
     ok?: () => Promise<void>;
 } | null>(() => {
     if (errorMessage.value) {
@@ -75,10 +95,12 @@ const modalContents = computed<{
                 title: "Requires Login",
                 message: "You must log in to Galaxy to use this tour.",
                 variant: "info",
-                okText: props.routePush ? "Login or Register" : undefined,
+                okText: router ? "Login or Register" : undefined,
+                cancelText: "End Tour",
                 ok: async () => {
-                    if (props.routePush) {
-                        props.routePush("/login/start");
+                    endTour();
+                    if (router) {
+                        router.push(`/login/start${props.tourId ? `?redirect=/tours/${props.tourId}` : ""}`);
                     }
                 },
             };
@@ -88,13 +110,15 @@ const modalContents = computed<{
                 title: "Requires Admin",
                 message: "You must be an admin to use this tour.",
                 variant: "info",
-                okText: props.routePush ? "Exit Tour" : undefined,
+                okText: router ? "Exit Tour" : undefined,
+                cancelText: "End Tour",
                 ok: async () => {
-                    if (props.routePush) {
+                    endTour();
+                    if (router) {
                         if (isAnonymousUser(currentUser.value)) {
-                            props.routePush("/login/start");
+                            router.push(`/login/start${props.tourId ? `?redirect=/tours/${props.tourId}` : ""}`);
                         } else {
-                            props.routePush("/");
+                            router.push("/");
                         }
                     }
                 },
@@ -108,6 +132,7 @@ const modalContents = computed<{
                     "This tour is designed to run on a new history, please create a new history before running it.",
                 variant: "info",
                 okText: "Create New History",
+                cancelText: "End Tour",
                 ok: async () => {
                     await historyStore.createNewHistory();
                 },
@@ -119,10 +144,21 @@ const modalContents = computed<{
 
 // We use this ref to control the modal visibility
 const showModal = ref(false);
+const modalRef = ref<InstanceType<typeof GModal> | null>(null);
+
+// Wait for GModal to render and then force show
+// (We needed this, without this the GModal wouldn't show via the .sync prop)
 watch(
     () => modalContents.value,
-    (newValue) => {
-        showModal.value = newValue !== null;
+    async (newValue) => {
+        if (Boolean(newValue) !== showModal.value) {
+            showModal.value = Boolean(newValue);
+
+            if (showModal.value) {
+                await nextTick();
+                modalRef.value?.showModal?.();
+            }
+        }
     },
     { immediate: true },
 );
@@ -148,15 +184,24 @@ function play(isCurrentlyPlaying: boolean) {
 async function next() {
     try {
         // do post-actions
-        if (currentStep.value && currentStep.value.onNext) {
-            await currentStep.value.onNext();
+        if (currentStep.value) {
+            if ("onNext" in currentStep.value && currentStep.value.onNext) {
+                await currentStep.value.onNext();
+            } else {
+                await props.onNext?.(currentStep.value);
+            }
         }
         // do pre-actions
         const nextIndex = currentIndex.value + 1;
         if (nextIndex < numberOfSteps.value && currentIndex.value !== -1) {
             const nextStep = props.steps[nextIndex];
-            if (nextStep?.onBefore) {
-                await nextStep.onBefore();
+            if (nextStep) {
+                if ("onBefore" in nextStep && nextStep.onBefore) {
+                    await nextStep.onBefore();
+                } else {
+                    await props.onBefore?.(nextStep);
+                }
+
                 // automatically continues to next step if enabled, unless its the last one
                 if (isPlaying.value && nextIndex !== numberOfSteps.value - 1) {
                     setTimeout(() => {
@@ -166,6 +211,9 @@ async function next() {
                     }, PLAY_DELAY);
                 }
             }
+        } else {
+            // End Tour
+            endTour();
         }
         // go to next step
         currentIndex.value = nextIndex;
@@ -174,9 +222,17 @@ async function next() {
     }
 }
 
-function end() {
+/** Ends the tour
+ *
+ * _In the case that_ `TourRunner` _is the parent, this will unmount the component._
+ */
+function endTour() {
     currentIndex.value = -1;
     isPlaying.value = false;
+    errorMessage.value = "";
+
+    // IMPORTANT: This is what unmounts the `TourRunner` component when that is the parent
+    emit("end-tour");
 }
 
 async function handleKeyup(e: KeyboardEvent) {
@@ -185,14 +241,16 @@ async function handleKeyup(e: KeyboardEvent) {
             await next();
             break;
         case 27:
-            end();
+            endTour();
             break;
     }
 }
 
-function modalOk() {
-    if (modalContents.value?.ok) {
+function modalDismiss(ok = true) {
+    if (modalContents.value?.ok && (ok || errorMessage.value)) {
         modalContents.value.ok();
+    } else if (modalContents.value?.cancelText === "End Tour") {
+        endTour();
     }
 }
 </script>
@@ -200,16 +258,21 @@ function modalOk() {
 <template>
     <div class="d-flex flex-column">
         <GModal
+            v-if="modalContents !== null"
             id="tour-requirement"
-            :show.sync="showModal"
-            :confirm="modalContents?.ok !== undefined"
-            :ok-text="modalContents?.okText"
-            :title="modalContents?.title"
+            ref="modalRef"
+            show
+            :confirm="!errorMessage && modalContents.ok !== undefined"
+            :ok-text="modalContents.okText"
+            :cancel-text="modalContents.cancelText"
+            :title="modalContents.title"
             size="small"
-            @ok="modalOk">
-            <BAlert :variant="modalContents?.variant" show>
-                <span v-if="!modalContents?.loading">{{ modalContents?.message }}</span>
-                <LoadingSpan v-else :message="modalContents?.message" />
+            :footer="Boolean(errorMessage)"
+            @ok="modalDismiss"
+            @cancel="modalDismiss(false)">
+            <BAlert :variant="modalContents.variant" show>
+                <span v-if="!modalContents.loading">{{ modalContents.message }}</span>
+                <LoadingSpan v-else :message="modalContents.message" />
             </BAlert>
             <div v-if="errorMessage">
                 The tour encountered an issue and cannot continue to the next step. This may be due to:
@@ -218,8 +281,11 @@ function modalOk() {
                     <li>Page content still loading</li>
                     <li>Browser or network connectivity issues</li>
                 </ul>
-                Click <strong>Ok</strong> to retry the current step, or <strong>Cancel</strong> to cancel the tour.
             </div>
+            <template v-slot:footer>
+                <span v-if="errorMessage">Exit to retry the current step.</span>
+                <span v-else-if="modalContents.cancelText === 'End Tour'">Closing this modal ends the tour.</span>
+            </template>
         </GModal>
         <TourStep
             v-if="modalContents === null && currentHistory && currentStep && currentUser"
@@ -228,7 +294,7 @@ function modalOk() {
             :is-playing="isPlaying"
             :is-last="isLast"
             @next="next"
-            @end="end"
+            @end="endTour"
             @play="play" />
     </div>
 </template>
