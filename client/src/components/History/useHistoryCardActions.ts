@@ -3,11 +3,10 @@ import {
     faCopy,
     faExchangeAlt,
     faEye,
-    faShareAlt,
     faTrash,
     faTrashRestore,
     faUndo,
-    faUsers,
+    faUsersCog,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ComputedRef, Ref } from "vue";
 import { computed } from "vue";
@@ -215,23 +214,15 @@ export function useHistoryCardActions(
 
     /**
      * Secondary actions shown as buttons on the history card
-     * Includes sharing and permission management actions
+     * Includes sharing and access management action
      * @type {CardAction[]}
      */
     const historyCardSecondaryActions: CardAction[] = [
         {
-            id: "change-permissions",
-            label: localize("Change Permissions"),
-            title: localize("Change permissions for this history"),
-            icon: faUsers,
-            to: `/histories/permissions?id=${history.value.id}`,
-            visible: !history.value.deleted && isMyHistory(history.value),
-        },
-        {
-            id: "share",
-            label: localize("Share"),
-            title: localize("Share this history"),
-            icon: faShareAlt,
+            id: "share-access-management",
+            label: localize("Share & Manage Access"),
+            title: localize("Share, Publish, or Set Permissions for this History"),
+            icon: faUsersCog,
             variant: "outline-primary",
             to: `/histories/sharing?id=${history.value.id}`,
             visible: !history.value.deleted && isMyHistory(history.value),

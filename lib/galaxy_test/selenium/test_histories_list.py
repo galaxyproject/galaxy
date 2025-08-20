@@ -42,7 +42,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-share-history-"]')
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-share-access-management-history-"]')
         self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
