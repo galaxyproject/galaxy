@@ -82,6 +82,13 @@ class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3F
             raise exceptions.MessageException("Bucket name is required for S3FsFilesSource.")
         return self._bucket_path(bucket or "", path)
 
+    def _adapt_entry_path(self, filesystem_path: str) -> str:
+        """Remove the S3 bucket name from the filesystem path."""
+        if self.template_config.bucket:
+            bucket_prefix = f"{self.template_config.bucket}/"
+            return filesystem_path.replace(bucket_prefix, "", 1)
+        return filesystem_path
+
     def _list(
         self,
         context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration],
