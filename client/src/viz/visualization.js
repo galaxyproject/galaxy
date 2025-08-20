@@ -4,8 +4,8 @@ import $ from "jquery";
 import { Dataset } from "mvc/dataset/data";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
-import config_mod from "utils/config";
 import _l from "utils/localization";
+import config_mod from "viz/config";
 import util_mod from "viz/trackster/util";
 
 /**
