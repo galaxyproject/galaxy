@@ -195,26 +195,39 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         fs = self._open_fs(context, cache_options)
         fs.put_file(native_path, target_path)
 
-    def _file_info_to_entry(self, dir_path: str, info: dict) -> AnyRemoteEntry:
+    def _adapt_entry_path(self, filesystem_path: str) -> str:
+        """Adapt the filesystem path to the desired entry path.
+
+        Subclasses can override this to transform paths (e.g., filesystem to virtual paths).
+        By default, returns the filesystem path unchanged.
+        """
+        return filesystem_path
+
+    def _extract_timestamp(self, info: dict) -> Optional[str]:
+        """Extract and format timestamp from fsspec file info."""
+        # Handle timestamp fields more robustly - check for None explicitly
+        mtime = info.get("mtime")
+        if mtime is None:
+            mtime = info.get("modified")
+        if mtime is None:
+            mtime = info.get("LastModified")
+
+        ctime_result = self.to_dict_time(mtime)
+        return ctime_result
+
+    def _info_to_entry(self, info: dict) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
-        name = os.path.basename(info["name"])
-        path = os.path.join(dir_path, name)
-        uri = self.uri_from_path(dir_path)
+        filesystem_path = info["name"]
+        entry_path = self._adapt_entry_path(filesystem_path)
+        name = os.path.basename(entry_path)
+        uri = self.uri_from_path(entry_path)
 
         if info.get("type") == "directory":
-            return RemoteDirectory(name=name, uri=uri, path=dir_path)
+            return RemoteDirectory(name=name, uri=uri, path=entry_path)
         else:
             size = int(info.get("size", 0))
-            # Handle timestamp fields more robustly - check for None explicitly
-            mtime = info.get("mtime")
-            if mtime is None:
-                mtime = info.get("modified")
-            if mtime is None:
-                mtime = info.get("LastModified")
-
-            ctime_result = self.to_dict_time(mtime) if mtime is not None else ""
-            ctime = ctime_result if ctime_result is not None else ""
-            return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=path)
+            ctime = self._extract_timestamp(info)
+            return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path)
 
     def _list_recursive(self, fs: AbstractFileSystem, path: str) -> tuple[list[AnyRemoteEntry], int]:
         """Handle recursive directory listing with item limit."""
@@ -223,12 +236,12 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         # Limiting the number of items returned for now.
         res: list[AnyRemoteEntry] = []
         count = 0
-        for p, dirs, files in fs.walk(path, detail=True):
+        for _, dirs, files in fs.walk(path, detail=True):
             # We are using detail=True to get file info as dicts,
             # so we can safely cast the result.
             dirs = cast(dict[str, dict], dirs)
             files = cast(dict[str, dict], files)
-            to_entry = functools.partial(self._file_info_to_entry, str(p))
+            to_entry = functools.partial(self._info_to_entry)
             res.extend(map(to_entry, dirs.values()))
             res.extend(map(to_entry, files.values()))
             count += len(dirs) + len(files)
@@ -252,8 +265,9 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         # Using detail=True returns a dict with file paths as keys and their info as
         # values so we can safely cast the result.
         matched_paths = cast(dict[str, dict], fs.glob(glob_pattern, detail=True))
-        for file_path, info in matched_paths.items():
-            entries_list.append(self._file_info_to_entry(str(file_path), info))
+        for entry_path, info in matched_paths.items():
+            if entry_path:  # Only process entries with valid paths
+                entries_list.append(self._info_to_entry(info))
         return entries_list
 
     def _list_directory(self, fs: AbstractFileSystem, path: str) -> list[AnyRemoteEntry]:
@@ -263,7 +277,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         for entry in entries:
             entry_path = entry.get("name", entry.get("path", ""))
             if entry_path:  # Only process entries with valid paths
-                entries_list.append(self._file_info_to_entry(entry_path, entry))
+                entries_list.append(self._info_to_entry(entry))
         return entries_list
 
     def _apply_pagination(
