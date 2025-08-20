@@ -422,19 +422,19 @@ multi_history_panel:
 
 published_histories:
   selectors:
-    histories: '#grid-histories-published tbody tr'
-    advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
-    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
-    advanced_search_toggle: '#histories-published-grid [data-description="toggle advanced search"]'
-    search_input: '#histories-published-grid input.search-query[data-description="filter text input"]'
+    history_cards: '.history-card-list .g-card'
+    advanced_search_name_input: '#history-list-filter-advanced-filter-name'
+    advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
+    advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
+    advanced_search_toggle: '#history-list [data-description="toggle advanced search"]'
+    search_input: '#history-list input.search-query[data-description="filter text input"]'
     tab: '#histories-published-tab'
 
 shared_histories:
   selectors:
-    _: '#histories-shared-grid'
-    histories: '.grid-table tr'
-    tab: '#histories-shared-tab'
+    shared_list: '.history-card-list'
+    history_cards: '.history-card-list .g-card'
+    shared_tab: '#histories-shared-tab'
 
 history_copy_elements:
   selectors:
@@ -476,14 +476,21 @@ collection_builders:
 histories:
   selectors:
     activity: '#activity-histories'
-    advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
-    advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
-    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
-    histories: '.grid-table tr'
-    import_button: '[data-description="grid action import new history"]'
-    reset_input: '#histories-grid [data-description="reset query"]'
-    search_input: '#histories-grid input.search-query[data-description="filter text input"]'
+    advanced_search_toggle: '#history-list [data-description="toggle advanced search"]'
+    advanced_search_name_input: '#history-list-filter-advanced-filter-name'
+    advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
+    advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
+    history_cards: '.history-card-list .g-card'
+    history_card_title: '[id^="g-card-title-link-history-"]'
+    history_card_select: 'input[id^="g-card-select-history-"]'
+    import_button: '[data-description="header action import new history"]'
+    reset_input: '#history-list-filter [data-description="reset query"]'
+    search_input: '#history-list-filter input.search-query[data-description="filter text input"]'
+    delete_history_confirm: '#delete-history .btn.btn-danger'
+    bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
+    bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
+    bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
+    bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
