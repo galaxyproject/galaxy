@@ -2,7 +2,7 @@ import { appendScriptStyle } from "utils/utils";
 import { loadWebhooks } from "utils/webhooks";
 
 export async function loadMastheadWebhooks(items) {
-    const webhooks = loadWebhooks("masthead");
+    const webhooks = await loadWebhooks("masthead");
     webhooks.forEach((webhook) => {
         if (webhook.activate) {
             const obj = {
