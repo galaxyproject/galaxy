@@ -1,18 +1,17 @@
 import { computed, ref, watch } from "vue";
 
-import {
-    type CreateSourceCredentialsPayload,
-    getKeyFromCredentialsIdentifier,
-    type ServiceCredentialPayload,
-    type ServiceCredentialsDefinition,
-    type ServiceCredentialsIdentifier,
-    type ServiceGroupPayload,
-    type UserCredentials,
+import type {
+    CreateSourceCredentialsPayload,
+    ServiceCredentialPayload,
+    ServiceCredentialsDefinition,
+    ServiceCredentialsIdentifier,
+    ServiceGroupPayload,
+    UserCredentials,
 } from "@/api/users";
+import { getKeyFromCredentialsIdentifier } from "@/api/users";
+import { useToolCredentials } from "@/composables/toolCredentials";
 import { SECRET_PLACEHOLDER, useUserCredentialsStore } from "@/stores/userCredentials";
 import { useUserStore } from "@/stores/userStore";
-
-import { useToolCredentials } from "./toolCredentials";
 
 /**
  * Vue composable that combines user credentials store with tool credentials management.
@@ -20,13 +19,8 @@ import { useToolCredentials } from "./toolCredentials";
  *
  * @param toolId - The ID of the tool
  * @param toolVersion - The version of the tool
- * @param toolCredentialsDefinition - Array of service credentials definitions from the tool
  */
-export function useUserToolCredentials(
-    toolId: string,
-    toolVersion: string,
-    toolCredentialsDefinition: ServiceCredentialsDefinition[]
-) {
+export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const userStore = useUserStore();
     const userCredentialsStore = useUserCredentialsStore();
 
@@ -37,7 +31,7 @@ export function useUserToolCredentials(
         hasSomeRequiredCredentials,
         hasAnyCredentials,
         servicesCount,
-    } = useToolCredentials(toolId, toolCredentialsDefinition);
+    } = useToolCredentials(toolId, toolVersion);
 
     const userCredentials = ref<UserCredentials[] | undefined>(undefined);
     const isBusy = ref(false);
@@ -58,7 +52,7 @@ export function useUserToolCredentials(
         for (const key of sourceCredentialsDefinition.value.services.keys()) {
             const userCredentialForService = getUserCredentialsForService(key);
 
-            const currentGroup = userCredentialForService?.current_group_name ?? "default";
+            const currentGroup = userCredentialForService?.current_group_name;
             const definition = getServiceCredentialsDefinitionByKey(key);
             const groups = buildGroupsFromUserCredentials(definition, userCredentialForService);
             const credential: ServiceCredentialPayload = {
@@ -95,11 +89,7 @@ export function useUserToolCredentials(
         serviceIdentifier: ServiceCredentialsIdentifier
     ): ServiceCredentialsDefinition {
         const key = getKeyFromCredentialsIdentifier(serviceIdentifier);
-        const definition = sourceCredentialsDefinition.value.services.get(key);
-        if (!definition) {
-            throw new Error(`No ServiceCredentialsDefinition found for service '${key}'`);
-        }
-        return definition;
+        return getServiceCredentialsDefinitionByKey(key);
     }
 
     function buildGroupsFromUserCredentials(
@@ -124,19 +114,6 @@ export function useUserToolCredentials(
                 };
                 groups.push(newGroup);
             }
-        } else {
-            const defaultGroup: ServiceGroupPayload = {
-                name: "default",
-                variables: definition.variables.map((variable) => ({
-                    name: variable.name,
-                    value: null,
-                })),
-                secrets: definition.secrets.map((secret) => ({
-                    name: secret.name,
-                    value: null,
-                })),
-            };
-            groups.push(defaultGroup);
         }
         return groups;
     }
@@ -234,7 +211,7 @@ export function useUserToolCredentials(
         isBusy.value = true;
         try {
             userCredentials.value =
-                userCredentialsStore.getAllUserCredentialsForTool(toolId) ??
+                userCredentialsStore.getAllUserCredentialsForTool(toolId, toolVersion) ??
                 (await userCredentialsStore.fetchAllUserCredentialsForTool(toolId, toolVersion));
         } catch (error) {
             console.error("Error checking user credentials", error);
@@ -268,7 +245,7 @@ export function useUserToolCredentials(
         busyMessage.value = "Updating your credentials";
         isBusy.value = true;
         try {
-            await userCredentialsStore.deleteCredentialsGroupForTool(toolId, serviceIdentifier, groupName);
+            await userCredentialsStore.deleteCredentialsGroupForTool(toolId, toolVersion, serviceIdentifier, groupName);
             // Refresh credentials after deletion
             await checkUserCredentials();
         } catch (error) {
