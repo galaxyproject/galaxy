@@ -84,7 +84,16 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
 
         i.e. /{root_path}/a/b/c -> /a/b/c
         """
-        native_path = native_path.replace(self._root_path, os.sep, 1)
+        # Remove the root path prefix
+        if native_path.startswith(self._root_path):
+            virtual_path = native_path[len(self._root_path) :]
+            # Ensure the path starts with a single slash
+            if not virtual_path.startswith(os.sep):
+                virtual_path = os.sep + virtual_path
+            elif virtual_path.startswith(os.sep + os.sep):
+                # Remove extra leading slash if present
+                virtual_path = virtual_path[1:]
+            return virtual_path
         return native_path
 
     def _list(
@@ -109,13 +118,11 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
             query=query,
             sort_by=sort_by,
         )
-
-        # Transform the paths in the results back to virtual paths
-        for entry in entries:
-            entry.path = self._from_temp_path(entry.path)
-            entry.uri = self._from_temp_path(entry.uri)
-
         return entries, total
+
+    def _adapt_entry_path(self, filesystem_path: str) -> str:
+        """Convert filesystem path to virtual temp path."""
+        return self._from_temp_path(filesystem_path)
 
     def _realize_to(
         self,
