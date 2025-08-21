@@ -1,3 +1,4 @@
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -23,8 +24,10 @@ import { useUserStore } from "@/stores/userStore";
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const userStore = useUserStore();
     const userCredentialsStore = useUserCredentialsStore();
+    const { userToolCredentials } = storeToRefs(userCredentialsStore);
 
-    // Use the tool credentials composable for credential definitions
+    const currentUserToolCredentials = computed(() => userToolCredentials.value(toolId, toolVersion));
+
     const {
         sourceCredentialsDefinition,
         hasSomeOptionalCredentials,
@@ -33,15 +36,13 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         servicesCount,
     } = useToolCredentials(toolId, toolVersion);
 
-    const userCredentials = ref<UserCredentials[] | undefined>(undefined);
     const isBusy = ref(false);
     const busyMessage = ref<string>("");
     const mutableUserCredentials = ref<CreateSourceCredentialsPayload>(createUserCredentialsPayload());
 
     watch(
-        userCredentials,
+        () => currentUserToolCredentials.value,
         () => {
-            console.debug("User credentials changed, updating mutable credentials");
             refreshMutableCredentials();
         },
         { deep: true }
@@ -74,7 +75,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     }
 
     function getUserCredentialsForService(key: string): UserCredentials | undefined {
-        return userCredentials.value?.find((c) => getKeyFromCredentialsIdentifier(c) === key);
+        return currentUserToolCredentials.value?.find((c) => getKeyFromCredentialsIdentifier(c) === key);
     }
 
     function getServiceCredentialsDefinitionByKey(key: string): ServiceCredentialsDefinition {
@@ -94,11 +95,11 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     function buildGroupsFromUserCredentials(
         definition: ServiceCredentialsDefinition,
-        userCredentials?: UserCredentials
+        initialUserCredentials?: UserCredentials
     ): ServiceGroupPayload[] {
         const groups: ServiceGroupPayload[] = [];
-        if (userCredentials) {
-            const existingGroups = Object.values(userCredentials.groups);
+        if (initialUserCredentials) {
+            const existingGroups = Object.values(initialUserCredentials.groups);
             for (const group of existingGroups) {
                 const newGroup: ServiceGroupPayload = {
                     name: group.name,
@@ -122,20 +123,20 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      * Check if the user has provided all required credentials
      */
     const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
-        if (!userCredentials.value || userCredentials.value.length === 0) {
+        if (!currentUserToolCredentials.value || currentUserToolCredentials.value.length === 0) {
             return false;
         }
-        return userCredentials.value.every((credentials) => areRequiredSetByUser(credentials));
+        return currentUserToolCredentials.value.every((credentials) => areRequiredSetByUser(credentials));
     });
 
     /**
      * Check if the user has provided all credentials (required and optional)
      */
     const hasUserProvidedAllCredentials = computed<boolean>(() => {
-        if (!userCredentials.value || userCredentials.value.length === 0) {
+        if (!currentUserToolCredentials.value || currentUserToolCredentials.value.length === 0) {
             return false;
         }
-        return userCredentials.value.every(areAllSetByUser);
+        return currentUserToolCredentials.value.every(areAllSetByUser);
     });
 
     /**
@@ -210,8 +211,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         busyMessage.value = "Checking your credentials";
         isBusy.value = true;
         try {
-            userCredentials.value =
-                userCredentialsStore.getAllUserCredentialsForTool(toolId, toolVersion) ??
+            userCredentialsStore.getAllUserCredentialsForTool(toolId, toolVersion) ??
                 (await userCredentialsStore.fetchAllUserCredentialsForTool(toolId, toolVersion));
         } catch (error) {
             console.error("Error checking user credentials", error);
@@ -228,8 +228,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         busyMessage.value = "Saving your credentials";
         isBusy.value = true;
         try {
-            userCredentials.value = await userCredentialsStore.saveUserCredentialsForTool(providedCredentials);
-            return userCredentials.value;
+            await userCredentialsStore.saveUserCredentialsForTool(providedCredentials);
         } catch (error) {
             console.error("Error saving user credentials", error);
             throw error;
@@ -257,13 +256,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     }
 
     /**
-     * Update user credentials reference
-     */
-    function updateUserCredentials(data?: UserCredentials[]) {
-        userCredentials.value = data;
-    }
-
-    /**
      * Refresh the mutable credentials payload based on current user credentials
      */
     function refreshMutableCredentials() {
@@ -278,7 +270,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         servicesCount,
 
         /** The credentials for the user already stored in the system */
-        userCredentials,
+        currentUserToolCredentials,
 
         /** Mutable credentials for editing */
         mutableUserCredentials,
@@ -301,7 +293,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         checkUserCredentials,
         saveUserCredentials,
         deleteCredentialsGroup,
-        updateUserCredentials,
         refreshMutableCredentials,
         getServiceCredentialsDefinition,
     };
