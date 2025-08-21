@@ -26,6 +26,7 @@ const router = useRouter();
 
 const props = defineProps<{
     tools: ToolType[];
+    loading?: boolean;
 }>();
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
@@ -152,7 +153,7 @@ function onOpen(tool: Tool) {
         :item-key="(tool) => tool.id"
         :prop-items="toolsUptoOffset"
         :prop-total-count="props.tools.length"
-        :prop-busy="busy"
+        :prop-busy="busy || (!props.tools.length && props.loading)"
         name="tool"
         name-plural="tools"
         :load-disabled="!props.tools.length">

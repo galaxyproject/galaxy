@@ -197,7 +197,7 @@ function applyFilter(filter: string, value: string) {
             </div>
         </div>
         <div class="tools-list-body">
-            <ToolsListTable :tools="itemsLoaded" @apply-filter="applyFilter" />
+            <ToolsListTable :tools="itemsLoaded" :loading="loading" @apply-filter="applyFilter" />
         </div>
     </section>
 </template>
