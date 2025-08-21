@@ -8,12 +8,12 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BSkeleton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 import GButton from "../BaseComponents/GButton.vue";
-import LoadingSpan from "../LoadingSpan.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
@@ -141,7 +141,7 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
             </div>
 
             <div v-if="props.fetching">
-                <LoadingSpan message="Fetching tool help" />
+                <BSkeleton />
             </div>
 
             <!-- eslint-disable-next-line vue/no-v-html -->
