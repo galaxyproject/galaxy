@@ -16,6 +16,8 @@ import { orderBy } from "lodash";
 import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
+export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
+
 const FILTER_KEYS = {
     id: ["id", "tool_id"],
     panel_section_name: ["section", "panel_section_name"],

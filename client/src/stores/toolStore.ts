@@ -6,7 +6,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -194,7 +194,9 @@ export const useToolStore = defineStore("toolStore", () => {
             loading.value = true;
             // Backend search
             if (q?.trim()) {
-                if (!toolResults.value[q]) {
+                // We have either cached the backend search result,
+                // or it is a favorites search (which we always repeat for changes)
+                if (!toolResults.value[q] || FAVORITES_KEYS.includes(q.trim())) {
                     const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
                     saveToolResults(q, data);
                 }

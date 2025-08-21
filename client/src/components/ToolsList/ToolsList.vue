@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { faStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import { createWhooshQuery } from "../Panels/utilities";
+import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
 
+import GButton from "../BaseComponents/GButton.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
 import Heading from "../Common/Heading.vue";
 import ToolsListTable from "./ToolsListTable.vue";
@@ -76,6 +79,9 @@ const filterSettings = computed<FilterSettings>(() =>
 const showAdvanced = ref(false);
 const filterText = ref(ToolFilters.value.applyFiltersToText(props, ""));
 
+const showFavorites = computed(() => FAVORITES_KEYS.includes(filterText.value.trim()));
+const favoritesButtonTitle = computed(() => (showFavorites.value ? "Hide favorite tools" : "Show favorite tools"));
+
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
 const whooshQuery = computed(() =>
@@ -108,71 +114,87 @@ function applyFilter(filter: string, value: string) {
                 <i class="ml-1"> Found {{ itemsLoaded.length }} tools </i>
             </div>
 
-            <FilterMenu
-                class="py-2"
-                name="Tools"
-                placeholder="search tools"
-                :debounce-delay="200"
-                :filter-text.sync="filterText"
-                :filter-class="ToolFilters"
-                has-help
-                :loading="loading"
-                :show-advanced.sync="showAdvanced">
-                <template v-slot:menu-help-text>
-                    <div>
-                        <p>
-                            You can use this Advanced Tool Search Panel to find tools by applying search filters, with
-                            the results showing up in the center panel.
-                        </p>
-
+            <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
+                <FilterMenu
+                    class="w-100"
+                    name="Tools"
+                    placeholder="search tools"
+                    :debounce-delay="200"
+                    :filter-text.sync="filterText"
+                    :filter-class="ToolFilters"
+                    has-help
+                    :loading="loading"
+                    :show-advanced.sync="showAdvanced">
+                    <template v-slot:menu-help-text>
                         <div>
-                            Hints:
-                            <ul>
-                                <li>
-                                    <i>
-                                        Clicking on the Section, Repo or Owner labels in the Search Results will
-                                        activate the according filter.
-                                    </i>
-                                </li>
-                                <li>
-                                    <i>
-                                        To find exact matches, you need to use double quotes (e.g.:
-                                        <code>"Get Data"</code>) around the search term.
-                                    </i>
-                                </li>
-                            </ul>
-                        </div>
+                            <p>
+                                You can use this Advanced Tool Search Panel to find tools by applying search filters,
+                                with the results showing up in the center panel.
+                            </p>
 
-                        <p>The available tool search filters are:</p>
-                        <dl>
-                            <dt><code>name</code></dt>
-                            <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
-                            <dt><code>section</code></dt>
-                            <dd>The tool section is based on the default tool panel view</dd>
-                            <dt><code>ontology</code></dt>
-                            <dd>
-                                This is the EDAM ontology term that is associated with the tool. Example inputs:
-                                <i>"topic_3174"</i> or <i>"operation_0324"</i>
-                            </dd>
-                            <dt><code>id</code></dt>
-                            <dd>The tool id (taken from its XML)</dd>
-                            <dt><code>owner</code></dt>
-                            <dd>
-                                For the tools that have been installed from the
-                                <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
-                                , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
-                                repository <b>owner</b>.
-                            </dd>
-                            <dt><code>help text</code></dt>
-                            <dd>
-                                This is like a keyword search: you can search for keywords that might exist in a tool's
-                                help text. An example input:
-                                <i>"genome, RNA, minimap"</i>
-                            </dd>
-                        </dl>
-                    </div>
-                </template>
-            </FilterMenu>
+                            <div>
+                                Hints:
+                                <ul>
+                                    <li>
+                                        <i>
+                                            Clicking on the Section, Repo or Owner labels in the Search Results will
+                                            activate the according filter.
+                                        </i>
+                                    </li>
+                                    <li>
+                                        <i>
+                                            To find exact matches, you need to use double quotes (e.g.:
+                                            <code>"Get Data"</code>) around the search term.
+                                        </i>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <p>The available tool search filters are:</p>
+                            <dl>
+                                <dt><code>name</code></dt>
+                                <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
+                                <dt><code>section</code></dt>
+                                <dd>The tool section is based on the default tool panel view</dd>
+                                <dt><code>ontology</code></dt>
+                                <dd>
+                                    This is the EDAM ontology term that is associated with the tool. Example inputs:
+                                    <i>"topic_3174"</i> or <i>"operation_0324"</i>
+                                </dd>
+                                <dt><code>id</code></dt>
+                                <dd>The tool id (taken from its XML)</dd>
+                                <dt><code>owner</code></dt>
+                                <dd>
+                                    For the tools that have been installed from the
+                                    <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
+                                    , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
+                                    repository <b>owner</b>.
+                                </dd>
+                                <dt><code>help text</code></dt>
+                                <dd>
+                                    This is like a keyword search: you can search for keywords that might exist in a
+                                    tool's help text. An example input:
+                                    <i>"genome, RNA, minimap"</i>
+                                </dd>
+                            </dl>
+                        </div>
+                    </template>
+                </FilterMenu>
+
+                <GButton
+                    v-if="!showAdvanced"
+                    id="show-favorites"
+                    class="text-nowrap"
+                    tooltip
+                    :title="favoritesButtonTitle"
+                    :pressed="showFavorites"
+                    outline
+                    color="blue"
+                    @click="filterText = showFavorites ? '' : '#favorites'">
+                    <FontAwesomeIcon :icon="faStar" fixed-width />
+                    Favorites
+                </GButton>
+            </div>
         </div>
         <div class="tools-list-body">
             <ToolsListTable :tools="itemsLoaded" @apply-filter="applyFilter" />

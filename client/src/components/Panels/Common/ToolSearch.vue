@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
 
-import { searchToolsByKeys } from "@/components/Panels/utilities";
+import { FAVORITES_KEYS, searchToolsByKeys } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
@@ -17,7 +17,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 // Note: These are ordered by result priority (exact matches very top; words matches very bottom)
 const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
 
-const FAVORITES = ["#favs", "#favorites", "#favourites"];
 const MIN_QUERY_LENGTH = 3;
 
 const props = defineProps({
@@ -172,7 +171,7 @@ onUnmounted(() => {
 watch(
     () => currentFavorites.value.tools,
     () => {
-        if (FAVORITES.includes(props.query)) {
+        if (FAVORITES_KEYS.includes(props.query)) {
             post({ type: "favoriteTools" });
         }
     },
@@ -181,7 +180,7 @@ watch(
 function checkQuery(q: string) {
     emit("onQuery", q);
     if (q.trim() && q.trim().length >= MIN_QUERY_LENGTH) {
-        if (FAVORITES.includes(q)) {
+        if (FAVORITES_KEYS.includes(q)) {
             post({ type: "favoriteTools" });
         } else {
             post({
