@@ -432,53 +432,6 @@ class Biom1(Json):
             pass
         return is_biom
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Store metadata information from the BIOM file.
-        """
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
-                try:
-                    json_dict = json.load(fh)
-                except Exception:
-                    return
-
-                def _transform_dict_list_ids(dict_list):
-                    if dict_list:
-                        return [x.get("id", None) for x in dict_list]
-                    return []
-
-                b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for m_name, b_name in [
-                    ("table_rows", "rows"),
-                    ("table_matrix_element_type", "matrix_element_type"),
-                    ("table_format", "format"),
-                    ("table_generated_by", "generated_by"),
-                    ("table_matrix_type", "matrix_type"),
-                    ("table_shape", "shape"),
-                    ("table_format_url", "format_url"),
-                    ("table_date", "date"),
-                    ("table_type", "type"),
-                    ("table_id", "id"),
-                    ("table_columns", "columns"),
-                ]:
-                    try:
-                        metadata_value = json_dict.get(b_name, None)
-                        if b_name == "columns" and metadata_value:
-                            keep_columns = set()
-                            for column in metadata_value:
-                                if column["metadata"] is not None:
-                                    for k, v in column["metadata"].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
-                            final_list = sorted(keep_columns)
-                            dataset.metadata.table_column_metadata_headers = final_list
-                        if b_name in b_transform:
-                            metadata_value = b_transform[b_name](metadata_value)
-                        setattr(dataset.metadata, m_name, metadata_value)
-                    except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong.")
-
 
 @build_sniff_from_prefix
 class ImgtJson(Json):
