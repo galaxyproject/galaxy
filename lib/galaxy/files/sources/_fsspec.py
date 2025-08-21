@@ -141,6 +141,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         try:
             cache_options = self._get_cache_options(context.config)
             fs = self._open_fs(context, cache_options)
+            path = self._to_filesystem_path(path)
 
             if recursive:
                 return self._list_recursive(fs, path)
@@ -182,6 +183,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """Download a file from the fsspec filesystem to a local path."""
         cache_options = self._get_cache_options(context.config)
         fs = self._open_fs(context, cache_options)
+        source_path = self._to_filesystem_path(source_path)
         fs.get_file(source_path, native_path)
 
     def _write_from(
@@ -193,6 +195,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """Upload a file from a local path to the fsspec filesystem."""
         cache_options = self._get_cache_options(context.config)
         fs = self._open_fs(context, cache_options)
+        target_path = self._to_filesystem_path(target_path)
         fs.put_file(native_path, target_path)
 
     def _adapt_entry_path(self, filesystem_path: str) -> str:
@@ -202,6 +205,14 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         By default, returns the filesystem path unchanged.
         """
         return filesystem_path
+
+    def _to_filesystem_path(self, path: str) -> str:
+        """Convert an entry path to the filesystem path format.
+
+        Subclasses can override this to transform paths (e.g., virtual to filesystem paths).
+        By default, returns the path unchanged.
+        """
+        return path
 
     def _extract_timestamp(self, info: dict) -> Optional[str]:
         """Extract and format timestamp from fsspec file info."""
