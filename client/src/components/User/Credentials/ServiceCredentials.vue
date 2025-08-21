@@ -17,16 +17,14 @@ import { computed, ref } from "vue";
 import type {
     CreateSourceCredentialsPayload,
     ServiceCredentialPayload,
-    ServiceCredentialsDefinition,
     ServiceGroupPayload,
     ServiceVariableDefinition,
-    UserCredentials,
 } from "@/api/users";
 import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
-import { useUserCredentialsStore } from "@/stores/userCredentials";
+import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -38,37 +36,62 @@ interface Props {
     toolId: string;
     toolVersion: string;
     credentialPayload: ServiceCredentialPayload;
-    serviceCredentialsDefinition: ServiceCredentialsDefinition;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "update-credentials-list", userCredentials?: UserCredentials[]): void;
     (e: "new-credentials-set", newSet: ServiceGroupPayload): void;
     (e: "update-current-set", newSet?: ServiceGroupPayload): void;
 }>();
 
 const { confirm } = useConfirmDialog();
+const { getServiceCredentialsDefinition } = useToolCredentialsDefinitionsStore();
+const { isBusy, busyMessage, saveUserCredentials, deleteCredentialsGroup } = useUserToolCredentials(
+    props.toolId,
+    props.toolVersion
+);
 
-const userCredentialsStore = useUserCredentialsStore();
-
-const { hasUserProvidedAllCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
-
-const isBusy = ref(false);
+const isExpanded = ref(false);
 const saveButtonText = ref("Save");
+const editSet = ref<Record<string, { data: ServiceGroupPayload }>>({});
+
+const availableSets = computed<ServiceGroupPayload[]>(() => props.credentialPayload.groups);
+const serviceCredentialsDefinition = computed(() => {
+    const scd = getServiceCredentialsDefinition(props.toolId, props.toolVersion, props.credentialPayload);
+
+    if (!scd) {
+        throw new Error(
+            `Service credentials definition not found for tool ${props.toolId} version ${props.toolVersion}`
+        );
+    }
+
+    return scd;
+});
 
 const selectedSet = computed<ServiceGroupPayload | undefined>(() =>
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
 );
-
-const isExpanded = ref(false);
-
 const serviceName = computed<string>(
-    () => props.serviceCredentialsDefinition.label || props.serviceCredentialsDefinition.name
+    () => serviceCredentialsDefinition.value.label || serviceCredentialsDefinition.value.name
 );
+const disableSaveButton = computed(() => {
+    return (editingSetKey: string) => {
+        if (!editSet.value[editingSetKey]) {
+            return true;
+        }
 
-const availableSets = computed<ServiceGroupPayload[]>(() => props.credentialPayload.groups);
+        const newData = editSet.value[editingSetKey].data;
+
+        return (
+            isBusy.value ||
+            !newData.name ||
+            newData.variables.some((variable) => !variable.value && !isVariableOptional(variable.name, "variable")) ||
+            newData.secrets.some((secret) => !secret.value && !isVariableOptional(secret.name, "secret")) ||
+            availableSets.value.filter((set) => set.name === newData.name).length > 1
+        );
+    };
+});
 
 function generateUniqueName(template: string, sets: ServiceGroupPayload[]): string {
     let name = template;
@@ -81,7 +104,7 @@ function generateUniqueName(template: string, sets: ServiceGroupPayload[]): stri
 }
 
 function getVariableDefinition(name: string, type: CredentialType): ServiceVariableDefinition {
-    const definition = props.serviceCredentialsDefinition[type === "variable" ? "variables" : "secrets"].find(
+    const definition = serviceCredentialsDefinition.value[type === "variable" ? "variables" : "secrets"].find(
         (variable) => variable.name === name
     );
     if (!definition) {
@@ -105,11 +128,11 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
 function onCreateNewSet() {
     const newSet: ServiceGroupPayload = {
         name: generateUniqueName("new credential", props.credentialPayload.groups),
-        variables: props.serviceCredentialsDefinition.variables.map((variable) => ({
+        variables: serviceCredentialsDefinition.value.variables.map((variable) => ({
             name: variable.name,
             value: null,
         })),
-        secrets: props.serviceCredentialsDefinition.secrets.map((secret) => ({
+        secrets: serviceCredentialsDefinition.value.secrets.map((secret) => ({
             name: secret.name,
             value: null,
         })),
@@ -134,12 +157,7 @@ async function onDeleteSet(setToDelete: ServiceGroupPayload) {
     });
 
     if (confirmed && setToDelete) {
-        await userCredentialsStore.deleteCredentialsGroupForTool(
-            props.toolId,
-            props.toolVersion,
-            props.credentialPayload,
-            setToDelete.name
-        );
+        await deleteCredentialsGroup(props.credentialPayload, setToDelete.name);
     }
 }
 
@@ -149,8 +167,6 @@ function onDiscardSet(setName: string) {
     editSet.value = { ...editSet.value };
 }
 
-const editSet = ref<Record<string, { data: ServiceGroupPayload }>>({});
-
 function onEditSet(setName: string) {
     editSet.value = {
         ...editSet.value,
@@ -159,14 +175,12 @@ function onEditSet(setName: string) {
 }
 
 async function onSaveSet(setName: string) {
-    saveButtonText.value = "Saving";
-
     try {
-        isBusy.value = true;
-
         if (!editSet.value[setName]) {
             return;
         }
+
+        saveButtonText.value = busyMessage.value;
 
         const toSend: CreateSourceCredentialsPayload = {
             source_id: props.toolId,
@@ -175,35 +189,15 @@ async function onSaveSet(setName: string) {
             credentials: [{ ...props.credentialPayload, groups: [editSet.value[setName].data] }],
         };
 
-        const newData = await userCredentialsStore.saveUserCredentialsForTool(toSend);
+        await saveUserCredentials(toSend);
 
-        emit("update-credentials-list", newData);
         onDiscardSet(setName);
     } catch (e) {
         Toast.error(`Error saving credentials: ${errorMessageAsString(e)}`);
     } finally {
-        isBusy.value = false;
         saveButtonText.value = "Save";
     }
 }
-
-const disableSaveButton = computed(() => {
-    return (editingSetKey: string) => {
-        if (!editSet.value[editingSetKey]) {
-            return true;
-        }
-
-        const newData = editSet.value[editingSetKey].data;
-
-        return (
-            isBusy.value ||
-            !newData.name ||
-            newData.variables.some((variable) => !variable.value && !isVariableOptional(variable.name, "variable")) ||
-            newData.secrets.some((secret) => !secret.value && !isVariableOptional(secret.name, "secret")) ||
-            availableSets.value.filter((set) => set.name === newData.name).length > 1
-        );
-    };
-});
 
 function primaryActions(setData: ServiceGroupPayload): CardAction[] {
     return [
@@ -297,10 +291,10 @@ function onNameInput(setName: string, value?: string) {
                 </span>
 
                 <span class="text-muted selected-set-info">
-                    <span v-if="hasUserProvidedAllCredentials && selectedSet">
+                    <span v-if="selectedSet">
                         Using: <b>{{ selectedSet?.name }}</b>
                     </span>
-                    <span v-else> No credentials set</span>
+                    <span v-else> No credential set</span>
                 </span>
             </BButton>
         </div>
