@@ -74,7 +74,7 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
 
         i.e. /a/b/c -> /{root_path}/a/b/c
         """
-        relative_path = path.lstrip(os.sep)
+        relative_path = path.lstrip("/")
         if not relative_path:
             return self._root_path
         return os.path.join(self._root_path, relative_path)
@@ -87,10 +87,10 @@ class TempFilesSource(FsspecFilesSource[TempFileSourceTemplateConfiguration, Tem
         # Remove the root path prefix
         if native_path.startswith(self._root_path):
             virtual_path = native_path[len(self._root_path) :]
-            # Ensure the path starts with a single slash
-            if not virtual_path.startswith(os.sep):
-                virtual_path = os.sep + virtual_path
-            elif virtual_path.startswith(os.sep + os.sep):
+            # Ensure the path starts with a single forward slash
+            if not virtual_path.startswith("/"):
+                virtual_path = f"/{virtual_path}"
+            elif virtual_path.startswith("//"):
                 # Remove extra leading slash if present
                 virtual_path = virtual_path[1:]
             return virtual_path
