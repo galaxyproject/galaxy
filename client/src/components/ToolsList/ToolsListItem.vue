@@ -127,11 +127,11 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
             <div v-if="props.summary" v-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
-                <GLink v-if="!showHelp" @click="() => (showHelp = true)">
+                <GLink v-if="!showHelp" unselectable @click="() => (showHelp = true)">
                     <FontAwesomeIcon :icon="faAngleDown" />
                     Show tool help
                 </GLink>
-                <GLink v-else @click="() => (showHelp = false)">
+                <GLink v-else unselectable @click="() => (showHelp = false)">
                     <FontAwesomeIcon :icon="faAngleUp" />
                     Hide tool help
                 </GLink>

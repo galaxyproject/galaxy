@@ -33,6 +33,8 @@ const props = defineProps<{
     dark?: boolean;
     /** Disables the default bold look of the link */
     thin?: boolean;
+    /** Makes the link unselectable */
+    unselectable?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -52,6 +54,7 @@ const styleClasses = computed(() => {
         "g-dark": props.dark,
         "g-thin": props.thin,
         "g-disabled": props.disabled,
+        "g-unselectable": props.unselectable,
     };
 });
 
@@ -130,6 +133,11 @@ const linkElementRef = useResolveElement(linkRef);
         text-decoration: underline;
         color: var(--color-grey-500) !important;
         cursor: default;
+    }
+
+    &.g-unselectable {
+        user-select: none;
+        -webkit-user-select: none;
     }
 }
 </style>
