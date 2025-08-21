@@ -185,6 +185,7 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function fetchTools(q?: string) {
         try {
+            loading.value = true;
             // Backend search
             if (q?.trim()) {
                 if (!toolResults.value[q]) {
@@ -195,7 +196,6 @@ export const useToolStore = defineStore("toolStore", () => {
 
             // Fetch all tools by IDs if not already fetched
             if (Object.keys(toolsById.value).length === 0) {
-                loading.value = true;
                 const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
                 saveAllTools(data as Tool[]);
             }
