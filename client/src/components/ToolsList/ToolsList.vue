@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
@@ -11,9 +9,7 @@ import { createWhooshQuery } from "../Panels/utilities";
 
 import FilterMenu from "../Common/FilterMenu.vue";
 import Heading from "../Common/Heading.vue";
-import ScrollToTopButton from "./ScrollToTopButton.vue";
 import ToolsListTable from "./ToolsListTable.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     name?: string;
@@ -71,10 +67,6 @@ const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
 // a "hint" to the `FilterMenu` help text.
 const ToolFilters = computed<Filtering<string>>(() => new Filtering(validFilters.value, undefined, false, false));
 
-// Scroll Variables
-const scrollContainer = ref<HTMLElement | null>(null);
-const { scrollTop } = useAnimationFrameScroll(scrollContainer);
-
 /** The filters derived from the `filterText` via the `Filtering` class. */
 const filterSettings = computed<FilterSettings>(() =>
     Object.fromEntries(ToolFilters.value.getFiltersForText(filterText.value)),
@@ -92,10 +84,6 @@ const whooshQuery = computed(() =>
 
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
-
-function scrollToTop() {
-    scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });
-}
 
 watch(
     () => whooshQuery.value,
@@ -186,26 +174,21 @@ function applyFilter(filter: string, value: string) {
                 </template>
             </FilterMenu>
         </div>
-        <div ref="scrollContainer" class="overflow-auto">
-            <BAlert v-if="loading" class="m-2" variant="info" show>
-                <LoadingSpan message="Loading Tools" />
-            </BAlert>
-            <BAlert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
-                No tools found for the entered filters.
-            </BAlert>
-            <div v-else>
-                <ToolsListTable :tools="itemsLoaded" @apply-filter="applyFilter" />
-            </div>
+        <div class="tools-list-body">
+            <ToolsListTable :tools="itemsLoaded" @apply-filter="applyFilter" />
         </div>
-        <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
     </section>
 </template>
 
 <style lang="scss" scoped>
 .tools-list {
-    position: relative;
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    flex-flow: column;
+
+    .tools-list-body {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
 }
 </style>

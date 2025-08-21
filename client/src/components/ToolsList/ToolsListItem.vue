@@ -13,23 +13,40 @@ import { computed, ref } from "vue";
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 import GButton from "../BaseComponents/GButton.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
-// TODO: Refactor props to use defineProps with types (best practices)
-const props = defineProps({
-    id: { type: String, required: true },
-    name: { type: String, required: true },
-    section: { type: String, required: true },
-    ontologies: { type: Array<string>, default: null },
-    description: { type: String, default: null },
-    summary: { type: String, default: null },
-    help: { type: String, default: null },
-    version: { type: String, default: null },
-    link: { type: String, default: null },
-    workflowCompatible: { type: Boolean, default: false },
-    local: { type: Boolean, default: false },
-    owner: { type: String, default: null },
+interface Props {
+    id: string;
+    name: string;
+    section?: string;
+    ontologies?: string[];
+    description?: string;
+    summary?: string;
+    help?: string;
+    version?: string;
+    link?: string;
+    workflowCompatible: boolean;
+    local: boolean;
+    owner?: string;
+    fetching: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    id: "",
+    name: "",
+    section: undefined,
+    ontologies: undefined,
+    description: undefined,
+    summary: undefined,
+    help: undefined,
+    version: undefined,
+    link: undefined,
+    workflowCompatible: false,
+    local: false,
+    owner: undefined,
+    fetching: false,
 });
 
 // TODO: For tool open emit, consider adding event as param to allow for opening tool in new tab
@@ -113,7 +130,7 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
                 <span v-if="props.owner" class="tag success">
                     <FontAwesomeIcon :icon="faUser" />
                     <b>Owner:</b>
-                    <GLink thin @click="() => emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
+                    <GLink thin @click="emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
                 </span>
 
                 <span v-if="props.ontologies && props.ontologies.length > 0">
@@ -123,8 +140,12 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
                 </span>
             </div>
 
+            <div v-if="props.fetching">
+                <LoadingSpan message="Fetching tool help" />
+            </div>
+
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-if="props.summary" v-html="props.summary"></div>
+            <div v-if="props.summary && !showHelp" v-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
                 <GLink v-if="!showHelp" unselectable @click="() => (showHelp = true)">

@@ -51,6 +51,12 @@ export interface Tool {
     form_style: string;
     disabled?: boolean;
     icon?: string;
+    tool_shed_repository?: {
+        name: string;
+        owner: string;
+        changeset_revision: string;
+        tool_shed: string;
+    };
 }
 
 export interface ToolSection {
