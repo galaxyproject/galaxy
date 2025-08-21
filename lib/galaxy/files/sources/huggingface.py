@@ -88,8 +88,8 @@ class HuggingFaceFilesSource(
             **cache_options,
         )
 
-    def _adapt_path(self, path: str) -> str:
-        """Transform Galaxy path to Hugging Face filesystem path."""
+    def _to_filesystem_path(self, path: str) -> str:
+        """Transform entry path to Hugging Face filesystem path."""
         if path == "/":
             # Hugging Face does not implement access to the repositories root
             return ""
@@ -112,7 +112,6 @@ class HuggingFaceFilesSource(
             return self._list_repositories(config=context.config, limit=limit, offset=offset, query=query)
 
         # For non-root paths, use the parent implementation
-        path = self._adapt_path(path)
         return super()._list(
             context=context,
             path=path,
