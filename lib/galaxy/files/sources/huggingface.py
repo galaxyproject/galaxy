@@ -140,7 +140,7 @@ class HuggingFaceFilesSource(
             repos_iter = api.list_models(search=query, sort="downloads", direction=-1, limit=MAX_REPO_LIMIT)
 
             # Convert repositories to directory entries
-            entries_list = []
+            entries_list: list[AnyRemoteEntry] = []
             for repo in repos_iter:
                 repo_id = repo.id if hasattr(repo, "id") else str(repo)
                 entry = RemoteDirectory(
