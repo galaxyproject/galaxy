@@ -17,7 +17,9 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
 
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
 
-    const currentUserCredentialsForTools = computed(() => userCredentialsForTools.value);
+    const userToolCredentials = computed(() => (toolId: string, toolVersion: string) => {
+        return userCredentialsForTools.value[getKey(toolId, toolVersion)];
+    });
 
     function getKey(toolId: string, toolVersion: string): string {
         const userId = ensureUserIsRegistered();
@@ -115,8 +117,11 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
             // Remove the group from the credentials
             const updatedCredentials = credentials.map((credential) => {
                 if (credential.name === serviceIdentifier.name && credential.version === serviceIdentifier.version) {
-                    delete credential.groups[groupName];
+                    const updatedCredential = { ...credential };
+                    delete updatedCredential.groups[groupName];
+                    return updatedCredential;
                 }
+                return credential;
             });
             set(userCredentialsForTools.value, key, updatedCredentials);
         }
@@ -142,7 +147,8 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
     }
 
     return {
-        currentUserCredentialsForTools,
+        userCredentialsForTools,
+        userToolCredentials,
         getAllUserCredentialsForTool,
         fetchAllUserCredentialsForTool,
         saveUserCredentialsForTool,
