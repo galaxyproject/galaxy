@@ -1,16 +1,8 @@
 <script setup lang="ts">
 import { BModal } from "bootstrap-vue";
-import { computed, onMounted } from "vue";
 
-import type {
-    CreateSourceCredentialsPayload,
-    ServiceCredentialPayload,
-    ServiceCredentialsIdentifier,
-    ServiceGroupPayload,
-    UserCredentials,
-} from "@/api/users";
+import type { ServiceCredentialPayload, ServiceGroupPayload } from "@/api/users";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
-import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
@@ -22,26 +14,17 @@ interface ManageToolCredentialsProps {
 const props = defineProps<ManageToolCredentialsProps>();
 
 const emit = defineEmits<{
-    (e: "onUpdateCredentialsList", data?: UserCredentials[]): void;
-    (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
-    (e: "delete-credentials-group", serviceId: ServiceCredentialsIdentifier, groupName: string): void;
     (e: "close"): void;
 }>();
 
-const { getServiceCredentialsDefinition } = useToolCredentialsDefinitionsStore();
-const { checkUserCredentials, mutableUserCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
-
-const serviceCredentialsDefinition = computed(
-    () => (credentialPayload: ServiceCredentialPayload) =>
-        getServiceCredentialsDefinition(props.toolId, props.toolVersion, credentialPayload)
-);
+const { mutableUserCredentials, saveUserCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
 
 function saveCredentials() {
     if (!mutableUserCredentials.value) {
         return;
     }
 
-    emit("save-credentials", mutableUserCredentials.value);
+    saveUserCredentials(mutableUserCredentials.value);
 }
 
 function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
@@ -51,17 +34,6 @@ function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: Servi
 
     if (credentialFound) {
         credentialFound.groups.push(newSet);
-    }
-}
-
-function onDeleteCredentialsGroup(serviceId: ServiceCredentialsIdentifier, groupName: string) {
-    const credentialFound = mutableUserCredentials.value.credentials.find(
-        (c) => c.name === serviceId.name && c.version === serviceId.version
-    );
-
-    if (credentialFound) {
-        credentialFound.groups = credentialFound.groups.filter((g) => g.name !== groupName);
-        emit("delete-credentials-group", serviceId, groupName);
     }
 }
 
@@ -77,14 +49,6 @@ function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: Servi
         }
     }
 }
-
-function onUpdateCredentialsList(data?: UserCredentials[]) {
-    emit("onUpdateCredentialsList", data);
-}
-
-onMounted(async () => {
-    await checkUserCredentials();
-});
 </script>
 
 <template>
@@ -109,20 +73,15 @@ onMounted(async () => {
         </p>
 
         <div class="accordion">
-            <template v-for="credential in mutableUserCredentials.credentials">
-                <ServiceCredentials
-                    v-if="serviceCredentialsDefinition(credential)"
-                    :key="credential.name"
-                    class="mb-2"
-                    :tool-id="props.toolId"
-                    :tool-version="props.toolVersion"
-                    :credential-payload="credential"
-                    :service-credentials-definition="serviceCredentialsDefinition(credential)"
-                    @update-credentials-list="onUpdateCredentialsList"
-                    @new-credentials-set="(newSet) => onNewCredentialsSet(credential, newSet)"
-                    @delete-credentials-group="onDeleteCredentialsGroup"
-                    @update-current-set="(updatedSet) => onCurrentSetChange(credential, updatedSet)" />
-            </template>
+            <ServiceCredentials
+                v-for="credential in mutableUserCredentials.credentials"
+                :key="credential.name"
+                class="mb-2"
+                :tool-id="props.toolId"
+                :tool-version="props.toolVersion"
+                :credential-payload="credential"
+                @new-credentials-set="(newSet) => onNewCredentialsSet(credential, newSet)"
+                @update-current-set="(updatedSet) => onCurrentSetChange(credential, updatedSet)" />
         </div>
     </BModal>
 </template>
