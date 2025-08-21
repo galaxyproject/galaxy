@@ -38,13 +38,6 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
     busy.value = true;
 
     const items = props.tools.slice(offset, offset + limit);
-    for (const tool of items) {
-        if (!helpDataCached.value.has(tool.id)) {
-            await fetchHelp(tool);
-        }
-    }
-
-    busy.value = false;
 
     toolsUptoOffset.value.push(
         ...items.map((tool) => {
@@ -54,6 +47,14 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
             } as Tool;
         })
     );
+
+    for (const tool of items) {
+        if (!helpDataCached.value.has(tool.id)) {
+            await fetchHelp(tool);
+        }
+    }
+
+    busy.value = false;
 
     return { items, total: props.tools.length };
 }
