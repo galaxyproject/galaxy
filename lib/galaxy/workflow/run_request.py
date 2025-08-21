@@ -521,6 +521,7 @@ def workflow_run_config_to_request(
     workflow_invocation = WorkflowInvocation()
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
+    workflow_invocation.state = WorkflowInvocation.states.NEW
     ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:

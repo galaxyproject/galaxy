@@ -170,7 +170,13 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if exception:
             raise exception
 
-    def queue(self, workflow_invocation, request_params, flush=True, initial_state: Optional[InvocationState] = None):
+    def queue(
+        self,
+        workflow_invocation: model.WorkflowInvocation,
+        request_params,
+        flush: bool = True,
+        initial_state: Optional[InvocationState] = None,
+    ):
         initial_state = initial_state or model.WorkflowInvocation.states.NEW
         workflow_invocation.set_state(initial_state)
         workflow_invocation.scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
