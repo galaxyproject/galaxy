@@ -3,7 +3,7 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
-import type { Tool as ToolType } from "@/stores/toolStore";
+import type { Tool } from "@/stores/toolStore";
 
 import { fetchData } from "./services";
 
@@ -18,14 +18,10 @@ type ToolHelpData = {
     summary?: string;
 };
 
-type Tool = ToolType & {
-    ontologies?: string[];
-};
-
 const router = useRouter();
 
 const props = defineProps<{
-    tools: ToolType[];
+    tools: Tool[];
     loading?: boolean;
 }>();
 
@@ -40,14 +36,7 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
 
     const items = props.tools.slice(offset, offset + limit);
 
-    toolsUptoOffset.value.push(
-        ...items.map((tool) => {
-            return {
-                ...tool,
-                ontologies: tool.edam_operations.concat(tool.edam_topics),
-            } as Tool;
-        })
-    );
+    toolsUptoOffset.value.push(...items);
 
     for (const tool of items) {
         if (!helpDataCached.value.has(tool.id)) {
@@ -163,7 +152,8 @@ function onOpen(tool: Tool) {
                 :key="item.id"
                 :name="item.name"
                 :section="item.panel_section_name || undefined"
-                :ontologies="item.ontologies"
+                :edam-operations="item.edam_operations"
+                :edam-topics="item.edam_topics"
                 :description="item.description"
                 :fetching="!helpDataCached.has(item.id) && busy"
                 :summary="helpDataCached.get(item.id)?.summary"

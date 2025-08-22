@@ -12,6 +12,7 @@ import { BSkeleton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
+import { useToolStore } from "@/stores/toolStore";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -21,7 +22,8 @@ interface Props {
     id: string;
     name: string;
     section?: string;
-    ontologies?: string[];
+    edamOperations: string[];
+    edamTopics: string[];
     description?: string;
     summary?: string;
     help?: string;
@@ -54,6 +56,38 @@ const emit = defineEmits<{
     (e: "open"): void;
     (e: "apply-filter", filter: string, value: string): void;
 }>();
+
+const toolStore = useToolStore();
+
+function getOntologyBadges(
+    view: "ontology:edam_operations" | "ontology:edam_topics",
+    ids: string[]
+): {
+    id: string;
+    name: string;
+    title: "EDAM Operation" | "EDAM Topic";
+}[] {
+    if (ids?.length) {
+        const sections = toolStore.getToolSections(view);
+        return ids
+            .map((id) => sections[id])
+            .filter((section) => section !== undefined)
+            .map((section) => ({
+                id: section.id,
+                name: section.name,
+                title: view === "ontology:edam_operations" ? "EDAM Operation" : "EDAM Topic",
+            }));
+    }
+    return [];
+}
+
+const edamOperationsBadges = computed(() => getOntologyBadges("ontology:edam_operations", props.edamOperations));
+
+const edamTopicsBadges = computed(() => getOntologyBadges("ontology:edam_topics", props.edamTopics));
+
+const ontologies = computed(() => {
+    return edamOperationsBadges.value.concat(edamTopicsBadges.value);
+});
 
 const showHelp = ref(false);
 
@@ -111,7 +145,7 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
         </div>
 
         <div class="tool-list-item-content">
-            <div class="d-flex flex-gapx-1 py-2">
+            <div class="d-flex flex-gapx-1 flex-gapy-1 flex-wrap py-2">
                 <span v-if="props.section" class="tag info">
                     <b>Section:</b>
                     <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
@@ -133,10 +167,10 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
                     <GLink thin @click="emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
                 </span>
 
-                <span v-if="props.ontologies && props.ontologies.length > 0">
-                    <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
-                        <GLink thin @click="() => emit('apply-filter', 'ontology', ontology)">{{ ontology }}</GLink>
-                    </span>
+                <span v-for="ontology in ontologies" :key="ontology.id" class="tag toggle">
+                    <GLink thin :title="ontology.title" @click="() => emit('apply-filter', 'ontology', ontology.id)">{{
+                        ontology.name
+                    }}</GLink>
                 </span>
             </div>
 
