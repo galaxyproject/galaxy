@@ -21,7 +21,7 @@ const invalidUrl = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/additional-
 
 describe("FromFileOrUrl", () => {
     it("converts shared urls to json urls", async () => {
-        const wrapper = mount(FromFileOrUrl, { localVue });
+        const wrapper = mount(FromFileOrUrl as object, { localVue });
 
         {
             const input = wrapper.find("#workflow-import-url-input");
