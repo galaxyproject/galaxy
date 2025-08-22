@@ -142,7 +142,7 @@ export const useToolStore = defineStore("toolStore", () => {
                     sec.id !== "builtin_converters" &&
                     sec.name !== undefined
                 );
-            });
+            }) as ToolSection[];
         };
     });
 
@@ -214,6 +214,11 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
+    function getToolSections(effectiveView: string) {
+        const sectionEntries = panelSections.value(effectiveView).map((section) => [section.id, section]);
+        return Object.fromEntries(sectionEntries) as Record<string, ToolSection>;
+    }
+
     async function initializePanel() {
         try {
             currentPanelView.value = currentPanelView.value || defaultPanelView.value;
@@ -279,5 +284,6 @@ export const useToolStore = defineStore("toolStore", () => {
         setPanel,
         toolsById,
         toolSections,
+        getToolSections,
     };
 });
