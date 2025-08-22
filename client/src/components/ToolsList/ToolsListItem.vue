@@ -19,6 +19,7 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolStore } from "@/stores/toolStore";
 
 import GButton from "../BaseComponents/GButton.vue";
+import ToolShareButton from "../Tool/Buttons/ToolShareButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
@@ -94,6 +95,8 @@ const ontologies = computed(() => {
 const showHelp = ref(false);
 const showPopover = ref(false);
 
+const canBeRun = computed(() => props.formStyle === "regular" || !props.local);
+
 const formattedToolHelp = computed(() => {
     if (showHelp.value) {
         const { formattedContent } = useFormattedToolHelp(props.help);
@@ -115,7 +118,7 @@ function quotedOntology(ontology: OntologyBadge) {
 
 const routeTo = computed(() =>
     props.id !== "upload1" && props.local && props.formStyle === "regular"
-        ? `/?tool_id=${encodeURIComponent(props.id)}&version=${props.version}`
+        ? `/?tool_id=${encodeURIComponent(props.id)}${props.version ? `&version=${props.version}` : ""}`
         : undefined,
 );
 
@@ -160,7 +163,7 @@ function openUploadIfNeeded() {
                         :show.sync="showPopover"
                         custom-class="tool-info-popover"
                         boundary="window"
-                        placement="bottomleft"
+                        placement="topleft"
                         :target="`tools-list-${props.id}`"
                         triggers="hover">
                         <div class="d-flex flex-column flex-gapy-1 text-center">
@@ -173,9 +176,18 @@ function openUploadIfNeeded() {
                         </div>
                     </BPopover>
 
+                    <ToolShareButton
+                        v-if="canBeRun && props.id !== 'upload1'"
+                        :id="props.id"
+                        :name="props.name"
+                        :link="routeHref"
+                        :version="props.version"
+                        color="grey" />
+
                     <ToolFavoriteButton :id="props.id" class="text-nowrap" color="grey" detailed />
 
                     <GButton
+                        v-if="canBeRun"
                         class="text-nowrap"
                         color="blue"
                         size="small"
