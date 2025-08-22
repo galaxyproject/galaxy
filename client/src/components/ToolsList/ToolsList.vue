@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
 import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
@@ -32,6 +33,8 @@ const props = withDefaults(defineProps<Props>(), {
     owner: "",
     help: "",
 });
+
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const toolStore = useToolStore();
 const { loading } = storeToRefs(toolStore);
@@ -187,7 +190,7 @@ function applyFilter(filter: string, value: string) {
                 </FilterMenu>
 
                 <GButton
-                    v-if="!showAdvanced"
+                    v-if="!showAdvanced && !isAnonymous"
                     id="show-favorites"
                     class="text-nowrap"
                     tooltip
