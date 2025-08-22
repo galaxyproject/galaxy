@@ -209,13 +209,13 @@ onMounted(() => {
 
         <template v-slot>
             <ToolCredentials
-                v-if="props.options.credentials && !props.editorView"
+                v-if="props.options.credentials?.length && !props.editorView"
                 class="mt-2"
                 :tool-id="props.id"
                 :tool-version="props.version" />
 
             <BAlert
-                v-else-if="props.options.credentials && props.editorView"
+                v-else-if="props.options.credentials?.length && props.editorView"
                 v-b-tooltip.hover
                 variant="info"
                 class="mt-2"
