@@ -35,6 +35,9 @@ interface Props<T> {
     adjustForTotalCountChanges?: boolean;
     /** The current scroll position of the list (used to track where the user has scrolled to). */
     propScrollTop?: number;
+    /** Whether to show "N {namePlural} loaded" instead of the default "All {namePlural} loaded" in the
+     * `all-loaded-footer` slot. */
+    showCountInFooter?: boolean;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -51,6 +54,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     propBusy: undefined,
     adjustForTotalCountChanges: false,
     propScrollTop: 0,
+    showCountInFooter: false,
 });
 
 const emit = defineEmits<{
@@ -102,6 +106,13 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
 });
 const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const scrolledBottom = computed(() => !isScrollable.value || arrived.bottom);
+
+const listEndText = computed<string>(() => {
+    let txt = !props.showCountInFooter ? "All" : (items.value.length || 0).toString();
+    txt += ` ${props.showCountInFooter && items.value.length === 1 ? props.name : props.namePlural}`;
+    txt += " loaded";
+    return txt;
+});
 
 const allLoaded = computed(() => totalItemCount.value !== undefined && totalItemCount.value <= items.value.length);
 
@@ -208,7 +219,7 @@ watch(
                         </slot>
 
                         <slot v-else-if="allLoaded" name="all-loaded-footer">
-                            <div class="list-end">- All {{ props.namePlural }} loaded -</div>
+                            <div class="list-end">- {{ listEndText }} -</div>
                         </slot>
                     </template>
                 </BListGroup>

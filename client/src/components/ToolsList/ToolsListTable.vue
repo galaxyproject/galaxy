@@ -129,7 +129,8 @@ function parseHelpForSummary(help: string): string {
         :prop-busy="busy || (!props.tools.length && props.loading)"
         name="tool"
         name-plural="tools"
-        :load-disabled="!props.tools.length">
+        :load-disabled="!props.tools.length"
+        show-count-in-footer>
         <template v-slot:item="{ item }">
             <ToolsListItem
                 :id="item.id"

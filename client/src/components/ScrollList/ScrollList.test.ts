@@ -152,8 +152,12 @@ describe("ScrollList with local loader and data", () => {
         while (wrapper.findAll(TEST_ITEM_DIV).length < TOTAL_ITEMS) {
             await scrollOnce();
         }
-        expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
+        expect(wrapper.text()).toContain(`- All ${ITEM_NAME_PLURAL} loaded -`);
         expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(false);
+
+        // Now we test if the `showCountInFooter` prop works
+        await wrapper.setProps({ showCountInFooter: true });
+        expect(wrapper.text()).toContain(`- ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL} loaded -`);
     });
 });
 
