@@ -101,6 +101,11 @@ class HuggingFaceFilesSource(
         # Remove leading slash for HF compatibility
         return path.lstrip("/")
 
+    def _extract_timestamp(self, info: dict) -> Optional[str]:
+        """Extract timestamp from Hugging Face file info to use it in the RemoteFile entry."""
+        last_commit: dict = info.get("last_commit", {})
+        return last_commit.get("date")
+
     def _list(
         self,
         context: FilesSourceRuntimeContext[HuggingFaceFileSourceConfiguration],
