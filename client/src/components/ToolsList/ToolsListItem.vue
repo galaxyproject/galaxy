@@ -4,13 +4,14 @@ import {
     faAngleUp,
     faExclamationTriangle,
     faExternalLinkAlt,
+    faInfoCircle,
     faLayerGroup,
     faSitemap,
     faUser,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
+import { BPopover, BSkeleton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
@@ -89,6 +90,7 @@ const ontologies = computed(() => {
 });
 
 const showHelp = ref(false);
+const showPopover = ref(false);
 
 const formattedToolHelp = computed(() => {
     if (showHelp.value) {
@@ -126,10 +128,38 @@ function quotedOntology(ontology: OntologyBadge) {
                     </GLink>
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
-                <span>(Galaxy Version {{ props.version }})</span>
             </div>
+
             <div class="d-flex align-items-start">
                 <div class="d-flex align-items-center flex-gapx-1">
+                    <GButton
+                        v-if="props.version || !props.workflowCompatible"
+                        :id="`tools-list-${props.id}`"
+                        icon-only
+                        transparent
+                        inline
+                        style="cursor: help"
+                        @click="showPopover = !showPopover">
+                        <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+                    </GButton>
+                    <BPopover
+                        v-if="props.version || !props.workflowCompatible"
+                        :show.sync="showPopover"
+                        custom-class="tool-info-popover"
+                        boundary="window"
+                        placement="bottomleft"
+                        :target="`tools-list-${props.id}`"
+                        triggers="hover">
+                        <div class="d-flex flex-column flex-gapy-1 text-center">
+                            <div>Galaxy Version {{ props.version }}</div>
+
+                            <div v-if="!props.workflowCompatible" class="tag warn">
+                                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                                Not Workflow compatible
+                            </div>
+                        </div>
+                    </BPopover>
+
                     <ToolFavoriteButton :id="props.id" color="grey" detailed />
 
                     <GButton
@@ -159,11 +189,6 @@ function quotedOntology(ontology: OntologyBadge) {
                 <span v-if="!props.local" class="tag info">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     External
-                </span>
-
-                <span v-if="!props.workflowCompatible" class="tag warn">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" />
-                    Not Workflow compatible
                 </span>
 
                 <span v-if="props.owner" class="tag success">
@@ -218,7 +243,10 @@ function quotedOntology(ontology: OntologyBadge) {
     .tool-list-item-content {
         padding-left: 0.5rem;
     }
+}
 
+.tool-info-popover,
+.tool-list-item {
     .tag {
         border-style: solid;
         border-width: 0 2px 1px 0;
