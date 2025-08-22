@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { faLayerGroup, faSitemap, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import {
+    faExternalLinkAlt,
+    faLayerGroup,
+    faLink,
+    faSitemap,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { getFullAppUrl } from "@/app/utils";
+import { Toast } from "@/composables/toast";
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
+import { copy } from "@/utils/clipboard";
 import type Filtering from "@/utils/filtering";
 
+import type { CardAction } from "../Common/GCard.types";
 import { types_to_icons } from "../Panels/utilities";
 
-import GLink from "../BaseComponents/GLink.vue";
 import GCard from "../Common/GCard.vue";
 
 const props = defineProps<{
@@ -48,6 +57,38 @@ const selectedOntology = computed<ToolSection | null>(() => {
         Object.values(edamTopics.value).find((section: ToolSection) => section.id === ontologyId) ||
         null
     );
+});
+
+const selectedOntologyActions = computed<CardAction[]>(() => {
+    const actions: CardAction[] = [];
+    if (selectedOntology.value) {
+        const ontologyId = selectedOntology.value.id;
+        const ontologyName = selectedOntology.value.name;
+        actions.push({
+            id: "tools-list-ontology-filter-link",
+            label: "Link to these results",
+            icon: faLink,
+            title: "Copy link to these results",
+            variant: "outline-primary",
+            handler: () => {
+                const link = getFullAppUrl(`tools/list?ontology="${ontologyId}"`);
+                copy(link);
+                Toast.success(`Link to ontology "${ontologyName} (${ontologyId})" copied to clipboard`);
+            },
+        });
+        if (selectedOntology.value.links && "edam_browser" in selectedOntology.value.links) {
+            actions.push({
+                id: "ontology-link",
+                label: "EDAM Browser",
+                icon: faExternalLinkAlt,
+                title: "View in EDAM Browser",
+                variant: "outline-primary",
+                href: selectedOntology.value.links.edam_browser,
+                externalLink: true,
+            });
+        }
+    }
+    return actions;
 });
 
 ensureSectionsAndOntologiesLoaded();
@@ -177,6 +218,7 @@ function applyQuotedFilter(filter: string, value: string) {
                     icon: faSitemap,
                 },
             ]"
+            :secondary-actions="selectedOntologyActions"
             :description="selectedOntology.description"
             full-description
             :title="selectedOntology.name">
@@ -187,19 +229,6 @@ function applyQuotedFilter(filter: string, value: string) {
                     <!-- TODO: There can be a mismatch here, maybe try to fix. Something like this looks better:
                     {{ Math.max(selectedOntology.tools.length, itemsLoaded.length) }} tools in this ontology -->
                 </i>
-            </template>
-            <template v-slot:secondary-actions>
-                <div v-if="selectedOntology.links && Object.keys(selectedOntology.links).length > 0">
-                    <GLink
-                        v-for="(link, key) in selectedOntology.links"
-                        :key="key"
-                        :href="link"
-                        :title="link"
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        {{ key }}
-                    </GLink>
-                </div>
             </template>
         </GCard>
     </div>
