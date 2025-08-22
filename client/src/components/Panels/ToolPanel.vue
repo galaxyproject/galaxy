@@ -1,23 +1,17 @@
 <script setup lang="ts">
-import { faCaretDown, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
-import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import { types_to_icons } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
-import Heading from "@/components/Common/Heading.vue";
 
 const toolStore = useToolStore();
 
@@ -33,26 +27,11 @@ const emit = defineEmits<{
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { currentPanelView, currentToolSections, isPanelPopulated, loading, panels, toolSections } =
-    storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, isPanelPopulated, toolSections } = storeToRefs(toolStore);
 
 const errorMessage = ref("");
-const panelName = ref("");
 const panelsFetched = ref(false);
 const query = ref("");
-
-const panelIcon = computed<IconDefinition | null>(() => {
-    if (
-        currentPanelView.value !== "default" &&
-        panels.value &&
-        typeof panels.value[currentPanelView.value]?.view_type === "string"
-    ) {
-        const viewType = panels.value[currentPanelView.value]?.view_type;
-        return viewType && types_to_icons[viewType] ? types_to_icons[viewType] : null;
-    } else {
-        return null;
-    }
-});
 
 const showFavorites = computed({
     get() {
@@ -67,16 +46,6 @@ const showFavorites = computed({
             query.value = query.value.replace("#favorites", "").trim();
         }
     },
-});
-
-const toolPanelHeader = computed(() => {
-    if (loading.value && panelName.value) {
-        return localize(panelName.value);
-    } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
-        return localize(panels.value[currentPanelView.value]?.name);
-    } else {
-        return localize("Tools");
-    }
 });
 
 async function initializePanel() {
@@ -94,12 +63,6 @@ async function initializePanel() {
     } finally {
         panelsFetched.value = true;
     }
-}
-
-async function updatePanelView(panelView: string) {
-    panelName.value = panels.value[panelView]?.name || "";
-    await toolStore.setPanel(panelView);
-    panelName.value = "";
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -145,38 +108,7 @@ initializePanel();
         go-to-all-title="Discover Tools"
         href="/tools/list">
         <template v-slot:activity-panel-header-top>
-            <PanelViewMenu
-                v-if="panels && Object.keys(panels).length > 1"
-                :panel-views="panels"
-                :current-panel-view="currentPanelView"
-                :store-loading="loading"
-                @updatePanelView="updatePanelView">
-                <template v-slot:panel-view-selector>
-                    <div class="d-flex justify-content-between panel-view-selector">
-                        <div>
-                            <FontAwesomeIcon
-                                v-if="panelIcon && !loading"
-                                class="mr-1"
-                                :icon="panelIcon"
-                                data-description="panel view header icon" />
-                            <Heading
-                                id="toolbox-heading"
-                                :class="toolPanelHeader !== 'Tools' && 'font-italic'"
-                                h2
-                                inline
-                                size="sm">
-                                <span v-if="loading && panelName">
-                                    <LoadingSpan :message="toolPanelHeader" />
-                                </span>
-                                <span v-else>{{ toolPanelHeader }}</span>
-                            </Heading>
-                        </div>
-                        <div class="panel-header-buttons">
-                            <FontAwesomeIcon :icon="faCaretDown" />
-                        </div>
-                    </div>
-                </template>
-            </PanelViewMenu>
+            <PanelViewMenu />
         </template>
         <template v-slot:header-buttons>
             <FavoritesButton v-model="showFavorites" />
@@ -206,12 +138,6 @@ initializePanel();
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-
-.panel-view-selector {
-    color: $panel-header-text-color;
-}
-
 .toolbox-panel {
     padding: 0.5rem 0rem !important;
 

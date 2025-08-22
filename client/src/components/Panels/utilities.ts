@@ -70,6 +70,10 @@ export const types_to_icons = {
     training: faGraduationCap,
 } as const satisfies Record<string, IconDefinition>;
 
+export function isToolSection(toolOrSection: Tool | ToolSection): toolOrSection is ToolSection {
+    return (toolOrSection as ToolSection).model_class === "ToolSection";
+}
+
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
     let query = "";

@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
+import { type FilterSettings, type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
+import { createSortedResultObject, createWhooshQuery, FAVORITES_KEYS, isToolSection } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GLink from "../BaseComponents/GLink.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
+import GCard from "../Common/GCard.vue";
 import Heading from "../Common/Heading.vue";
+import PanelViewMenu from "../Panels/Menus/PanelViewMenu.vue";
 import ToolsListTable from "./ToolsListTable.vue";
 
 interface Props {
@@ -33,7 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const toolStore = useToolStore();
-const { loading } = storeToRefs(toolStore);
+const { currentToolSections, currentPanelView, loading } = storeToRefs(toolStore);
 
 // Filtering Classes and Definitions
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
@@ -91,6 +95,55 @@ const whooshQuery = computed(() =>
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 
+/** A section view of all tools loaded from the store. */
+const allSectionsLoaded = computed<Record<string, ToolSection>>(() => {
+    const matchedTools: { id: string; order: number }[] = Object.keys(toolStore.getToolsById()).map((id) => ({
+        id: id,
+        order: 6,
+    }));
+    const { resultPanel } = createSortedResultObject(matchedTools, currentToolSections.value);
+
+    return Object.fromEntries(
+        Object.entries(resultPanel).filter(([_, section]) => isToolSection(section) && section.name !== "Uncategorized")
+    ) as Record<string, ToolSection>;
+
+    // TODO: If we want sections loaded for the given query, we can add the whooshQuery param to `getToolsById`.
+});
+
+const selectedSection = computed<ToolSection | null>(() => {
+    const sectionName = ToolFilters.value.getFilterValue(filterText.value, "section");
+    const sectionWithMatchingName = Object.values(currentToolSections.value).find(
+        (section: Tool | ToolSection) => section.name === sectionName
+    );
+    if (sectionWithMatchingName && isToolSection(sectionWithMatchingName)) {
+        return sectionWithMatchingName;
+    } else {
+        const ontologyId = ToolFilters.value.getFilterValue(filterText.value, "ontology");
+        const foundOntology = Object.values(currentToolSections.value).find(
+            (section: Tool | ToolSection) => section.id === ontologyId
+        );
+        if (foundOntology && isToolSection(foundOntology)) {
+            return foundOntology;
+        }
+    }
+    return null;
+});
+
+const selectedSectionBadges = computed(() => {
+    if (selectedSection.value?.id === ToolFilters.value.getFilterValue(filterText.value, "ontology")) {
+        return [
+            {
+                id: "ontology-id",
+                label: selectedSection.value!.id,
+                title: "The EDAM id for this ontology",
+                class: "ontology-badge",
+                visible: true,
+            },
+        ];
+    }
+    return [];
+});
+
 watch(
     () => whooshQuery.value,
     async (newQuery) => {
@@ -99,19 +152,38 @@ watch(
     { deep: true, immediate: true },
 );
 
+// Change filter text on panel view change (because this also changes what is in the section selector)
+watch(
+    () => currentPanelView.value,
+    () => {
+        filterText.value = "";
+    }
+);
+
 function applyFilter(filter: string, value: string) {
     filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+}
+
+function searchForSection(section: ToolSection) {
+    if (["ontology:edam_operations", "ontology:edam_topics"].includes(currentPanelView.value)) {
+        const foundOntology = ontologyList.value.find((ontology) => ontology.value === section.id);
+        if (foundOntology?.text) {
+            applyFilter("ontology", foundOntology.value);
+        }
+    } else {
+        applyFilter("section", section.name);
+    }
 }
 </script>
 
 <template>
     <section class="tools-list">
         <div class="mb-2">
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center justify-content-between">
                 <Heading h1 separator inline size="lg" class="flex-grow-1 m-0">
                     <span v-localize>Discover Tools in this Galaxy</span>
                 </Heading>
-                <i class="ml-1"> Found {{ itemsLoaded.length }} tools </i>
+                <PanelViewMenu compact has-info />
             </div>
 
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
@@ -195,7 +267,65 @@ function applyFilter(filter: string, value: string) {
                     Favorites
                 </GButton>
             </div>
+
+            <BDropdown
+                block
+                :disabled="loading"
+                variant="link"
+                class="tool-section-dropdown"
+                toggle-class="text-decoration-none"
+                role="menu"
+                aria-label="Select a tool section to filter by"
+                size="sm">
+                <template v-slot:button-content>
+                    <span class="sr-only">Select a tool section to filter by</span>
+                    <span v-if="selectedSection">
+                        {{ selectedSection.name }}
+                    </span>
+                    <i v-else> Select a section to filter by </i>
+                </template>
+
+                <BDropdownItem
+                    v-for="sec in allSectionsLoaded"
+                    :key="sec.id"
+                    class="ml-1"
+                    :title="sec.description"
+                    :active="selectedSection?.id === sec.id"
+                    @click="searchForSection(sec)">
+                    <span v-localize>{{ sec.name }}</span>
+                </BDropdownItem>
+            </BDropdown>
+
+            <GCard
+                v-if="selectedSection?.description"
+                current
+                :badges="selectedSectionBadges"
+                :description="selectedSection.description"
+                full-description
+                :title="selectedSection.name">
+                <template v-slot:update-time>
+                    <i v-if="selectedSection.tools">
+                        {{ Math.max(selectedSection.tools.length, itemsLoaded.length) }} tools in this section
+
+                        <!-- TODO: There can be a mismatch here, maybe try to fix. -->
+                    </i>
+                </template>
+                <template v-slot:secondary-actions>
+                    <div v-if="selectedSection.links && Object.keys(selectedSection.links).length > 0">
+                        <GLink
+                            v-for="(link, key) in selectedSection.links"
+                            :key="key"
+                            :href="link"
+                            :title="link"
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            {{ key }}
+                        </GLink>
+                    </div>
+                </template>
+            </GCard>
         </div>
+
         <div class="tools-list-body">
             <ToolsListTable :tools="itemsLoaded" :loading="loading" @apply-filter="applyFilter" />
         </div>
@@ -203,9 +333,24 @@ function applyFilter(filter: string, value: string) {
 </template>
 
 <style lang="scss" scoped>
+@import "theme/blue.scss";
+
 .tools-list {
     display: flex;
     flex-flow: column;
+
+    .tool-section-dropdown {
+        :deep(.dropdown-menu) {
+            overflow: auto;
+            max-height: 50vh;
+            min-width: 100%;
+        }
+    }
+
+    :deep(.ontology-badge) {
+        background-color: scale-color($brand-toggle, $lightness: +75%);
+        border-color: scale-color($brand-toggle, $lightness: +55%);
+    }
 
     .tools-list-body {
         display: flex;
