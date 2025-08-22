@@ -218,6 +218,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             throw error;
         } finally {
             isBusy.value = false;
+            busyMessage.value = "";
         }
     }
 
@@ -234,6 +235,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             throw error;
         } finally {
             isBusy.value = false;
+            busyMessage.value = "";
         }
     }
 
@@ -252,6 +254,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             throw error;
         } finally {
             isBusy.value = false;
+            busyMessage.value = "";
         }
     }
 
