@@ -92,6 +92,11 @@ const whooshQuery = computed(() =>
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 
+/** There is currently an active `owner:` filter */
+const hasOwnerFilter = computed(() =>
+    Boolean(ToolFilters.value.getFilterValue(filterText.value, "owner")?.replace(/^"(.*)"$/, "$1")),
+);
+
 watch(
     () => whooshQuery.value,
     async (newQuery) => {
@@ -204,7 +209,11 @@ function applyFilter(filter: string, value: string) {
         </div>
 
         <div class="tools-list-body">
-            <ToolsListTable :tools="itemsLoaded" :loading="loading" @apply-filter="applyFilter" />
+            <ToolsListTable
+                :tools="itemsLoaded"
+                :loading="loading"
+                :has-owner-filter="hasOwnerFilter"
+                @apply-filter="applyFilter" />
         </div>
     </section>
 </template>

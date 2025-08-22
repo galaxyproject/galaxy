@@ -23,6 +23,7 @@ const router = useRouter();
 const props = defineProps<{
     tools: Tool[];
     loading?: boolean;
+    hasOwnerFilter?: boolean;
 }>();
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
@@ -160,7 +161,7 @@ function onOpen(tool: Tool) {
                 :help="helpDataCached.get(item.id)?.help"
                 :local="item.target === 'galaxy_main'"
                 :link="item.link"
-                :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
+                :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"
                 :version="item.version"
                 @open="() => onOpen(item)"
