@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faLayerGroup, faSitemap, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -87,6 +87,7 @@ function applyQuotedFilter(filter: string, value: string) {
                 size="sm">
                 <template v-slot:button-content>
                     <span class="sr-only">Select a tool section to filter by</span>
+                    <FontAwesomeIcon :icon="faLayerGroup" />
                     <span v-if="selectedSection">
                         {{ selectedSection.name }}
                     </span>
@@ -114,6 +115,7 @@ function applyQuotedFilter(filter: string, value: string) {
                 size="sm">
                 <template v-slot:button-content>
                     <span class="sr-only">Select a tool ontology to filter by</span>
+                    <FontAwesomeIcon :icon="faSitemap" />
                     <span v-if="selectedOntology">
                         {{ selectedOntology.name }}
                     </span>
@@ -172,6 +174,7 @@ function applyQuotedFilter(filter: string, value: string) {
                     title: 'The EDAM id for this ontology',
                     class: 'ontology-badge',
                     visible: true,
+                    icon: faSitemap,
                 },
             ]"
             :description="selectedOntology.description"

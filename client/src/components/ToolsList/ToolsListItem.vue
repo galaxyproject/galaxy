@@ -4,6 +4,8 @@ import {
     faAngleUp,
     faExclamationTriangle,
     faExternalLinkAlt,
+    faLayerGroup,
+    faSitemap,
     faUser,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -152,6 +154,7 @@ function quotedOntology(ontology: OntologyBadge) {
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 flex-gapy-1 flex-wrap py-2">
                 <span v-if="props.section" class="tag info">
+                    <FontAwesomeIcon :icon="faLayerGroup" />
                     <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
                 </span>
 
@@ -172,6 +175,7 @@ function quotedOntology(ontology: OntologyBadge) {
                 </span>
 
                 <span v-for="ontology in ontologies" :key="ontology.id" class="tag toggle">
+                    <FontAwesomeIcon :icon="faSitemap" />
                     <GLink
                         thin
                         :title="ontology.title"
