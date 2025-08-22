@@ -130,7 +130,7 @@ function quotedOntology(ontology: OntologyBadge) {
             </div>
             <div class="d-flex align-items-start">
                 <div class="d-flex align-items-center flex-gapx-1">
-                    <ToolFavoriteButton :id="props.id" color="grey" />
+                    <ToolFavoriteButton :id="props.id" color="grey" detailed />
 
                     <GButton
                         v-if="props.local"

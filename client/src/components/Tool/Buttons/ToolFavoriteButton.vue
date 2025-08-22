@@ -14,6 +14,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 interface Props {
     id: string;
     color?: ComponentColor;
+    detailed?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -93,9 +94,13 @@ async function onRemoveFavorite() {
         :disabled="!title || loading"
         tooltip
         size="small"
-        transparent
+        :transparent="!props.detailed"
         :title="title"
         @click="onToggleFavorite">
         <FontAwesomeIcon :icon="icon" />
+        <span v-if="props.detailed" class="ms-1">
+            {{ showAddFavorite ? "Add to Favorites" : "" }}
+            {{ showRemoveFavorite ? "Remove" : "" }}
+        </span>
     </GButton>
 </template>
