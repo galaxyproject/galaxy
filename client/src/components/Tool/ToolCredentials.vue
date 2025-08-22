@@ -8,7 +8,7 @@ import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import ManageToolCredentials from "@/components/User/Credentials/ManageToolCredentials.vue";
+import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
 
 interface Props {
     toolId: string;
@@ -115,7 +115,7 @@ onMounted(async () => {
             </div>
         </BAlert>
 
-        <ManageToolCredentials
+        <ToolCredentialsManagement
             v-if="showModal"
             :tool-id="props.toolId"
             :tool-version="props.toolVersion"

@@ -6,12 +6,12 @@ import { useUserToolCredentials } from "@/composables/userToolCredentials";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
-interface ManageToolCredentialsProps {
+interface Props {
     toolId: string;
     toolVersion: string;
 }
 
-const props = defineProps<ManageToolCredentialsProps>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "close"): void;
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 const { mutableUserCredentials, saveUserCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
 
-function saveCredentials() {
+function onSelectCredentials() {
     if (!mutableUserCredentials.value) {
         return;
     }
@@ -65,7 +65,7 @@ function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: Servi
         ok-title="Select Credentials"
         cancel-title="Close"
         cancel-variant="outline-danger"
-        @ok="saveCredentials"
+        @ok="onSelectCredentials"
         @close="emit('close')">
         <p>
             Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
