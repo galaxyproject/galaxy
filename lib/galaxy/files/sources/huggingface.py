@@ -5,6 +5,7 @@ Hugging Face Hub file source plugin using fsspec.
 import logging
 from typing import (
     Annotated,
+    Literal,
     Optional,
     Union,
 )
@@ -37,6 +38,10 @@ from galaxy.files.sources._fsspec import (
 from galaxy.util.config_templates import TemplateExpansion
 
 log = logging.getLogger(__name__)
+
+SortByOptions = Literal["last_modified", "trending_score", "created_at", "downloads", "likes"]
+
+DEFAULT_SORT_BY: SortByOptions = "downloads"
 
 MAX_REPO_LIMIT = 1000
 
@@ -137,7 +142,7 @@ class HuggingFaceFilesSource(
             endpoint=config.endpoint,
         )
         try:
-            repos_iter = api.list_models(search=query, sort="downloads", direction=-1, limit=MAX_REPO_LIMIT)
+            repos_iter = api.list_models(search=query, sort=DEFAULT_SORT_BY, direction=-1, limit=MAX_REPO_LIMIT)
 
             # Convert repositories to directory entries
             entries_list: list[AnyRemoteEntry] = []
