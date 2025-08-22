@@ -27,31 +27,28 @@ const loading = ref(false);
 
 const userStore = useUserStore();
 const { currentFavorites, isAnonymous } = storeToRefs(userStore);
-const hasUser = computed(() => !isAnonymous.value);
 const isFavorite = computed(() => currentFavorites.value.tools?.includes(props.id));
-const showAddFavorite = computed(() => hasUser.value && !isFavorite.value);
-const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
 
 const title = computed(() => {
-    if (showAddFavorite.value) {
-        return "Add to Favorites";
-    } else if (showRemoveFavorite.value) {
+    if (isAnonymous.value) {
+        return "Login or Register to Favorite Tools";
+    }
+    if (isFavorite.value) {
         return "Remove from Favorites";
     } else {
-        return undefined;
+        return "Add to Favorites";
     }
 });
 
-const icon = computed(() => {
-    if (showAddFavorite.value) {
-        return farStar;
-    } else if (showRemoveFavorite.value) {
-        return fasStar;
-    }
-    return farStar;
-});
+const icon = computed(() => (isAnonymous.value || !isFavorite.value ? farStar : fasStar));
 
 function onToggleFavorite() {
+    if (isAnonymous.value) {
+        emit("onSetError", "You must be signed in to manage favorites.");
+        ariaAlert("sign in to manage favorites");
+        return;
+    }
+
     if (isFavorite.value) {
         onRemoveFavorite();
     } else {
@@ -91,16 +88,17 @@ async function onRemoveFavorite() {
 <template>
     <GButton
         :color="props.color"
-        :disabled="!title || loading"
+        :disabled="isAnonymous || loading"
+        :disabled-title="title"
         tooltip
         size="small"
         :transparent="!props.detailed"
         :title="title"
         @click="onToggleFavorite">
         <FontAwesomeIcon :icon="icon" />
-        <span v-if="props.detailed" class="ms-1">
-            {{ showAddFavorite ? "Add to Favorites" : "" }}
-            {{ showRemoveFavorite ? "Remove" : "" }}
+        <span v-if="props.detailed">
+            <span v-if="isAnonymous || !isFavorite"> Add to Favorites </span>
+            <span v-else> Remove </span>
         </span>
     </GButton>
 </template>
