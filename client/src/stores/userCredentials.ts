@@ -11,10 +11,6 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
 
-    const currentUserId = computed(() => {
-        return isRegisteredUser(currentUser.value) ? currentUser.value.id : "anonymous";
-    });
-
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
 
     const userToolCredentials = computed(() => (toolId: string, toolVersion: string) => {
@@ -128,10 +124,10 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
     }
 
     function ensureUserIsRegistered(): string {
-        if (currentUserId.value === "anonymous") {
+        if (!isRegisteredUser(currentUser.value)) {
             throw new Error("Only registered users can have tool credentials");
         }
-        return currentUserId.value;
+        return currentUser.value.id;
     }
 
     function removeSecretPlaceholders(providedCredentials: CreateSourceCredentialsPayload) {
