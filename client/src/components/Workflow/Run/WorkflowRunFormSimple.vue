@@ -7,16 +7,17 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
-import type { ServiceCredentialsDefinition } from "@/api/users";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
+import type { ToolIdentifier } from "@/composables/userMultiToolCredentials";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -29,7 +30,7 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
-import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
+import WorkflowCredentials from "@/components/Common/WorkflowCredentials.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -334,24 +335,18 @@ async function onExecute() {
     }
 }
 
-type ToolsCredentialInfo = {
-    id: string;
-    name: string;
-    label: string;
-    version: string;
-    credentialsDefinition: ServiceCredentialsDefinition[];
-};
+const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
 
-const credentialTools = computed<ToolsCredentialInfo[]>(() => {
+const credentialTools = computed<ToolIdentifier[]>(() => {
     return props.model.steps
         .filter((step: any) => step.step_type === "tool" && step.credentials?.length)
-        .map((step: any) => ({
-            id: step.id,
-            name: step.name,
-            label: step.label,
-            version: step.version,
-            credentialsDefinition: step.credentials,
-        }));
+        .map((step: any) => {
+            setToolCredentialsDefinition(step.id, step.version, step.credentials);
+            return {
+                toolId: step.id,
+                toolVersion: step.version,
+            };
+        });
 });
 </script>
 
@@ -473,7 +468,7 @@ const credentialTools = computed<ToolsCredentialInfo[]>(() => {
             show-details
             :hide-hr="Boolean(showRightPanel)" />
 
-        <WorkflowCredentialsManagement v-if="credentialTools.length" :tools="credentialTools" full />
+        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" full />
 
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">

@@ -43,7 +43,7 @@
             </span>
         </BAlert>
 
-        <WorkflowCredentialsManagement v-if="credentialTools.length" :tools="credentialTools" />
+        <WorkflowCredentials v-if="credentialTools.length" :tool-identifiers="credentialTools" />
 
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
@@ -96,8 +96,8 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
-import { transformToSourceCredentials } from "@/api/users";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { getReplacements } from "./model";
@@ -105,7 +105,7 @@ import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 
-import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
+import WorkflowCredentials from "@/components/Common/WorkflowCredentials.vue";
 
 export default {
     components: {
@@ -114,7 +114,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
-        WorkflowCredentialsManagement,
+        WorkflowCredentials,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -184,13 +184,15 @@ export default {
         credentialTools() {
             return this.model.steps
                 .filter((step) => step.step_type === "tool" && step.credentials?.length)
-                .map((step) => ({
-                    id: step.id,
-                    name: step.name,
-                    label: step.label,
-                    version: step.version,
-                    credentialsDefinition: transformToSourceCredentials(step.tool_id, step.credentials),
-                }));
+                .map((step) => {
+                    const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
+                    setToolCredentialsDefinition(step.id, step.version, step.credentials);
+
+                    return {
+                        toolId: step.id,
+                        toolVersion: step.version,
+                    };
+                });
         },
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
