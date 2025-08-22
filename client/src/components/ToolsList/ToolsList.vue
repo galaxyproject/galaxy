@@ -8,7 +8,7 @@ import { computed, ref, watch } from "vue";
 import { type FilterSettings, type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import { createSortedResultObject, createWhooshQuery, FAVORITES_KEYS, isToolSection } from "../Panels/utilities";
+import { createWhooshQuery, FAVORITES_KEYS, isToolSection } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
@@ -93,21 +93,6 @@ const whooshQuery = computed(() =>
 
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
-
-/** A section view of all tools loaded from the store. */
-const allSectionsLoaded = computed<Record<string, ToolSection>>(() => {
-    const matchedTools: { id: string; order: number }[] = Object.keys(toolStore.getToolsById()).map((id) => ({
-        id: id,
-        order: 6,
-    }));
-    const { resultPanel } = createSortedResultObject(matchedTools, currentToolSections.value);
-
-    return Object.fromEntries(
-        Object.entries(resultPanel).filter(([_, section]) => isToolSection(section) && section.name !== "Uncategorized")
-    ) as Record<string, ToolSection>;
-
-    // TODO: If we want sections loaded for the given query, we can add the whooshQuery param to `getToolsById`.
-});
 
 const selectedSection = computed<ToolSection | null>(() => {
     const sectionName = ToolFilters.value.getFilterValue(filterText.value, "section");
@@ -284,7 +269,7 @@ function searchForSection(section: ToolSection) {
                 </template>
 
                 <BDropdownItem
-                    v-for="sec in allSectionsLoaded"
+                    v-for="sec in currentToolSections"
                     :key="sec.id"
                     class="ml-1"
                     :title="sec.description"
