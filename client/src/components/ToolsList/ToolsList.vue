@@ -8,7 +8,7 @@ import { computed, ref, watch } from "vue";
 import { type FilterSettings, type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import { createWhooshQuery, FAVORITES_KEYS, isToolSection } from "../Panels/utilities";
+import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
@@ -99,14 +99,14 @@ const selectedSection = computed<ToolSection | null>(() => {
     const sectionWithMatchingName = Object.values(currentToolSections.value).find(
         (section: Tool | ToolSection) => section.name === sectionName
     );
-    if (sectionWithMatchingName && isToolSection(sectionWithMatchingName)) {
+    if (sectionWithMatchingName) {
         return sectionWithMatchingName;
     } else {
         const ontologyId = ToolFilters.value.getFilterValue(filterText.value, "ontology");
         const foundOntology = Object.values(currentToolSections.value).find(
             (section: Tool | ToolSection) => section.id === ontologyId
         );
-        if (foundOntology && isToolSection(foundOntology)) {
+        if (foundOntology) {
             return foundOntology;
         }
     }
