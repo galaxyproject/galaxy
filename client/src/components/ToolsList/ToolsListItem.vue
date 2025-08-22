@@ -18,6 +18,12 @@ import GButton from "../BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
+type OntologyBadge = {
+    id: string;
+    name: string;
+    title: "EDAM Operation" | "EDAM Topic";
+};
+
 interface Props {
     id: string;
     name: string;
@@ -59,14 +65,7 @@ const emit = defineEmits<{
 
 const toolStore = useToolStore();
 
-function getOntologyBadges(
-    view: "ontology:edam_operations" | "ontology:edam_topics",
-    ids: string[]
-): {
-    id: string;
-    name: string;
-    title: "EDAM Operation" | "EDAM Topic";
-}[] {
+function getOntologyBadges(view: "ontology:edam_operations" | "ontology:edam_topics", ids: string[]): OntologyBadge[] {
     if (ids?.length) {
         const sections = toolStore.getToolSections(view);
         return ids
@@ -103,6 +102,12 @@ const formattedToolHelp = computed(() => {
 /** We add double quotes to the section filter since the backend Whoosh search
  * requires it for exact matches, and the `Filtering` class only does single quotes. */
 const quotedSection = computed(() => (props.section ? `"${props.section}"` : ""));
+
+/** We add double quotes to the ontology id filter as well since the backend Whoosh search
+ * requires it for exact matches, and the `Filtering` class only does single quotes. */
+function quotedOntology(ontology: OntologyBadge) {
+    return `"${ontology.id}"`;
+}
 </script>
 
 <template>
@@ -168,9 +173,12 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
                 </span>
 
                 <span v-for="ontology in ontologies" :key="ontology.id" class="tag toggle">
-                    <GLink thin :title="ontology.title" @click="() => emit('apply-filter', 'ontology', ontology.id)">{{
-                        ontology.name
-                    }}</GLink>
+                    <GLink
+                        thin
+                        :title="ontology.title"
+                        @click="() => emit('apply-filter', 'ontology', quotedOntology(ontology))">
+                        {{ ontology.name }}
+                    </GLink>
                 </span>
             </div>
 

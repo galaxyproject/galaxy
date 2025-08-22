@@ -35,14 +35,14 @@ const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_o
 const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics"));
 
 const selectedSection = computed<ToolSection | null>(() => {
-    const sectionName = props.filterClass.getFilterValue(props.filterText, "section");
+    const sectionName = props.filterClass.getFilterValue(props.filterText, "section")?.replace(/^"(.*)"$/, "$1");
     return (
         Object.values(defaultToolSections.value).find((section: ToolSection) => section.name === sectionName) || null
     );
 });
 
 const selectedOntology = computed<ToolSection | null>(() => {
-    const ontologyId = props.filterClass.getFilterValue(props.filterText, "ontology");
+    const ontologyId = props.filterClass.getFilterValue(props.filterText, "ontology")?.replace(/^"(.*)"$/, "$1");
     return (
         Object.values(edamOperations.value).find((section: ToolSection) => section.id === ontologyId) ||
         Object.values(edamTopics.value).find((section: ToolSection) => section.id === ontologyId) ||
@@ -66,6 +66,10 @@ async function ensureSectionsAndOntologiesLoaded() {
 function getPanelIcon(panelView: string): IconDefinition | null {
     const viewType = panels.value[panelView]?.view_type;
     return viewType ? types_to_icons[viewType] : null;
+}
+
+function applyQuotedFilter(filter: string, value: string) {
+    emit("apply-filter", filter, `"${value}"`);
 }
 </script>
 
@@ -94,7 +98,7 @@ function getPanelIcon(panelView: string): IconDefinition | null {
                     :key="sec.id"
                     :title="sec.description"
                     :active="selectedSection?.id === sec.id"
-                    @click="emit('apply-filter', 'section', sec.name)">
+                    @click="applyQuotedFilter('section', sec.name)">
                     <span v-localize>{{ sec.name }}</span>
                 </BDropdownItem>
             </BDropdown>
@@ -130,7 +134,7 @@ function getPanelIcon(panelView: string): IconDefinition | null {
                         :key="ont.id"
                         :title="ont.description"
                         :active="selectedOntology?.id === ont.id"
-                        @click="emit('apply-filter', 'ontology', ont.id)">
+                        @click="applyQuotedFilter('ontology', ont.id)">
                         <span v-localize>{{ ont.name }}</span>
                     </BDropdownItem>
                 </BDropdownGroup>
@@ -151,7 +155,7 @@ function getPanelIcon(panelView: string): IconDefinition | null {
                         :key="ont.id"
                         :title="ont.description"
                         :active="selectedOntology?.id === ont.id"
-                        @click="emit('apply-filter', 'ontology', ont.id)">
+                        @click="applyQuotedFilter('ontology', ont.id)">
                         <span v-localize>{{ ont.name }}</span>
                     </BDropdownItem>
                 </BDropdownGroup>
