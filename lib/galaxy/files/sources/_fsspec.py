@@ -215,16 +215,18 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         return path
 
     def _extract_timestamp(self, info: dict) -> Optional[str]:
-        """Extract and format timestamp from fsspec file info."""
-        # Handle timestamp fields more robustly - check for None explicitly
-        mtime = info.get("mtime")
-        if mtime is None:
-            mtime = info.get("modified")
-        if mtime is None:
-            mtime = info.get("LastModified")
+        """Extract the timestamp from fsspec file info to use it in the RemoteFile entry.
 
-        ctime_result = self.to_dict_time(mtime)
-        return ctime_result
+        Subclasses can override this to customize timestamp extraction.
+        By default, it tries to extract 'mtime', 'modified', or 'LastModified'
+        """
+        return info.get("mtime") or info.get("modified") or info.get("LastModified")
+
+    def _get_formatted_timestamp(self, info: dict) -> Optional[str]:
+        """Get a formatted timestamp for the RemoteFile entry."""
+        mtime = self._extract_timestamp(info)
+        formatted_timestamp = self.to_dict_time(mtime)
+        return formatted_timestamp
 
     def _info_to_entry(self, info: dict) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
@@ -237,7 +239,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             return RemoteDirectory(name=name, uri=uri, path=entry_path)
         else:
             size = int(info.get("size", 0))
-            ctime = self._extract_timestamp(info)
+            ctime = self._get_formatted_timestamp(info)
             return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path)
 
     def _list_recursive(self, fs: AbstractFileSystem, path: str) -> tuple[list[AnyRemoteEntry], int]:
