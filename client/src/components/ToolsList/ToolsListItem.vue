@@ -23,7 +23,6 @@ import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue
 type OntologyBadge = {
     id: string;
     name: string;
-    title: "EDAM Operation" | "EDAM Topic";
 };
 
 interface Props {
@@ -76,7 +75,6 @@ function getOntologyBadges(view: "ontology:edam_operations" | "ontology:edam_top
             .map((section) => ({
                 id: section.id,
                 name: section.name,
-                title: view === "ontology:edam_operations" ? "EDAM Operation" : "EDAM Topic",
             }));
     }
     return [];
@@ -178,7 +176,8 @@ function quotedOntology(ontology: OntologyBadge) {
                     <FontAwesomeIcon :icon="faSitemap" />
                     <GLink
                         thin
-                        :title="ontology.title"
+                        :title="ontology.id"
+                        tooltip
                         @click="() => emit('apply-filter', 'ontology', quotedOntology(ontology))">
                         {{ ontology.name }}
                     </GLink>
