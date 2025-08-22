@@ -15,7 +15,6 @@ import GLink from "../BaseComponents/GLink.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
 import GCard from "../Common/GCard.vue";
 import Heading from "../Common/Heading.vue";
-import PanelViewMenu from "../Panels/Menus/PanelViewMenu.vue";
 import ToolsListTable from "./ToolsListTable.vue";
 
 interface Props {
@@ -183,7 +182,6 @@ function searchForSection(section: ToolSection) {
                 <Heading h1 separator inline size="lg" class="flex-grow-1 m-0">
                     <span v-localize>Discover Tools in this Galaxy</span>
                 </Heading>
-                <PanelViewMenu compact has-info />
             </div>
 
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">

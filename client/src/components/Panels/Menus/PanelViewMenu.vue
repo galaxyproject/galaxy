@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownText } from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownGroup } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -27,10 +27,6 @@ const props = defineProps<{
      * @default false
      */
     compact?: boolean;
-    /** Whether the menu describes what panel views are and changing them does.
-     * @default false
-     */
-    hasInfo?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -56,7 +52,6 @@ const panelIcon = computed<IconDefinition | null>(() => {
 const styleClasses = computed(() => {
     return {
         "w-100": !props.compact,
-        "dropdown-menu-wide": props.hasInfo,
     };
 });
 
@@ -148,26 +143,6 @@ async function updatePanelView(panel: Panel) {
             </div>
         </template>
 
-        <template v-if="props.hasInfo">
-            <BDropdownText>
-                <p>
-                    <span v-localize>
-                        Panel views allow you to change how tools are displayed in the tool panel, as well as the
-                        "Discover Tools" view.
-                    </span>
-                </p>
-                <p>
-                    <span v-localize>
-                        Changing this from the default view allows you to access "Sectioned" views with descriptions of
-                        ontologies etc.
-                    </span>
-                </p>
-                <!-- TODO: Improve this please! -->
-            </BDropdownText>
-
-            <BDropdownDivider />
-        </template>
-
         <PanelViewMenuItem
             v-if="defaultPanelView"
             :current-panel-view="currentPanelView"
@@ -208,12 +183,6 @@ async function updatePanelView(panel: Panel) {
         overflow: auto;
         max-height: 50vh;
         min-width: 100%;
-    }
-
-    &.dropdown-menu-wide {
-        :deep(.dropdown-menu) {
-            min-width: 300px;
-        }
     }
 }
 </style>
