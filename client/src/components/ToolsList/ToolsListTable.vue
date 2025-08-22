@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import type { Tool } from "@/stores/toolStore";
 
 import { fetchData } from "./services";
@@ -18,15 +16,11 @@ type ToolHelpData = {
     summary?: string;
 };
 
-const router = useRouter();
-
 const props = defineProps<{
     tools: Tool[];
     loading?: boolean;
     hasOwnerFilter?: boolean;
 }>();
-
-const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const busy = ref(false);
 const helpDataCached = ref<Map<string, ToolHelpData>>(new Map());
@@ -123,17 +117,6 @@ function parseHelpForSummary(help: string): string {
     });
     return summary;
 }
-
-function onOpen(tool: Tool) {
-    if (tool.id === "upload1") {
-        openGlobalUploadModal();
-    } else if (tool.form_style === "regular") {
-        // encode spaces in tool.id
-        const toolId = tool.id;
-        const toolVersion = tool.version;
-        router.push({ path: `/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}` });
-    }
-}
 </script>
 
 <template>
@@ -157,6 +140,7 @@ function onOpen(tool: Tool) {
                 :edam-topics="item.edam_topics"
                 :description="item.description"
                 :fetching="!helpDataCached.has(item.id) && busy"
+                :form-style="item.form_style"
                 :summary="helpDataCached.get(item.id)?.summary"
                 :help="helpDataCached.get(item.id)?.help"
                 :local="item.target === 'galaxy_main'"
@@ -164,7 +148,6 @@ function onOpen(tool: Tool) {
                 :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"
                 :version="item.version"
-                @open="() => onOpen(item)"
                 @apply-filter="(filter, value) => $emit('apply-filter', filter, value)" />
         </template>
     </ScrollList>

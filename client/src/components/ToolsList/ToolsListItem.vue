@@ -15,6 +15,7 @@ import { BPopover, BSkeleton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolStore } from "@/stores/toolStore";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -32,6 +33,7 @@ interface Props {
     section?: string;
     edamOperations: string[];
     edamTopics: string[];
+    formStyle?: string;
     description?: string;
     summary?: string;
     help?: string;
@@ -47,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     id: "",
     name: "",
     section: undefined,
-    ontologies: undefined,
+    formStyle: undefined,
     description: undefined,
     summary: undefined,
     help: undefined,
@@ -59,11 +61,11 @@ const props = withDefaults(defineProps<Props>(), {
     fetching: false,
 });
 
-// TODO: For tool open emit, consider adding event as param to allow for opening tool in new tab
 const emit = defineEmits<{
-    (e: "open"): void;
     (e: "apply-filter", filter: string, value: string): void;
 }>();
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const toolStore = useToolStore();
 
@@ -110,6 +112,20 @@ const quotedSection = computed(() => (props.section ? `"${props.section}"` : "")
 function quotedOntology(ontology: OntologyBadge) {
     return `"${ontology.id}"`;
 }
+
+const routeTo = computed(() =>
+    props.id !== "upload1" && props.local && props.formStyle === "regular"
+        ? `/?tool_id=${encodeURIComponent(props.id)}&version=${props.version}`
+        : undefined,
+);
+
+const routeHref = computed(() => (!props.local ? props.link : undefined));
+
+function openUploadIfNeeded() {
+    if (props.id === "upload1") {
+        openGlobalUploadModal();
+    }
+}
 </script>
 
 <template>
@@ -120,10 +136,7 @@ function quotedOntology(ontology: OntologyBadge) {
                     <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
                     <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
 
-                    <GLink v-if="props.local" dark @click="() => emit('open')">
-                        <b>{{ props.name }}</b>
-                    </GLink>
-                    <GLink v-else dark :href="props.link">
+                    <GLink dark :to="routeTo" :href="routeHref" @click="openUploadIfNeeded">
                         <b>{{ props.name }}</b>
                     </GLink>
                 </span>
@@ -160,19 +173,17 @@ function quotedOntology(ontology: OntologyBadge) {
                         </div>
                     </BPopover>
 
-                    <ToolFavoriteButton :id="props.id" color="grey" detailed />
+                    <ToolFavoriteButton :id="props.id" class="text-nowrap" color="grey" detailed />
 
                     <GButton
-                        v-if="props.local"
                         class="text-nowrap"
                         color="blue"
                         size="small"
-                        @click="() => emit('open')">
-                        <FontAwesomeIcon :icon="faWrench" fixed-width />
-                        Open
-                    </GButton>
-                    <GButton v-else class="text-nowrap" color="blue" size="small" :href="props.link">
-                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                        :to="routeTo"
+                        :href="routeHref"
+                        @click="openUploadIfNeeded">
+                        <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
+                        <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
                         Open
                     </GButton>
                 </div>
