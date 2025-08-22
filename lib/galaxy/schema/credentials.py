@@ -7,7 +7,10 @@ from typing import (
 from pydantic import RootModel
 from typing_extensions import Literal
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import Model
 
 SOURCE_TYPE = Literal["tool"]
@@ -50,6 +53,7 @@ class UserCredentialsResponse(Model):
     label: str
     description: str
     current_group_name: Optional[str] = None
+    current_group_id: Optional[EncodedDatabaseIdField] = None
     credential_definitions: CredentialDefinitionsResponse
     groups: Dict[str, CredentialGroupResponse]
 
@@ -69,15 +73,26 @@ class ServiceGroupPayload(Model):
     secrets: List[CredentialPayload]
 
 
-class ServiceCredentialPayload(Model):
-    name: str
-    version: str
-    current_group: Optional[str] = None
-    groups: List[ServiceGroupPayload]  # All provided groups, including the selected one
-
-
-class CreateSourceCredentialsPayload(Model):
+class SourceCredentialPayload(Model):
     source_type: SOURCE_TYPE
     source_id: str
     source_version: str
-    credentials: List[ServiceCredentialPayload]  # The credentials to create for each service
+
+
+class ServiceCredentialPayload(Model):
+    name: str
+    version: str
+    group: ServiceGroupPayload
+
+
+class CreateSourceCredentialsPayload(SourceCredentialPayload):
+    service_credential: ServiceCredentialPayload
+
+
+class SelectCurrentGroupPayload(Model):
+    user_credentials_id: DecodedDatabaseIdField
+    current_group_id: Optional[DecodedDatabaseIdField] = None
+
+
+class SelectServiceCredentialPayload(SourceCredentialPayload):
+    service_credentials: List[SelectCurrentGroupPayload]

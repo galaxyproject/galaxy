@@ -14,6 +14,8 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
+    SelectServiceCredentialPayload,
+    ServiceGroupPayload,
     SOURCE_TYPE,
     UserCredentialsListResponse,
 )
@@ -67,8 +69,36 @@ class FastAPICredentials:
         user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> UserCredentialsListResponse:
-        return self.service.provide_credential(trans, user_id, payload)
+    ):
+        self.service.provide_credential(trans, user_id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/users/{user_id}/credentials/group/{group_id}",
+        summary="Updates user credentials",
+    )
+    def update_user_credentials(
+        self,
+        user_id: FlexibleUserIdType,
+        group_id: DecodedDatabaseIdField,
+        payload: ServiceGroupPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.update_user_credentials(trans, user_id, group_id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/users/{user_id}/credentials",
+        summary="Updates the current credentials group",
+    )
+    def update_user_credentials_group(
+        self,
+        user_id: FlexibleUserIdType,
+        payload: SelectServiceCredentialPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.update_user_credentials_group(trans, user_id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
         "/api/users/{user_id}/credentials/{user_credentials_id}",

@@ -5184,9 +5184,27 @@ export interface paths {
         };
         /** Lists all credentials the user has provided */
         get: operations["list_user_credentials_api_users__user_id__credentials_get"];
-        put?: never;
+        /** Updates the current credentials group */
+        put: operations["update_user_credentials_group_api_users__user_id__credentials_put"];
         /** Allows users to provide credentials for a secret/variable */
         post: operations["provide_credential_api_users__user_id__credentials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/group/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Updates user credentials */
+        put: operations["update_user_credentials_api_users__user_id__credentials_group__group_id__put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8416,8 +8434,7 @@ export interface components {
         };
         /** CreateSourceCredentialsPayload */
         CreateSourceCredentialsPayload: {
-            /** Credentials */
-            credentials: components["schemas"]["ServiceCredentialPayload"][];
+            service_credential: components["schemas"]["ServiceCredentialPayload"];
             /** Source Id */
             source_id: string;
             /**
@@ -19741,6 +19758,16 @@ export interface components {
              */
             type: "section";
         };
+        /** SelectCurrentGroupPayload */
+        SelectCurrentGroupPayload: {
+            /** Current Group Id */
+            current_group_id?: string | null;
+            /**
+             * User Credentials Id
+             * @example 0123456789ABCDEF
+             */
+            user_credentials_id: string;
+        };
         /** SelectParameterModel */
         SelectParameterModel: {
             /**
@@ -19802,6 +19829,20 @@ export interface components {
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
+        };
+        /** SelectServiceCredentialPayload */
+        SelectServiceCredentialPayload: {
+            /** Service Credentials */
+            service_credentials: components["schemas"]["SelectCurrentGroupPayload"][];
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             */
+            source_type: "tool";
+            /** Source Version */
+            source_version: string;
         };
         /** ServerDirElement */
         ServerDirElement: {
@@ -19983,10 +20024,7 @@ export interface components {
         };
         /** ServiceCredentialPayload */
         ServiceCredentialPayload: {
-            /** Current Group */
-            current_group?: string | null;
-            /** Groups */
-            groups: components["schemas"]["ServiceGroupPayload"][];
+            group: components["schemas"]["ServiceGroupPayload"];
             /** Name */
             name: string;
             /** Version */
@@ -22115,6 +22153,8 @@ export interface components {
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
             credential_definitions: components["schemas"]["CredentialDefinitionsResponse"];
+            /** Current Group Id */
+            current_group_id?: string | null;
             /** Current Group Name */
             current_group_name?: string | null;
             /** Description */
@@ -40173,6 +40213,53 @@ export interface operations {
             };
         };
     };
+    update_user_credentials_group_api_users__user_id__credentials_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectServiceCredentialPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     provide_credential_api_users__user_id__credentials_post: {
         parameters: {
             query?: never;
@@ -40197,7 +40284,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserCredentialsListResponse"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_user_credentials_api_users__user_id__credentials_group__group_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceGroupPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

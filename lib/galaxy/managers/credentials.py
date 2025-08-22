@@ -1,6 +1,8 @@
 from typing import (
+    Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -18,7 +20,8 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import SOURCE_TYPE
 from galaxy.schema.fields import DecodedDatabaseIdField
 
-CredentialsModelsList = List[Union[UserCredentials, CredentialsGroup, Credential]]
+CredentialsModelsSet = Set[Union[UserCredentials, CredentialsGroup, Credential]]
+CredentialsAssociation = List[Tuple[UserCredentials, CredentialsGroup, Credential]]
 
 
 class CredentialsManager:
@@ -35,7 +38,7 @@ class CredentialsManager:
         source_version: Optional[str] = None,
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
         group_id: Optional[DecodedDatabaseIdField] = None,
-    ) -> List[Tuple[UserCredentials, CredentialsGroup, Credential]]:
+    ) -> CredentialsAssociation:
         if source_id and not source_type:
             raise RequestParameterInvalidException("Source type is required when source ID is provided.")
 
@@ -64,9 +67,27 @@ class CredentialsManager:
         result = self.session.execute(stmt).tuples().all()
         return list(result)
 
+    def index_credentials(self, existing_user_credentials: CredentialsAssociation) -> Tuple[
+        Dict[Tuple[str, str], UserCredentials],
+        Dict[Tuple[DecodedDatabaseIdField, str], CredentialsGroup],
+        Dict[Tuple[DecodedDatabaseIdField, str, bool], Credential],
+    ]:
+        user_cred_map = {}
+        group_map = {}
+        cred_map = {}
+
+        for uc, group, cred in existing_user_credentials:
+            if uc:
+                user_cred_map[(uc.name, uc.version)] = uc
+            if group:
+                group_map[(group.user_credentials_id, group.name)] = group
+            if cred:
+                cred_map[(cred.group_id, cred.name, cred.is_secret)] = cred
+
+        return user_cred_map, group_map, cred_map
+
     def add_user_credentials(
         self,
-        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]],
         user_id: DecodedDatabaseIdField,
         source_type: SOURCE_TYPE,
         source_id: str,
@@ -74,110 +95,74 @@ class CredentialsManager:
         name: str,
         version: str,
     ) -> DecodedDatabaseIdField:
-        user_credentials = next(
-            (
-                uc
-                for uc, *_ in existing_user_credentials
-                if uc.user_id == user_id
-                and uc.source_type == source_type
-                and uc.source_id == source_id
-                and uc.source_version == source_version
-                and uc.name == name
-                and uc.version == version
-            ),
-            None,
+        user_credentials = UserCredentials(
+            user_id=user_id,
+            source_type=source_type,
+            source_id=source_id,
+            source_version=source_version,
+            name=name,
+            version=version,
         )
-
-        if not user_credentials:
-            user_credentials = UserCredentials(
-                user_id=user_id,
-                source_type=source_type,
-                source_id=source_id,
-                source_version=source_version,
-                name=name,
-                version=version,
-            )
-            self.session.add(user_credentials)
-            self.session.flush()
+        self.session.add(user_credentials)
+        self.session.flush()
 
         return user_credentials.id
 
+    def update_group(
+        self,
+        credentials_group: CredentialsGroup,
+        group_name: str,
+    ) -> None:
+        credentials_group.name = group_name
+        self.session.add(credentials_group)
+
     def add_group(
         self,
-        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]],
         user_credentials_id: DecodedDatabaseIdField,
         group_name: str,
     ) -> DecodedDatabaseIdField:
-        credentials_group = next(
-            (
-                creds_group
-                for _, creds_group, _ in existing_user_credentials
-                if creds_group.name == group_name and creds_group.user_credentials_id == user_credentials_id
-            ),
-            None,
-        )
-
-        if not credentials_group:
-            credentials_group = CredentialsGroup(name=group_name, user_credentials_id=user_credentials_id)
-            self.session.add(credentials_group)
-            self.session.flush()
-
+        credentials_group = CredentialsGroup(name=group_name, user_credentials_id=user_credentials_id)
+        self.session.add(credentials_group)
+        self.session.flush()
         return credentials_group.id
 
-    def add_or_update_credential(
+    def update_credential(
         self,
-        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]],
-        group_id: DecodedDatabaseIdField,
-        name: str,
-        value: Optional[str],
+        credential: Credential,
+        value: Optional[str] = None,
         is_secret: bool = False,
     ) -> None:
-        credential = next(
-            (
-                cred
-                for *_, cred in existing_user_credentials
-                if cred and cred.name == name and cred.group_id == group_id and cred.is_secret == is_secret
-            ),
-            None,
+        credential.is_set = bool(value)
+        credential.value = value if not is_secret else None
+        self.session.add(credential)
+
+    def add_credential(
+        self,
+        group_id: DecodedDatabaseIdField,
+        name: str,
+        value: Optional[str] = None,
+        is_secret: bool = False,
+    ) -> None:
+        credential = Credential(
+            group_id=group_id,
+            name=name,
+            is_secret=is_secret,
+            is_set=bool(value),
+            value=value if not is_secret else None,
         )
-        if credential:
-            if value is not None:
-                credential.is_set = True
-                if not is_secret:
-                    credential.value = value
-                self.session.add(credential)
-        else:
-            credential = Credential(
-                group_id=group_id,
-                name=name,
-                is_secret=is_secret,
-                is_set=bool(value),
-                value=value if not is_secret else None,
-            )
-            self.session.add(credential)
+        self.session.add(credential)
 
     def update_current_group(
         self,
-        user_id: DecodedDatabaseIdField,
-        user_credentials_id: DecodedDatabaseIdField,
-        group_name: Optional[str] = None,
+        user_credentials: UserCredentials,
+        group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> None:
-        existing_user_credentials = self.get_user_credentials(user_id, user_credentials_id=user_credentials_id)
-        for user_credentials, credentials_group, _ in existing_user_credentials:
-            if group_name is None:
-                user_credentials.current_group_id = None
-                self.session.add(user_credentials)
-                break
-            if credentials_group.name == group_name:
-                user_credentials.current_group_id = credentials_group.id
-                self.session.add(user_credentials)
-                break
-        else:
-            raise RequestParameterInvalidException("Group not found to set as current.")
+        user_credentials.current_group_id = group_id
+        self.session.add(user_credentials)
 
     def delete_rows(
         self,
-        rows_to_delete: CredentialsModelsList,
+        rows_to_delete: CredentialsModelsSet,
     ) -> None:
         for row in rows_to_delete:
             self.session.delete(row)
