@@ -152,7 +152,6 @@ function quotedOntology(ontology: OntologyBadge) {
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 flex-gapy-1 flex-wrap py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b>
                     <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
                 </span>
 
