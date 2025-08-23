@@ -71,7 +71,7 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.17
+    version: 0.0.18
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
