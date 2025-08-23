@@ -92,7 +92,7 @@ isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
 jmespath==1.0.1
 jsonref==1.1.0
-jsonschema==4.25.0
+jsonschema==4.25.1
 jsonschema-specifications==2025.4.1
 kombu==5.5.4
 lagom==2.7.7
@@ -143,7 +143,7 @@ pydantic-core==2.33.2
 pydantic-tes==0.2.0
 pydot==4.0.1
 pyeventsystem==0.1.0
-pyfaidx==0.8.2
+pyfaidx==0.9.0.1
 pygments==2.19.2
 pyjwt==2.10.1
 pykwalify==1.8.0
@@ -160,13 +160,13 @@ python-slugify==8.0.4
 python3-openid==3.2.0
 pytz==2025.2
 pyyaml==6.0.2
-pyzmq==27.0.1
+pyzmq==27.0.2
 rdflib==7.1.4
 referencing==0.36.2
 refgenconf==0.12.2
 regex==2025.7.34
 repoze-lru==0.7
-requests==2.32.4
+requests==2.32.5
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
 requests-unixsocket==0.4.1
@@ -175,12 +175,12 @@ rich-argparse==1.7.1
 rocrate==0.14.0
 routes==2.5.1
 rpds-py==0.27.0
-ruamel-yaml==0.18.14
+ruamel-yaml==0.18.15
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
 s3fs==2025.7.0
 schema-salad==8.9.20250723145140
 setuptools==80.9.0
-setuptools-scm==8.3.1
+setuptools-scm==9.2.0
 six==1.17.0
 slowapi==0.1.9
 sniffio==1.3.1
@@ -223,4 +223,4 @@ yacman==0.9.3
 yarl==1.20.1
 zipp==3.23.0 ; python_full_version < '3.10'
 zipstream-new==1.1.8
-zstandard==0.23.0
+zstandard==0.24.0
