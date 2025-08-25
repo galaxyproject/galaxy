@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 import { isAdminUser, isAnonymousUser } from "@/api";
 import type { TourRequirements, TourStep as TourStepType } from "@/api/tours";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -32,7 +33,7 @@ type TourStepWithActions = TourStepType & {
 const props = defineProps<{
     steps: (TourStepType | TourStepWithActions)[];
     requirements: TourRequirements;
-    tourId?: string;
+    tourId: string;
     waitingOnElement?: string | null;
     onBefore?: (step: TourStepType) => Promise<void>;
     onNext?: (step: TourStepType) => Promise<void>;
@@ -42,7 +43,6 @@ const emit = defineEmits(["end-tour"]);
 
 const router = useRouter();
 
-const currentIndex = ref(-1);
 const errorMessage = ref("");
 const isPlaying = ref(false);
 
@@ -50,8 +50,22 @@ const isPlaying = ref(false);
 const historyStore = useHistoryStore();
 const { currentHistory, historiesLoading } = storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
+const tourStore = useTourStore();
+const { currentTour } = storeToRefs(tourStore);
 
-// Step variables
+/** The current step index
+ *
+ * This is set and updated based on the currently active tour in the `tourStore`.
+ * Is `-1` if no tour is currently active (or has ended).
+ */
+const currentIndex = computed({
+    get: () => (currentTour.value?.step !== undefined ? currentTour.value?.step : -1),
+    set: (val: number) => {
+        tourStore.setTour(props.tourId, val);
+    },
+});
+
+// Local step variables
 const currentStep = computed(() => props.steps[currentIndex.value]);
 const numberOfSteps = computed(() => props.steps.length);
 const isFirst = computed(() => currentIndex.value === 0);
@@ -101,7 +115,7 @@ const modalContents = computed<{
                 ok: async () => {
                     endTour();
                     if (router) {
-                        router.push(`/login/start${props.tourId ? `?redirect=/tours/${props.tourId}` : ""}`);
+                        router.push(`/login/start?redirect=/tours/${props.tourId}`);
                     }
                 },
             };
@@ -117,7 +131,7 @@ const modalContents = computed<{
                     endTour();
                     if (router) {
                         if (isAnonymousUser(currentUser.value)) {
-                            router.push(`/login/start${props.tourId ? `?redirect=/tours/${props.tourId}` : ""}`);
+                            router.push(`/login/start?redirect=/tours/${props.tourId}`);
                         } else {
                             router.push("/");
                         }
@@ -172,7 +186,6 @@ onUnmounted(() => {
 
 function start() {
     window.addEventListener("keyup", handleKeyup);
-    currentIndex.value = 0;
 }
 
 function play(isCurrentlyPlaying: boolean) {
@@ -228,11 +241,10 @@ async function next() {
  * _In the case that_ `TourRunner` _is the parent, this will unmount the component._
  */
 function endTour() {
-    currentIndex.value = -1;
+    tourStore.setTour(undefined);
     isPlaying.value = false;
     errorMessage.value = "";
 
-    // IMPORTANT: This is what unmounts the `TourRunner` component when that is the parent
     emit("end-tour");
 }
 

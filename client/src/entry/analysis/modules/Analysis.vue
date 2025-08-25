@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from "pinia";
-import { onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
@@ -10,40 +10,15 @@ import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import TourRunner from "@/components/Tour/TourRunner.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
-const route = useRoute();
-
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 
 const { historyPanelWidth } = storeToRefs(useUserStore());
 
-/** Tour state - set manually */
-const isTourRoute = ref(false);
-/** Current tour ID - set manually */
-const currentTourId = ref(null);
-
-// Watch for route changes to detect tour routes
-watch(
-    () => route,
-    (newRoute) => {
-        if (newRoute.path.startsWith("/tours/") && newRoute.params.tourId) {
-            isTourRoute.value = true;
-            currentTourId.value = newRoute.params.tourId;
-        }
-    },
-    { immediate: true, deep: true }
-);
-
 // methods
-function endTour() {
-    isTourRoute.value = false;
-    currentTourId.value = null;
-}
-
 function hideCenter() {
     showCenter.value = false;
 }
@@ -77,6 +52,5 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
-        <TourRunner v-if="isTourRoute" :key="currentTourId" :tour-id="currentTourId" @end-tour="endTour" />
     </div>
 </template>

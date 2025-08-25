@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 import { getTourData, type TourRequirements, type TourStep } from "@/api/tours";
 import { Toast } from "@/composables/toast";
+import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import Tour from "./Tour.vue";
@@ -17,6 +18,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["end-tour"]);
+
+const tourStore = useTourStore();
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -37,6 +40,7 @@ async function initialize() {
         ready.value = true;
     } catch (error) {
         Toast.error(errorMessageAsString(error), "Failed to start tour");
+        tourStore.setTour(undefined);
     }
 }
 
