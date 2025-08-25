@@ -3,6 +3,7 @@ from typing import (
     Callable,
     cast,
     Dict,
+    List,
     Optional,
     Set,
     Tuple,
@@ -31,6 +32,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
+    CredentialPayload,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -89,10 +91,10 @@ class CredentialsService:
         user_id: FlexibleUserIdType,
         group_id: DecodedDatabaseIdField,
         payload: ServiceGroupPayload,
-    ) -> None:
+    ) -> CredentialGroupResponse:
         """Updates user credentials for a specific group."""
         user = self._ensure_user_access(trans, user_id)
-        self._update_credentials(trans.sa_session, user, group_id, payload)
+        return self._update_credentials(trans.sa_session, user, group_id, payload)
 
     def update_user_credentials_group(
         self,
@@ -298,7 +300,7 @@ class CredentialsService:
         user: User,
         group_id: DecodedDatabaseIdField,
         payload: ServiceGroupPayload,
-    ) -> None:
+    ) -> CredentialGroupResponse:
         group_name, variables, secrets = payload.name, payload.variables, payload.secrets
         existing_user_credentials = self.credentials_manager.get_user_credentials(user.id, group_id=group_id)
         if not existing_user_credentials:
@@ -343,6 +345,8 @@ class CredentialsService:
                 raise ObjectNotFound(f"Secret '{secret_name}' not found.")
 
         session.commit()
+
+        return self._build_credential_group_response(group_id, group_name, variables, secrets)
 
     def _create_credentials(
         self,
@@ -391,10 +395,6 @@ class CredentialsService:
             raise Conflict(f"Group '{group_name}' already exists.")
         user_credential_group_id = self.credentials_manager.add_group(user_credentials_id, group_name)
 
-        # Build the response from the data we already have
-        variables_list = []
-        secrets_list = []
-
         for variable_payload in variables:
             variable_name, variable_value = variable_payload.name, variable_payload.value
 
@@ -404,18 +404,9 @@ class CredentialsService:
                 )
             if (user_credential_group_id, variable_name, False) in cred_map:
                 raise Conflict(f"Variable '{variable_name}' already exists in group '{group_name}'.")
-            credential_id = self.credentials_manager.add_credential(
-                user_credential_group_id, variable_name, variable_value
-            )
-            variables_list.append(
-                {
-                    "id": credential_id,
-                    "name": variable_name,
-                    "is_set": variable_value is not None,
-                    "value": variable_value,
-                }
-            )
+            self.credentials_manager.add_credential(user_credential_group_id, variable_name, variable_value)
 
+        user_vault = UserVaultWrapper(self.app.vault, user)
         for secret_payload in secrets:
             secret_name, secret_value = secret_payload.name, secret_payload.value
 
@@ -426,29 +417,56 @@ class CredentialsService:
             if (user_credential_group_id, secret_name, True) in cred_map:
                 raise Conflict(f"Secret '{secret_name}' already exists in group '{group_name}'.")
             if secret_value is not None:
-                user_vault = UserVaultWrapper(self.app.vault, user)
                 vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{group_name}|{secret_name}"
                 user_vault.write_secret(vault_ref, secret_value)
-            credential_id = self.credentials_manager.add_credential(
+            self.credentials_manager.add_credential(
                 user_credential_group_id,
                 secret_name,
                 secret_value,
                 is_secret=True,
             )
-            secrets_list.append(
-                {
-                    "id": credential_id,
-                    "name": secret_name,
-                    "is_set": secret_value is not None,
-                    "value": secret_value,
-                }
-            )
 
         session.commit()
 
-        return CredentialGroupResponse(
-            id=user_credential_group_id, name=group_name, variables=variables_list, secrets=secrets_list
+        return self._build_credential_group_response(
+            user_credential_group_id,
+            group_name,
+            variables,
+            secrets,
         )
+
+    def _build_credential_group_response(
+        self,
+        group_id: DecodedDatabaseIdField,
+        group_name: str,
+        variables: List[CredentialPayload],
+        secrets: List[CredentialPayload],
+    ) -> CredentialGroupResponse:
+        """Build a CredentialGroupResponse from variables and secrets data."""
+        variables_list = []
+        secrets_list = []
+
+        for variable in variables:
+            variable_name = variable.name
+            variable_value = variable.value
+            variables_list.append(
+                {
+                    "name": variable_name,
+                    "value": variable_value,
+                }
+            )
+
+        for secret in secrets:
+            secret_name = secret.name
+            secret_value = secret.value
+            secrets_list.append(
+                {
+                    "name": secret_name,
+                    "is_set": secret_value is not None,
+                }
+            )
+
+        return CredentialGroupResponse(id=group_id, name=group_name, variables=variables_list, secrets=secrets_list)
 
     def _ensure_user_access(
         self,

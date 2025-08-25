@@ -141,7 +141,7 @@ class CredentialsManager:
         name: str,
         value: Optional[str] = None,
         is_secret: bool = False,
-    ) -> DecodedDatabaseIdField:
+    ) -> None:
         credential = Credential(
             group_id=group_id,
             name=name,
@@ -151,7 +151,6 @@ class CredentialsManager:
         )
         self.session.add(credential)
         self.session.flush()
-        return credential.id
 
     def update_current_group(
         self,

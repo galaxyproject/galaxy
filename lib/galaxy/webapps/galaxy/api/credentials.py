@@ -83,9 +83,8 @@ class FastAPICredentials:
         group_id: DecodedDatabaseIdField,
         payload: ServiceGroupPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
-        self.service.update_user_credentials(trans, user_id, group_id, payload)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    ) -> CredentialGroupResponse:
+        return self.service.update_user_credentials(trans, user_id, group_id, payload)
 
     @router.put(
         "/api/users/{user_id}/credentials",
