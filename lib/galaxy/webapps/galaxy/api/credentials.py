@@ -14,6 +14,7 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
+    CredentialGroupResponse,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -69,9 +70,8 @@ class FastAPICredentials:
         user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
-        self.service.provide_credential(trans, user_id, payload)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    ) -> CredentialGroupResponse:
+        return self.service.provide_credential(trans, user_id, payload)
 
     @router.put(
         "/api/users/{user_id}/credentials/group/{group_id}",

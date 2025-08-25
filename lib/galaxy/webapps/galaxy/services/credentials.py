@@ -30,6 +30,7 @@ from galaxy.model import (
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
+    CredentialGroupResponse,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -76,10 +77,11 @@ class CredentialsService:
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
-    ) -> None:
+    ) -> CredentialGroupResponse:
         """Allows users to provide credentials for a group of secrets and variables."""
         user = self._ensure_user_access(trans, user_id)
-        self._create_credentials(trans.sa_session, user, payload)
+        credentials = self._create_credentials(trans.sa_session, user, payload)
+        return credentials
 
     def update_user_credentials(
         self,
@@ -344,8 +346,7 @@ class CredentialsService:
         session: galaxy_scoped_session,
         user: User,
         payload: CreateSourceCredentialsPayload,
-    ) -> None:
-        user_vault = UserVaultWrapper(self.app.vault, user)
+    ) -> CredentialGroupResponse:
         source_type, source_id, source_version, service = (
             payload.source_type,
             payload.source_id,
@@ -387,6 +388,10 @@ class CredentialsService:
             raise Conflict(f"Group '{group_name}' already exists.")
         user_credential_group_id = self.credentials_manager.add_group(user_credentials_id, group_name)
 
+        # Build the response from the data we already have
+        variables_list = []
+        secrets_list = []
+
         for variable_payload in variables:
             variable_name, variable_value = variable_payload.name, variable_payload.value
 
@@ -396,7 +401,17 @@ class CredentialsService:
                 )
             if (user_credential_group_id, variable_name, False) in cred_map:
                 raise Conflict(f"Variable '{variable_name}' already exists in group '{group_name}'.")
-            self.credentials_manager.add_credential(user_credential_group_id, variable_name, variable_value)
+            credential_id = self.credentials_manager.add_credential(
+                user_credential_group_id, variable_name, variable_value
+            )
+            variables_list.append(
+                {
+                    "id": credential_id,
+                    "name": variable_name,
+                    "is_set": variable_value is not None,
+                    "value": variable_value,
+                }
+            )
 
         for secret_payload in secrets:
             secret_name, secret_value = secret_payload.name, secret_payload.value
@@ -408,16 +423,29 @@ class CredentialsService:
             if (user_credential_group_id, secret_name, True) in cred_map:
                 raise Conflict(f"Secret '{secret_name}' already exists in group '{group_name}'.")
             if secret_value is not None:
+                user_vault = UserVaultWrapper(self.app.vault, user)
                 vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{group_name}|{secret_name}"
                 user_vault.write_secret(vault_ref, secret_value)
-            self.credentials_manager.add_credential(
+            credential_id = self.credentials_manager.add_credential(
                 user_credential_group_id,
                 secret_name,
                 secret_value,
                 is_secret=True,
             )
+            secrets_list.append(
+                {
+                    "id": credential_id,
+                    "name": secret_name,
+                    "is_set": secret_value is not None,
+                    "value": secret_value,
+                }
+            )
 
         session.commit()
+
+        return CredentialGroupResponse(
+            id=user_credential_group_id, name=group_name, variables=variables_list, secrets=secrets_list
+        )
 
     def _ensure_user_access(
         self,
