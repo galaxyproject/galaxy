@@ -8642,26 +8642,12 @@ export interface components {
             /** Name */
             name: string;
             /** Secrets */
-            secrets: components["schemas"]["CredentialResponse"][];
+            secrets: components["schemas"]["SecretResponse"][];
             /** Variables */
-            variables: components["schemas"]["CredentialResponse"][];
+            variables: components["schemas"]["VariableResponse"][];
         };
         /** CredentialPayload */
         CredentialPayload: {
-            /** Name */
-            name: string;
-            /** Value */
-            value: string | null;
-        };
-        /** CredentialResponse */
-        CredentialResponse: {
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /** Is Set */
-            is_set: boolean;
             /** Name */
             name: string;
             /** Value */
@@ -19598,6 +19584,13 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** SecretResponse */
+        SecretResponse: {
+            /** Is Set */
+            is_set: boolean;
+            /** Name */
+            name: string;
+        };
         /** SectionParameterModel */
         "SectionParameterModel-Input": {
             /**
@@ -22650,6 +22643,13 @@ export interface components {
              * @description The name of the user.
              */
             username?: string | null;
+        };
+        /** VariableResponse */
+        VariableResponse: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: string | null;
         };
         /** Visualization */
         Visualization: Record<string, never>;

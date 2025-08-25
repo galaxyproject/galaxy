@@ -273,15 +273,18 @@ class CredentialsService:
                 },
             )
 
-            target_list = "secrets" if credential.is_secret else "variables"
-            user_credentials_dict[cred_id]["groups"][credentials_group.name][target_list].append(
-                {
-                    "id": credential.id,
+            if credential.is_secret:
+                entry = {
                     "name": credential.name,
                     "is_set": credential.is_set,
+                }
+            else:
+                entry = {
+                    "name": credential.name,
                     "value": credential.value,
                 }
-            )
+            target_list = "secrets" if credential.is_secret else "variables"
+            user_credentials_dict[cred_id]["groups"][credentials_group.name][target_list].append(entry)
 
             if credentials_group.id == user_credentials.current_group_id:
                 user_credentials_dict[cred_id]["current_group_name"] = credentials_group.name
