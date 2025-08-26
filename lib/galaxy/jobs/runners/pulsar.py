@@ -245,9 +245,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client_manager_kwargs[kwd] = self.runner_params[kwd]
         if self.pulsar_app is not None:
             client_manager_kwargs["pulsar_app"] = self.pulsar_app
-            # TODO: Hack remove this following line pulsar lib update
-            # that includes https://github.com/galaxyproject/pulsar/commit/ce0636a5b64fae52d165bcad77b2caa3f0e9c232
-            client_manager_kwargs["file_cache"] = None
 
         for kwd in self.runner_params.keys():
             if kwd.startswith("amqp_") or kwd.startswith("transport_"):
