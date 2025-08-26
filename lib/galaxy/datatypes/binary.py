@@ -552,18 +552,23 @@ class _BamOrSam:
     Helper class to set the metadata common to sam and bam files
     """
 
+    max_references = 100000
+
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         try:
-            bam_file = pysam.AlignmentFile(dataset.get_file_name(), mode="rb")
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = dict(bam_file.header.items())  # type: ignore [attr-defined]
-            dataset.metadata.read_groups = [
-                read_group["ID"] for read_group in dataset.metadata.bam_header.get("RG", []) if "ID" in read_group
-            ]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get("HD", {}).get("SO", None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get("HD", {}).get("VN", None)
+            with pysam.AlignmentFile(dataset.get_file_name(), mode="rb", check_sq=False) as bam_file:
+                # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+                if bam_file.nreferences <= self.max_references:
+                    dataset.metadata.reference_names = list(bam_file.references)
+                    dataset.metadata.reference_lengths = list(bam_file.lengths)
+                    dataset.metadata.bam_header = dict(bam_file.header.items())  # type: ignore [attr-defined]
+                    dataset.metadata.read_groups = [
+                        read_group["ID"]
+                        for read_group in dataset.metadata.bam_header.get("RG", [])
+                        if "ID" in read_group
+                    ]
+                dataset.metadata.sort_order = bam_file.header.get("HD", {}).get("SO", None)  # type: ignore [attr-defined]
+                dataset.metadata.bam_version = bam_file.header.get("HD", {}).get("VN", None)  # type: ignore [attr-defined]
         except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -1054,7 +1059,7 @@ class BamInputSorted(BamNative):
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
-        with pysam.AlignmentFile(filename=file_name) as f:
+        with pysam.AlignmentFile(filename=file_name, check_sq=False) as f:
             # The only sure thing we know here is that the sort order can't be coordinate
             return f.header.get("HD", {}).get("SO") == "coordinate"  # type: ignore[attr-defined]
 
@@ -1074,7 +1079,7 @@ class BamQuerynameSorted(BamInputSorted):
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
-        with pysam.AlignmentFile(filename=file_name) as f:
+        with pysam.AlignmentFile(filename=file_name, check_sq=False) as f:
             return f.header.get("HD", {}).get("SO") != "queryname"  # type: ignore[attr-defined]
 
 
