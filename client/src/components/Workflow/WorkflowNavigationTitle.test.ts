@@ -136,7 +136,7 @@ describe("WorkflowNavigationTitle renders", () => {
 
             const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
             expect(editButton.attributes("href")).toBe(
-                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
+                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`,
             );
         }
         await findEditButton("invocation");

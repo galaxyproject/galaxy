@@ -102,9 +102,9 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(
-                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length })
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }),
                 );
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -124,9 +124,9 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(
-                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length })
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }),
                 );
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
