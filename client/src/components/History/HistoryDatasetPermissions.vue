@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
