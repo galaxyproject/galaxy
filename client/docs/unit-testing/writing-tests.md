@@ -97,7 +97,7 @@ describe("MyComponent", () => {
                 }
 
                 return response(200).json(TEST_HISTORY_SUMMARY);
-            })
+            }),
         );
 
         // Your test code here

@@ -52,7 +52,7 @@ watchImmediate(
         }
 
         previousReference = props.reference;
-    }
+    },
 );
 
 onBeforeUnmount(() => {
@@ -100,7 +100,7 @@ async function updateTooltipPosition() {
     const { x, y, middlewareData, placement } = await computePosition(
         props.reference,
         tooltip.value,
-        getComputePositionConfig(tooltipArrow.value)
+        getComputePositionConfig(tooltipArrow.value),
     );
 
     tooltipPositionStyle.value = `transform: translate(${x}px, ${y}px);`;
@@ -123,7 +123,7 @@ watch(
         if (isShowing.value && props.reference && tooltip.value) {
             cleanupFunction = autoUpdate(props.reference, tooltip.value, updateTooltipPosition);
         }
-    }
+    },
 );
 
 useAccessibleHover(() => props.reference, show, hide);

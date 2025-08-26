@@ -106,7 +106,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // Fetch items when history ID or update time changes, only if localShowToggle is true
@@ -129,7 +129,7 @@ watch(
                 }
             });
         }
-    }
+    },
 );
 
 const extensionInTitle = computed<string>(() => {
@@ -146,13 +146,13 @@ const modalTitle = computed(() => {
         return localize(`Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} datasets`);
     } else if (props.collectionType === "list:paired") {
         return localize(
-            `Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} paired datasets`
+            `Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} paired datasets`,
         );
     } else if (props.collectionType === "paired") {
         return localize(
             `Create a ${extensionInTitle.value} paired dataset collection ${
                 fromSelection.value ? "from selected items" : ""
-            }`
+            }`,
         );
     } else {
         return localize("Create a collection");
@@ -171,7 +171,7 @@ const createdCollectionInHistory = computed<HDCASummary | undefined>(() => {
 });
 /** If the created collection has achieved a terminal state */
 const createdCollectionInReadyState = computed(
-    () => createdCollectionInHistory.value && stateIsTerminal(createdCollectionInHistory.value)
+    () => createdCollectionInHistory.value && stateIsTerminal(createdCollectionInHistory.value),
 );
 
 // Methods
@@ -199,14 +199,14 @@ watch(
         if (stateReady && createdCollectionInHistory.value) {
             emit("created-collection", createdCollectionInHistory.value);
         }
-    }
+    },
 );
 
 async function fetchHistoryDatasets() {
     const { error } = await collectionItemsStore.fetchDatasetsForFiltertext(
         historyId.value,
         historyUpdateTime.value,
-        localFilterText.value
+        localFilterText.value,
     );
     if (error) {
         historyItemsError.value = error;

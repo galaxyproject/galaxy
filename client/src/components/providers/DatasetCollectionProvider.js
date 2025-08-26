@@ -6,5 +6,5 @@ import { fetchCollectionDetails } from "@/api/datasetCollections";
 // but we know the populated_state should at least be ok.
 export default SingleQueryProvider(
     (params) => fetchCollectionDetails({ hdca_id: params.id }),
-    (result) => result.populated_state === "ok"
+    (result) => result.populated_state === "ok",
 );

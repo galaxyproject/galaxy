@@ -21,7 +21,7 @@ describe("useCollectionElementsStore", () => {
                 }
                 fetchCollectionElementsSpy();
                 return response(200).json(elements);
-            })
+            }),
         );
     });
 

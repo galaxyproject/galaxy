@@ -20,7 +20,7 @@ defineProps<Props>();
 
 const historyStore = useHistoryStore();
 const currentHistoryName = computed(() =>
-    historyStore.currentHistoryId ? historyStore.getHistoryNameById(historyStore.currentHistoryId) : undefined
+    historyStore.currentHistoryId ? historyStore.getHistoryNameById(historyStore.currentHistoryId) : undefined,
 );
 </script>
 

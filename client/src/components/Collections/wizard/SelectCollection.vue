@@ -26,7 +26,7 @@ function inputDialog() {
         {
             // TODO: use this in that dialog.
             collectionType: collectionType,
-        }
+        },
     );
 }
 

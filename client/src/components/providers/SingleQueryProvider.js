@@ -101,7 +101,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                         this.error = err;
                         this.$emit("error", err);
                         console.debug("Failed to fulfill promise.", err);
-                    }
+                    },
                 );
             },
         },

@@ -73,7 +73,7 @@ async function createWrapper(localVue, currentUserId, history) {
     server.use(
         http.get("/api/histories/{history_id}/contents", ({ response }) => {
             return response(200).json(history_contents_result);
-        })
+        }),
     );
 
     const router = new VueRouter();
@@ -203,7 +203,7 @@ describe("History center panel View", () => {
 
         // instead we have an alert
         expect(wrapper.find("[data-description='history messages']").text()).toBe(
-            "History has been permanently deleted"
+            "History has been permanently deleted",
         );
     });
 

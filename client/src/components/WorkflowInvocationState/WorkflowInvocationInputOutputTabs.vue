@@ -50,7 +50,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const inputData = computed(() => Object.entries(props.invocation.inputs));

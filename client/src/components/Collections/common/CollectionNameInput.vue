@@ -22,7 +22,7 @@ watch(
     () => props.value,
     (newValue) => {
         name.value = newValue;
-    }
+    },
 );
 
 watch(name, (newValue) => {

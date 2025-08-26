@@ -36,7 +36,7 @@ function assertIdentifierIsFound(
     wrapper: Wrapper<Vue>,
     uriData: DataUri | DataUriCollectionElement,
     hasIdentifier = false,
-    expectIdentifier = "File"
+    expectIdentifier = "File",
 ) {
     if (hasIdentifier) {
         if (!("identifier" in uriData)) {

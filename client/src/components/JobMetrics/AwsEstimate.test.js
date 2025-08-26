@@ -74,7 +74,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
         const estimates_not_available = await deriveRenderedAwsEstimate(
             "99999.0000000",
             "18000.0000000",
-            "99999.0000000"
+            "99999.0000000",
         );
         expect(estimates_not_available).toEqual({});
     });

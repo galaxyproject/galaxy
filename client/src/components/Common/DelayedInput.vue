@@ -64,7 +64,7 @@ function setQuery(queryNew: string) {
 
 watch(
     () => queryInput.value,
-    () => delayQuery(queryInput.value ?? "")
+    () => delayQuery(queryInput.value ?? ""),
 );
 
 function clearBox() {
@@ -80,7 +80,7 @@ watchImmediate(
     () => props.value,
     (newQuery) => {
         queryInput.value = newQuery;
-    }
+    },
 );
 </script>
 

@@ -33,7 +33,7 @@ export function useHistoryCardBadges(
     history: Ref<AnyHistoryEntry>,
     sharedView: boolean,
     publishedView: boolean,
-    updateFilter: (key: string, value: string) => void
+    updateFilter: (key: string, value: string) => void,
 ): {
     historyCardTitleBadges: CardBadge[];
 } {
@@ -63,7 +63,7 @@ export function useHistoryCardBadges(
             id: "snapshot",
             label: localize("Snapshot available"),
             title: localize(
-                "This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history."
+                "This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.",
             ),
             icon: faCopy,
             visible: isArchivedHistory(history.value) && !!history.value.export_record_data,
@@ -80,7 +80,7 @@ export function useHistoryCardBadges(
             id: "owner-shared",
             label: username,
             title: localize(
-                `'${username}' shared this history with you. Click to view all histories shared with you by '${username}'`
+                `'${username}' shared this history with you. Click to view all histories shared with you by '${username}'`,
             ),
             icon: faUsers,
             type: "badge",

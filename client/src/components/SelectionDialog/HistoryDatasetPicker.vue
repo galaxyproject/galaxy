@@ -137,7 +137,7 @@ function checkIfAllSelected(): boolean {
         items.value.length &&
             items.value.every((item) => {
                 return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            })
+            }),
     );
 }
 

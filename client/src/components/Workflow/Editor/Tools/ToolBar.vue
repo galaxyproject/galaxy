@@ -46,7 +46,7 @@ library.add(
     faObjectGroup,
     faPen,
     faTimes,
-    faTrash
+    faTrash,
 );
 
 const { toolbarStore, undoRedoStore, commentStore, workflowId } = useWorkflowStores();
@@ -84,7 +84,7 @@ watch(
         } else {
             toolbarStore.inputCatcherActive = true;
         }
-    }
+    },
 );
 
 const snappingDistanceId = useUid("snapping-distance-");

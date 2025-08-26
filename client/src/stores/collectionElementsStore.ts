@@ -160,7 +160,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
         const collectionsInHistory = historyContentsPayload.filter(
-            (entry) => entry.history_content_type === "dataset_collection"
+            (entry) => entry.history_content_type === "dataset_collection",
         ) as HDCASummary[];
         for (const collection of collectionsInHistory) {
             set<HDCASummary>(storedCollections.value, collection.id, collection);

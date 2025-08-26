@@ -72,13 +72,13 @@ watch(
     () => props.showModal,
     (newVal) => {
         localShowModal.value = newVal;
-    }
+    },
 );
 watch(
     () => localShowModal.value,
     (newVal) => {
         emit("update:show-modal", newVal);
-    }
+    },
 );
 watch(
     () => props.history,
@@ -87,7 +87,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 async function copy(close: () => void) {

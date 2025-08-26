@@ -51,13 +51,13 @@ const isLoading = computed(() => {
 });
 
 const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
+    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
 );
 const isAutoDownloadType = computed(
-    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext)
+    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
 );
 const preferredVisualization = computed(
-    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
@@ -85,7 +85,7 @@ watch(
             isDatatypeLoading.value = false;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

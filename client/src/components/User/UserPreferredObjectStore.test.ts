@@ -21,7 +21,7 @@ async function mountComponent() {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
-        })
+        }),
     );
 
     const wrapper = mount(UserPreferredObjectStore as object, {
@@ -41,7 +41,7 @@ describe("UserPreferredObjectStore.vue", () => {
         expect(els.length).toBe(3);
 
         const galaxyDefaultOption = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector,
         );
 
         expect(galaxyDefaultOption.exists()).toBeTruthy();
@@ -49,7 +49,7 @@ describe("UserPreferredObjectStore.vue", () => {
         server.use(
             http.put("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser({ preferred_object_store_id: null }));
-            })
+            }),
         );
 
         await galaxyDefaultOption.trigger("click");
@@ -64,7 +64,7 @@ describe("UserPreferredObjectStore.vue", () => {
 
         const objectStore2Option = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_2" })
-                .selector
+                .selector,
         );
 
         expect(objectStore2Option.exists()).toBeTruthy();
@@ -72,7 +72,7 @@ describe("UserPreferredObjectStore.vue", () => {
         server.use(
             http.put("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser({ preferred_object_store_id: "object_store_2" }));
-            })
+            }),
         );
 
         await objectStore2Option.trigger("click");
@@ -86,11 +86,11 @@ describe("UserPreferredObjectStore.vue", () => {
         const wrapper = await mountComponent();
 
         const galaxyDefaultOption = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector
+            ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "__null__" }).selector,
         );
         const objectStoreOptionOption = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card({ object_store_id: "object_store_1" })
-                .selector
+                .selector,
         );
 
         expect(galaxyDefaultOption.exists()).toBeTruthy();
@@ -100,12 +100,12 @@ describe("UserPreferredObjectStore.vue", () => {
         server.use(
             http.put("/api/users/{user_id}", ({ response }) => {
                 return response("4XX").json({ err_msg: "problem with selection..", err_code: 400 }, { status: 400 });
-            })
+            }),
         );
 
         const objectStoreOptionButton = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "object_store_1" })
-                .selector
+                .selector,
         );
 
         await objectStoreOptionButton.trigger("click");

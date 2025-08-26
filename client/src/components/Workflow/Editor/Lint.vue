@@ -235,7 +235,7 @@ export default {
         onFixUntypedParameter(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?"
+                    "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
                 )
             ) {
                 this.$emit("onRefactor", [fixUntypedParameter(item)]);
@@ -246,7 +246,7 @@ export default {
         onFixDisconnectedInput(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?"
+                    "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
                 )
             ) {
                 this.$emit("onRefactor", [fixDisconnectedInput(item)]);
@@ -257,7 +257,7 @@ export default {
         onFixUnlabeledOutputs(item) {
             if (
                 confirm(
-                    "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?"
+                    "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?",
                 )
             ) {
                 this.$emit("onRefactor", [fixUnlabeledOutputs()]);

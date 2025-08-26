@@ -140,7 +140,7 @@ export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ d
  * @returns {Promise<{ data: SharedHistory[]; total: number }>} A promise that resolves to the shared history entries
  */
 export async function getSharedHistories(
-    options?: GetHistoriesOptions
+    options?: GetHistoriesOptions,
 ): Promise<{ data: SharedHistory[]; total: number }> {
     const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
 
@@ -175,7 +175,7 @@ export async function getSharedHistories(
  * @returns {Promise<{ data: PublishedHistory[]; total: number }>} A promise that resolves to the published history entries
  */
 export async function getPublishedHistories(
-    options?: GetHistoriesOptions
+    options?: GetHistoriesOptions,
 ): Promise<{ data: PublishedHistory[]; total: number }> {
     const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
 
@@ -210,7 +210,7 @@ export async function getPublishedHistories(
  * @returns {Promise<{ data: ArchivedHistorySummary[]; total: number }>} A promise that resolves to the archived history entries
  */
 export async function getArchivedHistories(
-    options?: GetHistoriesOptions
+    options?: GetHistoriesOptions,
 ): Promise<{ data: ArchivedHistorySummary[]; total: number }> {
     const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
 

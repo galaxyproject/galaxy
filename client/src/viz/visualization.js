@@ -57,7 +57,7 @@ var select_datasets = (filters, success_fn) => {
                             data_type: "track_config",
                             hda_ldda: f.src === "ldda" ? "ldda" : "hda",
                         },
-                    })
+                    }),
                 );
             });
             // To preserve order, wait until there are definitions for all tracks and then add
@@ -70,7 +70,7 @@ var select_datasets = (filters, success_fn) => {
                 success_fn(track_defs);
             });
         },
-        { format: null, multiple: true }
+        { format: null, multiple: true },
     );
 };
 
@@ -283,8 +283,8 @@ var GenomeDataManager = Cache.extend({
                 this.get("data_type") === "raw_data"
                     ? "state"
                     : this.get("data_type") === "data"
-                    ? "converted_datasets_state"
-                    : "error";
+                      ? "converted_datasets_state"
+                      : "error";
 
         var ss_deferred = new util_mod.ServerStateDeferred({
             ajax_settings: {
@@ -579,7 +579,7 @@ var GenomeDataManager = Cache.extend({
                         chrom: chrom_info.chrom,
                         start: 0,
                         end: chrom_info.len,
-                    })
+                    }),
                 );
 
                 // Set flag if data is not available.
@@ -615,7 +615,7 @@ var GenomeDataManager = Cache.extend({
             bigwig: function (data, subregion) {
                 return _.filter(
                     data,
-                    (data_point) => data_point[0] >= subregion.get("start") && data_point[0] <= subregion.get("end")
+                    (data_point) => data_point[0] >= subregion.get("start") && data_point[0] <= subregion.get("end"),
                 );
             },
             refseq: function (data, subregion) {
@@ -744,7 +744,7 @@ var GenomeRegion = Backbone.Model.extend(
                 function () {
                     this.attributes.str_val = `${this.get("chrom")}:${this.get("start")}-${this.get("end")}`;
                 },
-                this
+                this,
             );
         },
 
@@ -858,7 +858,7 @@ var GenomeRegion = Backbone.Model.extend(
                         GenomeRegion.overlap_results.DIF_CHROMS,
                         GenomeRegion.overlap_results.BEFORE,
                         GenomeRegion.overlap_results.AFTER,
-                    ]
+                    ],
                 ).length === 0
             );
         },
@@ -873,7 +873,7 @@ var GenomeRegion = Backbone.Model.extend(
             CONTAINED_BY: 1005,
             AFTER: 1006,
         },
-    }
+    },
 );
 
 var GenomeRegionCollection = Backbone.Collection.extend({
@@ -949,7 +949,7 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend(
                 new GenomeDataManager({
                     dataset: this.get("dataset"),
                     init_data: preloaded_data,
-                })
+                }),
             );
         },
     },
@@ -973,7 +973,7 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend(
                 };
             },
         },
-    }
+    },
 );
 
 var BackboneTrackCollection = Backbone.Collection.extend({
@@ -1057,7 +1057,7 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend(
                 };
             },
         },
-    }
+    },
 );
 
 /**

@@ -153,7 +153,7 @@ const expandable = computed(
             "galaxy.datatypes.images.Image",
             "pdf",
             "html",
-        ])
+        ]),
 );
 const dataContent = computed(() => getContentById(props.datasetId));
 const dataError = computed(() => getContentLoadError(props.datasetId));

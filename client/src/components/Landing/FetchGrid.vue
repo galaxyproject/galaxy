@@ -181,7 +181,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 const viewRequestAction: CardAction = {

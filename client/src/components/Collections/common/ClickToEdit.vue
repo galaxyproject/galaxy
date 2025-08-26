@@ -33,7 +33,7 @@ watch(
                 clickToEditInput.value?.focus();
             });
         }
-    }
+    },
 );
 
 watch(
@@ -42,7 +42,7 @@ watch(
         if (!editable.value) {
             localValue.value = value;
         }
-    }
+    },
 );
 
 function onBlur() {

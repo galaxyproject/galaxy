@@ -77,7 +77,7 @@ describe("UploadExamples.vue", () => {
         await items.at(0).find("a").trigger("click");
         expect(uploadPayload).toHaveBeenCalledWith(
             [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
-            "fake-history-id"
+            "fake-history-id",
         );
         expect(sendPayload).toHaveBeenCalledWith("mockedPayload", {
             success: expect.any(Function),

@@ -71,7 +71,7 @@ describe("FormCardSticky.vue", () => {
                 buttons: "<button>Click me</button>",
                 default: "<p>Main content</p>",
                 footer: "<footer>Footer content</footer>",
-            }
+            },
         );
         expect(wrapper.find("button").text()).toBe("Click me");
         expect(wrapper.find("#tool-card-body").text()).toContain("Main content");

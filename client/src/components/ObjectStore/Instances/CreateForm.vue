@@ -26,7 +26,7 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
         toRef(props, "uuid"),
         createTestUrl,
         createUrl,
-        (instance: UserConcreteObjectStore) => emit("created", instance)
+        (instance: UserConcreteObjectStore) => emit("created", instance),
     );
 </script>
 <template>

@@ -11,12 +11,12 @@ export function useInstanceAndTemplate(instanceIdRef: Ref<string>) {
     fileSourceTemplatesStore.fetchTemplates();
 
     const instance = computed<UserFileSourceModel | null>(
-        () => fileSourceInstancesStore.getInstance(instanceIdRef.value) || null
+        () => fileSourceInstancesStore.getInstance(instanceIdRef.value) || null,
     );
     const template = computed<FileSourceTemplateSummary | null>(() =>
         instance.value
             ? fileSourceTemplatesStore.getTemplate(instance.value?.template_id, instance.value?.template_version)
-            : null
+            : null,
     );
 
     return { instance, template };

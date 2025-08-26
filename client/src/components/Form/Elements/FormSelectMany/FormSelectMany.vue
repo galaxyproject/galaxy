@@ -108,7 +108,7 @@ const workerRunning = refDebounced(running, 400);
 function handleHighlight(
     event: MouseEvent | KeyboardEvent,
     index: number,
-    highlightHandler: UnwrapRef<ReturnType<typeof useHighlight>>
+    highlightHandler: UnwrapRef<ReturnType<typeof useHighlight>>,
 ) {
     if (event.shiftKey && event.ctrlKey) {
         highlightHandler.rangeRemoveHighlight(index);

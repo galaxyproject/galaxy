@@ -20,7 +20,7 @@ export type StepJobSummary =
 export type WorkflowInvocation = components["schemas"]["WorkflowInvocationResponse"];
 
 export function isWorkflowInvocationElementView(
-    item: WorkflowInvocation | null
+    item: WorkflowInvocation | null,
 ): item is WorkflowInvocationElementView {
     return item !== null && "steps" in item;
 }

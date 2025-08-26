@@ -97,7 +97,7 @@ export function useShortTermStorage() {
     async function prepareObjectDownload(
         startPreparingDownloadAsync: StartPreparingDownloadCallback,
         objectId: string,
-        options = DEFAULT_OPTIONS
+        options = DEFAULT_OPTIONS,
     ): Promise<PrepareDownloadResult | undefined> {
         isPreparing.value = true;
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);

@@ -109,7 +109,7 @@ function collectionTypeToColumns(collectionType: string | null | undefined): Der
 
 function fetchTargetToTableColumns(
     target: AnyFetchTarget | NestedElementItem,
-    isCollection: boolean = false
+    isCollection: boolean = false,
 ): DerivedColumn[] {
     const columns: DerivedColumn[] = [];
 
@@ -233,7 +233,7 @@ function fetchTargetToTableColumns(
 export function fetchTargetToRows(
     target: AnyFetchTarget | NestedElementItem,
     columns: DerivedColumn[],
-    parentIdentifiers: string[]
+    parentIdentifiers: string[],
 ): RowsType {
     const rows: RowsType = [];
     function addDataElementRow(item: UrlDataElement) {
@@ -324,7 +324,7 @@ export function fetchTargetToRows(
             } else if (column.type === "tags") {
                 if (item.tags && item.tags.length > 0) {
                     const genericTags = item.tags.filter(
-                        (tag) => !tag.startsWith("group:") && !tag.startsWith("name:")
+                        (tag) => !tag.startsWith("group:") && !tag.startsWith("name:"),
                     );
                     if (genericTags.length > column.type_index) {
                         row[column.key()] = genericTags[column.type_index]!;
@@ -371,7 +371,7 @@ function cellValue(
     table: FetchTable,
     rowIndex: number,
     columnType: ParsedFetchWorkbookColumnType,
-    columnTypeIndex: number = 0
+    columnTypeIndex: number = 0,
 ): CellValueType {
     const columnKey = new DerivedColumn(columnType, columnTypeIndex, "").key();
     const row = table.rows[rowIndex] as RowType;
@@ -448,7 +448,7 @@ function fillNestedElementForRow(
     table: FetchTable,
     rowIndex: number,
     collectionTypeParts: string[],
-    currentCollectionTypePartIndex: number
+    currentCollectionTypePartIndex: number,
 ) {
     const collectionTypePart = collectionTypeParts[currentCollectionTypePartIndex];
     let identifier: string;
@@ -461,7 +461,7 @@ function fillNestedElementForRow(
             table,
             rowIndex,
             "paired_or_unpaired_identifier",
-            currentCollectionTypePartIndex
+            currentCollectionTypePartIndex,
         ) as string;
     } else {
         throw Error(`Unsupported collection type part encountered: ${collectionTypePart}.`);
@@ -475,7 +475,7 @@ function fillNestedElementForRow(
             table,
             rowIndex,
             collectionTypeParts,
-            currentCollectionTypePartIndex + 1
+            currentCollectionTypePartIndex + 1,
         );
     } else {
         fillUrlElementForRow(nestedElement as UrlDataElement, table, rowIndex);

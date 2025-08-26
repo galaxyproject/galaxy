@@ -62,7 +62,7 @@ describe("History Navigation", () => {
             {
                 id: "user.id",
                 email: "user.email",
-            }
+            },
         );
 
         const dropDown = wrapper.find("*[data-description='history options']");

@@ -218,10 +218,13 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveAllTools(toolsData: Tool[]) {
-        toolsById.value = toolsData.reduce((acc, item) => {
-            acc[item.id] = item;
-            return acc;
-        }, {} as Record<string, Tool>);
+        toolsById.value = toolsData.reduce(
+            (acc, item) => {
+                acc[item.id] = item;
+                return acc;
+            },
+            {} as Record<string, Tool>,
+        );
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {

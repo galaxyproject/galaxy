@@ -121,7 +121,7 @@ watch(
     () => query.value,
     (newQuery) => {
         showFavorites.value = newQuery.includes("#favorites");
-    }
+    },
 );
 
 // if currentPanelView ever becomes null || "", load tools
@@ -132,7 +132,7 @@ watch(
         if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
             await initializePanel();
         }
-    }
+    },
 );
 
 initializePanel();

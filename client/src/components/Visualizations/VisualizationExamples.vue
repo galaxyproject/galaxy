@@ -26,7 +26,7 @@ defineProps<{
 function onSubmit(name: string, url: string, ftype?: string) {
     const data = uploadPayload(
         [{ extension: ftype, fileName: name, fileMode: "new", fileUri: url }],
-        currentHistoryId.value
+        currentHistoryId.value,
     );
     sendPayload(data, {
         success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),

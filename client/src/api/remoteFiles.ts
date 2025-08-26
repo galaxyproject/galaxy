@@ -75,7 +75,7 @@ export async function browseRemoteFiles(
     limit?: number,
     offset?: number,
     query?: string,
-    sortBy?: string
+    sortBy?: string,
 ): Promise<BrowseRemoteFilesResult> {
     const { response, data, error } = await GalaxyApi().GET("/api/remote_files", {
         params: {

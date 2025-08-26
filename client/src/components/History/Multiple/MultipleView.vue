@@ -62,7 +62,7 @@ watch(
             initialLoaded.value = true;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 /** computed ref that indicates whether the user has histories pinned */
@@ -106,7 +106,7 @@ function showRecent() {
     historyStore.pinnedHistories = [];
     Toast.info(
         "Showing the 4 most recently updated histories. Pin histories to this view by clicking on Select Histories.",
-        "History Multiview"
+        "History Multiview",
     );
 }
 </script>

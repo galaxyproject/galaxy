@@ -54,7 +54,7 @@ const props = withDefaults(
         okDisabled: false,
         okDisabledTitle: undefined,
         closeOnOk: true,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -114,7 +114,7 @@ watchImmediate(
         } else {
             hideModal();
         }
-    }
+    },
 );
 
 function onClickDialog(event: MouseEvent) {
@@ -153,7 +153,7 @@ const headingSize = computed(() =>
         small: () => "sm" as const,
         medium: () => "md" as const,
         large: () => "lg" as const,
-    })
+    }),
 );
 
 const uid = useUid("g-modal");

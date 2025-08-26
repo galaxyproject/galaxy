@@ -29,7 +29,7 @@ const props = withDefaults(
     }>(),
     {
         filter: "",
-    }
+    },
 );
 
 // defineEmits below

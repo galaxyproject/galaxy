@@ -345,7 +345,7 @@ export default {
             undoRedoStore,
             (value) => (name.value = value),
             showAttributes,
-            "set workflow name"
+            "set workflow name",
         );
         /** user set name. queues an undo/redo action */
         function setName(newName) {
@@ -362,7 +362,7 @@ export default {
             (value) => (license.value = value),
             showAttributes,
             "set license",
-            "license"
+            "license",
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -377,7 +377,7 @@ export default {
             (value) => (creator.value = value),
             showAttributes,
             "set creator",
-            "creator"
+            "creator",
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -389,7 +389,7 @@ export default {
             undoRedoStore,
             (value) => (doi.value = value),
             showAttributes,
-            "set DOI"
+            "set DOI",
         );
         function setDoi(newDoi) {
             setDoiHandler.set(doi.value, newDoi);
@@ -401,7 +401,7 @@ export default {
             (value) => (annotation.value = value),
             showAttributes,
             "modify short description",
-            "annotation"
+            "annotation",
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -419,7 +419,7 @@ export default {
                 readmeActive.value = true;
                 showAttributes(args);
             },
-            "modify readme"
+            "modify readme",
         );
         function setReadme(newReadme) {
             if (readme.value !== newReadme) {
@@ -434,7 +434,7 @@ export default {
                 if (newReportActive) {
                     readmeActive.value = false;
                 }
-            }
+            },
         );
 
         const help = ref(null);
@@ -442,7 +442,7 @@ export default {
             undoRedoStore,
             (value) => (help.value = value),
             showAttributes,
-            "modify help"
+            "modify help",
         );
         function setHelp(newHelp) {
             if (help.value !== newHelp) {
@@ -455,7 +455,7 @@ export default {
             undoRedoStore,
             (value) => (logoUrl.value = value),
             showAttributes,
-            "modify logo url"
+            "modify logo url",
         );
         function setLogoUrl(newLogoUrl) {
             if (logoUrl.value !== newLogoUrl) {
@@ -469,7 +469,7 @@ export default {
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
             showAttributes,
-            "change tags"
+            "change tags",
         );
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
@@ -481,7 +481,7 @@ export default {
             () => stateStore.activeNodeId,
             () => {
                 scrollToTop();
-            }
+            },
         );
 
         const rightPanelElement = ref(null);
@@ -563,20 +563,20 @@ export default {
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
-            }))
+            })),
         );
 
         const getLabels = computed(() => fromSteps(steps.value));
 
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow",
         );
 
         useActivityLogic(
             computed(() => ({
                 activityBarId: "workflow-editor",
                 isNewTempWorkflow: isNewTempWorkflow.value,
-            }))
+            })),
         );
 
         const { confirm } = useConfirmDialog();
@@ -586,8 +586,8 @@ export default {
         const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
         const workflowActivities = computed(() =>
             workflowEditorActivities.filter(
-                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
-            )
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value,
+            ),
         );
 
         function onSearchResultClicked(searchData) {
@@ -754,7 +754,7 @@ export default {
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
-                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
+                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
                 );
                 if (r == false) {
                     return;
@@ -838,7 +838,7 @@ export default {
                     this.id,
                     data,
                     defaultPosition(this.graphOffset, this.transform),
-                    true
+                    true,
                 );
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -851,7 +851,7 @@ export default {
                 this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await ConfirmDialog.confirm(
-                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`,
                 );
                 if (confirmed) {
                     this.copyIntoWorkflow(workflowId);
@@ -898,7 +898,7 @@ export default {
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
-                    }
+                    },
                 );
 
                 if (!confirmed) {
@@ -978,7 +978,7 @@ export default {
                         Ok: () => {
                             this.hideModal();
                         },
-                    }
+                    },
                 );
             }
         },
@@ -1073,7 +1073,7 @@ export default {
             if (version != this.version) {
                 if (this.hasChanges) {
                     const r = window.confirm(
-                        "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        "There are unsaved changes to your workflow which will be lost. Continue ?",
                     );
                     if (r == false) {
                         return;
@@ -1097,7 +1097,7 @@ export default {
             const response = await getModule(
                 { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
                 stepData.id,
-                this.stateStore.setLoadingState
+                this.stateStore.setLoadingState,
             );
 
             const updatedStep = {

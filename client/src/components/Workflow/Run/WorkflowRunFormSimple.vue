@@ -90,7 +90,7 @@ watch(
             showRightPanel.value = !showPanels.value && workflow.readme ? "help" : null;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
@@ -99,7 +99,7 @@ watch(
         if (!show) {
             activeNodeId.value = null;
         }
-    }
+    },
 );
 const computedActiveNodeId = computed<number | undefined>(() => {
     if (showGraph.value) {
@@ -245,7 +245,7 @@ const stepsNotMatchingRequest = computed<string[]>(() => {
 });
 
 const isValidRerun = computed(
-    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0
+    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0,
 );
 
 const hasValidationErrors = computed(() => stepValidation.value !== null);

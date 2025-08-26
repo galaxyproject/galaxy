@@ -34,7 +34,7 @@ const props = withDefaults(
         placeholder: "type to search",
         id: () => useUid("headless-multiselect-").value,
         validator: () => () => true,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -112,7 +112,7 @@ watch(
     () => trimmedSearchValue.value,
     () => {
         highlightedOption.value = 0;
-    }
+    },
 );
 
 function onOptionHover(index: number) {
@@ -263,7 +263,7 @@ watch(
     async () => {
         await nextTick();
         bounds.update();
-    }
+    },
 );
 
 function getPopupLayerId() {
@@ -436,7 +436,9 @@ whenever(isOpen, async () => {
 
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
+    box-shadow:
+        0 0 6px 0 rgba(3, 0, 34, 0.048),
+        0 0 4px 0 rgba(3, 0, 34, 0.185);
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
 

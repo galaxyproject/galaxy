@@ -52,7 +52,7 @@ async function loadIcon(folderPath, fileName, prefix) {
     if (segments.length !== 3 || !["regular", "solid", "duotone"].includes(type) || !segments[2] === "svg") {
         throw new Error(
             `Failed to load icon "${fileName}". ` +
-                'Icon files must be in the following format: "`name`.`type`.svg", where type is `regular`, `solid` or `duotone`'
+                'Icon files must be in the following format: "`name`.`type`.svg", where type is `regular`, `solid` or `duotone`',
         );
     }
 

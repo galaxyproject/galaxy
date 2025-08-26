@@ -51,7 +51,7 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
 
         // The use of the tool tip in statelesstag without a real dom is causing issues
@@ -62,7 +62,7 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -78,7 +78,7 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -98,7 +98,7 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();

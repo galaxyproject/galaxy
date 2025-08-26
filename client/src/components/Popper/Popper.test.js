@@ -85,7 +85,7 @@ describe("PopperComponent.vue", () => {
         expect(createPopper).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
-            expect.objectContaining({ placement: "bottom" })
+            expect.objectContaining({ placement: "bottom" }),
         );
     });
 

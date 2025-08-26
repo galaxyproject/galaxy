@@ -35,7 +35,7 @@ watch(
             });
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 onUnmounted(() => {

@@ -104,7 +104,7 @@ watch(
             ];
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function updateInfoMessage(strMessage: string) {
@@ -199,10 +199,13 @@ function onAttribute(data: Record<string, any>) {
 
 async function saveAttrs() {
     if (collection.value && attributesInputs.value) {
-        const updatedAttrs = attributesInputs.value.reduce((acc, input) => {
-            acc[input.name] = input.value;
-            return acc;
-        }, {} as Record<string, any>);
+        const updatedAttrs = attributesInputs.value.reduce(
+            (acc, input) => {
+                acc[input.name] = input.value;
+                return acc;
+            },
+            {} as Record<string, any>,
+        );
         try {
             await updateContentFields(collection.value, updatedAttrs);
 
@@ -255,7 +258,7 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-genome-nav"
                 @click="
                     updateInfoMessage(
-                        'This will create a new collection in your History. Your quota will not increase.'
+                        'This will create a new collection in your History. Your quota will not increase.',
                     )
                 ">
                 <template v-slot:title>
@@ -296,7 +299,7 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="
                     updateInfoMessage(
-                        'This operation might take a short while, depending on the size of your collection.'
+                        'This operation might take a short while, depending on the size of your collection.',
                     )
                 ">
                 <template v-slot:title>

@@ -154,7 +154,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 function validate(value: string, columnDefinition: SampleSheetColumnDefinition): boolean {
@@ -219,13 +219,13 @@ function generateGridColumnDefs(columnDefinitions: SampleSheetColumnDefinitions)
             columns.push(
                 uriColumn("URI 1 (Forward)", "url"),
                 uriColumn("URI 2 (Reverse)", "url_1"),
-                elementIdentifierColumn()
+                elementIdentifierColumn(),
             );
         } else if (collectionType === "sample_sheet:paired_or_unpaired") {
             columns.push(
                 uriColumn("URI 1 (Forward)", "url"),
                 uriColumn("URI 2 (Optional/Reverse)", "url_1"),
-                elementIdentifierColumn()
+                elementIdentifierColumn(),
             );
         } else {
             throw new Error("Mode not implemented yet");

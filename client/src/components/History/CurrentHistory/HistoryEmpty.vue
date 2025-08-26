@@ -20,7 +20,7 @@ const props = withDefaults(
     {
         message: "This history is empty.",
         writable: true,
-    }
+    },
 );
 
 const { openGlobalUploadModal } = useGlobalUploadModal();

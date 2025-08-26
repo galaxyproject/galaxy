@@ -72,12 +72,12 @@ const needsFileName = computed(
     () =>
         exportData.destination === "remote-source" ||
         exportData.destination === "rdm-repository" ||
-        exportData.destination === "zenodo-repository"
+        exportData.destination === "zenodo-repository",
 );
 
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
-        (target) => target.destination === exportData.destination
+        (target) => target.destination === exportData.destination,
     );
     return exportDestination?.label ?? "Unknown Destination";
 });
@@ -142,7 +142,7 @@ watch(
         if (oldValue && !newValue) {
             resetWizard();
         }
-    }
+    },
 );
 
 function getZenodoSource() {

@@ -21,12 +21,12 @@ export const useDatasetStore = defineStore("datasetStore", () => {
 
     const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } = useKeyedCache<HDADetailed>(
         fetchDatasetDetails,
-        shouldFetch
+        shouldFetch,
     );
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
         const datasetList = historyContentsPayload.filter(
-            (entry) => entry.history_content_type === "dataset"
+            (entry) => entry.history_content_type === "dataset",
         ) as HDADetailed[];
         for (const dataset of datasetList) {
             set(storedItems.value, dataset.id, dataset);

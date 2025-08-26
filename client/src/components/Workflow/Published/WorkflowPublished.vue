@@ -96,7 +96,7 @@ async function load() {
 watch(
     () => props.zoom,
     () => (stateStore.scale = props.zoom),
-    { immediate: true }
+    { immediate: true },
 );
 
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);

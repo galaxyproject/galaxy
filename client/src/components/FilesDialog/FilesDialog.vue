@@ -106,7 +106,7 @@ const fields = computed(() => {
 const fileMode = computed(() => props.mode == "file");
 
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
+    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot()),
 );
 
 const canCreateNewFileSource = computed(() => {

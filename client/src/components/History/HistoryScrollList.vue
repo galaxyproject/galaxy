@@ -69,14 +69,14 @@ watch(
         if (newVal !== "" && validFilter.value && newVal !== oldVal) {
             await loadMore(true);
         }
-    }
+    },
 );
 
 watch(
     () => busy.value,
     (loading: boolean) => {
         emit("update:loading", loading);
-    }
+    },
 );
 
 /** `historyStore` histories for current user */
@@ -88,7 +88,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 const filtered = computed<HistorySummary[]>(() => {

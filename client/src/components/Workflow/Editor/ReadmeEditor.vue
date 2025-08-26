@@ -44,7 +44,7 @@ watch(
     (newValue) => {
         readmeCurrent.value = newValue ?? "";
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -94,6 +94,11 @@ watch(
 
 <style scoped>
 .workflow-readme-textarea {
-    font: 14px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
+    font:
+        14px/1.7 Menlo,
+        Consolas,
+        Monaco,
+        "Andale Mono",
+        monospace;
 }
 </style>
