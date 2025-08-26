@@ -55,11 +55,7 @@ class UserCredentialsResponse(Model):
     source_version: str
     name: str
     version: str
-    label: str
-    description: str
-    current_group_name: Optional[str] = None
     current_group_id: Optional[EncodedDatabaseIdField] = None
-    credential_definitions: CredentialDefinitionsResponse
     groups: Dict[str, CredentialGroupResponse]
 
 

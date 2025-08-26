@@ -255,18 +255,13 @@ class CredentialsService:
                     "source_version": user_credentials.source_version,
                     "name": user_credentials.name,
                     "version": user_credentials.version,
-                    "label": definition.label,
-                    "description": definition.description,
-                    "credential_definitions": {
-                        "variables": [v.to_dict() for v in definition.variables],
-                        "secrets": [s.to_dict() for s in definition.secrets],
-                    },
                     "groups": {},
                 },
             )
 
             user_credentials_dict[cred_id]["groups"].setdefault(
-                credentials_group.name,
+                # TODO: The id should be encoded
+                credentials_group.id,
                 {
                     "id": credentials_group.id,
                     "name": credentials_group.name,
@@ -286,10 +281,8 @@ class CredentialsService:
                     "value": credential.value,
                 }
             target_list = "secrets" if credential.is_secret else "variables"
-            user_credentials_dict[cred_id]["groups"][credentials_group.name][target_list].append(entry)
-
-            if credentials_group.id == user_credentials.current_group_id:
-                user_credentials_dict[cred_id]["current_group_name"] = credentials_group.name
+            # TODO: The id should be encoded
+            user_credentials_dict[cred_id]["groups"][credentials_group.id][target_list].append(entry)
 
         user_credentials_list = [UserCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
         return UserCredentialsListResponse(root=user_credentials_list)

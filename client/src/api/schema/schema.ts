@@ -8614,24 +8614,6 @@ export interface components {
              */
             username: string;
         };
-        /** CredentialDefinitionResponse */
-        CredentialDefinitionResponse: {
-            /** Description */
-            description: string;
-            /** Label */
-            label: string;
-            /** Name */
-            name: string;
-            /** Optional */
-            optional: boolean;
-        };
-        /** CredentialDefinitionsResponse */
-        CredentialDefinitionsResponse: {
-            /** Secrets */
-            secrets: components["schemas"]["CredentialDefinitionResponse"][];
-            /** Variables */
-            variables: components["schemas"]["CredentialDefinitionResponse"][];
-        };
         /** CredentialGroupResponse */
         CredentialGroupResponse: {
             /**
@@ -22145,13 +22127,8 @@ export interface components {
         UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
-            credential_definitions: components["schemas"]["CredentialDefinitionsResponse"];
             /** Current Group Id */
             current_group_id?: string | null;
-            /** Current Group Name */
-            current_group_name?: string | null;
-            /** Description */
-            description: string;
             /** Groups */
             groups: {
                 [key: string]: components["schemas"]["CredentialGroupResponse"];
@@ -22161,8 +22138,6 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Label */
-            label: string;
             /** Name */
             name: string;
             /** Source Id */
