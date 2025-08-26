@@ -23,7 +23,7 @@ import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@for
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
     type AnyHistoryEntry,
