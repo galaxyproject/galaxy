@@ -2,11 +2,12 @@
  * Requests tools, and various panel views
  */
 
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
 import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import { parseHelpForSummary } from "@/components/ToolsList/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -80,6 +81,11 @@ export interface ToolSectionLabel {
     links?: Record<string, string> | null;
 }
 
+export type ToolHelpData = {
+    help?: string;
+    summary?: string;
+};
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
@@ -89,6 +95,8 @@ export const useToolStore = defineStore("toolStore", () => {
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, Tool | ToolSection>>>({});
+    const fetchedHelpIds = ref<Set<string>>(new Set());
+    const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
     const currentToolSections = computed(() => {
         const effectiveView = currentPanelView.value;
@@ -214,14 +222,41 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
+    async function fetchHelpForId(toolId: string) {
+        try {
+            if (!helpDataCached.value[toolId] && !fetchedHelpIds.value.has(toolId)) {
+                fetchedHelpIds.value.add(toolId);
+
+                const toolHelpData: ToolHelpData = {};
+
+                const { data } = (await axios.get(
+                    `${getAppRoot()}api/tools/${encodeURIComponent(toolId)}/build`,
+                )) as AxiosResponse<ToolHelpData>;
+
+                const help = data.help;
+                if (help && help !== "\n") {
+                    toolHelpData.help = help;
+                    toolHelpData.summary = parseHelpForSummary(help);
+                } else {
+                    toolHelpData.help = ""; // for cases where helpText == '\n'
+                }
+
+                Vue.set(helpDataCached.value, toolId, toolHelpData);
+            }
+        } catch (error) {
+            console.error("Error fetching help:", error);
+            fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
+        }
+    }
+
     function getToolSections(effectiveView: string, filter?: string) {
         const sectionEntries = panelSections.value(effectiveView).map((section) => [section.id, section]);
         if (filter) {
             const filterLower = filter.toLowerCase();
             return Object.fromEntries(
                 sectionEntries.filter(([, section]) =>
-                    (section as ToolSection).name?.toLowerCase().includes(filterLower)
-                )
+                    (section as ToolSection).name?.toLowerCase().includes(filterLower),
+                ),
             ) as Record<string, ToolSection>;
         }
 
@@ -272,10 +307,13 @@ export const useToolStore = defineStore("toolStore", () => {
         currentPanelView,
         currentToolSections,
         defaultPanelView,
+        fetchHelpForId,
+        fetchedHelpIds,
         fetchToolSections,
         fetchPanels,
         fetchToolForId,
         fetchTools,
+        helpDataCached,
         initializePanel,
         isPanelPopulated,
         loading,
