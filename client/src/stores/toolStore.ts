@@ -214,8 +214,17 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    function getToolSections(effectiveView: string) {
+    function getToolSections(effectiveView: string, filter?: string) {
         const sectionEntries = panelSections.value(effectiveView).map((section) => [section.id, section]);
+        if (filter) {
+            const filterLower = filter.toLowerCase();
+            return Object.fromEntries(
+                sectionEntries.filter(([, section]) =>
+                    (section as ToolSection).name?.toLowerCase().includes(filterLower)
+                )
+            ) as Record<string, ToolSection>;
+        }
+
         return Object.fromEntries(sectionEntries) as Record<string, ToolSection>;
     }
 

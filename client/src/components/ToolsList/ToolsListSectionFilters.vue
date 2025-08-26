@@ -7,9 +7,9 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem } from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BDropdownText, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { Toast } from "@/composables/toast";
@@ -38,10 +38,14 @@ const emit = defineEmits<{
 const toolStore = useToolStore();
 const { defaultPanelView, panels } = storeToRefs(toolStore);
 
-const defaultToolSections = computed(() => toolStore.getToolSections(defaultPanelView.value));
+const defaultToolSectionsFilter = ref("");
+const defaultToolSections = computed(() =>
+    toolStore.getToolSections(defaultPanelView.value, defaultToolSectionsFilter.value),
+);
 
-const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_operations"));
-const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics"));
+const ontologiesFilter = ref("");
+const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_operations", ontologiesFilter.value));
+const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics", ontologiesFilter.value));
 
 const selectedSection = computed<ToolSection | null>(() => {
     const sectionName = props.filterClass.getFilterValue(props.filterText, "section")?.replace(/^"(.*)"$/, "$1");
@@ -143,14 +147,25 @@ function applyQuotedFilter(filter: string, value: string) {
                     <i v-else> Select a section to filter by </i>
                 </template>
 
-                <BDropdownItem
-                    v-for="sec in defaultToolSections"
-                    :key="sec.id"
-                    :title="sec.description"
-                    :active="selectedSection?.id === sec.id"
-                    @click="applyQuotedFilter('section', sec.name)">
-                    <span v-localize>{{ sec.name }}</span>
-                </BDropdownItem>
+                <BDropdownGroup id="searchable-sections" class="sections-select-list" header-classes="search-header">
+                    <template v-slot:header>
+                        <BDropdownText>
+                            <BFormInput
+                                v-model="defaultToolSectionsFilter"
+                                type="text"
+                                placeholder="Filter sections..." />
+                        </BDropdownText>
+                    </template>
+
+                    <BDropdownItem
+                        v-for="sec in defaultToolSections"
+                        :key="sec.id"
+                        :title="sec.description"
+                        :active="selectedSection?.id === sec.id"
+                        @click="applyQuotedFilter('section', sec.name)">
+                        <span v-localize>{{ sec.name }}</span>
+                    </BDropdownItem>
+                </BDropdownGroup>
             </BDropdown>
 
             <BDropdown
@@ -171,44 +186,52 @@ function applyQuotedFilter(filter: string, value: string) {
                     <i v-else> Select an ontology to filter by </i>
                 </template>
 
-                <BDropdownGroup id="edam-operations" class="unselectable">
+                <BDropdownGroup id="searchable-sections" class="sections-select-list" header-classes="search-header">
                     <template v-slot:header>
-                        <FontAwesomeIcon
-                            v-if="getPanelIcon('ontology:edam_operations')"
-                            :icon="getPanelIcon('ontology:edam_operations')"
-                            fixed-width
-                            size="sm" />
-                        <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
+                        <BDropdownText>
+                            <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
+                        </BDropdownText>
                     </template>
-                    <BDropdownItem
-                        v-for="ont in edamOperations"
-                        :key="ont.id"
-                        :title="ont.description"
-                        :active="selectedOntology?.id === ont.id"
-                        @click="applyQuotedFilter('ontology', ont.id)">
-                        <span v-localize>{{ ont.name }}</span>
-                    </BDropdownItem>
-                </BDropdownGroup>
 
-                <BDropdownDivider />
+                    <BDropdownGroup v-if="Object.keys(edamOperations).length" id="edam-operations" class="unselectable">
+                        <template v-slot:header>
+                            <FontAwesomeIcon
+                                v-if="getPanelIcon('ontology:edam_operations')"
+                                :icon="getPanelIcon('ontology:edam_operations')"
+                                fixed-width
+                                size="sm" />
+                            <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
+                        </template>
+                        <BDropdownItem
+                            v-for="ont in edamOperations"
+                            :key="ont.id"
+                            :title="ont.description"
+                            :active="selectedOntology?.id === ont.id"
+                            @click="applyQuotedFilter('ontology', ont.id)">
+                            <span v-localize>{{ ont.name }}</span>
+                        </BDropdownItem>
+                    </BDropdownGroup>
 
-                <BDropdownGroup id="edam-topics" class="unselectable">
-                    <template v-slot:header>
-                        <FontAwesomeIcon
-                            v-if="getPanelIcon('ontology:edam_topics')"
-                            :icon="getPanelIcon('ontology:edam_topics')"
-                            fixed-width
-                            size="sm" />
-                        <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
-                    </template>
-                    <BDropdownItem
-                        v-for="ont in edamTopics"
-                        :key="ont.id"
-                        :title="ont.description"
-                        :active="selectedOntology?.id === ont.id"
-                        @click="applyQuotedFilter('ontology', ont.id)">
-                        <span v-localize>{{ ont.name }}</span>
-                    </BDropdownItem>
+                    <BDropdownDivider />
+
+                    <BDropdownGroup v-if="Object.keys(edamTopics).length" id="edam-topics" class="unselectable">
+                        <template v-slot:header>
+                            <FontAwesomeIcon
+                                v-if="getPanelIcon('ontology:edam_topics')"
+                                :icon="getPanelIcon('ontology:edam_topics')"
+                                fixed-width
+                                size="sm" />
+                            <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
+                        </template>
+                        <BDropdownItem
+                            v-for="ont in edamTopics"
+                            :key="ont.id"
+                            :title="ont.description"
+                            :active="selectedOntology?.id === ont.id"
+                            @click="applyQuotedFilter('ontology', ont.id)">
+                            <span v-localize>{{ ont.name }}</span>
+                        </BDropdownItem>
+                    </BDropdownGroup>
                 </BDropdownGroup>
             </BDropdown>
         </div>
@@ -245,9 +268,15 @@ function applyQuotedFilter(filter: string, value: string) {
 <style lang="scss" scoped>
 .tool-section-dropdown {
     :deep(.dropdown-menu) {
-        overflow: auto;
-        max-height: 50vh;
         min-width: 100%;
+
+        .search-header {
+            padding: 0 0 0.5rem 0;
+        }
+        .sections-select-list > .list-unstyled {
+            overflow-y: auto;
+            max-height: 50vh;
+        }
     }
 }
 </style>
