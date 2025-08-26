@@ -391,7 +391,7 @@ describe("FormData", () => {
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
         expect(wrapper.emitted("alert")[0][0]).toEqual(
-            "dataset is not a valid input for dataset collection parameter."
+            "dataset is not a valid input for dataset collection parameter.",
         );
     });
 
@@ -410,7 +410,7 @@ describe("FormData", () => {
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
         expect(wrapper.emitted("alert")[0][0]).toEqual(
-            "dataset pair dataset collection is not a valid input for list type dataset collection parameter."
+            "dataset pair dataset collection is not a valid input for list type dataset collection parameter.",
         );
     });
 
@@ -470,15 +470,14 @@ describe("FormData", () => {
         const checkLinked = wrapper.findComponent(".custom-switch");
         expect(wrapper.find(".custom-switch span").text()).toContain("Linked:");
         expect(wrapper.find(".custom-switch span").text()).toContain(
-            "Datasets will be run in matched order with other datasets."
+            "Datasets will be run in matched order with other datasets.",
         );
         expect(checkLinked.props().checked).toBeTruthy();
         // Emit change event to uncheck the checkbox via Bootstrap-Vue component
         await checkLinked.vm.$emit("input", false);
         expect(wrapper.find(".custom-switch span").text()).toContain("Unlinked:");
         expect(wrapper.find(".custom-switch span").text()).toContain(
-            "Dataset will be run against *all* other datasets."
-
+            "Dataset will be run against *all* other datasets.",
         );
         expect(wrapper.emitted("input")[4][0]).toEqual({
             batch: true,

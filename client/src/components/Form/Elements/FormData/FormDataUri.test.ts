@@ -26,7 +26,7 @@ function initWrapper(value: DataUri) {
 
 function assertLocationIsFound(
     wrapper: VueWrapper<any> | DOMWrapper<Element>,
-    uriData: DataUri | DataUriCollectionElement
+    uriData: DataUri | DataUriCollectionElement,
 ) {
     if (!("location" in uriData)) {
         throw new Error("The DataUri type does not have a url property");
