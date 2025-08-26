@@ -1,6 +1,4 @@
-import functools
 import logging
-import os
 from typing import (
     Optional,
     Union,
@@ -9,29 +7,30 @@ from typing import (
 from galaxy import exceptions
 from galaxy.files.models import (
     AnyRemoteEntry,
-    BaseFileSourceConfiguration,
-    BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
-    RemoteDirectory,
-    RemoteFile,
+)
+from galaxy.files.sources._fsspec import (
+    CacheOptionsDictType,
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
 
 try:
-    import s3fs
+    from s3fs import S3FileSystem
 except ImportError:
-    s3fs = None
+    S3FileSystem = None
 
-from . import BaseFilesSource
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
-FS_PLUGIN_TYPE = "s3fs"
+REQUIRED_PACKAGE = FS_PLUGIN_TYPE = "s3fs"
 
 log = logging.getLogger(__name__)
 
 
-class S3FSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     anon: Union[bool, TemplateExpansion] = False
     endpoint_url: Union[str, TemplateExpansion, None] = None
     bucket: Union[str, TemplateExpansion, None] = None
@@ -39,7 +38,7 @@ class S3FSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     key: Union[str, TemplateExpansion, None] = None
 
 
-class S3FSFileSourceConfiguration(BaseFileSourceConfiguration):
+class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     anon: bool = False
     endpoint_url: Optional[str] = None
     bucket: Optional[str] = None
@@ -47,26 +46,48 @@ class S3FSFileSourceConfiguration(BaseFileSourceConfiguration):
     key: Optional[str] = None
 
 
-class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
+class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
     plugin_type = FS_PLUGIN_TYPE
+    required_module = S3FileSystem
+    required_package = REQUIRED_PACKAGE
 
     template_config_class = S3FSFileSourceTemplateConfiguration
     resolved_config_class = S3FSFileSourceConfiguration
 
-    def _open_fs(self, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]):
-        if s3fs is None:
-            raise Exception("Missing s3fs package, please install it to use S3 file sources.")
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ):
+        if S3FileSystem is None:
+            raise self.required_package_exception
 
         config = context.config
         client_kwargs = {"endpoint_url": config.endpoint_url} if config.endpoint_url else None
-        fs = s3fs.S3FileSystem(
+        fs = S3FileSystem(
             anon=config.anon,
             key=config.key,
             secret=config.secret,
             client_kwargs=client_kwargs,
-            listings_expiry_time=config.file_sources_config.listings_expiry_time,
+            **cache_options,
         )
         return fs
+
+    def _to_bucket_path(self, path: str, config: S3FSFileSourceConfiguration) -> str:
+        """Adapt the path to the S3 bucket format."""
+        if path.startswith("s3://"):
+            return path.replace("s3://", "")
+        bucket = config.bucket
+        if not bucket and not path.startswith("s3://"):
+            raise exceptions.MessageException("Bucket name is required for S3FsFilesSource.")
+        return self._bucket_path(bucket or "", path)
+
+    def _adapt_entry_path(self, filesystem_path: str) -> str:
+        """Remove the S3 bucket name from the filesystem path."""
+        if self.template_config.bucket:
+            bucket_prefix = f"{self.template_config.bucket}/"
+            return filesystem_path.replace(bucket_prefix, "", 1)
+        return filesystem_path
 
     def _list(
         self,
@@ -79,38 +100,28 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        _bucket_name = context.config.bucket or ""
-        fs = self._open_fs(context)
-        if recursive:
-            res: list[AnyRemoteEntry] = []
-            bucket_path = self._bucket_path(_bucket_name, path)
-            for p, dirs, files in fs.walk(bucket_path, detail=True):
-                to_dict = functools.partial(self._resource_info_to_dict, p)
-                res.extend(map(to_dict, dirs.values()))
-                res.extend(map(to_dict, files.values()))
-            return res, len(res)
-        else:
-            bucket_path = self._bucket_path(_bucket_name, path)
-            try:
-                res = fs.ls(bucket_path, detail=True)
-            except Exception as e:
-                raise exceptions.MessageException(f"Error listing {bucket_path}: {e}")
-            to_dict = functools.partial(self._resource_info_to_dict, path)
-            return list(map(to_dict, res)), len(res)
+        bucket_path = self._to_bucket_path(path, context.config)
+        return super()._list(
+            context=context,
+            path=bucket_path,
+            recursive=recursive,
+            limit=limit,
+            offset=offset,
+            query=query,
+            sort_by=sort_by,
+        )
 
     def _realize_to(
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]
     ):
-        _bucket_name = context.config.bucket or ""
-        fs = self._open_fs(context)
-        bucket_path = self._bucket_path(_bucket_name, source_path)
-        fs.download(bucket_path, native_path)
+        bucket_path = self._to_bucket_path(source_path, context.config)
+        super()._realize_to(source_path=bucket_path, native_path=native_path, context=context)
 
-    def _write_from(self, target_path, native_path, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]):
-        _bucket_name = context.config.bucket or ""
-        fs = self._open_fs(context)
-        bucket_path = self._bucket_path(_bucket_name, target_path)
-        fs.upload(native_path, bucket_path)
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]
+    ):
+        bucket_path = self._to_bucket_path(target_path, context.config)
+        super()._write_from(target_path=bucket_path, native_path=native_path, context=context)
 
     def _bucket_path(self, bucket_name: str, path: str):
         if path.startswith("s3://"):
@@ -118,21 +129,6 @@ class S3FsFilesSource(BaseFilesSource[S3FSFileSourceTemplateConfiguration, S3FSF
         elif not path.startswith("/"):
             path = f"/{path}"
         return f"{bucket_name}{path}"
-
-    def _resource_info_to_dict(self, dir_path: str, resource_info) -> AnyRemoteEntry:
-        name = str(os.path.basename(resource_info["name"]))
-        path = os.path.join(dir_path, name)
-        uri = self.uri_from_path(path)
-        if resource_info["type"] == "directory":
-            return RemoteDirectory(name=name, uri=uri, path=path)
-        else:
-            return RemoteFile(
-                name=name,
-                size=resource_info["size"],
-                ctime=self.to_dict_time(resource_info["LastModified"]),
-                uri=uri,
-                path=path,
-            )
 
     def score_url_match(self, url: str):
         # We need to use template_config here because this is called before the template is expanded.
