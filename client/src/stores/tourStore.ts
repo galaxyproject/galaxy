@@ -1,12 +1,15 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 
+import type { TourDetails } from "@/api/tours";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export const useTourStore = defineStore("tourStore", () => {
     /** Track what tour ID we are expecting, to prevent any unintended localStorage
      * reactivity problems */
     const localTourId = ref<string>("");
+
+    const legacyTourCache = ref<Record<string, TourDetails>>({});
 
     const currentTour = useUserLocalStorage<{ id: string; step: number } | undefined>(
         "currently-active-tour",
@@ -41,5 +44,8 @@ export const useTourStore = defineStore("tourStore", () => {
     return {
         currentTour,
         setTour,
+        /** This serves as a cache to store tour data for `components/Tour/runData` used in
+         * `bundleEntries` for webhooks */
+        legacyTourCache,
     };
 });

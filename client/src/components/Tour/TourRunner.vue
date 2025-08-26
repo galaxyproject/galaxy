@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
 import { getTourData, type TourRequirements, type TourStep } from "@/api/tours";
@@ -20,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits(["end-tour"]);
 
 const tourStore = useTourStore();
+const { legacyTourCache } = storeToRefs(tourStore);
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -28,6 +30,14 @@ const waitingOnElement = ref<string | null>(null);
 
 async function initialize() {
     try {
+        const cachedTour = legacyTourCache.value[props.tourId];
+        if (cachedTour) {
+            steps.value = cachedTour.steps;
+            requirements.value = cachedTour.requirements;
+            ready.value = true;
+            return;
+        }
+
         const { requirements: tourRequirements, steps: tourSteps } = await getTourData(props.tourId);
 
         if (!tourSteps.length) {

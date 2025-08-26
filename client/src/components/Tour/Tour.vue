@@ -18,25 +18,13 @@ import TourStep from "./TourStep.vue";
 /** Popup display duration when auto-playing the tour */
 const PLAY_DELAY = 3000;
 
-/** A `TourStep` (from backend schema) but with additional before and next actions
- *
- * This is there for the legacy `runTour` mounting method (used in webhooks) which provides its own
- * `onBefore` and `onNext` hooks for each step.
- *
- * For when `TourRunner` is parent, we simply use the prop `onBefore` and `onNext` methods and the `TourStep` type.
- */
-type TourStepWithActions = TourStepType & {
-    onBefore?: () => Promise<void>;
-    onNext?: () => Promise<void>;
-};
-
 const props = defineProps<{
-    steps: (TourStepType | TourStepWithActions)[];
+    steps: TourStepType[];
     requirements: TourRequirements;
     tourId: string;
     waitingOnElement?: string | null;
-    onBefore?: (step: TourStepType) => Promise<void>;
-    onNext?: (step: TourStepType) => Promise<void>;
+    onBefore: (step: TourStepType) => Promise<void>;
+    onNext: (step: TourStepType) => Promise<void>;
 }>();
 
 const emit = defineEmits(["end-tour"]);
@@ -199,22 +187,14 @@ async function next() {
     try {
         // do post-actions
         if (currentStep.value) {
-            if ("onNext" in currentStep.value && currentStep.value.onNext) {
-                await currentStep.value.onNext();
-            } else {
-                await props.onNext?.(currentStep.value);
-            }
+            await props.onNext(currentStep.value);
         }
         // do pre-actions
         const nextIndex = currentIndex.value + 1;
         if (nextIndex < numberOfSteps.value && currentIndex.value !== -1) {
             const nextStep = props.steps[nextIndex];
             if (nextStep) {
-                if ("onBefore" in nextStep && nextStep.onBefore) {
-                    await nextStep.onBefore();
-                } else {
-                    await props.onBefore?.(nextStep);
-                }
+                await props.onBefore(nextStep);
 
                 // automatically continues to next step if enabled, unless its the last one
                 if (isPlaying.value && nextIndex !== numberOfSteps.value - 1) {
