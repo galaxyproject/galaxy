@@ -22,6 +22,7 @@ Optional Arguments:
     -i --info_only - Print results, but don't email or delete anything
     -e --email_only - Email notifications, but don't delete anything
         Useful for notifying users of pending deletion
+    --no-send - Do no send email (Default: false)
 
     --smtp - Specify smtp server
         If not specified, use smtp settings specified in config file
@@ -121,6 +122,7 @@ def main():
         help="Send emails only, don't delete",
         default=False,
     )
+    parser.add_argument("--no-send", action="store_true", help="Do not send email", default=False)
     parser.add_argument(
         "--smtp", default=None, help="SMTP Server to use to send email. Default: [read from galaxy config file]"
     )
@@ -188,13 +190,14 @@ def main():
         config=config,
         email_only=args.email_only,
         info_only=args.info_only,
+        no_send=args.no_send,
     )
     app.shutdown()
     sys.exit(0)
 
 
 def administrative_delete_datasets(
-    app, cutoff_time, cutoff_days, tool_id, template_file, config, email_only=False, info_only=False
+    app, cutoff_time, cutoff_days, tool_id, template_file, config, email_only=False, info_only=False, no_send=False
 ):
     # Marks dataset history association deleted and email users
     start = time.time()
@@ -269,7 +272,7 @@ def administrative_delete_datasets(
         print(f"Subject: {subject}")
         print("----------")
         print(msgtext)
-        if not info_only:
+        if not no_send and not info_only:
             galaxy.util.send_mail(fromaddr, email, subject, msgtext, config)
 
     stop = time.time()
