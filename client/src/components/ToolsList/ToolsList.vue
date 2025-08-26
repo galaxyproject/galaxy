@@ -3,6 +3,7 @@ import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -23,6 +24,7 @@ interface Props {
     id?: string;
     owner?: string;
     help?: string;
+    search?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,7 +34,10 @@ const props = withDefaults(defineProps<Props>(), {
     id: "",
     owner: "",
     help: "",
+    search: "",
 });
+
+const router = useRouter();
 
 const { isAnonymous } = storeToRefs(useUserStore());
 
@@ -81,7 +86,21 @@ const filterSettings = computed<FilterSettings>(() =>
 
 // `FilterMenu` Component Props
 const showAdvanced = ref(false);
-const filterText = ref(ToolFilters.value.applyFiltersToText(props, ""));
+const filterText = ref(ToolFilters.value.applyFiltersToText(props, "") || props.search);
+const toolFilterMenu = ref<InstanceType<typeof FilterMenu> | null>(null);
+const initialFocusDone = ref(false);
+
+// Focus the input element, so that it is ready for user input (user can continue typing as results are filtered)
+watch(
+    () => toolFilterMenu.value,
+    (newVal) => {
+        if (newVal && !initialFocusDone.value) {
+            newVal.$el?.querySelector("input")?.focus();
+            initialFocusDone.value = true;
+        }
+    },
+    { immediate: true },
+);
 
 const showFavorites = computed(() => FAVORITES_KEYS.includes(filterText.value.trim()));
 const favoritesButtonTitle = computed(() => (showFavorites.value ? "Hide favorite tools" : "Show favorite tools"));
@@ -100,13 +119,25 @@ const hasOwnerFilter = computed(() =>
     Boolean(ToolFilters.value.getFilterValue(filterText.value, "owner")?.replace(/^"(.*)"$/, "$1")),
 );
 
+// As soon as we have filters creating the whoosh query, or a raw search text, push search to router
 watch(
     () => whooshQuery.value,
     async (newQuery) => {
-        await toolStore.fetchTools(newQuery);
+        const routerParams: { path: string; query?: FilterSettings } = { path: "/tools/list" };
+        if (Object.keys(filterSettings.value).length) {
+            routerParams.query = filterSettings.value;
+        } else if (newQuery) {
+            routerParams.query = { search: newQuery };
+        }
+        router.push(routerParams);
     },
-    { deep: true, immediate: true },
 );
+
+// The component mounts with the whooshQuery already generated; perform fetch!
+searchTools();
+async function searchTools() {
+    await toolStore.fetchTools(whooshQuery.value);
+}
 
 function applyFilter(filter: string, value: string) {
     filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
@@ -124,10 +155,11 @@ function applyFilter(filter: string, value: string) {
 
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
                 <FilterMenu
+                    ref="toolFilterMenu"
                     class="w-100"
                     name="Tools"
                     placeholder="search tools"
-                    :debounce-delay="200"
+                    :debounce-delay="400"
                     :filter-text.sync="filterText"
                     :filter-class="ToolFilters"
                     has-help
