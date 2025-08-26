@@ -156,7 +156,7 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function fetchToolSections(panelView: string) {
         try {
-            if (!toolSections.value[panelView]) {
+            if (panelView && !toolSections.value[panelView]) {
                 loading.value = true;
                 const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
                 saveToolSections(panelView, data);
@@ -278,7 +278,6 @@ export const useToolStore = defineStore("toolStore", () => {
         saveAllTools,
         saveToolForId,
         saveToolResults,
-        saveToolSections,
         searchWorker,
         sectionDatalist,
         setPanel,

@@ -9,7 +9,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { Toast } from "@/composables/toast";
@@ -91,7 +91,15 @@ const selectedOntologyActions = computed<CardAction[]>(() => {
     return actions;
 });
 
-ensureSectionsAndOntologiesLoaded();
+watch(
+    () => defaultPanelView.value,
+    (newVal) => {
+        if (newVal) {
+            ensureSectionsAndOntologiesLoaded();
+        }
+    },
+    { immediate: true },
+);
 
 /** Ensures `toolStore.toolSections` contains the necessary sections to generate section dropdown filters for.
  *
