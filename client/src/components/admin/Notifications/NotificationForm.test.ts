@@ -44,7 +44,7 @@ describe("NotificationForm.vue", () => {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
-            enabled ? "" : "Please fill all required fields"
+            enabled ? "" : "Please fill all required fields",
         );
     }
 

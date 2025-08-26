@@ -107,7 +107,7 @@ library.add(
     faUndo,
     faUserCog,
     faUserLock,
-    faWrench
+    faWrench,
 );
 
 export const iconMixin = {

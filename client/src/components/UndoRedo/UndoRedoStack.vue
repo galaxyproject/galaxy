@@ -13,7 +13,7 @@ const currentStore = ref(useUndoRedoStore(props.storeId));
 
 watch(
     () => props.storeId,
-    (id) => (currentStore.value = useUndoRedoStore(id))
+    (id) => (currentStore.value = useUndoRedoStore(id)),
 );
 
 function dataAttributes(action: UndoRedoAction): Record<string, string> {

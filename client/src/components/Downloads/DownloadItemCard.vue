@@ -155,7 +155,7 @@ const primaryActions = computed(() => {
 });
 
 const elapsedTimeToExpire = computed(() =>
-    expirationDate.value ? formatDistanceToNow(expirationDate.value, { addSuffix: true }) : undefined
+    expirationDate.value ? formatDistanceToNow(expirationDate.value, { addSuffix: true }) : undefined,
 );
 
 const badges = computed<CardBadge[]>(() => {
@@ -250,7 +250,7 @@ watch(
             checkStatus();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 onUnmounted(() => {

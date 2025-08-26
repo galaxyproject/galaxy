@@ -33,7 +33,7 @@ export function useToolLogic() {
             } else {
                 comment.value = null;
             }
-        }
+        },
     );
 
     watch(
@@ -46,7 +46,7 @@ export function useToolLogic() {
             }
 
             toolbarStore.resetBoxSelect();
-        }
+        },
     );
 
     toolbarStore.onInputCatcherEvent("pointerdown", ({ position }) => {
@@ -200,7 +200,7 @@ export function useToolLogic() {
                 y: comment.position[1],
                 width: comment.size[0],
                 height: comment.size[1],
-            })
+            }),
         );
 
         const stepsInRect = Object.values(stepStore.steps).filter((step) => {

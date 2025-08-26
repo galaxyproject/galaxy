@@ -34,7 +34,7 @@ describe("History Navigation", () => {
             {
                 id: "user.id",
                 email: "user.email",
-            }
+            },
         );
 
         const createButton = wrapper.find("*[data-description='create new history']");

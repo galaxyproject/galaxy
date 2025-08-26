@@ -28,7 +28,7 @@ export function getRequiredObject(name: string | undefined) {
 export function hasValidLabel(
     name: string | undefined,
     args: Record<string, string>,
-    labels: Array<WorkflowLabel>
+    labels: Array<WorkflowLabel>,
 ): boolean {
     const requiredObject = getRequiredObject(name);
     const requiredLabels = getRequiredLabels(requiredObject);

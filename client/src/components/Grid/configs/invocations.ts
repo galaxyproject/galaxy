@@ -27,7 +27,7 @@ export async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     const params = {
         limit,
@@ -69,7 +69,7 @@ function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
         workflowIds.add(invocation.workflow_id);
     });
     historyIds.forEach(
-        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id)
+        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id),
     );
     workflowIds.forEach((workflow_id) => workflowStore.fetchWorkflowForInstanceIdCached(workflow_id));
 }
@@ -138,7 +138,7 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
             const workflow = workflowStore.getStoredWorkflowByInstanceId(
-                invocation.workflow_id
+                invocation.workflow_id,
             ) as unknown as StoredWorkflowDetailed;
             return !workflow?.deleted;
         },

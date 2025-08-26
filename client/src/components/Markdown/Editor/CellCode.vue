@@ -90,7 +90,7 @@ watch(
         if (aceEditor && newValue !== aceEditor.getValue()) {
             aceEditor.setValue(newValue, -1);
         }
-    }
+    },
 );
 </script>
 

@@ -111,7 +111,7 @@ export default {
                     userStore.loadUser();
                 }
             },
-            { immediate: true }
+            { immediate: true },
         );
 
         const confirmation = ref(null);
@@ -124,7 +124,7 @@ export default {
                 if (confirmation.value) {
                     confirmation.value = null;
                 }
-            }
+            },
         );
 
         return {

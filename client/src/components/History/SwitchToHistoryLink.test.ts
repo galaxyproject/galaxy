@@ -82,7 +82,7 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
             return response(200).json(history);
-        })
+        }),
     );
 
     const filters = hasFilters ? { deleted: false, visible: true, hid: "1" } : undefined;
@@ -131,7 +131,7 @@ async function expectActionForHistory(
     opensInNewTab = false,
     hasFilters = false,
     setsCurrentHistory = false,
-    setsFilters = false
+    setsFilters = false,
 ) {
     const wrapper = mountSwitchToHistoryLinkForHistory(history, hasFilters);
 

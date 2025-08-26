@@ -41,7 +41,7 @@ const canSwitch = computed(
         !!history.value &&
         !history.value.archived &&
         !history.value.purged &&
-        userOwnsHistory(userStore.currentUser, history.value)
+        userOwnsHistory(userStore.currentUser, history.value),
 );
 
 const linkTitle = computed(() => {

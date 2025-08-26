@@ -27,7 +27,7 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
     server.use(
         http.post("/api/remote_files", ({ response }) => {
             return response(200).json(FAKE_ENTRY);
-        })
+        }),
     );
 
     const wrapper = mount(RDMDestinationSelector as object, {

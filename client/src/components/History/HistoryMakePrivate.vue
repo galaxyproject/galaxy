@@ -31,9 +31,9 @@ async function makeHistoryPrivate() {
         Toast.success(
             localize(
                 "Existing data in this history is now private, as well as any new data created in this history. \
-                Your sharing preferences have also been reset."
+                Your sharing preferences have also been reset.",
             ),
-            localize("Successfully made history private.")
+            localize("Successfully made history private."),
         );
         emit("history-made-private", sharingStatusChanged);
     } catch (error) {

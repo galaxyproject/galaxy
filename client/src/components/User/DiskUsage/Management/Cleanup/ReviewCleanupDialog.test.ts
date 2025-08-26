@@ -37,7 +37,7 @@ const FAKE_OPERATION: CleanupOperation = {
                 total_free_bytes: 1024,
                 errors: [],
             },
-            EXPECTED_ITEMS
+            EXPECTED_ITEMS,
         ),
 };
 

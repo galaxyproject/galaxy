@@ -96,7 +96,7 @@ describe("ToolPanel", () => {
         server.use(
             http.get("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser());
-            })
+            }),
         );
 
         // setting this because for the default view, we just show "Tools" as the name
@@ -159,7 +159,7 @@ describe("ToolPanel", () => {
                 // Test: check if the panel header now has an icon and a changed name
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
                 expect(panelViewIcon.classes()).toContain(
-                    `fa-${types_to_icons[value.view_type as keyof typeof types_to_icons]}`
+                    `fa-${types_to_icons[value.view_type as keyof typeof types_to_icons]}`,
                 );
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value!.name);
             } else {

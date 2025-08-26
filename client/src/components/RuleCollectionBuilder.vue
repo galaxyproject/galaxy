@@ -576,14 +576,14 @@
         <RuleModalHeader v-if="importType == 'datasets'">
             {{
                 l(
-                    "Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete."
+                    "Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete.",
                 )
             }}
         </RuleModalHeader>
         <RuleModalHeader v-else-if="importType == 'collections'">
             {{
                 l(
-                    "Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete."
+                    "Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete.",
                 )
             }}
         </RuleModalHeader>
@@ -788,7 +788,7 @@ export default {
                     {
                         type: "add_column_metadata",
                         value: "name",
-                    }
+                    },
                 );
             } else if (this.elementsType == "library_datasets") {
                 rules.push({
@@ -820,13 +820,13 @@ export default {
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers",
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
             titleInvertFilterMatches: _l("Remove rows matching supplied value"),
             titleViewSource: _l(
-                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
+                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data",
             ),
             titleSourceCancel: _l("Stop editing rules and dismiss changes"),
             titleSourceReset: _l("Reset text area to current set of rules"),
@@ -1236,7 +1236,7 @@ export default {
                 if (collection) {
                     const obj = this.populateElementsFromCollectionDescription(
                         collection.elements,
-                        collection.collection_type
+                        collection.collection_type,
                     );
                     data = obj.data;
                     sources = obj.sources;
@@ -1781,7 +1781,7 @@ export default {
                 (identifier) => {
                     return { name: identifier, src: "new_collection" };
                 },
-                "element_identifiers"
+                "element_identifiers",
             );
             return elementsByCollectionName;
         },
@@ -1799,7 +1799,7 @@ export default {
                 (identifier) => {
                     return { name: identifier };
                 },
-                "elements"
+                "elements",
             );
 
             return elementsByCollectionName;
@@ -1823,7 +1823,7 @@ export default {
             collectionType,
             parentIdentifiers_,
             parentIndices_,
-            parentColumns_
+            parentColumns_,
         ) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             const parentIndices = parentIndices_ ? parentIndices_ : [];
@@ -1858,7 +1858,7 @@ export default {
                         restCollectionType,
                         identifiers,
                         indices,
-                        columns
+                        columns,
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;

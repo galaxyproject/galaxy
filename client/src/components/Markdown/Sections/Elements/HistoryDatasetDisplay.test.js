@@ -36,7 +36,7 @@ describe("History Tabular Dataset Display", () => {
     async function mountTarget() {
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(tabularMetaData)),
-            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular))
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
@@ -64,7 +64,7 @@ describe("History Text Dataset Display", () => {
         server.resetHandlers();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(textMetaData)),
-            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text))
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,

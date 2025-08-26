@@ -45,7 +45,7 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
                       ? extensions[0]!
                       : (config.value.default_extension as string) || DEFAULT_EXTENSION,
               }
-            : null
+            : null,
     );
 
     // Load the list of extensions
@@ -92,11 +92,11 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
                 await loadDbKeys();
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     const ready = computed(
-        () => dbKeysSet.value && extensionsSet.value && !!datatypesMapper.value && !datatypesMapperLoading.value
+        () => dbKeysSet.value && extensionsSet.value && !!datatypesMapper.value && !datatypesMapperLoading.value,
     );
 
     return {

@@ -24,7 +24,7 @@ jest.mock("@/api/plugins", () => ({
             logo: "/logo.png",
             help: "Some help text",
             tags: ["tag1", "tag2"],
-        })
+        }),
     ),
     fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] })),
 }));

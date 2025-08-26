@@ -27,7 +27,7 @@ const { steps, loadInvocationGraph } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
     workflow.value?.id,
-    workflow.value?.version
+    workflow.value?.version,
 );
 
 loadInvocationGraph(false);

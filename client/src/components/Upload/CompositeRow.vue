@@ -115,7 +115,7 @@ function inputRemoteFiles() {
                 fileSize: item.size,
             });
         },
-        { multiple: false }
+        { multiple: false },
     );
 }
 

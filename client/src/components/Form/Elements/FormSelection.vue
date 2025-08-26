@@ -105,11 +105,11 @@ watch(
             useMany.value = false;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const showSelectPreference = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && props.display !== "simple"
+    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && props.display !== "simple",
 );
 
 const displayMany = computed(() => showSelectPreference.value && useMany.value);

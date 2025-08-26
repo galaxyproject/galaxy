@@ -25,7 +25,7 @@ async function fetchInvocation(invocationId: string) {
 watch(
     () => props.invocationId,
     () => fetchInvocation(props.invocationId),
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

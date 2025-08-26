@@ -91,7 +91,7 @@ const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, dataty
 const dropTarget = ref<HTMLDivElement | null>(null);
 const position = useRelativePosition(
     dropTarget,
-    computed(() => props.parentNode)
+    computed(() => props.parentNode),
 );
 
 const stores = useWorkflowStores();
@@ -108,7 +108,7 @@ const connections = computed(() => {
 const invalidConnectionReasons = computed(() =>
     connections.value
         .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
-        .filter((reason) => reason)
+        .filter((reason) => reason),
 );
 
 const { draggingTerminal } = storeToRefs(stateStore);
@@ -133,10 +133,10 @@ const acceptsInput = computed(() => {
 });
 
 const endX = computed(
-    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2
+    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2,
 );
 const endY = computed(
-    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2
+    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2,
 );
 
 watch([endX, endY], ([x, y]) => {
@@ -183,7 +183,7 @@ function onDrop(event: DragEvent) {
         stepOut.stepId,
         stepOut.output,
         props.datatypesMapper,
-        stores
+        stores,
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;
@@ -210,7 +210,7 @@ watch(
         if (!draggingTerminal.value) {
             draggedOver.value = false;
         }
-    }
+    },
 );
 </script>
 

@@ -345,7 +345,7 @@ const RULES = {
                 data,
                 rule.replacement,
                 rule.group_count,
-                rule.allow_unmatched
+                rule.allow_unmatched,
             );
             if (rule.group_count) {
                 for (let i = 0; i < rule.group_count; i++) {

@@ -93,7 +93,7 @@ export default {
     emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
     setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
-            toRef(props, "step")
+            toRef(props, "step"),
         );
         const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
@@ -103,7 +103,7 @@ export default {
 
         watch(
             () => formKey.value,
-            () => (mainValues.value = null)
+            () => (mainValues.value = null),
         );
 
         return {

@@ -6,9 +6,9 @@ Using them effectively can make your code more reusable, decoupled, and easier t
 
 **More about Composables:**
 
--   [Composables Overview](https://vuejs.org/guide/reusability/composables.html)
--   [Composition API](https://vuejs.org/api/composition-api-setup.html)
--   [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
+- [Composables Overview](https://vuejs.org/guide/reusability/composables.html)
+- [Composition API](https://vuejs.org/api/composition-api-setup.html)
+- [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
 
 ## Using Composables in the Composition API
 

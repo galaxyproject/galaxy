@@ -80,7 +80,7 @@ const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
     workflowId.value,
-    workflowVersion.value
+    workflowVersion.value,
 );
 
 onMounted(async () => {
@@ -99,7 +99,7 @@ watch(
             await pollInvocationGraph();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const stateStore = useWorkflowStateStore(storeId.value);
@@ -108,7 +108,7 @@ const { activeNodeId } = storeToRefs(stateStore);
 watch(
     () => props.zoom,
     () => (stateStore.scale = props.zoom),
-    { immediate: true }
+    { immediate: true },
 );
 
 onUnmounted(() => {

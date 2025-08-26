@@ -65,7 +65,7 @@ export function useRoundRobinSelector<T>(items: MaybeRefOrGetter<T[]> | T[], pol
             } else if (!timer) {
                 start();
             }
-        }
+        },
     );
 
     onMounted(() => {

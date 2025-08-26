@@ -77,7 +77,7 @@ watch(
         } else if (newVal !== oldVal) {
             onUrlChange();
         }
-    }
+    },
 );
 
 const localFileActions: CardAction[] = [

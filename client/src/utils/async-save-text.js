@@ -16,7 +16,7 @@ function async_save_text(
     use_textarea,
     num_rows,
     on_start,
-    on_finish
+    on_finish,
 ) {
     // Set defaults if necessary.
     if (num_cols === undefined) {

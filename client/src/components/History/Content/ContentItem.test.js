@@ -45,7 +45,7 @@ describe("ContentItem", () => {
                 // We need to use untyped here because this endpoint is not
                 // described in the OpenAPI spec due to its complexity for now.
                 return response.untyped(HttpResponse.json(item));
-            })
+            }),
         );
 
         wrapper = mount(ContentItem, {

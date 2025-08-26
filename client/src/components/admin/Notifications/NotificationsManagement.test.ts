@@ -24,7 +24,7 @@ async function mountNotificationsManagement(config: any = {}) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json(config);
-        })
+        }),
     );
 
     const wrapper = shallowMount(NotificationsManagement as object, {

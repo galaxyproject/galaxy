@@ -36,7 +36,7 @@ describe("Notifications categories", () => {
         });
 
         expect(wrapper.find(`#g-card-description-${notification.id}`).html()).toContain(
-            "This is a <strong>markdown</strong> message to test <em>rendering</em>"
+            "This is a <strong>markdown</strong> message to test <em>rendering</em>",
         );
     });
 
@@ -51,10 +51,10 @@ describe("Notifications categories", () => {
         expect(wrapper.text()).toContain(`The user ${notification.content.owner_name} shared`);
 
         expect(wrapper.find(`#g-card-description-${notification.id}`).text()).toContain(
-            `The user ${notification.content.owner_name} shared`
+            `The user ${notification.content.owner_name} shared`,
         );
         expect(wrapper.find(`#g-card-description-${notification.id}`).text()).toContain(
-            `${notification.content.item_type}  with you`
+            `${notification.content.item_type}  with you`,
         );
     });
 

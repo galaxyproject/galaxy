@@ -47,7 +47,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 { open: '"', close: '"' },
                 { open: "'", close: "'" },
             ],
-        })
+        }),
     );
 
     // Set TypeScript/JavaScript configuration
@@ -110,7 +110,7 @@ export async function setupEditor(providerFunctions: any) {
         monaco.languages.registerCompletionItemProvider(LANG, {
             triggerCharacters: ["."],
             provideCompletionItems: providerFunctions.provideCompletionItems,
-        })
+        }),
     );
     disposables.push(monaco.languages.registerDefinitionProvider(LANG, providerFunctions));
     disposables.push(monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions));
@@ -218,7 +218,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
     const embeddedContents = extractEmbeddedJs(yamlContent);
     const offsetForPosition = model.getOffsetAt(position);
     const fragmentIndex = embeddedContents.findIndex(
-        (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition
+        (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition,
     );
     if (fragmentIndex >= 0) {
         const fragment = embeddedContents[fragmentIndex]!;
@@ -273,7 +273,7 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
 function attachDiagnosticsProvider(
     yamlModel: editor.ITextModel,
     embeddedModel: editor.ITextModel,
-    provideMarkerData: any
+    provideMarkerData: any,
 ) {
     monaco.editor.setModelMarkers(yamlModel, "owner", []); // Clear existing markers.
 
@@ -355,7 +355,7 @@ async function provideHover(model: editor.ITextModel, position: IPosition) {
         const languageService = await languageServiceForModel(currentData.model);
         const quickInfo = await languageService.getQuickInfoAtPosition(
             currentData.model.uri.toString(),
-            currentData.offset
+            currentData.offset,
         );
         if (quickInfo) {
             return quickInfoToMarkdown(quickInfo, position);

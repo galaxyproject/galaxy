@@ -236,7 +236,7 @@ useNodePosition(
     elHtml,
     props.id,
     stateStore,
-    computed(() => props.scale)
+    computed(() => props.scale),
 );
 
 const title = computed(() => props.step.label || props.step.name);
@@ -252,7 +252,7 @@ const isPopulatedInput = computed(
         props.populatedInputs &&
         isWorkflowInput(props.step.type) &&
         "nodeText" in props.step &&
-        props.step.nodeText !== undefined
+        props.step.nodeText !== undefined,
 );
 
 const classes = computed(() => {
@@ -310,7 +310,7 @@ const invalidOutputs = computed(() => {
     const invalidConnections = connections.filter(
         (connection) =>
             connection.output.stepId == props.id &&
-            !props.step.outputs.find((output) => output.name === connection.output.name)
+            !props.step.outputs.find((output) => output.name === connection.output.name),
     );
     const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
     return invalidOutputNames.map((name) => {
@@ -433,7 +433,9 @@ function toggleSelected() {
     $multi-selected: lighten($brand-info, 20%);
 
     &.node-multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px $multi-selected;
     }
 
     &.node-highlight {
@@ -442,7 +444,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 2px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+            box-shadow:
+                0 0 0 2px $brand-primary,
+                0 0 0 4px $multi-selected;
         }
     }
 
@@ -459,7 +463,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 3px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+            box-shadow:
+                0 0 0 3px $brand-primary,
+                0 0 0 5px $multi-selected;
         }
     }
 

@@ -42,8 +42,8 @@ function mountComponent(propsData = {}, apiMap = {}) {
     mapAxios(apiMap);
     server.use(
         http.get("/api/histories/test_history_id", ({ response }) =>
-            response(200).json({ id: "test_history_id", name: "history_name" })
-        )
+            response(200).json({ id: "test_history_id", name: "history_name" }),
+        ),
     );
     return mount(MountTarget, {
         localVue,
@@ -96,7 +96,7 @@ describe("MarkdownContainer", () => {
             },
             {
                 onPost: { "/api/histories": {} },
-            }
+            },
         );
         expect(wrapper.find("a").text()).toBe("Click to Import History: ...");
         await flushPromises();

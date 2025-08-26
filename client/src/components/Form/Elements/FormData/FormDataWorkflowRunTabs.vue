@@ -87,7 +87,7 @@ watch(
             }
         });
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // TODO:

@@ -17,7 +17,7 @@ const texts = reactive({
     freeSpace: {
         title: localize("Is your usage more than expected?"),
         description: localize(
-            "Find out what is eating up your space and learn how to easily and safely free up some of it."
+            "Find out what is eating up your space and learn how to easily and safely free up some of it.",
         ),
         icon: "fas fa-broom fa-6x",
         buttonText: localize("Free up disk usage"),
@@ -25,7 +25,7 @@ const texts = reactive({
     explore_by_history: {
         title: localize("Visually explore your disk usage by history"),
         description: localize(
-            "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way by history."
+            "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way by history.",
         ),
         icon: "fas fa-chart-pie fa-6x",
         buttonText: localize("Explore now"),
@@ -33,7 +33,7 @@ const texts = reactive({
     explore_by_objectstore: {
         title: localize("Visually explore your disk usage by storage"),
         description: localize(
-            "Want to know how the space in your account is being distributed across storages? Here you can explore your disk usage in a visual way by where it is physically stored."
+            "Want to know how the space in your account is being distributed across storages? Here you can explore your disk usage in a visual way by where it is physically stored.",
         ),
         icon: "fas fa-hdd fa-6x",
         buttonText: localize("Explore now"),

@@ -75,7 +75,7 @@ const selectedItemsForModal = ref<HDASummary[]>([]);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const creatingPairedType = computed(
-    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value)
+    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value),
 );
 const enableBuild = computed(
     () =>
@@ -84,7 +84,7 @@ const enableBuild = computed(
         counterSuccess.value > 0 &&
         uploadedHistoryItemsReady.value &&
         uploadedHistoryItemsOk.value.length > 0 &&
-        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0)
+        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0),
 );
 const enableReset = computed(() => !isRunning.value && counterNonRunning.value > 0);
 const enableStart = computed(() => !isRunning.value && counterAnnounce.value > 0);
@@ -100,7 +100,7 @@ const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo
     uploadValues as Ref<UploadItem[]>,
     historyId,
     enableStart,
-    creatingPairedType
+    creatingPairedType,
 );
 
 function createUploadQueue() {
@@ -263,14 +263,14 @@ function eventRemoteFiles() {
                         path: item.url,
                     };
                     return rval;
-                })
+                }),
             );
         },
         { multiple: true },
         (route: string) => {
             router.push(route);
             emit("dismiss");
-        }
+        },
     );
 }
 

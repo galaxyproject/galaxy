@@ -10,7 +10,7 @@ const DELAY_CLOSE = 50;
 export function usePopper(
     reference: Ref<HTMLElement>,
     popper: Ref<HTMLElement>,
-    options: { interactive?: boolean; placement?: Placement; trigger?: Trigger }
+    options: { interactive?: boolean; placement?: Placement; trigger?: Trigger },
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
     const visible = ref(false);

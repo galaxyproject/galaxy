@@ -48,7 +48,7 @@ export function parseInvocation(
     invocation: Invocation,
     workflowId: string,
     name: string,
-    attributes: ParsedAttributes
+    attributes: ParsedAttributes,
 ): ParsedAttributes {
     const result: ParsedAttributes = { ...attributes, invocation };
     const inputId = parseInput(invocation, result.input);

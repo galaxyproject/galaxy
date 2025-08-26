@@ -187,7 +187,7 @@ describe("Workflow Undo Redo Actions", () => {
                 commentStore.comments,
                 Object.values(stores.stepStore.steps) as any,
                 { x: 0, y: 0 },
-                { x: 500, y: 500 }
+                { x: 500, y: 500 },
             );
             testUndoRedo(action);
         });
@@ -250,7 +250,7 @@ describe("Workflow Undo Redo Actions", () => {
                 },
                 {
                     outputs: [{ name: "output", extensions: ["input"], type: "data", optional: true }],
-                }
+                },
             );
             testUndoRedo(action);
         });

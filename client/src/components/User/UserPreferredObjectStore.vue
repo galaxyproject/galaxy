@@ -19,7 +19,7 @@ const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 
 const error = ref();
 const selectedObjectStoreId = ref(
-    isRegisteredUser(currentUser.value) ? currentUser.value?.preferred_object_store_id ?? null : null
+    isRegisteredUser(currentUser.value) ? (currentUser.value?.preferred_object_store_id ?? null) : null,
 );
 
 const title = computed(() => {

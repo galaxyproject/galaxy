@@ -13,10 +13,10 @@ const props = defineProps<{
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
 const rerunUrl = computed(() =>
-    props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null
+    props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null,
 );
 const showCollectionDetailsUrl = computed(() =>
-    props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null
+    props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
 const disableDownload = props.dsc.populated_state !== "ok";
 

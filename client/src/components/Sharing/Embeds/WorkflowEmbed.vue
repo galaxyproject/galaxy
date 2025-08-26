@@ -59,7 +59,7 @@ const embedStyle = computed(() => {
     }
 });
 const embed = computed(
-    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`
+    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
 );
 
 // These Embed settings are not reactive, to we have to key them

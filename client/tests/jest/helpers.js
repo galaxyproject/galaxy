@@ -114,7 +114,7 @@ export function watchForChange(cfg = {}) {
                     resolve({ start, stop, propName, elapsed: stop - start, newVal, oldVal });
                 }
             },
-            opts
+            opts,
         );
     });
 }
@@ -282,7 +282,7 @@ export function mockUnprivilegedToolsRequest(server, http) {
     server.use(
         http.get("/api/unprivileged_tools", ({ response }) => {
             return response(200).json([]);
-        })
+        }),
     );
 }
 
@@ -306,7 +306,7 @@ export function suppressBootstrapVueWarnings() {
             if (msg.indexOf("BootstrapVue warn") < 0) {
                 originalWarn(msg);
             }
-        })
+        }),
     );
 }
 
@@ -317,7 +317,7 @@ export function suppressErrorForCustomIcons() {
             if (msg.indexOf("Could not find one or more icon(s)") < 0) {
                 originalError(msg);
             }
-        })
+        }),
     );
 }
 
@@ -328,6 +328,6 @@ export function suppressLucideVue2Deprecation() {
             if (msg.indexOf("[Lucide Vue] This package will be deprecated") < 0) {
                 originalWarn(msg);
             }
-        })
+        }),
     );
 }

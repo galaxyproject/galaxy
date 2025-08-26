@@ -26,7 +26,7 @@ watch(
         } else {
             results.value = [];
         }
-    }
+    },
 );
 
 const emit = defineEmits<{

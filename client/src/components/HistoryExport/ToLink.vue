@@ -145,7 +145,7 @@ export default {
                     } else {
                         // error ....
                         this.errorMessage = `Unexpected error while polling history export ${errorMessageAsString(
-                            response
+                            response,
                         )}`;
                     }
                 })

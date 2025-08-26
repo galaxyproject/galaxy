@@ -76,7 +76,7 @@ async function handleWorkbook(base64Content: string) {
         props.collectionType,
         props.extendedCollectionType.columnDefinitions,
         prefixColumnsType.value,
-        base64Content
+        base64Content,
     );
     if (data) {
         parsedWorkbook.value = data;

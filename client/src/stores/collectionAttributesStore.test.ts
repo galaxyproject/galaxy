@@ -28,7 +28,7 @@ describe("collectionAttributesStore", () => {
         server.use(
             http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {
                 return response(200).json(fetchCollectionAttributesMock());
-            })
+            }),
         );
     });
 

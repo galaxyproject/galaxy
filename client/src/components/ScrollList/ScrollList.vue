@@ -158,7 +158,7 @@ watch(
             scrollableDiv.value?.scrollTo({ top: props.propScrollTop, behavior: "instant" });
             syncedWithPropScroll.value = true;
         }
-    }
+    },
 );
 watch(
     () => scrollTop.value,
@@ -167,7 +167,7 @@ watch(
         if (syncedWithPropScroll.value) {
             emit("update:prop-scroll-top", newScrollTop);
         }
-    }
+    },
 );
 </script>
 

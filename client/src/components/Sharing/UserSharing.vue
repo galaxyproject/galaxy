@@ -77,7 +77,7 @@ async function onSearchChanged(searchValue: string) {
                     typeof value === "object" &&
                     "email" in value &&
                     typeof value.email === "string" &&
-                    !sharingCandidatesAsEmails.value.includes(value.email)
+                    !sharingCandidatesAsEmails.value.includes(value.email),
             );
         } catch (e) {
             emit("error", e as Error);

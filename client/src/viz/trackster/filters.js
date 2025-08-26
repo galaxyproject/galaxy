@@ -237,7 +237,7 @@ var NumberFilter = function (obj_dict) {
             if (filter.manager.height_filter !== filter) {
                 filter.height_icon.hide();
             }
-        }
+        },
     );
 
     // Add to clear floating layout.

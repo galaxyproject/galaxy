@@ -184,7 +184,7 @@ watch(
     () => {
         urlTracker = new UrlTracker(getHistoryUrl());
         load();
-    }
+    },
 );
 </script>
 

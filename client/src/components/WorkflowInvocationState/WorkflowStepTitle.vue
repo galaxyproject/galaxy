@@ -78,7 +78,7 @@ watch(
     async () => {
         await initStores();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

@@ -20,7 +20,7 @@ withDefaults(
     }>(),
     {
         isLoading: false,
-    }
+    },
 );
 </script>
 

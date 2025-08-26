@@ -12,7 +12,7 @@ const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state."
 /** Terminal states that are not usable from an upload (anything but `ok` or `deferred`)
  */
 const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
-    (state) => state !== STATES.OK && state !== STATES.DEFERRED
+    (state) => state !== STATES.OK && state !== STATES.DEFERRED,
 );
 
 /**
@@ -28,7 +28,7 @@ export function monitorUploadedHistoryItems(
     uploadValues: Ref<UploadItem[]>,
     historyId: Ref<string>,
     enableStart: Ref<boolean>,
-    creatingPairedType: Ref<boolean>
+    creatingPairedType: Ref<boolean>,
 ) {
     const historyItemsStore = useHistoryItemsStore();
     /** Uploaded items from the history */
@@ -59,14 +59,14 @@ export function monitorUploadedHistoryItems(
     });
 
     const uploadedHistoryItemsReady = computed(() =>
-        uploadedHistoryItems.value.every((item) => item && item.extension !== "auto")
+        uploadedHistoryItems.value.every((item) => item && item.extension !== "auto"),
     );
 
     // TODO: Could be refactored to use `useCollectionCreator.isElementInvalid()` instead? (with the added `auto` check)
     const uploadedHistoryItemsOk = computed(() =>
         uploadedHistoryItems.value.filter(
-            (item) => item && !UNUSABLE_FROM_UPLOAD_STATES.includes(item.state) && item.extension !== "auto"
-        )
+            (item) => item && !UNUSABLE_FROM_UPLOAD_STATES.includes(item.state) && item.extension !== "auto",
+        ),
     );
 
     const historyItemsStateInfo = computed<{

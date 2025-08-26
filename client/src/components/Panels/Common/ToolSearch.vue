@@ -70,7 +70,7 @@ const emit = defineEmits<{
         e: "onResults",
         filtered: string[] | null,
         sectioned: Record<string, Tool | ToolSection> | null,
-        closestValue: string | null
+        closestValue: string | null,
     ): void;
     (e: "onQuery", query: string): void;
 }>();
@@ -124,7 +124,7 @@ const { searchWorker } = storeToRefs(toolStore);
 
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
 const ontologyList = computed(() =>
-    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations"))
+    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
 );
 
 interface RequestPaylod {
@@ -237,7 +237,7 @@ watch(
         if (FAVORITES.includes(props.query)) {
             post({ type: "favoriteTools" });
         }
-    }
+    },
 );
 
 function checkQuery(q: string) {

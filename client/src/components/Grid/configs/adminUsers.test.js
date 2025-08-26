@@ -40,10 +40,10 @@ describe("AdminUsers", () => {
                 expect(ops[8].condition({ deleted: !a }, { value: { allow_user_deletion: b } })).toBe(a && b);
                 for (const c of [true, false]) {
                     expect(ops[9].condition({ deleted: a, purged: !b }, { value: { allow_user_deletion: c } })).toBe(
-                        a && b && c
+                        a && b && c,
                     );
                     expect(ops[10].condition({ deleted: a, purged: !b }, { value: { allow_user_deletion: c } })).toBe(
-                        a && b && c
+                        a && b && c,
                     );
                 }
             }

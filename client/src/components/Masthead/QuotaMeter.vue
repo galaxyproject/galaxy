@@ -34,7 +34,7 @@ const usage = computed(() => {
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
 const quotaTitle = computed(() =>
-    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
+    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details",
 );
 
 const variant = computed(() => {

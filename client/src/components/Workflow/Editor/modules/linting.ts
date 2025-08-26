@@ -30,7 +30,7 @@ export const bestPracticeWarningReadme =
 export function getDisconnectedInputs(
     steps: Steps = {},
     datatypesMapper: DatatypesMapperModel,
-    stores: ReturnType<typeof useWorkflowStores>
+    stores: ReturnType<typeof useWorkflowStores>,
 ) {
     const inputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
@@ -153,7 +153,7 @@ export function fixAllIssues(
     steps: Steps,
     parameters: UntypedParameters,
     datatypesMapper: DatatypesMapperModel,
-    stores: ReturnType<typeof useWorkflowStores>
+    stores: ReturnType<typeof useWorkflowStores>,
 ) {
     const actions = [];
     const untypedParameters = getUntypedParameters(parameters);

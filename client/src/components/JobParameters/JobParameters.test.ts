@@ -56,7 +56,7 @@ describe("JobParameters/JobParameters.vue", () => {
             element: Wrapper<any>,
             expectedTitle: string,
             expectedValue: string | { hid: number; name: string },
-            link?: string
+            link?: string,
         ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);

@@ -68,7 +68,7 @@ const terminalElement = computed(() => (terminalComponent.value?.$el as HTMLElem
 
 const position = useRelativePosition(
     terminalElement,
-    computed(() => props.parentNode)
+    computed(() => props.parentNode),
 );
 
 const extensions = computed(() => {
@@ -101,7 +101,7 @@ const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutp
 };
 
 const workflowOutput = computed(() =>
-    props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
+    props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name),
 );
 
 const isVisible = computed(() => {
@@ -162,7 +162,7 @@ function onToggleActive() {
     let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
     if (workflowOutput.value) {
         stepWorkflowOutputs = stepWorkflowOutputs.filter(
-            (workflowOutput) => workflowOutput.output_name !== output.value.name
+            (workflowOutput) => workflowOutput.output_name !== output.value.name,
         );
     } else {
         stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
@@ -173,7 +173,7 @@ function onToggleActive() {
         stateStore,
         step.id,
         { workflow_outputs: step.workflow_outputs },
-        { workflow_outputs: stepWorkflowOutputs }
+        { workflow_outputs: stepWorkflowOutputs },
     );
     undoRedoStore.applyAction(action);
 }
@@ -211,7 +211,7 @@ function onToggleVisible() {
         stateStore,
         step.id,
         { post_job_actions: oldPostJobActions },
-        { post_job_actions: newPostJobActions }
+        { post_job_actions: newPostJobActions },
     );
     undoRedoStore.applyAction(action);
 }
@@ -232,10 +232,10 @@ const dragY = ref(0);
 const isDragging = ref(false);
 
 const startX = computed(
-    () => position.value.offsetLeft + (props.stepPosition?.left ?? 0) + (terminalElement.value?.offsetWidth ?? 2) / 2
+    () => position.value.offsetLeft + (props.stepPosition?.left ?? 0) + (terminalElement.value?.offsetWidth ?? 2) / 2,
 );
 const startY = computed(
-    () => position.value.offsetTop + (props.stepPosition?.top ?? 0) + (terminalElement.value?.offsetHeight ?? 2) / 2
+    () => position.value.offsetTop + (props.stepPosition?.top ?? 0) + (terminalElement.value?.offsetHeight ?? 2) / 2,
 );
 const endX = computed(() => {
     return (dragX.value || startX.value) + props.scroll.x.value / props.scale;
@@ -265,7 +265,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 function onMove(dragPosition: XYPosition) {

@@ -45,7 +45,7 @@ const { throttle: dragThrottle } = useAnimationFrameThrottle();
 watch(
     () => props.viewportBoundingBox,
     () => (redraw = true),
-    { deep: true }
+    { deep: true },
 );
 
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
@@ -77,7 +77,7 @@ watch(
             aabbChanged = true;
         }
     },
-    { deep: true }
+    { deep: true },
 );
 
 // these settings are controlled via css, so they can be defined in one common place
@@ -205,7 +205,7 @@ function renderMinimap() {
                 selectedStep.position!.left - edge,
                 selectedStep.position!.top - edge,
                 rect.width + edge * 2,
-                rect.height + edge * 2
+                rect.height + edge * 2,
             );
         }
 
@@ -221,7 +221,7 @@ function renderMinimap() {
         props.viewportBoundingBox.x,
         props.viewportBoundingBox.y,
         props.viewportBoundingBox.width,
-        props.viewportBoundingBox.height
+        props.viewportBoundingBox.height,
     );
     ctx.fill();
     ctx.stroke();
@@ -239,7 +239,7 @@ watch(dragHandlePosition, () => {
     // resize
     minimapSize.value = Math.max(
         unref(props.viewportBounds.right) - dragHandlePosition.value.x,
-        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y
+        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y,
     );
 
     // clamp

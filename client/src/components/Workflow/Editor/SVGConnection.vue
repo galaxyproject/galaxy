@@ -72,7 +72,7 @@ const connectionPosition = computed(() => {
 
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
 const inputIsMappedOver = computed(
-    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection
+    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection,
 );
 
 const outputIsOptional = computed(() => {
@@ -80,7 +80,7 @@ const outputIsOptional = computed(() => {
         stepStore.getStep(props.connection.output.stepId)?.when ||
             stepStore
                 .getStep(props.connection.output.stepId)
-                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
     );
 });
 

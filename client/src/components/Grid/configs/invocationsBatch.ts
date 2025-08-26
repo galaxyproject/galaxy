@@ -14,7 +14,7 @@ async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     // extra props will be Record<string, Invocation>; get array of invocations
     const data = Object.values(extraProps ?? {}) as WorkflowInvocation[];

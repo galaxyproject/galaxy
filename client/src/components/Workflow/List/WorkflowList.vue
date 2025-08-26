@@ -83,12 +83,12 @@ const noItems = computed(() => !loading.value && workflowsLoaded.value.length ==
 const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted workflows" : "Show deleted workflows"));
 const bookmarkButtonTitle = computed(() =>
-    showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows"
+    showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows",
 );
 
 const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
 const rawFilters = computed(() =>
-    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
+    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false)),
 );
 const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
@@ -96,7 +96,7 @@ const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 const indeterminateSelected = computed(() => selectedWorkflowIds.value.length > 0 && !allSelected.value);
 const allSelected = computed(
-    () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length
+    () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length,
 );
 // TODO: fix this variable name, it's not a list of ids, rather is a list of SelectedWorkflows
 const selectedWorkflowIds = computed<SelectedWorkflow[]>(() => {
@@ -134,7 +134,7 @@ const {
             false,
             () => load(true),
             () => {},
-            () => {}
+            () => {},
         );
         deleteInModal();
     },
@@ -253,7 +253,7 @@ async function onBulkDelete() {
             title: "Delete workflows",
             okTitle: "Delete workflows",
             okVariant: "danger",
-        }
+        },
     );
 
     if (confirmed) {
@@ -268,7 +268,7 @@ async function onBulkDelete() {
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((s) => s.id === w.id),
-                    1
+                    1,
                 );
             }
 
@@ -307,7 +307,7 @@ async function onBulkRestore() {
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((s) => s.id === w.id),
-                    1
+                    1,
                 );
             }
 
@@ -354,7 +354,7 @@ async function onBulkTagsAdd(tags: string[]) {
 
             tmpSelected.splice(
                 tmpSelected.findIndex((s) => s.id === w.id),
-                1
+                1,
             );
         }
 

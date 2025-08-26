@@ -80,7 +80,7 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                     okTitle: "Private new datasets",
                     cancelTitle: "Keep datasets public",
                     cancelVariant: "outline-primary",
-                }
+                },
             );
 
             if (confirmed) {

@@ -50,7 +50,7 @@ export function useJobWatcher(jobId: Ref<string | undefined>) {
         },
         {
             immediate: true,
-        }
+        },
     );
 
     return {

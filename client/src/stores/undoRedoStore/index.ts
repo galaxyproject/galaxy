@@ -36,7 +36,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     watch(
         () => [undoActionStack.value.length, deletedActions.value.length],
-        () => (changeId.value += 1)
+        () => (changeId.value += 1),
     );
 
     function $reset() {

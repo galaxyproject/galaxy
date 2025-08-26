@@ -115,7 +115,9 @@ const computedPlaceholder = computed(() => {
  */
 const unPopulatedError = computed(
     () =>
-        props.workflowRun && alerts.value?.length === 1 && alerts.value[0] === "Please provide a value for this option."
+        props.workflowRun &&
+        alerts.value?.length === 1 &&
+        alerts.value[0] === "Please provide a value for this option.",
 );
 
 const connected = ref(false);
@@ -167,7 +169,7 @@ const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
-    props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
+    props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null,
 );
 const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
@@ -183,7 +185,7 @@ const helpText = computed(() => {
 const nonMdHelp = computed(() =>
     Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
         ? sanitize(helpText.value!)
-        : ""
+        : "",
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
 
@@ -215,7 +217,7 @@ const userDefinedTitle = computed(() => {
 const isHiddenType = computed(
     () =>
         ["hidden", "hidden_data", "baseurl"].includes(props.type ?? "") ||
-        (props.attributes && props.attributes.titleonly)
+        (props.attributes && props.attributes.titleonly),
 );
 
 /** Determines if the element renders content below the title. */
@@ -224,7 +226,7 @@ const rendersContent = computed(
         (props.workflowRun && hasAlert.value && !unPopulatedError.value) ||
         showField.value ||
         showPreview.value ||
-        helpText.value
+        helpText.value,
 );
 
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
@@ -397,7 +399,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                         ['text', 'password'].includes(props.type ?? '') ||
                         (attrs.is_workflow &&
                             ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(
-                                props.type ?? ''
+                                props.type ?? '',
                             ))
                     "
                     :id="props.id"

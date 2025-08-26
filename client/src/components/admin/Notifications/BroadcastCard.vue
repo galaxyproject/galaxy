@@ -81,7 +81,7 @@ function onEditClick() {
 async function onForceExpirationClick() {
     const confirmed = await confirm(
         "Are you sure you want to expire this broadcast? It will be automatically deleted on the next cleanup cycle.",
-        "Expire broadcast"
+        "Expire broadcast",
     );
     if (confirmed) {
         emit("expire", notification.value);

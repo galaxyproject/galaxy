@@ -42,7 +42,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 export function useHistoryCardActions(
     history: Ref<AnyHistoryEntry>,
     archivedView: boolean,
-    refreshCallBack: () => void
+    refreshCallBack: () => void,
 ): {
     historyCardExtraActions: CardAction[];
     historyCardSecondaryActions: CardAction[];
@@ -68,7 +68,7 @@ export function useHistoryCardActions(
                 okVariant: "danger",
                 cancelVariant: "outline-primary",
                 centered: true,
-            }
+            },
         );
 
         if (confirmed) {
@@ -105,12 +105,12 @@ export function useHistoryCardActions(
     async function onImportCopy(hti: ArchivedHistorySummary) {
         const confirmed = await confirm(
             localize(
-                `Are you sure you want to import a new copy of this history? This will create a new history with the same datasets contained in the associated export snapshot.`
+                `Are you sure you want to import a new copy of this history? This will create a new history with the same datasets contained in the associated export snapshot.`,
             ),
             {
                 id: "history-import-copy",
                 title: localize(`Import Copy of '${hti.name}'?`),
-            }
+            },
         );
 
         if (!confirmed) {
@@ -120,7 +120,7 @@ export function useHistoryCardActions(
         if (!hti.export_record_data) {
             Toast.error(
                 localize(`Failed to import history '${hti.name}' because it does not have an export record.`),
-                localize("History Import Failed")
+                localize("History Import Failed"),
             );
             return;
         }
@@ -135,16 +135,16 @@ export function useHistoryCardActions(
         if (error) {
             Toast.error(
                 localize(`Failed to import history '${hti.name}' with reason: ${error}`),
-                localize("History Import Failed")
+                localize("History Import Failed"),
             );
             return;
         }
 
         Toast.success(
             localize(
-                `The History '${hti.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
+                `The History '${hti.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`,
             ),
-            localize("Importing History in background...")
+            localize("Importing History in background..."),
         );
     }
 
@@ -158,10 +158,10 @@ export function useHistoryCardActions(
         const confirmMessage =
             htr.purged && htr.export_record_data
                 ? localize(
-                      "Are you sure you want to restore this (purged) history? Please note that this will not restore the datasets associated with this history. If you want to fully recover it, you can import a copy from the export record instead."
+                      "Are you sure you want to restore this (purged) history? Please note that this will not restore the datasets associated with this history. If you want to fully recover it, you can import a copy from the export record instead.",
                   )
                 : localize(
-                      "Are you sure you want to restore this history? This will move the history back to your active histories."
+                      "Are you sure you want to restore this history? This will move the history back to your active histories.",
                   );
 
         const confirmed = await confirm(confirmMessage, {
@@ -183,7 +183,7 @@ export function useHistoryCardActions(
         } catch (error) {
             Toast.error(
                 localize(`Failed to restore history '${htr.name}' with reason: ${error}`),
-                localize("History Restore Failed")
+                localize("History Restore Failed"),
             );
         }
     }

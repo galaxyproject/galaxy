@@ -34,7 +34,7 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
  */
 export function useResourceWatcher<T = unknown>(
     watchHandler: WatchResourceHandler,
-    options: WatchOptions = DEFAULT_WATCH_OPTIONS
+    options: WatchOptions = DEFAULT_WATCH_OPTIONS,
 ) {
     const { shortPollingInterval, longPollingInterval, enableBackgroundPolling } = {
         ...DEFAULT_WATCH_OPTIONS,

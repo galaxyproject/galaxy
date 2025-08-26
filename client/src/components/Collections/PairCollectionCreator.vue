@@ -120,11 +120,11 @@ watch(
             initialSuggestedName.value = _guessNameForPair(
                 workingElements.value[0] as HDASummary,
                 workingElements.value[1] as HDASummary,
-                removeExtensions.value
+                removeExtensions.value,
             );
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function _elementsSetUp() {
@@ -151,7 +151,7 @@ function _elementsSetUp() {
             continue;
         }
         const matchingElem = workingElements.value.find(
-            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id
+            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id,
         );
         if (matchingElem) {
             const problem = isElementInvalid(matchingElem);
@@ -263,7 +263,7 @@ function addUploadedFiles(files: HDASummary[]) {
     if (alreadyPopulated && files.length > 0) {
         Toast.info(
             localize("Forward and reverse datasets already selected. Uploaded files are available for replacement."),
-            localize("Uploads Available for Replacement")
+            localize("Uploads Available for Replacement"),
         );
     }
 }
@@ -286,7 +286,7 @@ function removeExtensionsToggle() {
     initialSuggestedName.value = _guessNameForPair(
         workingElements.value[0] as HDASummary,
         workingElements.value[1] as HDASummary,
-        removeExtensions.value
+        removeExtensions.value,
     );
 }
 
@@ -343,7 +343,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                     "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
                                     "order to have analyses done on both datasets. This interface allows you to create a pair, name it, and ",
                                     "swap which is forward and which reverse.",
-                                ].join("")
+                                ].join(""),
                             )
                         }}
                     </p>
@@ -356,7 +356,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                             </i>
                             {{
                                 localize(
-                                    "link to make your forward dataset the reverse and the reverse dataset forward"
+                                    "link to make your forward dataset the reverse and the reverse dataset forward",
                                 )
                             }}
                         </li>
@@ -399,7 +399,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                             {{
                                 localize(
                                     "No elements in your history are valid for this pair. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    You may need to switch to a different history or upload valid datasets.",
                                 )
                             }}
                             <div v-if="extensions?.length">

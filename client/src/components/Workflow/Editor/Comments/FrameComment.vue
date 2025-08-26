@@ -46,7 +46,7 @@ useResizable(
     computed(() => props.comment.size),
     ([width, height]) => {
         emit("resize", [width, height]);
-    }
+    },
 );
 
 function escapeAndSanitize(text: string) {
@@ -85,7 +85,7 @@ watch(
         if (!focused.value) {
             showColorSelector.value = false;
         }
-    }
+    },
 );
 
 function onClick() {
@@ -414,7 +414,9 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

@@ -273,7 +273,7 @@ export default {
         },
         stepOutputMatchesType(step, workflowOutput, type) {
             return Boolean(
-                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type)
+                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type),
             );
         },
         getArgumentTitle(argumentName) {

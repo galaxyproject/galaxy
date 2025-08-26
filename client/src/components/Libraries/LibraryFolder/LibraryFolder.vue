@@ -395,7 +395,7 @@ export default {
                     this.sortDesc,
                     this.perPage,
                     (this.currentPage ? this.currentPage - 1 : 0) * this.perPage,
-                    this.searchText
+                    this.searchText,
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
@@ -582,7 +582,7 @@ export default {
                     },
                     () => {
                         Toast.error("An error occurred.");
-                    }
+                    },
                 );
             }
         },
@@ -603,7 +603,7 @@ export default {
                         this.refreshTable();
                         Toast.success("Folder undeleted.");
                     },
-                    onError
+                    onError,
                 );
             } else {
                 this.services.undeleteDataset(
@@ -619,7 +619,7 @@ export default {
                             },
                         });
                     },
-                    onError
+                    onError,
                 );
             }
         },
@@ -661,7 +661,7 @@ export default {
                         } else {
                             Toast.error("An error occurred while attempting to update the folder.");
                         }
-                    }
+                    },
                 );
             } else {
                 Toast.info("Nothing has changed.");

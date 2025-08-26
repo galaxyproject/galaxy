@@ -156,7 +156,7 @@ if (props.watchOnPageChanges) {
             if (props.itemsProvider === undefined) {
                 resetPagination();
             }
-        }
+        },
     );
 }
 

@@ -53,7 +53,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 HttpResponse.json({
                     id: DATASET_ID,
                     creating_job: "creating_job",
-                })
+                }),
             );
         }),
 
@@ -81,7 +81,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 has_duplicate_inputs: has_duplicate_inputs,
                 has_empty_inputs: has_empty_inputs,
             });
-        })
+        }),
     );
 
     const wrapper = mount(DatasetError as object, {
@@ -136,7 +136,7 @@ describe("DatasetError", () => {
                 return response(200).json({
                     messages: [["message"], ["success"]],
                 });
-            })
+            }),
         );
 
         const FormAndSubmitButton = "#email-report-form";

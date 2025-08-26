@@ -102,7 +102,7 @@ export class Services {
             .post(
                 `${getAppRoot()}api/libraries/datasets/${id}/permissions?action=${
                     isMakePrivate ? "make_private" : "remove_restrictions"
-                }`
+                }`,
             )
             .then((fetched_permissions) => {
                 onSuccess(fetched_permissions.data);

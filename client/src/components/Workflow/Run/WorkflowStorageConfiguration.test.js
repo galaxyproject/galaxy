@@ -26,7 +26,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
     });
 
@@ -50,7 +50,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             expect(primaryEl.exists()).toBeTruthy();
             const intermediateEl = findViaNavigation(
                 wrapper,
-                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
+                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator,
             );
             expect(intermediateEl.exists()).toBeTruthy();
             await flushPromises();
@@ -62,7 +62,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             expect(primaryEl.exists()).toBeTruthy();
             const intermediateEl = findViaNavigation(
                 wrapper,
-                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
+                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator,
             );
             expect(intermediateEl.exists()).toBeFalsy();
             await flushPromises();

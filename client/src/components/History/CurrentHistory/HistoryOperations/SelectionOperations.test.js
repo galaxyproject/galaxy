@@ -232,7 +232,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_SUCCESS_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:show-selection");
@@ -246,7 +246,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_SUCCESS_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
@@ -265,7 +265,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
@@ -288,7 +288,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
@@ -305,7 +305,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_ERROR_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");

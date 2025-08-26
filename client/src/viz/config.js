@@ -101,7 +101,7 @@ var ConfigSetting = Backbone.Model.extend({
                     default_value: true,
                 },
             ],
-            (s) => s.key === key
+            (s) => s.key === key,
         );
         if (defaults) {
             this.set(_.extend({}, defaults, options));
@@ -206,7 +206,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
 
             return new ConfigSettingCollection(models);
         },
-    }
+    },
 );
 
 /**
@@ -236,7 +236,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             row.append(
                 $("<label />")
                     .attr("for", id)
-                    .text(`${param.get("label")}:`)
+                    .text(`${param.get("label")}:`),
             );
             // Draw parameter as checkbox
             if (type === "bool") {
@@ -249,7 +249,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         .val(value)
                         .click(function () {
                             $(this).select();
-                        })
+                        }),
                 );
             } else if (type === "select") {
                 // Draw parameter as select area

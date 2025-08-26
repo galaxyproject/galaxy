@@ -78,7 +78,7 @@ export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
     stepsJobsSummary: Ref<StepJobSummary[]>,
     workflowId: string | undefined,
-    workflowVersion: number | undefined
+    workflowVersion: number | undefined,
 ) {
     library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
@@ -208,7 +208,7 @@ export function useInvocationGraph(
     function updateStep(
         graphStep: GraphStep,
         invocationStep: InvocationStep | undefined,
-        invocationStepSummary: StepJobSummary | undefined
+        invocationStepSummary: StepJobSummary | undefined,
     ) {
         /** The new state for the graph step */
         let newState = graphStep.state;
@@ -340,7 +340,7 @@ export function useInvocationGraph(
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
         return Object.values(invocation.input_step_parameters).find(
-            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id,
         );
     }
 

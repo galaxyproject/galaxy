@@ -27,7 +27,7 @@ async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     const userStore = useUserStore();
     if (userStore.currentUser?.isAnonymous || !userStore.currentUser || !extraProps || !extraProps["history_id"]) {
@@ -130,7 +130,7 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
             const workflow = workflowStore.getStoredWorkflowByInstanceId(
-                invocation.workflow_id
+                invocation.workflow_id,
             ) as unknown as StoredWorkflowDetailed;
             return !workflow?.deleted;
         },

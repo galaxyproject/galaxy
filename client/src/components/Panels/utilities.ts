@@ -118,7 +118,7 @@ export function determineWidth(
     minWidth: number,
     maxWidth: number,
     direction: string,
-    positionX: number
+    positionX: number,
 ) {
     let newWidth = null;
     if (direction === "right") {
@@ -156,7 +156,7 @@ export function filterTools(toolsById: Record<string, Tool>, results: string[]) 
 export function getValidToolsInCurrentView(
     toolsById: Record<string, Tool>,
     isWorkflowPanel = false,
-    excludedSectionIds: string[] = []
+    excludedSectionIds: string[] = [],
 ) {
     const excludeSet = new Set(excludedSectionIds);
     const validTools: Record<string, Tool> = {};
@@ -179,7 +179,7 @@ export function getValidToolsInCurrentView(
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
 export function getValidToolsInEachSection(
     validToolIdsInCurrentView: string[],
-    currentPanel: Record<string, Tool | ToolSection>
+    currentPanel: Record<string, Tool | ToolSection>,
 ) {
     // use a set for fast membership lookup
     const idSet = new Set(validToolIdsInCurrentView);
@@ -211,7 +211,7 @@ export function getValidToolsInEachSection(
 export function getValidPanelItems(
     items: (string | ToolSection)[][],
     validToolIdsInCurrentView: string[],
-    excludedSectionIds: string[] = []
+    excludedSectionIds: string[] = [],
 ) {
     const validEntries = items.filter(([id, item]) => {
         id = id as string;
@@ -256,7 +256,7 @@ export function searchToolsByKeys(
     query: string,
     panelView = "default",
     currentPanel: Record<string, Tool | ToolSection>,
-    usesDL = false
+    usesDL = false,
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
@@ -363,7 +363,7 @@ export function searchToolsByKeys(
  */
 export function createSortedResultObject(
     matchedTools: SearchMatch[],
-    currentPanel: Record<string, Tool | ToolSection>
+    currentPanel: Record<string, Tool | ToolSection>,
 ) {
     const idResults: string[] = [];
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
@@ -412,7 +412,7 @@ export function createSortedResultObject(
             }
             return acc;
         },
-        {}
+        {},
     );
     return { idResults, resultPanel };
 }
@@ -429,20 +429,20 @@ function closestSubstring(query: string, actualStr: string) {
     const maxDistance = Math.floor(query.length / 5);
     // Create an array of all actualStr substrings that are query length, query length -1, and query length + 1
     const substrings = Array.from({ length: actualStr.length - query.length + maxDistance }, (_, i) =>
-        actualStr.substr(i, query.length)
+        actualStr.substr(i, query.length),
     );
     if (query.length > 1) {
         substrings.push(
             ...Array.from({ length: actualStr.length - query.length + maxDistance + 1 }, (_, i) =>
-                actualStr.substr(i, query.length - maxDistance)
-            )
+                actualStr.substr(i, query.length - maxDistance),
+            ),
         );
     }
     if (actualStr.length > query.length) {
         substrings.push(
             ...Array.from({ length: actualStr.length - query.length }, (_, i) =>
-                actualStr.substr(i, query.length + maxDistance)
-            )
+                actualStr.substr(i, query.length + maxDistance),
+            ),
         );
     }
     // check to see if any substrings have a levenshtein distance less than the max distance

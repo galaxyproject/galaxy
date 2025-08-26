@@ -62,7 +62,7 @@ function onViewObjectStore(objectStoreId: string) {
                 v-if="objectStoresBySizeData"
                 :description="
                     localize(
-                        `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the Galaxy storage.`
+                        `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the Galaxy storage.`,
                     )
                 "
                 :data="objectStoresBySizeData"

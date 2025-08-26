@@ -105,12 +105,12 @@ const effectiveExtensions = computed(() => {
 });
 
 const hasCompositeExtension = computed(() =>
-    effectiveExtensions.value.some((extension) => !!extension.composite_files)
+    effectiveExtensions.value.some((extension) => !!extension.composite_files),
 );
 const hasRegularExtension = computed(() => effectiveExtensions.value.some((extension) => !extension.composite_files));
 const historyAvailable = computed(() => Boolean(props.currentHistoryId));
 const ready = computed(
-    () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value
+    () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value,
 );
 const canUploadToHistory = computed(() => currentHistory.value && canMutateHistory(currentHistory.value));
 const showCollection = computed(() => !props.formats && props.multiple);

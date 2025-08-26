@@ -184,7 +184,7 @@ export default {
         },
         getParamInput(stepDetails) {
             return Object.values(this.invocation.input_step_parameters).find(
-                (param) => param.workflow_step_id === stepDetails.workflow_step_id
+                (param) => param.workflow_step_id === stepDetails.workflow_step_id,
             );
         },
         jobStepHeading(stepDetails) {

@@ -48,7 +48,7 @@ export var Dataset = Backbone.Model.extend({
                     delete this.attributes[k];
                 }
             },
-            this
+            this,
         );
 
         // Because this is an internal change, silence it.

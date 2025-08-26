@@ -94,13 +94,13 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || [])
+    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
 );
 const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0
+    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
 // hide message helper
@@ -174,7 +174,7 @@ async function getGridData() {
                 validatedFilterText(),
                 sortBy.value,
                 sortDesc.value,
-                props.extraProps
+                props.extraProps,
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;

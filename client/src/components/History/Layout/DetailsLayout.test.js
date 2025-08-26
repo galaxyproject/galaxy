@@ -52,7 +52,7 @@ describe("DetailsLayout", () => {
                 id: "user.id",
                 email: "user.email",
             },
-            true
+            true,
         );
 
         expect(wrapper.find(".edit-button").attributes("title")).toContain("Not Editable");

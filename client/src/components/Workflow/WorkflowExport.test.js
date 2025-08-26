@@ -33,7 +33,7 @@ describe("Workflow Export", () => {
                     id: "0",
                 },
             },
-            localVue
+            localVue,
         );
     });
 

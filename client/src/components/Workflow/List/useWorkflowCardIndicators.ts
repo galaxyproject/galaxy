@@ -11,7 +11,7 @@ export function useWorkflowCardIndicators(
     workflow: Ref<WorkflowSummary>,
     publishedView: boolean,
     filterable: boolean,
-    updateFilter: (key: string, value: boolean) => void
+    updateFilter: (key: string, value: boolean) => void,
 ) {
     const userStore = useUserStore();
 

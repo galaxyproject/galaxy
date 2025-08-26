@@ -19,7 +19,7 @@ const props = withDefaults(
         id: "frame",
         src: "",
         isPreview: false,
-    }
+    },
 );
 
 const { isAdmin } = storeToRefs(useUserStore());
@@ -48,7 +48,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const plainText = "Contents are shown as plain text.";

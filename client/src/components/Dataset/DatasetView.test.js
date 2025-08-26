@@ -186,7 +186,7 @@ describe("DatasetView", () => {
         server.use(
             http.get("/api/datasets/:dataset_id", ({ response }) => {
                 return response(200).json(mockDataset);
-            })
+            }),
         );
     });
 

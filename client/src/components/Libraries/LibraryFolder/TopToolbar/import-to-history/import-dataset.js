@@ -156,7 +156,7 @@ var ImportDatasetModal = Backbone.View.extend({
                 Toast.success(
                     "Click here to start analyzing it.",
                     "Selected datasets imported into history",
-                    `${getAppRoot()}histories/view?id=${history_id}`
+                    `${getAppRoot()}histories/view?id=${history_id}`,
                 );
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
                 Toast.error("There was an error and no datasets were imported into history.");
@@ -164,7 +164,7 @@ var ImportDatasetModal = Backbone.View.extend({
                 Toast.warning(
                     "Some of the datasets could not be imported into history. Click this to see what was imported.",
                     "",
-                    `${getAppRoot()}histories/view?id=${history_id}`
+                    `${getAppRoot()}histories/view?id=${history_id}`,
                 );
             }
             Galaxy.modal.hide();
@@ -174,7 +174,7 @@ var ImportDatasetModal = Backbone.View.extend({
             popped_item.save({
                 content: popped_item.content,
                 source: popped_item.source,
-            })
+            }),
         );
 
         promise
@@ -199,7 +199,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`
+            </div>`,
         );
     },
     templateDeletingItemsProgressBar: function () {
@@ -211,7 +211,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`
+            </div>`,
         );
     },
     templateImportIntoHistoryModal: function () {
@@ -232,7 +232,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     <input type="text" name="history_name" value=""
                         placeholder="name of the new history" style="width:50%;" />
                 </div>
-            </div>`
+            </div>`,
         );
     },
 });

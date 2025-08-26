@@ -28,7 +28,7 @@ describe("RepositoryDetails", () => {
 
             http.untyped.get("api/tool_shed/request", () => {
                 return HttpResponse.json([]);
-            })
+            }),
         );
 
         const localVue = getLocalVue();

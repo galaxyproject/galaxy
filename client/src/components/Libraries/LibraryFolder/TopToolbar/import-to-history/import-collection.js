@@ -165,7 +165,7 @@ var ImportCollectionModal = Backbone.View.extend({
                         <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
                     </div>
                 </div>
-            </div>`
+            </div>`,
         );
     },
 });

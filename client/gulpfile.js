@@ -55,7 +55,7 @@ function stageLibs(callback) {
                 fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
             } else {
                 throw new Error(
-                    `${p1} does not exist, yet it is a required library. Check that the package in question exists in node_modules.`
+                    `${p1} does not exist, yet it is a required library. Check that the package in question exists in node_modules.`,
                 );
             }
         });

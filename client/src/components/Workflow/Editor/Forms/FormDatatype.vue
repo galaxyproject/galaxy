@@ -17,7 +17,7 @@ const props = withDefaults(
     {
         value: undefined,
         multiple: false,
-    }
+    },
 );
 
 const currentValue = ref<string | string[] | undefined>(undefined);
@@ -27,7 +27,7 @@ watch(
     (newValue) => {
         currentValue.value = newValue;
     },
-    { immediate: true }
+    { immediate: true },
 );
 const emit = defineEmits(["onChange"]);
 

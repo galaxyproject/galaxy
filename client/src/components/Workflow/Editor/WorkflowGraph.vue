@@ -54,7 +54,7 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     maxZoom,
     canvas,
     scroll,
-    props.initialPosition
+    props.initialPosition,
 );
 
 watch(
@@ -62,13 +62,13 @@ watch(
     () => {
         stateStore.position[0] = transform.value.x;
         stateStore.position[1] = transform.value.y;
-    }
+    },
 );
 
 const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
     elementBounding,
     scale,
-    transform
+    transform,
 );
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
@@ -117,7 +117,7 @@ watch(
             }
             emit("scrollTo");
         }
-    }
+    },
 );
 
 function zoomTo(zoomLevel: number, panTo: XYPosition | null = null, origin?: Vector) {
@@ -149,7 +149,7 @@ function onDeactivate() {
 
 watch(
     () => transform.value.k,
-    () => (stateStore.scale = transform.value.k)
+    () => (stateStore.scale = transform.value.k),
 );
 
 watch(transform, () => emit("transform", transform.value));

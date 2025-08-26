@@ -34,7 +34,7 @@ describe("fetchModels", () => {
         table: FetchTable,
         rowIndex: number,
         columnType: ParsedFetchWorkbookColumnType,
-        expectedValue: any
+        expectedValue: any,
     ) {
         const columnKey = new DerivedColumn(columnType, 0, "").key();
         const row = table.rows[rowIndex] as RowType;
@@ -64,7 +64,7 @@ describe("fetchModels", () => {
                 "name_tag",
                 "group_tags",
                 "tags",
-            ])
+            ]),
         );
         expectRowToHaveColumnValue(table, 0, "name", "file1.txt");
         expectRowToHaveColumnValue(table, 0, "url", "http://example.com/file1.txt");
@@ -93,7 +93,7 @@ describe("fetchModels", () => {
         const rows = fetchTargetToRows(
             { collection_type: null, elements: [partialElement] } as AnyFetchTarget,
             columns,
-            []
+            [],
         );
         expect(rows[0]!["name"]).toEqual("file2.txt");
         expect(rows[0]!["url"]).toEqual("http://example.com/file2.txt");
@@ -137,7 +137,7 @@ describe("fetchModels", () => {
         } as any;
         const columns: DerivedColumn[] = [new DerivedColumn("url", 0, "URL")];
         expect(() =>
-            fetchTargetToRows({ collection_type: null, elements: [badElement] } as AnyFetchTarget, columns, [])
+            fetchTargetToRows({ collection_type: null, elements: [badElement] } as AnyFetchTarget, columns, []),
         ).toThrow(/URL is required/);
     });
 

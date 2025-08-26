@@ -38,7 +38,7 @@ describe("DatasetStorage.vue", () => {
                     return response("5XX").json({ err_msg: TEST_ERROR_MESSAGE, err_code: 500 }, { status: 500 });
                 }
                 return response(200).json(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
-            })
+            }),
         );
 
         wrapper = shallowMount(DatasetStorage as object, {
