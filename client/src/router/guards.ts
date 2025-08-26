@@ -5,7 +5,7 @@ import { useUserStore } from "@/stores/userStore";
 export async function requireAuth(
     to: RouteLocationNormalized,
     from: RouteLocationNormalized,
-    next: NavigationGuardNext
+    next: NavigationGuardNext,
 ) {
     const userStore = useUserStore();
     await userStore.loadUser(false);
