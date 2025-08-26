@@ -29,7 +29,7 @@
 
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { userOwnsHistory } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
