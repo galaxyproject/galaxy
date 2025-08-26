@@ -51,11 +51,9 @@ from datetime import (
 )
 from time import strftime
 
-import sqlalchemy as sa
 from mako.template import Template
 from sqlalchemy import (
     and_,
-    false,
     select,
 )
 from sqlalchemy.orm import aliased
@@ -66,7 +64,6 @@ from cleanup_datasets import CleanupDatasetsApplication
 
 import galaxy.config
 import galaxy.util
-from galaxy import model
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -289,7 +286,6 @@ def _get_tool_id_for_hda(app, hda_id):
     # Aliases for ORM‑mapped classes
     Job = aliased(app.model.Job)
     JTODA = aliased(app.model.JobToOutputDatasetAssociation)
-    HDA = aliased(app.model.HistoryDatasetAssociation)
 
     session = app.sa_session
 
