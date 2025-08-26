@@ -25,7 +25,11 @@ function parse<T>(value: string, type: "string" | "number" | "boolean" | "object
 }
 
 export function syncRefToLocalStorage<T>(key: string, refToSync: Ref<T>) {
-    const stored = window.localStorage.getItem(key);
+    let stored = window.localStorage.getItem(key);
+
+    if (stored === "null" || stored === "undefined") {
+        stored = null;
+    }
 
     const sync = () => {
         const stringified = stringify(refToSync.value);
