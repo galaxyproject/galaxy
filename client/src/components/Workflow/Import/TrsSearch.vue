@@ -9,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
+import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
 
 import type { TrsSelection } from "./types";
@@ -25,6 +26,8 @@ type TrsSearchData = {
     description: string;
     [key: string]: unknown;
 };
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const fields = [
     { key: "name", label: "Name" },
@@ -195,7 +198,22 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
                     </BCard>
                 </template>
+
+                <template v-slot:cell(description)="row">
+                    <span class="trs-description" v-html="renderMarkdown(row.item.data.description)" />
+                </template>
             </BTable>
         </div>
     </BCard>
 </template>
+
+<style>
+.trs-description {
+    position: relative;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+</style>
