@@ -82,7 +82,11 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     function setSelected(item: T, selected: boolean, checkInRange = true) {
         const key = getItemKey(item as T);
         const newSelected = new Map(selectedItems.value);
-        selected ? newSelected.set(key, item) : newSelected.delete(key);
+        if (selected) {
+            (newSelected as Map<string, T>).set(key, item);
+        } else {
+            newSelected.delete(key);
+        }
         selectedItems.value = newSelected;
         breakQuerySelection();
 
@@ -235,7 +239,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
         const newItems = [...selectedItems.value.values(), ...itemsToSelect];
         const newEntries: Array<[string, T]> = newItems.map((item) => {
             const key = getItemKey(item as T);
-            return [key, item];
+            return [key, item as T];
         });
         selectedItems.value = new Map(newEntries);
         breakQuerySelection();
