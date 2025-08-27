@@ -15,13 +15,14 @@ import { BPopover, BSkeleton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolStore } from "@/stores/toolStore";
 
+import type { CardBadge } from "../Common/GCard.types";
+import { useToolsListCardActions } from "./useToolsListCardActions";
+
 import GButton from "../BaseComponents/GButton.vue";
-import ToolShareButton from "../Tool/Buttons/ToolShareButton.vue";
+import GCard from "../Common/GCard.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
-import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
 type OntologyBadge = {
     id: string;
@@ -66,8 +67,6 @@ const emit = defineEmits<{
     (e: "apply-filter", filter: string, value: string): void;
 }>();
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
-
 const toolStore = useToolStore();
 
 function getOntologyBadges(view: "ontology:edam_operations" | "ontology:edam_topics", ids: string[]): OntologyBadge[] {
@@ -94,8 +93,6 @@ const ontologies = computed(() => {
 
 const showHelp = ref(false);
 const showPopover = ref(false);
-
-const canBeRun = computed(() => props.formStyle === "regular" || !props.local);
 
 const formattedToolHelp = computed(() => {
     if (showHelp.value) {
@@ -124,85 +121,109 @@ const routeTo = computed(() =>
 
 const routeHref = computed(() => (!props.local ? props.link : undefined));
 
-function openUploadIfNeeded() {
-    if (props.id === "upload1") {
-        openGlobalUploadModal();
+const toolBadges = computed<CardBadge[]>(() => {
+    const badges = [];
+    if (!props.local) {
+        badges.push({
+            id: "external-tool",
+            label: "External",
+            title: "This tool opens in an external site",
+            visible: true,
+            icon: faExternalLinkAlt,
+        });
     }
-}
+    return badges;
+});
+
+const { toolsListCardPrimaryActions, toolsListCardSecondaryActions, openUploadIfNeeded } = useToolsListCardActions(
+    props.id,
+    props.local,
+    props.name,
+    props.formStyle,
+    props.version,
+    routeTo.value,
+    routeHref.value,
+);
 </script>
 
 <template>
-    <div class="tool-list-item">
-        <div class="top-bar bg-secondary px-2 py-1 rounded-right">
-            <div class="py-1 d-flex flex-wrap flex-gapx-1">
+    <GCard
+        :id="props.id"
+        class="tool-list-item"
+        :badges="toolBadges"
+        :primary-actions="toolsListCardPrimaryActions"
+        :secondary-actions="toolsListCardSecondaryActions">
+        <template v-slot:title>
+            <h4 class="py-1 d-flex flex-wrap text-wrap flex-gapx-1">
                 <span>
                     <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
                     <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
 
-                    <GLink dark :to="routeTo" :href="routeHref" @click="openUploadIfNeeded">
+                    <GLink v-if="routeTo || routeHref" dark :to="routeTo" :href="routeHref" @click="openUploadIfNeeded">
                         <b>{{ props.name }}</b>
                     </GLink>
+                    <span v-else
+                        ><b>{{ props.name }}</b></span
+                    >
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
-            </div>
+            </h4>
+        </template>
 
-            <div class="d-flex align-items-start">
-                <div class="d-flex align-items-center flex-gapx-1">
-                    <GButton
-                        v-if="props.version || !props.workflowCompatible"
-                        :id="`tools-list-${props.id}`"
-                        icon-only
-                        transparent
-                        inline
-                        style="cursor: help"
-                        @click="showPopover = !showPopover">
-                        <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
-                    </GButton>
-                    <BPopover
-                        v-if="props.version || !props.workflowCompatible"
-                        :show.sync="showPopover"
-                        custom-class="tool-info-popover"
-                        boundary="window"
-                        placement="topleft"
-                        :target="`tools-list-${props.id}`"
-                        triggers="hover">
-                        <div class="d-flex flex-column flex-gapy-1 text-center">
-                            <div>Galaxy Version {{ props.version }}</div>
+        <template v-slot:indicators>
+            <GButton
+                v-if="props.version || !props.workflowCompatible"
+                :id="`tools-list-${props.id}`"
+                icon-only
+                transparent
+                inline
+                style="cursor: help"
+                @click="showPopover = !showPopover">
+                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+            </GButton>
+            <BPopover
+                v-if="props.version || !props.workflowCompatible"
+                :show.sync="showPopover"
+                custom-class="tool-info-popover"
+                boundary="window"
+                placement="topleft"
+                :target="`tools-list-${props.id}`"
+                triggers="hover">
+                <div class="d-flex flex-column flex-gapy-1 text-center">
+                    <div>Galaxy Version {{ props.version }}</div>
 
-                            <div v-if="!props.workflowCompatible" class="tag warn">
-                                <FontAwesomeIcon :icon="faExclamationTriangle" />
-                                Not Workflow compatible
-                            </div>
-                        </div>
-                    </BPopover>
-
-                    <ToolShareButton
-                        v-if="canBeRun && props.id !== 'upload1'"
-                        :id="props.id"
-                        :name="props.name"
-                        :link="routeHref"
-                        :version="props.version"
-                        color="grey" />
-
-                    <ToolFavoriteButton :id="props.id" class="text-nowrap" color="grey" detailed />
-
-                    <GButton
-                        v-if="canBeRun"
-                        class="text-nowrap"
-                        color="blue"
-                        size="small"
-                        :to="routeTo"
-                        :href="routeHref"
-                        @click="openUploadIfNeeded">
-                        <FontAwesomeIcon v-if="props.local" :icon="faWrench" fixed-width />
-                        <FontAwesomeIcon v-else :icon="faExternalLinkAlt" fixed-width />
-                        Open
-                    </GButton>
+                    <div v-if="!props.workflowCompatible" class="tag warn">
+                        <FontAwesomeIcon :icon="faExclamationTriangle" />
+                        Not Workflow compatible
+                    </div>
                 </div>
-            </div>
-        </div>
+            </BPopover>
+        </template>
 
-        <div class="tool-list-item-content">
+        <template v-slot:description>
+            <div v-if="props.fetching && !props.help">
+                <BSkeleton />
+            </div>
+
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-else-if="props.summary && !showHelp" v-html="props.summary"></div>
+
+            <div v-if="props.help" class="mt-2">
+                <GLink v-if="!showHelp" unselectable @click="() => (showHelp = true)">
+                    <FontAwesomeIcon :icon="faAngleDown" />
+                    Show tool help
+                </GLink>
+                <GLink v-else unselectable @click="() => (showHelp = false)">
+                    <FontAwesomeIcon :icon="faAngleUp" />
+                    Hide tool help
+                </GLink>
+
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
+            </div>
+        </template>
+
+        <template v-slot:update-time>
             <div class="d-flex flex-gapx-1 flex-gapy-1 flex-wrap py-2">
                 <span v-if="props.section" class="tag info">
                     <FontAwesomeIcon :icon="faLayerGroup" />
@@ -231,43 +252,14 @@ function openUploadIfNeeded() {
                     </GLink>
                 </span>
             </div>
-
-            <div v-if="props.fetching">
-                <BSkeleton />
-            </div>
-
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-if="props.summary && !showHelp" v-html="props.summary"></div>
-
-            <div v-if="props.help" class="mt-2">
-                <GLink v-if="!showHelp" unselectable @click="() => (showHelp = true)">
-                    <FontAwesomeIcon :icon="faAngleDown" />
-                    Show tool help
-                </GLink>
-                <GLink v-else unselectable @click="() => (showHelp = false)">
-                    <FontAwesomeIcon :icon="faAngleUp" />
-                    Hide tool help
-                </GLink>
-
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
-            </div>
-        </div>
-    </div>
+        </template>
+    </GCard>
 </template>
 
 <style lang="scss" scoped>
 @import "theme/blue.scss";
 
-.tool-list-item {
-    border-left: solid 3px $brand-secondary;
-    border-radius: 0.25rem;
-
-    .tool-list-item-content {
-        padding-left: 0.5rem;
-    }
-}
-
+// Styling for the section and ontology tags
 .tool-info-popover,
 .tool-list-item {
     .tag {
@@ -295,11 +287,6 @@ function openUploadIfNeeded() {
     .toggle {
         background-color: scale-color($brand-toggle, $lightness: +75%);
         border-color: scale-color($brand-toggle, $lightness: +55%);
-    }
-
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
     }
 }
 </style>

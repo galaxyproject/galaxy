@@ -5,7 +5,7 @@ import { watchEffect } from "vue";
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
 import ScrollList from "../ScrollList/ScrollList.vue";
-import ToolsListItem from "./ToolsListItem.vue";
+import ToolsListCard from "./ToolsListCard.vue";
 
 /** Number of tools to fetch the help data for at a time. */
 const FETCH_LIMIT = 4;
@@ -61,7 +61,7 @@ watchEffect(() => {
         :load-disabled="!props.tools.length"
         show-count-in-footer>
         <template v-slot:item="{ item }">
-            <ToolsListItem
+            <ToolsListCard
                 :id="item.id"
                 :key="item.id"
                 :name="item.name"
@@ -82,11 +82,3 @@ watchEffect(() => {
         </template>
     </ScrollList>
 </template>
-
-<style lang="scss" scoped>
-:deep(.scroll-list-container) {
-    .list-group {
-        gap: 1rem;
-    }
-}
-</style>

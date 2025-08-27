@@ -94,10 +94,6 @@ watch(
     },
 );
 
-function onSetError(e) {
-    errorText.value = e;
-}
-
 const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
@@ -140,7 +136,7 @@ const canGenerateTours = computed(() =>
         :version="props.version">
         <template v-slot:buttons>
             <GButtonGroup class="tool-card-buttons">
-                <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
+                <ToolFavoriteButton v-if="hasUser" :id="props.id" />
                 <ToolVersionsButton
                     v-if="showVersions"
                     :version="props.version"
