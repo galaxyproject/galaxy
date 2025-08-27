@@ -19,7 +19,7 @@ If Galaxy complains about the version of Python you are using:
     - Otherwise:
         1. Make sure a supported version of Python is installed.
         2. Verify that the Python interpreter you want to use is first in the
-           output of `which -a python3 python`. If this is not the case, just
+           output of `which -a python3 python`. If this is not the case,
            execute: `export GALAXY_PYTHON=/path/to/python`
 
 4. Remove compiled mako templates when upgrading from Python 2:
