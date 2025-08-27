@@ -1192,6 +1192,8 @@ test_data:
         # do the raw re-import as a regular user we expect a 403 error.
         response = self.workflow_populator.create_workflow_response(downloaded_workflow)
         self._assert_status_code_is(response, 403)
+        response_dict = response.json()
+        assert response_dict["err_msg"] == "Only admin users can create tools dynamically."
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
