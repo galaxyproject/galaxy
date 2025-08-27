@@ -234,6 +234,8 @@ class CredentialsService:
             user.id, source_type, source_id, source_version
         )
         user_credentials_dict: Dict[int, Dict[str, Any]] = {}
+        groups_dict: Dict[Tuple[int, int], Dict[str, Any]] = {}
+
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
             definition = self.source_type_credentials[cast(SOURCE_TYPE, user_credentials.source_type)](
@@ -255,13 +257,14 @@ class CredentialsService:
                     "source_version": user_credentials.source_version,
                     "name": user_credentials.name,
                     "version": user_credentials.version,
-                    "groups": {},
+                    "current_group_id": user_credentials.current_group_id,
+                    "groups": [],
                 },
             )
 
-            user_credentials_dict[cred_id]["groups"].setdefault(
-                # TODO: The id should be encoded
-                credentials_group.id,
+            group_key = (cred_id, credentials_group.id)
+            groups_dict.setdefault(
+                group_key,
                 {
                     "id": credentials_group.id,
                     "name": credentials_group.name,
@@ -281,8 +284,15 @@ class CredentialsService:
                     "value": credential.value,
                 }
             target_list = "secrets" if credential.is_secret else "variables"
-            # TODO: The id should be encoded
-            user_credentials_dict[cred_id]["groups"][credentials_group.id][target_list].append(entry)
+            groups_dict[group_key][target_list].append(entry)
+
+        # Convert groups from dictionary to list for each user credentials
+        for cred_id, cred_data in user_credentials_dict.items():
+            cred_data["groups"] = [
+                CredentialGroupResponse(**group_data)
+                for (c_id, g_id), group_data in groups_dict.items()
+                if c_id == cred_id
+            ]
 
         user_credentials_list = [UserCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
         return UserCredentialsListResponse(root=user_credentials_list)

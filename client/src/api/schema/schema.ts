@@ -22130,9 +22130,7 @@ export interface components {
             /** Current Group Id */
             current_group_id?: string | null;
             /** Groups */
-            groups: {
-                [key: string]: components["schemas"]["CredentialGroupResponse"];
-            };
+            groups: components["schemas"]["CredentialGroupResponse"][];
             /**
              * Id
              * @example 0123456789ABCDEF

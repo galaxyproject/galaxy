@@ -28,6 +28,7 @@ class SecretResponse(CredentialResponse):
     is_set: bool
 
 
+# TODO: ServiceCredentialsGroupResponse
 class CredentialGroupResponse(Model):
     id: EncodedDatabaseIdField
     name: str
@@ -47,6 +48,7 @@ class CredentialDefinitionsResponse(Model):
     secrets: List[CredentialDefinitionResponse]
 
 
+# TODO: Rename the class to UserSourceServicesResponse
 class UserCredentialsResponse(Model):
     user_id: EncodedDatabaseIdField
     id: EncodedDatabaseIdField
@@ -56,7 +58,7 @@ class UserCredentialsResponse(Model):
     name: str
     version: str
     current_group_id: Optional[EncodedDatabaseIdField] = None
-    groups: Dict[str, CredentialGroupResponse]
+    groups: List[CredentialGroupResponse]
 
 
 class UserCredentialsListResponse(RootModel):
