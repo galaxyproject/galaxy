@@ -39,7 +39,7 @@ module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
     // Detect if running under webpack-dev-server
-    const isDevServer = argv.$0 && argv.$0.includes("webpack-dev-server");
+    const isDevServer = Boolean(process.env.WEBPACK_SERVE);
 
     let minimizations = {};
     if (targetEnv == "production") {
