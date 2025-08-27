@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { watchEffect } from "vue";
 
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
+import LoadingSpan from "../LoadingSpan.vue";
 import ScrollList from "../ScrollList/ScrollList.vue";
 import ToolsListCard from "./ToolsListCard.vue";
 
@@ -60,6 +62,12 @@ watchEffect(() => {
         name-plural="tools"
         :load-disabled="!props.tools.length"
         show-count-in-footer>
+        <template v-slot:loading>
+            <BAlert v-if="props.tools.length" show>
+                <LoadingSpan message="Loading tools" />
+            </BAlert>
+        </template>
+
         <template v-slot:item="{ item }">
             <ToolsListCard
                 :id="item.id"

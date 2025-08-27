@@ -202,8 +202,8 @@ watch(
                 role="list">
                 <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
                 <BListGroup v-else>
-                    <slot v-if="busy && items.length === 0" name="loading">
-                        <BAlert variant="info" show>
+                    <slot v-if="items.length === 0" name="loading">
+                        <BAlert v-if="busy" variant="info" show>
                             <LoadingSpan :message="`Loading ${props.namePlural}`" />
                         </BAlert>
                     </slot>
