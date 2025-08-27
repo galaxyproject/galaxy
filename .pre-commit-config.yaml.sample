@@ -13,6 +13,9 @@ repos:
     - id: prettier
       additional_dependencies:
         - prettier@3.6.2 # SEE: https://github.com/pre-commit/pre-commit/issues/3133
+      exclude_types:  # .prettierignore ignored apparently ...
+        - yaml
+        - json
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0  # Use the ref you want to point at
     hooks:
