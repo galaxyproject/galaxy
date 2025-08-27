@@ -1,3 +1,6 @@
+/** Terms to identify summary sections in the help text */
+const SUMMARY_HEADER_TERMS = ["what it does", "synopsis", "syntax", "purpose", "what this tool does"];
+
 /** Given the help text, extracts and returns a summary by detecting relevant HTML elements
  * that could contain a short description of the tool.
  */
@@ -6,11 +9,10 @@ export function parseHelpForSummary(help: string): string {
     const parser = new DOMParser();
     const helpDoc = parser.parseFromString(help, "text/html");
 
-    const terms = ["what it does", "synopsis", "syntax", "purpose"];
     const xpaths: string[] = [];
 
     // Generate XPath expressions for each term
-    terms.forEach((term) => {
+    SUMMARY_HEADER_TERMS.forEach((term) => {
         // Case-insensitive strong element check
         xpaths.push(
             `//strong[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ?', 'abcdefghijklmnopqrstuvwxyz'), '${term}')]/../following-sibling::*`,
