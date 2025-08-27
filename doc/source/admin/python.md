@@ -1,6 +1,6 @@
 # Supported Python versions
 
-Galaxy's core functionality is currently supported on Python **>=3.8** .
+Galaxy's core functionality is currently supported on Python **>=3.9** .
 
 If Galaxy complains about the version of Python you are using:
 
@@ -19,21 +19,8 @@ If Galaxy complains about the version of Python you are using:
     - Otherwise:
         1. Make sure a supported version of Python is installed.
         2. Verify that the Python interpreter you want to use is first in the
-           output of `which -a python3 python` (or `which -a python` if you are
-           using Galaxy <=19.09). If this is not the case:
-           - If you are using Galaxy >= 20.01, just execute:
-             `export GALAXY_PYTHON=/path/to/python`
-           - If instead you are using an older version of Galaxy, you can
-            manipulate your shell's `PATH` variable to place the correct version
-            first. This can be done for just Python by creating a new directory,
-            adding a symbolic link to `python` in there, and putting that
-            directory at the front of `PATH`:
-
-              ```sh
-              % mkdir ~/galaxy-python
-              % ln -s /path/to/python ~/galaxy-python/python
-              % export PATH=~/galaxy-python:$PATH
-              ```
+           output of `which -a python3 python`. If this is not the case, just
+           execute: `export GALAXY_PYTHON=/path/to/python`
 
 4. Remove compiled mako templates when upgrading from Python 2:
      ```sh
