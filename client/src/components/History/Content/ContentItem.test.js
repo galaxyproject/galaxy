@@ -6,6 +6,7 @@ import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import ContentItem from "./ContentItem.vue";
 
@@ -22,6 +23,8 @@ jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
     useRouter: jest.fn(() => ({})),
 }));
+
+setupSelectableMock();
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});

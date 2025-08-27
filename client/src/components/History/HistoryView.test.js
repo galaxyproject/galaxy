@@ -7,6 +7,7 @@ import { setupMockConfig } from "tests/jest/mockConfig";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
@@ -18,6 +19,8 @@ const localVue = getLocalVue();
 localVue.use(VueRouter);
 
 jest.mock("stores/services/history.services");
+
+setupSelectableMock();
 
 const { server, http } = useServerMock();
 
