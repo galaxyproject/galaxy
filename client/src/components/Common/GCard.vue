@@ -510,7 +510,7 @@ function onKeyDown(event: KeyboardEvent) {
                                     </slot>
                                 </div>
 
-                                <div :id="getElementId(props.id, 'indicators')">
+                                <div :id="getElementId(props.id, 'indicators')" class="align-self-baseline">
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators">
                                             <BButton
