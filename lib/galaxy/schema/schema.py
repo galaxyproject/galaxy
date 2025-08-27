@@ -1253,7 +1253,7 @@ class HDCASummary(HDCACommon, WithModelClass):
     )
     contents_url: ContentsUrlField
     collection_id: DatasetCollectionId
-    store_times_summary: Optional[List[OldestCreateTimeByObjectStoreId]] = Field(
+    store_times_summary: Optional[list[OldestCreateTimeByObjectStoreId]] = Field(
         None,
         title="Store Times Summary",
         description=(
