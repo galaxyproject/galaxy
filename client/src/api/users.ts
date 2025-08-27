@@ -38,11 +38,12 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
     return toQuotaUsage(data);
 }
 
+export type ServiceCredentialsGroup = components["schemas"]["CredentialGroupResponse"];
 export type CreateSourceCredentialsPayload = components["schemas"]["CreateSourceCredentialsPayload"];
+export type UserCredentialsResponse = components["schemas"]["UserCredentialsResponse"];
 export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
 export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
-export type UserCredentials = components["schemas"]["UserCredentialsResponse"];
-export type ServiceVariableDefinition = components["schemas"]["CredentialDefinitionResponse"];
+export type UserSourceService = components["schemas"]["UserCredentialsResponse"];
 
 export function transformToSourceCredentials(toolId: string, toolVersion: string): SourceCredentialsDefinition {
     const { getToolCredentialsDefinitions } = useToolCredentialsDefinitionsStore();
@@ -77,6 +78,13 @@ export function getKeyFromCredentialsIdentifier(
     return `${credentialsIdentifier.name}-${credentialsIdentifier.version}`;
 }
 
+export interface ServiceParameterDefinition {
+    readonly name: string;
+    readonly label: string;
+    readonly optional: boolean;
+    readonly description: string;
+}
+
 /**
  * Represents the definition of credentials for a particular service.
  * For example, a tool may have use an array of services, each with its own credentials.
@@ -88,8 +96,8 @@ export function getKeyFromCredentialsIdentifier(
 export interface ServiceCredentialsDefinition extends ServiceCredentialsIdentifier {
     readonly label?: string;
     readonly description?: string;
-    readonly secrets: Readonly<ServiceVariableDefinition[]>;
-    readonly variables: Readonly<ServiceVariableDefinition[]>;
+    readonly secrets: Readonly<ServiceParameterDefinition[]>;
+    readonly variables: Readonly<ServiceParameterDefinition[]>;
 }
 
 /**
