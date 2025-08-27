@@ -10,7 +10,6 @@ import { rootResponse } from "@/components/FilesDialog/testingData";
 import FormDirectory from "./FormDirectory.vue";
 import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
 
-const localVue = getLocalVue();
 jest.mock("app");
 
 const { server, http } = useServerMock();
@@ -35,7 +34,7 @@ async function validateLatestEmittedPath(wrapper, expectedPath) {
     // also manually change prop value to be able to test the value being displayed
     await wrapper.setProps({ value: latestPath });
     const fullPathDisplayed = wrapper.find("[data-description='directory full path']");
-    expect(fullPathDisplayed.text()).toBe(`Directory Path: ${expectedPath}`);
+    expect(fullPathDisplayed.text()).toBe(`Directory Path:${expectedPath}`);
 }
 
 describe("DirectoryPathEditableBreadcrumb", () => {
@@ -61,10 +60,12 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     const saveNewChunk = async (path) => {
         // enter a new path chunk
         const input = wrapper.find("#path-input-breadcrumb");
-        await input.setValue(path);
+        input.element.value = path;
+        await input.trigger("input");
         expect(input.element.value).toBe(path);
 
-        input.trigger("keyup.enter");
+        // Trigger the Enter keyup event to call addPath method
+        await input.trigger("keyup", { key: "Enter" });
         return input;
     };
 
@@ -80,19 +81,22 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         );
 
         const pinia = createPinia();
+        const globalConfig = getLocalVue();
 
         wrapper = mount(FormDirectory, {
-            propsData: {
+            props: {
                 value: null,
             },
-            localVue: localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
         await flushPromises();
     });
     afterEach(async () => {
         if (wrapper) {
-            wrapper.destroy();
+            wrapper.unmount();
         }
         wrapper = undefined;
     });
@@ -117,7 +121,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const chunks = testingData.pathChunks.map((e) => e.pathChunk);
         // every item should be rendered
         for (let i = 0; i < regularPathElements.length; i++) {
-            const text = regularPathElements.at(i).text();
+            const text = regularPathElements[i].text();
             expect(chunks.includes(text)).toBe(true);
         }
     });
@@ -146,7 +150,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // should be the same name plus additional item
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
         // find newly added chunk
-        const addedChunk = wrapper.findAll("li.breadcrumb-item button").wrappers.find((e) => e.text() === validPath);
+        const addedChunk = wrapper.findAll("li.breadcrumb-item button").find((e) => e.text() === validPath);
 
         await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);
 

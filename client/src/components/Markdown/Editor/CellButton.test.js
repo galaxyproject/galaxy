@@ -3,14 +3,16 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Target from "./CellButton.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function mountTarget(props = {}) {
     return mount(Target, {
-        localVue,
-        propsData: props,
-        stubs: {
-            FontAwesomeIcon: true,
+        props,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 }

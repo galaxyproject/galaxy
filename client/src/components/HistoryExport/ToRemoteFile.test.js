@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToRemoteFile from "./ToRemoteFile.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const TEST_HISTORY_ID = "hist1235";
 const TEST_JOB_ID = "job123789";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
@@ -21,10 +21,10 @@ describe("ToRemoteFile.vue", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         wrapper = shallowMount(ToRemoteFile, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 

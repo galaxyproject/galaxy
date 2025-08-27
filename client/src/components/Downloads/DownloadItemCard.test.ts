@@ -7,7 +7,7 @@ import type { MonitoringData, PersistentProgressTaskMonitorResult } from "@/comp
 
 import DownloadItemCard from "./DownloadItemCard.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 jest.mock("@/components/TagsMultiselect/StatelessTags.vue", () => ({
     name: "StatelessTags",
@@ -87,8 +87,8 @@ describe("DownloadItemCard.vue", () => {
     function mountDownloadItemCard(options: { monitoringData?: MonitoringData } = {}) {
         const monitoringData = options.monitoringData || baseMonitoringData;
         return mount(DownloadItemCard as object, {
-            propsData: { monitoringData },
-            localVue,
+            props: { monitoringData },
+            global: globalConfig.global,
         });
     }
 
@@ -194,7 +194,7 @@ describe("DownloadItemCard.vue", () => {
         await goToButton.trigger("click");
 
         expect(wrapper.emitted("onGoTo")).toBeTruthy();
-        expect(wrapper.emitted("onGoTo")?.[0][0]).toContain(baseMonitoringData.request.object.id);
+        expect(wrapper.emitted("onGoTo")?.[0]![0]).toContain(baseMonitoringData.request.object.id);
     });
 
     it("emits onDownload when Download is clicked", async () => {
@@ -209,7 +209,7 @@ describe("DownloadItemCard.vue", () => {
         await downloadButton.trigger("click");
 
         expect(wrapper.emitted("onDownload")).toBeTruthy();
-        expect(wrapper.emitted("onDownload")?.[0][0]).toContain(fakeTaskId);
+        expect(wrapper.emitted("onDownload")?.[0]![0]).toContain(fakeTaskId);
     });
 
     it("emits onDelete when Remove is clicked", async () => {
@@ -224,7 +224,7 @@ describe("DownloadItemCard.vue", () => {
         await removeButton.trigger("click");
 
         expect(wrapper.emitted("onDelete")).toBeTruthy();
-        expect(wrapper.emitted("onDelete")?.[0][0]).toBe(baseMonitoringData.request);
+        expect(wrapper.emitted("onDelete")?.[0]![0]).toBe(baseMonitoringData.request);
     });
 
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {

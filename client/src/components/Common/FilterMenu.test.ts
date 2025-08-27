@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -14,7 +14,7 @@ const { server, http } = useServerMock();
 
 setupSelectableMock();
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const options = [
     { text: "Any", value: "any" },
     { text: "Yes", value: true },
@@ -73,7 +73,7 @@ const validTestFilters = {
 const TestFilters = new Filtering(validTestFilters, undefined);
 
 describe("FilterMenu", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(() => {
         server.use(
@@ -92,19 +92,22 @@ describe("FilterMenu", () => {
     });
 
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
+        const pinia = createTestingPinia();
         wrapper = mount(FilterMenu as object, {
-            propsData: {
+            props: {
                 name: name,
                 placeholder: placeholder,
                 filterClass: filterClass,
                 filterText: "",
                 showAdvanced: false,
             },
-            localVue,
-            stubs: {
-                icon: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
-            pinia: createTestingPinia(),
         });
     }
 
@@ -116,15 +119,22 @@ describe("FilterMenu", () => {
 
     async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
-            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+            const showAdvancedEvents = wrapper.emitted("update:show-advanced");
+            if (showAdvancedEvents) {
+                const toggleEmit = showAdvancedEvents.length - 1;
+                const showAdvancedEvent = showAdvancedEvents[toggleEmit]?.[0];
+                expect(showAdvancedEvent).toEqual(showAdvanced);
+                await wrapper.setProps({ showAdvanced: showAdvancedEvent });
+            }
         }
-        const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
-        const receivedDict = filterClass.getQueryDict(receivedText);
-        const parsedDict = filterClass.getQueryDict(filterText);
-        expect(receivedDict).toEqual(parsedDict);
+        const filterTextEvents = wrapper.emitted("update:filter-text");
+        if (filterTextEvents) {
+            const filterEmit = filterTextEvents.length - 1;
+            const receivedText = filterTextEvents[filterEmit]?.[0] as string;
+            const receivedDict = filterClass.getQueryDict(receivedText);
+            const parsedDict = filterClass.getQueryDict(filterText);
+            expect(receivedDict).toEqual(parsedDict);
+        }
     }
 
     it("test generic test items filter panel search", async () => {
@@ -170,7 +180,7 @@ describe("FilterMenu", () => {
 
         // First 4 filters are normal, non ranged input fields
         expectedFilters.forEach((expectedFilter, i) => {
-            const label = labels.at(i);
+            const label = labels[i]!;
             expect(label.text()).toBe(expectedFilter.label);
             if (i < 4) {
                 const filterInput = wrapper.find(`[placeholder='${expectedFilter.placeholder}']`);
@@ -195,19 +205,19 @@ describe("FilterMenu", () => {
         const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAll(".btn-secondary");
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
-            expect(radioBtnGrp.at(i).text()).toBe(options[i]?.text);
-            expect(radioBtnGrp.at(i).props().value).toBe(options[i]?.value);
-            expect(radioBtnGrp.at(i).props().checked).toBe(null);
+            expect(radioBtnGrp[i]!.text()).toBe(options[i]?.text);
+            expect(radioBtnGrp[i]!.attributes("value")).toBe(options[i]?.value);
+            expect(radioBtnGrp[i]!.attributes("checked")).toBe(undefined);
         }
-        await radioBtnGrp.at(1).find("input").setChecked(); // click "Yes"
+        await radioBtnGrp[1]!.find("input").trigger("click"); // click "Yes"
         // boolean filter
         const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
-        expect(boolBtnGrp.at(0).text()).toBe("Yes");
-        expect(boolBtnGrp.at(0).props().value).toBe(true);
-        expect(boolBtnGrp.at(1).text()).toBe("No");
-        expect(boolBtnGrp.at(1).props().value).toBe("any");
-        await boolBtnGrp.at(1).find("input").setChecked(); // click "No"
+        expect(boolBtnGrp[0]!.text()).toBe("Yes");
+        expect(boolBtnGrp[0]!.attributes("value")).toBe("true");
+        expect(boolBtnGrp[1]!.text()).toBe("No");
+        expect(boolBtnGrp[1]!.attributes("value")).toBe("any");
+        await boolBtnGrp[1]!.find("input").trigger("click"); // click "No"
 
         // perform search
         await performSearch();
@@ -237,7 +247,7 @@ describe("FilterMenu", () => {
         let deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
         expect(deletedFilterActiveBtn.text()).toBe("No");
 
-        await deletedFilterAnyBtn.find("input").setChecked();
+        await deletedFilterAnyBtn.find("input").trigger("click");
 
         // now active button for deleted filter should be "Any"
         deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
@@ -260,7 +270,7 @@ describe("FilterMenu", () => {
         let visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
         expect(visibleFilterActiveBtn.text()).toBe("Yes");
 
-        await visibleFilterAnyBtn.find("input").setChecked();
+        await visibleFilterAnyBtn.find("input").trigger("click");
 
         // now active button for visible filter should be "Any"
         visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
@@ -295,7 +305,8 @@ describe("FilterMenu", () => {
 
         // -------- Testing deleted filter first:  ---------
         const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
-        await deletedFilterCheckbox.setChecked();
+        (deletedFilterCheckbox.element as HTMLInputElement).checked = true;
+        await deletedFilterCheckbox.trigger("change");
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });
 });

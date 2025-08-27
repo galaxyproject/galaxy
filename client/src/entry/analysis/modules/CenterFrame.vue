@@ -69,7 +69,7 @@ function onLoad(ev: Event) {
         if (location && location.host && location.pathname != "/") {
             emit("load");
         }
-    } catch (err) {
+    } catch {
         console.warn("CenterFrame - onLoad location access forbidden.", ev, location);
     }
 }

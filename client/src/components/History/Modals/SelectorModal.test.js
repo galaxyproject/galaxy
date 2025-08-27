@@ -1,7 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -11,7 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 import SelectorModal from "./SelectorModal.vue";
 import GCard from "components/Common/GCard.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const CURRENT_HISTORY_ID = "COOL_ID";
 const getFakeHistorySummaries = (num, selectedIndex = 0) => {
@@ -54,8 +54,8 @@ describe("History SelectorModal.vue", () => {
     async function mountWith(props) {
         server.use(
             http.get("/api/histories", ({ response, query }) => {
-                const offset = Number(query.get("offset")) ?? 0;
-                const limit = Number(query.get("limit")) ?? 10;
+                const offset = Number(query.get("offset")) || 0;
+                const limit = Number(query.get("limit")) || 10;
                 return response(200).json(allHistories.slice(offset, offset + limit));
             }),
             http.get("/api/histories/count", ({ response }) => {
@@ -64,12 +64,15 @@ describe("History SelectorModal.vue", () => {
         );
 
         const pinia = createPinia();
+        setActivePinia(pinia);
         wrapper = mount(SelectorModal, {
-            propsData: props,
-            localVue,
-            pinia,
-            stubs: {
-                icon: { template: "<div></div>" },
+            props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
         });
 
@@ -96,7 +99,7 @@ describe("History SelectorModal.vue", () => {
     it("paginates the histories", async () => {
         await mountWith(PROPS_FOR_MODAL);
 
-        let displayedRows = wrapper.findAllComponents(GCard).wrappers;
+        let displayedRows = wrapper.findAllComponents(GCard);
         expect(displayedRows.length).toBe(10);
         expect(wrapper.find("[data-description='load more items button']").exists()).toBe(true);
 
@@ -105,7 +108,7 @@ describe("History SelectorModal.vue", () => {
             histories: historyStore.histories,
         });
 
-        displayedRows = wrapper.findAllComponents(GCard).wrappers;
+        displayedRows = wrapper.findAllComponents(GCard);
         expect(displayedRows.length).toBe(15);
         expect(wrapper.find("[data-description='load more items button']").exists()).toBe(false);
     });
@@ -113,21 +116,21 @@ describe("History SelectorModal.vue", () => {
     it("emits selectHistory with the correct history ID when a row is clicked", async () => {
         await mountWith(PROPS_FOR_MODAL);
 
-        expect(wrapper.emitted()["selectHistory"]).toBeUndefined();
+        expect(wrapper.emitted("selectHistory")).toBeUndefined();
 
         const targetHistoryId = "ID-2";
         const targetRow = wrapper.find(`[data-pk="${targetHistoryId}"]`);
         await targetRow.trigger("click");
 
-        expect(wrapper.emitted()["selectHistory"]).toBeDefined();
-        expect(wrapper.emitted()["selectHistory"][0][0].id).toBe(targetHistoryId);
+        expect(wrapper.emitted("selectHistory")).toBeDefined();
+        expect(wrapper.emitted("selectHistory")[0][0].id).toBe(targetHistoryId);
     });
 
     describe("Multi-selection Mode", () => {
         it("should select multiple histories", async () => {
             await mountWith(PROPS_FOR_MODAL_MULTIPLE_SELECT);
 
-            expect(wrapper.emitted()["selectHistories"]).toBeUndefined();
+            expect(wrapper.emitted("selectHistories")).toBeUndefined();
 
             const targetHistoryId1 = "ID-1";
             const targetRow1 = wrapper.find(`[data-pk="${targetHistoryId1}"]`);
@@ -137,14 +140,14 @@ describe("History SelectorModal.vue", () => {
             const targetRow2 = wrapper.find(`[data-pk="${targetHistoryId2}"]`);
             await targetRow2.trigger("click");
 
-            const selectedHistories = wrapper.findAll(`.${SELECTED_HISTORY_CLASS}`).wrappers;
+            const selectedHistories = wrapper.findAll(`.${SELECTED_HISTORY_CLASS}`);
             expect(selectedHistories.length).toBe(2);
 
             const button = wrapper.find("[data-description='change selected histories button']");
 
             await button.trigger("click");
 
-            expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
+            expect(wrapper.emitted("selectHistories")[0][0][0].id).toBe(targetHistoryId1);
         });
     });
 });

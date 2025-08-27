@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { nextTick } from "vue";
@@ -10,16 +10,18 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
-async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
+async function mountComponent(component: object, propsData: object = {}): Promise<VueWrapper<any>> {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(component, {
-        localVue,
-        propsData,
-        pinia,
+    const wrapper = mount(component as any, {
+        props: propsData,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
 
     await flushPromises();

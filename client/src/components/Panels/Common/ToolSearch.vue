@@ -2,8 +2,8 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
-import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, toRaw, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import { searchToolsByKeys } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -262,9 +262,28 @@ function checkQuery(q: string) {
     }
 }
 
+// Deep conversion of reactive objects to plain objects for web worker
+function deepToRaw<T>(sourceObj: T): T {
+    const objectIterator = (input: any): any => {
+        if (Array.isArray(input)) {
+            return input.map((item) => objectIterator(item));
+        } else if (input !== null && typeof input === "object") {
+            const target = toRaw(input);
+            const output: any = {};
+            for (const key in target) {
+                output[key] = objectIterator(target[key]);
+            }
+            return output;
+        }
+        return input;
+    };
+    return objectIterator(sourceObj);
+}
+
 function post(message: object) {
     if (props.useWorker) {
-        searchWorker.value?.postMessage(message);
+        // Deep convert the entire message to a plain object to avoid proxy cloning issues
+        searchWorker.value?.postMessage(deepToRaw(message));
     } else {
         nextTick(() => {
             handlePost({ data: message as SearchEventData });
@@ -281,15 +300,15 @@ function onAdvancedSearch(filters: any) {
     <div v-if="searchWorker || !props.useWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
+            v-model:filter-text="localFilterText"
+            v-model:show-advanced="propShowAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
             name="Tools"
             :placeholder="props.placeholder"
             :debounce-delay="200"
             :filter-class="ToolFilters"
-            :filter-text.sync="localFilterText"
             has-help
             :loading="props.queryPending"
-            :show-advanced.sync="propShowAdvanced"
             menu-type="separate"
             @on-search="onAdvancedSearch">
             <template v-slot:menu-help-text>

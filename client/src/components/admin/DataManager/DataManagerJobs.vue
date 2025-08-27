@@ -11,10 +11,7 @@
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -24,7 +21,7 @@
                 </b-row>
                 <b-row>
                     <b-col>
-                        <GButton :pressed.sync="showCommandLine" outline>
+                        <GButton v-model:pressed="showCommandLine" outline>
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
                         </GButton>
                     </b-col>
@@ -52,8 +49,8 @@
                         </GButton>
                         <GButton
                             v-if="!showCommandLine"
+                            v-model:pressed="row.detailsShowing"
                             outline
-                            :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </GButton>

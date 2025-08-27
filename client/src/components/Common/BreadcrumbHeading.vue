@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
-import type { RawLocation } from "vue-router";
-import { useRouter } from "vue-router/composables";
+import type { RouteLocationRaw } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 import localize from "@/utils/localization";
@@ -17,19 +17,19 @@ interface Props {
 const props = defineProps<Props>();
 
 const router = useRouter();
+const route = useRoute();
 
-function isPathActive(path: RawLocation): boolean {
-    return router.currentRoute.path === router.resolve(path).route.path;
+function isPathActive(path: RouteLocationRaw): boolean {
+    return route.path === router.resolve(path).path;
 }
 </script>
 
 <template>
     <div class="breadcrumb-heading mb-2">
         <Heading h1 separator inline size="lg" class="breadcrumb-heading-header mr-2 mb-0">
-            <template v-for="(item, index) in props.items">
+            <template v-for="(item, index) in props.items" :key="index">
                 <BLink
                     v-if="item.to && !isPathActive(item.to)"
-                    :key="index"
                     v-b-tooltip.hover.bottom.noninteractive
                     :title="`Go back to ${localize(item.title)}`"
                     :to="item.to"
@@ -37,7 +37,7 @@ function isPathActive(path: RawLocation): boolean {
                     <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
                 </BLink>
-                <span v-else :key="'else-' + index" class="breadcrumb-heading-header-inactive">
+                <span v-else class="breadcrumb-heading-header-inactive">
                     <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
                 </span>

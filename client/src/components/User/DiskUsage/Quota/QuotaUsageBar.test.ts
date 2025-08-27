@@ -1,5 +1,5 @@
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
@@ -22,7 +22,7 @@ const UNLIMITED_USAGE: QuotaUsage = toQuotaUsage({
 });
 
 function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
-    const wrapper = mount(QuotaUsageBar as object, { propsData: { quotaUsage }, localVue });
+    const wrapper = mount(QuotaUsageBar as any, { props: { quotaUsage }, global: localVue.global });
     return wrapper;
 }
 

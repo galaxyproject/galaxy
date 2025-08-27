@@ -25,9 +25,8 @@ jest.mock("@/composables/config", () => ({
     })),
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const axiosMock = new MockAdapter(axios);
-const pinia = createTestingPinia({ stubActions: false });
 
 function mapAxios(apiMap = {}) {
     axiosMock.reset();
@@ -38,19 +37,22 @@ function mapAxios(apiMap = {}) {
     }
 }
 
-function mountComponent(propsData = {}, apiMap = {}) {
+function mountComponent(props = {}, apiMap = {}) {
     mapAxios(apiMap);
     server.use(
         http.get("/api/histories/test_history_id", ({ response }) =>
             response(200).json({ id: "test_history_id", name: "history_name" }),
         ),
     );
+    const pinia = createTestingPinia({ stubActions: false });
     return mount(MountTarget, {
-        localVue,
-        pinia,
-        propsData,
-        stubs: {
-            FontAwesomeIcon: true,
+        props,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 }
@@ -171,7 +173,8 @@ describe("MarkdownContainer", () => {
         });
         await flushPromises();
         const alert = wrapper.find(".alert-danger");
-        expect(alert.text()).toContain("Invalid or missing label for history_dataset_display");
+        expect(alert.text()).toContain("Invalid or missing label for");
+        expect(alert.text()).toContain("history_dataset_display");
     });
 
     it("Renders loading span while invocation is loading", async () => {

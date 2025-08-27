@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BAlert, BButton, BCard, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";

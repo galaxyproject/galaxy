@@ -10,7 +10,7 @@
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+        <b-modal v-model="showError" size="sm" :title="localize(errorTitle)" scrollable ok-only>
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </b-alert>
@@ -117,6 +117,7 @@ import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
+import { localize } from "utils/localization";
 
 import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";

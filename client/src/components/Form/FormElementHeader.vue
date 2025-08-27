@@ -57,12 +57,12 @@ const badgeData = computed(() => {
     <div class="d-flex align-items-center flex-gapx-1">
         <FormDataExtensions
             v-if="renderFormats"
+            v-model:formats-visible="formatsVisible"
             class="mr-1"
             popover
             minimal
             :extensions="props.extensions || []"
-            :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
+            :formats-button-id="formatsButtonId" />
         <slot name="badges" />
         <BBadge
             v-if="badgeData.message && props.type !== 'boolean'"

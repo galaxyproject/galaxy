@@ -17,7 +17,7 @@
                         :internal-search="false"
                         @input="valueChanged"
                         @search-change="searchChanged">
-                        <template slot="afterList">
+                        <template v-slot:afterList>
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { Services } from "components/Libraries/LibraryPermissions/services";
 import Vue from "vue";
@@ -73,6 +73,7 @@ export default {
             required: true,
         },
     },
+    emits: ["input"],
     data() {
         return {
             permissions: undefined,

@@ -1,15 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
-import VueRouter from "vue-router";
 
 import GenericElement from "./GenericElement";
 
 jest.mock("components/History/model/queries");
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const globalConfig = getLocalVue();
 
 describe("GenericElement", () => {
     let wrapper;
@@ -18,7 +15,7 @@ describe("GenericElement", () => {
         suppressLucideVue2Deprecation();
 
         wrapper = mount(GenericElement, {
-            propsData: {
+            props: {
                 dsc: {
                     elements: [
                         {
@@ -61,21 +58,23 @@ describe("GenericElement", () => {
                     ],
                 },
             },
-            localVue,
-            router,
-            pinia: createTestingPinia(),
+            ...globalConfig,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, createTestingPinia()],
+            },
         });
     });
 
     it("check basics", async () => {
         const contentItems = wrapper.findAll(".content-item");
         expect(contentItems.length).toBe(2);
-        expect(contentItems.at(0).attributes("data-hid")).toBe("1");
-        expect(contentItems.at(1).attributes("data-hid")).toBe("2");
-        await contentItems.at(1).find(".cursor-pointer").trigger("click");
+        expect(contentItems[0].attributes("data-hid")).toBe("1");
+        expect(contentItems[1].attributes("data-hid")).toBe("2");
+        await contentItems[1].find(".cursor-pointer").trigger("click");
         const contentExpanded = wrapper.findAll(".content-item");
         expect(contentExpanded.length).toBe(4);
-        expect(contentExpanded.at(2).attributes("data-hid")).toBe("3");
-        expect(contentExpanded.at(3).attributes("data-hid")).toBe("4");
+        expect(contentExpanded[2].attributes("data-hid")).toBe("3");
+        expect(contentExpanded[3].attributes("data-hid")).toBe("4");
     });
 });

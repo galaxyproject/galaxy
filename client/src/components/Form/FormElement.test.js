@@ -5,21 +5,21 @@ import FormHidden from "./Elements/FormHidden";
 import FormText from "./Elements/FormText";
 import FormElement from "./FormElement";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormElement", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(FormElement, {
-            propsData: {
+            props: {
                 id: "input",
                 value: "initial_value",
                 help: "help_text",
                 error: "error_text",
                 title: "title_text",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 

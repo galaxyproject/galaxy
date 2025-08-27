@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
@@ -14,7 +14,7 @@ jest.spyOn(window, "location", "get").mockImplementation(() => ({
 }));
 
 describe("NewUserConfirmation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let axiosMock: MockAdapter;
 
     beforeEach(() => {
@@ -36,7 +36,7 @@ describe("NewUserConfirmation", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(1);
 
-        const checkField = inputs.at(0);
+        const checkField = inputs[0]!;
         expect(checkField.attributes("type")).toBe("checkbox");
 
         const submitButton = wrapper.find("button[name='confirm']");
@@ -44,7 +44,7 @@ describe("NewUserConfirmation", () => {
 
         expect(axiosMock.history.post?.length).toBe(0);
 
-        await checkField.setChecked();
+        await checkField.setValue(true);
 
         await submitButton.trigger("click");
 

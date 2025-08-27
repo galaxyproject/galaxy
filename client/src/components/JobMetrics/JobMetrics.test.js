@@ -15,16 +15,20 @@ jest.mock("axios", () => ({
     },
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
+        const pinia = createTestingPinia();
+        setActivePinia(pinia);
         const wrapper = mount(JobMetrics, {
-            pinia: createTestingPinia(),
-            propsData: {
+            props: {
                 jobId: "9000",
             },
-            localVue,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
 
         await wrapper.vm.$nextTick();
@@ -54,10 +58,12 @@ describe("JobMetrics/JobMetrics.vue", () => {
         setActivePinia(pinia);
 
         const wrapper = mount(JobMetrics, {
-            localVue,
-            pinia,
-            propsData: {
+            props: {
                 jobId: JOB_ID,
+            },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
             },
         });
 
@@ -67,9 +73,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
         expect(metricsTables.length).toBe(2);
-        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).toBe("core");
-        expect(metricsTables.at(0).findAll("tr").length).toBe(2);
-        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).toBe("extended");
-        expect(metricsTables.at(1).findAll("tr").length).toBe(1);
+        expect(metricsTables[0].find(".metrics_plugin_title").text()).toBe("core");
+        expect(metricsTables[0].findAll("tr").length).toBe(2);
+        expect(metricsTables[1].find(".metrics_plugin_title").text()).toBe("extended");
+        expect(metricsTables[1].findAll("tr").length).toBe(1);
     });
 });

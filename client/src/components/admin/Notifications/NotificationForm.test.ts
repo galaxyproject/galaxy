@@ -2,10 +2,9 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import type Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -17,20 +16,22 @@ useServerMock();
 
 const SUBMIT_BUTTON_SELECTOR = "#notification-submit";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 async function mountNotificationForm(props?: object) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
     const wrapper = mount(NotificationForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 
@@ -40,7 +41,7 @@ async function mountNotificationForm(props?: object) {
 }
 
 describe("NotificationForm.vue", () => {
-    function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
+    function expectSubmitButton(wrapper: VueWrapper<any>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(

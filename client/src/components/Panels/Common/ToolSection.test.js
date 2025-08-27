@@ -13,33 +13,35 @@ useConfig.mockReturnValue({
     isConfigLoaded: true,
 });
 
-const localVue = getLocalVue();
-const pinia = createPinia();
-
 function sectionIsOpened(wrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
 }
 
+const globalConfig = getLocalVue();
+const pinia = createPinia();
+
 describe("ToolSection", () => {
     test("test tool section", () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     name: "name",
                 },
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
-        nameElement.trigger("click");
+        expect(nameElement[0].text()).toBe("name");
+        nameElement[0].trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
     });
 
     test("test tool section title", async () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     title: "tool_section",
                     elems: [
@@ -52,15 +54,17 @@ describe("ToolSection", () => {
                     ],
                 },
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
         expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
-        expect($names.at(1).text()).toBe("name");
+        expect($names[1].text()).toBe("name");
         const $label = wrapper.find(".title-link");
         expect($label.text()).toBe("tool_section");
         await $sectionName.trigger("click");
@@ -69,7 +73,7 @@ describe("ToolSection", () => {
 
     test("test tool slider state", async () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     title: "tool_section",
                     elems: [
@@ -83,8 +87,10 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
         expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");

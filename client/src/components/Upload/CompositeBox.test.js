@@ -3,11 +3,11 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./CompositeBox.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function getWrapper() {
     return mount(mountTarget, {
-        propsData: {
+        props: {
             defaultDbKey: "?",
             effectiveExtensions: [
                 {
@@ -32,7 +32,7 @@ function getWrapper() {
             historyId: "historyId",
             listDbKeys: [],
         },
-        localVue,
+        global: globalConfig.global,
     });
 }
 

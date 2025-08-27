@@ -35,7 +35,7 @@ describe("stores/jobMetricsStore", () => {
         const metrics = jobMetricsStore.getJobMetricsByJobId("123");
 
         expect(metrics.length).toBe(1);
-        expect(metrics[0]).toEqual(testPlugin);
+        expect(metrics[0]!).toEqual(testPlugin);
     });
 
     it("returns metrics by hda ID for dataset ID by default.", () => {
@@ -50,7 +50,7 @@ describe("stores/jobMetricsStore", () => {
         const metrics = jobMetricsStore.getJobMetricsByDatasetId("123");
 
         expect(metrics.length).toBe(1);
-        expect(metrics[0]).toEqual(testPlugin);
+        expect(metrics[0]!).toEqual(testPlugin);
     });
 
     it("returns metrics by Ldda ID for dataset ID when dataset type is not hda.", () => {
@@ -65,6 +65,6 @@ describe("stores/jobMetricsStore", () => {
         const metrics = jobMetricsStore.getJobMetricsByDatasetId("123", "not-hda");
 
         expect(metrics.length).toBe(1);
-        expect(metrics[0]).toEqual(testPlugin);
+        expect(metrics[0]!).toEqual(testPlugin);
     });
 });

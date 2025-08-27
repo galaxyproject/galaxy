@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watchEffect } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
 import {
@@ -30,12 +30,13 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const router = useRouter();
+const route = useRoute();
 
 const loading = ref(true);
 
 const model = computed<UserPreferencesModel | undefined>(() => {
-    if (router.currentRoute.params.id) {
-        return getUserPreferencesModel(router.currentRoute.params.id);
+    if (route.params?.id) {
+        return getUserPreferencesModel(route.params.id);
     } else if (isRegisteredUser(currentUser.value)) {
         return getUserPreferencesModel(currentUser.value.id);
     } else {

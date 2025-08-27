@@ -3,18 +3,20 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Target from "./FormElementLabel.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function mountTarget(props = {}, slots = {}) {
     return mount(Target, {
-        localVue,
-        propsData: props,
+        props,
         slots,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-        directives: {
-            localize: () => {},
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+            },
+            directives: {
+                localize: () => {},
+            },
         },
     });
 }
@@ -56,7 +58,7 @@ describe("FormElementLabel.vue", () => {
         });
         const asterisk = wrapper.find("small.text-danger");
         expect(asterisk.exists()).toBe(true);
-        expect(asterisk.text()).toBe("* required");
+        expect(asterisk.text()).toBe("*required");
     });
 
     it("should render nothing extra if required is false", () => {

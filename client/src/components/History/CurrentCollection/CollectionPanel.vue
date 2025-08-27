@@ -138,9 +138,9 @@ watch(
         <section class="dataset-collection-panel w-100 d-flex flex-column" :class="{ 'compact-panel': multiView }">
             <section>
                 <CollectionNavigation
+                    v-bind="$attrs"
                     :history-name="history.name"
-                    :selected-collections="selectedCollections"
-                    v-on="$listeners" />
+                    :selected-collections="selectedCollections" />
                 <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
                 <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>

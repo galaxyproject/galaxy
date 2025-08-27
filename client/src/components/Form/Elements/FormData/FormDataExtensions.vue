@@ -37,11 +37,11 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
+            v-model:pressed="localFormatsVisible"
             size="small"
             color="blue"
             transparent
-            inline
-            :pressed.sync="localFormatsVisible">
+            inline>
             <span v-localize>accepted formats</span>
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
@@ -49,8 +49,8 @@ const localFormatsVisible = computed({
         <component
             :is="props.popover ? BPopover : BCollapse"
             v-model="localFormatsVisible"
+            v-model:show="localFormatsVisible"
             :target="props.formatsButtonId"
-            :show.sync="localFormatsVisible"
             placement="bottom">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>

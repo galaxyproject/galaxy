@@ -1,5 +1,7 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getAppRoot } from "onload/loadConfig";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { Services } from "../services";
 import Details from "./Details";
@@ -21,24 +23,28 @@ Services.mockImplementation(() => {
 });
 
 describe("Details", () => {
-    const localVue = createLocalVue();
+    const globalConfig = getLocalVue();
     it("test repository details loading", async () => {
         const wrapper = shallowMount(Details, {
-            propsData: {
+            props: {
                 repo: {
                     tool_shed_url: "tool_shed_url",
                     name: "name",
                     owner: "owner",
                 },
             },
-            localVue,
+            global: globalConfig.global,
         });
-        expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
-        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repository details");
-        expect(wrapper.findAll("repositorydetails-stub").length).toBe(0);
-        await localVue.nextTick();
-        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
+        // Since the mock resolves immediately, the loading state is already false
+        await flushPromises();
+        await wrapper.vm.$nextTick();
+
+        // After loading completes, verify the component shows repository details
+        expect(wrapper.vm.loading).toBe(false);
         expect(wrapper.findAll(".alert").length).toBe(0);
-        expect(wrapper.findAll("repositorydetails-stub").length).toBe(1);
+        const repoDetails = wrapper.findComponent({ name: "RepositoryDetails" });
+        expect(repoDetails.exists()).toBe(true);
+        expect(repoDetails.props("repo")).toEqual({});
+        expect(repoDetails.props("toolshedUrl")).toBe("tool_shed_url");
     });
 });

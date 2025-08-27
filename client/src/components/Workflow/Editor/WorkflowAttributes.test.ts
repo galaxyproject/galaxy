@@ -25,7 +25,7 @@ describe("WorkflowAttributes", () => {
         suppressBootstrapVueWarnings();
 
         const pinia = createPinia();
-        const localVue = getLocalVue(true);
+        const globalConfig = getLocalVue(true);
 
         setActivePinia(pinia);
 
@@ -35,7 +35,7 @@ describe("WorkflowAttributes", () => {
         untypedParameters.getParameter("workflow_parameter_1");
 
         const wrapper = mount(WorkflowAttributes as object, {
-            propsData: {
+            props: {
                 id: "workflow_id",
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
@@ -44,17 +44,23 @@ describe("WorkflowAttributes", () => {
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },
-            stubs: {
-                LicenseSelector: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    LicenseSelector: true,
+                },
             },
-            localVue,
-            pinia,
         });
 
         await flushPromises();
 
         const userTagsStore = useUserTagsStore();
-        jest.spyOn(userTagsStore, "userTags", "get").mockReturnValue(autocompleteTags);
+        // Mock the userTags property directly
+        Object.defineProperty(userTagsStore, "userTags", {
+            get: () => autocompleteTags,
+            configurable: true,
+        });
         userTagsStore.onNewTagSeen = jest.fn();
         userTagsStore.onTagUsed = jest.fn();
         userTagsStore.onMultipleNewTagsSeen = jest.fn();
@@ -65,7 +71,7 @@ describe("WorkflowAttributes", () => {
 
         const name = wrapper.find("#workflow-name");
         expect((name.element as HTMLInputElement).value).toBe(TEST_NAME);
-        await wrapper.setProps({ name: "new_workflow_name" });
+        await wrapper.setProps({ name: "new_workflow_name" } as any);
         expect((name.element as HTMLInputElement).value).toBe("new_workflow_name");
 
         const version = wrapper.findAll(`#workflow-version-area > select > option`);
@@ -73,15 +79,17 @@ describe("WorkflowAttributes", () => {
         expect(version).toHaveLength(TEST_VERSIONS.length);
 
         for (let i = 0; i < version.length; i++) {
-            const versionLabel = version.at(i).text();
-            const versionDate = versionLabel.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
+            const versionLabel = version[i]!.text();
+            const versionDate = versionLabel!
+                .substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(","))
+                .trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }
 
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);
-        expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
-        expect(parameters.at(1).text()).toBe("2: workflow_parameter_1");
+        expect(parameters[0]!.text()).toBe("1: workflow_parameter_0");
+        expect(parameters[1]!.text()).toBe("2: workflow_parameter_1");
         expect((wrapper.find("#workflow-annotation").element as HTMLInputElement).value).toBe(TEST_ANNOTATION);
     });
 });

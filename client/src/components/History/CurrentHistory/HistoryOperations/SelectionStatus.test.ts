@@ -1,10 +1,10 @@
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import HistorySelectionStatus from "./SelectionStatus.vue";
 
-const localVue = getLocalVue();
+const { global } = getLocalVue();
 
 const SELECT_ALL_BTN = '[data-test-id="select-all-btn"]';
 const CLEAR_BTN = '[data-test-id="clear-btn"]';
@@ -18,9 +18,9 @@ const SOMETHING_SELECTED = {
 };
 
 async function mountHistorySelectionStatusWith(props: Record<string, any>) {
-    const wrapper = shallowMount(HistorySelectionStatus as object, {
-        propsData: props,
-        localVue,
+    const wrapper = mount(HistorySelectionStatus as any, {
+        props: props,
+        global,
     });
 
     await flushPromises();
@@ -28,7 +28,7 @@ async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     return wrapper;
 }
 
-async function expectWrapperButtonToEmitEvent(wrapper: Wrapper<Vue>, buttonSelector: string, expectedEvent: string) {
+async function expectWrapperButtonToEmitEvent(wrapper: VueWrapper<any>, buttonSelector: string, expectedEvent: string) {
     expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
     await wrapper.find(buttonSelector).trigger("click");
     expect(wrapper.emitted()).toHaveProperty(expectedEvent);
@@ -40,7 +40,7 @@ describe("History SelectionStatus", () => {
             const wrapper = await mountHistorySelectionStatusWith(NOTHING_SELECTED);
             expect(wrapper.find(CLEAR_BTN).exists()).toBe(false);
 
-            await wrapper.setProps({ selectionSize: 1 });
+            await (wrapper as any).setProps({ selectionSize: 1 });
             expect(wrapper.find(CLEAR_BTN).exists()).toBe(true);
         });
 
@@ -55,7 +55,7 @@ describe("History SelectionStatus", () => {
             const wrapper = await mountHistorySelectionStatusWith(SOMETHING_SELECTED);
             expect(wrapper.find(SELECT_ALL_BTN).exists()).toBe(false);
 
-            await wrapper.setProps(NOTHING_SELECTED);
+            await (wrapper as any).setProps(NOTHING_SELECTED);
             expect(wrapper.find(SELECT_ALL_BTN).exists()).toBe(true);
         });
 

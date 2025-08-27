@@ -1,4 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 
@@ -30,17 +31,22 @@ const SELECTORS = {
     OUTPUTS_LIST: "[data-description='list of outputs']",
 };
 
+const globalConfig = getLocalVue();
+
 describe("ToolSuccessMessage", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(async () => {
         wrapper = mount(ToolSuccessMessage as object, {
-            propsData: {
+            props: {
                 jobResponse: TEST_JOB_RESPONSE,
                 toolName: TEST_TOOL_NAME,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });

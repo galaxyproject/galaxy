@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
-import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import VueRouter from "vue-router";
+import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { getFakeRegisteredUser } from "tests/test-data";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -12,10 +11,6 @@ import { useUserStore } from "@/stores/userStore";
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
-
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
 
 const { server, http } = useServerMock();
 
@@ -32,10 +27,39 @@ async function mountWorkflowList() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
+    const globalConfig = getLocalVue({ withPinia: false });
+
     const wrapper = mount(WorkflowList as object, {
-        localVue,
-        pinia,
-        router,
+        props: {
+            activeList: "published", // Avoid the "my" filtering logic that causes the error
+        },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                "workflow-card": true,
+                "workflow-card-list": true,
+                "b-modal": true,
+                "b-alert": true,
+                "b-button": true,
+                "b-nav": true,
+                "b-nav-item": true,
+                "b-overlay": true,
+                "b-pagination": true,
+                "stateless-tags": true,
+                "tags-multiselect": true,
+                "tags-selection-dialog": true,
+                "filter-menu": true,
+                "list-header": true,
+                heading: true,
+                "breadcrumb-heading": true,
+                "login-required": true,
+                "loading-span": true,
+                "workflow-list-actions": true,
+                "g-link": true,
+                "font-awesome-icon": true,
+            },
+        },
     });
 
     const userStore = useUserStore();
@@ -61,7 +85,7 @@ describe("WorkflowList", () => {
     it("render empty workflow list", async () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
-                return response(200).json([]);
+                return response.untyped(HttpResponse.json({ data: [], totalMatches: 0 }));
             }),
         );
 
@@ -77,7 +101,9 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+                return response.untyped(
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }),
+                );
             }),
         );
 
@@ -97,7 +123,9 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+                return response.untyped(
+                    HttpResponse.json({ data: FAKE_WORKFLOWS, totalMatches: FAKE_WORKFLOWS.length }),
+                );
             }),
         );
 

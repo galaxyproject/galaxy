@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -86,7 +87,7 @@ const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
 ]);
 
 const initComponent = async (props: { multiple: boolean; mode?: string }, hasTemplates = false) => {
-    const localVue = getLocalVue();
+    const globalConfig = getLocalVue();
 
     server.use(
         http.get("/api/remote_files/plugins", ({ response }) => {
@@ -117,10 +118,13 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });
+    setActivePinia(testingPinia);
     const wrapper = mount(FilesDialog as object, {
-        localVue,
-        propsData: { ...props, modalStatic: true },
-        pinia: testingPinia,
+        props: { ...props, modalStatic: true },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, testingPinia],
+        },
     });
 
     await flushPromises();
@@ -128,7 +132,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
 };
 
 describe("FilesDialog, file mode", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -263,7 +267,7 @@ describe("FilesDialog, file mode", () => {
 });
 
 describe("FilesDialog, create new file source button", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -292,7 +296,7 @@ describe("FilesDialog, create new file source button", () => {
 });
 
 describe("FilesDialog, file mode with templates", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     beforeEach(async () => {
         wrapper = await initComponent({ multiple: true }, true);
     });
@@ -303,7 +307,7 @@ describe("FilesDialog, file mode with templates", () => {
 });
 
 describe("FilesDialog, directory mode", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -348,14 +352,14 @@ describe("FilesDialog, directory mode", () => {
 });
 
 class Utils {
-    wrapper: Wrapper<any>;
+    wrapper: VueWrapper<any>;
 
-    constructor(wrapper: Wrapper<any>) {
+    constructor(wrapper: VueWrapper<any>) {
         this.wrapper = wrapper;
     }
 
     async openRoot() {
-        expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
+        expect(this.wrapper.findComponent(SelectionDialog as any).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
     }
 
@@ -418,7 +422,7 @@ class Utils {
     }
 
     getSelectionDialog(): any {
-        return this.wrapper.findComponent(SelectionDialog);
+        return this.wrapper.findComponent(SelectionDialog as any);
     }
 
     getButtonById(id: string): any {
@@ -451,11 +455,16 @@ class Utils {
     }
 
     expectOkButtonDisabled() {
-        expect(this.getOkButton().attributes("disabled")).toBeTruthy();
+        const button = this.getOkButton();
+        // In Vue 3, disabled might be present as attribute or element property
+        const isDisabled = button.attributes("disabled") !== undefined || button.element.disabled === true;
+        expect(isDisabled).toBeTruthy();
     }
 
     expectOkButtonEnabled() {
-        expect(this.getOkButton().attributes("disabled")).toBeFalsy();
+        const button = this.getOkButton();
+        const isDisabled = button.attributes("disabled") !== undefined || button.element.disabled === true;
+        expect(isDisabled).toBeFalsy();
     }
 
     expectSelectAllIconStatusToBe(status: string) {

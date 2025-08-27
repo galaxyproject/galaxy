@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -8,7 +8,7 @@ import type { BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles
 import RDMDestinationSelector from "./RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const CREATE_RECORD_BTN = "#create-record-button";
 
@@ -30,18 +30,18 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
         }),
     );
 
-    const wrapper = mount(RDMDestinationSelector as object, {
-        propsData: {
+    const wrapper = mount(RDMDestinationSelector as any, {
+        props: {
             fileSource,
         },
-        localVue,
+        global: globalConfig.global,
     });
     await flushPromises();
     return wrapper;
 }
 
 describe("RDMDestinationSelector", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(async () => {
         wrapper = await initWrapper();
@@ -71,7 +71,7 @@ describe("RDMDestinationSelector", () => {
             const emitted = wrapper.emitted("onRecordSelected");
 
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+            expect(emitted?.[0]?.[0]).toEqual(FAKE_ENTRY.uri);
         });
     });
 
@@ -87,7 +87,7 @@ describe("RDMDestinationSelector", () => {
 
             const emitted = wrapper.emitted("onRecordSelected");
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
+            expect(emitted?.[0]?.[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
         });
     });
 
@@ -134,7 +134,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+                expect(emitted?.[0]?.[0]).toEqual(FAKE_ENTRY.uri);
             });
         });
 
@@ -151,7 +151,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(fakeRecordUri);
+                expect(emitted?.[0]?.[0]).toEqual(fakeRecordUri);
             });
         });
     });
@@ -159,20 +159,20 @@ describe("RDMDestinationSelector", () => {
     async function selectExportChoice(choice: string, fileSourceId?: string) {
         const suffix = fileSourceId ? `${fileSourceId}` : "any";
         const exportChoice = wrapper.find(`#radio-${choice}-${suffix}`);
-        await exportChoice.setChecked(true);
+        await exportChoice.setValue(true);
     }
 
     async function setRDMSourceInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput);
+        const component = wrapper.findComponent(FilesInput as any);
         expect(component.attributes("placeholder")).toContain("source");
-        component.vm.$emit("input", newValue);
+        await component.vm.$emit("input", newValue);
         await flushPromises();
     }
 
     async function setRDMDirectoryInput(newValue: string) {
-        const component = wrapper.findComponent(FilesInput);
+        const component = wrapper.findComponent(FilesInput as any);
         expect(component.attributes("placeholder")).toContain("directory");
-        component.vm.$emit("input", newValue);
+        await component.vm.$emit("input", newValue);
         await flushPromises();
     }
 

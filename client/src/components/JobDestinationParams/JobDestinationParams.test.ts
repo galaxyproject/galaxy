@@ -1,7 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -13,7 +13,7 @@ import JobDestinationParams from "./JobDestinationParams.vue";
 
 const JOB_ID = "foo_job_id";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const jobDestinationResponse = jobDestinationResponseData as Record<string, string | null>;
 
@@ -27,12 +27,16 @@ async function mountJobDestinationParams() {
     );
 
     const pinia = createPinia();
+    setActivePinia(pinia);
+
     const wrapper = shallowMount(JobDestinationParams as object, {
-        propsData: {
+        props: {
             jobId: JOB_ID,
         },
-        localVue,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
 
     const userStore = useUserStore();
@@ -56,9 +60,9 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         expect(params.length).toBe(responseKeys.length);
 
         for (let counter = 0; counter < responseKeys.length - 1; counter++) {
-            const parameter = params.at(counter).findAll("td");
-            const parameterTitle = parameter.at(0).text();
-            const parameterValue = parameter.at(1).text();
+            const parameter = params[counter]!.findAll("td");
+            const parameterTitle = parameter[0]!.text();
+            const parameterValue = parameter[1]!.text();
 
             expect(responseKeys.includes(parameterTitle)).toBeTruthy();
             // since we render null as an empty string, rendered empty string should always equal null in test data

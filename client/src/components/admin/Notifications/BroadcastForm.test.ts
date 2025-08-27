@@ -2,7 +2,7 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -18,27 +18,28 @@ const ACTION_LINK_SELECTOR = "#create-action-link";
 const SUBMIT_BUTTON_SELECTOR = "#broadcast-submit";
 const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 
-const localVue = getLocalVue(true);
-
 async function mountBroadcastForm(props?: object) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
+    const globalConfig = getLocalVue({ withPinia: false });
+    const router = globalConfig.global.plugins[0]; // Router is first when pinia is excluded
+
     const mockRouter = {
         push: jest.fn(),
     };
+    router.push = mockRouter.push;
 
     const wrapper = mount(BroadcastForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-        mocks: {
-            $router: mockRouter,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 
@@ -50,7 +51,7 @@ async function mountBroadcastForm(props?: object) {
 const { server, http } = useServerMock();
 
 describe("BroadcastForm.vue", () => {
-    function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
+    function expectSubmitButton(wrapper: VueWrapper<any>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
@@ -58,7 +59,7 @@ describe("BroadcastForm.vue", () => {
         );
     }
 
-    async function createBroadcast(wrapper: Wrapper<Vue>, mockRouter: { push: jest.Mock }, actionsLink = false) {
+    async function createBroadcast(wrapper: VueWrapper<any>, mockRouter: { push: jest.Mock }, actionsLink = false) {
         server.use(
             http.post("/api/notifications/broadcast", ({ response }) => {
                 // We use untyped here because we don't care about the response

@@ -6,7 +6,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToolFooter from "./ToolFooter";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const citationsA = [{ format: "bibtex", content: "@misc{entry_a, year = {1111}}" }];
 const citationsB = [{ format: "bibtex", content: "@misc{entry_b, year = {2222}}" }];
@@ -21,7 +21,7 @@ describe("ToolFooter", () => {
         axiosMock.onGet(`/api/tools/tool_b/citations`).reply(200, citationsB);
 
         wrapper = mount(ToolFooter, {
-            propsData: {
+            props: {
                 id: "tool_a",
                 hasCitations: true,
                 xrefs: [],
@@ -29,12 +29,14 @@ describe("ToolFooter", () => {
                 creators: [],
                 requirements: [],
             },
-            localVue,
-            stubs: {
-                Citation: false,
-                License: true,
-                Creators: true,
-                FontAwesomeIcon: true,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    Citation: false,
+                    License: true,
+                    Creators: true,
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
@@ -46,7 +48,7 @@ describe("ToolFooter", () => {
 
     it("check props", async () => {
         await flushPromises();
-        expect(wrapper.findAll(".footer-section-name").at(0).text()).toBeLocalizationOf("References");
+        expect(wrapper.findAll(".footer-section-name")[0].text()).toBeLocalizationOf("References");
         const referenceA = wrapper.find(".formatted-reference .csl-entry");
         expect(referenceA.attributes()["data-csl-entry-id"]).toBe("entry_a");
         expect(referenceA.text()).toContain("1111");

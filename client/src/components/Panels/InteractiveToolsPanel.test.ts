@@ -18,8 +18,6 @@ jest.mock("@/utils/tool-version", () => ({
     filterLatestToolVersions: jest.fn((tools: Tool[]) => tools),
 }));
 
-const localVue = getLocalVue();
-
 // Mock tools data
 const mockTools: Partial<Tool>[] = [
     { id: "rstudio/1.1.0", version: "1.1.0", name: "RStudio", model_class: "InteractiveTool" },
@@ -43,6 +41,7 @@ describe("InteractiveToolsPanel component", () => {
             stubActions: false,
         });
         setActivePinia(pinia);
+        const globalConfig = getLocalVue({ withPinia: false });
 
         // Mock the stores before mounting
         const toolStore = useToolStore();
@@ -56,17 +55,14 @@ describe("InteractiveToolsPanel component", () => {
         entryPointStore.$patch({ entryPoints: [] });
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
-            pinia,
-            stubs: {
-                ActivityPanel: true,
-                DelayedInput: true,
-                FontAwesomeIcon: true,
-                UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: jest.fn(),
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    ActivityPanel: true,
+                    DelayedInput: true,
+                    FontAwesomeIcon: true,
+                    UtcDate: true,
                 },
             },
         });
@@ -163,6 +159,7 @@ describe("InteractiveToolsPanel component", () => {
             stubActions: false,
         });
         setActivePinia(pinia);
+        const globalConfig = getLocalVue({ withPinia: false });
 
         // Set up entry points before mounting
         const entryPointStore = useEntryPointStore();
@@ -177,19 +174,21 @@ describe("InteractiveToolsPanel component", () => {
         jest.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(jest.fn());
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
-            pinia,
-            stubs: {
-                ActivityPanel: {
-                    template: '<div><slot name="header" /><slot /></div>',
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    ActivityPanel: {
+                        template: '<div><slot name="header" /><slot /></div>',
+                    },
+                    DelayedInput: true,
+                    FontAwesomeIcon: true,
+                    UtcDate: true,
                 },
-                DelayedInput: true,
-                FontAwesomeIcon: true,
-                UtcDate: true,
-            },
-            mocks: {
-                $router: {
-                    push: jest.fn(),
+                mocks: {
+                    $router: {
+                        push: jest.fn(),
+                    },
                 },
             },
         });
@@ -204,15 +203,15 @@ describe("InteractiveToolsPanel component", () => {
         expect(activeToolItems).toHaveLength(2);
 
         // Check that the first active tool has the correct name
-        expect(activeToolItems.at(0).text()).toContain("Active RStudio");
-        expect(activeToolItems.at(0).text()).toContain("Running");
+        expect(activeToolItems[0]!.text()).toContain("Active RStudio");
+        expect(activeToolItems[0]!.text()).toContain("Running");
 
         // Check that the second active tool (starting) has the correct name
-        expect(activeToolItems.at(1).text()).toContain("Starting Jupyter");
-        expect(activeToolItems.at(1).text()).toContain("Starting...");
+        expect(activeToolItems[1]!.text()).toContain("Starting Jupyter");
+        expect(activeToolItems[1]!.text()).toContain("Starting...");
 
         // Check that stop buttons are present
-        expect(activeToolItems.at(0).find(".btn-link.text-danger").exists()).toBe(true);
-        expect(activeToolItems.at(1).find(".btn-link.text-danger").exists()).toBe(true);
+        expect(activeToolItems[0]!.find(".btn-link.text-danger").exists()).toBe(true);
+        expect(activeToolItems[1]!.find(".btn-link.text-danger").exists()).toBe(true);
     });
 });

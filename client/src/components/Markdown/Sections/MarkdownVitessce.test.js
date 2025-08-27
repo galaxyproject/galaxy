@@ -15,13 +15,19 @@ Vue.directive("localize", {});
 
 const { server, http } = useServerMock();
 
+const globalConfig = getLocalVue(true);
+
 describe("MarkdownVitessce.vue", () => {
     it("displays error on invalid JSON", async () => {
+        const pinia = createTestingPinia();
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: "{invalid",
             },
-            pinia: createTestingPinia(),
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
         expect(wrapper.text()).toContain("SyntaxError");
     });
@@ -44,9 +50,10 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
+            global: globalConfig.global,
         });
         expect(wrapper.text()).toContain("Data for rendering this Vitessce Dashboard is not yet available.");
     });
@@ -66,9 +73,10 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
+            global: globalConfig.global,
         });
         const config = wrapper.vm.visualizationConfig;
         expect(config.dataset_content.datasets[0].files[0].url).toBe("/api/datasets/123/display");
@@ -104,17 +112,20 @@ describe("MarkdownVitessce.vue", () => {
                 },
             ],
         };
-        const localVue = getLocalVue(true);
-        localVue.component("VisualizationWrapper", {
-            template: "<div class='viz-wrapper-stub' />",
-        });
         const pinia = createTestingPinia({ stubActions: false });
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+                components: {
+                    VisualizationWrapper: {
+                        template: "<div class='viz-wrapper-stub' />",
+                    },
+                },
+            },
         });
         await new Promise((resolve) => setTimeout(resolve));
         const file = wrapper.vm.visualizationConfig.dataset_content.datasets[0].files[0];

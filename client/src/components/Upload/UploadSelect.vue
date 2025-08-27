@@ -63,10 +63,14 @@ const currentValue = computed({
         select-label=""
         selected-label=""
         track-by="id">
-        <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
-        <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
-            {{ option.text }}
-        </span>
+        <template v-slot:noResult>
+            <span v-localize>No matching {{ what }}s found.</span>
+        </template>
+        <template v-slot:singleLabel="{ option }">
+            <span :class="{ 'selection-warning': warn }">
+                {{ option.text }}
+            </span>
+        </template>
     </Multiselect>
 </template>
 

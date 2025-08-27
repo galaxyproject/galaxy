@@ -1,13 +1,16 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { BAlert, BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 
 jest.mock("app");
+
+const globalConfig = getLocalVue();
 
 const mockOptions = {
     callback: () => {},
@@ -17,12 +20,10 @@ const mockOptions = {
 
 describe("DatasetCollectionDialog.vue", () => {
     let wrapper;
-    let localVue;
     let axiosMock;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        localVue = createLocalVue();
     });
 
     afterEach(() => {
@@ -37,8 +38,8 @@ describe("DatasetCollectionDialog.vue", () => {
             .reply(200, collectionsResponse);
 
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: globalConfig.global,
         });
 
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
@@ -56,8 +57,8 @@ describe("DatasetCollectionDialog.vue", () => {
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(403, { err_msg: "Bad error" });
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: globalConfig.global,
         });
         await flushPromises();
         expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");

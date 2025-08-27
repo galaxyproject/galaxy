@@ -3,7 +3,6 @@ import "./worker/__mocks__/selectMany";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import type { PropType } from "vue";
 
 import type { SelectOption } from "./worker/selectMany";
 
@@ -14,11 +13,13 @@ const localVue = getLocalVue();
 
 jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
-function mountSelectMany(props: Partial<PropType<typeof FormSelectMany>>) {
+function mountSelectMany(props: any) {
     return mount(FormSelectMany as any, {
-        propsData: { options: [], value: [], ...props },
-        pinia,
-        localVue,
+        props: { options: [], value: [], ...props },
+        global: {
+            ...localVue.global,
+            plugins: [pinia, ...(localVue.global?.plugins || [])],
+        },
     });
 }
 
@@ -56,13 +57,14 @@ function generateOptionsFromArrays(matrix: Array<Array<string>>): SelectOption[]
 
 /** gets the latest input event value and reflects it to props */
 async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
-    const emittedEvents = wrapper.emitted()?.["input"];
+    const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+    const emittedEvents = emitted.input;
 
     if (!emittedEvents) {
         return undefined;
     }
 
-    const latestValue = emittedEvents[emittedEvents.length - 1]?.[0];
+    const latestValue = emittedEvents?.[emittedEvents.length - 1]?.[0];
 
     if (latestValue === undefined) {
         return undefined;
@@ -90,7 +92,7 @@ describe("FormSelectMany", () => {
         expect(unselectedOptions.length).toBe(6);
 
         options.forEach((option, i) => {
-            expect(unselectedOptions.at(i).text()).toBe(option.label);
+            expect(unselectedOptions[i]!.text()).toBe(option.label);
         });
     });
 
@@ -100,7 +102,7 @@ describe("FormSelectMany", () => {
         const wrapper = mountSelectMany({ options });
 
         {
-            const firstOption = wrapper.findAll(selectors.unselectedOptions).at(0);
+            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
             await firstOption.trigger("click");
 
             const emitted = await emittedInput(wrapper);
@@ -108,7 +110,7 @@ describe("FormSelectMany", () => {
         }
 
         {
-            const firstOption = wrapper.findAll(selectors.unselectedOptions).at(0);
+            const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
             await firstOption.trigger("click");
 
             const emitted = await emittedInput(wrapper);
@@ -123,28 +125,28 @@ describe("FormSelectMany", () => {
         {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
             expect(selectedOptions.length).toBe(2);
-            expect(selectedOptions.at(0).text()).toBe("foo@galaxy.com");
-            expect(selectedOptions.at(1).text()).toBe("foo@galaxy.org");
+            expect(selectedOptions[0]!.text()).toBe("foo@galaxy.com");
+            expect(selectedOptions[1]!.text()).toBe("foo@galaxy.org");
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.wrappers.forEach((unselectedOption) => {
+            unselectedOptions.forEach((unselectedOption) => {
                 expect(unselectedOption.text()).not.toBe("foo@galaxy.com");
                 expect(unselectedOption.text()).not.toBe("foo@galaxy.org");
             });
         }
 
-        const firstOption = wrapper.findAll(selectors.unselectedOptions).at(0);
+        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
         await firstOption.trigger("click");
         const emitted = await emittedInput(wrapper);
 
         {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
             expect(selectedOptions.length).toBe(3);
-            expect(selectedOptions.at(2).text()).toBe(emitted[2]);
+            expect(selectedOptions[2]!.text()).toBe((emitted as any)?.[2]);
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.wrappers.forEach((unselectedOption) => {
-                expect(unselectedOption.text()).not.toBe(emitted[2]);
+            unselectedOptions.forEach((unselectedOption) => {
+                expect(unselectedOption.text()).not.toBe((emitted as any)?.[2]);
             });
         }
     });
@@ -161,7 +163,7 @@ describe("FormSelectMany", () => {
             expect(unselectedCount.text()).toBe("(4)");
         }
 
-        const firstOption = wrapper.findAll(selectors.unselectedOptions).at(0);
+        const firstOption = wrapper.findAll(selectors.unselectedOptions)[0]!;
         await firstOption.trigger("click");
         await emittedInput(wrapper);
 
@@ -292,16 +294,16 @@ describe("FormSelectMany", () => {
 
         {
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            await unselectedOptions.at(0).trigger("click", { shiftKey: true });
-            await unselectedOptions.at(7).trigger("click", { shiftKey: true });
+            await unselectedOptions[0]!.trigger("click", { shiftKey: true });
+            await unselectedOptions[7]!.trigger("click", { shiftKey: true });
 
             {
                 const highlightedOptions = wrapper.findAll(selectors.unselectedHighlighted);
                 expect(highlightedOptions.length).toBe(8);
             }
 
-            await unselectedOptions.at(1).trigger("click", { ctrlKey: true });
-            await unselectedOptions.at(2).trigger("click", { ctrlKey: true });
+            await unselectedOptions[1]!.trigger("click", { ctrlKey: true });
+            await unselectedOptions[2]!.trigger("click", { ctrlKey: true });
 
             {
                 const highlightedOptions = wrapper.findAll(selectors.unselectedHighlighted);
@@ -317,16 +319,16 @@ describe("FormSelectMany", () => {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
             expect(selectedOptions.length).toBe(6);
 
-            await selectedOptions.at(0).trigger("click", { shiftKey: true });
-            await selectedOptions.at(5).trigger("click", { shiftKey: true });
+            await selectedOptions[0]!.trigger("click", { shiftKey: true });
+            await selectedOptions[5]!.trigger("click", { shiftKey: true });
 
             {
                 const highlightedOptions = wrapper.findAll(selectors.selectedHighlighted);
                 expect(highlightedOptions.length).toBe(6);
             }
 
-            await selectedOptions.at(2).trigger("click", { shiftKey: true, ctrlKey: true });
-            await selectedOptions.at(5).trigger("click", { shiftKey: true, ctrlKey: true });
+            await selectedOptions[2]!.trigger("click", { shiftKey: true, ctrlKey: true });
+            await selectedOptions[5]!.trigger("click", { shiftKey: true, ctrlKey: true });
 
             {
                 const highlightedOptions = wrapper.findAll(selectors.selectedHighlighted);

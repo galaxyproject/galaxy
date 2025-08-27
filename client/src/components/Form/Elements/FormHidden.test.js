@@ -3,18 +3,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormHidden from "./FormHidden";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("FormHidden", () => {
     let wrapper;
 
     beforeEach(() => {
         wrapper = mount(FormHidden, {
-            propsData: {
+            props: {
                 value: false,
                 info: "info",
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 

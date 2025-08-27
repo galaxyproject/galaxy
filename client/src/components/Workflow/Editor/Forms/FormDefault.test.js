@@ -1,12 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import FormDefault from "./FormDefault";
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 
 describe("FormDefault", () => {
     let wrapper;
@@ -16,8 +14,9 @@ describe("FormDefault", () => {
     ];
 
     beforeEach(() => {
+        const pinia = createTestingPinia();
         wrapper = mount(FormDefault, {
-            propsData: {
+            props: {
                 datatypes: [],
                 step: {
                     id: 0,
@@ -33,10 +32,12 @@ describe("FormDefault", () => {
                     outputs,
                 },
             },
-            localVue,
-            pinia: createTestingPinia(),
-            provide: {
-                workflowId: "mock-workflow",
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+                provide: {
+                    workflowId: "mock-workflow",
+                },
             },
         });
     });

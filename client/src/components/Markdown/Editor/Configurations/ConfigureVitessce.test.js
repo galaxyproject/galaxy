@@ -6,7 +6,7 @@ import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
 import ConfigureVitessce from "./ConfigureVitessce.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 let mockedStore;
 
@@ -27,14 +27,16 @@ beforeEach(() => {
 
 function mountComponent(content = {}) {
     return mount(ConfigureVitessce, {
-        localVue,
-        propsData: {
+        props: {
             name: "vitessce-view",
             content: JSON.stringify(content),
         },
-        stubs: {
-            ConfigureSelector: true,
-            ConfigureHeader: true,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                ConfigureSelector: true,
+                ConfigureHeader: true,
+            },
         },
     });
 }
@@ -42,14 +44,16 @@ function mountComponent(content = {}) {
 describe("ConfigureVitessce.vue", () => {
     it("renders error alert on invalid content", () => {
         const wrapper = mount(ConfigureVitessce, {
-            localVue,
-            propsData: {
+            props: {
                 name: "vitessce-view",
                 content: "{invalid-json",
             },
-            stubs: {
-                ConfigureSelector: true,
-                ConfigureHeader: true,
+            global: {
+                ...globalConfig.global,
+                stubs: {
+                    ConfigureSelector: true,
+                    ConfigureHeader: true,
+                },
             },
         });
         expect(wrapper.text()).toContain("Failed to parse:");

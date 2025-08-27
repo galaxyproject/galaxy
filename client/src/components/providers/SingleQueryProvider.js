@@ -1,7 +1,24 @@
 import hash from "object-hash";
 import { LastQueue } from "utils/lastQueue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
-import { HasAttributesMixin } from "./utils";
+/**
+ * Composable for converting attributes from kebab-case to camelCase
+ */
+function useAttributes(attrs) {
+    const toCamelCase = (attributes) => {
+        const result = {};
+        for (const key in attributes) {
+            const newKey = key.replace(/-./g, (x) => x[1].toUpperCase());
+            result[newKey] = attributes[key];
+        }
+        return result;
+    };
+
+    const attributes = computed(() => toCamelCase(attrs));
+
+    return { attributes, toCamelCase };
+}
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
@@ -15,8 +32,8 @@ import { HasAttributesMixin } from "./utils";
  */
 export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
+
     return {
-        mixins: [HasAttributesMixin],
         props: {
             useCache: {
                 type: Boolean,
@@ -31,79 +48,69 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 default: 3000,
             },
         },
-        data() {
-            return {
-                result: null,
-                error: null,
-                timeoutId: null,
-            };
-        },
-        created() {
-            this.queue = new LastQueue(this.autoTime);
-        },
-        computed: {
-            loading() {
-                return this.result === null;
-            },
-            cacheKey() {
-                return hash(this.$attrs || {});
-            },
-        },
-        mounted() {
-            this.doQuery();
-        },
-        destroyed() {
-            if (this.timeoutId) {
-                clearTimeout(this.timeoutId);
-            }
-        },
-        render() {
-            return (
-                this.$scopedSlots.default &&
-                this.$scopedSlots.default({
-                    loading: this.loading,
-                    result: this.result,
-                    error: this.error,
-                })
-            );
-        },
-        methods: {
-            update(attributes) {
-                for (var attrname in attributes) {
-                    this.attributes[attrname] = attributes[attrname];
-                }
-                this.doQuery();
-            },
-            doQuery() {
+        emits: ["update:result", "error"],
+        setup(props, { slots, emit, attrs }) {
+            const result = ref(null);
+            const error = ref(null);
+            const timeoutId = ref(null);
+            const queue = new LastQueue(props.autoTime);
+
+            const { attributes } = useAttributes(attrs);
+
+            const loading = computed(() => result.value === null);
+            const cacheKey = computed(() => hash(attrs || {}));
+
+            function doQuery() {
                 let lookupPromise;
-                if (this.useCache) {
-                    lookupPromise = promiseCache.get(this.cacheKey);
+                if (props.useCache) {
+                    lookupPromise = promiseCache.get(cacheKey.value);
                     if (!lookupPromise) {
-                        lookupPromise = lookup(this.$attrs);
-                        promiseCache.set(this.cacheKey, lookupPromise);
+                        lookupPromise = lookup(attrs);
+                        promiseCache.set(cacheKey.value, lookupPromise);
                     }
                 } else {
-                    lookupPromise = this.queue.enqueue(lookup, this.attributes);
+                    lookupPromise = queue.enqueue(lookup, attributes.value);
                 }
                 lookupPromise.then(
-                    (result) => {
-                        this.result = result;
-                        this.$emit("update:result", result);
-                        this.error = null;
-                        if (this.autoRefresh && !stopRefresh(result)) {
-                            this.timeoutId = setTimeout(() => {
-                                this.doQuery();
-                            }, this.autoTime);
+                    (res) => {
+                        result.value = res;
+                        emit("update:result", res);
+                        error.value = null;
+                        if (props.autoRefresh && !stopRefresh(res)) {
+                            timeoutId.value = setTimeout(() => {
+                                doQuery();
+                            }, props.autoTime);
                         }
                     },
                     (err) => {
-                        this.result = {};
-                        this.error = err;
-                        this.$emit("error", err);
+                        result.value = {};
+                        error.value = err;
+                        emit("error", err);
                         console.debug("Failed to fulfill promise.", err);
                     },
                 );
-            },
+            }
+
+            onMounted(() => {
+                doQuery();
+            });
+
+            onUnmounted(() => {
+                if (timeoutId.value) {
+                    clearTimeout(timeoutId.value);
+                }
+            });
+
+            return () => {
+                if (!slots.default) {
+                    return null;
+                }
+                return slots.default({
+                    loading: loading.value,
+                    result: result.value,
+                    error: error.value,
+                });
+            };
         },
     };
 };

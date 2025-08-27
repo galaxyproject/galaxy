@@ -1,11 +1,58 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
-import { mapActions, mapState } from "pinia";
 import { useDbKeyStore } from "stores/dbKeyStore";
 import { prependPath } from "utils/redirect";
+import { onMounted, ref, watch } from "vue";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
 
+// Composable for simple provider functionality
+export function useSimpleProvider(props, { slots }, urlGetter) {
+    const loading = ref(false);
+    const item = ref(null);
+
+    async function load() {
+        loading.value = true;
+        const url = urlGetter ? urlGetter() : props.url;
+        const { data } = await axios.get(url);
+        item.value = data;
+        loading.value = false;
+    }
+
+    async function save(newProps) {
+        loading.value = true;
+        const url = urlGetter ? urlGetter() : props.url;
+        const { data } = await axios.put(url, newProps);
+        item.value = data;
+        loading.value = false;
+    }
+
+    // Watch for id changes
+    watch(
+        () => props.id,
+        (newVal, oldVal) => {
+            if (newVal !== oldVal) {
+                load();
+            }
+        },
+        { immediate: true },
+    );
+
+    // Return render function
+    return () => {
+        if (!slots.default) {
+            return null;
+        }
+        return slots.default({
+            loading: loading.value,
+            item: item.value,
+            save,
+            result: item.value,
+        });
+    };
+}
+
+// For backwards compatibility, keep the mixin version temporarily
 export const SimpleProviderMixin = {
     props: {
         id: { type: String, required: true },
@@ -41,100 +88,141 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        return this.$scopedSlots.default({
-            loading: this.loading,
-            item: this.item,
-            save: this.save,
-            result: this.item,
-        });
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
+                loading: this.loading,
+                item: this.item,
+                save: this.save,
+                result: this.item,
+            });
+        }
+        return null;
     },
 };
 
 export const DbKeyProvider = {
-    mixins: [SimpleProviderMixin],
     props: {
         id: null,
     },
-    async mounted() {
-        await this.load();
-    },
-    methods: {
-        ...mapActions(useDbKeyStore, ["fetchUploadDbKeys"]),
-        async load() {
-            this.loading = true;
-            let dbKeys = this.getUploadDbKeys;
+    setup(props, { slots }) {
+        const dbKeyStore = useDbKeyStore();
+        const loading = ref(false);
+        const item = ref(null);
+
+        async function load() {
+            loading.value = true;
+            let dbKeys = dbKeyStore.getUploadDbKeys;
             if (dbKeys == null || dbKeys.length == 0) {
-                await this.fetchUploadDbKeys();
-                dbKeys = this.getUploadDbKeys;
+                await dbKeyStore.fetchUploadDbKeys();
+                dbKeys = dbKeyStore.getUploadDbKeys;
             }
-            this.item = dbKeys;
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapState(useDbKeyStore, ["getUploadDbKeys"]),
+            item.value = dbKeys;
+            loading.value = false;
+        }
+
+        async function save(newProps) {
+            // DbKeyProvider doesn't support save
+            console.warn("DbKeyProvider does not support save operation");
+        }
+
+        onMounted(() => {
+            load();
+        });
+
+        return () => {
+            if (!slots.default) {
+                return null;
+            }
+            return slots.default({
+                loading: loading.value,
+                item: item.value,
+                save,
+                result: item.value,
+            });
+        };
     },
 };
 
 export const DatatypesProvider = {
-    mixins: [SimpleProviderMixin],
     props: {
         id: null,
     },
-    async mounted() {
-        await this.load();
-    },
-    methods: {
-        ...mapActions(useDatatypeStore, ["fetchUploadDatatypes"]),
-        async load() {
-            this.loading = true;
-            let datatypes = this.getUploadDatatypes;
+    setup(props, { slots }) {
+        const datatypeStore = useDatatypeStore();
+        const loading = ref(false);
+        const item = ref(null);
+
+        async function load() {
+            loading.value = true;
+            let datatypes = datatypeStore.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
-                await this.fetchUploadDatatypes();
-                datatypes = this.getUploadDatatypes;
+                await datatypeStore.fetchUploadDatatypes();
+                datatypes = datatypeStore.getUploadDatatypes;
             }
-            this.item = datatypes;
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapState(useDatatypeStore, ["getUploadDatatypes"]),
+            item.value = datatypes;
+            loading.value = false;
+        }
+
+        async function save(newProps) {
+            // DatatypesProvider doesn't support save
+            console.warn("DatatypesProvider does not support save operation");
+        }
+
+        onMounted(() => {
+            load();
+        });
+
+        return () => {
+            if (!slots.default) {
+                return null;
+            }
+            return slots.default({
+                loading: loading.value,
+                item: item.value,
+                save,
+                result: item.value,
+            });
+        };
     },
 };
 
 export const SuitableConvertersProvider = {
-    mixins: [SimpleProviderMixin],
-    computed: {
-        url() {
-            return prependPath(`/api/dataset_collections/${this.id}/suitable_converters`);
-        },
+    props: {
+        id: { type: String, required: true },
+    },
+    setup(props, context) {
+        const urlGetter = () => prependPath(`/api/dataset_collections/${props.id}/suitable_converters`);
+        return useSimpleProvider(props, context, urlGetter);
     },
 };
 
 export const DatasetCollectionContentProvider = {
-    mixins: [SimpleProviderMixin],
-    computed: {
-        url() {
-            // ugh ...
-            return prependPath(this.id);
-        },
+    props: {
+        id: { type: String, required: true },
+    },
+    setup(props, context) {
+        const urlGetter = () => prependPath(props.id);
+        return useSimpleProvider(props, context, urlGetter);
     },
 };
 
 export const JobProvider = {
-    mixins: [SimpleProviderMixin],
-    computed: {
-        url() {
-            return prependPath(`api/jobs/${this.id}?full=true`);
-        },
+    props: {
+        id: { type: String, required: true },
+    },
+    setup(props, context) {
+        const urlGetter = () => prependPath(`api/jobs/${props.id}?full=true`);
+        return useSimpleProvider(props, context, urlGetter);
     },
 };
 
 export const DatasetCollectionElementProvider = {
-    mixins: [SimpleProviderMixin],
-    computed: {
-        url() {
-            return prependPath(`api/dataset_collection_element/${this.id}`);
-        },
+    props: {
+        id: { type: String, required: true },
+    },
+    setup(props, context) {
+        const urlGetter = () => prependPath(`api/dataset_collection_element/${props.id}`);
+        return useSimpleProvider(props, context, urlGetter);
     },
 };

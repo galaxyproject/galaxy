@@ -18,7 +18,7 @@ jest.mock("@/composables/config", () => ({
     })),
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -35,8 +35,9 @@ describe("FormTool", () => {
     });
 
     function mountTarget() {
+        const pinia = createTestingPinia();
         return mount(FormTool, {
-            propsData: {
+            props: {
                 id: "input",
                 datatypes: [],
                 step: {
@@ -57,12 +58,14 @@ describe("FormTool", () => {
                     post_job_actions: {},
                 },
             },
-            localVue,
-            stubs: {
-                ToolFooter: { template: "<div>tool-footer</div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    ToolFooter: { template: "<div>tool-footer</div>" },
+                },
+                provide: { workflowId: "mock-workflow" },
             },
-            pinia: createTestingPinia(),
-            provide: { workflowId: "mock-workflow" },
         });
     }
 
@@ -70,7 +73,7 @@ describe("FormTool", () => {
         const wrapper = mountTarget();
 
         const dropdowns = wrapper.findAll(".tool-versions .dropdown-item");
-        let version = dropdowns.at(1);
+        let version = dropdowns[1];
         expect(version.text()).toBe("Switch to 2.0");
         await version.trigger("click");
 
@@ -78,7 +81,7 @@ describe("FormTool", () => {
         expect(state.tool_version).toEqual("2.0");
         expect(state.tool_id).toEqual("tool_id+2.0");
 
-        version = dropdowns.at(0);
+        version = dropdowns[0];
         expect(version.text()).toBe("Switch to 3.0");
         await version.trigger("click");
 

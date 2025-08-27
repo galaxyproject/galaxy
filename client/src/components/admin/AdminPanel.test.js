@@ -5,7 +5,7 @@ import { useConfig } from "@/composables/config";
 
 import MountTarget from "./AdminPanel.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -14,17 +14,20 @@ jest.mock("@/composables/config", () => ({
     })),
 }));
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRoute: jest.fn(() => ({})),
 }));
 
-function createTarget(propsData = {}) {
+function createTarget(props = {}) {
     return mount(MountTarget, {
-        localVue,
-        propsData,
-        stubs: {
-            routerLink: true,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                routerLink: true,
+            },
         },
+        props,
     });
 }
 

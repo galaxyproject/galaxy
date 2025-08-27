@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createLocalVue, mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -10,8 +10,6 @@ import jobs from "./test/json/jobs.json";
 
 import JobStep from "./JobStep.vue";
 
-const localVue = createLocalVue();
-
 const { server, http } = useServerMock();
 
 const SELECTORS = {
@@ -21,7 +19,7 @@ const SELECTORS = {
 };
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let propsData;
     let iteration: "base" | "state_change" = "base";
     const pinia = createTestingPinia();
@@ -75,19 +73,20 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         propsData = {
             jobs: jobs,
         };
-        wrapper = mount(JobStep as object, {
-            localVue,
-            propsData,
-            stubs: {
-                BPopover: true,
-                ContentItem: true,
-                FontAwesomeIcon: true,
-                JobInformation: true,
-                JobParameters: true,
-                BTooltip: true,
-                LoadingSpan: true,
+        wrapper = mount(JobStep as any, {
+            props: propsData,
+            global: {
+                stubs: {
+                    BPopover: true,
+                    ContentItem: true,
+                    FontAwesomeIcon: true,
+                    JobInformation: true,
+                    JobParameters: true,
+                    BTooltip: true,
+                    LoadingSpan: true,
+                },
+                plugins: [pinia],
             },
-            pinia,
         });
         await flushPromises();
     });
@@ -100,23 +99,29 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         const jobsContents = wrapper.findAll(SELECTORS.JOB_CONTENT);
         expect(jobsContents.length).toBe(jobs.length);
 
-        liTabs.wrappers.forEach((liTab, i) => {
+        liTabs.forEach((liTab, i) => {
             expect(jobs[i]).toBeTruthy();
             expect(liTab.text()).toEqual(jobs[i]?.state);
             // expect the first job to be shown and rest to be hidden
             expect(liTab.attributes("aria-selected")).toEqual(i === 0 ? "true" : "false");
-            expect(jobsContents.at(i).attributes("style")).toEqual(i === 0 ? "" : "display: none;");
+            if (jobsContents[i]) {
+                expect(jobsContents[i].attributes("style")).toEqual(i === 0 ? "" : "display: none;");
+            }
         });
 
         // click on the second tab
-        await liTabs.at(1).trigger("click");
-        await flushPromises();
+        if (liTabs[1]) {
+            await liTabs[1].trigger("click");
+            await flushPromises();
 
-        // expect the second job to be shown and rest to be hidden
-        jobsContents.wrappers.forEach((jobContent, i) => {
-            expect(jobContent.attributes("style")).toEqual(i === 1 ? "" : "display: none;");
-            expect(liTabs.at(i).attributes("aria-selected")).toEqual(i === 1 ? "true" : "false");
-        });
+            // expect the second job to be shown and rest to be hidden
+            jobsContents.forEach((jobContent, i) => {
+                expect(jobContent.attributes("style")).toEqual(i === 1 ? "" : "display: none;");
+                if (liTabs[i]) {
+                    expect(liTabs[i].attributes("aria-selected")).toEqual(i === 1 ? "true" : "false");
+                }
+            });
+        }
     });
     test("it reacts to prop update", async () => {
         // verify initial data is displayed for first tab

@@ -9,12 +9,20 @@ import StatelessTags from "./StatelessTags";
 const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
-        propsData: props,
-        localVue,
+        props,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                "headless-multiselect": {
+                    template:
+                        '<div><button class="toggle-button">Toggle</button><div class="headless-multiselect"><div class="headless-multiselect__option">name:named_user_tag</div><div class="headless-multiselect__option">abc</div><div class="headless-multiselect__option">my_tag</div><fieldset><input /></fieldset></div></div>',
+                },
+            },
+        },
     });
 };
 
@@ -62,9 +70,9 @@ describe("StatelessTags", () => {
 
         const tags = wrapper.findAll(".tag");
         expect(tags.length).toBe(3);
-        expect(tags.at(0).text()).toBe("tag_1");
-        expect(tags.at(1).text()).toBe("tag_2");
-        expect(tags.at(2).text()).toBe("tags:tag_3");
+        expect(tags[0].text()).toBe("tag_1");
+        expect(tags[1].text()).toBe("tag_2");
+        expect(tags[2].text()).toBe("tags:tag_3");
     });
 
     it("formats named tags", () => {
@@ -74,9 +82,9 @@ describe("StatelessTags", () => {
         });
 
         const tags = wrapper.findAll(".tag");
-        expect(tags.at(0).text()).toBe("#tag_1");
-        expect(tags.at(1).text()).toBe("tag_2");
-        expect(tags.at(2).text()).toBe("#tag_3");
+        expect(tags[0].text()).toBe("#tag_1");
+        expect(tags[1].text()).toBe("tag_2");
+        expect(tags[2].text()).toBe("#tag_3");
     });
 
     it("shows autocomplete options", async () => {
@@ -96,7 +104,7 @@ describe("StatelessTags", () => {
 
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
-        visibleOptions.wrappers.forEach((option, i) => {
+        visibleOptions.forEach((option, i) => {
             expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });
@@ -109,7 +117,9 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
         const multiselect = wrapper.find(selectors.multiselect);
-        await multiselect.find(selectors.input).setValue("new_tag");
+        const input = multiselect.find(selectors.input);
+        input.element.value = "new_tag";
+        await input.trigger("input");
         await wrapper.vm.$nextTick();
         multiselect.find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
@@ -126,7 +136,9 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
         const multiselect = wrapper.find(selectors.multiselect);
-        await multiselect.find(selectors.input).setValue(":illegal_tag");
+        const input = multiselect.find(selectors.input);
+        input.element.value = ":illegal_tag";
+        await input.trigger("input");
         await wrapper.vm.$nextTick();
 
         const option = multiselect.find(selectors.options);

@@ -21,7 +21,6 @@ class ResizeObserver {
     disconnect = jest.fn();
 }
 
-// eslint-disable-next-line compat/compat
 window.ResizeObserver = ResizeObserver;
 
 function propsForStep(step: Step) {

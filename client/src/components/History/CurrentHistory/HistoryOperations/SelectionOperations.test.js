@@ -8,7 +8,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -37,7 +37,7 @@ async function mountSelectionOperationsWrapper(config) {
 
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
-        propsData: {
+        props: {
             history: FAKE_HISTORY,
             filterText: "",
             contentSelection: new Map(),
@@ -46,8 +46,10 @@ async function mountSelectionOperationsWrapper(config) {
             totalItemsInQuery: 5,
             isMultiViewItem: false,
         },
-        localVue,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
+        },
     });
     await flushPromises();
     return wrapper;
@@ -65,7 +67,7 @@ describe("History Selection Operations", () => {
         describe("Dropdown Menu", () => {
             it("should not render if there is nothing selected", async () => {
                 await wrapper.setProps({ selectionSize: 0 });
-                expect(wrapper.html()).toBe("");
+                expect(wrapper.html()).toMatch(/^<!--v-if-->$/);
             });
 
             it("should display the total number of items to apply the operation", async () => {

@@ -1,4 +1,4 @@
-import { mount, type Wrapper, type WrapperArray } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -50,9 +50,22 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
     return wrapper;
 }
 
-async function setAllItemsChecked(wrapper: Wrapper<Vue>) {
-    await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+async function setAllItemsChecked(wrapper: VueWrapper<any>) {
+    await wrapper.find(SELECT_ALL_CHECKBOX).setValue(true);
     await flushPromises();
+}
+
+// Helper function for filtering DOM wrappers in Vue Test Utils v2
+function withNameFilter(wrapperArray: ReturnType<VueWrapper<any>["findAll"]>) {
+    return {
+        childSelectorHasText: (selector: string, str: string) =>
+            wrapperArray.filter((wrapper: DOMWrapper<Element>, _index: number) =>
+                wrapper.find(selector).text().match(str),
+            ),
+
+        hasText: (str: string) =>
+            wrapperArray.filter((wrapper: DOMWrapper<Element>, _index: number) => wrapper.text().match(str)),
+    };
 }
 
 describe("ReviewCleanupDialog.vue", () => {
@@ -60,7 +73,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
 
         expect(wrapper.find(REVIEW_TABLE).exists()).toBe(true);
-        expect(wrapper.findAll("tbody > tr").wrappers.length).toBe(EXPECTED_TOTAL_ITEMS);
+        expect(wrapper.findAll("tbody > tr").length).toBe(EXPECTED_TOTAL_ITEMS);
     });
 
     it("should disable the delete button if no items are selected", async () => {
@@ -91,10 +104,10 @@ describe("ReviewCleanupDialog.vue", () => {
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
         const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete").at(0);
+        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
         expect(permanentlyDeleteBtn.attributes().disabled).toBeTruthy();
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
         expect(permanentlyDeleteBtn.attributes().disabled).toBeFalsy();
     });
 
@@ -102,23 +115,13 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
         const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete").at(0);
+        const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
         await permanentlyDeleteBtn.trigger("click");
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeTruthy();
         expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
     });
-
-    // From: https://github.com/vuejs/vue-test-utils/issues/960#issuecomment-626327505
-    function withNameFilter(wrapperArray: WrapperArray<Vue>) {
-        return {
-            childSelectorHasText: (selector: string, str: string): WrapperArray<Vue> =>
-                wrapperArray.filter((i) => i.find(selector).text().match(str)),
-
-            hasText: (str: string): WrapperArray<Vue> => wrapperArray.filter((i) => i.text().match(str)),
-        };
-    }
 });

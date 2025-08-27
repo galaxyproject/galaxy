@@ -8,7 +8,7 @@ import BarChart from "./BarChart.vue";
 
 // Duplicated interface from BarChart.vue because of https://github.com/vuejs/core/issues/4294
 interface BarChartProps {
-    title: string;
+    title?: string;
     data: DataValuePoint[];
     description?: string;
     width?: number;
@@ -16,6 +16,7 @@ interface BarChartProps {
     enableTooltips?: boolean;
     enableSelection?: boolean;
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
+    valueFormatter?: (value: number) => string;
 }
 
 const TEST_DATA = [
@@ -26,10 +27,12 @@ const TEST_DATA = [
 function mountBarChartWrapper(props: BarChartProps) {
     const pinia = createTestingPinia();
     const localVue = getLocalVue();
-    return mount(BarChart as object, {
-        propsData: props,
-        localVue,
-        pinia,
+    return mount(BarChart as any, {
+        props: props,
+        global: {
+            ...localVue.global,
+            plugins: [...localVue.global.plugins, pinia],
+        },
     });
 }
 
@@ -105,7 +108,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(dataPoint.label);
+                expect(wrapper.findAll(".legend-item")[index].text()).toContain(dataPoint.label);
             });
         });
 
@@ -138,7 +141,7 @@ describe("BarChart.vue", () => {
                 labelFormatter: newLabelFormatter,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(newLabelFormatter(dataPoint));
+                expect(wrapper.findAll(".legend-item")[index].text()).toContain(newLabelFormatter(dataPoint));
             });
         });
     });
@@ -174,7 +177,7 @@ describe("BarChart.vue", () => {
                     enableTooltips: true,
                 });
                 await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA.at(0)?.label);
+                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA[0]?.label);
             });
         });
 
@@ -228,7 +231,7 @@ describe("BarChart.vue", () => {
                     enableSelection: true,
                 });
                 await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA.at(0)?.label);
+                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA[0]?.label);
             });
         });
     });

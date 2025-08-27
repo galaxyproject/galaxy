@@ -28,10 +28,50 @@ const DETAILS_MODAL = "#details-modal";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
-async function mountFolderDetailsWrapper(localVue) {
+async function mountFolderDetailsWrapper(globalConfig) {
     const wrapper = mount(FolderDetails, {
-        localVue,
-        propsData: INPUT_PROP_DATA,
+        props: INPUT_PROP_DATA,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                LibraryBreadcrumb: true,
+                DatasetLibraryView: true,
+                FolderLibraryView: true,
+                PermissionsView: true,
+                "b-modal": {
+                    template: "<div :id=\"id\" :aria-hidden=\"modalVisible ? 'false' : 'true'\"><slot></slot></div>",
+                    props: ["id", "title", "ok-title", "cancel-title", "visible", "static"],
+                    emits: ["ok", "cancel", "show", "hide"],
+                    data() {
+                        return {
+                            modalVisible: false,
+                        };
+                    },
+                    mounted() {
+                        // Simulate the v-b-modal directive functionality
+                        this.$el.ownerDocument.addEventListener("click", (e) => {
+                            if (e.target.closest('[data-testid="loc-details-btn"]')) {
+                                this.modalVisible = true;
+                                this.$emit("show");
+                            }
+                        });
+                    },
+                },
+                "b-table-lite": {
+                    template:
+                        '<table :data-testid="$attrs[\'data-testid\']"><tbody><tr v-for="item in items" :key="item.id"><td v-for="field in fields" :key="field.key">{{ item[field.key] }}</td></tr></tbody></table>',
+                    props: ["fields", "items", "class", "striped", "small"],
+                },
+                "b-alert": {
+                    template: '<div v-if="show" data-testid="error-alert"><slot></slot></div>',
+                    props: ["variant", "show", "dismissible"],
+                },
+                "b-button": {
+                    template: "<button @click=\"$emit('click')\"><slot></slot></button>",
+                    emits: ["click"],
+                },
+            },
+        },
     });
     await flushPromises();
     return wrapper;
@@ -39,15 +79,15 @@ async function mountFolderDetailsWrapper(localVue) {
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     const axiosMock = new MockAdapter(axios);
     let wrapper;
-    const localVue = getLocalVue();
+    const globalConfig = getLocalVue();
 
     beforeEach(async () => {
         axiosMock.reset();
-        wrapper = await mountFolderDetailsWrapper(localVue);
+        wrapper = await mountFolderDetailsWrapper(globalConfig);
     });
 
     afterEach(async () => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("Should display details button", async () => {

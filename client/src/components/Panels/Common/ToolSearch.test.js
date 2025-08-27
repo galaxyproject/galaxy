@@ -3,19 +3,16 @@ import "jest-location-mock";
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
-import VueRouter from "vue-router";
 
 import ToolSearch from "./ToolSearch";
-
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
 
 describe("ToolSearch", () => {
     it("test tools advanced filter panel navigation", async () => {
         const pinia = createPinia();
+        const globalConfig = getLocalVue({ withPinia: false });
+
         const wrapper = mount(ToolSearch, {
-            propsData: {
+            props: {
                 currentPanelView: "default",
                 enableAdvanced: false,
                 showAdvanced: false,
@@ -23,12 +20,13 @@ describe("ToolSearch", () => {
                 currentPanel: {},
                 useWorker: false,
             },
-            localVue,
-            router,
-            stubs: {
-                icon: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             },
-            pinia,
         });
         const $router = wrapper.vm.$router;
 
@@ -40,9 +38,10 @@ describe("ToolSearch", () => {
 
         // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
         const sectionField = wrapper.find("[placeholder='any section']");
-        expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();
+        expect(wrapper.emitted("update:show-advanced")).toBeUndefined();
         await sectionField.trigger("keyup.esc");
-        expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
+        const emitted = wrapper.emitted("update:show-advanced");
+        expect(emitted ? emitted.length - 1 : 0).toBeFalsy();
 
         // Add filters to fields
         await wrapper.find("[data-description='toggle advanced search']").trigger("click");
@@ -57,12 +56,13 @@ describe("ToolSearch", () => {
         };
 
         // Now add all filters in the advanced menu
-        Object.entries(filterInputs).forEach(([selector, value]) => {
+        for (const [selector, value] of Object.entries(filterInputs)) {
             const filterInput = wrapper.find(selector);
-            if (filterInput.vm && filterInput.props().type == "text") {
-                filterInput.setValue(value);
+            if (filterInput.exists() && filterInput.element) {
+                filterInput.element.value = value;
+                await filterInput.trigger("input");
             }
-        });
+        }
 
         // Test: we route to the list with filters
         const mockMethod = jest.fn();

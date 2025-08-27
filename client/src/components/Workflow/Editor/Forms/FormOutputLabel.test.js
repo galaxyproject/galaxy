@@ -1,13 +1,12 @@
 import { mount } from "@vue/test-utils";
-import { createPinia, PiniaVuePlugin, setActivePinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import FormOutputLabel from "./FormOutputLabel";
 
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+const globalConfig = getLocalVue();
 
 describe("FormOutputLabel", () => {
     let wrapper;
@@ -23,24 +22,28 @@ describe("FormOutputLabel", () => {
         const pinia = createPinia();
         setActivePinia(pinia);
         wrapper = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "output-name",
                 step: stepOne,
             },
-            localVue,
-            pinia,
-            provide: { workflowId: "mock-workflow" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                provide: { workflowId: "mock-workflow" },
+            },
         });
 
         const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "other-name",
                 step: stepTwo,
             },
-            localVue,
-            pinia,
-            provide: { workflowId: "mock-workflow" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                provide: { workflowId: "mock-workflow" },
+            },
         });
         stepStore = useWorkflowStepStore("mock-workflow");
         stepStore.addStep(stepOne);
@@ -54,13 +57,16 @@ describe("FormOutputLabel", () => {
         expect(title.text()).toBe("Label for: 'output-name'");
         const input = wrapper.find("input");
         const inputOther = wrapperOther.find("input");
-        await input.setValue("new-label");
+        input.element.value = "new-label";
+        await input.trigger("input");
         expect(wrapper.find(".ui-form-error").exists()).toBe(false);
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
-        await inputOther.setValue("other-label");
+        inputOther.element.value = "other-label";
+        await inputOther.trigger("input");
         expect(wrapper.find(".ui-form-error").exists()).toBe(false);
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
-        await input.setValue("other-label");
+        input.element.value = "other-label";
+        await input.trigger("input");
         expect(wrapper.find(".ui-form-error").text()).toBe("Duplicate output label 'other-label' will be ignored.");
         expect(wrapperOther.find(".ui-form-error").exists()).toBe(false);
         expect(stepStore.workflowOutputs["new-label"].outputName).toBe("output-name");

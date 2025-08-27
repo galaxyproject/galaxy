@@ -10,7 +10,7 @@ import { setupMockConfig } from "tests/jest/mockConfig";
 
 import StsDownloadButton from "./StsDownloadButton.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const NO_TASKS_CONFIG = {
     enable_celery_tasks: false,
 };
@@ -26,13 +26,15 @@ async function mountStsDownloadButtonWrapper(config) {
 
     const pinia = createPinia();
     const wrapper = mount(StsDownloadButton, {
-        propsData: {
+        props: {
             title: "my title",
             fallbackUrl: FALLBACK_URL,
             downloadEndpoint: DOWNLOAD_ENDPOINT,
         },
-        localVue,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...(globalConfig.global?.plugins || []), pinia],
+        },
     });
     await flushPromises();
     return wrapper;

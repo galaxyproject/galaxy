@@ -3,16 +3,16 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./RulesInput.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 function getWrapper() {
     return mount(mountTarget, {
-        propsData: {
+        props: {
             fileSourcesConfigured: true,
             ftpUploadSite: null,
             historyId: "historyId",
         },
-        localVue,
+        global: globalConfig.global,
     });
 }
 
@@ -22,7 +22,8 @@ describe("RulesInput", () => {
         expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
         const textInput = wrapper.find(".upload-rule-source-content");
         expect(textInput.element.value).toBe("");
-        await textInput.setValue("a b c d");
+        textInput.element.value = "a b c d";
+        await textInput.trigger("input");
         expect(textInput.element.value).toBe("a b c d");
         expect(wrapper.find("#btn-reset").classes()).not.toEqual(expect.arrayContaining(["disabled"]));
         await wrapper.find("#btn-reset").trigger("click");

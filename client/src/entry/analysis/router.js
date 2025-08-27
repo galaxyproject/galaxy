@@ -56,8 +56,7 @@ import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
 import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance";
@@ -65,8 +64,6 @@ import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
 import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
-
-import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
@@ -97,8 +94,6 @@ import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
-Vue.use(VueRouter);
-
 // Async component for CustomToolEditor to reduce bundle size
 // NOTE: We use the full async component factory pattern instead of simple dynamic imports
 // (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
@@ -114,8 +109,7 @@ const CustomToolEditor = () => ({
     timeout: 10000,
 });
 
-// patches $router.push() to trigger an event and hide duplication warnings
-patchRouterPush(VueRouter);
+// TODO: Update patchRouterPush for Vue Router 4 if needed
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -145,9 +139,8 @@ function redirectIf(condition, path) {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    const router = new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
+    const router = createRouter({
+        history: createWebHistory(getAppRoot()),
         routes: [
             /** Login entry route */
             {

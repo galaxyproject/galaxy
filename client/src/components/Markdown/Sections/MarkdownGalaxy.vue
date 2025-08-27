@@ -96,7 +96,7 @@ function handleAttributes() {
     try {
         error.value = "";
         attributes.value = getArgs(props.content);
-    } catch (e) {
+    } catch {
         error.value = "The directive provided below is invalid. Please review it for errors.";
         attributes.value = {};
     }

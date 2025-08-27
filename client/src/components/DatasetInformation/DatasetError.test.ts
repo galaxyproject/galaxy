@@ -1,7 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -10,7 +10,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
@@ -27,6 +27,7 @@ type RegexJobMessage = components["schemas"]["RegexJobMessage"];
 
 async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
+    setActivePinia(pinia);
     const error1: RegexJobMessage = {
         desc: "message_1",
         code_desc: null,
@@ -85,11 +86,13 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     );
 
     const wrapper = mount(DatasetError as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
-        pinia,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
 
     const userStore = useUserStore();
@@ -109,8 +112,8 @@ describe("DatasetError", () => {
         expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
 
         const messages = wrapper.findAll("#dataset-error-job-messages .code");
-        expect(messages.at(0).text()).toBe("message_1");
-        expect(messages.at(1).text()).toBe("message_2");
+        expect(messages[0]!.text()).toBe("message_1");
+        expect(messages[1]!.text()).toBe("message_2");
 
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();

@@ -1,16 +1,13 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue, wait } from "tests/jest/helpers";
-import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { waitOnJob } from "@/components/JobStates/wait";
 
 import HistoryImport from "./HistoryImport.vue";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const globalConfig = getLocalVue();
 
 const TEST_JOB_ID = "job123789";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
@@ -45,9 +42,11 @@ describe("HistoryImport.vue", () => {
         );
 
         wrapper = mount(HistoryImport, {
-            propsData: {},
-            localVue,
-            router,
+            props: {},
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins],
+            },
         });
         await flushPromises();
     });
@@ -59,24 +58,21 @@ describe("HistoryImport.vue", () => {
     });
 
     it("should allow import when URL available", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.importReady).toBeTruthy();
     });
 
     it("should require an URI if that is the import type", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-            importType: "sourceRemoteFilesUri",
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        wrapper.vm.importType = "sourceRemoteFilesUri";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.importReady).toBeFalsy();
     });
 
     it("should post to create a new history and wait on job when submitted", async () => {
-        await wrapper.setData({
-            sourceURL: TEST_SOURCE_URL,
-        });
+        wrapper.vm.sourceURL = TEST_SOURCE_URL;
+        await wrapper.vm.$nextTick();
         let formData;
 
         server.use(
@@ -106,7 +102,8 @@ describe("HistoryImport.vue", () => {
 
     it("warns about shared history imports", async () => {
         const input = wrapper.find("input[type=url]");
-        await input.setValue("https://usegalaxy.org/u/some_user/h/exported_history");
+        input.element.value = "https://usegalaxy.org/u/some_user/h/exported_history";
+        await input.trigger("input");
 
         await wait(210);
 

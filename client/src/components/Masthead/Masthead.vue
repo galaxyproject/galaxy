@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";

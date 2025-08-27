@@ -3,19 +3,18 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import Tool from "./Tool";
 
-const localVue = getLocalVue();
-
 describe("Tool", () => {
     test("test tool", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {},
             },
-            localVue,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("");
-        nameElement.trigger("click");
+        expect(nameElement[0].text()).toBe("");
+        nameElement[0].trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
         expect(labelsElement.children).toBeUndefined();
@@ -25,33 +24,35 @@ describe("Tool", () => {
         expect(wrapper.emitted().onOperation).toBeDefined();
     });
     test("test tool operation", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {
                     name: "name",
                 },
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
-            localVue,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
+        expect(nameElement[0].text()).toBe("name");
         const operationElement = wrapper.find(".operation");
         expect(operationElement.classes()).toEqual(expect.arrayContaining(["operationIconClass"]));
         const title = operationElement.attributes("title");
         expect(title).toBe("operationTitle");
     });
     test("test tool hide name, test description", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Tool, {
-            propsData: {
+            props: {
                 tool: {
                     name: "name",
                     description: "description",
                 },
                 hideName: true,
             },
-            localVue,
+            global: globalConfig.global,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.length).toBe(0);

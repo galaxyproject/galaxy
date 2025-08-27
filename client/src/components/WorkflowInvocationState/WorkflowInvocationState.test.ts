@@ -1,15 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { setActivePinia } from "pinia";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
-
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const selectors = {
     invocationSummary: ".invocation-overview",
@@ -151,13 +147,14 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const wrapper = shallowMount(WorkflowInvocationState as object, {
-        propsData: {
+    const wrapper = shallowMount(WorkflowInvocationState as any, {
+        props: {
             invocationId,
             isFullPage,
         },
-        pinia,
-        localVue,
+        global: {
+            plugins: [pinia],
+        },
     });
     await flushPromises();
     return wrapper;
@@ -266,7 +263,7 @@ describe("WorkflowInvocationState check 'Debug' tab", () => {
  * exposing the internals of the component. This is just to restore the previous behavior of the test
  * and it only uses the wrapper to check the props of the invocation summary component.
  */
-function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
+function isInvocationAndJobTerminal(wrapper: VueWrapper<any>): boolean {
     const invocationSummary = wrapper.find(selectors.invocationSummary);
     return invocationSummary.exists() && invocationSummary.html().includes('invocationandjobterminal="true"');
 }

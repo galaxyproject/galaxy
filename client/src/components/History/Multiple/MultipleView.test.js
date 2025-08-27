@@ -1,7 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
@@ -49,21 +49,31 @@ describe("MultipleView", () => {
             }),
         );
 
-        const wrapper = mount(MultipleView, {
-            pinia: createPinia(),
-            stubs: {
-                HistoryPanel: true,
-                icon: { template: "<div></div>" },
-            },
-            localVue: getLocalVue(),
-        });
+        const pinia = createPinia();
+        setActivePinia(pinia);
 
+        // Initialize stores before mounting
         const userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: USER_ID });
 
         const historyStore = useHistoryStore();
         historyStore.setHistories(fakeSummaries);
         historyStore.setCurrentHistoryId(currentHistoryId);
+
+        const globalConfig = getLocalVue();
+        const wrapper = mount(MultipleView, {
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    "history-panel": true,
+                    "history-scroll-list": true,
+                    "b-list-group": true,
+                    "b-list-group-item": true,
+                    icon: { template: "<div></div>" },
+                },
+            },
+        });
 
         await flushPromises();
 

@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { SINGULAR_DATA_URI, SINGULAR_FILE_URI, SINGULAR_LIST_URI } from "./testData/uriData";
@@ -15,8 +15,8 @@ const SELECTORS = {
 };
 
 function initWrapper(value: DataUri) {
-    const wrapper = mount(FormDataUri as object, {
-        propsData: {
+    const wrapper = mount(FormDataUri as any, {
+        props: {
             value,
         },
     });
@@ -24,7 +24,10 @@ function initWrapper(value: DataUri) {
     return wrapper;
 }
 
-function assertLocationIsFound(wrapper: Wrapper<Vue>, uriData: DataUri | DataUriCollectionElement) {
+function assertLocationIsFound(
+    wrapper: VueWrapper<any> | DOMWrapper<Element>,
+    uriData: DataUri | DataUriCollectionElement,
+) {
     if (!("location" in uriData)) {
         throw new Error("The DataUri type does not have a url property");
     }
@@ -33,7 +36,7 @@ function assertLocationIsFound(wrapper: Wrapper<Vue>, uriData: DataUri | DataUri
 }
 
 function assertIdentifierIsFound(
-    wrapper: Wrapper<Vue>,
+    wrapper: VueWrapper<any> | DOMWrapper<Element>,
     uriData: DataUri | DataUriCollectionElement,
     hasIdentifier = false,
     expectIdentifier = "File",
@@ -79,7 +82,7 @@ describe("FormDataUri", () => {
         expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
 
         for (let i = 0; i < collectionElements.length; i++) {
-            const element = collectionElements.at(i);
+            const element = collectionElements[i]!;
             const expectedElement = testUriDataCollection.elements[i];
             if (!expectedElement) {
                 throw new Error("No element found");

@@ -66,7 +66,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(false);
+        expect(optionTabs.length).toBe(0);
     });
 
     it("should render both archival modes when writeable file sources and celery tasks are available", async () => {
@@ -94,7 +94,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(true);
+        expect(optionTabs.length).toBeGreaterThan(0);
 
         const keepStorageOption = wrapper.find("#keep-storage-tab");
         expect(keepStorageOption.exists()).toBe(true);
@@ -107,7 +107,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(ARCHIVED_TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(false);
+        expect(optionTabs.length).toBe(0);
 
         const successMessage = wrapper.find("#history-archived-alert");
         expect(successMessage.exists()).toBe(true);

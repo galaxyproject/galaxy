@@ -4,14 +4,14 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./ActivityItem.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("ActivityItem", () => {
     let wrapper;
 
     beforeEach(async () => {
         wrapper = mount(mountTarget, {
-            propsData: {
+            props: {
                 id: "activity-test-id",
                 activityBarId: "activity-bar-test-id",
                 icon: "activity-test-icon",
@@ -22,10 +22,12 @@ describe("ActivityItem", () => {
                 to: null,
                 tooltip: "activity-test-tooltip",
             },
-            pinia: createTestingPinia(),
-            localVue,
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), createTestingPinia()],
+                stubs: {
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });

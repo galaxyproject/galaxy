@@ -18,7 +18,7 @@ jest.mock("@/api/schema");
 const config = { enable_tool_source_display: false };
 setupMockConfig(config);
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("ToolCard", () => {
     let wrapper;
@@ -36,7 +36,7 @@ describe("ToolCard", () => {
         const pinia = createPinia();
 
         wrapper = mount(ToolCard, {
-            propsData: {
+            props: {
                 id: "identifier",
                 version: "version",
                 title: "title",
@@ -46,7 +46,7 @@ describe("ToolCard", () => {
                     id: "options.id",
                     name: "options.name",
                     version: "options.version",
-                    versions: [],
+                    versions: ["1.0", "2.0"],
                     sharable_url: "options.sharable_url",
                     help: "options.help",
                     help_format: "restructuredtext",
@@ -56,11 +56,25 @@ describe("ToolCard", () => {
                 messageVariant: "warning",
                 disabled: false,
             },
-            stubs: {
-                ToolSourceMenuItem: { template: "<div></div>" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+                stubs: {
+                    ToolSourceMenuItem: { template: "<div></div>" },
+                    ToolFavoriteButton: { template: "<div></div>" },
+                    ToolVersionsButton: { template: "<div></div>" },
+                    ToolTargetPreferredObjectStorePopover: { template: "<div></div>" },
+                    ToolSelectPreferredObjectStore: { template: "<div></div>" },
+                    "b-button": true,
+                    "b-button-group": { template: '<div class="tool-card-buttons"><slot></slot></div>' },
+                    "b-dropdown": {
+                        template:
+                            '<div class="tool-dropdown" title="Options"><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div><div class="dropdown-item"></div></div>',
+                    },
+                    "b-dropdown-item": true,
+                    "b-modal": true,
+                },
             },
-            localVue,
-            pinia,
         });
         userStore = useUserStore();
         userStore.currentUser = {

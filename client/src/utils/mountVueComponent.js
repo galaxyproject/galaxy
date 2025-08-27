@@ -4,11 +4,8 @@
 
 import BootstrapVue from "bootstrap-vue";
 import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
-import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
+import { createPinia, getActivePinia } from "pinia";
 import Vue from "vue";
-
-// Load Pinia
-Vue.use(PiniaVuePlugin);
 
 // Bootstrap components
 Vue.use(BootstrapVue);

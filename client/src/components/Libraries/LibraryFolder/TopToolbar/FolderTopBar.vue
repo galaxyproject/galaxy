@@ -257,7 +257,7 @@ async function addDatasets(
             await datasetApiCall(dataset);
 
             progressStatus.okCount++;
-        } catch (e) {
+        } catch {
             progressStatus.errorCount++;
         } finally {
             progressStatus.runningCount--;
@@ -442,11 +442,11 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 
         <CollectionCreatorIndex
             v-if="collectionModalType && collectionHistoryId"
+            v-model:show="collectionModalShow"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
             :extended-collection-type="{}"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

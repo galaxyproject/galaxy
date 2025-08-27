@@ -1,14 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 
 import DatasetInformation from "./DatasetInformation.vue";
-
-const HDA_ID = "FOO_HDA_ID";
 
 interface DatasetResponse {
     id: string;
@@ -39,12 +37,10 @@ const datasetResponse: DatasetResponse = {
     file_name: "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat",
 };
 
-const localVue = getLocalVue();
-
 describe("DatasetInformation/DatasetInformation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
     let axiosMock: MockAdapter;
-    let datasetInfoTable: Wrapper<Vue>;
+    let datasetInfoTable: DOMWrapper<Element>;
 
     afterEach(() => {
         axiosMock.restore();
@@ -55,13 +51,16 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
         const pinia = createTestingPinia();
+        const globalConfig = getLocalVue({ withPinia: false });
 
         wrapper = mount(DatasetInformation as object, {
-            propsData: {
+            props: {
                 dataset: datasetResponse,
             },
-            localVue,
-            pinia,
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+            },
         });
 
         datasetInfoTable = wrapper.find("#dataset-details");

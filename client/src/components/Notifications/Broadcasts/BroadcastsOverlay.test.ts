@@ -8,7 +8,7 @@ import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadca
 
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 const now = new Date();
 const inTwoMonths = new Date(new Date(now).setMonth(now.getMonth() + 2));
@@ -59,10 +59,12 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     });
 
     const wrapper = mount(BroadcastsOverlay as object, {
-        localVue,
-        pinia,
-        stubs: {
-            BroadcastContainer: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            stubs: {
+                BroadcastContainer: true,
+            },
         },
     });
 
@@ -77,7 +79,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith();
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 
     it("should render only one broadcast at a time", async () => {
@@ -150,7 +152,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([expiredBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 
     it("should not render the broadcast when it has not been published yet", async () => {
@@ -161,6 +163,6 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([unpublishedBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.html()).toBe("<!--v-if-->");
     });
 });

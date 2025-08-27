@@ -1,18 +1,19 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
 import StateUpgradeModal from "./StateUpgradeModal";
 
-const localVue = createLocalVue();
+const globalConfig = getLocalVue();
 
 describe("StateUpgradeModal.vue", () => {
     let wrapper;
 
     async function mountWith(stateMessages) {
         wrapper = shallowMount(StateUpgradeModal, {
-            propsData: {
+            props: {
                 stateMessages,
             },
-            localVue,
+            global: globalConfig.global,
         });
         await wrapper.vm.$nextTick();
     }

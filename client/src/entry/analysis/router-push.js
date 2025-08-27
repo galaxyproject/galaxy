@@ -1,6 +1,8 @@
 import { getGalaxyInstance } from "app";
 import { addSearchParams } from "utils/url";
 
+import { eventBus } from "@/utils/eventBus";
+
 /**
  * Is called before the regular router.push() and allows us to provide logs,
  * handle the window manager, avoid duplication warnings, and force a component
@@ -32,7 +34,7 @@ export function patchRouterPush(VueRouter) {
             return;
         }
         // always emit event, even when a duplicate route is pushed
-        this.app.$emit("router-push");
+        eventBus.emit("router-push");
         // avoid console warning when user clicks to revisit same route
         return originalPush.call(this, location).catch((err) => {
             if (err.name !== "NavigationDuplicated") {

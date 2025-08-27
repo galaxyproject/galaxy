@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
@@ -13,7 +13,7 @@ import JobParameters from "./JobParameters.vue";
 const JOB_ID = "foo";
 const DatasetProvider: any = {
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: false,
             result: raw,
         });
@@ -38,12 +38,12 @@ describe("JobParameters/JobParameters.vue", () => {
     });
 
     it("should render job parameters", async () => {
-        const propsData = {
+        const props = {
             jobId: JOB_ID,
         };
 
         const wrapper = mount(JobParameters as object, {
-            propsData,
+            props,
             stubs: {
                 DatasetProvider: DatasetProvider,
                 ContentItem: true,
@@ -53,22 +53,22 @@ describe("JobParameters/JobParameters.vue", () => {
         await flushPromises();
 
         const checkTableParameter = (
-            element: Wrapper<any>,
+            element: any,
             expectedTitle: string,
             expectedValue: string | { hid: number; name: string },
             link?: string,
         ) => {
             const tds = element.findAll("td");
-            expect(tds.at(0).text()).toBe(expectedTitle);
+            expect(tds[0]!.text()).toBe(expectedTitle);
             if (typeof expectedValue === "string") {
-                expect(tds.at(1).text()).toContain(expectedValue);
+                expect(tds[1]!.text()).toContain(expectedValue);
             } else {
-                const contentItem = tds.at(1).find("contentitem-stub");
+                const contentItem = tds[1].find("contentitem-stub");
                 expect(contentItem.attributes("id")).toBe(`${expectedValue.hid}`);
                 expect(contentItem.attributes("name")).toBe(expectedValue.name);
             }
             if (link) {
-                const a_element = tds.at(1).find("a");
+                const a_element = tds[1].find("a");
                 expect(a_element.attributes("href")).toBe(link);
             }
         };
@@ -80,20 +80,20 @@ describe("JobParameters/JobParameters.vue", () => {
         const elements = tbody.findAll("tr");
         expect(elements.length).toBe(3);
 
-        checkTableParameter(elements.at(0), "Add this value", "22", undefined);
-        checkTableParameter(elements.at(1), linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
-        checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
+        checkTableParameter(elements[0], "Add this value", "22", undefined);
+        checkTableParameter(elements[1], linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
+        checkTableParameter(elements[2], "Iterate?", "NO", undefined);
     });
 
     it("should show only single parameter", async () => {
-        const propsData = {
+        const props = {
             jobId: JOB_ID,
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
+        const getSingleParam = async (props: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters as object, {
-                propsData,
+                props,
                 stubs: {
                     DatasetProvider: DatasetProvider,
                     ContentItem: true,
@@ -104,7 +104,7 @@ describe("JobParameters/JobParameters.vue", () => {
             return wrapper.find("#single-param");
         };
 
-        const singleParam = await getSingleParam(propsData);
+        const singleParam = await getSingleParam(props);
 
         expect(singleParam.text()).toBe("NO");
     });

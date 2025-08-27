@@ -8,11 +8,12 @@ import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 import PageForm from "./PageForm.vue";
 
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const mockPush = jest.fn();
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -20,16 +21,16 @@ jest.mock("vue-router/composables", () => ({
 
 function mountTarget(props = {}) {
     return mount(PageForm, {
-        localVue,
-        propsData: props,
-        stubs: {
-            FontAwesomeIcon: true,
-            BButton: true,
-            BAlert: true,
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+            },
+            directives: {
+                localize: () => {},
+            },
         },
-        directives: {
-            localize: () => {},
-        },
+        props,
     });
 }
 
@@ -101,9 +102,15 @@ describe("PageForm.vue - Create mode", () => {
         );
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("My Title");
-        await wrapper.find("#page-slug").setValue("my-title");
-        await wrapper.find("#page-annotation").setValue("An annotation");
+        const titleInput = wrapper.find("#page-title");
+        titleInput.element.value = "My Title";
+        await titleInput.trigger("input");
+        const slugInput = wrapper.find("#page-slug");
+        slugInput.element.value = "my-title";
+        await slugInput.trigger("input");
+        const annotationInput = wrapper.find("#page-annotation");
+        annotationInput.element.value = "An annotation";
+        await annotationInput.trigger("input");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-123");
@@ -113,8 +120,12 @@ describe("PageForm.vue - Create mode", () => {
         server.use(http.post("/api/pages", ({ response }) => response(400).json({ err_msg: "Creation failed" })));
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Some Title");
-        await wrapper.find("#page-slug").setValue("some-title");
+        const titleInput = wrapper.find("#page-title");
+        titleInput.element.value = "Some Title";
+        await titleInput.trigger("input");
+        const slugInput = wrapper.find("#page-slug");
+        slugInput.element.value = "some-title";
+        await slugInput.trigger("input");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
         const alert = wrapper.findComponent({ name: "BAlert" });
@@ -175,9 +186,15 @@ describe("PageForm.vue - Edit mode", () => {
         );
         const wrapper = mountTarget({ mode: "edit", id: "456" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Updated Title");
-        await wrapper.find("#page-slug").setValue("updated-title");
-        await wrapper.find("#page-annotation").setValue("Updated annotation");
+        const titleInput = wrapper.find("#page-title");
+        titleInput.element.value = "Updated Title";
+        await titleInput.trigger("input");
+        const slugInput = wrapper.find("#page-slug");
+        slugInput.element.value = "updated-title";
+        await slugInput.trigger("input");
+        const annotationInput = wrapper.find("#page-annotation");
+        annotationInput.element.value = "Updated annotation";
+        await annotationInput.trigger("input");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/list");
@@ -187,8 +204,12 @@ describe("PageForm.vue - Edit mode", () => {
         server.use(http.put("/api/pages/:id", ({ response }) => response(400).json({ err_msg: "Update failed" })));
         const wrapper = mountTarget({ mode: "edit", id: "789" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Error Title");
-        await wrapper.find("#page-slug").setValue("error-title");
+        const titleInput = wrapper.find("#page-title");
+        titleInput.element.value = "Error Title";
+        await titleInput.trigger("input");
+        const slugInput = wrapper.find("#page-slug");
+        slugInput.element.value = "error-title";
+        await slugInput.trigger("input");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
         const alert = wrapper.findComponent({ name: "BAlert" });

@@ -59,21 +59,23 @@ describe("UploadModal.vue", () => {
             }),
         );
 
-        const localVue = getLocalVue();
+        const globalConfig = getLocalVue();
         const pinia = createPinia();
 
         wrapper = mount(UploadModal, {
-            propsData,
-            localVue,
-            stubs: {
-                BTabs: true,
-                BTab: true,
-                Collection: true,
-                Composite: true,
-                Default: true,
-                RulesInput: true,
+            props: propsData,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+                stubs: {
+                    BTabs: true,
+                    BTab: true,
+                    Collection: true,
+                    Composite: true,
+                    Default: true,
+                    RulesInput: true,
+                },
             },
-            pinia,
         });
 
         userStore = useUserStore();

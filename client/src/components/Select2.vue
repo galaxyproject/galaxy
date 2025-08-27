@@ -51,7 +51,7 @@ export default {
                 vm.$emit("input", event.val);
             });
     },
-    destroyed: function () {
+    unmounted: function () {
         $(this.$el).off().select2("destroy");
     },
 };

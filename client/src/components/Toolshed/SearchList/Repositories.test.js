@@ -1,4 +1,6 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
 import { Services } from "../services";
 import Repositories from "./Repositories";
@@ -28,28 +30,27 @@ Services.mockImplementation(() => {
 });
 
 describe("Repositories", () => {
-    const localVue = createLocalVue();
-
     it("test repository details loading", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Repositories, {
-            propsData: {
+            props: {
                 query: "toolname",
                 scrolled: false,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: globalConfig.global,
         });
         // Test initial state prior to the data fetch tick -- should be loading.
         expect(wrapper.find(".loading-message").text()).toBe("Loading repositories...");
-        await localVue.nextTick();
+        await nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
-        expect(links.at(0).text()).toBe("name_0");
-        expect(links.at(1).text()).toBe("name_1");
+        expect(links[0].text()).toBe("name_0");
+        expect(links[1].text()).toBe("name_1");
         // Reset repositories and state to test empty.
         wrapper.vm.repositories = [];
         wrapper.vm.pageState = 2; // COMPLETE is '2'
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.find(".unavailable-message").text()).toBe("No matching repositories found.");
     });
 });

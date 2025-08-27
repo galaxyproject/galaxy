@@ -1,4 +1,6 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
 import { Services } from "../services";
 import Categories from "./Categories";
@@ -25,39 +27,36 @@ Services.mockImplementation(() => {
 });
 
 describe("Categories", () => {
-    let localVue;
-    beforeEach(() => {
-        localVue = createLocalVue();
-    });
-
     it("test categories loading", () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: true,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: globalConfig.global,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading categories...");
     });
 
     it("test categories table", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: false,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: globalConfig.global,
         });
-        await localVue.nextTick();
+        await nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
-        expect(links.at(0).text()).toBe("name_0");
-        expect(links.at(1).text()).toBe("name_1");
+        expect(links[0].text()).toBe("name_0");
+        expect(links[1].text()).toBe("name_1");
         const rows = wrapper.findAll("tr");
         expect(rows.length).toBe(3);
-        const cells = rows.at(1).findAll("td");
-        expect(cells.at(1).text()).toBe("description_0");
-        expect(cells.at(2).text()).toBe("repositories_0");
+        const cells = rows[1].findAll("td");
+        expect(cells[1].text()).toBe("description_0");
+        expect(cells[2].text()).toBe("repositories_0");
     });
 });

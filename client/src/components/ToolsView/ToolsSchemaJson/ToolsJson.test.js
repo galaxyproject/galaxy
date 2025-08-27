@@ -9,7 +9,7 @@ import testToolsListResponse from "../testData/toolsList";
 import testToolsListInPanelResponse from "../testData/toolsListInPanel";
 import ToolsJson from "./ToolsJson";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("ToolSchemaJson/ToolsView.vue", () => {
     let wrapper;
@@ -20,7 +20,9 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet("/api/tools?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet("/api/tool_panels/default").reply(200, testToolsListInPanelResponse);
-        wrapper = shallowMount(ToolsJson, { localVue });
+        wrapper = shallowMount(ToolsJson, {
+            global: globalConfig.global,
+        });
         await flushPromises();
     });
 

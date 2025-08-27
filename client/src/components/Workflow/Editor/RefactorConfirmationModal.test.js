@@ -7,7 +7,7 @@ import RefactorConfirmationModal from "./RefactorConfirmationModal";
 
 jest.mock("./modules/services");
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const TEST_WORKFLOW_ID = "test123";
 const TEST_ACTION_TYPE = "upgrade_subworkflow";
 
@@ -16,11 +16,11 @@ describe("RefactorConfirmationModal.vue", () => {
 
     beforeEach(() => {
         wrapper = shallowMount(RefactorConfirmationModal, {
-            propsData: {
+            props: {
                 refactorActions: [],
                 workflowId: TEST_WORKFLOW_ID,
             },
-            localVue,
+            global: globalConfig.global,
         });
     });
 

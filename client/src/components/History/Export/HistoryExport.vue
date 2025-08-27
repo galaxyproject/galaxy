@@ -279,7 +279,7 @@ const breadcrumbItems = computed(() => [
         </div>
 
         <GModal
-            :show.sync="showOldRecords"
+            v-model:show="showOldRecords"
             :title="`Previous Export Records for ${historyName}`"
             size="medium"
             hide-header

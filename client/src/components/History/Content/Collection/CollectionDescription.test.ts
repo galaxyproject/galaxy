@@ -1,6 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import type Vue from "vue";
 
 import type { HDCASummary } from "@/api";
 
@@ -33,7 +32,7 @@ const defaultTestHDCA: HDCASummary = {
 };
 
 describe("CollectionDescription", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(() => {
         wrapper = mount(CollectionDescription as object, {

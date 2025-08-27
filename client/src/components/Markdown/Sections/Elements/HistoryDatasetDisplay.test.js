@@ -9,7 +9,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -39,9 +39,11 @@ describe("History Tabular Dataset Display", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
-            propsData: { datasetId },
-            pinia: setUpDatatypesStore(),
+            props: { datasetId },
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), setUpDatatypesStore()],
+            },
         });
         await flushPromises();
     }
@@ -67,9 +69,11 @@ describe("History Text Dataset Display", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
-            propsData: { datasetId },
-            pinia: setUpDatatypesStore(),
+            props: { datasetId },
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), setUpDatatypesStore()],
+            },
         });
         await flushPromises();
     }
@@ -83,20 +87,20 @@ describe("History Text Dataset Display", () => {
 
     it("should render header with embedded true", async () => {
         await mountTarget();
-        expect(wrapper.find(".card-header").exists()).toBe(true);
+        expect(wrapper.find("b-card-header").exists()).toBe(true);
         await wrapper.setProps({ embedded: true });
-        expect(wrapper.find(".card-header").exists()).toBe(false);
+        expect(wrapper.find("b-card-header").exists()).toBe(false);
     });
 
     it("should expand dataset", async () => {
         await mountTarget();
-        const expandBTN = wrapper.find('.btn[title="Expand"]');
+        const expandBTN = wrapper.find('b-button[title="Expand"]');
         expect(expandBTN.exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset").exists()).toBe(true);
 
         await expandBTN.trigger("click");
 
-        expect(wrapper.find('.btn[title="Collapse"]').exists()).toBe(true);
+        expect(wrapper.find('b-button[title="Collapse"]').exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset-expanded").exists()).toBe(true);
     });
 });

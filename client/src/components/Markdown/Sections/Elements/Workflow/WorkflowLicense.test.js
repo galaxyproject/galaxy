@@ -7,7 +7,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import WorkflowLicense from "./WorkflowLicense.vue";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 const { server, http } = useServerMock();
 
@@ -29,9 +29,11 @@ describe("Workflow License", () => {
             ),
         );
         return mount(WorkflowLicense, {
-            localVue,
-            pinia,
-            propsData: { workflowId: "workflow_id" },
+            props: { workflowId: "workflow_id" },
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
     }
 

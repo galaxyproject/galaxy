@@ -28,7 +28,7 @@ jest.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockedStore,
 }));
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 describe("UploadExamples.vue", () => {
     const urlData = [
@@ -49,16 +49,16 @@ describe("UploadExamples.vue", () => {
     it("renders loading spinner when no historyId", () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         expect(wrapper.find("svg").exists()).toBe(true);
     });
 
     it("renders dropdown with upload options", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         expect(items.length).toBe(urlData.length);
@@ -70,11 +70,11 @@ describe("UploadExamples.vue", () => {
         const { uploadPayload } = require("@/utils/upload-payload.js");
         const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
-        await items.at(0).find("a").trigger("click");
+        await items[0].find("a").trigger("click");
         expect(uploadPayload).toHaveBeenCalledWith(
             [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
             "fake-history-id",
@@ -90,19 +90,19 @@ describe("UploadExamples.vue", () => {
     it("shows error toast when upload fails", async () => {
         const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         const items = wrapper.findAllComponents(BDropdownItem);
-        await items.at(1).find("a").trigger("click");
+        await items[1].find("a").trigger("click");
         sendPayload.mock.calls[0][1].error();
         expect(toastError).toHaveBeenCalledWith("Uploading the sample dataset 'Example 2' has failed.");
     });
 
     it("does not render dropdown if urlData is missing", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: {},
+            props: {},
+            global: globalConfig.global,
         });
         expect(wrapper.findComponent(BDropdown).exists()).toBe(false);
     });
@@ -110,8 +110,8 @@ describe("UploadExamples.vue", () => {
     it("reacts to history ID becoming available", async () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            props: { urlData },
+            global: globalConfig.global,
         });
         expect(wrapper.find("svg").exists()).toBe(true);
         mockedStore.currentHistoryId = ref("new-history-id");

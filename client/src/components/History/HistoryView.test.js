@@ -14,12 +14,15 @@ import { useUserStore } from "@/stores/userStore";
 import ContentItem from "./Content/ContentItem.vue";
 import HistoryView from "./HistoryView.vue";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-
+const globalConfig = getLocalVue();
 jest.mock("stores/services/history.services");
 
 const { server, http } = useServerMock();
+
+jest.mock("vue-router", () => ({
+    useRoute: jest.fn(() => ({})),
+    useRouter: jest.fn(() => ({})),
+}));
 
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
@@ -63,7 +66,7 @@ function create_datasets(historyId, count) {
     };
 }
 
-async function createWrapper(localVue, currentUserId, history) {
+async function createWrapper(globalConfig, currentUserId, history) {
     const pinia = createPinia();
     getHistoryByIdFromServer.mockResolvedValue(history);
     setCurrentHistoryOnServer.mockResolvedValue(history);
@@ -80,16 +83,32 @@ async function createWrapper(localVue, currentUserId, history) {
     router.push(`/history/${history.id}`);
 
     const wrapper = mount(HistoryView, {
-        propsData: { id: history.id },
-        localVue,
-        provide: {
-            store: {
-                dispatch: jest.fn,
-                getters: {},
+        props: { id: history.id },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+            provide: {
+                store: {
+                    dispatch: jest.fn,
+                    getters: {},
+                },
+            },
+            stubs: {
+                "history-panel": true,
+                "content-item": {
+                    template: '<div class="content-item"><slot /></div>',
+                    props: ["id", "name"],
+                },
+                "stateless-tags": {
+                    template: '<div class="stateless-tags">tag_1 tag_2</div>',
+                },
+                "tags-multiselect": true,
+                "loading-span": true,
+                "expanded-items": true,
+                "history-filters": true,
+                "history-counter": true,
             },
         },
-        pinia,
-        router,
     });
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
@@ -123,7 +142,7 @@ describe("History center panel View", () => {
 
     it("current user's current history", async () => {
         const history = create_history("history_1", "user_1", false);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         const historyStore = useHistoryStore();
@@ -146,14 +165,14 @@ describe("History center panel View", () => {
         expect(historyItems.length).toBe(10);
         for (let i = 0; i < historyItems.length; i++) {
             const hid = historyItems.length - i;
-            expect(historyItems.at(i).props("id")).toBe(hid);
-            expect(historyItems.at(i).props("name")).toBe(`Dataset ${hid}`);
+            expect(historyItems[i].props("id")).toBe(hid);
+            expect(historyItems[i].props("name")).toBe(`Dataset ${hid}`);
         }
     });
 
     it("other user's history", async () => {
         const history = create_history("history_2", "user_2", false);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         // switch/import buttons: external history so should be importable
@@ -171,7 +190,7 @@ describe("History center panel View", () => {
 
     it("same user, not current history", async () => {
         const history = create_history("history_3", "user_1", false);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         // switch/import buttons: not current history, switchable
@@ -189,7 +208,7 @@ describe("History center panel View", () => {
 
     it("same user, purged history", async () => {
         const history = create_history("history_4", "user_1", true);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         // history purged, is switchable but not importable
@@ -209,7 +228,7 @@ describe("History center panel View", () => {
 
     it("should not display archived message and should be importable when user is not owner and history is archived", async () => {
         const history = create_history("history_2", "user_2", false, true);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         const switchButton = wrapper.find("[data-description='switch to history button']");
@@ -228,7 +247,7 @@ describe("History center panel View", () => {
 
     it("should display archived message and should not be importable when user is owner and history is archived", async () => {
         const history = create_history("history_2", "user_1", false, true);
-        const wrapper = await createWrapper(localVue, "user_1", history);
+        const wrapper = await createWrapper(globalConfig, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
         const switchButton = wrapper.find("[data-description='switch to history button']");

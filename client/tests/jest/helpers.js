@@ -1,16 +1,16 @@
 /**
  * Unit test debugging utilities
  */
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { iconPlugin } from "components/plugins/icons";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
-import { PiniaVuePlugin } from "pinia";
+import { createPinia } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import _short from "@/components/plugins/short";
 
@@ -179,32 +179,53 @@ export const wait = (n) => {
     });
 };
 
-// Gets a localVue with custom directives
-export function getLocalVue(instrumentLocalization = false) {
-    const localVue = createLocalVue();
+// Gets Vue Test Utils global configuration for Vue 3
+export function getLocalVue(options = {}) {
+    // options can be a boolean for backward compatibility with old instrumentLocalization flag
+    if (typeof options === "boolean") {
+        options = { instrumentLocalization: options };
+    }
+    const { instrumentLocalization = false, withPinia = true } = options;
+
     const mockedDirective = {
-        bind(el, binding) {
+        beforeMount(el, binding) {
             el.setAttribute("data-mock-directive", binding.value || el.title);
         },
     };
-    localVue.use(PiniaVuePlugin);
-    localVue.use(BootstrapVue);
+
     const l = instrumentLocalization ? testLocalize : _l;
-    localVue.use(localizationPlugin, l);
-    localVue.use(vueRxShortcutPlugin);
-    localVue.use(iconPlugin);
-    localVue.directive("b-tooltip", mockedDirective);
-    localVue.directive("b-popover", mockedDirective);
-    return localVue;
+
+    // Create a basic router for tests
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [],
+    });
+
+    const plugins = [router, BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin];
+    if (withPinia) {
+        plugins.unshift(createPinia());
+    }
+
+    // Return global config object for Vue Test Utils v2
+    return {
+        global: {
+            plugins: plugins,
+            directives: {
+                "b-tooltip": mockedDirective,
+                "b-popover": mockedDirective,
+            },
+            stubs: {},
+        },
+    };
 }
 
 // Mounts a renderless component with sample content for testing
 export function mountRenderless(component, mountConfig = {}) {
-    const { localVue = getLocalVue(), ...otherConfig } = mountConfig;
+    const globalConfig = getLocalVue();
     return shallowMount(component, {
-        localVue,
-        ...otherConfig,
-        scopedSlots: {
+        ...globalConfig,
+        ...mountConfig,
+        slots: {
             default: "<div></div>",
         },
     });
@@ -287,12 +308,53 @@ export function mockUnprivilegedToolsRequest(server, http) {
 }
 
 /**
- * Return a new mocked out router attached the specified localVue instance.
+ * Mock the current user API request with a test user
+ * @param {Object} server - MSW server instance
+ * @param {Object} http - MSW http instance
+ * @param {Object} userOverrides - Optional overrides for the user object
  */
-export function injectTestRouter(localVue) {
-    localVue.use(VueRouter);
-    const router = new VueRouter();
+export function mockCurrentUserRequest(server, http, userOverrides = {}) {
+    const defaultUser = {
+        id: "test-user-id",
+        email: "test@example.com",
+        username: "testuser",
+        is_admin: false,
+        preferences: {
+            favorites: JSON.stringify({ tools: [] }),
+        },
+        ...userOverrides,
+    };
+
+    server.use(
+        http.get("/api/users/:userId", ({ response }) => {
+            return response(200).json(defaultUser);
+        }),
+    );
+}
+
+/**
+ * Return a new mocked out router for Vue 3.
+ */
+export function injectTestRouter() {
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [],
+    });
     return router;
+}
+
+/**
+ * Get local Vue config with router included
+ */
+export function getLocalVueWithRouter(instrumentLocalization = false) {
+    const config = getLocalVue(instrumentLocalization);
+    const router = injectTestRouter();
+    return {
+        global: {
+            ...config.global,
+            plugins: [...config.global.plugins, router],
+        },
+    };
 }
 
 export function suppressDebugConsole() {
@@ -300,25 +362,21 @@ export function suppressDebugConsole() {
 }
 
 export function suppressBootstrapVueWarnings() {
-    const originalWarn = console.warn;
-    jest.spyOn(console, "warn").mockImplementation(
-        jest.fn((msg) => {
-            if (msg.indexOf("BootstrapVue warn") < 0) {
-                originalWarn(msg);
-            }
-        }),
-    );
+    // Simply mock console.warn to do nothing to avoid circular call issues
+    jest.spyOn(console, "warn").mockImplementation(() => {});
 }
 
 export function suppressErrorForCustomIcons() {
+    // Restore console.error first if it's already mocked
+    if (console.error.mockRestore) {
+        console.error.mockRestore();
+    }
     const originalError = console.error;
-    jest.spyOn(console, "error").mockImplementation(
-        jest.fn((msg) => {
-            if (msg.indexOf("Could not find one or more icon(s)") < 0) {
-                originalError(msg);
-            }
-        }),
-    );
+    jest.spyOn(console, "error").mockImplementation((msg) => {
+        if (msg && typeof msg === "string" && msg.indexOf("Could not find one or more icon(s)") < 0) {
+            originalError(msg);
+        }
+    });
 }
 
 export function suppressLucideVue2Deprecation() {

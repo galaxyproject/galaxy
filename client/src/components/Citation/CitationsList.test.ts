@@ -1,15 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/jest/mockHistoryBreadcrumbs";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import VueRouter from "vue-router";
 
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
-
-const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -41,37 +37,39 @@ jest.mock("@/components/Citation/services", () => ({
 setupMockHistoryBreadcrumbs();
 
 describe("CitationsList", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper<any>;
 
     beforeEach(async () => {
         const pinia = createTestingPinia();
+        const localVue = getLocalVue({ instrumentLocalization: true, withPinia: false });
+        const router = localVue.global.plugins[0]; // Router is first when pinia is excluded
 
-        const router = new VueRouter();
         router.push("/histories/citations?id=test-id");
 
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 id: "test-id",
                 source: "histories",
             },
-            localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue.global,
+                plugins: [...localVue.global.plugins, pinia],
+            },
         });
 
         await flushPromises();
     });
 
     it("renders the config Galaxy citation and any fetched citations", () => {
-        const citationItems = wrapper.findAllComponents(CitationItem);
+        const citationItems = wrapper.findAllComponents(CitationItem as any);
 
         // It finds the Galaxy citation from the config, and the mocked citation for the history tools.
         expect(citationItems.length).toBe(2);
 
-        expect(citationItems.at(0).text()).toContain(
+        expect(citationItems.at(0)!.text()).toContain(
             "The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update",
         );
-        expect(citationItems.at(1).text()).toContain(
+        expect(citationItems.at(1)!.text()).toContain(
             "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations",
         );
     });

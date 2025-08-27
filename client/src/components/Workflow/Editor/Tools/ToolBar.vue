@@ -176,14 +176,14 @@ function autoLayout() {
                         <FontAwesomeIcon icon="fa-mouse-pointer" size="lg" />
                     </GButton>
                     <GButton
+                        v-model:pressed="snapActive"
                         tooltip
                         tooltip-placement="right"
                         outline
                         color="blue"
                         class="button"
                         data-tool="toggle_snap"
-                        :title="snapButtonTitle"
-                        :pressed.sync="snapActive">
+                        :title="snapButtonTitle">
                         <FontAwesomeIcon icon="fa-magnet" size="lg" />
                     </GButton>
                 </GButtonGroup>
@@ -334,7 +334,7 @@ function autoLayout() {
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option buttons">
                 <GButtonGroup>
                     <GButton
-                        :pressed.sync="commentOptions.bold"
+                        v-model:pressed="commentOptions.bold"
                         outline
                         color="blue"
                         class="button font-weight-bold"
@@ -342,7 +342,7 @@ function autoLayout() {
                         Bold
                     </GButton>
                     <GButton
-                        :pressed.sync="commentOptions.italic"
+                        v-model:pressed="commentOptions.italic"
                         outline
                         color="blue"
                         class="button font-italic"

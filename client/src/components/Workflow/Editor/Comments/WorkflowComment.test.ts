@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount } from "@vue/test-utils";
+import { mount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { suppressErrorForCustomIcons } from "tests/jest/helpers";
 import { nextTick, reactive, ref } from "vue";
@@ -73,7 +73,7 @@ describe("WorkflowComment", () => {
 
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment },
                 scale: 1,
                 rootOffset: {},
@@ -117,7 +117,7 @@ describe("WorkflowComment", () => {
 
     it("displays the correct comment type", async () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, type: "text", data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
@@ -143,7 +143,7 @@ describe("WorkflowComment", () => {
         const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
 
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: testComment,
                 scale: 1,
                 rootOffset: {},
@@ -153,7 +153,7 @@ describe("WorkflowComment", () => {
             },
         });
 
-        const textComment = wrapper.findComponent(TextComment);
+        const textComment = wrapper.findComponent(TextComment) as VueWrapper;
 
         textComment.vm.$emit("change", "abc");
         expect(changeData).toBeCalledWith(123, "abc");
@@ -173,7 +173,7 @@ describe("WorkflowComment", () => {
 
     it("forwards pan events", () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
@@ -183,9 +183,10 @@ describe("WorkflowComment", () => {
             },
         });
 
-        const textComment = wrapper.findComponent(TextComment);
+        const textComment = wrapper.findComponent(TextComment) as VueWrapper;
 
         textComment.vm.$emit("pan-by", { x: 50, y: 50 });
-        expect(wrapper.emitted()["pan-by"]?.[0]?.[0]).toEqual({ x: 50, y: 50 });
+        const emitted = wrapper.emitted() as Record<string, unknown[][]>;
+        expect(emitted["pan-by"][0][0]).toEqual({ x: 50, y: 50 });
     });
 });

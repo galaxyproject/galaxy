@@ -3,8 +3,6 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import BaseList from "./BaseList";
 
-const localVue = getLocalVue();
-
 describe("Categories", () => {
     const getter = async () => {
         return {
@@ -24,8 +22,9 @@ describe("Categories", () => {
         return {};
     };
     test("test categories loading", async () => {
+        const globalConfig = getLocalVue();
         const wrapper = mount(BaseList, {
-            propsData: {
+            props: {
                 icon: "fa fa-caret-down",
                 tooltip: "tooltip",
                 plural: "plural",
@@ -34,14 +33,14 @@ describe("Categories", () => {
                 getter: getter,
                 setter: setter,
             },
-            localVue,
+            global: globalConfig.global,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".card-header").text()).toContain("There are 2");
         const th = wrapper.findAll("th");
         expect(th.length).toBe(3);
-        expect(th.at(0).text()).toBe("Execute");
-        expect(th.at(1).text()).toBe("Col 0");
-        expect(th.at(2).text()).toBe("Col 1");
+        expect(th[0].text()).toBe("Execute");
+        expect(th[1].text()).toBe("Col 0");
+        expect(th[2].text()).toBe("Col 1");
     });
 });

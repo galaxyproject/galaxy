@@ -2,7 +2,6 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { nextTick } from "vue";
-import VueRouter from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 
@@ -12,19 +11,37 @@ const ACTIVE_CLASS = ".breadcrumb-heading-header-active";
 const INACTIVE_CLASS = ".breadcrumb-heading-header-inactive";
 const BETA_CLASS = ".breadcrumb-heading-header-beta";
 
-const localVue = getLocalVue();
+// Mock the router composables
+const mockUseRoute = jest.fn();
+const mockUseRouter = jest.fn();
 
-localVue.use(VueRouter);
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
+    useRoute: () => mockUseRoute(),
+    useRouter: () => mockUseRouter(),
+}));
 
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = new VueRouter();
+    const globalConfig = getLocalVue({ withPinia: false });
 
-    router.push(routePath);
+    // Setup route mock
+    mockUseRoute.mockReturnValue({
+        path: routePath,
+    });
+
+    // Setup router mock
+    mockUseRouter.mockReturnValue({
+        resolve: (to: any) => {
+            if (typeof to === "string") {
+                return { path: to };
+            }
+            return { path: to.path || "/" };
+        },
+    });
 
     const wrapper = mount(BreadcrumbHeading as object, {
-        localVue,
-        router,
-        propsData: {
+        ...globalConfig,
+        props: {
             items,
         },
         slots: {
@@ -33,11 +50,16 @@ async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = 
     });
 
     await flushPromises();
+    await nextTick();
 
     return wrapper;
 }
 
 describe("BreadcrumbHeading.vue", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     it("renders a single breadcrumb item without link when no 'to' property", async () => {
         const items = [{ title: "Home" }];
 

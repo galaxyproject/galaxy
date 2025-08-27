@@ -4,27 +4,32 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
 
 import MountTarget from "./LoginForm.vue";
 
-const localVue = getLocalVue(true);
-const testingPinia = createTestingPinia({ stubActions: false });
+const globalConfig = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
 async function mountLoginForm() {
-    const wrapper = mount(MountTarget as object, {
-        propsData: {
+    const testingPinia = createTestingPinia({ stubActions: false });
+    setActivePinia(testingPinia);
+
+    const wrapper = mount(MountTarget as any, {
+        props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        localVue,
-        stubs: {
-            ExternalLogin: true,
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, testingPinia],
+            stubs: {
+                ExternalLogin: true,
+            },
         },
-        pinia: testingPinia,
     });
 
     return wrapper;
@@ -55,12 +60,12 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = inputs.at(0)!;
         expect(usernameField.attributes("type")).toBe("text");
 
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs.at(1);
+        const pwdField = inputs.at(1)!;
         expect(pwdField.attributes("type")).toBe("password");
 
         await pwdField.setValue("test_pwd");
@@ -84,7 +89,7 @@ describe("LoginForm", () => {
             enableOidc: true,
             showWelcomeWithLogin: true,
             welcomeUrl: "welcome_url",
-        });
+        } as any);
 
         const register = wrapper.find($register);
         (expect(register.text()) as any).toBeLocalizationOf("Register here.");
@@ -117,13 +122,13 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = inputs.at(0)!;
         expect(usernameField.attributes("type")).toBe("text");
         expect((usernameField.element as HTMLInputElement).disabled).toBe(true);
         expect((usernameField.element as HTMLInputElement).value).not.toBe("");
         expect((usernameField.element as HTMLInputElement).value).toContain(external_email);
 
-        const pwdField = inputs.at(1);
+        const pwdField = inputs.at(1)!;
         expect(pwdField.attributes("type")).toBe("password");
         expect((pwdField.element as HTMLInputElement).value).toBe("");
 

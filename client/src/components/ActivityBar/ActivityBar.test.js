@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { shallowMount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
-import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import { mount } from "@vue/test-utils";
+import { dispatchEvent, getLocalVue, mockCurrentUserRequest, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useConfig } from "@/composables/config";
@@ -16,15 +15,12 @@ useConfig.mockReturnValue({
     isConfigLoaded: true,
 });
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRoute: jest.fn(() => ({})),
 }));
 
 const { server, http } = useServerMock();
-
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
-
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
         anonymous: true,
@@ -48,19 +44,28 @@ describe("ActivityBar", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
+        const globalConfig = getLocalVue({ withPinia: false });
+
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);
-        wrapper = shallowMount(mountTarget, {
-            localVue,
-            pinia,
+        mockCurrentUserRequest(server, http);
+
+        wrapper = mount(mountTarget, {
+            global: {
+                ...globalConfig.global,
+                plugins: [...globalConfig.global.plugins, pinia],
+                stubs: {
+                    FontAwesomeIcon: true,
+                },
+            },
         });
     });
 
     it("rendering", async () => {
         activityStore.setAll([testActivity("1"), testActivity("2"), testActivity("3")]);
         await wrapper.vm.$nextTick();
-        const items = wrapper.findAll("[title='test-title']");
+        const items = wrapper.findAll("[aria-label='test-title']");
         expect(items.length).toBe(3);
     });
 

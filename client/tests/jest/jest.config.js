@@ -14,6 +14,7 @@ const modulesToTransform = [
     "@fortawesome",
     "ro-crate-zip-explorer",
     "yaml",
+    "vue-multiselect",
 ].join("|");
 
 // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
@@ -21,7 +22,7 @@ const modulesToTransform = [
 // jest to work properly.  I think.
 
 const configOverride = {
-    "^.+.tsx?$": [
+    "^.+\\.tsx?$": [
         "ts-jest",
         {
             tsconfig: {
@@ -69,7 +70,7 @@ module.exports = {
     testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",
-        "^.*\\.(vue)$": "@vue/vue2-jest",
+        "^.*\\.(vue)$": "@vue/vue3-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
         "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
         ...mergedTSJTransform,

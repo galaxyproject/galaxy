@@ -8,10 +8,11 @@ import { useServerMock } from "@/api/client/__mocks__";
 import RoleForm from "./RoleForm.vue";
 
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 const mockPush = jest.fn();
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
+    ...jest.requireActual("vue-router"),
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -27,15 +28,15 @@ jest.mock("@/composables/filter/filter.js", () => {
 function mountTarget() {
     setActivePinia(createPinia());
     return mount(RoleForm, {
-        localVue,
-        stubs: {
-            FontAwesomeIcon: true,
-            FormSelection: true,
-            BButton: true,
-            BAlert: true,
-        },
-        directives: {
-            localize: () => {},
+        global: {
+            ...globalConfig.global,
+            stubs: {
+                FontAwesomeIcon: true,
+                FormSelection: true,
+            },
+            directives: {
+                localize: () => {},
+            },
         },
     });
 }
@@ -94,8 +95,12 @@ describe("RoleForm.vue", () => {
         );
         const wrapper = mountTarget();
         await flushPromises();
-        await wrapper.find("#role-name").setValue("Test Role");
-        await wrapper.find("#role-description").setValue("Test Description");
+        const nameInput = wrapper.find("#role-name");
+        nameInput.element.value = "Test Role";
+        await nameInput.trigger("input");
+        const descInput = wrapper.find("#role-description");
+        descInput.element.value = "Test Description";
+        await descInput.trigger("input");
         wrapper.vm.groupIds = ["g1"];
         wrapper.vm.userIds = ["u1"];
         await wrapper.find("#role-submit").trigger("click");
@@ -109,8 +114,12 @@ describe("RoleForm.vue", () => {
         server.use(http.post("/api/roles", ({ response }) => response(400).json({ err_msg: "Creation failed" })));
         const wrapper = mountTarget();
         await flushPromises();
-        await wrapper.find("#role-name").setValue("Bad Role");
-        await wrapper.find("#role-description").setValue("Bad Description");
+        const nameInput = wrapper.find("#role-name");
+        nameInput.element.value = "Bad Role";
+        await nameInput.trigger("input");
+        const descInput = wrapper.find("#role-description");
+        descInput.element.value = "Bad Description";
+        await descInput.trigger("input");
         await wrapper.find("#role-submit").trigger("click");
         await flushPromises();
         const alert = wrapper.findComponent({ name: "BAlert" });

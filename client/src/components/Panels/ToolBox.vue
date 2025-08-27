@@ -174,10 +174,10 @@ function onToggle() {
     <div class="unified-panel" data-description="panel toolbox">
         <div class="unified-panel-controls">
             <ToolSearch
+                v-model:show-advanced="propShowAdvanced"
                 :enable-advanced="!props.workflow"
                 :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
-                :show-advanced.sync="propShowAdvanced"
                 :tools-list="toolsList"
                 :current-panel="localSectionsById"
                 :query="query"

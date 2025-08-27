@@ -6,7 +6,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import invocationData from "../Workflow/test/json/invocation.json";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview";
 
-const localVue = getLocalVue();
+const globalConfig = getLocalVue();
 
 // Constants
 const workflowData = {
@@ -15,7 +15,7 @@ const workflowData = {
     version: 0,
 };
 const selectors = {
-    bAlertStub: "balert-stub",
+    bAlert: ".alert",
 };
 const alertMessages = {
     unOwned: "Workflow is neither importable, nor owned by or shared with current user",
@@ -46,17 +46,20 @@ jest.mock("@/stores/workflowStore", () => {
 
 describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
     async function loadWrapper(invocationData) {
-        const propsData = {
+        const props = {
             invocation: invocationData,
             invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
             stepsJobsSummary: [],
             jobStatesSummary: {},
         };
+        const pinia = createTestingPinia();
         const wrapper = shallowMount(WorkflowInvocationOverview, {
-            propsData,
-            localVue,
-            pinia: createTestingPinia(),
+            props,
+            global: {
+                ...globalConfig.global,
+                plugins: [...(globalConfig.global?.plugins || []), pinia],
+            },
         });
         await flushPromises();
         return wrapper;
@@ -70,14 +73,16 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
     it("displays an alert for an unowned workflow", async () => {
         const wrapper = await loadWrapper({ ...invocationData, workflow_id: "unowned-workflow" });
         expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.bAlert);
+        expect(alert.exists()).toBeTruthy();
         expect(alert.text()).toContain(alertMessages.unOwned);
     });
 
     it("displays an alert for a nonexistant workflow", async () => {
         const wrapper = await loadWrapper({ ...invocationData, workflow_id: "nonexistant-workflow" });
         expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.bAlert);
+        expect(alert.exists()).toBeTruthy();
         expect(alert.text()).toContain(alertMessages.nonExistent);
     });
 });

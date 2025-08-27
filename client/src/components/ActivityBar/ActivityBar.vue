@@ -4,7 +4,7 @@ import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icon
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
@@ -318,11 +318,10 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
-                <template v-for="activity in props.specialActivities">
+                <template v-for="activity in props.specialActivities" :key="activity.id">
                     <ActivityItem
                         v-if="activity.panel"
                         :id="`${activity.id}`"
-                        :key="activity.id"
                         :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
                         :is-active="panelActivityIsActive(activity)"
@@ -348,9 +347,9 @@ defineExpose({
         </div>
         <FlexPanel
             v-if="isSideBarOpen && !hidePanel"
+            v-model:reactive-width="sidePanelWidth"
             side="left"
-            :collapsible="false"
-            :reactive-width.sync="sidePanelWidth">
+            :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />

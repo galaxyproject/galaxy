@@ -15,7 +15,7 @@ import {
 
 import HistoryExport from "./HistoryExport.vue";
 
-const localVue = getLocalVue(true);
+const globalConfig = getLocalVue(true);
 
 jest.mock("@/api/histories.export");
 const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<typeof fetchHistoryExportRecords>;
@@ -49,9 +49,11 @@ async function mountHistoryExport() {
     setActivePinia(pinia);
 
     const wrapper = shallowMount(HistoryExport as object, {
-        propsData: { historyId: FAKE_HISTORY_ID },
-        localVue,
-        pinia,
+        props: { historyId: FAKE_HISTORY_ID },
+        global: {
+            ...globalConfig.global,
+            plugins: [...globalConfig.global.plugins, pinia],
+        },
     });
     await flushPromises();
     return wrapper;
