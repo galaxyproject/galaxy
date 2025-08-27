@@ -1579,6 +1579,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if util.is_uuid(step_dict["content_id"]):
                         step_dict["content_id"] = None
                         step_dict["tool_id"] = None
+                        step_dict["tool_uuid"] = None
 
                 pja_dict = {}
                 for pja in step.post_job_actions:
