@@ -135,7 +135,12 @@ const toolBadges = computed<CardBadge[]>(() => {
     return badges;
 });
 
-const { toolsListCardPrimaryActions, toolsListCardSecondaryActions, openUploadIfNeeded } = useToolsListCardActions(
+const {
+    favoriteToolAction: bookmark,
+    toolsListCardPrimaryActions,
+    toolsListCardSecondaryActions,
+    openUploadIfNeeded,
+} = useToolsListCardActions(
     props.id,
     props.local,
     props.name,
@@ -151,8 +156,11 @@ const { toolsListCardPrimaryActions, toolsListCardSecondaryActions, openUploadIf
         :id="props.id"
         class="tool-list-item"
         :badges="toolBadges"
+        :bookmarked="bookmark.label === 'Unfavorite'"
+        :show-bookmark="!bookmark.title.includes('Login')"
         :primary-actions="toolsListCardPrimaryActions"
-        :secondary-actions="toolsListCardSecondaryActions">
+        :secondary-actions="toolsListCardSecondaryActions"
+        @bookmark="bookmark.handler">
         <template v-slot:title>
             <h4 class="py-1 d-flex flex-wrap text-wrap flex-gapx-1">
                 <span>
