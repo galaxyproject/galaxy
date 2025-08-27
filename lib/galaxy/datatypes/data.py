@@ -1343,6 +1343,7 @@ class ZarrDirectory(Directory):
         """Returns the path to the metadata file in the Zarr store."""
         if meta_file := self._find_zarr_metadata_file(store_root_path):
             with open(meta_file) as f:
+                # TODO: looks like unbounded data loading, should be limited but is this safe for zarr?
                 return json.load(f)
         return None
 

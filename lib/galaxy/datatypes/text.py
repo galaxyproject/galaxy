@@ -16,14 +16,12 @@ from typing import (
 import yaml
 
 from galaxy.datatypes.data import (
+    DEFAULT_MAX_PEEK_SIZE,
     get_file_peek,
     Headers,
     Text,
 )
-from galaxy.datatypes.metadata import (
-    MetadataElement,
-    MetadataParameter,
-)
+from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -141,7 +139,7 @@ class DataManagerJson(Json):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         with open(dataset.get_file_name()) as fh:
-            data_tables = json.load(fh)["data_tables"]
+            data_tables = json.loads(fh.read(DEFAULT_MAX_PEEK_SIZE))
         dataset.metadata.data_tables = data_tables
 
 
@@ -160,7 +158,7 @@ class ExpressionJson(Json):
             file_path = dataset.get_file_name()
             try:
                 with open(file_path) as f:
-                    obj = json.load(f)
+                    obj = json.loads(f.read(DEFAULT_MAX_PEEK_SIZE))
                     if isinstance(obj, int):
                         json_type = "int"
                     elif isinstance(obj, float):
@@ -195,7 +193,7 @@ class Ipynb(Json):
         if self._looks_like_json(file_prefix):
             try:
                 with open(file_prefix.filename) as f:
-                    ipynb = json.load(f)
+                    ipynb = json.loads(f.read(DEFAULT_MAX_PEEK_SIZE))
                 if ipynb.get("nbformat", False) is not False and ipynb.get("metadata", False):
                     return True
                 else:
@@ -274,126 +272,6 @@ class Biom1(Json):
     file_ext = "biom1"
     edam_format = "format_3746"
 
-    MetadataElement(
-        name="table_rows",
-        default=[],
-        desc="table_rows",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value=[],
-    )
-    MetadataElement(
-        name="table_matrix_element_type",
-        default="",
-        desc="table_matrix_element_type",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_format",
-        default="",
-        desc="table_format",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_generated_by",
-        default="",
-        desc="table_generated_by",
-        param=MetadataParameter,
-        readonly=True,
-        visible=True,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_matrix_type",
-        default="",
-        desc="table_matrix_type",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_shape",
-        default=[],
-        desc="table_shape",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value=[],
-    )
-    MetadataElement(
-        name="table_format_url",
-        default="",
-        desc="table_format_url",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_date",
-        default="",
-        desc="table_date",
-        param=MetadataParameter,
-        readonly=True,
-        visible=True,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_type",
-        default="",
-        desc="table_type",
-        param=MetadataParameter,
-        readonly=True,
-        visible=True,
-        optional=True,
-        no_value="",
-    )
-    MetadataElement(
-        name="table_id",
-        default=None,
-        desc="table_id",
-        param=MetadataParameter,
-        readonly=True,
-        visible=True,
-        optional=True,
-    )
-    MetadataElement(
-        name="table_columns",
-        default=[],
-        desc="table_columns",
-        param=MetadataParameter,
-        readonly=True,
-        visible=False,
-        optional=True,
-        no_value=[],
-    )
-    MetadataElement(
-        name="table_column_metadata_headers",
-        default=[],
-        desc="table_column_metadata_headers",
-        param=MetadataParameter,
-        readonly=True,
-        visible=True,
-        optional=True,
-        no_value=[],
-    )
-
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
@@ -430,53 +308,6 @@ class Biom1(Json):
         except Exception:
             pass
         return is_biom
-
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Store metadata information from the BIOM file.
-        """
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
-                try:
-                    json_dict = json.load(fh)
-                except Exception:
-                    return
-
-                def _transform_dict_list_ids(dict_list):
-                    if dict_list:
-                        return [x.get("id", None) for x in dict_list]
-                    return []
-
-                b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for m_name, b_name in [
-                    ("table_rows", "rows"),
-                    ("table_matrix_element_type", "matrix_element_type"),
-                    ("table_format", "format"),
-                    ("table_generated_by", "generated_by"),
-                    ("table_matrix_type", "matrix_type"),
-                    ("table_shape", "shape"),
-                    ("table_format_url", "format_url"),
-                    ("table_date", "date"),
-                    ("table_type", "type"),
-                    ("table_id", "id"),
-                    ("table_columns", "columns"),
-                ]:
-                    try:
-                        metadata_value = json_dict.get(b_name, None)
-                        if b_name == "columns" and metadata_value:
-                            keep_columns = set()
-                            for column in metadata_value:
-                                if column["metadata"] is not None:
-                                    for k, v in column["metadata"].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
-                            final_list = sorted(keep_columns)
-                            dataset.metadata.table_column_metadata_headers = final_list
-                        if b_name in b_transform:
-                            metadata_value = b_transform[b_name](metadata_value)
-                        setattr(dataset.metadata, m_name, metadata_value)
-                    except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong.")
 
 
 @build_sniff_from_prefix
@@ -531,23 +362,6 @@ class ImgtJson(Json):
         except Exception:
             pass
         return is_imgt
-
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Store metadata information from the imgt file.
-        """
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
-                try:
-                    json_dict = json.load(fh)
-                    tax_names = []
-                    for entry in json_dict:
-                        if "taxonId" in entry:
-                            names = "{}: {}".format(entry["taxonId"], ",".join(entry["speciesNames"]))
-                            tax_names.append(names)
-                    dataset.metadata.taxon_names = tax_names
-                except Exception:
-                    return
 
 
 @build_sniff_from_prefix
@@ -1240,16 +1054,6 @@ class BCSLts(Json):
         if self._looks_like_json(file_prefix):
             is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
         return is_bcsl_ts
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
-            ts = json.load(open(dataset.get_file_name()))
-            dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
 
     def _looks_like_bcsl_ts(self, file_prefix: FilePrefix) -> bool:
         content = open(file_prefix.filename).read()
