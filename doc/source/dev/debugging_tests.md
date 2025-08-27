@@ -40,37 +40,28 @@ Sometimes it is necessary to debug tests that work locally. There are a few diff
 The first step is often to exclude the workflow runs that are passing, so that you don't waste time waiting for your test.
 To do this you can delete all the workflow YAML files in `.github/workflows/` except for the one that sets up the failing test.
 
-If the YAML file has a strategy section that sets up multiple tests keep just the one that contains the failing test.
+If the YAML file has a `strategy` section that splits tests into multiple job runs, keep just the one that contains the failing test.
 If the test never finishes, add `-s` to the options that `run_tests.sh` pass to `pytest` (i.e. `-s` needs to be after a `--`), so you can see live output.
-This diff here adds `-s` and disables strategies that are already passing:
+The following diff adds `-s` and select a single shard from the job matrix:
 
 ```diff
 diff --git a/.github/workflows/integration.yaml b/.github/workflows/integration.yaml
-index 6647588dfb..c8d82957a1 100644
+index 52cf06d311..6a2d90f235 100644
 --- a/.github/workflows/integration.yaml
 +++ b/.github/workflows/integration.yaml
-@@ -14,7 +14,7 @@ jobs:
-       fail-fast: false
-       matrix:
-         python-version: ['3.8']
--        subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
-+        subset: ['not (upload_datatype or extended_metadata or kubernetes)']
-     services:
-       postgres:
-         image: postgres:13
-@@ -73,7 +73,7 @@ jobs:
-         if: matrix.subset == 'upload_datatype'
+@@ -98,7 +98,7 @@ jobs:
        - name: Run tests
-         if: matrix.subset != 'kubernetes'
--        run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
-+        run: './run_tests.sh -integration test/integration -- -s -k "${{ matrix.subset }}"'
+         run: |
+           . .ci/minikube-test-setup/start_services.sh
+-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
++          ./run_tests.sh --coverage -integration test/integration -- -s --num-shards=4 --shard-id=1
          working-directory: 'galaxy root'
-       - name: Run tests
-         if: matrix.subset == 'kubernetes'
+       - uses: codecov/codecov-action@v3
+         with:
 ```
 
-If that's not enough and you need to snoop around the process, halting it and inspecting what is going on it's helpful to log into the github runner
-and run the test manually. You can do this by injecting a step that inserts an ssh session via [tmate](https://github.com/mxschmitt/action-tmate#use-registered-public-ssh-keys), then use your favorite tools like py-spy or similar to look at the test while it's failing or getting stuck.
+If that's not enough and you need to snoop around the process, halting it and inspecting what is going on it's helpful to log into the GitHub runner
+and run the test manually. You can do this by injecting a step that inserts an SSH session via [tmate](https://github.com/mxschmitt/action-tmate#use-registered-public-ssh-keys), then use your favorite tools like py-spy or similar to look at the test while it's failing or getting stuck.
 
 Note that you probably don't want to do this on a PR branch, where all your tests are still going to run. Instead run this only against your fork.
 
