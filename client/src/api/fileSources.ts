@@ -1,4 +1,4 @@
-import { faAws, faDropbox, faGoogleDrive } from "@fortawesome/free-brands-svg-icons";
+import { faAws, faDropbox, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
 import { faCloud, faFolderTree, faNetworkWired, type IconDefinition } from "font-awesome-6";
 
 import type { components } from "@/api/schema";
@@ -65,6 +65,10 @@ export const templateTypes: FileSourceTypesDetail = {
     dataverse: {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with a Dataverse.org instance.",
+    },
+    huggingface: {
+        icon: faHubspot,
+        message: "This is a file repository plugin that connects with the Hugging Face Hub.",
     },
 };
 

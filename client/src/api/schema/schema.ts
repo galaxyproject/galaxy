@@ -11184,7 +11184,8 @@ export interface components {
                 | "inveniordm"
                 | "zenodo"
                 | "rspace"
-                | "dataverse";
+                | "dataverse"
+                | "huggingface";
             /** Variables */
             variables?:
                 | (
@@ -21585,7 +21586,8 @@ export interface components {
                 | "inveniordm"
                 | "zenodo"
                 | "rspace"
-                | "dataverse";
+                | "dataverse"
+                | "huggingface";
             /** Uri Root */
             uri_root: string;
             /**
