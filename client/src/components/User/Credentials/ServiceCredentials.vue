@@ -24,7 +24,7 @@ import type { CardAction, CardIndicator } from "@/components/Common/GCard.types"
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
-import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { SECRET_PLACEHOLDER } from "@/stores/userToolsServicesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -41,6 +41,7 @@ interface Props {
     sourceId: string;
     sourceVersion: string;
     serviceDefinition: ServiceCredentialsDefinition;
+    serviceCurrentGroupId?: string;
 }
 
 const props = defineProps<Props>();
@@ -59,8 +60,6 @@ const editingGroups = ref<Record<string, EditGroup>>({});
 const sourceId = computed(() => props.sourceId);
 const sourceVersion = computed(() => props.sourceVersion);
 
-const userToolsServicesStore = useUserToolsServicesStore();
-
 const {
     isBusy,
     busyMessage,
@@ -70,16 +69,18 @@ const {
     deleteCredentialsGroup,
 } = useUserToolCredentials(sourceId.value, sourceVersion.value);
 
-const toolService = computed(() => {
-    return userToolsServicesStore.getToolService(sourceId.value, sourceVersion.value, props.serviceDefinition);
-});
+const serviceName = computed<string>(() => props.serviceDefinition.label || props.serviceDefinition.name);
 const serviceGroups = computed<ServiceCredentialsGroup[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
-const selectedGroup = computed<ServiceCredentialsGroup | undefined>(() =>
-    serviceGroups.value.find((group) => group.id === toolService.value?.current_group_id)
-);
-const serviceName = computed<string>(() => props.serviceDefinition.label || props.serviceDefinition.name);
+const serviceSelectedGroup = computed<ServiceCredentialsGroup | undefined>(() => {
+    for (const group of serviceGroups.value) {
+        if (group.id === props.serviceCurrentGroupId) {
+            return group;
+        }
+    }
+    return undefined;
+});
 const disableSaveButton = computed(() => {
     return (editingGroupKey: string) => {
         if (!editingGroups.value[editingGroupKey]) {
@@ -239,7 +240,7 @@ async function onDeleteGroup(groupToDelete: ServiceCredentialsGroup) {
     }
 }
 
-function primaryActions(groupData: ServiceCredentialsGroup): CardAction[] {
+const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): CardAction[] => {
     return [
         {
             id: `delete-${groupData.name}`,
@@ -248,7 +249,7 @@ function primaryActions(groupData: ServiceCredentialsGroup): CardAction[] {
             icon: faTrash,
             variant: "outline-danger",
             handler: () => onDeleteGroup(groupData),
-            visible: groupData.name !== selectedGroup.value?.name && !editingGroups.value[groupData.id],
+            visible: groupData.name !== serviceSelectedGroup.value?.name && !editingGroups.value[groupData.id],
         },
         {
             id: `edit-${groupData.name}`,
@@ -261,13 +262,14 @@ function primaryActions(groupData: ServiceCredentialsGroup): CardAction[] {
         },
         {
             id: `use-${groupData.name}`,
-            label: selectedGroup.value?.name === groupData.name ? "This group is currently used" : "Use this group",
+            label:
+                serviceSelectedGroup.value?.name === groupData.name ? "This group is currently used" : "Use this group",
             title: "Use this group",
-            icon: selectedGroup.value?.name === groupData.name ? faX : faCheck,
+            icon: serviceSelectedGroup.value?.name === groupData.name ? faX : faCheck,
             variant: "outline-info",
             handler: () => onCurrentGroupChange(groupData),
-            disabled: selectedGroup.value?.name === groupData.name,
-            visible: !editingGroups.value[groupData.id] && selectedGroup.value?.name !== groupData.name,
+            disabled: serviceSelectedGroup.value?.name === groupData.name,
+            visible: !editingGroups.value[groupData.id] && serviceSelectedGroup.value?.name !== groupData.name,
         },
         {
             id: `discard-${groupData.name}`,
@@ -290,9 +292,9 @@ function primaryActions(groupData: ServiceCredentialsGroup): CardAction[] {
             visible: !!editingGroups.value[groupData.id],
         },
     ];
-}
+});
 
-function primaryActionsForNewGroup(eg: EditGroup): CardAction[] {
+const primaryActionsForNewGroup = computed(() => (eg: EditGroup): CardAction[] => {
     const groupName = eg.groupPayload.name;
     return [
         {
@@ -316,28 +318,30 @@ function primaryActionsForNewGroup(eg: EditGroup): CardAction[] {
             visible: !!editingGroups.value[groupName],
         },
     ];
-}
+});
 
-function groupIndicators(groupName: string): CardIndicator[] {
+const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardIndicator[] => {
     return [
         {
             id: "current-group",
             label: "",
             title: "This group will be used for this tool in the workflow",
             icon: faCheck,
-            visible: selectedGroup.value?.name === groupName,
+            visible: serviceSelectedGroup.value?.id === group.id && !editingGroups.value[group.id],
         },
     ];
-}
+});
 
 function onClearSelection() {
     onCurrentGroupChange(undefined);
 }
 
-function onNameInput(groupId: string, value?: string) {
-    if (editingGroups.value[groupId]) {
-        editingGroups.value[groupId].groupPayload.name = value?.trim() || "";
-    }
+function createNameInputHandler(groupId: string) {
+    return (newValue?: string) => {
+        if (editingGroups.value[groupId]) {
+            editingGroups.value[groupId].groupPayload.name = newValue?.trim() || "";
+        }
+    };
 }
 </script>
 
@@ -352,8 +356,8 @@ function onNameInput(groupId: string, value?: string) {
                 </span>
 
                 <span class="text-muted selected-group-info">
-                    <span v-if="selectedGroup">
-                        Using: <b>{{ selectedGroup?.name }}</b>
+                    <span v-if="props.serviceCurrentGroupId">
+                        Using: <b>{{ serviceSelectedGroup?.name }}</b>
                     </span>
                     <span v-else> No credential group selected</span>
                 </span>
@@ -369,8 +373,8 @@ function onNameInput(groupId: string, value?: string) {
                     :id="`group-${sg.id}-${sg.name}`"
                     :key="`${sg.id}-${sg.name}`"
                     :title="sg.name"
-                    :selected="selectedGroup?.name === sg.name && !editingGroups[sg.id]"
-                    :indicators="groupIndicators(sg.name)"
+                    :selected="serviceSelectedGroup?.id === sg.id && !editingGroups[sg.id]"
+                    :indicators="groupIndicators(sg)"
                     :primary-actions="primaryActions(sg)">
                     <template v-if="editingGroups[sg.id]" v-slot:description>
                         <div class="p-2">
@@ -389,7 +393,7 @@ function onNameInput(groupId: string, value?: string) {
                                     title="Group Name"
                                     aria-label="Group Name"
                                     class="mb-2"
-                                    @input="(newValue) => onNameInput(sg.id, newValue)" />
+                                    @input="createNameInputHandler(sg.id)" />
                             </BFormGroup>
 
                             <div v-for="variable in editingGroups[sg.id]?.groupPayload.variables" :key="variable.name">
@@ -449,7 +453,7 @@ function onNameInput(groupId: string, value?: string) {
                 </GCard>
 
                 <GCard
-                    v-for="eg in Object.values(editingGroups).filter((g) => !g.groupId)"
+                    v-for="eg in Object.values(editingGroups).filter((g) => g.newGroup)"
                     :key="eg.groupId"
                     :title="eg.groupId"
                     :primary-actions="primaryActionsForNewGroup(eg)"
@@ -471,7 +475,7 @@ function onNameInput(groupId: string, value?: string) {
                                     title="Group Name"
                                     aria-label="Group Name"
                                     class="mb-2"
-                                    @input="(newValue) => onNameInput(eg.groupId, newValue)" />
+                                    @input="createNameInputHandler(eg.groupId)" />
                             </BFormGroup>
 
                             <div
@@ -535,12 +539,18 @@ function onNameInput(groupId: string, value?: string) {
                         color="blue"
                         outline
                         title="Create a new group of credentials"
+                        :disabled="editingGroups && Object.keys(editingGroups).length > 0"
                         @click="onCreateTemporaryGroup">
                         <FontAwesomeIcon :icon="faPlus" />
                         Create New Group
                     </GButton>
 
-                    <GButton color="grey" outline title="Clear selection" @click="onClearSelection">
+                    <GButton
+                        color="grey"
+                        outline
+                        title="Clear selection"
+                        :disabled="!props.serviceCurrentGroupId"
+                        @click="onClearSelection">
                         <FontAwesomeIcon :icon="faXmark" />
                         Clear Selection
                     </GButton>
