@@ -44,6 +44,7 @@ export type UserCredentialsResponse = components["schemas"]["UserCredentialsResp
 export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
 export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
 export type UserSourceService = components["schemas"]["UserCredentialsResponse"];
+export type SelectCurrentGroupPayload = components["schemas"]["SelectCurrentGroupPayload"];
 
 export function transformToSourceCredentials(toolId: string, toolVersion: string): SourceCredentialsDefinition {
     const { getToolCredentialsDefinitions } = useToolCredentialsDefinitionsStore();
@@ -51,7 +52,7 @@ export function transformToSourceCredentials(toolId: string, toolVersion: string
     const toolCredentialsDefinitions = getToolCredentialsDefinitions(toolId, toolVersion);
 
     const services = new Map(
-        toolCredentialsDefinitions?.map((service) => [getKeyFromCredentialsIdentifier(service), service])
+        toolCredentialsDefinitions.map((service) => [getKeyFromCredentialsIdentifier(service), service])
     );
 
     return {
