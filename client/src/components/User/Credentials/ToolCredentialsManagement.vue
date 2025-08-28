@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { BModal } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
-import type { ServiceCredentialPayload, ServiceGroupPayload } from "@/api/users";
+import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
+
+interface CurrentGroupIds {
+    [serviceId: string]: string | undefined;
+}
 
 interface Props {
     toolId: string;
@@ -17,36 +22,55 @@ const emit = defineEmits<{
     (e: "close"): void;
 }>();
 
-const { mutableUserCredentials, saveUserCredentials } = useUserToolCredentials(props.toolId, props.toolVersion);
+const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGroups } = useUserToolCredentials(
+    props.toolId,
+    props.toolVersion
+);
+
+const currentGroupIds = ref<CurrentGroupIds>(initCurrentGroupIds());
+
+const serviceIdFor = computed(() => {
+    return (sd: ServiceCredentialsIdentifier): string | undefined => {
+        const service = userServiceFor.value(sd);
+        return service?.id;
+    };
+});
+
+function initCurrentGroupIds(): CurrentGroupIds {
+    const ids: CurrentGroupIds = {};
+    for (const sd of sourceCredentialsDefinition.value.services.values()) {
+        const s = userServiceFor.value(sd);
+        if (s) {
+            ids[s.id] = s.current_group_id || undefined;
+        }
+    }
+    return ids;
+}
 
 function onSelectCredentials() {
-    if (!mutableUserCredentials.value) {
-        return;
+    const serviceCredentials: SelectCurrentGroupPayload[] = [];
+    for (const serviceId of Object.keys(currentGroupIds.value)) {
+        const groupId = currentGroupIds.value[serviceId];
+        const sc: SelectCurrentGroupPayload = {
+            user_credentials_id: serviceId,
+            current_group_id: groupId || null,
+        };
+        serviceCredentials.push(sc);
     }
-
-    saveUserCredentials(mutableUserCredentials.value);
+    selectCurrentCredentialsGroups(serviceCredentials);
 }
 
-function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
-    const credentialFound = mutableUserCredentials.value.credentials.find(
-        (c) => c.name === credential.name && c.version === credential.version
-    );
-
-    if (credentialFound) {
-        credentialFound.groups.push(newSet);
+function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, groupId?: string) {
+    const serviceId = serviceIdFor.value(serviceDefinition);
+    if (serviceId) {
+        currentGroupIds.value[serviceId] = groupId;
     }
 }
 
-function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: ServiceGroupPayload) {
-    if (!newSet) {
-        credential.current_group = null;
-    } else {
-        const credentialFound = mutableUserCredentials.value.credentials.find(
-            (c) => c.name === credential.name && c.version === credential.version
-        );
-        if (credentialFound) {
-            credentialFound.current_group = newSet.name;
-        }
+function serviceCurrentGroupFor(sd: ServiceCredentialsIdentifier): string | undefined {
+    const serviceId = serviceIdFor.value(sd);
+    if (serviceId) {
+        return currentGroupIds.value[serviceId];
     }
 }
 </script>
@@ -74,14 +98,14 @@ function onCurrentSetChange(credential: ServiceCredentialPayload, newSet?: Servi
 
         <div class="accordion">
             <ServiceCredentials
-                v-for="credential in mutableUserCredentials.credentials"
-                :key="credential.name"
+                v-for="sd in sourceCredentialsDefinition.services.values()"
+                :key="sd.name"
                 class="mb-2"
-                :tool-id="props.toolId"
-                :tool-version="props.toolVersion"
-                :credential-payload="credential"
-                @new-credentials-set="(newSet) => onNewCredentialsSet(credential, newSet)"
-                @update-current-set="(updatedSet) => onCurrentSetChange(credential, updatedSet)" />
+                :source-id="props.toolId"
+                :source-version="props.toolVersion"
+                :service-definition="sd"
+                :service-current-group-id="serviceCurrentGroupFor(sd)"
+                @update-current-group="(groupId) => onCurrentGroupChange(sd, groupId)" />
         </div>
     </BModal>
 </template>
