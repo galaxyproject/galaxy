@@ -24,7 +24,7 @@ const mockSetCurrentHistory = jest.fn();
 const mockApplyFilters = jest.fn();
 const mockWindowOpen = jest.fn(() => null);
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
     useRouter: () => ({
         resolve: (route: string) => ({
             href: `resolved-${route}`,

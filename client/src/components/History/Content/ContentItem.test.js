@@ -14,7 +14,7 @@ const { server, http } = useServerMock();
 
 const globalConfig = getLocalVue();
 
-jest.mock("vue-router/composables", () => ({
+jest.mock("vue-router", () => ({
     useRoute: jest.fn(() => ({})),
     useRouter: jest.fn(() => ({})),
 }));
