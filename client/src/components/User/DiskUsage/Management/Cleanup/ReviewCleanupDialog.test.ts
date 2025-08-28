@@ -106,9 +106,9 @@ describe("ReviewCleanupDialog.vue", () => {
         const allButtons = wrapper.findAll(".btn");
         const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete")[0];
 
-        expect(permanentlyDeleteBtn.attributes().disabled).toBeTruthy();
+        expect(permanentlyDeleteBtn?.attributes().disabled).toBeTruthy();
         await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
-        expect(permanentlyDeleteBtn.attributes().disabled).toBeFalsy();
+        expect(permanentlyDeleteBtn?.attributes().disabled).toBeFalsy();
     });
 
     it("should emit the confirmation event when the agreement and deletion has been confirmed", async () => {

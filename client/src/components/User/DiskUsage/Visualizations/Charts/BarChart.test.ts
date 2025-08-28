@@ -108,7 +108,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item")[index].text()).toContain(dataPoint.label);
+                expect(wrapper.findAll(".legend-item")[index]?.text()).toContain(dataPoint.label);
             });
         });
 
@@ -141,7 +141,7 @@ describe("BarChart.vue", () => {
                 labelFormatter: newLabelFormatter,
             });
             TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item")[index].text()).toContain(newLabelFormatter(dataPoint));
+                expect(wrapper.findAll(".legend-item")[index]?.text()).toContain(newLabelFormatter(dataPoint));
             });
         });
     });
