@@ -1,5 +1,5 @@
 import { defineStore, storeToRefs } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, readonly, ref, set } from "vue";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
@@ -20,6 +20,9 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
 
     const userToolsServices = ref<Record<string, UserSourceService[]>>({});
     const userToolServiceGroups = ref<Record<string, ServiceCredentialsGroup>>({});
+
+    const isBusy = ref(false);
+    const busyMessage = ref<string>("");
 
     const userServicesExistForTool = computed(() => {
         return (toolId: string, toolVersion: string) => {
@@ -79,55 +82,74 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     async function fetchAllUserToolServices(toolId: string, toolVersion: string): Promise<UserSourceService[]> {
         const userId = ensureUserIsRegistered();
 
-        const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
-            params: {
-                path: { user_id: userId },
-                query: {
-                    source_version: toolVersion,
-                    source_type: "tool",
-                    source_id: toolId,
+        busyMessage.value = "Checking your credentials";
+        isBusy.value = true;
+
+        try {
+            const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
+                params: {
+                    path: { user_id: userId },
+                    query: {
+                        source_version: toolVersion,
+                        source_type: "tool",
+                        source_id: toolId,
+                    },
                 },
-            },
-        });
+            });
 
-        if (error) {
-            throw Error(`Failed to fetch user credentials for tool ${toolId}: ${error.err_msg}`);
+            const key = getKey(toolId, toolVersion);
+
+            if (error) {
+                throw Error(`Failed to fetch user credentials for tool ${key}: ${error.err_msg}`);
+            }
+
+            set(userToolsServices.value, key, data);
+
+            updateUserToolServiceGroups(data);
+
+            return data;
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
         }
-
-        const key = getKey(toolId, toolVersion);
-        set(userToolsServices.value, key, data);
-
-        updateUserToolServiceGroups(data);
-
-        return data;
     }
 
     async function createNewCredentialsGroupForTool(
         createSourceCredentialsPayload: CreateSourceCredentialsPayload
     ): Promise<ServiceCredentialsGroup> {
         const userId = ensureUserIsRegistered();
-        const toolId = createSourceCredentialsPayload.source_id;
-        const toolVersion = createSourceCredentialsPayload.source_version;
 
-        const { data, error } = await GalaxyApi().POST("/api/users/{user_id}/credentials", {
-            params: {
-                path: { user_id: userId },
-            },
-            body: {
-                source_id: toolId,
-                source_type: createSourceCredentialsPayload.source_type,
-                source_version: toolVersion,
-                service_credential: createSourceCredentialsPayload.service_credential,
-            },
-        });
+        busyMessage.value = "Creating your credentials";
+        isBusy.value = true;
 
-        if (error) {
-            throw Error(`Failed to create new credentials group for tool ${toolId}@${toolVersion}: ${error.err_msg}`);
+        try {
+            const toolId = createSourceCredentialsPayload.source_id;
+            const toolVersion = createSourceCredentialsPayload.source_version;
+
+            const { data, error } = await GalaxyApi().POST("/api/users/{user_id}/credentials", {
+                params: {
+                    path: { user_id: userId },
+                },
+                body: {
+                    source_id: toolId,
+                    source_type: createSourceCredentialsPayload.source_type,
+                    source_version: toolVersion,
+                    service_credential: createSourceCredentialsPayload.service_credential,
+                },
+            });
+
+            if (error) {
+                const key = getKey(toolId, toolVersion);
+                throw Error(`Failed to create new credentials group for tool ${key}: ${error.err_msg}`);
+            }
+
+            await fetchAllUserToolServices(toolId, toolVersion);
+
+            return data;
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
         }
-
-        await fetchAllUserToolServices(toolId, toolVersion);
-
-        return data;
     }
 
     async function updateUserCredentialsForTool(
@@ -140,20 +162,29 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
 
         removeSecretPlaceholders(serviceGroupPayload);
 
-        const { data, error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials/group/{group_id}", {
-            params: {
-                path: { user_id: userId, group_id: groupId },
-            },
-            body: serviceGroupPayload,
-        });
+        busyMessage.value = "Updating your credentials";
+        isBusy.value = true;
 
-        if (error) {
-            throw Error(`Failed to save user credentials ${groupId} for ${toolId}@${toolVersion} : ${error.err_msg}`);
+        try {
+            const { data, error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials/group/{group_id}", {
+                params: {
+                    path: { user_id: userId, group_id: groupId },
+                },
+                body: serviceGroupPayload,
+            });
+
+            if (error) {
+                const key = getKey(toolId, toolVersion);
+                throw Error(`Failed to save user credentials ${groupId} for ${key} : ${error.err_msg}`);
+            }
+
+            updateUserToolServiceGroup(data);
+
+            return data;
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
         }
-
-        updateUserToolServiceGroup(data);
-
-        return data;
     }
 
     async function deleteCredentialsGroupForTool(
@@ -170,23 +201,31 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
 
         const toolServicesId = getToolService(toolId, toolVersion, serviceIdentifier)?.id;
         if (!toolServicesId) {
-            throw new Error(`No service found for tool ${toolId}@${toolVersion}`);
+            const key = getKey(toolId, toolVersion);
+            throw new Error(`No service found for tool ${key}`);
         }
 
-        const { error } = await GalaxyApi().DELETE(
-            "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
-            {
-                params: {
-                    path: { user_id: userId, user_credentials_id: toolServicesId!, group_id: groupId },
-                },
+        busyMessage.value = "Updating your credentials";
+        isBusy.value = true;
+
+        try {
+            const { error } = await GalaxyApi().DELETE(
+                "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
+                {
+                    params: {
+                        path: { user_id: userId, user_credentials_id: toolServicesId!, group_id: groupId },
+                    },
+                }
+            );
+
+            if (error) {
+                const key = getKey(toolId, toolVersion);
+                throw Error(`Failed to delete user credentials group for tool ${key}: ${error.err_msg}`);
             }
-        );
-
-        if (error) {
-            throw Error(`Failed to delete user credentials group for tool ${toolId}: ${error.err_msg}`);
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
         }
-
-        delete userToolServiceGroups.value[groupId];
     }
 
     async function selectCurrentCredentialsGroupsForTool(
@@ -196,27 +235,34 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     ) {
         const userId = ensureUserIsRegistered();
 
-        const { error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials", {
-            params: {
-                path: {
-                    user_id: userId,
+        busyMessage.value = "Selecting current credentials groups";
+        isBusy.value = true;
+
+        try {
+            const { error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials", {
+                params: {
+                    path: {
+                        user_id: userId,
+                    },
                 },
-            },
-            body: {
-                source_id: toolId,
-                source_type: "tool",
-                source_version: toolVersion,
-                service_credentials: serviceCredentials,
-            },
-        });
+                body: {
+                    source_id: toolId,
+                    source_type: "tool",
+                    source_version: toolVersion,
+                    service_credentials: serviceCredentials,
+                },
+            });
 
-        if (error) {
-            throw new Error(
-                `Failed to select current credentials groups for tool ${toolId}@${toolVersion}: ${error.err_msg}`
-            );
+            if (error) {
+                const key = getKey(toolId, toolVersion);
+                throw new Error(`Failed to select current credentials groups for tool ${key}: ${error.err_msg}`);
+            }
+
+            await fetchAllUserToolServices(toolId, toolVersion);
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
         }
-
-        await fetchAllUserToolServices(toolId, toolVersion);
     }
 
     function ensureUserIsRegistered(): string {
@@ -235,6 +281,8 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     }
 
     return {
+        isBusy: readonly(isBusy),
+        busyMessage: readonly(busyMessage),
         userToolsServices,
         userServicesExistForTool,
         userToolServicesFor,

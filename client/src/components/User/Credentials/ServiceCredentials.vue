@@ -12,6 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCollapse, BFormGroup, BFormInput } from "bootstrap-vue";
 import { faX, faXmark } from "font-awesome-6";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type {
@@ -24,7 +25,7 @@ import type { CardAction, CardIndicator } from "@/components/Common/GCard.types"
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
-import { SECRET_PLACEHOLDER } from "@/stores/userToolsServicesStore";
+import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -60,14 +61,9 @@ const editingGroups = ref<Record<string, EditGroup>>({});
 const sourceId = computed(() => props.sourceId);
 const sourceVersion = computed(() => props.sourceVersion);
 
-const {
-    isBusy,
-    busyMessage,
-    userServiceGroupsFor,
-    createUserCredentials,
-    saveUserCredentials,
-    deleteCredentialsGroup,
-} = useUserToolCredentials(sourceId.value, sourceVersion.value);
+const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
+const { userServiceGroupsFor, createUserCredentials, saveUserCredentials, deleteCredentialsGroup } =
+    useUserToolCredentials(sourceId.value, sourceVersion.value);
 
 const serviceName = computed<string>(() => props.serviceDefinition.label || props.serviceDefinition.name);
 const serviceGroups = computed<ServiceCredentialsGroup[]>(() => {

@@ -2,10 +2,12 @@
 import { faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
@@ -18,13 +20,14 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
+const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
+
 const {
-    isBusy,
-    busyMessage,
     hasUserProvidedRequiredCredentials,
     hasUserProvidedAllCredentials,
     hasSomeOptionalCredentials,
     hasSomeRequiredCredentials,
+    statusVariant,
     checkUserCredentials,
 } = useUserToolCredentials(props.toolId, props.toolVersion);
 
@@ -32,12 +35,6 @@ const showModal = ref(false);
 
 const provideCredentialsButtonTitle = computed(() => {
     return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
-});
-const bannerVariant = computed(() => {
-    if (isBusy.value) {
-        return "info";
-    }
-    return hasUserProvidedRequiredCredentials.value ? "success" : "warning";
 });
 
 function toggleDialog() {
@@ -55,7 +52,7 @@ onMounted(async () => {
 
 <template>
     <div class="mt-2">
-        <BAlert show :variant="bannerVariant">
+        <BAlert show :variant="statusVariant">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="userStore.isAnonymous">
                 <span v-if="hasSomeRequiredCredentials">

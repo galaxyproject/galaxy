@@ -1,5 +1,5 @@
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import type {
     CreateSourceCredentialsPayload,
@@ -24,7 +24,7 @@ import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userTool
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const userStore = useUserStore();
     const userToolsServicesStore = useUserToolsServicesStore();
-    const { userToolServicesFor, userToolServiceGroups } = storeToRefs(userToolsServicesStore);
+    const { isBusy, userToolServicesFor, userToolServiceGroups } = storeToRefs(userToolsServicesStore);
     const {
         sourceCredentialsDefinition,
         hasSomeOptionalCredentials,
@@ -48,9 +48,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             return foundedService?.groups;
         };
     });
-
-    const isBusy = ref(false);
-    const busyMessage = ref<string>("");
 
     function getServiceCredentialsDefinitionByKey(key: string): ServiceCredentialsDefinition {
         const definition = sourceCredentialsDefinition.value.services.get(key);
@@ -184,8 +181,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             return;
         }
 
-        busyMessage.value = "Checking your credentials";
-        isBusy.value = true;
         try {
             if (!userToolsServicesStore.userServicesExistForTool(toolId, toolVersion)) {
                 await userToolsServicesStore.fetchAllUserToolServices(toolId, toolVersion);
@@ -193,23 +188,15 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         } catch (error) {
             console.error("Error checking user credentials", error);
             throw error;
-        } finally {
-            isBusy.value = false;
-            busyMessage.value = "";
         }
     }
 
     async function createUserCredentials(createSourceCredentialsPayload: CreateSourceCredentialsPayload) {
-        busyMessage.value = "Creating your credentials";
-        isBusy.value = true;
         try {
             await userToolsServicesStore.createNewCredentialsGroupForTool(createSourceCredentialsPayload);
         } catch (error) {
             console.error("Error creating user credentials", error);
             throw error;
-        } finally {
-            isBusy.value = false;
-            busyMessage.value = "";
         }
     }
 
@@ -217,8 +204,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      * Save user credentials for the tool
      */
     async function saveUserCredentials(groupId: string, serviceGroupPayload: ServiceGroupPayload) {
-        busyMessage.value = "Updating your credentials";
-        isBusy.value = true;
         try {
             await userToolsServicesStore.updateUserCredentialsForTool(
                 toolId,
@@ -229,9 +214,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         } catch (error) {
             console.error("Error updating user credentials", error);
             throw error;
-        } finally {
-            isBusy.value = false;
-            busyMessage.value = "";
         }
     }
 
@@ -239,31 +221,21 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      * Delete a credentials group for a specific service
      */
     async function deleteCredentialsGroup(serviceIdentifier: ServiceCredentialsIdentifier, groupId: string) {
-        busyMessage.value = "Updating your credentials";
-        isBusy.value = true;
         try {
             await userToolsServicesStore.deleteCredentialsGroupForTool(toolId, toolVersion, serviceIdentifier, groupId);
             await userToolsServicesStore.fetchAllUserToolServices(toolId, toolVersion);
         } catch (error) {
             console.error("Error deleting user credentials group", error);
             throw error;
-        } finally {
-            isBusy.value = false;
-            busyMessage.value = "";
         }
     }
 
     async function selectCurrentCredentialsGroups(serviceCredentials: SelectCurrentGroupPayload[]) {
-        busyMessage.value = "Selecting current credentials groups";
-        isBusy.value = true;
         try {
             await userToolsServicesStore.selectCurrentCredentialsGroupsForTool(toolId, toolVersion, serviceCredentials);
         } catch (error) {
             console.error("Error selecting current credentials groups", error);
             throw error;
-        } finally {
-            isBusy.value = false;
-            busyMessage.value = "";
         }
     }
 
@@ -278,12 +250,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         currentUserToolServices,
         userServiceFor,
         userServiceGroupsFor,
-
-        /** Busy state for operations */
-        isBusy,
-
-        /** Message to display during busy operations */
-        busyMessage,
 
         /** Color variant for status messages according to current state */
         statusVariant,
