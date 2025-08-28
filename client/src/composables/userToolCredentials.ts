@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 
 import type {
     CreateSourceCredentialsPayload,
+    SelectCurrentGroupPayload,
     ServiceCredentialsDefinition,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
@@ -33,12 +34,17 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     } = useToolCredentials(toolId, toolVersion);
 
     const currentUserToolServices = computed(() => userToolServicesFor.value(toolId, toolVersion));
-    const userServiceGroupsFor = computed(() => {
+
+    const userServiceFor = computed(() => {
         return (credentialsIdentifier: ServiceCredentialsIdentifier) => {
-            const foundedService = currentUserToolServices.value?.find((service) => {
+            return currentUserToolServices.value?.find((service) => {
                 return service.name === credentialsIdentifier.name && service.version === credentialsIdentifier.version;
             });
-
+        };
+    });
+    const userServiceGroupsFor = computed(() => {
+        return (credentialsIdentifier: ServiceCredentialsIdentifier) => {
+            const foundedService = userServiceFor.value(credentialsIdentifier);
             return foundedService?.groups;
         };
     });
@@ -236,11 +242,24 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         busyMessage.value = "Updating your credentials";
         isBusy.value = true;
         try {
-            console.log("286 Deleting group:", groupId);
             await userToolsServicesStore.deleteCredentialsGroupForTool(toolId, toolVersion, serviceIdentifier, groupId);
             await userToolsServicesStore.fetchAllUserToolServices(toolId, toolVersion);
         } catch (error) {
             console.error("Error deleting user credentials group", error);
+            throw error;
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
+        }
+    }
+
+    async function selectCurrentCredentialsGroups(serviceCredentials: SelectCurrentGroupPayload[]) {
+        busyMessage.value = "Selecting current credentials groups";
+        isBusy.value = true;
+        try {
+            await userToolsServicesStore.selectCurrentCredentialsGroupsForTool(toolId, toolVersion, serviceCredentials);
+        } catch (error) {
+            console.error("Error selecting current credentials groups", error);
             throw error;
         } finally {
             isBusy.value = false;
@@ -257,6 +276,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
         /** The credentials for the user already stored in the system */
         currentUserToolServices,
+        userServiceFor,
         userServiceGroupsFor,
 
         /** Busy state for operations */
@@ -280,5 +300,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         deleteCredentialsGroup,
         buildGroupsFromUserCredentials,
         getServiceCredentialsDefinition,
+        selectCurrentCredentialsGroups,
     };
 }
