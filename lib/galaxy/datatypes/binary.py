@@ -3208,6 +3208,22 @@ class Xlsx(Binary):
 
 
 @build_sniff_from_prefix
+class Pptx(Binary):
+    """Class for PowerPoint 2007 (pptx) files"""
+
+    file_ext = "pptx"
+    compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Pptx is compressed in zip format and must not be uncompressed in Galaxy.
+        return (
+            file_prefix.compressed_mime_type
+            == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
+
+
+@build_sniff_from_prefix
 class ExcelXls(Binary):
     """Class describing an Excel (xls) file"""
 
