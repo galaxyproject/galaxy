@@ -361,7 +361,7 @@ function createNameInputHandler(groupId: string) {
         </div>
 
         <BCollapse :id="`accordion-${props.serviceDefinition.name}`" v-model="isExpanded" class="px-2">
-            <div class="d-flex flex-column align-items-center mt-2">
+            <div class="d-flex flex-column mt-2">
                 <span class="text-md">{{ props.serviceDefinition.description }}</span>
 
                 <GCard

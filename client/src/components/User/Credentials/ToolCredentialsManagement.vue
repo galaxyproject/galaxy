@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 
 import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
+import { useToolStore } from "@/stores/toolStore";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
@@ -22,10 +23,15 @@ const emit = defineEmits<{
     (e: "close"): void;
 }>();
 
+const { getToolNameById } = useToolStore();
+
 const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGroups } = useUserToolCredentials(
     props.toolId,
     props.toolVersion
 );
+
+const okTitle = "Save Group Selection";
+const toolName = getToolNameById(props.toolId);
 
 const currentGroupIds = ref<CurrentGroupIds>(initCurrentGroupIds());
 
@@ -79,21 +85,21 @@ function serviceCurrentGroupFor(sd: ServiceCredentialsIdentifier): string | unde
     <BModal
         visible
         scrollable
-        title="Select Credentials for this tool"
         no-close-on-backdrop
         no-close-on-esc
         button-size="md"
         size="lg"
         modal-class="manage-tool-credentials-modal"
         body-class="manage-tool-credentials-body"
-        ok-title="Select Credentials"
+        :title="`Manage & Select Credentials Groups for: ${toolName} (${props.toolVersion})`"
+        :ok-title="okTitle"
         cancel-title="Close"
         cancel-variant="outline-danger"
         @ok="onSelectCredentials"
         @close="emit('close')">
         <p>
-            Manage your credentials for <strong>{{ toolId }}</strong> (<strong>{{ toolVersion }}</strong
-            >) here. After making any changes, select the credentials you want to use with this tool.
+            You can manage your credentials here. Any changes to credential groups will persist, but changes to the
+            current group selection for services will only be saved when you click "{{ okTitle }}".
         </p>
 
         <div class="accordion">
