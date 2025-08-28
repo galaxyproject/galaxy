@@ -4,6 +4,7 @@ import { computed, ref, set } from "vue";
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
     CreateSourceCredentialsPayload,
+    SelectCurrentGroupPayload,
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
@@ -63,14 +64,14 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
 
         for (const key in userToolsServices.value) {
             const services = userToolsServices.value[key];
-            const service = services?.find((s) => s.id === group.id);
-
-            if (service) {
-                const groupIndex = service.groups.findIndex((g) => g.id === group.id);
-                if (groupIndex !== -1) {
-                    service.groups[groupIndex] = group;
+            if (services) {
+                for (const service of services) {
+                    const groupIndex = service.groups.findIndex((g) => g.id === group.id);
+                    if (groupIndex !== -1) {
+                        set(service.groups, groupIndex, group);
+                        break;
+                    }
                 }
-                break;
             }
         }
     }
@@ -188,6 +189,36 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
         delete userToolServiceGroups.value[groupId];
     }
 
+    async function selectCurrentCredentialsGroupsForTool(
+        toolId: string,
+        toolVersion: string,
+        serviceCredentials: SelectCurrentGroupPayload[]
+    ) {
+        const userId = ensureUserIsRegistered();
+
+        const { error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials", {
+            params: {
+                path: {
+                    user_id: userId,
+                },
+            },
+            body: {
+                source_id: toolId,
+                source_type: "tool",
+                source_version: toolVersion,
+                service_credentials: serviceCredentials,
+            },
+        });
+
+        if (error) {
+            throw new Error(
+                `Failed to select current credentials groups for tool ${toolId}@${toolVersion}: ${error.err_msg}`
+            );
+        }
+
+        await fetchAllUserToolServices(toolId, toolVersion);
+    }
+
     function ensureUserIsRegistered(): string {
         if (!isRegisteredUser(currentUser.value)) {
             throw new Error("Only registered users can have tool credentials");
@@ -213,5 +244,6 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
         createNewCredentialsGroupForTool,
         updateUserCredentialsForTool,
         deleteCredentialsGroupForTool,
+        selectCurrentCredentialsGroupsForTool,
     };
 });
