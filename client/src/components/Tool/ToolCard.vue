@@ -7,7 +7,7 @@ import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -146,7 +146,7 @@ const canGenerateTours = computed(() =>
     Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
 );
 
-onMounted(() => {
+onBeforeMount(() => {
     if (props.options.credentials) {
         setToolCredentialsDefinition(props.id, props.version, props.options.credentials);
     }
