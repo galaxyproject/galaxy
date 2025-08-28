@@ -3184,6 +3184,7 @@ class Docx(Binary):
 
     file_ext = "docx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Docx is compressed in zip format and must not be uncompressed in Galaxy.
