@@ -176,8 +176,19 @@ const isOptional = ref(props.value.optional ?? false);
 const defaultBoolean = ref(props.value.default_value === null ? "null" : props.value.default_value ? "true" : "false");
 const defaultString = ref(props.value.default_value || "");
 // form framework doesn't yield typed values it seems
-const defaultIntAsStr = ref(props.value.default_value ? props.value.default_value.toString() : "0");
-const defaultFloatAsStr = ref(props.value.default_value ? props.value.default_value.toString() : "0.0");
+
+function defaultNumberAsString(defaultForType: string): string {
+    if (props.value.default_value !== null && props.value.default_value !== undefined) {
+        return props.value.default_value.toString();
+    } else if (props.value.optional) {
+        return "";
+    } else {
+        return defaultForType;
+    }
+}
+
+const defaultIntAsStr = ref(defaultNumberAsString("0"));
+const defaultFloatAsStr = ref(defaultNumberAsString("0.0"));
 
 watch(isOptional, setIsOptional);
 watch(defaultIntAsStr, setDefaultByType);
