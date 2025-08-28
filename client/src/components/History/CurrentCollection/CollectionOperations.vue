@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faDownload, faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -36,7 +38,7 @@ function onDownload() {
                     variant="link"
                     :href="downloadUrl"
                     @click="onDownload">
-                    <Icon class="mr-1" icon="download" />
+                    <FontAwesomeIcon class="mr-1" :icon="faDownload" />
                     <span>Download</span>
                 </b-button>
                 <b-button
@@ -47,7 +49,7 @@ function onDownload() {
                     variant="link"
                     :href="showCollectionDetailsUrl"
                     @click.prevent.stop="router.push(showCollectionDetailsUrl)">
-                    <icon icon="info-circle" />
+                    <FontAwesomeIcon class="mr-1" :icon="faInfoCircle" />
                     <span>Show Details</span>
                 </b-button>
                 <b-button
@@ -58,7 +60,7 @@ function onDownload() {
                     variant="link"
                     :href="rerunUrl"
                     @click.prevent.stop="router.push(rerunUrl)">
-                    <Icon class="mr-1" icon="redo" />
+                    <FontAwesomeIcon class="mr-1" :icon="faRedo" />
                     <span>Run Job Again</span>
                 </b-button>
             </b-button-group>
