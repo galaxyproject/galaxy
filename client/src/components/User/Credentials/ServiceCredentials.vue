@@ -10,7 +10,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BButton, BCollapse } from "bootstrap-vue";
 import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -30,12 +30,14 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
+import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
 type CredentialType = "variable" | "secret";
+
 interface EditGroup {
     groupId: string;
+    isNewGroup: boolean;
     groupPayload: ServiceGroupPayload;
-    newGroup: boolean;
 }
 
 interface Props {
@@ -45,7 +47,9 @@ interface Props {
     serviceCurrentGroupId?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    serviceCurrentGroupId: undefined,
+});
 
 const emit = defineEmits<{
     (e: "update-current-group", groupId?: string): void;
@@ -55,7 +59,6 @@ const { confirm } = useConfirmDialog();
 
 const isExpanded = ref(false);
 const saveButtonText = ref("Save");
-
 const editingGroups = ref<Record<string, EditGroup>>({});
 
 const sourceId = computed(() => props.sourceId);
@@ -65,33 +68,57 @@ const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
 const { userServiceGroupsFor, createUserCredentials, saveUserCredentials, deleteCredentialsGroup } =
     useUserToolCredentials(sourceId.value, sourceVersion.value);
 
-const serviceName = computed<string>(() => props.serviceDefinition.label || props.serviceDefinition.name);
+const serviceName = computed<string>(() => {
+    return props.serviceDefinition.label || props.serviceDefinition.name || "Unknown Service";
+});
+
 const serviceGroups = computed<ServiceCredentialsGroup[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
+
 const serviceSelectedGroup = computed<ServiceCredentialsGroup | undefined>(() => {
-    for (const group of serviceGroups.value) {
-        if (group.id === props.serviceCurrentGroupId) {
-            return group;
-        }
+    if (!props.serviceCurrentGroupId) {
+        return undefined;
     }
-    return undefined;
+    return serviceGroups.value.find((group) => group.id === props.serviceCurrentGroupId);
 });
+
+const newEditingGroups = computed(() => {
+    return Object.values(editingGroups.value).filter((g) => g.isNewGroup);
+});
+
+function isVariableOptional(name: string, type: CredentialType): boolean {
+    const definitions = type === "variable" ? props.serviceDefinition.variables : props.serviceDefinition.secrets;
+    const definition = definitions.find((variable) => variable.name === name);
+    return definition?.optional || false;
+}
+
+function validateGroupData(groupData: ServiceGroupPayload): boolean {
+    if (!groupData.name?.trim()) {
+        return false;
+    }
+
+    const hasInvalidVariable = groupData.variables.some(
+        (variable) => !variable.value && !isVariableOptional(variable.name, "variable")
+    );
+
+    const hasInvalidSecret = groupData.secrets.some(
+        (secret) => !secret.value && !isVariableOptional(secret.name, "secret")
+    );
+
+    const hasDuplicateName = serviceGroups.value.filter((group) => group.name === groupData.name).length > 1;
+
+    return !hasInvalidVariable && !hasInvalidSecret && !hasDuplicateName;
+}
+
 const disableSaveButton = computed(() => {
-    return (editingGroupKey: string) => {
-        if (!editingGroups.value[editingGroupKey]) {
+    return (editingGroupKey: string): boolean => {
+        const editGroup = editingGroups.value[editingGroupKey];
+        if (!editGroup) {
             return true;
         }
 
-        const newData = editingGroups.value[editingGroupKey].groupPayload;
-
-        return (
-            isBusy.value ||
-            !newData.name ||
-            newData.variables.some((variable) => !variable.value && !isVariableOptional(variable.name, "variable")) ||
-            newData.secrets.some((secret) => !secret.value && !isVariableOptional(secret.name, "secret")) ||
-            serviceGroups.value.filter((group) => group.name === newData.name).length > 1
-        );
+        return isBusy.value || !validateGroupData(editGroup.groupPayload);
     };
 });
 
@@ -105,29 +132,7 @@ function generateUniqueName(template: string, currentGroups: ServiceCredentialsG
     return name;
 }
 
-function getVariableDefinition(name: string, type: CredentialType) {
-    const definition = props.serviceDefinition[type === "variable" ? "variables" : "secrets"].find(
-        (variable) => variable.name === name
-    );
-    if (!definition) {
-        throw new Error(`Variable definition not found for variable ${name}`);
-    }
-    return definition;
-}
-
-function getVariableTitle(name: string, type: CredentialType): string {
-    return getVariableDefinition(name, type).label || name;
-}
-
-function getVariableDescription(name: string, type: CredentialType): string | undefined {
-    return getVariableDefinition(name, type).description;
-}
-
-function isVariableOptional(name: string, type: CredentialType): boolean {
-    return getVariableDefinition(name, type).optional;
-}
-
-function onCreateTemporaryGroup() {
+function createTemporaryGroup() {
     const editableGroup: ServiceGroupPayload = {
         name: generateUniqueName("new credential", serviceGroups.value),
         variables: props.serviceDefinition.variables.map((variable) => ({
@@ -142,15 +147,20 @@ function onCreateTemporaryGroup() {
 
     editingGroups.value = {
         ...editingGroups.value,
-        [editableGroup.name]: { groupId: editableGroup.name, groupPayload: editableGroup, newGroup: true },
+        [editableGroup.name]: {
+            groupId: editableGroup.name,
+            groupPayload: editableGroup,
+            isNewGroup: true,
+        },
     };
 }
 
-function onEditGroup(groupId: string) {
+function editGroup(groupId: string) {
     const groupToEdit = serviceGroups.value.find((group) => group.id === groupId);
 
     if (!groupToEdit) {
-        throw new Error(`Group not found: ${groupId}`);
+        Toast.error(`Group not found: ${groupId}`);
+        return;
     }
 
     const editableGroup: ServiceGroupPayload = {
@@ -167,21 +177,28 @@ function onEditGroup(groupId: string) {
 
     editingGroups.value = {
         ...editingGroups.value,
-        [groupId]: { groupId: groupToEdit.id, groupPayload: editableGroup, newGroup: false },
+        [groupId]: {
+            groupId: groupToEdit.id,
+            isNewGroup: false,
+            groupPayload: editableGroup,
+        },
     };
 }
 
-function onDiscardGroup(groupId: string) {
-    delete editingGroups.value[groupId];
-
-    editingGroups.value = { ...editingGroups.value };
+function discardGroupChanges(groupId: string) {
+    const { [groupId]: _removedGroup, ...remainingGroups } = editingGroups.value;
+    editingGroups.value = remainingGroups;
 }
 
-function onCurrentGroupChange(selectedGroup?: ServiceCredentialsGroup) {
+function updateCurrentGroup(selectedGroup?: ServiceCredentialsGroup) {
     emit("update-current-group", selectedGroup?.id);
 }
 
-async function onCreateGroup(editGroup: EditGroup) {
+function onClearSelection() {
+    updateCurrentGroup(undefined);
+}
+
+async function createGroup(editGroup: EditGroup) {
     try {
         const newGroup: CreateSourceCredentialsPayload = {
             source_id: sourceId.value,
@@ -196,17 +213,21 @@ async function onCreateGroup(editGroup: EditGroup) {
 
         await createUserCredentials(newGroup);
 
-        onDiscardGroup(editGroup?.groupId);
-    } catch (e) {
-        Toast.error(`Error creating group: ${errorMessageAsString(e)}`);
+        discardGroupChanges(editGroup.groupId);
+
+        Toast.success("Credentials group created successfully");
+    } catch (error) {
+        console.error("Error creating group:", error);
+        Toast.error(`Error creating group: ${errorMessageAsString(error)}`);
     }
 }
 
-async function onUpdateGroup(groupId: string) {
+async function updateGroup(groupId: string) {
     try {
         const groupToUpdate = editingGroups.value[groupId];
 
         if (!groupToUpdate) {
+            console.warn(`No group found for update: ${groupId}`);
             return;
         }
 
@@ -214,15 +235,18 @@ async function onUpdateGroup(groupId: string) {
 
         await saveUserCredentials(groupId, groupToUpdate.groupPayload);
 
-        onDiscardGroup(groupId);
-    } catch (e) {
-        Toast.error(`Error saving credentials: ${errorMessageAsString(e)}`);
+        discardGroupChanges(groupId);
+
+        Toast.success("Credentials group updated successfully");
+    } catch (error) {
+        console.error("Error saving credentials:", error);
+        Toast.error(`Error saving credentials: ${errorMessageAsString(error)}`);
     } finally {
         saveButtonText.value = "Save";
     }
 }
 
-async function onDeleteGroup(groupToDelete: ServiceCredentialsGroup) {
+async function deleteGroup(groupToDelete: ServiceCredentialsGroup) {
     const confirmed = await confirm(`Are you sure you want to delete the credentials group "${groupToDelete.name}"?`, {
         title: "Delete credentials group",
         okTitle: "Delete group",
@@ -232,20 +256,30 @@ async function onDeleteGroup(groupToDelete: ServiceCredentialsGroup) {
     });
 
     if (confirmed && groupToDelete) {
-        await deleteCredentialsGroup(props.serviceDefinition, groupToDelete.id);
+        try {
+            await deleteCredentialsGroup(props.serviceDefinition, groupToDelete.id);
+            Toast.success("Credentials group deleted successfully");
+        } catch (error) {
+            console.error("Error deleting group:", error);
+            Toast.error(`Error deleting group: ${errorMessageAsString(error)}`);
+        }
     }
 }
 
 const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): CardAction[] => {
+    const editingGroup = editingGroups.value[groupData.id];
+    const isBeingEdited = Boolean(editingGroup);
+    const isCurrentGroup = serviceSelectedGroup.value?.id === groupData.id;
+
     return [
         {
-            id: `delete-${groupData.name}`,
+            id: `delete-${groupData.id}`,
             label: "",
             title: "Delete this group",
             icon: faTrash,
             variant: "outline-danger",
-            handler: () => onDeleteGroup(groupData),
-            visible: groupData.name !== serviceSelectedGroup.value?.name && !editingGroups.value[groupData.id],
+            handler: () => deleteGroup(groupData),
+            visible: !isCurrentGroup && !isBeingEdited,
         },
         {
             id: `edit-${groupData.name}`,
@@ -253,19 +287,18 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
             title: "Edit this group",
             icon: faPencilAlt,
             variant: "outline-info",
-            handler: () => onEditGroup(groupData.id),
-            visible: !editingGroups.value[groupData.id],
+            handler: () => editGroup(groupData.id),
+            visible: !isBeingEdited,
         },
         {
             id: `use-${groupData.name}`,
-            label:
-                serviceSelectedGroup.value?.name === groupData.name ? "This group is currently used" : "Use this group",
+            label: isCurrentGroup ? "This group is currently used" : "Use this group",
             title: "Use this group",
-            icon: serviceSelectedGroup.value?.name === groupData.name ? faX : faCheck,
+            icon: isCurrentGroup ? faX : faCheck,
             variant: "outline-info",
-            handler: () => onCurrentGroupChange(groupData),
-            disabled: serviceSelectedGroup.value?.name === groupData.name,
-            visible: !editingGroups.value[groupData.id] && serviceSelectedGroup.value?.name !== groupData.name,
+            handler: () => updateCurrentGroup(groupData),
+            disabled: isCurrentGroup,
+            visible: !isBeingEdited && !isCurrentGroup,
         },
         {
             id: `discard-${groupData.name}`,
@@ -273,9 +306,9 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
             title: "Discard changes to this group",
             icon: faBan,
             variant: "outline-danger",
-            handler: () => onDiscardGroup(groupData.id),
+            handler: () => discardGroupChanges(groupData.id),
             disabled: isBusy.value,
-            visible: !!editingGroups.value[groupData.id],
+            visible: isBeingEdited,
         },
         {
             id: `save-${groupData.name}`,
@@ -283,62 +316,55 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
             title: "Save changes to this group",
             icon: isBusy.value ? faSpinner : faSave,
             variant: "outline-info",
-            handler: () => onUpdateGroup(groupData.id),
+            handler: () => updateGroup(groupData.id),
             disabled: disableSaveButton.value(groupData.id),
-            visible: !!editingGroups.value[groupData.id],
+            visible: isBeingEdited,
         },
     ];
 });
 
-const primaryActionsForNewGroup = computed(() => (eg: EditGroup): CardAction[] => {
-    const groupName = eg.groupPayload.name;
+const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAction[] => {
+    const groupId = editGroup.groupId;
+    const isBeingEdited = Boolean(editingGroups.value[groupId]);
+
     return [
         {
-            id: `discard-${groupName}`,
+            id: `discard-${groupId}`,
             label: "Discard",
             title: "Discard changes to this group",
             icon: faBan,
             variant: "outline-danger",
-            handler: () => onDiscardGroup(groupName),
+            handler: () => discardGroupChanges(groupId),
             disabled: isBusy.value,
-            visible: !!editingGroups.value[groupName],
+            visible: isBeingEdited,
         },
         {
-            id: `save-${groupName}`,
+            id: `save-${groupId}`,
             label: "Save",
             title: "Save changes to this group",
             icon: isBusy.value ? faSpinner : faSave,
             variant: "outline-info",
-            handler: () => onCreateGroup(eg),
-            disabled: disableSaveButton.value(groupName),
-            visible: !!editingGroups.value[groupName],
+            handler: () => createGroup(editGroup),
+            disabled: disableSaveButton.value(groupId),
+            visible: isBeingEdited,
         },
     ];
 });
 
 const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardIndicator[] => {
+    const isCurrentGroup = serviceSelectedGroup.value?.id === group.id;
+    const isBeingEdited = Boolean(editingGroups.value[group.id]);
+
     return [
         {
             id: "current-group",
             label: "",
             title: "This group will be used for this tool in the workflow",
             icon: faCheck,
-            visible: serviceSelectedGroup.value?.id === group.id && !editingGroups.value[group.id],
+            visible: isCurrentGroup && !isBeingEdited,
         },
     ];
 });
-
-function onClearSelection() {
-    onCurrentGroupChange(undefined);
-}
-
-function createNameInputHandler(groupId: string) {
-    return (newValue?: string) => {
-        if (editingGroups.value[groupId]) {
-            editingGroups.value[groupId].groupPayload.name = newValue?.trim() || "";
-        }
-    };
-}
 </script>
 
 <template>
@@ -373,160 +399,20 @@ function createNameInputHandler(groupId: string) {
                     :indicators="groupIndicators(sg)"
                     :primary-actions="primaryActions(sg)">
                     <template v-if="editingGroups[sg.id]" v-slot:description>
-                        <div class="p-2">
-                            Editing group of credentials for <b>{{ sg.name }}</b>
-
-                            <BFormGroup
-                                :id="`${sg.name}-name`"
-                                label="Group Name"
-                                description="Enter a unique name for this group">
-                                <BFormInput
-                                    :id="`${sg.name}-name-input`"
-                                    :value="editingGroups[sg.id]?.groupPayload.name"
-                                    type="text"
-                                    :state="editingGroups[sg.id]?.groupPayload.name ? true : false"
-                                    placeholder="Enter group name"
-                                    title="Group Name"
-                                    aria-label="Group Name"
-                                    class="mb-2"
-                                    @input="createNameInputHandler(sg.id)" />
-                            </BFormGroup>
-
-                            <div v-for="variable in editingGroups[sg.id]?.groupPayload.variables" :key="variable.name">
-                                <BFormGroup
-                                    :id="`${editingGroups[sg.id]?.groupPayload.name}-${variable.name}-variable`"
-                                    :label="getVariableTitle(variable.name, 'variable')"
-                                    :description="getVariableDescription(variable.name, 'variable')">
-                                    <BFormInput
-                                        :id="`${editingGroups[sg.id]?.groupPayload.name}-${
-                                            variable.name
-                                        }-variable-input`"
-                                        v-model="variable.value"
-                                        type="text"
-                                        :state="
-                                            !variable.value
-                                                ? isVariableOptional(variable.name, 'variable')
-                                                    ? null
-                                                    : false
-                                                : true
-                                        "
-                                        :placeholder="getVariableTitle(variable.name, 'variable')"
-                                        :title="getVariableTitle(variable.name, 'variable')"
-                                        :aria-label="getVariableTitle(variable.name, 'variable')"
-                                        :required="!isVariableOptional(variable.name, 'variable')"
-                                        :readonly="false"
-                                        class="mb-2" />
-                                </BFormGroup>
-                            </div>
-
-                            <div v-for="secret in editingGroups[sg.id]?.groupPayload.secrets" :key="secret.name">
-                                <BFormGroup
-                                    :id="`${editingGroups[sg.id]?.groupPayload.name}-${secret.name}-secret`"
-                                    :label="getVariableTitle(secret.name, 'secret')"
-                                    :description="getVariableDescription(secret.name, 'secret')">
-                                    <BFormInput
-                                        :id="`${editingGroups[sg.id]?.groupPayload.name}-${secret.name}-secret-input`"
-                                        v-model="secret.value"
-                                        type="password"
-                                        autocomplete="off"
-                                        :state="
-                                            !secret.value
-                                                ? isVariableOptional(secret.name, 'secret')
-                                                    ? null
-                                                    : false
-                                                : true
-                                        "
-                                        :placeholder="getVariableTitle(secret.name, 'secret')"
-                                        :title="getVariableTitle(secret.name, 'secret')"
-                                        :aria-label="getVariableTitle(secret.name, 'secret')"
-                                        :required="!isVariableOptional(secret.name, 'secret')"
-                                        :readonly="false"
-                                        class="mb-2" />
-                                </BFormGroup>
-                            </div>
-                        </div>
+                        <CredentialsGroupForm
+                            :group-data="editingGroups[sg.id]"
+                            :service-definition="props.serviceDefinition" />
                     </template>
                 </GCard>
 
                 <GCard
-                    v-for="eg in Object.values(editingGroups).filter((g) => g.newGroup)"
+                    v-for="eg in newEditingGroups"
                     :key="eg.groupId"
                     :title="eg.groupId"
                     :primary-actions="primaryActionsForNewGroup(eg)"
                     class="mb-2">
                     <template v-slot:description>
-                        <div class="p-2">
-                            Creating new group of credentials
-
-                            <BFormGroup
-                                :id="`${eg.groupId}-name`"
-                                label="Group Name"
-                                description="Enter a unique name for this group">
-                                <BFormInput
-                                    :id="`${eg.groupId}-name-input`"
-                                    :value="eg.groupPayload.name"
-                                    type="text"
-                                    :state="eg.groupPayload.name ? true : false"
-                                    placeholder="Enter group name"
-                                    title="Group Name"
-                                    aria-label="Group Name"
-                                    class="mb-2"
-                                    @input="createNameInputHandler(eg.groupId)" />
-                            </BFormGroup>
-
-                            <div
-                                v-for="variable in eg.groupPayload.variables"
-                                :key="`${eg.groupId}-${variable.name}-variable`">
-                                <BFormGroup
-                                    :id="`${eg.groupId}-${variable.name}-variable`"
-                                    :label="getVariableTitle(variable.name, 'variable')"
-                                    :description="getVariableDescription(variable.name, 'variable')">
-                                    <BFormInput
-                                        :id="`${eg.groupId}-${variable.name}-variable-input`"
-                                        v-model="variable.value"
-                                        type="text"
-                                        :state="
-                                            !variable.value
-                                                ? isVariableOptional(variable.name, 'variable')
-                                                    ? null
-                                                    : false
-                                                : true
-                                        "
-                                        :placeholder="getVariableTitle(variable.name, 'variable')"
-                                        :title="getVariableTitle(variable.name, 'variable')"
-                                        :aria-label="getVariableTitle(variable.name, 'variable')"
-                                        :required="!isVariableOptional(variable.name, 'variable')"
-                                        :readonly="false"
-                                        class="mb-2" />
-                                </BFormGroup>
-                            </div>
-
-                            <div v-for="secret in eg.groupPayload.secrets" :key="`${eg.groupId}-${secret.name}-secret`">
-                                <BFormGroup
-                                    :id="`${eg.groupId}-${secret.name}-secret`"
-                                    :label="getVariableTitle(secret.name, 'secret')"
-                                    :description="getVariableDescription(secret.name, 'secret')">
-                                    <BFormInput
-                                        :id="`${eg.groupId}-${secret.name}-secret-input`"
-                                        v-model="secret.value"
-                                        type="password"
-                                        autocomplete="off"
-                                        :state="
-                                            !secret.value
-                                                ? isVariableOptional(secret.name, 'secret')
-                                                    ? null
-                                                    : false
-                                                : true
-                                        "
-                                        :placeholder="getVariableTitle(secret.name, 'secret')"
-                                        :title="getVariableTitle(secret.name, 'secret')"
-                                        :aria-label="getVariableTitle(secret.name, 'secret')"
-                                        :required="!isVariableOptional(secret.name, 'secret')"
-                                        :readonly="false"
-                                        class="mb-2" />
-                                </BFormGroup>
-                            </div>
-                        </div>
+                        <CredentialsGroupForm :group-data="eg" :service-definition="props.serviceDefinition" />
                     </template>
                 </GCard>
 
@@ -536,7 +422,7 @@ function createNameInputHandler(groupId: string) {
                         outline
                         title="Create a new group of credentials"
                         :disabled="editingGroups && Object.keys(editingGroups).length > 0"
-                        @click="onCreateTemporaryGroup">
+                        @click="createTemporaryGroup">
                         <FontAwesomeIcon :icon="faPlus" />
                         Create New Group
                     </GButton>
