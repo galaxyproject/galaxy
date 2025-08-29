@@ -14,6 +14,14 @@ import { useUserStore } from "@/stores/userStore";
 
 export const SECRET_PLACEHOLDER = "********";
 
+export interface CurrentGroupIds {
+    [serviceId: string]: string | undefined;
+}
+
+export interface ToolsCurrentGroupIds {
+    [toolKey: string]: CurrentGroupIds;
+}
+
 export const useUserToolsServicesStore = defineStore("userToolsServicesStore", () => {
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
@@ -24,19 +32,21 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     const isBusy = ref(false);
     const busyMessage = ref<string>("");
 
+    const userToolsServicesCurrentGroupIds = ref<ToolsCurrentGroupIds>({});
+
     const userServicesExistForTool = computed(() => {
         return (toolId: string, toolVersion: string) => {
-            const key = getKey(toolId, toolVersion);
-            return userToolsServices.value[key];
+            const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+            return userToolsServices.value[userToolServiceKey];
         };
     });
 
     const userToolServicesFor = computed(() => (toolId: string, toolVersion: string) => {
-        const key = getKey(toolId, toolVersion);
-        return userToolsServices.value[key];
+        const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+        return userToolsServices.value[userToolServiceKey];
     });
 
-    function getKey(toolId: string, toolVersion: string): string {
+    function getUserToolServiceKey(toolId: string, toolVersion: string): string {
         const userId = ensureUserIsRegistered();
         return `${userId}-${toolId}-${toolVersion}`;
     }
@@ -49,13 +59,25 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
         }
     }
 
+    function initToolsCurrentGroupIds() {
+        for (const toolKey in userToolsServices.value) {
+            const userToolServices = userToolsServices.value[toolKey];
+            if (userToolServices) {
+                userToolsServicesCurrentGroupIds.value[toolKey] = {};
+                for (const service of userToolServices) {
+                    userToolsServicesCurrentGroupIds.value[toolKey][service.id] = service.current_group_id || undefined;
+                }
+            }
+        }
+    }
+
     function getToolService(
         toolId: string,
         toolVersion: string,
         serviceIdentifier: ServiceCredentialsIdentifier
     ): UserSourceService | undefined {
-        const key = getKey(toolId, toolVersion);
-        const service = userToolsServices.value[key]?.find(
+        const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+        const service = userToolsServices.value[userToolServiceKey]?.find(
             (service) => service.name === serviceIdentifier.name && service.version === serviceIdentifier.version
         );
 
@@ -65,13 +87,13 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     function updateUserToolServiceGroup(group: ServiceCredentialsGroup) {
         set(userToolServiceGroups.value, group.id, group);
 
-        for (const key in userToolsServices.value) {
-            const services = userToolsServices.value[key];
-            if (services) {
-                for (const service of services) {
-                    const groupIndex = service.groups.findIndex((g) => g.id === group.id);
-                    if (groupIndex !== -1) {
-                        set(service.groups, groupIndex, group);
+        for (const userToolServiceKey in userToolsServices.value) {
+            const userToolServices = userToolsServices.value[userToolServiceKey];
+            if (userToolServices) {
+                for (const userToolService of userToolServices) {
+                    const currentUserToolServiceGroup = userToolService.groups.findIndex((g) => g.id === group.id);
+                    if (currentUserToolServiceGroup !== -1) {
+                        set(userToolService.groups, currentUserToolServiceGroup, group);
                         break;
                     }
                 }
@@ -97,15 +119,17 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
                 },
             });
 
-            const key = getKey(toolId, toolVersion);
+            const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
 
             if (error) {
-                throw Error(`Failed to fetch user credentials for tool ${key}: ${error.err_msg}`);
+                throw Error(`Failed to fetch user credentials for tool ${userToolServiceKey}: ${error.err_msg}`);
             }
 
-            set(userToolsServices.value, key, data);
+            set(userToolsServices.value, userToolServiceKey, data);
 
             updateUserToolServiceGroups(data);
+
+            initToolsCurrentGroupIds();
 
             return data;
         } finally {
@@ -115,6 +139,7 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
     }
 
     async function createNewCredentialsGroupForTool(
+        serviceIdentifier: ServiceCredentialsIdentifier,
         createSourceCredentialsPayload: CreateSourceCredentialsPayload
     ): Promise<ServiceCredentialsGroup> {
         const userId = ensureUserIsRegistered();
@@ -139,11 +164,23 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
             });
 
             if (error) {
-                const key = getKey(toolId, toolVersion);
-                throw Error(`Failed to create new credentials group for tool ${key}: ${error.err_msg}`);
+                const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+                throw Error(`Failed to create new credentials group for tool ${userToolServiceKey}: ${error.err_msg}`);
             }
 
             await fetchAllUserToolServices(toolId, toolVersion);
+
+            const toolService = getToolService(toolId, toolVersion, serviceIdentifier);
+            if (!toolService?.id) {
+                const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+                throw new Error(`No service found for tool ${userToolServiceKey}`);
+            }
+
+            const userToolServicesCurrentGroupIds =
+                userToolsServicesCurrentGroupIds.value[getUserToolServiceKey(toolId, toolVersion)];
+            if (userToolServicesCurrentGroupIds && !userToolServicesCurrentGroupIds[toolService.id]) {
+                userToolServicesCurrentGroupIds[toolService.id] = undefined;
+            }
 
             return data;
         } finally {
@@ -174,8 +211,8 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
             });
 
             if (error) {
-                const key = getKey(toolId, toolVersion);
-                throw Error(`Failed to save user credentials ${groupId} for ${key} : ${error.err_msg}`);
+                const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+                throw Error(`Failed to save user credentials ${groupId} for ${userToolServiceKey} : ${error.err_msg}`);
             }
 
             updateUserToolServiceGroup(data);
@@ -199,10 +236,11 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
             return;
         }
 
-        const toolServicesId = getToolService(toolId, toolVersion, serviceIdentifier)?.id;
+        const toolService = getToolService(toolId, toolVersion, serviceIdentifier);
+        const toolServicesId = toolService?.id;
         if (!toolServicesId) {
-            const key = getKey(toolId, toolVersion);
-            throw new Error(`No service found for tool ${key}`);
+            const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+            throw new Error(`No service found for tool ${userToolServiceKey}`);
         }
 
         busyMessage.value = "Updating your credentials";
@@ -213,14 +251,24 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
                 "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
                 {
                     params: {
-                        path: { user_id: userId, user_credentials_id: toolServicesId!, group_id: groupId },
+                        path: { user_id: userId, user_credentials_id: toolServicesId, group_id: groupId },
                     },
                 }
             );
 
             if (error) {
-                const key = getKey(toolId, toolVersion);
-                throw Error(`Failed to delete user credentials group for tool ${key}: ${error.err_msg}`);
+                const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+                throw Error(`Failed to delete user credentials group for tool ${userToolServiceKey}: ${error.err_msg}`);
+            }
+
+            await fetchAllUserToolServices(toolId, toolVersion);
+
+            const updatedToolService = getToolService(toolId, toolVersion, serviceIdentifier);
+            const updatedToolServicesId = updatedToolService?.id;
+            const userToolServicesCurrentGroupIds =
+                userToolsServicesCurrentGroupIds.value[getUserToolServiceKey(toolId, toolVersion)];
+            if (!updatedToolServicesId && userToolServicesCurrentGroupIds) {
+                delete userToolServicesCurrentGroupIds[toolServicesId];
             }
         } finally {
             isBusy.value = false;
@@ -254,8 +302,10 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
             });
 
             if (error) {
-                const key = getKey(toolId, toolVersion);
-                throw new Error(`Failed to select current credentials groups for tool ${key}: ${error.err_msg}`);
+                const userToolServiceKey = getUserToolServiceKey(toolId, toolVersion);
+                throw new Error(
+                    `Failed to select current credentials groups for tool ${userToolServiceKey}: ${error.err_msg}`
+                );
             }
 
             await fetchAllUserToolServices(toolId, toolVersion);
@@ -287,6 +337,8 @@ export const useUserToolsServicesStore = defineStore("userToolsServicesStore", (
         userServicesExistForTool,
         userToolServicesFor,
         userToolServiceGroups,
+        userToolsServicesCurrentGroupIds,
+        initToolsCurrentGroupIds,
         getToolService,
         fetchAllUserToolServices,
         createNewCredentialsGroupForTool,
