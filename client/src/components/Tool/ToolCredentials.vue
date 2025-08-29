@@ -42,10 +42,6 @@ function toggleDialog() {
 }
 
 onMounted(async () => {
-    if (userStore.isAnonymous) {
-        return;
-    }
-
     await checkUserCredentials();
 });
 </script>
