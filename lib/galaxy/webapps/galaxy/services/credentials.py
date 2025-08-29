@@ -3,7 +3,6 @@ from typing import (
     Callable,
     cast,
     Dict,
-    List,
     Optional,
     Set,
     Tuple,
@@ -20,6 +19,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.credentials import (
+    CredentialsAssociation,
     CredentialsManager,
     CredentialsModelsSet,
 )
@@ -32,7 +32,6 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
-    CredentialPayload,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -360,7 +359,8 @@ class CredentialsService:
 
         session.commit()
 
-        return self._build_credential_group_response(group_id, group_name, variables, secrets)
+        updated_credentials = self.credentials_manager.get_user_credentials(user.id, group_id=group_id)
+        return self._construct_credential_group_response(group_id, group_name, updated_credentials)
 
     def _create_credentials(
         self,
@@ -442,45 +442,46 @@ class CredentialsService:
 
         session.commit()
 
-        return self._build_credential_group_response(
+        updated_credentials = self.credentials_manager.get_user_credentials(
+            user.id, user_credentials_id=user_credentials_id, group_id=user_credential_group_id
+        )
+        return self._construct_credential_group_response(
             user_credential_group_id,
             group_name,
-            variables,
-            secrets,
+            updated_credentials,
         )
 
-    def _build_credential_group_response(
+    def _construct_credential_group_response(
         self,
-        group_id: DecodedDatabaseIdField,
+        group_id: int,
         group_name: str,
-        variables: List[CredentialPayload],
-        secrets: List[CredentialPayload],
+        group_credentials: CredentialsAssociation,
     ) -> CredentialGroupResponse:
-        """Build a CredentialGroupResponse from variables and secrets data."""
-        variables_list = []
-        secrets_list = []
+        updated_variables = []
+        updated_secrets = []
+        for *_, credential in group_credentials:
+            if credential.is_secret:
+                updated_secrets.append(
+                    {
+                        "name": credential.name,
+                        "is_set": credential.is_set,
+                    }
+                )
+            else:
+                updated_variables.append(
+                    {
+                        "name": credential.name,
+                        "value": credential.value,
+                    }
+                )
 
-        for variable in variables:
-            variable_name = variable.name
-            variable_value = variable.value
-            variables_list.append(
-                {
-                    "name": variable_name,
-                    "value": variable_value,
-                }
-            )
-
-        for secret in secrets:
-            secret_name = secret.name
-            secret_value = secret.value
-            secrets_list.append(
-                {
-                    "name": secret_name,
-                    "is_set": secret_value is not None,
-                }
-            )
-
-        return CredentialGroupResponse(id=group_id, name=group_name, variables=variables_list, secrets=secrets_list)
+        group_data = {
+            "id": group_id,
+            "name": group_name,
+            "variables": updated_variables,
+            "secrets": updated_secrets,
+        }
+        return CredentialGroupResponse(**group_data)
 
     def _ensure_user_access(
         self,
