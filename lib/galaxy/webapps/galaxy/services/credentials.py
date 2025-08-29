@@ -174,7 +174,9 @@ class CredentialsService:
                     rows_to_delete.update({credentials_group, credential})
                     if credential.is_secret:
                         secrets_to_delete.add(
-                            f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{credentials_group.name}|{credential.name}"
+                            self._build_vault_credential_reference(
+                                user_credentials, credentials_group.name, credential.name
+                            )
                         )
                     if credentials_group.id == user_credentials.current_group_id:
                         self.credentials_manager.update_current_group(user_credentials, None)
@@ -190,7 +192,9 @@ class CredentialsService:
                 rows_to_delete.update({user_credentials, credentials_group, credential})
                 if credential.is_secret:
                     secrets_to_delete.add(
-                        f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{credentials_group.name}|{credential.name}"
+                        self._build_vault_credential_reference(
+                            user_credentials, credentials_group.name, credential.name
+                        )
                     )
 
         if secrets_to_delete:
@@ -199,6 +203,11 @@ class CredentialsService:
                 user_vault.delete_secret(vault_ref)
 
         self.credentials_manager.delete_rows(rows_to_delete)
+
+    def _build_vault_credential_reference(
+        self, user_credentials: UserCredentials, group_name: str, secret_name: str
+    ) -> str:
+        return f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{group_name}|{secret_name}"
 
     def _get_tool_credentials_definition(
         self,
@@ -309,10 +318,7 @@ class CredentialsService:
         if not existing_user_credentials:
             raise ObjectNotFound(f"No credentials found for user {user.id} in group {group_id}.")
 
-        user_vault = UserVaultWrapper(self.app.vault, user)
-
         user_credentials, credentials_group = next((uc, cg) for uc, cg, _ in existing_user_credentials)
-        prefix_secret_ref = f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}"
         old_group_name = credentials_group.name
         if old_group_name != group_name:
             self.credentials_manager.update_group(credentials_group, group_name)
@@ -329,16 +335,19 @@ class CredentialsService:
             else:
                 raise ObjectNotFound(f"Variable '{variable_name}' not found.")
 
+        user_vault = UserVaultWrapper(self.app.vault, user)
         for secret_payload in secrets:
             secret_name, secret_value = secret_payload.name, secret_payload.value
             secret = existing_credentials_map.get((secret_name, True))
             if secret:
                 old_group_secret = None
                 if old_group_name != group_name:
-                    old_vault_ref = f"{prefix_secret_ref}|{old_group_name}|{secret_name}"
+                    old_vault_ref = self._build_vault_credential_reference(
+                        user_credentials, old_group_name, secret_name
+                    )
                     old_group_secret = user_vault.read_secret(old_vault_ref)
                     user_vault.delete_secret(old_vault_ref)
-                vault_ref = f"{prefix_secret_ref}|{group_name}|{secret_name}"
+                vault_ref = self._build_vault_credential_reference(user_credentials, group_name, secret_name)
                 if secret_value is not None:
                     user_vault.write_secret(vault_ref, secret_value)
                 elif old_group_secret:
@@ -478,6 +487,7 @@ class CredentialsService:
     ) -> User:
         if trans.anonymous:
             raise AuthenticationRequired("You need to be logged in to access your credentials.")
+        assert trans.user is not None
         if user_id != "current" and user_id != trans.user.id:
             raise ItemOwnershipException("You can only access your own credentials.")
         return trans.user
