@@ -205,6 +205,22 @@ $galaxy-state-bg: (
     }
 }
 
+// EDAM Ontology Badges (in ToolList)
+.edam-ontology-badge {
+    border: 1px solid;
+    &.operation {
+        color: var(--color-blue-600);
+        background-color: var(--color-blue-100);
+        border-color: var(--color-blue-600);
+    }
+
+    &.topic {
+        color: var(--color-green-600);
+        background-color: var(--color-green-100);
+        border-color: var(--color-green-600);
+    }
+}
+
 // Extra label colors
 .badge-beta {
     @extend .badge-warning;

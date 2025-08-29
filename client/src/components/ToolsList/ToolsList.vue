@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faStar } from "@fortawesome/free-solid-svg-icons";
+import { faSitemap, faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -147,10 +147,22 @@ function applyFilter(filter: string, value: string) {
 <template>
     <section class="tools-list">
         <div class="mb-2">
-            <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center justify-content-between flex-gapx-1">
                 <Heading h1 separator inline size="lg" class="flex-grow-1 m-0">
                     <span v-localize>Discover Tools in this Galaxy</span>
                 </Heading>
+
+                <GButton
+                    size="small"
+                    outline
+                    tooltip
+                    tooltip-placement="bottom"
+                    color="blue"
+                    title="Discover Tool EDAM Ontologies"
+                    to="/tools/list/ontologies">
+                    <FontAwesomeIcon :icon="faSitemap" />
+                    Ontologies
+                </GButton>
             </div>
 
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
@@ -254,16 +266,9 @@ function applyFilter(filter: string, value: string) {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-
 .tools-list {
     display: flex;
     flex-flow: column;
-
-    :deep(.ontology-badge) {
-        background-color: scale-color($brand-toggle, $lightness: +75%);
-        border-color: scale-color($brand-toggle, $lightness: +55%);
-    }
 
     .tools-list-body {
         display: flex;
