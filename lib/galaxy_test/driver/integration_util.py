@@ -7,10 +7,13 @@ testing configuration.
 
 import os
 import re
+import string
 import sys
 from collections.abc import Iterator
 from typing import (
+    Any,
     ClassVar,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
@@ -225,6 +228,9 @@ def integration_tool_runner(tool_ids):
         instance._run_tool_test(tool_id)
 
     return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)
+
+
+ObjectStoreConfigFormat = Literal["xml", "yml"]
 
 
 class ConfiguresObjectStores:
