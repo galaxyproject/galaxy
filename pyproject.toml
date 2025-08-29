@@ -127,7 +127,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
-    "pytest<8",  # https://github.com/galaxyproject/galaxy/issues/17561
+    "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-html",
