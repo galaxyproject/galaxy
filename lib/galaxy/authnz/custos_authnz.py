@@ -133,6 +133,8 @@ class OIDCAuthnzBase(IdentityProvider):
                 return False
         except jwt.exceptions.DecodeError:
             log.error("Refresh token is non-decodable")
+            # If the refresh token is non-decodable, we do not use it. See discussion in https://github.com/galaxyproject/galaxy/pull/20821
+            return False
 
         oauth2_session = self._create_oauth2_session()
         token_endpoint = self.config.token_endpoint
