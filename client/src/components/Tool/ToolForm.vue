@@ -87,7 +87,7 @@
                     id="execute"
                     class="text-nowrap"
                     title="Run Tool"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     size="small"
                     :wait="showExecuting"
                     :tooltip="tooltip"
@@ -97,7 +97,7 @@
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -224,10 +224,16 @@ export default {
             return this.uuid || this.formConfig.uuid;
         },
         tooltip() {
-            if (!this.canMutateHistory) {
-                return this.immutableHistoryMessage;
+            switch (true) {
+                case !this.canMutateHistory:
+                    return this.immutableHistoryMessage;
+                case this.formConfig.errors && Object.values(this.formConfig.errors).length > 0:
+                    return "Please correct errors before running the tool.";
+                case this.showExecuting:
+                    return "Tool is being executed...";
+                default:
+                    return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
             }
-            return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
@@ -252,8 +258,10 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
-        runButtonTitle() {
-            return "Run Tool";
+        runButtonDisabled() {
+            return (
+                this.disabled || !this.canMutateHistory || (this.formConfig.errors && Object.values(this.formConfig.errors).length > 0)
+            );
         },
     },
     watch: {
