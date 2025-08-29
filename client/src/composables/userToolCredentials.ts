@@ -1,6 +1,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { getToolKey } from "@/api/tools";
 import type {
     CreateSourceCredentialsPayload,
     SelectCurrentGroupPayload,
@@ -52,7 +53,9 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     function getServiceCredentialsDefinitionByKey(key: string): ServiceCredentialsDefinition {
         const definition = sourceCredentialsDefinition.value.services.get(key);
         if (!definition) {
-            throw new Error(`No definition found for credential service '${key}' in tool ${toolId}`);
+            throw new Error(
+                `No definition found for credential service '${key}' in tool ${getToolKey(toolId, toolVersion)}`
+            );
         }
         return definition;
     }
@@ -193,7 +196,11 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     async function createUserCredentials(createSourceCredentialsPayload: CreateSourceCredentialsPayload) {
         try {
-            await userToolsServicesStore.createNewCredentialsGroupForTool(createSourceCredentialsPayload);
+            const serviceIdentifier = createSourceCredentialsPayload.service_credential;
+            await userToolsServicesStore.createNewCredentialsGroupForTool(
+                serviceIdentifier,
+                createSourceCredentialsPayload
+            );
         } catch (error) {
             console.error("Error creating user credentials", error);
             throw error;
@@ -223,7 +230,6 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     async function deleteCredentialsGroup(serviceIdentifier: ServiceCredentialsIdentifier, groupId: string) {
         try {
             await userToolsServicesStore.deleteCredentialsGroupForTool(toolId, toolVersion, serviceIdentifier, groupId);
-            await userToolsServicesStore.fetchAllUserToolServices(toolId, toolVersion);
         } catch (error) {
             console.error("Error deleting user credentials group", error);
             throw error;
