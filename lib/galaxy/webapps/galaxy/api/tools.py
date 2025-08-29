@@ -777,6 +777,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
           '21.01' (where inputs inside conditionals or repeats are nested
           elements).
         :type input_format: str
+
+        :param __tags: optional list of strings
+          Global tags to apply to all tool outputs (datasets and dataset
+          collections) in the target history. Example: "__tags": ["#tag1", "#tag2"].
+        :type __tags: list[str]
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -786,6 +791,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             )
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
+        __tags = payload.get("__tags", [])
+        if not isinstance(__tags, list) or not all(isinstance(tag, str) for tag in __tags):
+            raise exceptions.RequestParameterInvalidException("__tags must be a list of strings.")
         return self.service._create(trans, payload, **kwd)
 
 

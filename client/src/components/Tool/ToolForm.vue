@@ -355,7 +355,7 @@ export default {
                 tool_uuid: this.toolUuid,
                 inputs: {
                     ...this.formData,
-                    tags: this.tags,
+                    __tags: this.tags,
                 },
             };
             if (this.useEmail) {

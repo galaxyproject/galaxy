@@ -2223,9 +2223,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             completed_jobs=completed_jobs,
         )
 
-        tags = incoming.get("tags", [])
-        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
-            raise exceptions.RequestParameterInvalidException("Tags must be a list of strings.")
+        # Reserved global tags parameter. Applies to all tool outputs.
+        # This may change in the future if per-output tags are introduced.
+        tags = incoming.get("__tags", [])
         if tags:
             tag_handler = trans.tag_handler
             for _, hda in execution_tracker.output_datasets:
