@@ -1,3 +1,4 @@
+import pytest
 from selenium.webdriver.support.ui import Select
 
 from galaxy.util.unittest_utils import skip_if_site_down
@@ -12,6 +13,7 @@ from .framework import (
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
+    @pytest.mark.skip("Skipping UCSC table direct1 data source test, chromedriver fails captcha")
     @selenium_test
     @managed_history
     @skip_if_site_down("https://genome.ucsc.edu/cgi-bin/hgTables")
