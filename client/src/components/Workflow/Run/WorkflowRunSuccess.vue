@@ -23,7 +23,7 @@ const targetHistories = computed(() =>
             histories.push(invocation.history_id);
         }
         return histories;
-    }, [] as string[])
+    }, [] as string[]),
 );
 </script>
 
