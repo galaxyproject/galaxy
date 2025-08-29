@@ -125,7 +125,7 @@ class OIDCAuthnzBase(IdentityProvider):
             return False
 
         # Try to extract expiration date from the refresh token. If expired, do not refresh token.
-        try: 
+        try:
             refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
             # do not attempt to use refresh token that is already expired
             if int(refresh_token_decoded["exp"]) <= int(time.time()):
