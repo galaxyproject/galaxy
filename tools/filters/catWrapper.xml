@@ -1,40 +1,42 @@
-<tool id="cat1" name="Concatenate datasets" version="1.0.0">
+<tool id="cat1" name="Concatenate datasets" version="1.0.0" profile="24.2">
     <description>tail-to-head</description>
     <edam_operations>
         <edam_operation>operation_3436</edam_operation>
     </edam_operations>
-    <command interpreter="python"><![CDATA[
-catWrapper.py
-'$out_file1'
-'$input1'
-#for $q in $queries
-    '${q.input2}'
-#end for
+    <command><![CDATA[
+        cat '$input1'
+            #for $q in $queries
+                '${q.input2}'
+            #end for
+            > '$out_file1'
     ]]></command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <param name="input1" format="data" type="data" label="Concatenate Dataset"/>
         <repeat name="queries" title="Dataset">
-            <param name="input2" type="data" label="Select" />
+            <param name="input2" format="data" type="data" label="Select" />
         </repeat>
     </inputs>
     <outputs>
-        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file1" format_source="input1" metadata_source="input1"/>
     </outputs>
     <tests>
         <test>
             <param name="input1" value="1.bed"/>
-            <param name="input2" value="2.bed"/>
-            <output name="out_file1" file="cat_wrapper_out1.bed"/>
+            <repeat name="queries">
+                <param name="input2" value="2.bed"/>
+            </repeat>
+            <output name="out_file1" ftype="bed" file="cat_wrapper_out1.bed"/>
         </test>
-        <!--TODO: if possible, enhance the underlying test code to handle this test
-            the problem is multiple params with the same name "input2"
         <test>
             <param name="input1" value="1.bed"/>
-            <param name="input2" value="2.bed"/>
-            <param name="input2" value="3.bed"/>
-            <output name="out_file1" file="cat_wrapper_out2.bed"/>
+            <repeat name="queries">
+                <param name="input2" value="2.bed"/>
+            </repeat>
+            <repeat name="queries">
+                <param name="input2" value="3.bed"/>
+            </repeat>
+            <output name="out_file1" ftype="bed" file="cat_wrapper_out2.bed"/>
         </test>
-        -->
     </tests>
     <help><![CDATA[
 .. class:: warningmark
