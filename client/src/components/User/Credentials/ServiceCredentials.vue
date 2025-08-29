@@ -72,7 +72,7 @@ const serviceName = computed<string>(() => {
     return props.serviceDefinition.label || props.serviceDefinition.name || "Unknown Service";
 });
 
-const serviceGroups = computed<ServiceCredentialsGroup[]>(() => {
+const userServicesGroups = computed<ServiceCredentialsGroup[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
 
@@ -80,7 +80,7 @@ const serviceSelectedGroup = computed<ServiceCredentialsGroup | undefined>(() =>
     if (!props.serviceCurrentGroupId) {
         return undefined;
     }
-    return serviceGroups.value.find((group) => group.id === props.serviceCurrentGroupId);
+    return userServicesGroups.value.find((group) => group.id === props.serviceCurrentGroupId);
 });
 
 const newEditingGroups = computed(() => {
@@ -106,7 +106,7 @@ function validateGroupData(groupData: ServiceGroupPayload): boolean {
         (secret) => !secret.value && !isVariableOptional(secret.name, "secret")
     );
 
-    const hasDuplicateName = serviceGroups.value.filter((group) => group.name === groupData.name).length > 1;
+    const hasDuplicateName = userServicesGroups.value.filter((group) => group.name === groupData.name).length > 1;
 
     return !hasInvalidVariable && !hasInvalidSecret && !hasDuplicateName;
 }
@@ -134,7 +134,7 @@ function generateUniqueName(template: string, currentGroups: ServiceCredentialsG
 
 function createTemporaryGroup() {
     const editableGroup: ServiceGroupPayload = {
-        name: generateUniqueName("new credential", serviceGroups.value),
+        name: generateUniqueName("new credential", userServicesGroups.value),
         variables: props.serviceDefinition.variables.map((variable) => ({
             name: variable.name,
             value: "",
@@ -156,7 +156,7 @@ function createTemporaryGroup() {
 }
 
 function editGroup(groupId: string) {
-    const groupToEdit = serviceGroups.value.find((group) => group.id === groupId);
+    const groupToEdit = userServicesGroups.value.find((group) => group.id === groupId);
 
     if (!groupToEdit) {
         Toast.error(`Group not found: ${groupId}`);
@@ -391,28 +391,29 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                 <span class="text-md">{{ props.serviceDefinition.description }}</span>
 
                 <GCard
-                    v-for="sg in serviceGroups"
-                    :id="`group-${sg.id}-${sg.name}`"
-                    :key="`${sg.id}-${sg.name}`"
-                    :title="sg.name"
-                    :selected="serviceSelectedGroup?.id === sg.id && !editingGroups[sg.id]"
-                    :indicators="groupIndicators(sg)"
-                    :primary-actions="primaryActions(sg)">
-                    <template v-if="editingGroups[sg.id]" v-slot:description>
+                    v-for="usg in userServicesGroups"
+                    :id="`group-${usg.id}-${usg.name}`"
+                    :key="`${usg.id}-${usg.name}`"
+                    :title="usg.name"
+                    :selected="serviceSelectedGroup?.id === usg.id && !editingGroups[usg.id]"
+                    :indicators="groupIndicators(usg)"
+                    :primary-actions="primaryActions(usg)">
+                    <template v-if="editingGroups[usg.id]" v-slot:description>
                         <CredentialsGroupForm
-                            :group-data="editingGroups[sg.id]"
+                            :group-data="editingGroups[usg.id]"
                             :service-definition="props.serviceDefinition" />
                     </template>
                 </GCard>
 
                 <GCard
-                    v-for="eg in newEditingGroups"
-                    :key="eg.groupId"
-                    :title="eg.groupId"
-                    :primary-actions="primaryActionsForNewGroup(eg)"
+                    v-for="neg in newEditingGroups"
+                    :id="`group-${neg.groupId}`"
+                    :key="neg.groupId"
+                    :title="neg.groupId"
+                    :primary-actions="primaryActionsForNewGroup(neg)"
                     class="mb-2">
                     <template v-slot:description>
-                        <CredentialsGroupForm :group-data="eg" :service-definition="props.serviceDefinition" />
+                        <CredentialsGroupForm :group-data="neg" :service-definition="props.serviceDefinition" />
                     </template>
                 </GCard>
 
