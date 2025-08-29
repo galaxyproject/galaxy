@@ -5,7 +5,7 @@ import { faCaretDown, faDownload, faExternalLinkAlt, faLink } from "@fortawesome
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { storeToRefs } from "pinia";
-import Webhooks from "utils/webhooks";
+import { loadWebhooks } from "utils/webhooks";
 import { computed, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
@@ -37,24 +37,6 @@ const props = defineProps({
 
 const webhookDetails = ref([]);
 
-Webhooks.load({
-    type: "tool-menu",
-    callback: (webhooks) => {
-        webhooks.forEach((webhook) => {
-            if (webhook.activate && webhook.config.function) {
-                webhookDetails.value.push({
-                    icon: `fa ${webhook.config.icon}`,
-                    title: webhook.config.title,
-                    onclick: () => {
-                        const func = new Function("options", webhook.config.function);
-                        func(props.options);
-                    },
-                });
-            }
-        });
-    },
-});
-
 const showDownload = computed(() => currentUser.value?.is_admin);
 const showLink = computed(() => Boolean(props.sharableUrl));
 
@@ -73,6 +55,24 @@ function onDownload() {
 function onLink() {
     openLink(props.sharableUrl);
 }
+
+async function loadToolMenuWebhooks() {
+    const webhooks = await loadWebhooks("tool-menu");
+    webhooks.forEach((webhook) => {
+        if (webhook.activate && webhook.config.function) {
+            webhookDetails.value.push({
+                icon: `fa ${webhook.config.icon}`,
+                title: webhook.config.title,
+                onclick: () => {
+                    const func = new Function("options", webhook.config.function);
+                    func(props.options);
+                },
+            });
+        }
+    });
+}
+
+loadToolMenuWebhooks();
 </script>
 
 <template>
