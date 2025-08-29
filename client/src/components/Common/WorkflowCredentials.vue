@@ -2,11 +2,13 @@
 import { faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onBeforeMount, ref } from "vue";
 
-import type { ToolIdentifier } from "@/composables/userMultiToolCredentials";
+import type { ToolIdentifier } from "@/api/tools";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
 
 import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -19,33 +21,28 @@ const props = defineProps<Props>();
 
 const userStore = useUserStore();
 
+const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
+
 const {
-    isAnyBusy,
-    // TODO: Implement logic for aggregating credential states
-    hasUserProvidedRequiredCredentials,
-    hasUserProvidedAllCredentials,
-    hasSomeOptionalCredentials,
-    hasSomeRequiredCredentials,
+    hasUserProvidedAllRequiredToolsCredentials,
+    hasUserProvidedAllToolsCredentials,
+    hasSomeToolWithOptionalCredentials,
+    hasSomeToolWithRequiredCredentials,
+    statusVariant,
     checkAllUserCredentials,
 } = useUserMultiToolCredentials(props.toolIdentifiers);
 
 const showModal = ref(false);
 
 const provideCredentialsButtonTitle = computed(() => {
-    return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
-});
-const bannerVariant = computed(() => {
-    if (isAnyBusy.value) {
-        return "info";
-    }
-    return hasUserProvidedRequiredCredentials.value ? "success" : "warning";
+    return hasUserProvidedAllRequiredToolsCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
 function toggleDialog() {
     showModal.value = !showModal.value;
 }
 
-onMounted(async () => {
+onBeforeMount(async () => {
     if (userStore.isAnonymous) {
         return;
     }
@@ -55,11 +52,11 @@ onMounted(async () => {
 </script>
 
 <template>
-    <BAlert show :variant="bannerVariant">
-        <LoadingSpan v-if="isAnyBusy" message="Processing credentials" />
+    <BAlert show :variant="statusVariant">
+        <LoadingSpan v-if="isBusy" :message="busyMessage" />
         <div v-else-if="userStore.isAnonymous">
             <FontAwesomeIcon :icon="faKey" fixed-width />
-            <span v-if="hasSomeRequiredCredentials">
+            <span v-if="hasSomeToolWithRequiredCredentials">
                 <strong>
                     Some steps in this workflow require credentials to access its services and you need to be logged in
                     to provide them.
@@ -77,22 +74,22 @@ onMounted(async () => {
                 <FontAwesomeLayers class="mr-1">
                     <FontAwesomeIcon :icon="faKey" fixed-width />
                     <FontAwesomeIcon
-                        v-if="hasUserProvidedRequiredCredentials"
+                        v-if="hasUserProvidedAllRequiredToolsCredentials"
                         :icon="faCheck"
                         fixed-width
                         transform="shrink-6 right-6 down-6" />
                     <FontAwesomeIcon v-else :icon="faExclamation" fixed-width transform="shrink-6 right-8 down-7" />
                 </FontAwesomeLayers>
 
-                <span v-if="hasUserProvidedRequiredCredentials">
+                <span v-if="hasUserProvidedAllRequiredToolsCredentials">
                     <strong>You have already provided credentials for this workflow.</strong> You can update or delete
                     your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
-                    <span v-if="hasSomeOptionalCredentials && !hasUserProvidedAllCredentials">
+                    <span v-if="hasSomeToolWithOptionalCredentials && !hasUserProvidedAllToolsCredentials">
                         <br />
                         You can still provide some optional credentials for this workflow.
                     </span>
                 </span>
-                <span v-else-if="hasSomeRequiredCredentials">
+                <span v-else-if="hasSomeToolWithRequiredCredentials">
                     This workflow <strong>requires you to enter credentials</strong> to access its services. Please
                     provide your credentials before using the workflow using the
                     <i>{{ provideCredentialsButtonTitle }}</i> button.
