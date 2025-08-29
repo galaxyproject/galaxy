@@ -691,7 +691,7 @@ trs_search:
     search: "#trs-search-query"
     search_result:
       type: xpath
-      selector: "//td[contains(text(), '${workflow_name}')]"
+      selector: "//td[contains(., '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     import_version: '[data-version-name*="${version}"]'
