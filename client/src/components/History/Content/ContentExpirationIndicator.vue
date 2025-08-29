@@ -153,7 +153,7 @@ const variant = computed(() => {
 });
 </script>
 <template>
-    <span v-if="canExpire">
+    <span v-if="canExpire" class="expiration-indicator">
         <BBadge v-b-tooltip.noninteractive.hover.left :variant="variant" :title="expirationTooltip">
             <FontAwesomeIcon :icon="faHourglass" /> {{ expirationMessage }}
         </BBadge>
