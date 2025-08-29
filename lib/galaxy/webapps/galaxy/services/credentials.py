@@ -352,6 +352,8 @@ class CredentialsService:
                     user_vault.write_secret(vault_ref, secret_value)
                 elif old_group_secret:
                     user_vault.write_secret(vault_ref, old_group_secret)
+                if secret_value is None:
+                    continue  # do not update the credential if no new value is provided
                 self.credentials_manager.update_credential(secret, secret_value, is_secret=True)
             else:
                 raise ObjectNotFound(f"Secret '{secret_name}' not found.")
