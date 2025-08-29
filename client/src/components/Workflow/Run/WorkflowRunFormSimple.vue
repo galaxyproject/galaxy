@@ -4,16 +4,16 @@ import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
-import type { ToolIdentifier } from "@/composables/userMultiToolCredentials";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -338,15 +338,33 @@ async function onExecute() {
 const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
 
 const credentialTools = computed<ToolIdentifier[]>(() => {
-    return props.model.steps
-        .filter((step: any) => step.step_type === "tool" && step.credentials?.length)
-        .map((step: any) => {
-            setToolCredentialsDefinition(step.id, step.version, step.credentials);
-            return {
-                toolId: step.id,
-                toolVersion: step.version,
-            };
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length
+    );
+
+    const toolIdentifiers: ToolIdentifier[] = [];
+
+    credentialSteps.forEach((step: any) => {
+        setToolCredentialsDefinition(step.id, step.version, step.credentials);
+        toolIdentifiers.push({
+            toolId: step.id,
+            toolVersion: step.version,
         });
+    });
+
+    return toolIdentifiers;
+});
+
+onBeforeMount(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length
+    );
+    if (credentialSteps.length) {
+        const promises = credentialSteps.map((step: any) =>
+            setToolCredentialsDefinition(step.id, step.version, step.credentials)
+        );
+        return Promise.all(promises);
+    }
 });
 </script>
 
@@ -468,7 +486,7 @@ const credentialTools = computed<ToolIdentifier[]>(() => {
             show-details
             :hide-hr="Boolean(showRightPanel)" />
 
-        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" full />
+        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" />
 
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
