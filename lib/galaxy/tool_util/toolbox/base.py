@@ -412,7 +412,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return panel_view_rendered.has_item_recursive(tool)
 
     def load_dynamic_tool(self, dynamic_tool: "DynamicTool") -> Union["Tool", None]:
-        if not dynamic_tool.active:
+        if not dynamic_tool.active or not dynamic_tool.public:
             return None
 
         tool = self.create_dynamic_tool(dynamic_tool)
