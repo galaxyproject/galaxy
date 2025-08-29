@@ -246,13 +246,24 @@ class ConfiguresObjectStores:
         return config_path
 
     @classmethod
-    def _configure_object_store(cls, template, config):
+    def _configure_object_store(
+        cls,
+        template: string.Template,
+        config: dict[str, Any],
+        template_params: Optional[dict[str, Any]] = None,
+        format: ObjectStoreConfigFormat = "xml",
+    ):
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        xml = template.safe_substitute({"temp_directory": temp_directory})
-        config_path = cls.write_object_store_config_file("object_store_conf.xml", xml)
+        template_config = {"temp_directory": temp_directory}
+        template_config.update(template_params or {})
+        object_stores_config = template.safe_substitute(template_config)
+        config_path = cls.write_object_store_config_file(f"object_store_conf.{format}", object_stores_config)
         config["object_store_config_file"] = config_path
-        for path in re.findall(r'files_dir path="([^"]*)"', xml):
+        paths_regex = r'files_dir path="([^"]*)"'
+        if format == "yml":
+            paths_regex = r'(?:files_dir|path): "([^"]*)"'
+        for path in re.findall(paths_regex, object_stores_config):
             assert path.startswith(temp_directory)
             dir_name = os.path.basename(path)
             os.path.join(temp_directory, dir_name)
