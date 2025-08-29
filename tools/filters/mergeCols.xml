@@ -1,13 +1,16 @@
-<tool id="mergeCols1" name="Merge Columns" version="1.0.1">
+<tool id="mergeCols1" name="Merge Columns" version="1.0.1" profile="24.2">
   <description>together</description>
-  <command interpreter="python">
-   mergeCols.py 
-      $input1
-      $out_file1
-      $col1
-      $col2
+  <requirements>
+    <requirement type="package" version="3.13">python</requirement>
+  </requirements>
+  <command>
+    python '$__tool_directory__/mergeCols.py'
+      '$input1'
+      '$out_file1'
+      '$col1'
+      '$col2'
       #for $col in $columns
-        ${col.datacol}
+        '${col.datacol}'
       #end for
   </command>
   <inputs>
@@ -26,7 +29,9 @@
       <param name="input1" value="1.bed"/>
       <param name="col1" value="4" />
       <param name="col2" value="1" />
-      <param name="datacol" value="6" />
+      <repeat name="columns">
+        <param name="datacol" value="6" />
+      </repeat>
       <output name="out_file1" file="mergeCols.dat"/>
     </test>
   </tests>
