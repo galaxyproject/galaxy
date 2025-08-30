@@ -441,7 +441,7 @@ export default {
                         this.errorTitle = "Job submission failed.";
                         this.errorContent = jobDef;
                     }
-                }
+                },
             );
         },
         updateTags(newTags) {
