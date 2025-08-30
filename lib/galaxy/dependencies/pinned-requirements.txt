@@ -8,7 +8,7 @@ aiohappyeyeballs==2.6.1
 aiohttp==3.12.15
 aioitertools==0.12.0
 aiosignal==1.4.0
-alembic==1.16.4
+alembic==1.16.5
 amqp==5.3.1
 annotated-types==0.7.0
 anyio==4.10.0
@@ -62,7 +62,7 @@ docopt==0.6.2
 docutils==0.21.2
 dparse==0.6.4
 edam-ontology==1.25.2
-email-validator==2.2.0
+email-validator==2.3.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
 fastapi-slim==0.116.1
@@ -121,7 +121,7 @@ numpy==2.2.6 ; python_full_version == '3.10.*'
 numpy==2.3.2 ; python_full_version >= '3.11'
 oauthlib==3.3.1
 openpyxl==3.1.5
-orjson==3.11.2
+orjson==3.11.3
 oyaml==1.0
 packaging==24.2 ; python_full_version < '3.10'
 packaging==25.0 ; python_full_version >= '3.10'
@@ -131,7 +131,7 @@ paste==3.10.1
 pastedeploy==3.1.0
 pebble==5.1.3
 pillow==11.3.0
-prompt-toolkit==3.0.51
+prompt-toolkit==3.0.52
 propcache==0.3.2
 prov==1.5.1
 psutil==7.0.0
@@ -164,7 +164,7 @@ pyzmq==27.0.2
 rdflib==7.1.4
 referencing==0.36.2
 refgenconf==0.12.2
-regex==2025.7.34
+regex==2025.8.29
 repoze-lru==0.7
 requests==2.32.5
 requests-oauthlib==2.0.0
@@ -174,7 +174,7 @@ rich==13.9.4
 rich-argparse==1.7.1
 rocrate==0.14.0
 routes==2.5.1
-rpds-py==0.27.0
+rpds-py==0.27.1
 ruamel-yaml==0.18.15
 ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
 s3fs==2025.7.0
@@ -189,22 +189,22 @@ sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.43
 sqlparse==0.5.3
-starlette==0.47.2
+starlette==0.47.3
 starlette-context==0.4.0
-supervisor==4.2.5
+supervisor==4.3.0
 svgwrite==1.4.3
 tenacity==9.1.2
 text-unidecode==1.3
 tifffile==2024.8.30 ; python_full_version < '3.10'
 tifffile==2025.5.10 ; python_full_version == '3.10.*'
-tifffile==2025.6.11 ; python_full_version >= '3.11'
+tifffile==2025.8.28 ; python_full_version >= '3.11'
 tinydb==4.8.2
 tomli==2.2.1 ; python_full_version < '3.11'
 tornado==6.5.2
 tqdm==4.67.1
 tuspy==1.1.0
 tuswsgi==0.5.5
-typing-extensions==4.14.1
+typing-extensions==4.15.0
 typing-inspection==0.4.1
 tzdata==2025.2
 tzlocal==5.3.1
