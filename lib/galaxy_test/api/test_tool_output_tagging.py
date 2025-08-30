@@ -1,7 +1,10 @@
 from typing import List
 
-from galaxy_test.base.populators import DatasetPopulator, DatasetCollectionPopulator
 from galaxy_test.base.api_asserts import assert_status_code_is
+from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+)
 from ._framework import ApiTestCase
 
 
