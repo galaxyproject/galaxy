@@ -11,7 +11,7 @@ import { computed, onBeforeMount, ref, watch } from "vue";
 
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
-import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -87,7 +87,7 @@ const props = defineProps({
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
-const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -148,7 +148,7 @@ const canGenerateTours = computed(() =>
 
 onBeforeMount(() => {
     if (props.options.credentials) {
-        setToolCredentialsDefinition(props.id, props.version, props.options.credentials);
+        setToolServiceCredentialsDefinitionFor(props.id, props.version, props.options.credentials);
     }
 });
 </script>

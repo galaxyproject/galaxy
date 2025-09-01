@@ -97,7 +97,7 @@ import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
 import { useHistoryStore } from "@/stores/historyStore";
-import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { getReplacements } from "./model";
@@ -185,8 +185,8 @@ export default {
             return this.model.steps
                 .filter((step) => step.step_type === "tool" && step.credentials?.length)
                 .map((step) => {
-                    const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
-                    setToolCredentialsDefinition(step.id, step.version, step.credentials);
+                    const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+                    setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
 
                     return {
                         toolId: step.id,

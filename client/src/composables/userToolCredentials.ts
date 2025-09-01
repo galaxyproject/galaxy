@@ -60,7 +60,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return definition;
     }
 
-    function getServiceCredentialsDefinition(
+    function getToolServiceCredentialsDefinitionFor(
         serviceIdentifier: ServiceCredentialsIdentifier
     ): ServiceCredentialsDefinition {
         const key = getKeyFromCredentialsIdentifier(serviceIdentifier);
@@ -138,7 +138,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             return false;
         }
 
-        const serviceDefinitions = getServiceCredentialsDefinition(sourceService);
+        const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
         const selectedGroup = userToolServiceGroups.value[sourceService.current_group_id];
 
         return (
@@ -161,7 +161,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             return false;
         }
 
-        const serviceDefinitions = getServiceCredentialsDefinition(sourceService);
+        const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
         const selectedGroup = userToolServiceGroups.value[sourceService.current_group_id];
 
         return (
@@ -271,7 +271,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         saveUserCredentials,
         deleteCredentialsGroup,
         buildGroupsFromUserCredentials,
-        getServiceCredentialsDefinition,
+        getToolServiceCredentialsDefinitionFor,
         selectCurrentCredentialsGroups,
     };
 }

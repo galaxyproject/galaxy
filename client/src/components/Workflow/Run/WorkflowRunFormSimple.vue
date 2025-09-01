@@ -17,7 +17,7 @@ import { usePanels } from "@/composables/usePanels";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useToolCredentialsDefinitionsStore } from "@/stores/toolCredentialsDefinitionsStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -335,7 +335,7 @@ async function onExecute() {
     }
 }
 
-const { setToolCredentialsDefinition } = useToolCredentialsDefinitionsStore();
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
 
 const credentialTools = computed<ToolIdentifier[]>(() => {
     const credentialSteps = props.model.steps.filter(
@@ -345,7 +345,7 @@ const credentialTools = computed<ToolIdentifier[]>(() => {
     const toolIdentifiers: ToolIdentifier[] = [];
 
     credentialSteps.forEach((step: any) => {
-        setToolCredentialsDefinition(step.id, step.version, step.credentials);
+        setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
         toolIdentifiers.push({
             toolId: step.id,
             toolVersion: step.version,
@@ -361,7 +361,7 @@ onBeforeMount(() => {
     );
     if (credentialSteps.length) {
         const promises = credentialSteps.map((step: any) =>
-            setToolCredentialsDefinition(step.id, step.version, step.credentials)
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials)
         );
         return Promise.all(promises);
     }
