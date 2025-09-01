@@ -42,9 +42,8 @@ jobs:
       - name: Clean dotnet folder for space
         run: rm -Rf /usr/share/dotnet
       - name: Install packages
-        # conntrack: mandatory for later k8s versions
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install conntrack ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
