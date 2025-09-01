@@ -15,6 +15,7 @@ import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
+import DatasetInMarkdown from "@/components/Dataset/DatasetMarkdown/DatasetInMarkdown.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
@@ -66,6 +67,9 @@ const isImageDataset = computed(() => {
     return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
         "galaxy.datatypes.images.Image",
     ]);
+});
+const isMarkdownDataset = computed(() => {
+    return dataset.value?.file_ext === "markdown";
 });
 
 const isPdfDataset = computed(() => {
@@ -205,6 +209,7 @@ watch(
                 :history-dataset-id="datasetId"
                 :allow-size-toggle="true"
                 class="p-3" />
+            <DatasetInMarkdown v-else-if="isMarkdownDataset" :history-content-id="datasetId" />
             <CenterFrame
                 v-else
                 :src="`/datasets/${datasetId}/display/?preview=True`"
