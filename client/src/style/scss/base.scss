@@ -212,12 +212,22 @@ $galaxy-state-bg: (
         color: var(--color-blue-600);
         background-color: var(--color-blue-100);
         border-color: var(--color-blue-600);
+
+        &:hover {
+            color: var(--color-blue-500);
+            background-color: var(--color-blue-200);
+        }
     }
 
     &.topic {
         color: var(--color-green-600);
         background-color: var(--color-green-100);
         border-color: var(--color-green-600);
+
+        &:hover {
+            color: var(--color-green-500);
+            background-color: var(--color-green-200);
+        }
     }
 }
 

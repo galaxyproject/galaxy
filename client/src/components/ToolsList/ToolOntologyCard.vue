@@ -39,10 +39,14 @@ const badges = computed<CardBadge[]>(() => {
         {
             id: "ontology-id",
             label: props.ontology.id,
-            title: "The EDAM id for this ontology",
+            title: "Copy the EDAM id for this ontology",
             class: `edam-ontology-badge ${props.ontology.id.includes("operation") ? "operation" : "topic"}`,
             visible: true,
             icon: faSitemap,
+            handler: () => {
+                copy(props.ontology.id);
+                Toast.success(`EDAM ID "${props.ontology.id}" copied to clipboard`);
+            },
         },
     ];
 });
