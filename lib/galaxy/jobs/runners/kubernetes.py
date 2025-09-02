@@ -680,26 +680,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         return ByteSize(mem_value).value
 
-    def __assemble_k8s_container_image_name(self, job_wrapper):
-        """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
-        job_destination = job_wrapper.job_destination
-
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination
-        # definition
-        repo = ""
-        owner = ""
-        if "repo" in job_destination.params:
-            repo = f"{job_destination.params['repo']}/"
-        if "owner" in job_destination.params:
-            owner = f"{job_destination.params['owner']}/"
-
-        k8s_cont_image = repo + owner + job_destination.params["image"]
-
-        if "tag" in job_destination.params:
-            k8s_cont_image += f":{job_destination.params['tag']}"
-
-        return k8s_cont_image
-
     def __get_k8s_container_name(self, job_wrapper):
         # These must follow a specific regex for Kubernetes.
         raw_id = job_wrapper.job_destination.id
