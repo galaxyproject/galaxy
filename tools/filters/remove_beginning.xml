@@ -1,4 +1,4 @@
-<tool id="Remove beginning1" name="Remove beginning" version="1.0.0">
+<tool id="Remove beginning1" name="Remove beginning" version="1.0.0" profile="24.2">
   <description>of a file</description>
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>

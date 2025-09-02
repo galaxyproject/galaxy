@@ -30,9 +30,6 @@
     <param name="strip" type="boolean" checked="true" label="Strip leading and trailing whitespaces" />
     <param name="condense" type="boolean" checked="true" label="Condense consecutive delimiters in one TAB" />
   </inputs>
-  <stdio>
-    <exit_code range="1:" level="fatal" />
-  </stdio>
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
