@@ -30,8 +30,8 @@ from sqlalchemy.orm import Session
 from galaxy import model
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.psa_authnz import (
-    AUTH_PIPELINE,
     _decode_access_token_helper,
+    AUTH_PIPELINE,
     decode_access_token,
     PSAAuthnz,
 )
