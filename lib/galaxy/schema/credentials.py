@@ -42,11 +42,6 @@ class CredentialDefinitionResponse(Model):
     optional: bool
 
 
-class CredentialDefinitionsResponse(Model):
-    variables: List[CredentialDefinitionResponse]
-    secrets: List[CredentialDefinitionResponse]
-
-
 # TODO: Rename the class to UserSourceServicesResponse
 class UserCredentialsResponse(Model):
     user_id: EncodedDatabaseIdField
@@ -62,6 +57,17 @@ class UserCredentialsResponse(Model):
 
 class UserCredentialsListResponse(RootModel):
     root: List[UserCredentialsResponse]
+
+
+class ExtendedUserCredentialsResponse(UserCredentialsResponse):
+    label: str
+    description: str
+    variables: List[CredentialDefinitionResponse]
+    secrets: List[CredentialDefinitionResponse]
+
+
+class ExtendedUserCredentialsListResponse(RootModel):
+    root: List[ExtendedUserCredentialsResponse]
 
 
 class CredentialPayload(Model):

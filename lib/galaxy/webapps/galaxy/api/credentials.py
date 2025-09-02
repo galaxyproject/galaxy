@@ -3,7 +3,10 @@ API operations on credentials (credentials and variables).
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from fastapi import (
     Query,
@@ -15,6 +18,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
+    ExtendedUserCredentialsListResponse,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -58,8 +62,14 @@ class FastAPICredentials:
             None,
             description="The version of the source to filter by. By default it is the latest version.",
         ),
-    ) -> UserCredentialsListResponse:
-        return self.service.list_user_credentials(trans, user_id, source_type, source_id, source_version)
+        include_definition: bool = Query(
+            False,
+            description="Whether to include extended credential definition information.",
+        ),
+    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
+        return self.service.list_user_credentials(
+            trans, user_id, source_type, source_id, source_version, include_definition
+        )
 
     @router.post(
         "/api/users/{user_id}/credentials",

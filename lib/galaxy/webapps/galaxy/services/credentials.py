@@ -6,6 +6,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
 )
 
 from galaxy.exceptions import (
@@ -32,6 +33,8 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
+    ExtendedUserCredentialsListResponse,
+    ExtendedUserCredentialsResponse,
     SelectServiceCredentialPayload,
     ServiceGroupPayload,
     SOURCE_TYPE,
@@ -68,10 +71,11 @@ class CredentialsService:
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
         source_version: Optional[str] = None,
-    ) -> UserCredentialsListResponse:
+        include_definition: bool = False,
+    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
         """Lists all credentials the user has provided (credentials themselves are not included)."""
         user = self._ensure_user_access(trans, user_id)
-        return self._list_user_credentials(user, source_type, source_id, source_version)
+        return self._list_user_credentials(user, source_type, source_id, source_version, include_definition)
 
     def provide_credential(
         self,
@@ -237,7 +241,8 @@ class CredentialsService:
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
         source_version: Optional[str] = None,
-    ) -> UserCredentialsListResponse:
+        include_definition: bool = False,
+    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
         existing_user_credentials = self.credentials_manager.get_user_credentials(
             user.id, source_type, source_id, source_version
         )
@@ -269,6 +274,16 @@ class CredentialsService:
                     "groups": [],
                 },
             )
+
+            if include_definition:
+                user_credentials_dict[cred_id].update(
+                    {
+                        "label": definition.label,
+                        "description": definition.description,
+                        "variables": [v.to_dict() for v in definition.variables],
+                        "secrets": [s.to_dict() for s in definition.secrets],
+                    }
+                )
 
             group_key = (cred_id, credentials_group.id)
             groups_dict.setdefault(
@@ -302,8 +317,14 @@ class CredentialsService:
                 if c_id == cred_id
             ]
 
-        user_credentials_list = [UserCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
-        return UserCredentialsListResponse(root=user_credentials_list)
+        if include_definition:
+            extended_user_credentials_list = [
+                ExtendedUserCredentialsResponse(**cred) for cred in user_credentials_dict.values()
+            ]
+            return ExtendedUserCredentialsListResponse(root=extended_user_credentials_list)
+        else:
+            user_credentials_list = [UserCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
+            return UserCredentialsListResponse(root=user_credentials_list)
 
     def _update_credentials(
         self,
