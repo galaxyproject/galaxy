@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faLayerGroup, faSitemap, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faLayerGroup, faSitemap, faTimes, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BDropdownText, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -10,6 +10,7 @@ import type Filtering from "@/utils/filtering";
 
 import { types_to_icons } from "../Panels/utilities";
 
+import GButton from "../BaseComponents/GButton.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
 
 const props = defineProps<{
@@ -126,6 +127,17 @@ function applyQuotedFilter(filter: string, value: string) {
                 </BDropdownGroup>
             </BDropdown>
 
+            <GButton
+                v-if="selectedSection"
+                title="Remove section filter"
+                icon-only
+                inline
+                transparent
+                tooltip
+                @click="applyQuotedFilter('section', selectedSection.name)">
+                <FontAwesomeIcon :icon="faTimes" />
+            </GButton>
+
             <BDropdown
                 block
                 :disabled="props.disabled"
@@ -192,6 +204,17 @@ function applyQuotedFilter(filter: string, value: string) {
                     </BDropdownGroup>
                 </BDropdownGroup>
             </BDropdown>
+
+            <GButton
+                v-if="selectedOntology"
+                title="Remove ontology filter"
+                icon-only
+                inline
+                transparent
+                tooltip
+                @click="applyQuotedFilter('ontology', selectedOntology.id)">
+                <FontAwesomeIcon :icon="faTimes" />
+            </GButton>
         </div>
 
         <ToolOntologyCard v-if="selectedOntology?.description" :ontology="selectedOntology" header />
