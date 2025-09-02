@@ -8614,6 +8614,17 @@ export interface components {
              */
             username: string;
         };
+        /** CredentialDefinitionResponse */
+        CredentialDefinitionResponse: {
+            /** Description */
+            description: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+        };
         /** CredentialGroupResponse */
         CredentialGroupResponse: {
             /**
@@ -11049,6 +11060,46 @@ export interface components {
              * @constant
              */
             type: "expression";
+        };
+        /** ExtendedUserCredentialsListResponse */
+        ExtendedUserCredentialsListResponse: components["schemas"]["ExtendedUserCredentialsResponse"][];
+        /** ExtendedUserCredentialsResponse */
+        ExtendedUserCredentialsResponse: {
+            /** Current Group Id */
+            current_group_id?: string | null;
+            /** Description */
+            description: string;
+            /** Groups */
+            groups: components["schemas"]["CredentialGroupResponse"][];
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["CredentialDefinitionResponse"][];
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             */
+            source_type: "tool";
+            /** Source Version */
+            source_version: string;
+            /**
+             * User Id
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /** Variables */
+            variables: components["schemas"]["CredentialDefinitionResponse"][];
+            /** Version */
+            version: string;
         };
         /** ExtraFileEntry */
         ExtraFileEntry: {
@@ -40145,6 +40196,8 @@ export interface operations {
                 source_id?: string | null;
                 /** @description The version of the source to filter by. By default it is the latest version. */
                 source_version?: string | null;
+                /** @description Whether to include extended credential definition information. */
+                include_definition?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -40163,7 +40216,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserCredentialsListResponse"];
+                    "application/json":
+                        | components["schemas"]["UserCredentialsListResponse"]
+                        | components["schemas"]["ExtendedUserCredentialsListResponse"];
                 };
             };
             /** @description Request Error */
