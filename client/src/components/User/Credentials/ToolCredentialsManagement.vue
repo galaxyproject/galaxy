@@ -3,11 +3,10 @@ import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 
-import { getToolKey } from "@/api/tools";
 import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
-import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
@@ -24,8 +23,8 @@ const emit = defineEmits<{
 
 const { getToolNameById } = useToolStore();
 
-const userToolsServicesStore = useUserToolsServicesStore();
-const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServicesStore);
+const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredentialsStore);
 
 const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGroups } = useUserToolCredentials(
     props.toolId,
@@ -34,10 +33,10 @@ const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGro
 
 const okTitle = "Save Group Selection";
 const toolName = getToolNameById(props.toolId);
-const toolKey = getToolKey(props.toolId, props.toolVersion);
+const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(props.toolId, props.toolVersion);
 
 const userToolServicesCurrentGroupIds = computed(() => {
-    return userToolsServicesCurrentGroupIds.value[toolKey] || {};
+    return userToolsServicesCurrentGroupIds.value[userToolKey] || {};
 });
 
 const userToolServiceIdFor = computed(() => {
@@ -65,22 +64,19 @@ function onSelectCredentials() {
 }
 
 function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, groupId?: string) {
-    const userToolServiceId = userToolServiceIdFor.value(serviceDefinition);
-    const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[toolKey];
-    if (userToolServiceId && userToolServiceCurrentGroupIds) {
-        userToolServiceCurrentGroupIds[userToolServiceId] = groupId;
+    const userServiceCredentialsId = userToolServiceIdFor.value(serviceDefinition);
+    if (userServiceCredentialsId) {
+        userToolsServiceCredentialsStore.updateToolServiceCredentialsCurrentGroupId(
+            props.toolId,
+            props.toolVersion,
+            userServiceCredentialsId,
+            groupId
+        );
     }
 }
 
-const serviceCurrentGroupFor = computed(() => (sd: ServiceCredentialsIdentifier): string | undefined => {
-    const userToolServiceId = userToolServiceIdFor.value(sd);
-    if (userToolServiceId) {
-        return userToolServicesCurrentGroupIds.value[userToolServiceId];
-    }
-});
-
 onBeforeMount(() => {
-    userToolsServicesStore.initToolsCurrentGroupIds();
+    userToolsServiceCredentialsStore.initToolsCurrentGroupIds();
 });
 </script>
 
@@ -114,7 +110,6 @@ onBeforeMount(() => {
                 :source-id="props.toolId"
                 :source-version="props.toolVersion"
                 :service-definition="sd"
-                :service-current-group-id="serviceCurrentGroupFor(sd)"
                 @update-current-group="(groupId) => onCurrentGroupChange(sd, groupId)" />
         </div>
     </BModal>

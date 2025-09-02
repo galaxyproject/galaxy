@@ -8,7 +8,7 @@ import { computed, onBeforeMount, ref } from "vue";
 import type { ToolIdentifier } from "@/api/tools";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useUserStore } from "@/stores/userStore";
-import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -21,7 +21,7 @@ const props = defineProps<Props>();
 
 const userStore = useUserStore();
 
-const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
+const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
     hasUserProvidedAllRequiredToolsCredentials,

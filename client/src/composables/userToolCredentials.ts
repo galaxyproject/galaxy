@@ -13,7 +13,7 @@ import type {
 import { getKeyFromCredentialsIdentifier } from "@/api/users";
 import { useToolCredentials } from "@/composables/toolCredentials";
 import { useUserStore } from "@/stores/userStore";
-import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 /**
  * Vue composable that combines user credentials store with tool credentials management.
@@ -24,8 +24,10 @@ import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userTool
  */
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const userStore = useUserStore();
-    const userToolsServicesStore = useUserToolsServicesStore();
-    const { isBusy, userToolServicesFor, userToolServiceGroups } = storeToRefs(userToolsServicesStore);
+    const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+    const { isBusy, userToolServicesFor, userToolServiceCredentialsGroups } = storeToRefs(
+        userToolsServiceCredentialsStore
+    );
     const {
         sourceCredentialsDefinition,
         hasSomeOptionalCredentials,
@@ -139,7 +141,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
 
         const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
-        const selectedGroup = userToolServiceGroups.value[sourceService.current_group_id];
+        const selectedGroup = userToolServiceCredentialsGroups.value[sourceService.current_group_id];
 
         return (
             serviceDefinitions.variables.every((v) => {
@@ -162,7 +164,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
 
         const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
-        const selectedGroup = userToolServiceGroups.value[sourceService.current_group_id];
+        const selectedGroup = userToolServiceCredentialsGroups.value[sourceService.current_group_id];
 
         return (
             serviceDefinitions.variables.every((v) => {
@@ -185,8 +187,8 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
 
         try {
-            if (!userToolsServicesStore.userServicesExistForTool(toolId, toolVersion)) {
-                await userToolsServicesStore.fetchAllUserToolServices(toolId, toolVersion);
+            if (!userToolsServiceCredentialsStore.userServicesExistForTool(toolId, toolVersion)) {
+                await userToolsServiceCredentialsStore.fetchAllUserToolServices(toolId, toolVersion);
             }
         } catch (error) {
             console.error("Error checking user credentials", error);
@@ -197,7 +199,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     async function createUserCredentials(createSourceCredentialsPayload: CreateSourceCredentialsPayload) {
         try {
             const serviceIdentifier = createSourceCredentialsPayload.service_credential;
-            await userToolsServicesStore.createNewCredentialsGroupForTool(
+            await userToolsServiceCredentialsStore.createNewCredentialsGroupForTool(
                 serviceIdentifier,
                 createSourceCredentialsPayload
             );
@@ -212,7 +214,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      */
     async function saveUserCredentials(groupId: string, serviceGroupPayload: ServiceGroupPayload) {
         try {
-            await userToolsServicesStore.updateUserCredentialsForTool(
+            await userToolsServiceCredentialsStore.updateUserCredentialsForTool(
                 toolId,
                 toolVersion,
                 groupId,
@@ -229,7 +231,12 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      */
     async function deleteCredentialsGroup(serviceIdentifier: ServiceCredentialsIdentifier, groupId: string) {
         try {
-            await userToolsServicesStore.deleteCredentialsGroupForTool(toolId, toolVersion, serviceIdentifier, groupId);
+            await userToolsServiceCredentialsStore.deleteCredentialsGroupForTool(
+                toolId,
+                toolVersion,
+                serviceIdentifier,
+                groupId
+            );
         } catch (error) {
             console.error("Error deleting user credentials group", error);
             throw error;
@@ -238,7 +245,11 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     async function selectCurrentCredentialsGroups(serviceCredentials: SelectCurrentGroupPayload[]) {
         try {
-            await userToolsServicesStore.selectCurrentCredentialsGroupsForTool(toolId, toolVersion, serviceCredentials);
+            await userToolsServiceCredentialsStore.selectCurrentCredentialsGroupsForTool(
+                toolId,
+                toolVersion,
+                serviceCredentials
+            );
         } catch (error) {
             console.error("Error selecting current credentials groups", error);
             throw error;

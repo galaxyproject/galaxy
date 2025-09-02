@@ -10,7 +10,7 @@ import { getToolKey } from "@/api/tools";
 import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
-import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import Heading from "@/components/Common/Heading.vue";
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
@@ -27,8 +27,8 @@ const emit = defineEmits<{
 
 const { getToolNameById } = useToolStore();
 
-const userToolsServicesStore = useUserToolsServicesStore();
-const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServicesStore);
+const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredentialsStore);
 
 const { userServiceForTool, sourceCredentialsDefinitionFor, selectCurrentCredentialsGroupsForTool } =
     useUserMultiToolCredentials(props.toolIdentifiers);

@@ -25,7 +25,7 @@ import type { CardAction, CardIndicator } from "@/components/Common/GCard.types"
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
-import { SECRET_PLACEHOLDER, useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -44,12 +44,9 @@ interface Props {
     sourceId: string;
     sourceVersion: string;
     serviceDefinition: ServiceCredentialsDefinition;
-    serviceCurrentGroupId?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    serviceCurrentGroupId: undefined,
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "update-current-group", groupId?: string): void;
@@ -64,8 +61,10 @@ const editingGroups = ref<Record<string, EditGroup>>({});
 const sourceId = computed(() => props.sourceId);
 const sourceVersion = computed(() => props.sourceVersion);
 
-const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
-const { userServiceGroupsFor, createUserCredentials, saveUserCredentials, deleteCredentialsGroup } =
+const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+const { isBusy, busyMessage, getUserToolServiceCurrentGroupId } = storeToRefs(userToolsServiceCredentialsStore);
+
+const { userServiceGroupsFor, userServiceFor, createUserCredentials, saveUserCredentials, deleteCredentialsGroup } =
     useUserToolCredentials(sourceId.value, sourceVersion.value);
 
 const serviceName = computed<string>(() => {
@@ -76,11 +75,18 @@ const userServicesGroups = computed<ServiceCredentialsGroup[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
 
-const serviceSelectedGroup = computed<ServiceCredentialsGroup | undefined>(() => {
-    if (!props.serviceCurrentGroupId) {
-        return undefined;
+const userToolService = userServiceFor.value(props.serviceDefinition);
+
+const currentServiceCredentialsGroup = computed(() => {
+    if (!userToolService?.id) {
+        throw new Error(`User tool service is not defined`);
     }
-    return userServicesGroups.value.find((group) => group.id === props.serviceCurrentGroupId);
+    const currentGroupId = getUserToolServiceCurrentGroupId.value(
+        props.sourceId,
+        props.sourceVersion,
+        userToolService.id
+    );
+    return userServicesGroups.value.find((group) => group.id === currentGroupId);
 });
 
 const newEditingGroups = computed(() => {
@@ -269,7 +275,7 @@ async function deleteGroup(groupToDelete: ServiceCredentialsGroup) {
 const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): CardAction[] => {
     const editingGroup = editingGroups.value[groupData.id];
     const isBeingEdited = Boolean(editingGroup);
-    const isCurrentGroup = serviceSelectedGroup.value?.id === groupData.id;
+    const isCurrentGroup = currentServiceCredentialsGroup.value?.id === groupData.id;
 
     return [
         {
@@ -352,7 +358,7 @@ const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAct
 });
 
 const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardIndicator[] => {
-    const isCurrentGroup = serviceSelectedGroup.value?.id === group.id;
+    const isCurrentGroup = currentServiceCredentialsGroup.value?.id === group.id;
     const isBeingEdited = Boolean(editingGroups.value[group.id]);
 
     return [
@@ -378,8 +384,8 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                 </span>
 
                 <span class="text-muted selected-group-info">
-                    <span v-if="props.serviceCurrentGroupId">
-                        Using: <b>{{ serviceSelectedGroup?.name }}</b>
+                    <span v-if="currentServiceCredentialsGroup?.id">
+                        Using: <b>{{ currentServiceCredentialsGroup?.name }}</b>
                     </span>
                     <span v-else> No credential group selected</span>
                 </span>
@@ -395,7 +401,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                     :id="`group-${usg.id}-${usg.name}`"
                     :key="`${usg.id}-${usg.name}`"
                     :title="usg.name"
-                    :selected="serviceSelectedGroup?.id === usg.id && !editingGroups[usg.id]"
+                    :selected="currentServiceCredentialsGroup?.id === usg.id && !editingGroups[usg.id]"
                     :indicators="groupIndicators(usg)"
                     :primary-actions="primaryActions(usg)">
                     <template v-if="editingGroups[usg.id]" v-slot:description>
@@ -432,7 +438,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                         color="grey"
                         outline
                         title="Clear selection"
-                        :disabled="!props.serviceCurrentGroupId"
+                        :disabled="!currentServiceCredentialsGroup?.id"
                         @click="onClearSelection">
                         <FontAwesomeIcon :icon="faXmark" />
                         Clear Selection

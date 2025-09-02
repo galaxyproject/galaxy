@@ -7,7 +7,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
-import { useUserToolsServicesStore } from "@/stores/userToolsServicesStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
@@ -20,7 +20,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const { isBusy, busyMessage } = storeToRefs(useUserToolsServicesStore());
+const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
     hasUserProvidedRequiredCredentials,
