@@ -119,6 +119,10 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name("USER_MODEL")] = "models.User"
         # Use a custom auth pipeline if configured.
         auth_pipeline = app_config.get("oidc_auth_pipeline", AUTH_PIPELINE)
+        # Add extra steps to the auth pipeline if configured.
+        pipeline_extra = app_config.get("oidc_auth_pipeline_extra", [])
+        if pipeline_extra:
+            auth_pipeline = auth_pipeline + tuple(pipeline_extra)
         self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
