@@ -21,6 +21,7 @@ This level of access is acceptable when only administrators install tools. Howev
 To address this, Galaxy now supports a restricted tool language for user-defined tools. This format is modeled after the XML tool definition but replaces Cheetah templating with sandboxed JavaScript expressions that do not have access to the database or filesystem.
 
 Example: Concatenate Files Tool (YAML)
+
 ```yaml
 class: GalaxyUserTool
 id: cat_user_defined
@@ -42,6 +43,7 @@ outputs:
 ```
 
 Equivalent Tool in XML:
+
 ```xml
 <tool id="cat" version="0.1">
     <description>tail-to-head</description>
@@ -96,7 +98,6 @@ The user-defined tool language is still evolving, and additional safety audits a
 
 Current limitations include:
 
-- [configfiles](https://docs.galaxyproject.org/en/master/dev/schema.html#tool-configfiles) are not supported
 - Access to reference data is not supported
 - Access to metadata and metadata files (such as BAM indexes) is not supported
 - Access to the `extra_files` directory is not supported

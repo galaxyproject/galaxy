@@ -412,7 +412,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return panel_view_rendered.has_item_recursive(tool)
 
     def load_dynamic_tool(self, dynamic_tool: "DynamicTool") -> Union["Tool", None]:
-        if not dynamic_tool.active:
+        if not dynamic_tool.active or not dynamic_tool.public:
             return None
 
         tool = self.create_dynamic_tool(dynamic_tool)
@@ -734,11 +734,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         user: Optional["User"] = None,
     ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
-        if tool_id is None:
-            if tool_uuid is None:
-                raise RequestParameterInvalidException(
-                    "get_tool cannot be called with both tool_id and tool_uuid as None"
-                )
+        if tool_id is None and tool_uuid is None:
+            raise RequestParameterInvalidException("get_tool cannot be called with both tool_id and tool_uuid as None")
+        elif tool_uuid:
             if user:
                 unprivileged_tool = self.get_unprivileged_tool_or_none(user, tool_uuid=tool_uuid)
                 if unprivileged_tool:
@@ -748,7 +746,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if tool_from_uuid is None:
                 raise ObjectNotFound(f"Failed to find a tool with uuid [{tool_uuid}]")
             tool_id = tool_from_uuid.id
-            assert tool_id
+        assert tool_id
 
         if tool_version:
             tool_version = str(tool_version)

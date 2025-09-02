@@ -21,6 +21,7 @@ from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
+    YamlTemplateConfigFile,
 )
 from galaxy.util import listify
 from .interface import (
@@ -116,6 +117,9 @@ class YamlToolSource(ToolSource):
 
     def parse_environment_variables(self):
         return []
+
+    def parse_template_configfiles(self):
+        return [YamlTemplateConfigFile(**config) for config in self.root_dict.get("configfiles") or []]
 
     def parse_interpreter(self):
         return self.root_dict.get("interpreter")

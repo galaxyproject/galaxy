@@ -1308,6 +1308,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if isinstance(module, ToolModule) and module.tool:
                 # Serialize tool version
                 step_dict["tool_version"] = module.tool.version
+                step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
@@ -1559,6 +1560,7 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
+                step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
             # Add tool shed repository information and post-job actions to step dict.
             if isinstance(module, ToolModule):
                 if module.tool and module.tool.tool_shed:
@@ -1577,6 +1579,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if util.is_uuid(step_dict["content_id"]):
                         step_dict["content_id"] = None
                         step_dict["tool_id"] = None
+                        step_dict["tool_uuid"] = None
 
                 pja_dict = {}
                 for pja in step.post_job_actions:
@@ -1743,6 +1746,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "id": step_id,
                 "type": step_type,
                 "tool_id": step.tool_id,
+                "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                 "tool_version": step.tool_version,
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
                 "tool_inputs": step.tool_inputs,
@@ -2062,10 +2066,14 @@ class WorkflowContentsManager(UsesAnnotations):
                     if {
                         "tool_id": step.tool_id,
                         "tool_version": step.tool_version,
-                        "tool_uuid": step.tool_uuid,
+                        "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                     } not in tools:
                         tools.append(
-                            {"tool_id": step.tool_id, "tool_version": step.tool_version, "tool_uuid": step.tool_uuid}
+                            {
+                                "tool_id": step.tool_id,
+                                "tool_version": step.tool_version,
+                                "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
+                            }
                         )
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))

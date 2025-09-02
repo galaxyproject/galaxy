@@ -68,7 +68,7 @@ class LandingRequestManager:
         request_state = payload.request_state
 
         ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
-        tool = get_tool_from_toolbox(self.app.toolbox, ref)
+        tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
         landing_request_state = LandingRequestToolState(request_state or {})
         # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
         # schema - so we can't do this properly.

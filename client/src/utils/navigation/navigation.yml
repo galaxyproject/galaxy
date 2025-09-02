@@ -1045,6 +1045,17 @@ tools:
     clear_search: '#toolbox-panel .search-clear'
     title: '.toolSectionTitle'
 
+custom_tools:
+  selectors:
+    activity: '#activity-user-defined-tools'
+    create_button:
+      selector: 'create new custom tool'
+      type: data-description
+    save_button:
+      selector: 'save custom tool'
+      type: data-description
+    tool_link: "#g-card-custom-tool-${tool_uuid}"
+
 admin:
   allowlist:
     selectors:

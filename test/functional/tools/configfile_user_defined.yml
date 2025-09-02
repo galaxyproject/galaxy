@@ -1,0 +1,27 @@
+class: GalaxyUserTool
+id: configfile
+version: "0.1"
+name: Test configfile
+configfiles:
+  - content: |
+      $(inputs.text)
+    filename: hello.txt
+container: busybox
+shell_command: cat hello.txt
+inputs:
+  - name: text
+    type: text
+    value: hello!
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: hello.txt
+tests:
+  - inputs:
+      text: hello there!
+  - outputs:
+      output:
+        asserts:
+          has_line:
+            line: "hello there!"

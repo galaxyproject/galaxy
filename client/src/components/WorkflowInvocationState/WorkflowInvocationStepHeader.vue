@@ -51,6 +51,7 @@ const stepLabel = computed(() => {
                         :step-label="stepLabel"
                         :step-type="props.workflowStep.type"
                         :step-tool-id="props.workflowStep.tool_id"
+                        :step-tool-uuid="props.workflowStep.tool_uuid"
                         :step-subworkflow-id="props.workflowStep.workflow_id" />
                 </u>
             </span>

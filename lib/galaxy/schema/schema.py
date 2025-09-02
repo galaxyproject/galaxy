@@ -2500,6 +2500,11 @@ class WorkflowStepBase(Model):
     tool_id: Optional[str] = Field(
         None, title="Tool ID", description="The unique name of the tool associated with this step."
     )
+    tool_uuid: Optional[UUID4] = Field(
+        None,
+        title="Tool UUID",
+        description="The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.",
+    )
     tool_version: Optional[str] = Field(
         None, title="Tool Version", description="The version of the tool associated with this step."
     )
