@@ -3,6 +3,9 @@
     <edam_operations>
         <edam_operation>operation_3436</edam_operation>
     </edam_operations>
+    <requirements>
+        <requirement type="package" version="8.31">coreutils</requirement>
+    </requirements>
     <command><![CDATA[
         cat '$input1'
             #for $q in $queries
