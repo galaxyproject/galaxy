@@ -157,6 +157,7 @@ function applyFilter(filter: string, value: string) {
                     outline
                     tooltip
                     tooltip-placement="bottom"
+                    :disabled="loading"
                     color="blue"
                     title="Discover Tool EDAM Ontologies"
                     to="/tools/list/ontologies">

@@ -2,7 +2,7 @@
 import { faExternalLinkAlt, faFilter, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BDropdown, BDropdownItem, BFormInput } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -22,6 +22,8 @@ const errorMessage = ref("");
 const showing = ref<"operations" | "topics" | "all">("all");
 const sortOrder = ref<"asc" | "desc">("asc");
 
+const currentOffset = ref(0);
+
 const breadcrumbItems = computed(() => [
     { title: "Discover Tools", to: "/tools/list" },
     { title: "EDAM Ontologies", to: "/tools/list/ontologies" },
@@ -30,7 +32,7 @@ const breadcrumbItems = computed(() => [
 const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_operations", ontologiesFilter.value));
 const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics", ontologiesFilter.value));
 
-const shownOntologies = computed(() => {
+const filteredAndSortedOntologies = computed(() => {
     let ontologies;
     switch (showing.value) {
         case "topics":
@@ -54,6 +56,8 @@ const shownOntologies = computed(() => {
         return 0;
     });
 });
+
+const shownOntologies = computed(() => filteredAndSortedOntologies.value.slice(0, currentOffset.value));
 
 const ontologyDatalist = computed(() => {
     switch (showing.value) {
@@ -92,6 +96,18 @@ function changeSort() {
         sortOrder.value = "asc";
     }
 }
+
+/** Since we can have a massive list of ontologies, we use this method to paginate */
+async function loadMore(_: number, limit: number) {
+    currentOffset.value += limit;
+
+    return { items: shownOntologies.value, total: filteredAndSortedOntologies.value.length };
+}
+
+// As these variables change, reset the current offset to show first 20 results
+watch([ontologiesFilter, sortOrder, showing], async () => {
+    currentOffset.value = 20;
+});
 </script>
 
 <template>
@@ -161,12 +177,14 @@ function changeSort() {
         <div class="d-flex flex-column overflow-auto h-100">
             <ScrollList
                 ref="root"
+                :loader="loadMore"
                 :item-key="(tool) => tool.id"
                 :prop-items="shownOntologies"
-                :prop-total-count="shownOntologies.length"
+                :prop-total-count="filteredAndSortedOntologies.length"
                 :prop-busy="loading"
                 name="ontology"
                 name-plural="ontologies"
+                :scroll-top-reset-key="`${ontologiesFilter}-${showing}-${sortOrder}`"
                 show-count-in-footer>
                 <template v-slot:item="{ item }">
                     <ToolOntologyCard :key="item.id" :ontology="item" routable />

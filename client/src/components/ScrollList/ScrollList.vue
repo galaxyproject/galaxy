@@ -38,6 +38,8 @@ interface Props<T> {
     /** Whether to show "N {namePlural} loaded" instead of the default "All {namePlural} loaded" in the
      * `all-loaded-footer` slot. */
     showCountInFooter?: boolean;
+    /** A key on which the `scrollTop` is reset to 0 */
+    scrollTopResetKey?: string;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -55,6 +57,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     adjustForTotalCountChanges: false,
     propScrollTop: 0,
     showCountInFooter: false,
+    scrollTopResetKey: undefined,
 });
 
 const emit = defineEmits<{
@@ -178,6 +181,12 @@ watch(
         if (syncedWithPropScroll.value) {
             emit("update:prop-scroll-top", newScrollTop);
         }
+    },
+);
+watch(
+    () => props.scrollTopResetKey,
+    () => {
+        scrollableDiv.value?.scrollTo({ top: 0, behavior: "instant" });
     },
 );
 </script>
