@@ -1,6 +1,15 @@
-<tool id="Extract_features1" name="Extract features" version="1.0.0">
+<tool id="Extract_features1" name="Extract features" version="1.0.0" profile="20.05">
   <description>from GFF data</description>
-  <command interpreter="python">extract_GFF_Features.py $input1 $out_file1 ${column_choice.col} ${column_choice.feature}</command>
+  <requirements>
+    <requirement type="package" version="0.14.0">bx-python</requirement>
+  </requirements>
+  <required_files>
+    <include path="extract_GFF_Features.py"/>
+  </required_files>
+  <command>
+    python '$__tool_directory__/extract_GFF_Features.py'
+      '$input1' '$out_file1' '${column_choice.col}' '${column_choice.feature}'
+  </command>
   <inputs>
     <param format="gff" name="input1" type="data" label="Select GFF data"/>
     <conditional name="column_choice">

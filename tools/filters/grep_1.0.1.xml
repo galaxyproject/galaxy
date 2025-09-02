@@ -1,9 +1,15 @@
-<tool id="Grep1" name="Select" version="1.0.1">
+<tool id="Grep1" name="Select" version="1.0.1" profile="24.2">
   <description>lines that match an expression</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
-  <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert</command>
+  <required_files>
+    <include path="grep.py"/>
+  </required_files>
+  <command>
+    python '$__tool_directory__/grep.py'
+          -i '$input' -o '$out_file1' -pattern '$pattern' -v '$invert'
+  </command>
   <inputs>
     <param format="txt" name="input" type="data" label="Select lines from"/>
     <param name="invert" type="select" label="that">
