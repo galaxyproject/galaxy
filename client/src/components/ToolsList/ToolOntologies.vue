@@ -113,7 +113,7 @@ function changeSort() {
                 <option v-for="data in ontologyDatalist" :key="data.value" :label="data.text" :value="data.text" />
             </datalist>
 
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center tool-ontologies-header">
                 <div class="d-flex flex-gapx-1 align-items-center">
                     <HelpText uri="galaxy.tools.ontologies.description" text="What are EDAM Ontologies?" />
 
@@ -123,10 +123,10 @@ function changeSort() {
                 </div>
 
                 <div class="d-flex flex-gapx-1 align-items-center">
-                    <BBadge v-if="showing === 'topics'" class="edam-ontology-badge topic text-left" pill>
+                    <BBadge class="edam-ontology-badge topic text-left" pill>
                         <HelpText uri="galaxy.tools.ontologies.topic" text="What is an EDAM Topic?" />
                     </BBadge>
-                    <BBadge v-else-if="showing === 'operations'" class="edam-ontology-badge operation text-left" pill>
+                    <BBadge class="edam-ontology-badge operation text-left" pill>
                         <HelpText uri="galaxy.tools.ontologies.operation" text="What is an EDAM Operation?" />
                     </BBadge>
 
@@ -183,3 +183,15 @@ function changeSort() {
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.tool-ontologies-header {
+    :deep(.popper-element) {
+        max-width: 70vw;
+    }
+
+    .edam-ontology-badge {
+        white-space: normal !important;
+    }
+}
+</style>
