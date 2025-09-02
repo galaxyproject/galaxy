@@ -1,5 +1,5 @@
-<tool id="cat1" name="Concatenate datasets" version="1.0.0" profile="24.2">
-    <description>tail-to-head</description>
+<tool id="cat1" name="Concatenate multiple datasets or collections" version="1.0.0" profile="24.2">
+    <description></description>
     <edam_operations>
         <edam_operation>operation_3436</edam_operation>
     </edam_operations>
