@@ -818,6 +818,13 @@ class AsynchronousJobState(JobState):
         if attribute not in self.cleanup_file_attributes:
             self.cleanup_file_attributes.append(attribute)
 
+    def init_job_stream_files(self):
+        """For runners that don't create explicit job scripts - create job stream files."""
+        with open(self.output_file, "w"):
+            pass
+        with open(self.error_file, "w"):
+            pass
+
 
 class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
