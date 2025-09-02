@@ -3,6 +3,9 @@
   <requirements>
     <requirement type="package" version="3.13">python</requirement>
   </requirements>
+  <required_files>
+    <include path="convert_characters.py"/>
+  </required_files>
   <command>
     python '$__tool_directory__/convert_characters.py'
       #if $strip
