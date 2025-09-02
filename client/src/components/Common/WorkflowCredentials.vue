@@ -52,61 +52,64 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-    <BAlert show :variant="statusVariant">
-        <LoadingSpan v-if="isBusy" :message="busyMessage" />
-        <div v-else-if="userStore.isAnonymous">
-            <FontAwesomeIcon :icon="faKey" fixed-width />
-            <span v-if="hasSomeToolWithRequiredCredentials">
-                <strong>
-                    Some steps in this workflow require credentials to access its services and you need to be logged in
-                    to provide them.
-                </strong>
-            </span>
-            <span v-else>
-                Some steps in this workflow <strong>can use additional credentials</strong> to access its services
-                <strong>or you can use it anonymously</strong>.
-            </span>
-            <br />
-            Please <a href="/login/start">log in or register here</a>.
-        </div>
-        <div v-else class="d-flex justify-content-between align-items-center">
-            <div>
-                <FontAwesomeLayers class="mr-1">
-                    <FontAwesomeIcon :icon="faKey" fixed-width />
-                    <FontAwesomeIcon
-                        v-if="hasUserProvidedAllRequiredToolsCredentials"
-                        :icon="faCheck"
-                        fixed-width
-                        transform="shrink-6 right-6 down-6" />
-                    <FontAwesomeIcon v-else :icon="faExclamation" fixed-width transform="shrink-6 right-8 down-7" />
-                </FontAwesomeLayers>
-
-                <span v-if="hasUserProvidedAllRequiredToolsCredentials">
-                    <strong>You have already provided credentials for this workflow.</strong> You can update or delete
-                    your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
-                    <span v-if="hasSomeToolWithOptionalCredentials && !hasUserProvidedAllToolsCredentials">
-                        <br />
-                        You can still provide some optional credentials for this workflow.
-                    </span>
-                </span>
-                <span v-else-if="hasSomeToolWithRequiredCredentials">
-                    This workflow <strong>requires you to enter credentials</strong> to access its services. Please
-                    provide your credentials before using the workflow using the
-                    <i>{{ provideCredentialsButtonTitle }}</i> button.
+    <div>
+        <BAlert show :variant="statusVariant">
+            <LoadingSpan v-if="isBusy" :message="busyMessage" />
+            <div v-else-if="userStore.isAnonymous">
+                <FontAwesomeIcon :icon="faKey" fixed-width />
+                <span v-if="hasSomeToolWithRequiredCredentials">
+                    <strong>
+                        Some steps in this workflow require credentials to access its services and you need to be logged
+                        in to provide them.
+                    </strong>
                 </span>
                 <span v-else>
-                    This workflow <strong>can use credentials</strong> to access its services. If you don't provide
-                    credentials, you can still use the workflow, but you will access its services
-                    <strong>anonymously</strong> and in some cases, with limited functionality.
+                    Some steps in this workflow <strong>can use additional credentials</strong> to access its services
+                    <strong>or you can use it anonymously</strong>.
                 </span>
+                <br />
+                Please <a href="/login/start">log in or register here</a>.
             </div>
+            <div v-else class="d-flex justify-content-between align-items-center">
+                <div>
+                    <FontAwesomeLayers class="mr-1">
+                        <FontAwesomeIcon :icon="faKey" fixed-width />
+                        <FontAwesomeIcon
+                            v-if="hasUserProvidedAllRequiredToolsCredentials"
+                            :icon="faCheck"
+                            fixed-width
+                            transform="shrink-6 right-6 down-6" />
+                        <FontAwesomeIcon v-else :icon="faExclamation" fixed-width transform="shrink-6 right-8 down-7" />
+                    </FontAwesomeLayers>
 
-            <BButton variant="primary" size="sm" @click="toggleDialog"> {{ provideCredentialsButtonTitle }} </BButton>
+                    <span v-if="hasUserProvidedAllRequiredToolsCredentials">
+                        <strong>You have already provided credentials for this workflow.</strong> You can update or
+                        delete your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
+                        <span v-if="hasSomeToolWithOptionalCredentials && !hasUserProvidedAllToolsCredentials">
+                            <br />
+                            You can still provide some optional credentials for this workflow.
+                        </span>
+                    </span>
+                    <span v-else-if="hasSomeToolWithRequiredCredentials">
+                        This workflow <strong>requires you to enter credentials</strong> to access its services. Please
+                        provide your credentials before using the workflow using the
+                        <i>{{ provideCredentialsButtonTitle }}</i> button.
+                    </span>
+                    <span v-else>
+                        This workflow <strong>can use credentials</strong> to access its services. If you don't provide
+                        credentials, you can still use the workflow, but you will access its services
+                        <strong>anonymously</strong> and in some cases, with limited functionality.
+                    </span>
+                </div>
 
-            <WorkflowCredentialsManagement
-                v-if="showModal"
-                :tool-identifiers="props.toolIdentifiers"
-                @close="toggleDialog" />
-        </div>
-    </BAlert>
+                <BButton variant="primary" size="sm" @click="toggleDialog">
+                    {{ provideCredentialsButtonTitle }}
+                </BButton>
+            </div>
+        </BAlert>
+        <WorkflowCredentialsManagement
+            v-if="showModal"
+            :tool-identifiers="props.toolIdentifiers"
+            @close="toggleDialog" />
+    </div>
 </template>
