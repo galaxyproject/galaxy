@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faFilter, faSort, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faFilter, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BDropdown, BDropdownItem, BFormInput } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -20,7 +20,7 @@ const loading = ref(true);
 const errorMessage = ref("");
 
 const showing = ref<"operations" | "topics" | "all">("all");
-const sortOrder = ref<"asc" | "desc" | "indeterminate">("indeterminate");
+const sortOrder = ref<"asc" | "desc">("asc");
 
 const breadcrumbItems = computed(() => [
     { title: "Discover Tools", to: "/tools/list" },
@@ -41,9 +41,6 @@ const shownOntologies = computed(() => {
             break;
         default:
             ontologies = Object.values(edamOperations.value).concat(Object.values(edamTopics.value));
-    }
-    if (sortOrder.value === "indeterminate") {
-        return ontologies;
     }
     return [...ontologies].sort((a, b) => {
         const nameA = a.name?.toLowerCase() ?? "";
@@ -89,12 +86,10 @@ async function ensureOntologiesLoaded() {
 }
 
 function changeSort() {
-    if (sortOrder.value === "indeterminate") {
-        sortOrder.value = "asc";
-    } else if (sortOrder.value === "asc") {
+    if (sortOrder.value === "asc") {
         sortOrder.value = "desc";
     } else {
-        sortOrder.value = "indeterminate";
+        sortOrder.value = "asc";
     }
 }
 </script>
@@ -151,11 +146,8 @@ function changeSort() {
                         <BDropdownItem @click="showing = 'topics'">Show Topics Only</BDropdownItem>
                     </BDropdown>
 
-                    <GButton color="blue" outline :pressed="sortOrder !== 'indeterminate'" @click="changeSort">
-                        <FontAwesomeIcon v-if="sortOrder === 'indeterminate'" :icon="faSort" />
-                        <FontAwesomeIcon v-else-if="sortOrder === 'asc'" :icon="faSortAlphaDown" />
-                        <FontAwesomeIcon v-else-if="sortOrder === 'desc'" :icon="faSortAlphaUp" />
-
+                    <GButton color="blue" outline @click="changeSort">
+                        <FontAwesomeIcon :icon="sortOrder === 'asc' ? faSortAlphaDown : faSortAlphaUp" />
                         Sort
                     </GButton>
                 </div>
