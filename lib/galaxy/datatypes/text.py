@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+import ijson
 import yaml
 
 from galaxy.datatypes.data import (
@@ -433,50 +434,93 @@ class Biom1(Json):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
-        Store metadata information from the BIOM file.
+        Store metadata information from the BIOM file using streaming JSON parsing.
         """
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
+        if not dataset.has_data():
+            return
+
+        # Mapping of metadata names to BIOM field names
+        field_mapping = [
+            ("table_rows", "rows"),
+            ("table_matrix_element_type", "matrix_element_type"),
+            ("table_format", "format"),
+            ("table_generated_by", "generated_by"),
+            ("table_matrix_type", "matrix_type"),
+            ("table_shape", "shape"),
+            ("table_format_url", "format_url"),
+            ("table_date", "date"),
+            ("table_type", "type"),
+            ("table_id", "id"),
+            ("table_columns", "columns"),
+        ]
+
+        # Fields we're looking for
+        target_fields = {b_name for _, b_name in field_mapping}
+        found_fields = {}
+        column_metadata_headers = set()
+
+        try:
+            with open(dataset.get_file_name(), "rb") as fh:
+                log.debug("Loading metadata from json file %s", dataset.get_file_name())
+                log.debug("File size is %d bytes", os.path.getsize(dataset.get_file_name()))
+                parser = ijson.parse(fh)
+
+                for prefix, event, value in parser:
+                    # Handle top-level fields
+                    if "." not in prefix and prefix in target_fields:
+                        if event in ("string", "number", "boolean", "null"):
+                            found_fields[prefix] = value
+                        elif event == "start_array":
+                            # For arrays, we need to collect the items
+                            if prefix in ("rows", "columns", "shape"):
+                                found_fields[prefix] = []
+
+                    # Handle array items for rows and columns (collect ids)
+                    elif prefix.startswith("rows.item.id") and event == "string":
+                        if "rows" not in found_fields:
+                            found_fields["rows"] = []
+                        found_fields["rows"].append(value)
+
+                    elif prefix.startswith("columns.item.id") and event == "string":
+                        if "columns" not in found_fields:
+                            found_fields["columns"] = []
+                        found_fields["columns"].append(value)
+
+                    # Handle shape array items
+                    elif prefix.startswith("shape.item") and event == "number":
+                        if "shape" not in found_fields:
+                            found_fields["shape"] = []
+                        found_fields["shape"].append(value)
+
+                    # Collect column metadata headers
+                    elif prefix.startswith("columns.item.metadata.") and event in ("string", "number", "boolean"):
+                        if value is not None:
+                            # Extract the metadata key name
+                            key_parts = prefix.split(".")
+                            if len(key_parts) >= 4:
+                                metadata_key = key_parts[3]
+                                column_metadata_headers.add(metadata_key)
+
+                    # Early exit if we've found all top-level fields
+                    if len(found_fields) >= len(target_fields):
+                        # Still need to scan for column metadata headers
+                        continue
+
+            # Set metadata values
+            for m_name, b_name in field_mapping:
                 try:
-                    json_dict = json.load(fh)
-                except Exception:
-                    return
-
-                def _transform_dict_list_ids(dict_list):
-                    if dict_list:
-                        return [x.get("id", None) for x in dict_list]
-                    return []
-
-                b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for m_name, b_name in [
-                    ("table_rows", "rows"),
-                    ("table_matrix_element_type", "matrix_element_type"),
-                    ("table_format", "format"),
-                    ("table_generated_by", "generated_by"),
-                    ("table_matrix_type", "matrix_type"),
-                    ("table_shape", "shape"),
-                    ("table_format_url", "format_url"),
-                    ("table_date", "date"),
-                    ("table_type", "type"),
-                    ("table_id", "id"),
-                    ("table_columns", "columns"),
-                ]:
-                    try:
-                        metadata_value = json_dict.get(b_name, None)
-                        if b_name == "columns" and metadata_value:
-                            keep_columns = set()
-                            for column in metadata_value:
-                                if column["metadata"] is not None:
-                                    for k, v in column["metadata"].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
-                            final_list = sorted(keep_columns)
-                            dataset.metadata.table_column_metadata_headers = final_list
-                        if b_name in b_transform:
-                            metadata_value = b_transform[b_name](metadata_value)
+                    metadata_value = found_fields.get(b_name)
+                    if metadata_value is not None:
                         setattr(dataset.metadata, m_name, metadata_value)
-                    except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong.")
+                except Exception:
+                    log.exception(f"Error setting metadata {m_name} from field {b_name}")
+
+            # Set column metadata headers
+            if column_metadata_headers:
+                dataset.metadata.table_column_metadata_headers = sorted(column_metadata_headers)
+
+        except Exception:
+            log.exception("Error in streaming BIOM metadata detection. Metadata may not be complete or even present.")
 
 
 @build_sniff_from_prefix
