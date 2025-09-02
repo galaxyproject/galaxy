@@ -132,6 +132,15 @@ const toolBadges = computed<CardBadge[]>(() => {
             icon: faExternalLinkAlt,
         });
     }
+    if (props.owner) {
+        badges.push({
+            id: "tool-owner",
+            label: props.owner,
+            title: "The Toolshed Repository Owner",
+            visible: true,
+            icon: faUser,
+        });
+    }
     return badges;
 });
 
@@ -236,17 +245,6 @@ const {
                 <span v-if="props.section" class="tag info">
                     <FontAwesomeIcon :icon="faLayerGroup" />
                     <GLink thin @click="() => emit('apply-filter', 'section', quotedSection)">{{ section }}</GLink>
-                </span>
-
-                <span v-if="!props.local" class="tag info">
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    External
-                </span>
-
-                <span v-if="props.owner" class="tag success">
-                    <FontAwesomeIcon :icon="faUser" />
-                    <b>Owner:</b>
-                    <GLink thin @click="emit('apply-filter', 'owner', props.owner)">{{ props.owner }}</GLink>
                 </span>
 
                 <span v-for="ontology in ontologies" :key="ontology.id" class="tag toggle">
