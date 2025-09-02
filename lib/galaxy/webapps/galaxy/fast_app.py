@@ -87,6 +87,7 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {"name": "admin_visualizations", "description": "Admin operations for managing visualization packages."},
 ]
 
 

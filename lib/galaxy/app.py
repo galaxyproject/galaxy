@@ -70,6 +70,7 @@ from galaxy.managers.tasks import (
 )
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
+from galaxy.managers.visualization_admin import VisualizationPackageManager
 from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowsManager,
@@ -619,6 +620,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
         self.notification_manager = self._register_singleton(NotificationManager)
+        self.visualization_package_manager = self._register_singleton(VisualizationPackageManager)
 
         self.task_manager = self._register_abstract_singleton(
             AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717

@@ -55,6 +55,13 @@
                 </strong>
                 - Manage the notifications and broadcast messages that are displayed to users.
             </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/visualizations">Visualizations</router-link>
+                </strong>
+                - Install and manage visualization packages. Add new visualizations from npm registry and stage assets
+                for Galaxy to serve.
+            </li>
         </ul>
 
         <Heading h2 icon="fa-user" size="md">User Management</Heading>
