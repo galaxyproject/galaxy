@@ -1,6 +1,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { isRegisteredUser } from "@/api";
 import { getToolKey } from "@/api/tools";
 import type {
     CreateSourceCredentialsPayload,
@@ -23,11 +24,13 @@ import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/store
  * @param toolVersion - The version of the tool
  */
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
-    const userStore = useUserStore();
+    const { currentUser } = storeToRefs(useUserStore());
+
     const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
     const { isBusy, userToolServicesFor, userToolServiceCredentialsGroups } = storeToRefs(
         userToolsServiceCredentialsStore
     );
+
     const {
         sourceCredentialsDefinition,
         hasSomeOptionalCredentials,
@@ -182,7 +185,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
      * Fetch or check user credentials for the tool
      */
     async function checkUserCredentials() {
-        if (userStore.isAnonymous) {
+        if (!isRegisteredUser(currentUser.value)) {
             return;
         }
 

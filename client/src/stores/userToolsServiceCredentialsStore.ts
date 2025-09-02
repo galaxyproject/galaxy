@@ -53,6 +53,9 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
     const getUserToolServiceCurrentGroupId = computed(() => {
         return (toolId: string, toolVersion: string, userServiceCredentialsId: string): string | undefined => {
+            if (!isRegisteredUser(currentUser.value)) {
+                return undefined;
+            }
             const userToolKey = getUserToolKey(toolId, toolVersion);
             if (!userToolsServicesCurrentGroupIds.value[userToolKey]) {
                 throw new Error(`Current group IDs are not defined for user tool service: ${userToolKey}`);
@@ -63,12 +66,18 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
     const userServicesExistForTool = computed(() => {
         return (toolId: string, toolVersion: string) => {
+            if (!isRegisteredUser(currentUser.value)) {
+                return undefined;
+            }
             const userToolKey = getUserToolKey(toolId, toolVersion);
             return userToolsServices.value[userToolKey];
         };
     });
 
     const userToolServicesFor = computed(() => (toolId: string, toolVersion: string) => {
+        if (!isRegisteredUser(currentUser.value)) {
+            return undefined;
+        }
         const userToolKey = getUserToolKey(toolId, toolVersion);
         return userToolsServices.value[userToolKey];
     });

@@ -19,7 +19,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(useUserStore());
+
 const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
@@ -50,7 +51,7 @@ onMounted(async () => {
     <div class="mt-2">
         <BAlert show :variant="statusVariant">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
-            <div v-else-if="userStore.isAnonymous">
+            <div v-else-if="isAnonymous">
                 <span v-if="hasSomeRequiredCredentials">
                     <strong>
                         This tool requires credentials to access its services and you need to be logged in to provide

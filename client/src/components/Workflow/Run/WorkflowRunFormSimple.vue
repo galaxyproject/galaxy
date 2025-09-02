@@ -18,6 +18,7 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -59,6 +60,9 @@ const emit = defineEmits<{
     (e: "submissionError", error: string): void;
 }>();
 
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, changingCurrentHistory } = storeToRefs(useHistoryStore());
+
 const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
 
@@ -82,8 +86,6 @@ const showHelp = computed(() => showRightPanel.value === "help");
 
 const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
     usePersistentToggle("workflow-run-settings-panel");
-
-const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
 // Workflow REAME/help panel setup
 const { workflow, loading: workflowLoading } = useWorkflowInstance(props.model.runData.workflow_id);
@@ -369,7 +371,10 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <div class="d-flex flex-column h-100 workflow-run-form-simple" data-galaxy-file-drop-target>
+    <div
+        v-if="currentUser && currentHistoryId"
+        class="d-flex flex-column h-100 workflow-run-form-simple"
+        data-galaxy-file-drop-target>
         <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>

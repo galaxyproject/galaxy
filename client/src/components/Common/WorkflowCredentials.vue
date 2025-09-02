@@ -3,7 +3,7 @@ import { faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onBeforeMount, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
@@ -19,7 +19,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
@@ -42,11 +42,7 @@ function toggleDialog() {
     showModal.value = !showModal.value;
 }
 
-onBeforeMount(async () => {
-    if (userStore.isAnonymous) {
-        return;
-    }
-
+onMounted(async () => {
     await checkAllUserCredentials();
 });
 </script>
@@ -55,7 +51,7 @@ onBeforeMount(async () => {
     <div>
         <BAlert show :variant="statusVariant">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
-            <div v-else-if="userStore.isAnonymous">
+            <div v-else-if="isAnonymous">
                 <FontAwesomeIcon :icon="faKey" fixed-width />
                 <span v-if="hasSomeToolWithRequiredCredentials">
                     <strong>
@@ -107,6 +103,7 @@ onBeforeMount(async () => {
                 </BButton>
             </div>
         </BAlert>
+
         <WorkflowCredentialsManagement
             v-if="showModal"
             :tool-identifiers="props.toolIdentifiers"
