@@ -6,7 +6,6 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
-import { getToolKey } from "@/api/tools";
 import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
@@ -48,32 +47,21 @@ function onToolServiceCurrentGroupChange(
     serviceDefinition: ServiceCredentialsIdentifier,
     groupId?: string
 ) {
-    const toolKey = getToolKey(toolId, toolVersion);
-    const userToolServiceId = userToolServiceIdFor.value(toolId, toolVersion, serviceDefinition);
-    const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[toolKey];
-    if (userToolServiceId && userToolServiceCurrentGroupIds) {
-        userToolServiceCurrentGroupIds[userToolServiceId] = groupId;
+    const userToolServiceCredentialsId = userToolServiceIdFor.value(toolId, toolVersion, serviceDefinition);
+    if (userToolServiceCredentialsId) {
+        userToolsServiceCredentialsStore.updateToolServiceCredentialsCurrentGroupId(
+            toolId,
+            toolVersion,
+            userToolServiceCredentialsId,
+            groupId
+        );
     }
-}
-
-function serviceCurrentGroupFor(
-    toolId: string,
-    toolVersion: string,
-    serviceDefinition: ServiceCredentialsIdentifier
-): string | undefined {
-    const toolKey = getToolKey(toolId, toolVersion);
-    const userToolServiceId = userToolServiceIdFor.value(toolId, toolVersion, serviceDefinition);
-    const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[toolKey];
-    if (userToolServiceId && userToolServiceCurrentGroupIds) {
-        return userToolServiceCurrentGroupIds[userToolServiceId];
-    }
-    return undefined;
 }
 
 function onSelectCredentials() {
     for (const ti of props.toolIdentifiers) {
-        const toolKey = getToolKey(ti.toolId, ti.toolVersion);
-        const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[toolKey];
+        const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(ti.toolId, ti.toolVersion);
+        const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[userToolKey];
         if (userToolServiceCurrentGroupIds) {
             const serviceCredentials: SelectCurrentGroupPayload[] = [];
             for (const userToolServiceId of Object.keys(userToolServiceCurrentGroupIds)) {
@@ -127,7 +115,6 @@ function onSelectCredentials() {
                     :source-id="ti.toolId"
                     :source-version="ti.toolVersion"
                     :service-definition="sd"
-                    :service-current-group-id="serviceCurrentGroupFor(ti.toolId, ti.toolVersion, sd)"
                     @update-current-group="
                         (groupId) => onToolServiceCurrentGroupChange(ti.toolId, ti.toolVersion, sd, groupId)
                     ">
