@@ -132,8 +132,8 @@ class OIDCAuthnzBase(IdentityProvider):
                 # in the future we might want to log out the user here
                 return False
         except jwt.exceptions.DecodeError:
-            log.error("Refresh token is non-decodable")
-            # If the refresh token is non-decodable, we do not use it. See discussion in https://github.com/galaxyproject/galaxy/pull/20821
+            log.warning("Refresh token cannot be decoded. Galaxy does not support non-decodable refresh tokens.")
+            # If the refresh token is non-decodable, we do not use it because we cannot reliably determine its expiration date. See discussion in https://github.com/galaxyproject/galaxy/pull/20821
             return False
 
         oauth2_session = self._create_oauth2_session()
