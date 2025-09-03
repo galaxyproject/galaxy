@@ -1126,6 +1126,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_generated_tours``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow tools to show the option of and create interactive tours
+    crafted for them by the backend.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``webhooks_dir``
 ~~~~~~~~~~~~~~~~

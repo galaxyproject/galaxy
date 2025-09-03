@@ -893,6 +893,10 @@ galaxy:
   # list.
   #tour_config_dir: config/plugins/tours
 
+  # Allow tools to show the option of and create interactive tours
+  # crafted for them by the backend.
+  #enable_tool_generated_tours: false
+
   # Webhooks directory: where to store webhooks - plugins to extend the
   # Galaxy UI. By default none will be loaded.  Set to
   # config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To use
