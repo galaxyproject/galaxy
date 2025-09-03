@@ -388,6 +388,7 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
+        entry: entry,
     };
     return result;
 }

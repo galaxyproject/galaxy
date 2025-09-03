@@ -261,7 +261,7 @@ function eventRemoteFiles() {
                     const rval = {
                         mode: "url",
                         name: item.label,
-                        size: item.size,
+                        size: item.entry.size,
                         path: item.url,
                     };
                     return rval;
