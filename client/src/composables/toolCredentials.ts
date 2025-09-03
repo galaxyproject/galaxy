@@ -67,7 +67,7 @@ export function useToolCredentials(toolId: string, toolVersion: string) {
     const servicesCount = computed(() => sourceCredentialsDefinition.value.services.size);
 
     return {
-        sourceCredentialsDefinition: readonly(sourceCredentialsDefinition),
+        sourceCredentialsDefinition,
         hasSomeOptionalCredentials,
         hasSomeRequiredCredentials,
         hasAnyCredentials,
