@@ -329,7 +329,6 @@
     <datatype extension='qiime2.tabular' type="galaxy.datatypes.qiime2:QIIME2Metadata" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
         <converter file="archive_to_directory.xml" target_datatype="directory" />
-        <converter file="archive_to_directory.xml" target_datatype="lexicmap_index"/>
     </datatype>
     <datatype extension="ncbi_genome_dataset.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="zarr.zip" type="galaxy.datatypes.binary:CompressedZarrZipArchive" display_in_upload="true">
@@ -340,7 +339,6 @@
     </datatype>
     <datatype extension="tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
-      <converter file="archive_to_directory.xml" target_datatype="lexicmap_index"/>
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>

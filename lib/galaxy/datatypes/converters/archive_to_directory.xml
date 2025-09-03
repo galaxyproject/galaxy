@@ -22,7 +22,6 @@
             <option value="directory">directory</option>
             <option value="zarr">zarr</option>
             <option value="ome_zarr">ome_zarr</option>
-            <option value="lexicmap_index">lexicmap_index</option>
         </param>
     </inputs>
     <outputs provided_metadata_file="metadata_json">
