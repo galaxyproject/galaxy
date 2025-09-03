@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faFilter, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BDropdown, BDropdownItem, BFormInput } from "bootstrap-vue";
+import { BAlert, BBadge, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -9,6 +9,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { searchSections } from "../Panels/utilities";
 
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
+import GLink from "../BaseComponents/GLink.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -73,17 +75,23 @@ const filtered = computed<{
 
 const shownOntologies = computed(() => filtered.value.sections.slice(0, currentOffset.value));
 
+/** A datalist for the search input, only rendered if the query is longer than 4 characters
+ * _(otherwise it gets in the way)_.
+ */
 const ontologyDatalist = computed(() => {
-    switch (showing.value) {
-        case "topics":
-            return toolStore.sectionDatalist("ontology:edam_topics");
-        case "operations":
-            return toolStore.sectionDatalist("ontology:edam_operations");
-        default:
-            return toolStore
-                .sectionDatalist("ontology:edam_topics")
-                .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+    if (ontologiesFilter.value.length > 4) {
+        switch (showing.value) {
+            case "topics":
+                return toolStore.sectionDatalist("ontology:edam_topics");
+            case "operations":
+                return toolStore.sectionDatalist("ontology:edam_operations");
+            default:
+                return toolStore
+                    .sectionDatalist("ontology:edam_topics")
+                    .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+        }
     }
+    return [];
 });
 
 ensureOntologiesLoaded();
@@ -111,6 +119,12 @@ function changeSort() {
     }
 }
 
+function clearIfEsc(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+        ontologiesFilter.value = "";
+    }
+}
+
 /** Since we can have a massive list of ontologies, we use this method to paginate */
 async function loadMore(_: number, limit: number) {
     currentOffset.value += limit;
@@ -129,11 +143,11 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
         <div class="d-flex flex-column flex-gapy-1 mb-2">
             <BreadcrumbHeading :items="breadcrumbItems" />
 
-            <BFormInput
+            <GFormInput
                 v-model="ontologiesFilter"
-                type="text"
                 placeholder="Filter ontologies"
-                list="ontology-list-datalist" />
+                list="ontology-list-datalist"
+                @keydown="clearIfEsc" />
             <datalist v-if="ontologyDatalist.length" id="ontology-list-datalist">
                 <option v-for="data in ontologyDatalist" :key="data.value" :label="data.text" :value="data.text" />
             </datalist>
@@ -145,9 +159,9 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
             <BBadge v-else-if="filtered.closestTerm" class="alert-danger w-100">
                 Did you mean:
                 <i>
-                    <a href="javascript:void(0)" @click="ontologiesFilter = filtered.closestTerm">
+                    <GLink thin @click="ontologiesFilter = filtered.closestTerm">
                         {{ filtered.closestTerm }}
-                    </a>
+                    </GLink>
                 </i>
                 ?
             </BBadge>

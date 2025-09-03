@@ -70,9 +70,11 @@ watch(
     () => delayQuery(queryInput.value ?? ""),
 );
 
-function clearBox() {
-    queryInput.value = "";
-    toolInput.value?.focus();
+function clearBox(event?: KeyboardEvent) {
+    if (!event || event.key === "Escape") {
+        queryInput.value = "";
+        toolInput.value?.focus();
+    }
 }
 
 function onToggle() {
@@ -96,7 +98,7 @@ watchImmediate(
             autocomplete="off"
             :placeholder="placeholder"
             data-description="filter text input"
-            @keydown.esc="clearBox" />
+            @keydown="clearBox" />
 
         <BInputGroupAppend>
             <GButton
@@ -120,7 +122,7 @@ watchImmediate(
                 size="small"
                 :title="localize(titleClear)"
                 data-description="reset query"
-                @click="clearBox">
+                @click="clearBox(undefined)">
                 <FontAwesomeIcon v-if="loading" fixed-width :icon="faSpinner" spin />
                 <FontAwesomeIcon v-else fixed-width :icon="faTimes" />
             </GButton>
