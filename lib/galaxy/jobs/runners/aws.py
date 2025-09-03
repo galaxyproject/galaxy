@@ -449,7 +449,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         # TODO: This is where any cleanup would occur
                         self.handle_stop()
                         return
-                    self.watched.append((async_job_state.job_id, async_job_state))
+                    self.watched.append(async_job_state)
             except Empty:
                 pass
             # Iterate over the list of watched jobs and check state
@@ -466,11 +466,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.watched = [x for x in self.watched if x[0] not in done]
 
     def check_watched_items_by_batch(self, start: int, end: int, done: set[str]):
-        jobs = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
-        if not jobs:
+        async_job_states = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
+        if not async_job_states:
             return
 
-        jobs_dict = dict(jobs)
+        jobs_dict = {ajs.job_id: ajs for ajs in async_job_states}
+
         resp = self._batch_client.describe_jobs(jobs=list(jobs_dict.keys()))
 
         gotten = set()
