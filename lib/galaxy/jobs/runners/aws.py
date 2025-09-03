@@ -463,7 +463,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     def check_watched_items(self):
         done: set[str] = set()
         self.check_watched_items_by_batch(0, len(self.watched), done)
-        self.watched = [x for x in self.watched if x[0] not in done]
+        self.watched = [ajs for ajs in self.watched if ajs.job_id not in done]
 
     def check_watched_items_by_batch(self, start: int, end: int, done: set[str]):
         async_job_states = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
