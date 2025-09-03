@@ -4,18 +4,13 @@ import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
 
-import { FAVORITES_KEYS, searchToolsByKeys } from "@/components/Panels/utilities";
+import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
-import type { ToolSearchKeys } from "../utilities";
-
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-// Note: These are ordered by result priority (exact matches very top; words matches very bottom)
-const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
 
 const MIN_QUERY_LENGTH = 3;
 
@@ -64,17 +59,15 @@ const { currentFavorites } = storeToRefs(useUserStore());
 const toolStore = useToolStore();
 const { searchWorker } = storeToRefs(toolStore);
 
-interface RequestPaylod {
+interface RequestPayload {
     tools: Tool[];
-    keys: ToolSearchKeys;
     query: string;
-    panelView: string;
     currentPanel: Record<string, Tool | ToolSection>;
 }
 
 interface SearchEventQuery {
-    type: "searchToolsByKeys";
-    payload: RequestPaylod;
+    type: "searchTools";
+    payload: RequestPayload;
 }
 
 interface SearchEventClear {
@@ -116,9 +109,9 @@ interface ResponsePayload {
 
 function handlePost(event: SearchEvent) {
     const { type } = event.data;
-    if (type === "searchToolsByKeys") {
-        const { tools, keys, query, panelView, currentPanel } = event.data.payload;
-        const { results, resultPanel, closestTerm } = searchToolsByKeys(tools, keys, query, panelView, currentPanel);
+    if (type === "searchTools") {
+        const { tools, query, currentPanel } = event.data.payload;
+        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel);
         // send the result back to the main thread
         onMessage({
             data: {
@@ -184,12 +177,10 @@ function checkQuery(q: string) {
             post({ type: "favoriteTools" });
         } else {
             post({
-                type: "searchToolsByKeys",
+                type: "searchTools",
                 payload: {
                     tools: props.toolsList,
-                    keys: KEYS,
                     query: q,
-                    panelView: props.currentPanelView,
                     currentPanel: props.currentPanel,
                 },
             });

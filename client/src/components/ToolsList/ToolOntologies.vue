@@ -4,8 +4,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BDropdown, BDropdownItem, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { useToolStore } from "@/stores/toolStore";
+import { type ToolSection, useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import { searchSections } from "../Panels/utilities";
 
 import ToolOntologyCard from "./ToolOntologyCard.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -29,10 +31,16 @@ const breadcrumbItems = computed(() => [
     { title: "EDAM Ontologies", to: "/tools/list/ontologies" },
 ]);
 
-const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_operations", ontologiesFilter.value));
-const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics", ontologiesFilter.value));
+const validFilter = computed(() =>
+    ontologiesFilter.value.trim().length >= 3 ? ontologiesFilter.value.trim() : undefined,
+);
+const edamOperations = computed(() => toolStore.panelSections("ontology:edam_operations"));
+const edamTopics = computed(() => toolStore.panelSections("ontology:edam_topics"));
 
-const filteredAndSortedOntologies = computed(() => {
+const filtered = computed<{
+    sections: ToolSection[];
+    closestTerm: string | null;
+}>(() => {
     let ontologies;
     switch (showing.value) {
         case "topics":
@@ -44,7 +52,12 @@ const filteredAndSortedOntologies = computed(() => {
         default:
             ontologies = Object.values(edamOperations.value).concat(Object.values(edamTopics.value));
     }
-    return [...ontologies].sort((a, b) => {
+
+    if (validFilter.value) {
+        return searchSections(ontologies, validFilter.value);
+    }
+
+    const sorted = [...ontologies].sort((a, b) => {
         const nameA = a.name?.toLowerCase() ?? "";
         const nameB = b.name?.toLowerCase() ?? "";
         if (nameA < nameB) {
@@ -55,9 +68,10 @@ const filteredAndSortedOntologies = computed(() => {
         }
         return 0;
     });
+    return { sections: sorted, closestTerm: null };
 });
 
-const shownOntologies = computed(() => filteredAndSortedOntologies.value.slice(0, currentOffset.value));
+const shownOntologies = computed(() => filtered.value.sections.slice(0, currentOffset.value));
 
 const ontologyDatalist = computed(() => {
     switch (showing.value) {
@@ -101,7 +115,7 @@ function changeSort() {
 async function loadMore(_: number, limit: number) {
     currentOffset.value += limit;
 
-    return { items: shownOntologies.value, total: filteredAndSortedOntologies.value.length };
+    return { items: shownOntologies.value, total: filtered.value.sections.length };
 }
 
 // As these variables change, reset the current offset to show first 20 results
@@ -123,6 +137,20 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
             <datalist v-if="ontologyDatalist.length" id="ontology-list-datalist">
                 <option v-for="data in ontologyDatalist" :key="data.value" :label="data.text" :value="data.text" />
             </datalist>
+
+            <BBadge v-if="ontologiesFilter.trim() && !validFilter" class="alert-info w-100">
+                Search term is too short
+            </BBadge>
+
+            <BBadge v-else-if="filtered.closestTerm" class="alert-danger w-100">
+                Did you mean:
+                <i>
+                    <a href="javascript:void(0)" @click="ontologiesFilter = filtered.closestTerm">
+                        {{ filtered.closestTerm }}
+                    </a>
+                </i>
+                ?
+            </BBadge>
 
             <div class="d-flex justify-content-between align-items-center tool-ontologies-header">
                 <div class="d-flex flex-gapx-1 align-items-center">
@@ -162,7 +190,7 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                         <BDropdownItem @click="showing = 'topics'">Show Topics Only</BDropdownItem>
                     </BDropdown>
 
-                    <GButton color="blue" outline @click="changeSort">
+                    <GButton v-if="!validFilter" color="blue" outline @click="changeSort">
                         <FontAwesomeIcon :icon="sortOrder === 'asc' ? faSortAlphaDown : faSortAlphaUp" />
                         Sort
                     </GButton>
@@ -180,7 +208,7 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                 :loader="loadMore"
                 :item-key="(tool) => tool.id"
                 :prop-items="shownOntologies"
-                :prop-total-count="filteredAndSortedOntologies.length"
+                :prop-total-count="filtered.sections.length"
                 :prop-busy="loading"
                 name="ontology"
                 name-plural="ontologies"

@@ -4,7 +4,7 @@ import toolsList from "components/ToolsView/testData/toolsList";
 import toolsListInPanel from "components/ToolsView/testData/toolsListInPanel";
 import { useConfig } from "composables/config";
 
-import { createSortedResultObject, filterTools } from "./utilities";
+import { createSortedResultPanel, filterTools } from "./utilities";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({
@@ -41,7 +41,7 @@ describe("ToolBox", () => {
         const matchedTools = resultIds.map((id) => {
             return { id: id, sections: [], order: 0 };
         });
-        const toolsResultsSection = createSortedResultObject(matchedTools, toolPanelMock);
+        const toolsResultsSection = createSortedResultPanel(matchedTools, toolPanelMock);
         expect(toolsResultsSection.idResults).toEqual(resultIds);
         const resultSectionIds = Object.keys(toolsResultsSection.resultPanel);
         expect(resultSectionIds.length).toBe(2);

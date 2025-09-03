@@ -27,16 +27,20 @@ const emit = defineEmits<{
 }>();
 
 const toolStore = useToolStore();
-const { defaultPanelView, panels } = storeToRefs(toolStore);
+const { defaultPanelView, panels, panelSections } = storeToRefs(toolStore);
 
 const defaultToolSectionsFilter = ref("");
 const defaultToolSections = computed(() =>
-    toolStore.getToolSections(defaultPanelView.value, defaultToolSectionsFilter.value),
+    searchWithinSections(panelSections.value(defaultPanelView.value), defaultToolSectionsFilter.value),
 );
 
 const ontologiesFilter = ref("");
-const edamOperations = computed(() => toolStore.getToolSections("ontology:edam_operations", ontologiesFilter.value));
-const edamTopics = computed(() => toolStore.getToolSections("ontology:edam_topics", ontologiesFilter.value));
+const edamOperations = computed(() =>
+    searchWithinSections(panelSections.value("ontology:edam_operations"), ontologiesFilter.value),
+);
+const edamTopics = computed(() =>
+    searchWithinSections(panelSections.value("ontology:edam_topics"), ontologiesFilter.value),
+);
 
 const selectedSection = computed<ToolSection | null>(() => {
     const sectionName = props.filterClass.getFilterValue(props.filterText, "section")?.replace(/^"(.*)"$/, "$1");
@@ -82,6 +86,14 @@ function getPanelIcon(panelView: string): IconDefinition | null {
 
 function applyQuotedFilter(filter: string, value: string) {
     emit("apply-filter", filter, `"${value}"`);
+}
+
+function searchWithinSections(sections: ToolSection[], query: string) {
+    if (query) {
+        const filterLower = query.toLowerCase();
+        return sections.filter((section) => section.name?.toLowerCase().includes(filterLower));
+    }
+    return sections;
 }
 </script>
 

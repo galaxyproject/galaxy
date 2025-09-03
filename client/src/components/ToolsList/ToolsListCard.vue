@@ -12,6 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPopover, BSkeleton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
@@ -67,13 +68,13 @@ const emit = defineEmits<{
     (e: "apply-filter", filter: string, value: string): void;
 }>();
 
-const toolStore = useToolStore();
+const { panelSections } = storeToRefs(useToolStore());
 
 function getOntologyBadges(view: "ontology:edam_operations" | "ontology:edam_topics", ids: string[]): OntologyBadge[] {
     if (ids?.length) {
-        const sections = toolStore.getToolSections(view);
+        const sections = panelSections.value(view);
         return ids
-            .map((id) => sections[id])
+            .map((id) => sections.find((section) => section.id === id))
             .filter((section) => section !== undefined)
             .map((section) => ({
                 id: section.id,
