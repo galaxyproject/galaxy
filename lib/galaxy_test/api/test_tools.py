@@ -1853,7 +1853,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_show_tool_source_admin(self):
         response = self._get("tools/cat1/raw_tool_source", admin=True)
         response.raise_for_status()
-        assert "Concatenate datasets" in response.text
+        assert "Concatenate multiple datasets" in response.text
         assert response.headers["language"] == "xml"
 
     def test_show_tool_source_denied(self):
