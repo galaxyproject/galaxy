@@ -276,14 +276,14 @@ class CredentialsService:
             )
 
             if include_definition:
-                user_credentials_dict[cred_id].update(
-                    {
-                        "label": definition.label,
-                        "description": definition.description,
-                        "variables": [v.to_dict() for v in definition.variables],
-                        "secrets": [s.to_dict() for s in definition.secrets],
-                    }
-                )
+                user_credentials_dict[cred_id]["definition"] = {
+                    "name": definition.name,
+                    "version": definition.version,
+                    "description": definition.description,
+                    "label": definition.label,
+                    "variables": [v.to_dict() for v in definition.variables],
+                    "secrets": [s.to_dict() for s in definition.secrets],
+                }
 
             group_key = (cred_id, credentials_group.id)
             groups_dict.setdefault(

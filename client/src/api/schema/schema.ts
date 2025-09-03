@@ -11067,8 +11067,7 @@ export interface components {
         ExtendedUserCredentialsResponse: {
             /** Current Group Id */
             current_group_id?: string | null;
-            /** Description */
-            description: string;
+            definition: components["schemas"]["ServiceCredentialsDefinition"];
             /** Groups */
             groups: components["schemas"]["CredentialGroupResponse"][];
             /**
@@ -11076,12 +11075,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Label */
-            label: string;
             /** Name */
             name: string;
-            /** Secrets */
-            secrets: components["schemas"]["CredentialDefinitionResponse"][];
             /** Source Id */
             source_id: string;
             /**
@@ -11096,8 +11091,6 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             user_id: string;
-            /** Variables */
-            variables: components["schemas"]["CredentialDefinitionResponse"][];
             /** Version */
             version: string;
         };
@@ -20053,6 +20046,21 @@ export interface components {
             group: components["schemas"]["ServiceGroupPayload"];
             /** Name */
             name: string;
+            /** Version */
+            version: string;
+        };
+        /** ServiceCredentialsDefinition */
+        ServiceCredentialsDefinition: {
+            /** Description */
+            description: string;
+            /** Label */
+            label: string | null;
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["CredentialDefinitionResponse"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialDefinitionResponse"][];
             /** Version */
             version: string;
         };

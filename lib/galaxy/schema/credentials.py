@@ -59,11 +59,17 @@ class UserCredentialsListResponse(RootModel):
     root: List[UserCredentialsResponse]
 
 
-class ExtendedUserCredentialsResponse(UserCredentialsResponse):
-    label: str
+class ServiceCredentialsDefinition(Model):
+    name: str
+    version: str
     description: str
+    label: Optional[str]
     variables: List[CredentialDefinitionResponse]
     secrets: List[CredentialDefinitionResponse]
+
+
+class ExtendedUserCredentialsResponse(UserCredentialsResponse):
+    definition: ServiceCredentialsDefinition
 
 
 class ExtendedUserCredentialsListResponse(RootModel):
