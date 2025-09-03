@@ -1666,7 +1666,7 @@ class Anndata(H5):
                 # Shape we determine here due to the non-standard representation of 'X' dimensions
                 shape = anndata_file["X"].attrs.get("shape")
                 if shape is not None:
-                    dataset.metadata.shape = tuple(shape)
+                    dataset.metadata.shape = (int(shape[0]), int(shape[1]))
                 elif hasattr(anndata_file["X"], "shape"):
                     dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
