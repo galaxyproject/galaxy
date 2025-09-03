@@ -1,47 +1,29 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { watch } from "vue";
 
-import { GalaxyApi } from "@/api";
-import type { UserCredentials } from "@/api/users";
-import { Toast } from "@/composables/toast";
+import { isRegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
-import GCard from "@/components/Common/GCard.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import ServiceCredentialsGroupsList from "@/components/User/Credentials/ServiceCredentialsGroupsList.vue";
 
-const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Credentials Management" }];
+const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Tools Credentials Management" }];
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
-const loading = ref(false);
-const error = ref(null);
-const credentialsList = ref<UserCredentials[]>([]);
-const selectedCredential = ref<UserCredentials[]>([]);
-
-async function fetchCredentials() {
-    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
-        params: {
-            path: {
-                user_id: currentUser.value?.id,
-            },
-        },
-    });
-
-    if (error) {
-        Toast.error(error.err_msg, "Error fetching credentials");
-        return [];
-    }
-
-    credentialsList.value = data;
-}
+const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+const { isBusy, busyMessage, userToolsGroups } = storeToRefs(userToolsServiceCredentialsStore);
 
 watch(
     () => currentUser.value,
     async () => {
-        if (!currentUser.value?.isAnonymous && currentUser.value?.id) {
-            await fetchCredentials();
+        if (isRegisteredUser(currentUser.value)) {
+            await userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
         }
     },
     { immediate: true }
@@ -52,8 +34,16 @@ watch(
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <span> You can manage your provided for tools and services here. </span>
+        <div class="mb-2">You can manage your provided credentials for tools here.</div>
 
-        <GCard v-for="credential in credentialsList" :key="credential.id" :title="credential.name" />
+        <BAlert v-if="isBusy" show>
+            <LoadingSpan :message="busyMessage" />
+        </BAlert>
+        <BAlert v-else-if="!isBusy && !userToolsGroups.length" variant="info" show>
+            No credentials have been defined for any tools or services yet.
+        </BAlert>
+        <div v-else-if="!isBusy">
+            <ServiceCredentialsGroupsList :service-groups="userToolsGroups" />
+        </div>
     </div>
 </template>
