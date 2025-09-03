@@ -17,6 +17,7 @@
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
+  <tool file="directory_datatype.xml" />
   <tool file="environment_variables.xml" />
   <tool file="environment_variables_inject.xml" />
   <tool file="code_file.xml" />
