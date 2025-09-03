@@ -32,8 +32,8 @@ async function initialize() {
     try {
         const cachedTour = legacyTourCache.value[props.tourId];
         if (cachedTour) {
-            steps.value = cachedTour.steps;
-            requirements.value = cachedTour.requirements;
+            steps.value = cachedTour.steps || [];
+            requirements.value = cachedTour.requirements || [];
             ready.value = true;
             return;
         }
