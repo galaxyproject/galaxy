@@ -1,7 +1,7 @@
-<tool id="join1" name="Join two Datasets" version="2.1.3">
+<tool id="join1" name="Join two Datasets" version="2.1.3" profile="20.05">
   <description>side by side on a specified field</description>
   <requirements>
-    <requirement type="package" version="19.9.0">galaxy-util</requirement>
+    <requirement type="package" version="25.0.2">galaxy-util</requirement>
   </requirements>
   <command detect_errors="aggressive">
     python '$__tool_directory__/join.py' '$input1' '$input2' $field1 $field2 '$out_file1' $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file $header
