@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { getToolKey } from "@/api/tools";
 import type { ServiceCredentialsDefinition, ServiceCredentialsIdentifier } from "@/api/users";
@@ -7,23 +7,27 @@ import type { ServiceCredentialsDefinition, ServiceCredentialsIdentifier } from 
 export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServiceCredentialsDefinitionsStore", () => {
     const toolsServiceCredentialsDefinitions = ref<{ [key: string]: ServiceCredentialsDefinition[] }>({});
 
+    const getToolServiceCredentialsDefinitionsFor = computed(() => {
+        return (toolId: string, toolVersion: string): ServiceCredentialsDefinition[] => {
+            const definitions = toolsServiceCredentialsDefinitions.value[getToolKey(toolId, toolVersion)];
+            return definitions ?? [];
+        };
+    });
+
     function setToolServiceCredentialsDefinitionFor(
         toolId: string,
         toolVersion: string,
         serviceDefinitions: ServiceCredentialsDefinition[]
     ) {
-        toolsServiceCredentialsDefinitions.value[getToolKey(toolId, toolVersion)] = serviceDefinitions;
-    }
-
-    function getToolServiceCredentialsDefinitionsFor(
-        toolId: string,
-        toolVersion: string
-    ): ServiceCredentialsDefinition[] {
-        const definitions = toolsServiceCredentialsDefinitions.value[getToolKey(toolId, toolVersion)];
-        if (!definitions) {
-            throw new Error(`No service credentials definitions found for tool: ${getToolKey(toolId, toolVersion)}`);
-        }
-        return definitions;
+        const toolKey = getToolKey(toolId, toolVersion);
+        const existingDefinitions = toolsServiceCredentialsDefinitions.value[toolKey] || [];
+        const uniqueDefinitions = serviceDefinitions.filter(
+            (newDef) =>
+                !existingDefinitions.some(
+                    (existing) => existing.name === newDef.name && existing.version === newDef.version
+                )
+        );
+        toolsServiceCredentialsDefinitions.value[toolKey] = [...existingDefinitions, ...uniqueDefinitions];
     }
 
     function getToolServiceCredentialsDefinitionFor(
@@ -31,16 +35,19 @@ export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServ
         toolVersion: string,
         serviceCredentialsIdentifier: ServiceCredentialsIdentifier
     ): ServiceCredentialsDefinition | undefined {
-        const definition = getToolServiceCredentialsDefinitionsFor(toolId, toolVersion).find(
-            (sd) => sd.name === serviceCredentialsIdentifier.name && sd.version === serviceCredentialsIdentifier.version
-        );
+        const definition = getToolServiceCredentialsDefinitionsFor
+            .value(toolId, toolVersion)
+            .find(
+                (sd) =>
+                    sd.name === serviceCredentialsIdentifier.name && sd.version === serviceCredentialsIdentifier.version
+            );
         return definition;
     }
 
     return {
         toolsServiceCredentialsDefinitions,
-        setToolServiceCredentialsDefinitionFor,
         getToolServiceCredentialsDefinitionsFor,
+        setToolServiceCredentialsDefinitionFor,
         getToolServiceCredentialsDefinitionFor,
     };
 });
