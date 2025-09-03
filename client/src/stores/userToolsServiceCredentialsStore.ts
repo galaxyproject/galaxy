@@ -5,11 +5,14 @@ import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
     CreateSourceCredentialsPayload,
     SelectCurrentGroupPayload,
+    ServiceCredentialsDefinition,
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
     UserSourceService,
+    UserToolsServiceCredentialsFull,
 } from "@/api/users";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 export const SECRET_PLACEHOLDER = "********";
@@ -22,12 +25,21 @@ export interface ToolsCurrentGroupIds {
     [userToolKey: string]: ServiceCredentialsCurrentGroupIds;
 }
 
+export interface ServiceCredentialsGroupDetails extends ServiceCredentialsGroup {
+    sourceId: string;
+    sourceVersion: string;
+    serviceDefinition: ServiceCredentialsDefinition;
+}
+
 export const useUserToolsServiceCredentialsStore = defineStore("userToolsServiceCredentialsStore", () => {
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
 
     const userToolsServices = ref<Record<string, UserSourceService[]>>({});
     const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialsGroup>>({});
+
+    const { setToolServiceCredentialsDefinitionFor, getToolServiceCredentialsDefinitionsFor } =
+        useToolsServiceCredentialsDefinitionsStore();
 
     const isBusy = ref(false);
     const busyMessage = ref<string>("");
@@ -51,6 +63,37 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         userToolsServicesCurrentGroupIds.value = { ...userToolsServicesCurrentGroupIds.value };
     }
 
+    const userToolsGroups = computed(() => {
+        const groups: ServiceCredentialsGroupDetails[] = [];
+        for (const userToolKey in userToolsServices.value) {
+            const userToolServices = userToolsServices.value[userToolKey];
+            if (userToolServices) {
+                for (const service of userToolServices) {
+                    for (const group of service.groups) {
+                        const serviceDefinitions = getToolServiceCredentialsDefinitionsFor(
+                            service.source_id,
+                            service.source_version
+                        );
+
+                        const serviceDefinition = serviceDefinitions.find(
+                            (def) => def.name === service.name && def.version === service.version
+                        );
+                        if (!serviceDefinition) {
+                            throw new Error(`Service definition not found for ${service.name}:${service.version}`);
+                        }
+                        groups.push({
+                            ...group,
+                            sourceId: service.source_id,
+                            sourceVersion: service.source_version,
+                            serviceDefinition: serviceDefinition,
+                        });
+                    }
+                }
+            }
+        }
+        return groups;
+    });
+
     const getUserToolServiceCurrentGroupId = computed(() => {
         return (toolId: string, toolVersion: string, userServiceCredentialsId: string): string | undefined => {
             if (!isRegisteredUser(currentUser.value)) {
@@ -58,7 +101,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
             }
             const userToolKey = getUserToolKey(toolId, toolVersion);
             if (!userToolsServicesCurrentGroupIds.value[userToolKey]) {
-                throw new Error(`Current group IDs are not defined for user tool service: ${userToolKey}`);
+                return undefined;
             }
             return userToolsServicesCurrentGroupIds.value[userToolKey][userServiceCredentialsId];
         };
@@ -133,10 +176,59 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
-    async function fetchAllUserToolServices(toolId: string, toolVersion: string): Promise<UserSourceService[]> {
+    async function fetchAllUserToolsServiceCredentials(includeDefinition: boolean = true) {
+        if (!isRegisteredUser(currentUser.value)) {
+            return [];
+        }
+
         const userId = ensureUserIsRegistered();
 
-        busyMessage.value = "Checking your credentials";
+        busyMessage.value = "Loading all your service credentials";
+        isBusy.value = true;
+
+        try {
+            const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
+                params: {
+                    path: { user_id: userId },
+                    query: {
+                        include_definition: includeDefinition,
+                    },
+                },
+            });
+
+            if (error) {
+                throw Error(`Failed to fetch all user tools service credentials: ${error.err_msg}`);
+            }
+
+            for (const usc of data) {
+                if (includeDefinition) {
+                    const withDefinition = usc as UserToolsServiceCredentialsFull;
+
+                    setToolServiceCredentialsDefinitionFor(withDefinition.source_id, withDefinition.source_version, [
+                        withDefinition.definition,
+                    ]);
+                }
+
+                const userToolKey = getUserToolKey(usc.source_id, usc.source_version);
+                const matchingToolServices = data.filter(
+                    (d) => d.source_id === usc.source_id && d.source_version === usc.source_version
+                );
+                set(userToolsServices.value, userToolKey, matchingToolServices);
+
+                updateUserToolServiceGroups(matchingToolServices);
+
+                initToolsCurrentGroupIds();
+            }
+        } finally {
+            isBusy.value = false;
+            busyMessage.value = "";
+        }
+    }
+
+    async function fetchAllUserToolServices(toolId: string, toolVersion: string): Promise<void> {
+        const userId = ensureUserIsRegistered();
+
+        busyMessage.value = "Loading your service credentials for this tool";
         isBusy.value = true;
 
         try {
@@ -162,8 +254,6 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
             updateUserToolServiceGroups(data);
 
             initToolsCurrentGroupIds();
-
-            return data;
         } finally {
             isBusy.value = false;
             busyMessage.value = "";
@@ -376,9 +466,11 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         userToolServiceCredentialsGroups,
         userToolsServicesCurrentGroupIds,
         getUserToolServiceCurrentGroupId,
+        userToolsGroups,
         initToolsCurrentGroupIds,
         getUserToolKey,
         getToolService,
+        fetchAllUserToolsServiceCredentials,
         fetchAllUserToolServices,
         updateToolServiceCredentialsCurrentGroupId,
         createNewCredentialsGroupForTool,
