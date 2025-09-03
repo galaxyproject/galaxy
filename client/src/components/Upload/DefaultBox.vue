@@ -6,6 +6,7 @@ import { useRouter } from "vue-router/composables";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
 import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipExplorer";
@@ -13,7 +14,8 @@ import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { ComponentSize } from "../BaseComponents/componentVariants";
-import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
+import type { UploadFile, UploadItem } from "./model";
+import { defaultModel, isLocalFile } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -253,7 +255,7 @@ async function eventExplore(archiveSource: ArchiveSource) {
 /** Show remote files dialog or FTP files */
 function eventRemoteFiles() {
     filesDialog(
-        (items: UploadFile[]) => {
+        (items: SelectionItem[]) => {
             queue.value.add(
                 items.map((item) => {
                     const rval = {

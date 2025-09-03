@@ -35,7 +35,7 @@ const filesSources = useFileSources();
 
 interface FilesDialogProps {
     /** Callback function to be called passing the results when selection is complete */
-    callback?: (files: any) => void;
+    callback?: (files: SelectionItem[]) => void;
     /** Options to filter the file sources */
     filterOptions?: FilterFileSourcesOptions;
     /** Decide wether to keep the underlying modal static or dynamic */
@@ -423,7 +423,7 @@ function onSelectAll() {
 function finalize() {
     const results = selectionModel.value.finalize();
     modalShow.value = false;
-    props.callback(results);
+    props.callback(Array.isArray(results) ? results : [results]);
 }
 
 function onOk() {
