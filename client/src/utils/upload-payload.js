@@ -79,6 +79,10 @@ export function uploadPayload(items, historyId, composite = false) {
                         }
                     case "url":
                         if (isUrl(urlContent)) {
+                            const hashes = item.fileData?.hashes;
+                            if (hashes) {
+                                elem["hashes"] = hashes;
+                            }
                             return {
                                 src: "url",
                                 url: urlContent,

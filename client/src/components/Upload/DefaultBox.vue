@@ -263,6 +263,7 @@ function eventRemoteFiles() {
                         name: item.label,
                         size: item.entry.size,
                         path: item.url,
+                        hashes: item.entry.hashes,
                     };
                     return rval;
                 }),
