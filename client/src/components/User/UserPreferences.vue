@@ -193,8 +193,8 @@ onMounted(async () => {
                 <UserPreferencesElement
                     id="edit-preferences-credentials"
                     :icon="faKey"
-                    title="Manage Your Credentials"
-                    description="Manage your credentials for accessing external services."
+                    title="Manage Your Tools Credentials"
+                    description="Manage your tools credentials groups for accessing external services."
                     to="/user/credentials" />
 
                 <UserPreferencesElement
