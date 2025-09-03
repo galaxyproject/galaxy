@@ -3,7 +3,7 @@ import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { computed, type ComputedRef, type Ref, ref, watch } from "vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
@@ -11,7 +11,13 @@ import type { Tool, ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
-import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
+import {
+    FAVORITES_KEYS,
+    filterTools,
+    getValidPanelItems,
+    getValidToolsInCurrentView,
+    getValidToolsInEachSection,
+} from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
@@ -23,17 +29,23 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
-    (e: "update:panel-query", query: string): void;
+    (e: "update:show-favorites", value: boolean): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
 }>();
 
-const props = defineProps({
-    workflow: { type: Boolean, default: false },
-    panelQuery: { type: String, required: true },
-    useSearchWorker: { type: Boolean, default: true },
+interface Props {
+    workflow?: boolean;
+    useSearchWorker?: boolean;
+    showFavorites?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    workflow: false,
+    useSearchWorker: true,
+    showFavorites: false,
 });
 
-const queryFilter: Ref<string | null> = ref(null);
+const query = ref("");
 const queryPending = ref(false);
 const showSections = ref(props.workflow);
 const results: Ref<string[]> = ref([]);
@@ -42,20 +54,39 @@ const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
 
-const query = computed({
-    get: () => {
-        return props.panelQuery.trim();
-    },
-    set: (q: string) => {
-        queryPending.value = true;
-        emit("update:panel-query", q);
-    },
-});
-
 const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
+
+// Watchers for `query` (when to apply/remove favorites, reset filter etc.)
+watch(
+    () => query.value,
+    () => {
+        queryPending.value = true;
+        if (FAVORITES_KEYS.includes(query.value)) {
+            emit("update:show-favorites", true);
+        } else {
+            emit("update:show-favorites", false);
+        }
+    },
+);
+watch(
+    () => props.showFavorites,
+    (newValue) => {
+        if (newValue) {
+            query.value = "#favorites";
+        } else {
+            query.value = "";
+        }
+    },
+);
+watch(
+    () => currentPanelView.value,
+    () => {
+        query.value = "";
+    },
+);
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
 const localToolsById = computed(() => {
@@ -139,7 +170,6 @@ function onResults(
         resultPanel.value = null;
     }
     closestTerm.value = closestMatch;
-    queryFilter.value = hasResults.value ? query.value : null;
     queryPending.value = false;
 }
 
@@ -152,6 +182,10 @@ function onSectionFilter(filter: string) {
     } else {
         query.value = "";
     }
+}
+
+function onSearchQuery(q: string) {
+    query.value = q;
 }
 
 function onToggle() {
@@ -170,7 +204,7 @@ function onToggle() {
                 :query="query"
                 :query-pending="queryPending"
                 :use-worker="useSearchWorker"
-                @onQuery="(q) => (query = q)"
+                @onQuery="onSearchQuery"
                 @onResults="onResults" />
             <section>
                 <div v-if="hasResults && resultPanel" class="pb-2">
@@ -203,7 +237,7 @@ function onToggle() {
                         <ToolSection
                             v-if="panel"
                             :category="panel || {}"
-                            :query-filter="queryFilter || undefined"
+                            :query-filter="hasResults ? query : undefined"
                             :has-filter-button="hasResults && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />

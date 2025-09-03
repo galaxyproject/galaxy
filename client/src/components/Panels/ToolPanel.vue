@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -23,30 +23,13 @@ const props = defineProps({
 
 const emit = defineEmits<{
     (e: "onInsertTool", toolId: string, toolName: string): void;
-    (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
-    (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
 const { currentPanelView, currentToolSections, isPanelPopulated, toolSections } = storeToRefs(toolStore);
 
 const errorMessage = ref("");
 const panelsFetched = ref(false);
-const query = ref("");
-
-const showFavorites = computed({
-    get() {
-        return query.value.includes("#favorites");
-    },
-    set(value) {
-        if (value) {
-            if (!query.value.includes("#favorites")) {
-                query.value = `#favorites ${query.value}`.trim();
-            }
-        } else {
-            query.value = query.value.replace("#favorites", "").trim();
-        }
-    },
-});
+const showFavorites = ref(false);
 
 async function initializePanel() {
     try {
@@ -69,26 +52,10 @@ function onInsertTool(toolId: string, toolName: string) {
     emit("onInsertTool", toolId, toolName);
 }
 
-function onInsertWorkflow(workflowId: string | undefined, workflowName: string) {
-    emit("onInsertWorkflow", workflowId, workflowName);
-}
-
-function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | undefined) {
-    emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
-}
-
-watch(
-    () => query.value,
-    (newQuery) => {
-        showFavorites.value = newQuery.includes("#favorites");
-    },
-);
-
 // if currentPanelView ever becomes null || "", load tools
 watch(
     () => currentPanelView.value,
     async (newVal) => {
-        query.value = "";
         if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
             await initializePanel();
         }
@@ -116,11 +83,9 @@ initializePanel();
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
-            :panel-query.sync="query"
+            :show-favorites.sync="showFavorites"
             :use-search-worker="useSearchWorker"
-            @onInsertTool="onInsertTool"
-            @onInsertWorkflow="onInsertWorkflow"
-            @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+            @onInsertTool="onInsertTool" />
         <div v-else-if="errorMessage" data-description="tool panel error message">
             <BAlert class="m-2" variant="danger" show>
                 {{ errorMessage }}
