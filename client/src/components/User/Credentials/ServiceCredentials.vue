@@ -79,7 +79,7 @@ const userToolService = userServiceFor.value(props.serviceDefinition);
 
 const currentServiceCredentialsGroup = computed(() => {
     if (!userToolService?.id) {
-        throw new Error(`User tool service is not defined`);
+        return undefined;
     }
     const currentGroupId = getUserToolServiceCurrentGroupId.value(
         props.sourceId,
