@@ -3,6 +3,7 @@ from typing import (
     Callable,
     cast,
     Dict,
+    List,
     Optional,
     Set,
     Tuple,
@@ -33,6 +34,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
+    CredentialPayload,
     ExtendedUserCredentialsListResponse,
     ExtendedUserCredentialsResponse,
     SelectServiceCredentialPayload,
@@ -212,6 +214,25 @@ class CredentialsService:
     ) -> str:
         return f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{group_name}|{secret_name}"
 
+    def _get_credentials_definition(
+        self,
+        user: User,
+        source_type: SOURCE_TYPE,
+        source_id: str,
+        source_version: str,
+        service_name: str,
+        service_version: str,
+    ) -> CredentialsRequirement:
+        definition = self.source_type_credentials[source_type](
+            user, source_id, source_version, service_name, service_version
+        )
+        if definition is None:
+            raise ObjectNotFound(
+                f"Service '{service_name}' with version '{service_version}' is not defined "
+                f"in {source_type} with id {source_id} and version {source_version}."
+            )
+        return definition
+
     def _get_tool_credentials_definition(
         self,
         user: User,
@@ -251,15 +272,14 @@ class CredentialsService:
 
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
-            definition = self.source_type_credentials[cast(SOURCE_TYPE, user_credentials.source_type)](
+            definition = self._get_credentials_definition(
                 user,
+                cast(SOURCE_TYPE, user_credentials.source_type),
                 user_credentials.source_id,
                 user_credentials.source_version,
                 user_credentials.name,
                 user_credentials.version,
             )
-            if definition is None:
-                continue
             user_credentials_dict.setdefault(
                 cred_id,
                 {
@@ -347,6 +367,18 @@ class CredentialsService:
         for *_, credential in existing_user_credentials:
             existing_credentials_map[(credential.name, credential.is_secret)] = credential
 
+        source_credentials = self._get_credentials_definition(
+            user,
+            cast(SOURCE_TYPE, user_credentials.source_type),
+            user_credentials.source_id,
+            user_credentials.source_version,
+            user_credentials.name,
+            user_credentials.version,
+        )
+        self._validate_credentials_against_definition(
+            source_credentials, variables, secrets, user_credentials.name, is_update=True
+        )
+
         for variable_payload in variables:
             variable_name, variable_value = variable_payload.name, variable_payload.value
             variable = existing_credentials_map.get((variable_name, False))
@@ -398,14 +430,10 @@ class CredentialsService:
         service_name, service_version, service_group = service.name, service.version, service.group
         group_name, variables, secrets = service_group.name, service_group.variables, service_group.secrets
 
-        source_credentials = self.source_type_credentials[source_type](
-            user, source_id, source_version, service_name, service_version
+        source_credentials = self._get_credentials_definition(
+            user, source_type, source_id, source_version, service_name, service_version
         )
-        if source_credentials is None:
-            raise ObjectNotFound(
-                f"Service '{service_name}' with version '{service_version}' is not defined "
-                f"in {source_type} with id {source_id} and version {source_version}."
-            )
+        self._validate_credentials_against_definition(source_credentials, variables, secrets, service_name)
 
         existing_user_credentials = self.credentials_manager.get_user_credentials(
             user.id, source_type, source_id, source_version
@@ -433,10 +461,6 @@ class CredentialsService:
         for variable_payload in variables:
             variable_name, variable_value = variable_payload.name, variable_payload.value
 
-            if not any(v.name == variable_name for v in source_credentials.variables):
-                raise RequestParameterInvalidException(
-                    f"Variable '{variable_name}' is not defined for service '{service_name}'."
-                )
             if (user_credential_group_id, variable_name, False) in cred_map:
                 raise Conflict(f"Variable '{variable_name}' already exists in group '{group_name}'.")
             self.credentials_manager.add_credential(user_credential_group_id, variable_name, variable_value)
@@ -445,10 +469,6 @@ class CredentialsService:
         for secret_payload in secrets:
             secret_name, secret_value = secret_payload.name, secret_payload.value
 
-            if not any(s.name == secret_name for s in source_credentials.secrets):
-                raise RequestParameterInvalidException(
-                    f"Secret '{secret_name}' is not defined for service '{service_name}'."
-                )
             if (user_credential_group_id, secret_name, True) in cred_map:
                 raise Conflict(f"Secret '{secret_name}' already exists in group '{group_name}'.")
             if secret_value is not None:
@@ -503,6 +523,53 @@ class CredentialsService:
             "secrets": updated_secrets,
         }
         return CredentialGroupResponse(**group_data)
+
+    def _validate_credentials_against_definition(
+        self,
+        source_credentials: CredentialsRequirement,
+        variables: List[CredentialPayload],
+        secrets: List[CredentialPayload],
+        service_name: str,
+        is_update: bool = False,
+    ) -> None:
+        defined_variables = {v.name: v for v in source_credentials.variables}
+        defined_secrets = {s.name: s for s in source_credentials.secrets}
+        provided_variables = {v.name for v in variables}
+        provided_secrets = {s.name for s in secrets}
+        for variable_payload in variables:
+            variable_name = variable_payload.name
+            variable_definition = defined_variables.get(variable_name)
+            if not variable_definition:
+                raise RequestParameterInvalidException(
+                    f"Variable '{variable_name}' is not defined for service '{service_name}'."
+                )
+            if not variable_definition.optional and not variable_payload.value:
+                raise RequestParameterInvalidException(
+                    f"Required variable '{variable_name}' cannot be empty for service '{service_name}'."
+                )
+        for secret_payload in secrets:
+            secret_name = secret_payload.name
+            secret_definition = defined_secrets.get(secret_name)
+            if not secret_definition:
+                raise RequestParameterInvalidException(
+                    f"Secret '{secret_name}' is not defined for service '{service_name}'."
+                )
+            # none value on secret means no update
+            is_missing_value = not secret_payload.value if not is_update else secret_payload.value == ""
+            if not secret_definition.optional and is_missing_value:
+                raise RequestParameterInvalidException(
+                    f"Required secret '{secret_name}' cannot be empty for service '{service_name}'."
+                )
+        for required_variable in source_credentials.variables:
+            if not required_variable.optional and required_variable.name not in provided_variables:
+                raise RequestParameterInvalidException(
+                    f"Required variable '{required_variable.name}' is not provided for service '{service_name}'."
+                )
+        for required_secret in source_credentials.secrets:
+            if not required_secret.optional and required_secret.name not in provided_secrets:
+                raise RequestParameterInvalidException(
+                    f"Required secret '{required_secret.name}' is not provided for service '{service_name}'."
+                )
 
     def _ensure_user_access(
         self,
