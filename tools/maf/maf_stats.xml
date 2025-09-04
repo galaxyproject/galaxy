@@ -1,8 +1,12 @@
-<tool id="maf_stats1" name="MAF Coverage Stats" version="1.0.1">
+<tool id="maf_stats1" name="MAF Coverage Stats" version="1.0.1" profile="20.05">
   <description>Alignment coverage information</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="maf_stats.py"/>
+  </required_files>
   <command>
 python '$__tool_directory__/maf_stats.py' $maf_source_type.maf_source
 #if $maf_source_type.maf_source == "user":
@@ -10,7 +14,7 @@ python '$__tool_directory__/maf_stats.py' $maf_source_type.maf_source
 #else:
     '$maf_source_type.mafType'
 #end if
-'$input1' '$out_file1' $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary '${GALAXY_DATA_INDEX_DIR}'
+'$input1' '$out_file1' '$dbkey' '${input1.metadata.chromCol}' '${input1.metadata.startCol}' '${input1.metadata.endCol}' '$summary' '${GALAXY_DATA_INDEX_DIR}'
 #if $maf_source_type.maf_source == "user":
     '$input2.metadata.maf_index'
 #end if
