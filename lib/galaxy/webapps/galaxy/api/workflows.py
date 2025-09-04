@@ -1459,7 +1459,7 @@ class FastAPIInvocations:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
-        return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
+        return self.invocations_service.show(trans, invocation_id, serialization_params)
 
     @router.get(
         "/api/invocations/{invocation_id}/request",

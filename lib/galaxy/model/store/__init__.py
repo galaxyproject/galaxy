@@ -2848,11 +2848,13 @@ class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExpo
         parametric_domain_items: List[ParametricDomainItem] = []
         for inv_step in workflow_invocation.steps:
             try:
-                for k, v in inv_step.workflow_step.tool_inputs.items():
-                    param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain_items.append(
-                        ParametricDomainItem(param=str(param), value=str(value), step=str(step))
-                    )
+                tool_inputs = inv_step.workflow_step.tool_inputs
+                if tool_inputs:
+                    for k, v in tool_inputs.items():
+                        param, value, step_index = k, v, inv_step.workflow_step.order_index
+                        parametric_domain_items.append(
+                            ParametricDomainItem(param=str(param), value=str(value), step=str(step_index))
+                        )
             except Exception:
                 continue
 

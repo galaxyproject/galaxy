@@ -8964,7 +8964,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship(
+    steps: Mapped[list["WorkflowInvocationStep"]] = relationship(
         "WorkflowInvocationStep",
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,
