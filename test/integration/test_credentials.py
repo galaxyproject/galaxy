@@ -302,9 +302,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         payload = payload or self._build_credentials_payload()
         response = self._post("/api/users/current/credentials", data=payload, json=True)
         self._assert_status_code_is(response, status_code)
-        if status_code == 200:
-            return response.json()
-        return []
+        return response.json()
 
     def _build_credentials_payload(
         self,
