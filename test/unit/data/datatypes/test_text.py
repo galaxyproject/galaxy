@@ -3,6 +3,7 @@ from unittest import TestCase
 from galaxy.datatypes.text import Ipynb
 from .util import get_input_files
 
+
 class TestIpynbSniffer(TestCase):
     """Test the Jupyter notebook (Ipynb) datatype sniffer"""
 
@@ -20,4 +21,3 @@ class TestIpynbSniffer(TestCase):
         with get_input_files("2.ipynb") as input_files:
             notebook = input_files[0]
             assert self.ipynb_sniffer.sniff(notebook) is False
-
