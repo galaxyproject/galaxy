@@ -7,7 +7,8 @@
 cp '$provided_metadata' 'galaxy.json' &&
 mkdir '$output1.files_path' &&
 cd '$output1.files_path' &&
-python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');"
+python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');" &&
+if [ -d \$(basename "$input1" .dat) ]; then mv "\$(basename "$input1" .dat)"/* . && rmdir "\$(basename "$input1" .dat)"; fi
     ]]></command>
     <configfiles>
         <configfile name="provided_metadata">{"output1": {"created_from_basename": "${input1.created_from_basename}"}}
