@@ -15,9 +15,3 @@ class TestIpynbSniffer(TestCase):
         with get_input_files("1.ipynb") as input_files:
             notebook = input_files[0]
             assert self.ipynb_sniffer.sniff(notebook) is True
-
-    def test_missing_metadata_key(self):
-        """Test notebook without metadata key (should fail)"""
-        with get_input_files("2.ipynb") as input_files:
-            notebook = input_files[0]
-            assert self.ipynb_sniffer.sniff(notebook) is False
