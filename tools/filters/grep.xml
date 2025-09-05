@@ -1,11 +1,11 @@
 <tool id="Grep1" name="Select" version="1.0.4" profile="20.05">
   <description>lines that match an expression</description>
-  <requirements>
-    <requirement type="package" version="3.4">grep</requirement>
-  </requirements>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
+  <requirements>
+    <requirement type="package" version="3.4">grep</requirement>
+  </requirements>
   <stdio>
     <exit_code range="2:" level="warning" description="Select failed" />
   </stdio>
@@ -49,23 +49,22 @@
     <test>
       <param name="input" value="1.bed"/>
       <param name="invert" value=""/>
-      <param name="pattern" value="+"/>
+      <param name="pattern" value="nothing"/>
       <param name="keep_header" value="true"/>
       <output name="out_file1">
         <assert_contents>
           <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
-          <not_has_text text="CCDS993.1_cds_0_0_chr1_148078401_r"/>
+          <has_n_lines n="1"></has_n_lines>
         </assert_contents>
       </output>
     </test>
     <test>
       <param name="input" value="1.bed"/>
       <param name="invert" value=""/>
-      <param name="pattern" value="+"/>
+      <param name="pattern" value="nothing"/>
       <output name="out_file1">
         <assert_contents>
-          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
-          <not_has_text text="CCDS993.1_cds_0_0_chr1_148078401_r"/>
+          <has_n_lines n="0"></has_n_lines>
         </assert_contents>
       </output>
     </test>
@@ -78,6 +77,7 @@
         <assert_contents>
           <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
           <has_n_lines n="1"></has_n_lines>
+          <not_has_text text="CCDS990.1_cds_0_0_chr1_147984546_f"/>
         </assert_contents>
       </output>
     </test>
@@ -88,6 +88,17 @@
       <output name="out_file1">
         <assert_contents>
           <has_n_lines n="2"></has_n_lines>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value="-v"/>
+      <param name="pattern" value="^chr1"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="chrX"/>
+          <not_has_text text="chr1"/>
         </assert_contents>
       </output>
     </test>

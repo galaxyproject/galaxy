@@ -6,6 +6,9 @@
   <requirements>
     <requirement type="package" version="3.13">python</requirement>
   </requirements>
+  <required_files>
+    <include path="filtering.py"/>
+  </required_files>
   <command>
     python '$__tool_directory__/filtering.py' '$input' '$out_file1' '$inputs' ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
   </command>

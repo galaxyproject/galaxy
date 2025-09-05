@@ -68,13 +68,15 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input1"/>
+    <data name="out_file1" format_source="input1" metadata_source="input1"/>
   </outputs>
   <tests>
     <test>
       <param name="input1" value="5.gff"/>
-      <param name="col" value="0" />
-      <param name="feature" value="chr5,chr6,chr7,chr8" />
+      <conditional name="column_choice">
+        <param name="col" value="0" />
+        <param name="feature" value="chr5,chr6,chr7,chr8" />
+      </conditional>
       <output name="out_file1" file="Extract_features1_out.gff"/>
     </test>
   </tests>

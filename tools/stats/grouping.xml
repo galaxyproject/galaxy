@@ -4,6 +4,9 @@
     <requirement type="package" version="1.15.4">numpy</requirement>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
+  <required_files>
+    <include path="grouping.py"/>
+  </required_files>
   <command detect_errors="exit_code">
   python '$__tool_directory__/grouping.py'
       '${out_file1}'

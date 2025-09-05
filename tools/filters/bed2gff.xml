@@ -6,6 +6,9 @@
   <requirements>
     <requirement type="package" version="3.13">python</requirement>
   </requirements>
+  <required_files>
+    <include path="bed_to_gff_converter.py"/>
+  </required_files>
   <command>python '$__tool_directory__/bed_to_gff_converter.py' '$input' '$out_file1'</command>
   <inputs>
     <param format="bed" name="input" type="data" label="Convert this dataset"/>

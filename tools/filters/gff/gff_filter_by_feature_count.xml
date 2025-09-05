@@ -1,4 +1,4 @@
-<tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1.1" profile="20.05">
+<tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1.1" profile="24.2">
   <description>using simple expressions</description>
   <requirements>
     <requirement type="package" version="0.14.0">bx-python</requirement>
