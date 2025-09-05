@@ -180,7 +180,7 @@ class CredentialsService:
                     if credential.is_secret:
                         secrets_to_delete.add(
                             self._build_vault_credential_reference(
-                                user_credentials, credentials_group.name, credential.name
+                                user_credentials, credentials_group.id, credential.name
                             )
                         )
                     if credentials_group.id == user_credentials.current_group_id:
@@ -197,9 +197,7 @@ class CredentialsService:
                 rows_to_delete.update({user_credentials, credentials_group, credential})
                 if credential.is_secret:
                     secrets_to_delete.add(
-                        self._build_vault_credential_reference(
-                            user_credentials, credentials_group.name, credential.name
-                        )
+                        self._build_vault_credential_reference(user_credentials, credentials_group.id, credential.name)
                     )
 
         if secrets_to_delete:
@@ -210,9 +208,9 @@ class CredentialsService:
         self.credentials_manager.delete_rows(rows_to_delete)
 
     def _build_vault_credential_reference(
-        self, user_credentials: UserCredentials, group_name: str, secret_name: str
+        self, user_credentials: UserCredentials, group_id: int, secret_name: str
     ) -> str:
-        return f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{group_name}|{secret_name}"
+        return f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.name}|{user_credentials.version}|{group_id}|{secret_name}"
 
     def _get_credentials_definition(
         self,
@@ -359,8 +357,7 @@ class CredentialsService:
             raise ObjectNotFound(f"No credentials found for user {user.id} in group {group_id}.")
 
         user_credentials, credentials_group = next((uc, cg) for uc, cg, _ in existing_user_credentials)
-        old_group_name = credentials_group.name
-        if old_group_name != group_name:
+        if credentials_group.name != group_name:
             self.credentials_manager.update_group(credentials_group, group_name)
 
         existing_credentials_map: Dict[Tuple[str, bool], Credential] = {}
@@ -392,21 +389,10 @@ class CredentialsService:
             secret_name, secret_value = secret_payload.name, secret_payload.value
             secret = existing_credentials_map.get((secret_name, True))
             if secret:
-                old_group_secret = None
-                if old_group_name != group_name:
-                    old_vault_ref = self._build_vault_credential_reference(
-                        user_credentials, old_group_name, secret_name
-                    )
-                    old_group_secret = user_vault.read_secret(old_vault_ref)
-                    user_vault.delete_secret(old_vault_ref)
-                vault_ref = self._build_vault_credential_reference(user_credentials, group_name, secret_name)
+                vault_ref = self._build_vault_credential_reference(user_credentials, credentials_group.id, secret_name)
                 if secret_value is not None:
                     user_vault.write_secret(vault_ref, secret_value)
-                elif old_group_secret:
-                    user_vault.write_secret(vault_ref, old_group_secret)
-                if secret_value is None:
-                    continue  # do not update the credential if no new value is provided
-                self.credentials_manager.update_credential(secret, secret_value, is_secret=True)
+                    self.credentials_manager.update_credential(secret, secret_value, is_secret=True)
             else:
                 raise ObjectNotFound(f"Secret '{secret_name}' not found.")
 
@@ -472,7 +458,7 @@ class CredentialsService:
             if (user_credential_group_id, secret_name, True) in cred_map:
                 raise Conflict(f"Secret '{secret_name}' already exists in group '{group_name}'.")
             if secret_value is not None:
-                vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{group_name}|{secret_name}"
+                vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{user_credential_group_id}|{secret_name}"
                 user_vault.write_secret(vault_ref, secret_value)
             self.credentials_manager.add_credential(
                 user_credential_group_id,
