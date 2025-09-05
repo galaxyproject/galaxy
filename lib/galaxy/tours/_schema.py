@@ -54,6 +54,7 @@ class TourStep(BaseModel):
     textinsert: Optional[str] = Field(
         None, title="Text-insert", description="Text to insert if element is a text box (e.g. tool search or upload)"
     )
+    orphan: Optional[bool] = Field(None, title="Orphan", description="If true, the step is an orphan step")
 
 
 class TourDetails(TourCore):
