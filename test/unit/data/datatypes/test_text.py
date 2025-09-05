@@ -14,4 +14,4 @@ class TestIpynbSniffer(TestCase):
         """Test the specific bug fix: empty metadata dict should not cause rejection"""
         with get_input_files("1.ipynb") as input_files:
             notebook = input_files[0]
-            assert self.ipynb_sniffer.sniff(notebook) is True
+            assert self.ipynb_sniffer.sniff(notebook) is True  # type: ignore[attr-defined]
