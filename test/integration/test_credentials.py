@@ -1,3 +1,7 @@
+from typing import Optional
+
+from galaxy.model.db.user import get_user_by_email
+from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base.api_util import random_name
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
@@ -290,6 +294,34 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         ]
         self._provide_user_credentials(payload, status_code=200)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_vault_integration(self):
+        test_user_email = "user@vault.test"
+        with self._different_user(test_user_email):
+            payload = self._build_credentials_payload()
+            self._provide_user_credentials(payload)
+
+            credentials_list = self._check_credentials_exist()
+            assert len(credentials_list) == 1
+            group = credentials_list[0]["groups"][0]
+
+            # Check that secrets are stored in the vault
+            for secret in payload["service_credential"]["group"]["secrets"]:
+                vault_ref = self._get_vault_ref(payload, group["id"], secret["name"])
+                expected_value = secret["value"]
+                self._check_vault_entry_exists(test_user_email, vault_ref, expected_value)
+
+            # Delete the credentials group
+            user_credentials_id = credentials_list[0]["id"]
+            group_id = group["id"]
+            response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{group_id}")
+            self._assert_status_code_is(response, 204)
+
+            # Check that secrets are removed from the vault
+            for secret in payload["service_credential"]["group"]["secrets"]:
+                vault_ref = self._get_vault_ref(payload, group["id"], secret["name"])
+                self._check_vault_entry_exists(test_user_email, vault_ref, should_exist=False)
+
     def _provide_user_credentials(self, payload=None, status_code=200):
         payload = payload or self._build_credentials_payload()
         response = self._post("/api/users/current/credentials", data=payload, json=True)
@@ -302,7 +334,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         source_id: str = CREDENTIALS_TEST_TOOL,
         source_version: str = "test",
         service_name: str = "service1",
-        service_version: str = "1",
+        service_version: str = "v1",
         group_name=None,
     ):
         if group_name is None:
@@ -335,3 +367,25 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             assert list_user_credentials[0]["source_id"] == source_id
 
         return list_user_credentials
+
+    def _check_vault_entry_exists(
+        self, user_email: str, vault_ref: str, expected_value: Optional[str] = None, should_exist=True
+    ):
+        app = self._app
+        user = get_user_by_email(app.model.session, user_email)
+        user_vault = UserVaultWrapper(app.vault, user)
+        stored_value = user_vault.read_secret(vault_ref)
+        if should_exist:
+            assert (
+                stored_value == expected_value
+            ), f"Expected vault entry '{vault_ref}' to have value '{expected_value}', got '{stored_value}'"
+        else:
+            assert (
+                stored_value is None
+                # Ideally we would check for None, but some vault implementations write an empty string when deleting
+                or stored_value == ""
+            ), f"Expected vault entry '{vault_ref}' to not exist, but found value '{stored_value}'"
+
+    def _get_vault_ref(self, payload: dict, group_id: str, secret_name: str):
+        decoded_group_id = self._app.security.decode_id(group_id)
+        return f"{payload['source_type']}|{payload['source_id']}|{payload['service_credential']['name']}|{payload['service_credential']['version']}|{decoded_group_id}|{secret_name}"
