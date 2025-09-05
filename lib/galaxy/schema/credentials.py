@@ -1,9 +1,13 @@
 from typing import (
+    Annotated,
     List,
     Optional,
 )
 
-from pydantic import RootModel
+from pydantic import (
+    Field,
+    RootModel,
+)
 from typing_extensions import Literal
 
 from galaxy.schema.fields import (
@@ -16,42 +20,129 @@ SOURCE_TYPE = Literal["tool"]
 
 
 class CredentialResponse(Model):
-    name: str
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the credential.",
+        ),
+    ]
 
 
 class VariableResponse(CredentialResponse):
-    value: Optional[str]
+    value: Annotated[
+        Optional[str],
+        Field(
+            None,
+            description="The value of the variable (for variables, not secrets).",
+        ),
+    ]
 
 
 class SecretResponse(CredentialResponse):
-    is_set: bool
+    is_set: Annotated[
+        bool,
+        Field(
+            description="Whether the secret has been set (value is not exposed).",
+        ),
+    ]
 
 
 # TODO: ServiceCredentialsGroupResponse
 class CredentialGroupResponse(Model):
-    id: EncodedDatabaseIdField
-    name: str
+    id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            description="Encoded ID of the credential group.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the credential group.",
+        ),
+    ]
     variables: List[VariableResponse]
     secrets: List[SecretResponse]
 
 
 class CredentialDefinitionResponse(Model):
-    name: str
-    label: str
-    description: str
-    optional: bool
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the credential definition.",
+        ),
+    ]
+    label: Annotated[
+        str,
+        Field(
+            description="The human-readable label for the credential.",
+        ),
+    ]
+    description: Annotated[
+        str,
+        Field(
+            description="A description of what this credential is used for.",
+        ),
+    ]
+    optional: Annotated[
+        bool,
+        Field(
+            description="Whether this credential is optional or required.",
+        ),
+    ]
 
 
 # TODO: Rename the class to UserSourceServicesResponse
 class UserCredentialsResponse(Model):
-    user_id: EncodedDatabaseIdField
-    id: EncodedDatabaseIdField
-    source_type: SOURCE_TYPE
-    source_id: str
-    source_version: str
-    name: str
-    version: str
-    current_group_id: Optional[EncodedDatabaseIdField] = None
+    user_id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            description="The ID of the user who owns these credentials.",
+        ),
+    ]
+    id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            description="The encoded ID of the user credentials.",
+        ),
+    ]
+    source_type: Annotated[
+        SOURCE_TYPE,
+        Field(
+            description="The type of source (e.g., 'tool').",
+        ),
+    ]
+    source_id: Annotated[
+        str,
+        Field(
+            description="The ID of the source (e.g., tool ID).",
+        ),
+    ]
+    source_version: Annotated[
+        str,
+        Field(
+            description="The version of the source.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the service requiring credentials.",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the service.",
+        ),
+    ]
+    current_group_id: Annotated[
+        Optional[EncodedDatabaseIdField],
+        Field(
+            None,
+            description="The ID of the currently active credential group.",
+        ),
+    ]
     groups: List[CredentialGroupResponse]
 
 
@@ -60,10 +151,31 @@ class UserCredentialsListResponse(RootModel):
 
 
 class ServiceCredentialsDefinition(Model):
-    name: str
-    version: str
-    description: str
-    label: Optional[str]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the service.",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the service.",
+        ),
+    ]
+    description: Annotated[
+        str,
+        Field(
+            description="A description of the service.",
+        ),
+    ]
+    label: Annotated[
+        Optional[str],
+        Field(
+            None,
+            description="A human-readable label for the service.",
+        ),
+    ]
     variables: List[CredentialDefinitionResponse]
     secrets: List[CredentialDefinitionResponse]
 
@@ -77,36 +189,115 @@ class ExtendedUserCredentialsListResponse(RootModel):
 
 
 class CredentialPayload(Model):
-    name: str
-    value: Optional[str]
+    name: Annotated[
+        str,
+        Field(
+            title="Credential Name",
+            description="The name of the credential (variable or secret).",
+        ),
+    ]
+    value: Annotated[
+        Optional[str],
+        Field(
+            None,
+            description="The value of the credential.",
+        ),
+    ]
 
 
 class ServiceGroupPayload(Model):
-    name: str
-    variables: List[CredentialPayload]
-    secrets: List[CredentialPayload]
+    name: Annotated[
+        str,
+        Field(
+            min_length=3,
+            description="The name of the credential group (minimum 3 characters).",
+        ),
+    ]
+    variables: Annotated[
+        List[CredentialPayload],
+        Field(
+            description="List of variables for this credential group.",
+        ),
+    ]
+    secrets: Annotated[
+        List[CredentialPayload],
+        Field(
+            description="List of secrets for this credential group.",
+        ),
+    ]
 
 
 class SourceCredentialPayload(Model):
-    source_type: SOURCE_TYPE
-    source_id: str
-    source_version: str
+    source_type: Annotated[
+        SOURCE_TYPE,
+        Field(
+            description="The type of source requiring credentials.",
+        ),
+    ]
+    source_id: Annotated[
+        str,
+        Field(
+            description="The ID of the source (e.g., tool ID).",
+        ),
+    ]
+    source_version: Annotated[
+        str,
+        Field(
+            description="The version of the source.",
+        ),
+    ]
 
 
 class ServiceCredentialPayload(Model):
-    name: str
-    version: str
-    group: ServiceGroupPayload
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the service requiring credentials.",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the service.",
+        ),
+    ]
+    group: Annotated[
+        ServiceGroupPayload,
+        Field(
+            description="The credential group containing variables and secrets.",
+        ),
+    ]
 
 
 class CreateSourceCredentialsPayload(SourceCredentialPayload):
-    service_credential: ServiceCredentialPayload
+    service_credential: Annotated[
+        ServiceCredentialPayload,
+        Field(
+            description="The service credential details including group and credentials.",
+        ),
+    ]
 
 
 class SelectCurrentGroupPayload(Model):
-    user_credentials_id: DecodedDatabaseIdField
-    current_group_id: Optional[DecodedDatabaseIdField] = None
+    user_credentials_id: Annotated[
+        DecodedDatabaseIdField,
+        Field(
+            description="The ID of the user credentials to update.",
+        ),
+    ]
+    current_group_id: Annotated[
+        Optional[DecodedDatabaseIdField],
+        Field(
+            None,
+            description="The ID of the group to set as current (None to unset).",
+        ),
+    ]
 
 
 class SelectServiceCredentialPayload(SourceCredentialPayload):
-    service_credentials: List[SelectCurrentGroupPayload]
+    service_credentials: Annotated[
+        List[SelectCurrentGroupPayload],
+        Field(
+            description="List of user credentials to update with current group selections.",
+        ),
+    ]

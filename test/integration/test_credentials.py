@@ -153,16 +153,8 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_provide_credential_invalid_group(self):
-        # Test providing credentials with an invalid group name - empty string
-        # The new API appears to be more permissive and allows empty group names
-        # So instead test a different validation scenario or adjust expectations
         payload = self._build_credentials_payload(group_name="")
-
-        # Create the credentials (API allows empty group names)
-        response = self._provide_user_credentials(payload)
-
-        # Verify that empty group name was accepted
-        assert response["name"] == ""  # Empty group name is allowed
+        self._provide_user_credentials(payload, status_code=400)
 
     def test_invalid_source_type(self):
         payload = self._build_credentials_payload(source_type="invalid_source_type")
