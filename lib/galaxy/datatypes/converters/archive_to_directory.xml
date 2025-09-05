@@ -1,7 +1,7 @@
 <tool id="CONVERTER_archive_to_directory" name="Unpack archive to directory" version="1.0.0" profile="21.09">
     <!-- Use compression_utils instead of shell commands (tar/unzip) so we can verify safety of results -->
     <requirements>
-        <requirement type="package" version="25.0">galaxy-util</requirement>
+        <requirement type="package" version="25.0.2">galaxy-util</requirement>
     </requirements>
     <command><![CDATA[
         mkdir '$output1.files_path' &&
