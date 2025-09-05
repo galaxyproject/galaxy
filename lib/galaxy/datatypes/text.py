@@ -196,7 +196,7 @@ class Ipynb(Json):
             try:
                 with open(file_prefix.filename) as f:
                     ipynb = json.load(f)
-                if ipynb.get("nbformat", False) is not False and ipynb.get("metadata", False):
+                if ipynb.get("nbformat", False) is not False and "metadata" in ipynb:
                     return True
                 else:
                     return False
