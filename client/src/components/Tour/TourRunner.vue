@@ -21,7 +21,7 @@ const props = defineProps<{
 const emit = defineEmits(["end-tour"]);
 
 const tourStore = useTourStore();
-const { legacyTourCache } = storeToRefs(tourStore);
+const { toolGeneratedTours } = storeToRefs(tourStore);
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -30,11 +30,15 @@ const waitingOnElement = ref<string | null>(null);
 
 async function initialize() {
     try {
-        const cachedTour = legacyTourCache.value[props.tourId];
+        const cachedTour = toolGeneratedTours.value[props.tourId];
         if (cachedTour) {
             steps.value = cachedTour.steps || [];
             requirements.value = cachedTour.requirements || [];
             ready.value = true;
+
+            // Delete it from the store, since it isn't meant to be a cache
+            // (needs to be regenerated each time because TGTs can have upload data)
+            delete tourStore.toolGeneratedTours[props.tourId];
             return;
         }
 

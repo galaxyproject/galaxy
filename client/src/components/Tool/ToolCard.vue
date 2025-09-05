@@ -119,6 +119,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
 }
 
 const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
+
+const allowGeneratedTours = computed(() => Boolean(isConfigLoaded.value && config.value.enable_tool_generated_tours));
 </script>
 
 <template>
@@ -137,8 +139,10 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     @onChangeVersion="onChangeVersion" />
                 <ToolOptionsButton
                     :id="props.id"
+                    :allow-generated-tours="allowGeneratedTours"
                     :tool-uuid="props.toolUuid"
                     :sharable-url="props.options.sharable_url"
+                    :version="props.version"
                     :options="props.options" />
                 <b-button
                     v-if="allowObjectStoreSelection"

@@ -12,6 +12,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
 
+import ToolTourGeneratorItem from "./ToolTourGeneratorItem.vue";
+
 library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -32,6 +34,14 @@ const props = defineProps({
     options: {
         type: Object,
         required: true,
+    },
+    allowGeneratedTours: {
+        type: Boolean,
+        default: false,
+    },
+    version: {
+        type: String,
+        default: "1.0",
     },
 });
 
@@ -107,6 +117,8 @@ loadToolMenuWebhooks();
         <b-dropdown-item v-if="showLink" @click="onLink">
             <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
         </b-dropdown-item>
+
+        <ToolTourGeneratorItem v-if="props.allowGeneratedTours" :tool-id="id" :tool-version="props.version" />
 
         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
             <span :class="w.icon" />{{ l(w.title) }}

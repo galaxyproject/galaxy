@@ -9,6 +9,7 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
+import { getContentItemState, type State } from "@/components/History/Content/model/states";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
@@ -60,6 +61,19 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         };
     });
 
+    const getStatesForHids = computed(() => {
+        return (historyId: string, hids: number[]): Record<string, State> => {
+            const itemArray = items.value[historyId] || [];
+            const states: Record<string, State> = {};
+            itemArray.forEach((item: ExtendedHistoryItem) => {
+                if (hids.includes(item.hid)) {
+                    states[item.hid] = getContentItemState(item);
+                }
+            });
+            return states;
+        };
+    });
+
     async function fetchHistoryItems(historyId: string, filterText: string, offset: number) {
         const queryString = HistoryFilters.getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
@@ -103,6 +117,11 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         lastUpdateTime,
         isWatching,
         getHistoryItems,
+        /**
+         * Returns history item states for the provided `historyId` and a list of `hids`.
+         * Is reactive to updates to the items in this store.
+         */
+        getStatesForHids,
         fetchHistoryItems,
         saveHistoryItems,
         setLastUpdateTime,

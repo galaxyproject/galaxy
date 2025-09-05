@@ -15,3 +15,18 @@ export async function getTourData(tourId: string) {
     }
     return data;
 }
+
+export async function generateTour(toolId: string, toolVersion: string) {
+    const { data, error } = await GalaxyApi().GET("/api/tours/generate", {
+        params: {
+            query: {
+                tool_id: toolId,
+                tool_version: toolVersion,
+            },
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
