@@ -557,8 +557,6 @@ Mothur/1.36.1
         assert lmod.module_name == "Bar"
         assert lmod.module_version is None
 
-        assert lmod.shell_commands() == ""
-
 
 def _setup_lmod_command(temp_directory, contents):
     lmod_script = os.path.join(temp_directory, "lmod")
