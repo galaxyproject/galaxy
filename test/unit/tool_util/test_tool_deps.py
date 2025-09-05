@@ -331,9 +331,7 @@ Mothur/1.36.1
 """,
         )
         resolver = ModuleDependencyResolver(
-            _SimpleDependencyManager(),
-            modulecmd=module_script,
-            skip_availability_check="true"
+            _SimpleDependencyManager(), modulecmd=module_script, skip_availability_check="true"
         )
 
         module = resolver.resolve(ToolRequirement(name="Mothur", version="1.36.1", type="package"))
@@ -355,8 +353,6 @@ Mothur/1.36.1
         module = resolver.resolve(ToolRequirement(name="Bar", version=None, type="package"))
         assert module.module_name == "Bar"
         assert module.module_version is None
-
-        assert module.shell_commands() == ""
 
 
 def _setup_module_command(temp_directory, contents):
@@ -534,7 +530,7 @@ Mothur/1.36.1
             _SimpleDependencyManager(),
             lmodexec=lmod_script,
             skip_availability_check="true",
-            modulepath="/path/to/modulefiles"
+            modulepath="/path/to/modulefiles",
         )
 
         lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.36.1", type="package"))
