@@ -1,6 +1,6 @@
 from typing import (
     Annotated,
-    List,
+    Literal,
     Optional,
 )
 
@@ -8,7 +8,6 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -61,8 +60,8 @@ class CredentialGroupResponse(Model):
             description="The name of the credential group.",
         ),
     ]
-    variables: List[VariableResponse]
-    secrets: List[SecretResponse]
+    variables: list[VariableResponse]
+    secrets: list[SecretResponse]
 
 
 class CredentialDefinitionResponse(Model):
@@ -143,11 +142,11 @@ class UserCredentialsResponse(Model):
             description="The ID of the currently active credential group.",
         ),
     ]
-    groups: List[CredentialGroupResponse]
+    groups: list[CredentialGroupResponse]
 
 
 class UserCredentialsListResponse(RootModel):
-    root: List[UserCredentialsResponse]
+    root: list[UserCredentialsResponse]
 
 
 class ServiceCredentialsDefinition(Model):
@@ -176,8 +175,8 @@ class ServiceCredentialsDefinition(Model):
             description="A human-readable label for the service.",
         ),
     ]
-    variables: List[CredentialDefinitionResponse]
-    secrets: List[CredentialDefinitionResponse]
+    variables: list[CredentialDefinitionResponse]
+    secrets: list[CredentialDefinitionResponse]
 
 
 class ExtendedUserCredentialsResponse(UserCredentialsResponse):
@@ -185,7 +184,7 @@ class ExtendedUserCredentialsResponse(UserCredentialsResponse):
 
 
 class ExtendedUserCredentialsListResponse(RootModel):
-    root: List[ExtendedUserCredentialsResponse]
+    root: list[ExtendedUserCredentialsResponse]
 
 
 class CredentialPayload(Model):
@@ -214,13 +213,13 @@ class ServiceGroupPayload(Model):
         ),
     ]
     variables: Annotated[
-        List[CredentialPayload],
+        list[CredentialPayload],
         Field(
             description="List of variables for this credential group.",
         ),
     ]
     secrets: Annotated[
-        List[CredentialPayload],
+        list[CredentialPayload],
         Field(
             description="List of secrets for this credential group.",
         ),
@@ -296,7 +295,7 @@ class SelectCurrentGroupPayload(Model):
 
 class SelectServiceCredentialPayload(SourceCredentialPayload):
     service_credentials: Annotated[
-        List[SelectCurrentGroupPayload],
+        list[SelectCurrentGroupPayload],
         Field(
             description="List of user credentials to update with current group selections.",
         ),

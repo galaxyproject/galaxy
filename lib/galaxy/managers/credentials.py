@@ -1,9 +1,5 @@
 from typing import (
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -20,8 +16,8 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import SOURCE_TYPE
 from galaxy.schema.fields import DecodedDatabaseIdField
 
-CredentialsModelsSet = Set[Union[UserCredentials, CredentialsGroup, Credential]]
-CredentialsAssociation = List[Tuple[UserCredentials, CredentialsGroup, Credential]]
+CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
+CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
 
 
 class CredentialsManager:
@@ -67,10 +63,10 @@ class CredentialsManager:
         result = self.session.execute(stmt).tuples().all()
         return list(result)
 
-    def index_credentials(self, existing_user_credentials: CredentialsAssociation) -> Tuple[
-        Dict[Tuple[str, str], UserCredentials],
-        Dict[Tuple[DecodedDatabaseIdField, str], CredentialsGroup],
-        Dict[Tuple[DecodedDatabaseIdField, str, bool], Credential],
+    def index_credentials(self, existing_user_credentials: CredentialsAssociation) -> tuple[
+        dict[tuple[str, str], UserCredentials],
+        dict[tuple[DecodedDatabaseIdField, str], CredentialsGroup],
+        dict[tuple[DecodedDatabaseIdField, str, bool], Credential],
     ]:
         user_cred_map = {}
         group_map = {}

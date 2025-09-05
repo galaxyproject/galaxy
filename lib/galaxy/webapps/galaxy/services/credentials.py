@@ -2,11 +2,7 @@ from typing import (
     Any,
     Callable,
     cast,
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -62,7 +58,7 @@ class CredentialsService:
     ) -> None:
         self.app = app
         self.credentials_manager = credentials_manager
-        self.source_type_credentials: Dict[SOURCE_TYPE, GetToolCredentialsDefinition] = {
+        self.source_type_credentials: dict[SOURCE_TYPE, GetToolCredentialsDefinition] = {
             "tool": self._get_tool_credentials_definition,
         }
 
@@ -124,13 +120,13 @@ class CredentialsService:
         if not existing_user_credentials:
             raise ObjectNotFound(f"No credentials found for {source_type}, {source_id}, {source_version}")
 
-        cred_map: Dict[DecodedDatabaseIdField, UserCredentials] = {}
-        group_map: Dict[DecodedDatabaseIdField, UserCredentials] = {}
+        cred_map: dict[DecodedDatabaseIdField, UserCredentials] = {}
+        group_map: dict[DecodedDatabaseIdField, UserCredentials] = {}
         for uc, cg, _ in existing_user_credentials:
             cred_map[uc.id] = uc
             group_map[cg.id] = uc
 
-        updated_credentials: Set[UserCredentials] = set()
+        updated_credentials: set[UserCredentials] = set()
 
         for service in service_credentials:
             if service.current_group_id is not None:
@@ -163,7 +159,7 @@ class CredentialsService:
             raise ObjectNotFound("No credentials found.")
 
         rows_to_delete: CredentialsModelsSet = set()
-        secrets_to_delete: Set[str] = set()
+        secrets_to_delete: set[str] = set()
 
         if group_id:
             user_credentials_record = None
@@ -265,8 +261,8 @@ class CredentialsService:
         existing_user_credentials = self.credentials_manager.get_user_credentials(
             user.id, source_type, source_id, source_version
         )
-        user_credentials_dict: Dict[int, Dict[str, Any]] = {}
-        groups_dict: Dict[Tuple[int, int], Dict[str, Any]] = {}
+        user_credentials_dict: dict[int, dict[str, Any]] = {}
+        groups_dict: dict[tuple[int, int], dict[str, Any]] = {}
 
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
@@ -360,7 +356,7 @@ class CredentialsService:
         if credentials_group.name != group_name:
             self.credentials_manager.update_group(credentials_group, group_name)
 
-        existing_credentials_map: Dict[Tuple[str, bool], Credential] = {}
+        existing_credentials_map: dict[tuple[str, bool], Credential] = {}
         for *_, credential in existing_user_credentials:
             existing_credentials_map[(credential.name, credential.is_secret)] = credential
 
@@ -513,8 +509,8 @@ class CredentialsService:
     def _validate_credentials_against_definition(
         self,
         source_credentials: CredentialsRequirement,
-        variables: List[CredentialPayload],
-        secrets: List[CredentialPayload],
+        variables: list[CredentialPayload],
+        secrets: list[CredentialPayload],
         service_name: str,
         is_update: bool = False,
     ) -> None:
