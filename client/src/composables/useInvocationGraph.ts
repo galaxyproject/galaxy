@@ -12,7 +12,7 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
@@ -334,7 +334,7 @@ export function useInvocationGraph(
                 set(graphStep, "state", getContentItemState(hda));
                 set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
             } else {
-                const hdca = await fetchCollectionDetails({ hdca_id: inputItem.id });
+                const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
                 set(graphStep, "state", getContentItemState(hdca));
                 set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
