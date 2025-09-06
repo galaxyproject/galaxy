@@ -1097,7 +1097,23 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     @property
     def version_object(self):
-        return parse_version(self.version)
+        """Parse version string, handling special Galaxy version format."""
+        GALAXY_VERSION_SUFFIX = "+galaxy"
+        version = self.version
+
+        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
+        if GALAXY_VERSION_SUFFIX not in version:
+            return parse_version(version)
+
+        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
+
+        # Handle Galaxy versions that need numeric sorting
+        if suffix:
+            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
+            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
+            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
+
+        return parse_version(version)
 
     @property
     def sa_session(self):
