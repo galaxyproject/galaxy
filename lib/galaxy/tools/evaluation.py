@@ -30,6 +30,7 @@ from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.structured_app import (
     BasicSharedApp,
+    MinimalManagerApp,
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
@@ -643,7 +644,7 @@ class ToolEvaluator:
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
     def _create_interactivetools_entry_points(self):
-        if hasattr(self.app, "interactivetool_manager"):
+        if isinstance(self.app, MinimalManagerApp):
             self.interactivetools = self._populate_interactivetools_template()
             self.app.interactivetool_manager.create_interactivetool(self.job, self.tool, self.interactivetools)
 
@@ -815,7 +816,8 @@ class ToolEvaluator:
                 matching_eps = [ep for ep in self.job.interactivetool_entry_points if ep.label == entry_point_label]
                 if matching_eps:
                     entry_point = matching_eps[0]
-                    entry_point_path = InteractiveToolManager(self.app).get_entry_point_path(self.app, entry_point)
+                    assert isinstance(self.app, MinimalManagerApp)
+                    entry_point_path = InteractiveToolManager(self.app).get_entry_point_path(entry_point)
                     environment_variable_template = entry_point_path.rstrip("/")
                 else:
                     environment_variable_template = ""

@@ -619,6 +619,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
         self.notification_manager = self._register_singleton(NotificationManager)
+        self.interactivetool_manager = InteractiveToolManager(self)
 
         self.task_manager = self._register_abstract_singleton(
             AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
@@ -839,8 +840,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        # We need InteractiveToolManager before the job handler starts
-        self.interactivetool_manager = InteractiveToolManager(self)
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if

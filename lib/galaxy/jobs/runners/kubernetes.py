@@ -10,6 +10,7 @@ import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Union
 
 import yaml
 
@@ -242,7 +243,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
-    def __configure_port_routing(self, ajs):
+    def __configure_port_routing(self, ajs: AsynchronousJobState) -> None:
         # Configure interactive tool entry points first
         guest_ports = ajs.job_wrapper.guest_ports
         ports_dict = {}
@@ -712,7 +713,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_job_name(self, prefix, job_wrapper):
         return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
 
@@ -754,7 +755,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_persisted_state = job_state.job_wrapper.get_state()
 
             # This assumes jobs dependent on a single pod, single container
-            if succeeded > 0 or job_state == model.Job.states.STOPPED:
+            if succeeded > 0 or job_persisted_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 log.debug(f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} succeeded")
