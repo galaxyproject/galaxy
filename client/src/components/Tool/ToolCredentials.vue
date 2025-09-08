@@ -24,18 +24,18 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
-    hasUserProvidedRequiredCredentials,
-    hasUserProvidedAllCredentials,
-    hasSomeOptionalCredentials,
-    hasSomeRequiredCredentials,
     statusVariant,
+    toolHasRequiredServiceCredentials,
+    hasUserProvidedAllServiceCredentials,
+    hasUserProvidedAllRequiredServiceCredentials,
+    hasUserProvidedSomeOptionalServiceCredentials,
     checkUserCredentials,
 } = useUserToolCredentials(props.toolId, props.toolVersion);
 
 const showModal = ref(false);
 
 const provideCredentialsButtonTitle = computed(() => {
-    return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
+    return hasUserProvidedAllServiceCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
 function toggleDialog() {
@@ -52,10 +52,10 @@ onMounted(async () => {
         <BAlert show :variant="statusVariant">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="isAnonymous">
-                <span v-if="hasSomeRequiredCredentials">
+                <span v-if="toolHasRequiredServiceCredentials">
                     <strong>
-                        This tool requires credentials to access its services and you need to be logged in to provide
-                        them.
+                        This tool <strong>requires credentials</strong> to access its services and you need to be logged
+                        in to provide them.
                     </strong>
                 </span>
                 <span v-else>
@@ -70,34 +70,39 @@ onMounted(async () => {
                     <FontAwesomeLayers class="mr-1">
                         <FontAwesomeIcon :icon="faKey" fixed-width />
                         <FontAwesomeIcon
-                            v-if="hasUserProvidedRequiredCredentials"
+                            v-if="hasUserProvidedAllServiceCredentials"
                             :icon="faCheck"
                             fixed-width
                             transform="shrink-6 right-6 down-6" />
                         <FontAwesomeIcon
-                            v-else-if="hasSomeRequiredCredentials"
+                            v-else-if="hasUserProvidedAllRequiredServiceCredentials"
                             :icon="faExclamation"
                             fixed-width
                             transform="shrink-6 right-8 down-7" />
                     </FontAwesomeLayers>
 
-                    <span v-if="hasUserProvidedRequiredCredentials">
+                    <span v-if="hasUserProvidedAllServiceCredentials">
                         <strong>You have already provided credentials for this tool.</strong> You can update or delete
                         your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
-                        <span v-if="hasSomeOptionalCredentials && !hasUserProvidedAllCredentials">
-                            <br />
-                            You can still provide some optional credentials for this tool.
+                    </span>
+                    <span v-else-if="toolHasRequiredServiceCredentials">
+                        <span v-if="hasUserProvidedAllRequiredServiceCredentials">
+                            You have provided <strong>all the required credentials</strong> for this tool, but you can
+                            still provide some other optional credentials for this tool.
+                        </span>
+                        <span v-else>
+                            This tool <strong>requires you to enter credentials</strong> to access its services. Please
+                            provide your credentials before using the tool using the
+                            <i>{{ provideCredentialsButtonTitle }}</i> button.
                         </span>
                     </span>
-                    <span v-else-if="hasSomeRequiredCredentials">
-                        This tool <strong>requires you to enter credentials</strong> to access its services. Please
-                        provide your credentials before using the tool using the
-                        <i>{{ provideCredentialsButtonTitle }}</i> button.
+                    <span v-else-if="hasUserProvidedSomeOptionalServiceCredentials">
+                        You have provided <strong>some optional credentials</strong> for this tool, but you can still
+                        provide more optional credentials for this tool.
                     </span>
                     <span v-else>
                         This tool <strong>can use credentials</strong> to access its services. If you don't provide
-                        credentials, you can still use the tool, but you will access its services
-                        <strong>anonymously</strong> and in some cases, with limited functionality.
+                        credentials, you can still use the tool, and the tool will use its default values.
                     </span>
                 </div>
 
