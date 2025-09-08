@@ -225,16 +225,16 @@ export default {
             return this.uuid || this.formConfig.uuid;
         },
         tooltip() {
-            switch (true) {
-                case !this.canMutateHistory:
-                    return this.immutableHistoryMessage;
-                case this.hasConfigOrValErrors:
-                    return "Please correct errors before running the tool.";
-                case this.showExecuting:
-                    return "Tool is being executed...";
-                default:
-                    return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
+            if (!this.canMutateHistory) {
+                return this.immutableHistoryMessage;
             }
+            if (this.hasConfigOrValErrors) {
+                return "Please resolve highlighted issues before running the tool.";
+            }
+            if (this.showExecuting) {
+                return "Tool is being executed...";
+            }
+            return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
