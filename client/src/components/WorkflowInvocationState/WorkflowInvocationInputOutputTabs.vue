@@ -19,6 +19,7 @@ const OUTPUTS_NOT_AVAILABLE_YET_MSG =
 const props = defineProps<{
     invocation: WorkflowInvocationElementView;
     terminal?: boolean;
+    tabsNotLazy?: boolean;
 }>();
 
 // Fetching full workflow to get the workflow output labels (for when invocation is not terminal)
@@ -64,13 +65,13 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
 </script>
 <template>
     <span>
-        <BTab title="Inputs" lazy>
+        <BTab title="Inputs" :lazy="!props.tabsNotLazy">
             <div v-if="parameters.length || inputData.length">
                 <WorkflowInvocationInputs :invocation="props.invocation" />
             </div>
             <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
         </BTab>
-        <BTab title="Outputs" lazy>
+        <BTab title="Outputs" :lazy="!props.tabsNotLazy">
             <div v-if="outputs.length">
                 <div
                     v-for="([key, output], index) in outputs"

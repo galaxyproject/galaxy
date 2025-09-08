@@ -95,6 +95,7 @@ async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvoca
         propsData: {
             invocation,
             terminal,
+            tabsNotLazy: true,
         },
         stubs: {
             ContentItem: true,
