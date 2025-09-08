@@ -13,6 +13,8 @@ from time import sleep
 from typing import (
     Any,
     Optional,
+    TYPE_CHECKING,
+    Union,
 )
 
 import pulsar.core
@@ -45,6 +47,7 @@ from galaxy.job_execution.compute_environment import (
 )
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -58,6 +61,9 @@ from galaxy.util import (
     string_as_bool_or_none,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from pulsar.client.client import BaseJobClient
 
 log = logging.getLogger(__name__)
 
@@ -274,7 +280,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         """Convert a legacy URL to a job destination."""
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         if self.use_mq:
             # Might still need to check pod IPs.
             job_wrapper = job_state.job_wrapper
@@ -287,7 +293,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                         job_state.job_id,
                         persisted_state,
                     )
-                    job_state = None
+                    return None
                 elif persisted_state == model.Job.states.RUNNING:
                     client = self.get_client_from_state(job_state)
                     job_ip = client.job_ip()
@@ -297,15 +303,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
                             ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
                         self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
                         log.debug("(%s) Got ports for entry point: %s", job_state.job_id, str(ports_dict))
-                        job_state = None
+                        return None
             else:
                 # No need to monitor MQ jobs that have no entry points
-                job_state = None
+                return None
             return job_state
         else:
             return self.check_watched_item_state(job_state)
 
-    def check_watched_item_state(self, job_state):
+    def check_watched_item_state(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -317,10 +323,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        job_state = self._update_job_state_for_status(job_state, status)
-        return job_state
+        return self._update_job_state_for_status(job_state, status)
 
-    def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
+    def _update_job_state_for_status(
+        self,
+        job_state: AsynchronousJobState,
+        pulsar_status: Union[str, None],
+        full_status: Union[dict[str, Any], None] = None,
+    ) -> Union[AsynchronousJobState, None]:
         log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
         if pulsar_status in ["complete", "cancelled"]:
             self.mark_as_finished(job_state)
@@ -616,12 +626,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
         env = getattr(job_wrapper.job_destination, "env", [])
         return self.get_client(params, job_id, env)
 
-    def get_client_from_state(self, job_state):
+    def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
         job_destination_params = job_state.job_destination.params
         job_id = job_state.job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
         return self.get_client(job_destination_params, job_id)
 
-    def get_client(self, job_destination_params, job_id, env=None):
+    def get_client(
+        self, job_destination_params: dict[str, Any], job_id, env: Union[list, None] = None
+    ) -> "BaseJobClient":
         # Cannot use url_for outside of web thread.
         # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
         if env is None:
@@ -987,7 +999,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_kwds["datatypes_config"] = datatypes_config
         return metadata_kwds
 
-    def __async_update(self, full_status):
+    def __async_update(self, full_status: dict[str, Any]) -> None:
         galaxy_job_id = None
         remote_job_id = None
         try:
@@ -999,6 +1011,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 galaxy_job_id = self.app.model.session.execute(stmt).scalar_one()
             else:
                 galaxy_job_id = remote_job_id
+            assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)

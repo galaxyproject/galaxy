@@ -34,6 +34,10 @@ import re
 import signal
 import time
 from math import inf
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import (
@@ -41,6 +45,9 @@ from galaxy.util import (
     size_to_bytes,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs.runners import AsynchronousJobState
 
 log = logging.getLogger(__name__)
 
@@ -58,21 +65,23 @@ class UnivaJobRunner(DRMAAJobRunner):
     # restrict job name length as in the DRMAAJobRunner
     # restrict_job_name_length = 15
 
-    def check_watched_item(self, ajs, new_watched):
+    def check_watched_item_drmaa(self, ajs: "AsynchronousJobState", new_watched: list["AsynchronousJobState"]) -> str:
         """
         get state with job_status/qstat
 
         since qstat returns undetermined for finished jobs
         we return DONE here
         """
+        assert ajs.job_id is not None
         state = self._get_drmaa_state(ajs.job_id, self.ds, False)
         # log.debug("UnivaJobRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
         if state == self.drmaa.JobState.UNDETERMINED:
             return self.drmaa.JobState.DONE
         return state
 
-    def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
-        extinfo = {}
+    def _complete_terminal_job(self, ajs: "AsynchronousJobState", drmaa_state: str, **kwargs):
+        extinfo: dict = {}
+        assert ajs.job_id is not None
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -445,7 +454,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
-    def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=None):
+    def _get_drmaa_state(self, job_id: str, ds, waitqacct: bool, extinfo: Union[dict, None] = None) -> str:
         """
         get the state using drmaa.job_info/qstat and drmaa.wait/qacct using the above functions
         qacct/wait is only called if waitqacct is True.
