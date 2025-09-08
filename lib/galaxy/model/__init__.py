@@ -6895,7 +6895,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def populated(self):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(e.child_collection and e.child_collection.populated for e in self.elements)
+            if self.id:
+                return self.populated_optimized
+            else:
+                return all(e.child_collection and e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
