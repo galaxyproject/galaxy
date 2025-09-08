@@ -98,8 +98,7 @@ function reset() {
         :disabled="generatingTour"
         @click="clickGenerateTour">
         <span v-if="!generatingTour">
-            <FontAwesomeIcon :icon="faPuzzlePiece" />
-            <span v-localize>Generate Tour</span>
+            <FontAwesomeIcon :icon="faPuzzlePiece" /><span v-localize>Generate Tour</span>
         </span>
         <LoadingSpan v-else message="Generating Tour" />
     </BDropdownItem>
