@@ -70,7 +70,7 @@ dependencies = [
     "pebble",
     "pillow",
     "psutil",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.10",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "PyJWT",
