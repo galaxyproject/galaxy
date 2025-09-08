@@ -41,6 +41,7 @@ from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -1166,6 +1167,9 @@ class InputDataCollectionModule(InputModule):
                 fields=fields,
             )
             collection_type_description.validate()
+        column_definitions = state.get("column_definitions")
+        if column_definitions:
+            validate_column_definitions(column_definitions)
         return None
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):

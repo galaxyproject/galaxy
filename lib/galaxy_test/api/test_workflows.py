@@ -7836,6 +7836,72 @@ steps:
         assert r.status_code == 400
         assert "Invalid collection type:" in r.json()["err_msg"]
 
+    @skip_without_tool("multi_data_optional")
+    def test_invalid_sample_sheet_definitions_rejected(self):
+        valid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: string
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(valid_collection_type)})
+        assert r.status_code == 200
+
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: stringx
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
+
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: string
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+      extra_key: not_allowed
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):
         with self.dataset_populator.test_history() as history_id:

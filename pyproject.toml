@@ -43,7 +43,7 @@ dependencies = [
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.1.1",
     "gunicorn",
-    "gxformat2",
+    "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
