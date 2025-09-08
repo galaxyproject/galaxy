@@ -29,6 +29,7 @@ from galaxy.util.config_templates import (
     EnvironmentDict,
     partial_model,
 )
+from galaxy.util.hash_util import HashFunctionNames
 from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
@@ -326,12 +327,25 @@ class RemoteDirectory(RemoteEntry):
     class_: Annotated[Literal["Directory"], Field(..., serialization_alias="class")] = "Directory"
 
 
+class RemoteFileHash(StrictModel):
+    hash_function: HashFunctionNames
+    hash_value: str
+
+
 class RemoteFile(RemoteEntry):
     class_: Annotated[Literal["File"], Field(..., serialization_alias="class")] = "File"
     size: Annotated[int, Field(..., title="Size", description="The size of the file in bytes.")] = 0
     ctime: Annotated[
-        Optional[str], Field(default="Unknown", title="Creation time", description="The creation time of the file.")
+        Optional[str], Field(default=None, title="Creation time", description="The creation time of the file.")
     ]
+    hashes: Annotated[
+        Optional[list[RemoteFileHash]],
+        Field(
+            default=None,
+            title="Hashes",
+            description="List of precomputed hashes for the file, if available.",
+        ),
+    ] = None
 
 
 AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]

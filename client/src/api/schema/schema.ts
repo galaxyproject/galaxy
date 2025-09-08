@@ -18632,6 +18632,11 @@ export interface components {
              */
             ctime: string;
             /**
+             * Hashes
+             * @description List of precomputed hashes for the file, if available.
+             */
+            hashes?: components["schemas"]["RemoteFileHash"][] | null;
+            /**
              * Name
              * @description The name of the entry.
              */
@@ -18651,6 +18656,16 @@ export interface components {
              * @description The URI of the entry.
              */
             uri: string;
+        };
+        /** RemoteFileHash */
+        RemoteFileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
         };
         /**
          * RemoteFilesDisableMode
