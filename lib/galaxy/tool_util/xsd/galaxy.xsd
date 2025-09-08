@@ -783,6 +783,11 @@ It can contain multiple ``variable`` and ``secret`` tags.
         <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true, tools can run without credentials; if false, credentials must be provided before execution.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="CredentialsVariable">
     <xs:annotation>

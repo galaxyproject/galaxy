@@ -20141,6 +20141,11 @@ export interface components {
              * @description The name of the service.
              */
             name: string;
+            /**
+             * Optional
+             * @description If true, tools can run without credentials; if false, credentials must be provided before execution.
+             */
+            optional: boolean;
             /** Secrets */
             secrets: components["schemas"]["CredentialDefinitionResponse"][];
             /** Variables */

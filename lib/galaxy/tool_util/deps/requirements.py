@@ -369,6 +369,7 @@ class CredentialsRequirement:
         version: str,
         label: str = "",
         description: str = "",
+        optional: bool = False,
         secrets: Optional[List[Secret]] = None,
         variables: Optional[List[Variable]] = None,
     ) -> None:
@@ -376,6 +377,7 @@ class CredentialsRequirement:
         self.version = version
         self.label = label
         self.description = description
+        self.optional = optional
         self.secrets = secrets if secrets is not None else []
         self.variables = variables if variables is not None else []
 
@@ -390,6 +392,7 @@ class CredentialsRequirement:
             "version": self.version,
             "label": self.label,
             "description": self.description,
+            "optional": self.optional,
             "secrets": [s.to_dict() for s in self.secrets],
             "variables": [v.to_dict() for v in self.variables],
         }
@@ -400,6 +403,7 @@ class CredentialsRequirement:
         version = dict["version"]
         label = dict.get("label", "")
         description = dict.get("description", "")
+        optional = dict.get("optional", False)
         secrets = [Secret.from_element(s) for s in dict.get("secrets", [])]
         variables = [Variable.from_element(v) for v in dict.get("variables", [])]
         return cls(
@@ -407,6 +411,7 @@ class CredentialsRequirement:
             version=version,
             label=label,
             description=description,
+            optional=optional,
             secrets=secrets,
             variables=variables,
         )
@@ -511,6 +516,7 @@ def credentials_from_element(credentials_elem) -> CredentialsRequirement:
     version = credentials_elem.get("version")
     label = credentials_elem.get("label", "")
     description = credentials_elem.get("description", "")
+    optional = string_as_bool(credentials_elem.get("optional", "false"))
     secrets = [Secret.from_element(elem) for elem in credentials_elem.findall("secret")]
     variables = [Variable.from_element(elem) for elem in credentials_elem.findall("variable")]
     return CredentialsRequirement(
@@ -518,6 +524,7 @@ def credentials_from_element(credentials_elem) -> CredentialsRequirement:
         version=version,
         label=label,
         description=description,
+        optional=optional,
         secrets=secrets,
         variables=variables,
     )

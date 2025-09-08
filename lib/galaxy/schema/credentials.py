@@ -175,6 +175,12 @@ class ServiceCredentialsDefinition(Model):
             description="A human-readable label for the service.",
         ),
     ]
+    optional: Annotated[
+        bool,
+        Field(
+            description="If true, tools can run without credentials; if false, credentials must be provided before execution.",
+        ),
+    ]
     variables: list[CredentialDefinitionResponse]
     secrets: list[CredentialDefinitionResponse]
 
