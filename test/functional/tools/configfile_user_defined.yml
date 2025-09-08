@@ -20,7 +20,7 @@ outputs:
 tests:
   - inputs:
       text: hello there!
-  - outputs:
+    outputs:
       output:
         asserts:
           has_line:
