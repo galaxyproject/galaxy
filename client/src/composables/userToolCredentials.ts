@@ -1,5 +1,5 @@
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import { isRegisteredUser } from "@/api";
 import { getToolKey } from "@/api/tools";
@@ -9,10 +9,10 @@ import type {
     ServiceCredentialsDefinition,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
+    SourceCredentialsDefinition,
     UserSourceService,
 } from "@/api/users";
-import { getKeyFromCredentialsIdentifier } from "@/api/users";
-import { useToolCredentials } from "@/composables/toolCredentials";
+import { getKeyFromCredentialsIdentifier, transformToSourceCredentials } from "@/api/users";
 import { useUserStore } from "@/stores/userStore";
 import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
@@ -26,18 +26,12 @@ import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/store
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const { currentUser } = storeToRefs(useUserStore());
 
-    const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
-    const { isBusy, userToolServicesFor, userToolServiceCredentialsGroups } = storeToRefs(
-        userToolsServiceCredentialsStore
+    const sourceCredentialsDefinition = ref<SourceCredentialsDefinition>(
+        transformToSourceCredentials(toolId, toolVersion)
     );
 
-    const {
-        sourceCredentialsDefinition,
-        hasSomeOptionalCredentials,
-        hasSomeRequiredCredentials,
-        hasAnyCredentials,
-        servicesCount,
-    } = useToolCredentials(toolId, toolVersion);
+    const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+    const { isBusy, userToolServicesFor } = storeToRefs(userToolsServiceCredentialsStore);
 
     const currentUserToolServices = computed(() => userToolServicesFor.value(toolId, toolVersion));
 
@@ -98,31 +92,66 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return groups;
     }
 
-    /**
-     * Check if the user has provided all required credentials
-     */
-    const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
+    const hasUserProvidedAllServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
             return false;
         }
-        return currentUserToolServices.value.every((credentials) => areRequiredSetByUser(credentials));
+        for (const definition of sourceCredentialsDefinition.value.services.values()) {
+            const userService = currentUserToolServices.value.find(
+                (service) => getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+            );
+            if (!userService || !serviceHasCurrentGroupId(userService)) {
+                return false;
+            }
+        }
+        return true;
     });
 
-    /**
-     * Check if the user has provided all credentials (required and optional)
-     */
-    const hasUserProvidedAllCredentials = computed<boolean>(() => {
+    const toolHasRequiredServiceCredentials = computed<boolean>(() => {
+        for (const definition of sourceCredentialsDefinition.value.services.values()) {
+            if (definition.optional === false) {
+                return true;
+            }
+        }
+        return false;
+    });
+
+    const hasUserProvidedAllRequiredServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
             return false;
         }
-        return currentUserToolServices.value.every(areAllSetByUser);
+
+        for (const definition of sourceCredentialsDefinition.value.services.values()) {
+            if (definition.optional === false) {
+                const userService = currentUserToolServices.value.find(
+                    (service) =>
+                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+                );
+                if (!userService || !serviceHasCurrentGroupId(userService)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     });
 
-    /**
-     * Get the appropriate button title for managing credentials
-     */
-    const provideCredentialsButtonTitle = computed(() => {
-        return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
+    const hasUserProvidedSomeOptionalServiceCredentials = computed<boolean>(() => {
+        if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
+            return false;
+        }
+
+        for (const definition of sourceCredentialsDefinition.value.services.values()) {
+            if (definition.optional === true) {
+                const userService = currentUserToolServices.value.find(
+                    (service) =>
+                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+                );
+                if (userService && serviceHasCurrentGroupId(userService)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     });
 
     /**
@@ -132,53 +161,20 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         if (isBusy.value) {
             return "info";
         }
-        return hasUserProvidedRequiredCredentials.value ? "success" : "warning";
-    });
-
-    /**
-     * Check if all required credentials are set by the user
-     */
-    function areRequiredSetByUser(sourceService: UserSourceService): boolean {
-        if (!sourceService.groups || !sourceService.current_group_id) {
-            return false;
+        if (hasUserProvidedAllServiceCredentials.value || hasUserProvidedAllRequiredServiceCredentials.value) {
+            return "success";
         }
-
-        const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
-        const selectedGroup = userToolServiceCredentialsGroups.value[sourceService.current_group_id];
-
-        return (
-            serviceDefinitions.variables.every((v) => {
-                const variable = selectedGroup?.variables.find((dv) => v.name === dv.name);
-                return v.optional || (variable?.value ?? false);
-            }) &&
-            serviceDefinitions.secrets.every((s) => {
-                const secret = selectedGroup?.secrets.find((ds) => s.name === ds.name);
-                return s.optional || (secret?.is_set ?? false);
-            })
-        );
-    }
+        return "warning";
+    });
 
     /**
      * Check if all credentials (required and optional) are set by the user
      */
-    function areAllSetByUser(sourceService: UserSourceService): boolean {
-        if (!sourceService.groups || !sourceService.current_group_id) {
-            return false;
+    function serviceHasCurrentGroupId(sourceService: UserSourceService): boolean {
+        if (sourceService.groups && sourceService.current_group_id) {
+            return true;
         }
-
-        const serviceDefinitions = getToolServiceCredentialsDefinitionFor(sourceService);
-        const selectedGroup = userToolServiceCredentialsGroups.value[sourceService.current_group_id];
-
-        return (
-            serviceDefinitions.variables.every((v) => {
-                const variable = selectedGroup?.variables.find((dv) => v.name === dv.name);
-                return variable?.value ?? false;
-            }) &&
-            serviceDefinitions.secrets.every((s) => {
-                const secret = selectedGroup?.secrets.find((ds) => s.name === ds.name);
-                return secret?.is_set ?? false;
-            })
-        );
+        return false;
     }
 
     /**
@@ -261,25 +257,17 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     return {
         sourceCredentialsDefinition,
-        hasSomeOptionalCredentials,
-        hasSomeRequiredCredentials,
-        hasAnyCredentials,
-        servicesCount,
 
-        /** The credentials for the user already stored in the system */
         currentUserToolServices,
         userServiceFor,
         userServiceGroupsFor,
 
-        /** Color variant for status messages according to current state */
         statusVariant,
+        toolHasRequiredServiceCredentials,
+        hasUserProvidedAllServiceCredentials,
+        hasUserProvidedAllRequiredServiceCredentials,
+        hasUserProvidedSomeOptionalServiceCredentials,
 
-        // User credentials computed properties
-        hasUserProvidedRequiredCredentials,
-        hasUserProvidedAllCredentials,
-        provideCredentialsButtonTitle,
-
-        // Methods
         checkUserCredentials,
         createUserCredentials,
         saveUserCredentials,
