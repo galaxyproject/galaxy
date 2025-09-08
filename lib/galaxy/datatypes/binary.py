@@ -4770,3 +4770,63 @@ class Numpy(Binary):
             return dataset.peek
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
+
+
+@build_sniff_from_prefix
+class Hic(Binary):
+    """
+    Hic: highly compressed binary file that stores contact matrices
+    from multiple resolutions in a clever way, allowing random access.
+    https://github.com/aidenlab/hic-format
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('merlin.hic')
+    >>> Hic().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Hic().sniff(fname)
+    False
+    """
+
+    file_ext = "hic"
+
+    MetadataElement(
+        name="version",
+        default="",
+        param=MetadataParameter,
+        desc="Version of the HiC file format",
+        readonly=True,
+        visible=True,
+        no_value=0,
+        optional=True,
+    )
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"HIC"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(self._magic)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary HiC file"
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nHiC Format v{dataset.metadata.version}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary HiC file ({nice_size(dataset.get_size())})"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Set metadata for HiC file.
+        """
+        with open(dataset.get_file_name(), "rb") as handle:
+            header_bytes = handle.read(8)
+        dataset.metadata.version = struct.unpack("<i", header_bytes[4:8])[0]
