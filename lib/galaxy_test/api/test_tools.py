@@ -1827,6 +1827,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "abc\n"
 
+    @skip_without_tool("cat_multiple_user_defined")
+    def test_collection_into_multiple_true(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            hdca = self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()[
+                "output_collections"
+            ][0]
+            response = self._run(
+                "cat_multiple_user_defined",
+                history_id,
+                {"datasets": {"values": [{"src": "hdca", "id": hdca["id"]}]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            output_content = self.dataset_populator.get_history_dataset_content(
+                history_id, response["outputs"][0]["id"]
+            )
+            assert output_content == "TestData123\n" * 3
+
     def test_show_dynamic_tools(self):
         # Create tool.
         original_list = self.dataset_populator.list_dynamic_tools()
