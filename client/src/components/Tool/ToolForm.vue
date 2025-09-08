@@ -121,6 +121,7 @@ import { useJobStore } from "stores/jobStore";
 import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
@@ -212,6 +213,7 @@ export default {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        ...mapState(useTourStore, ["currentTour"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -283,6 +285,7 @@ export default {
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
+        ...mapActions(useTourStore, ["setTour"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -353,6 +356,11 @@ export default {
             this.preferredObjectStoreId = preferredObjectStoreId;
         },
         onExecute(config, historyId) {
+            // If a tour is active that was generated for this tool, end it.
+            if (this.currentTour?.id.startsWith(`tool-generated-${this.formConfig.id}`)) {
+                this.setTour(undefined);
+            }
+
             if (this.validationInternal) {
                 this.validationScrollTo = this.validationInternal.slice();
                 return;

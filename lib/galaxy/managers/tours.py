@@ -252,13 +252,22 @@ class TourGenerator:
             if cond_case_steps:
                 steps.extend(cond_case_steps)  # add conditional input steps
 
-        # Add the last step
+        # Add the execute tool step which clicks Run
         steps.append(
             TourStep(
                 title="Execute tool",
                 content="Click <b>Execute</b> button to run the tool.",
                 element="#execute",
                 placement="bottom",
+                postclick=True,
+            )
+        )
+        # Add the last step (this might potentially never be reached because in the
+        # client, we end the tour when clicking "#execute")
+        steps.append(
+            TourStep(
+                title="What's next?",
+                content=f"Your <b>{self._tool.name}</b> job is now running. Check the history panel on the right to monitor progress.",
             )
         )
 
