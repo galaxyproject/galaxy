@@ -1,4 +1,14 @@
 <script setup lang="ts">
+/**
+ * Component that runs a tour with the given ID.
+ * It handles waiting for elements to appear and performing any pre-step actions like clicking or text insertion.
+ *
+ * Note: This is not meant to be reused in other components, it is only meant to be mounted in `App.vue`.
+ *       There, we check the `tourStore.currentTour.id` and mount this component if it is set.
+ *       Therefore, to start a tour, just set the `tourStore.currentTour` to the desired tour ID,
+ *       and `App.vue` will mount this component automatically.
+ */
+
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
