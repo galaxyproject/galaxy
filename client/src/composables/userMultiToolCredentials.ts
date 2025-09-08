@@ -1,12 +1,16 @@
+import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
 import { getToolKey } from "@/api/tools";
 import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     const userToolCredentialsByKey = reactive(new Map<string, ReturnType<typeof useUserToolCredentials>>());
+
+    const { isBusy } = storeToRefs(useUserToolsServiceCredentialsStore());
 
     tools.forEach(({ toolId, toolVersion }) => {
         const toolKey = getToolKey(toolId, toolVersion);
@@ -37,50 +41,55 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
         }
     );
 
-    const hasSomeToolWithOptionalCredentials = computed(() => {
-        const map = new Map<string, boolean>();
-        userToolCredentialsByKey.forEach((userToolCredentials, key) => {
-            map.set(key, userToolCredentials.hasSomeOptionalCredentials.value);
-        });
-        return map;
+    const someToolsHasRequiredServiceCredentials = computed(() => {
+        return Array.from(userToolCredentialsByKey.values()).some(
+            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value
+        );
     });
 
-    const hasSomeToolWithRequiredCredentials = computed(() => {
-        const map = new Map<string, boolean>();
-        userToolCredentialsByKey.forEach((userToolCredentials, key) => {
-            map.set(key, userToolCredentials.hasSomeRequiredCredentials.value);
-        });
-        return map;
+    const hasUserProvidedAllToolsServiceCredentials = computed(() => {
+        return Array.from(userToolCredentialsByKey.values()).every(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value
+        );
     });
 
-    const statusVariant = computed<"success" | "info" | "warning">(() => {
-        const map = new Map<string, string>();
-        userToolCredentialsByKey.forEach((userToolCredentials, key) => {
-            map.set(key, userToolCredentials.statusVariant.value);
-        });
+    const hasUserProvidedAllRequiredToolsServiceCredentials = computed(() => {
+        return Array.from(userToolCredentialsByKey.values()).every(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value
+        );
+    });
 
-        if (Array.from(map.values()).every((v) => v === "success")) {
-            return "success";
-        } else if (Array.from(map.values()).some((v) => v === "info")) {
+    const hasUserProvidedSomeOptionalToolsServiceCredentials = computed(() => {
+        return Array.from(userToolCredentialsByKey.values()).some(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value
+        );
+    });
+
+    // const statusVariant = computed<"success" | "info" | "warning">(() => {
+    //     const map = new Map<string, string>();
+    //     userToolCredentialsByKey.forEach((userToolCredentials, key) => {
+    //         map.set(key, userToolCredentials.statusVariant.value);
+    //     });
+
+    //     if (Array.from(map.values()).every((v) => v === "success")) {
+    //         return "success";
+    //     } else if (Array.from(map.values()).some((v) => v === "info")) {
+    //         return "info";
+    //     }
+    //     return "warning";
+    // });
+
+    const statusVariant = computed<"info" | "success" | "warning">(() => {
+        if (isBusy.value) {
             return "info";
         }
+        if (
+            hasUserProvidedAllToolsServiceCredentials.value ||
+            hasUserProvidedAllRequiredToolsServiceCredentials.value
+        ) {
+            return "success";
+        }
         return "warning";
-    });
-
-    const hasUserProvidedAllRequiredToolsCredentials = computed(() => {
-        const map = new Map<string, boolean>();
-        userToolCredentialsByKey.forEach((userToolCredentials, key) => {
-            map.set(key, userToolCredentials.hasUserProvidedRequiredCredentials.value);
-        });
-        return map;
-    });
-
-    const hasUserProvidedAllToolsCredentials = computed(() => {
-        const map = new Map<string, boolean>();
-        userToolCredentialsByKey.forEach((userToolCredentials, key) => {
-            map.set(key, userToolCredentials.hasUserProvidedAllCredentials.value);
-        });
-        return map;
     });
 
     async function checkAllUserCredentials() {
@@ -112,14 +121,14 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     }
 
     return {
-        statusVariant,
         userServiceForTool,
         sourceCredentialsDefinitionFor,
 
-        hasUserProvidedAllRequiredToolsCredentials,
-        hasUserProvidedAllToolsCredentials,
-        hasSomeToolWithOptionalCredentials,
-        hasSomeToolWithRequiredCredentials,
+        statusVariant,
+        someToolsHasRequiredServiceCredentials,
+        hasUserProvidedAllToolsServiceCredentials,
+        hasUserProvidedAllRequiredToolsServiceCredentials,
+        hasUserProvidedSomeOptionalToolsServiceCredentials,
 
         checkAllUserCredentials,
         selectCurrentCredentialsGroupsForTool,
