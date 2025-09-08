@@ -294,6 +294,7 @@ class CredentialsService:
                     "name": definition.name,
                     "version": definition.version,
                     "description": definition.description,
+                    "optional": definition.optional,
                     "label": definition.label,
                     "variables": [v.to_dict() for v in definition.variables],
                     "secrets": [s.to_dict() for s in definition.secrets],
