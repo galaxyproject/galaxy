@@ -66,9 +66,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
 from galaxy.model import (
     History,
-    ImplicitCollectionJobs,
-    ImplicitCollectionJobsJobAssociation,
-    Job,
     StoredWorkflow,
     StoredWorkflowTagAssociation,
     StoredWorkflowUserShareAssociation,
@@ -422,9 +419,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return workflow_canvas.finish(for_embed=for_embed)
 
     def get_invocation(
-        self, trans, decoded_invocation_id: int, eager=False, check_ownership=True, check_accessible=True
+        self, trans, decoded_invocation_id: int, check_ownership=True, check_accessible=True
     ) -> WorkflowInvocation:
-        workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
+        workflow_invocation = _get_invocation(trans.sa_session, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
             message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
@@ -2259,16 +2256,8 @@ def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
     return session.scalars(stmt).first()
 
 
-def _get_invocation(session, eager, invocation_id):
+def _get_invocation(session, invocation_id):
     stmt = select(WorkflowInvocation)
-    if eager:
-        stmt = stmt.options(
-            subqueryload(WorkflowInvocation.steps)
-            .joinedload(WorkflowInvocationStep.implicit_collection_jobs)
-            .joinedload(ImplicitCollectionJobs.jobs)
-            .joinedload(ImplicitCollectionJobsJobAssociation.job)
-            .joinedload(Job.input_datasets)
-        )
     stmt = stmt.where(WorkflowInvocation.id == invocation_id).limit(1)
     return session.scalars(stmt).first()
 
