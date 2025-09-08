@@ -2,9 +2,8 @@
 import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { CredentialType } from "@/api/userCredentials";
 import type { ServiceCredentialsDefinition, ServiceGroupPayload, ServiceParameterDefinition } from "@/api/users";
-
-type CredentialType = "variable" | "secret";
 
 interface EditGroup {
     groupId: string;

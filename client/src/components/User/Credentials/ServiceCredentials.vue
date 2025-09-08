@@ -15,6 +15,7 @@ import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import type { CredentialType } from "@/api/userCredentials";
 import type {
     CreateSourceCredentialsPayload,
     ServiceCredentialsDefinition,
@@ -31,8 +32,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
-
-type CredentialType = "variable" | "secret";
 
 interface EditGroup {
     groupId: string;
@@ -224,7 +223,7 @@ async function createGroup(editGroup: EditGroup) {
         Toast.success("Credentials group created successfully");
     } catch (error) {
         console.error("Error creating group:", error);
-        Toast.error(`Error creating group: ${errorMessageAsString(error)}`);
+        Toast.error(`${errorMessageAsString(error)}`);
     }
 }
 
@@ -246,7 +245,7 @@ async function updateGroup(groupId: string) {
         Toast.success("Credentials group updated successfully");
     } catch (error) {
         console.error("Error saving credentials:", error);
-        Toast.error(`Error saving credentials: ${errorMessageAsString(error)}`);
+        Toast.error(`${errorMessageAsString(error)}`);
     } finally {
         saveButtonText.value = "Save";
     }
