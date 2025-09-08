@@ -6875,11 +6875,11 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 stmt = self._build_nested_collection_attributes_stmt(
                     collection_attributes=("populated_state",),
                     inner_filter=InnerCollectionFilter(
-                        "populated_state", operator.__ne__, DatasetCollection.populated_states.OK
+                        "populated_state", operator.__eq__, DatasetCollection.populated_states.OK
                     ),
                 )
                 stmt = stmt.subquery()
-                stmt = select(~exists(stmt))
+                stmt = select(exists(stmt))
                 session = required_object_session(self)
                 _populated_optimized = session.scalar(stmt)
 
