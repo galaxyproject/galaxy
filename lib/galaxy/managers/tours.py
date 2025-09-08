@@ -8,6 +8,7 @@ from typing import (
 from webob.compat import cgi_FieldStorage
 
 from galaxy.exceptions import (
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesAppContext
@@ -41,11 +42,9 @@ class ToursManager:
             raise RequestParameterInvalidException("Tool id is missing.")
         if not tool_version:
             raise RequestParameterInvalidException("Tool version is missing.")
-        try:
-            tour_generator = TourGenerator(trans, tool_id, tool_version)
-            return tour_generator.get_data()
-        except Exception as e:
-            raise Exception(f"Cannot generate a tour for the tool {tool_id} version {tool_version}: {str(e)}")
+
+        tour_generator = TourGenerator(trans, tool_id, tool_version)
+        return tour_generator.get_data()
 
 
 class TourGenerator:
@@ -63,7 +62,7 @@ class TourGenerator:
         """Get the tool and ensure it exists."""
         tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
-            raise ValueError(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
+            raise ObjectNotFound(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
         return tool
 
     def _upload_test_data(self):
@@ -72,7 +71,7 @@ class TourGenerator:
         section of the provided tool.
         """
         if not self._tool.tests:
-            raise ValueError("Tests are not defined.")
+            raise RequestParameterInvalidException("Tests are not defined.")
         self._test = self._tool.tests[0]
         # All inputs with the type 'data'
         self._data_inputs = {x.name: x for x in self._tool.input_params if x.type == "data"}
@@ -93,7 +92,7 @@ class TourGenerator:
                 k for k, v in self._tool.inputs.items() if v.type == "repeat" or v.type == "data_collection"
             ]
             if not_supported_input_types:
-                raise ValueError("Not supported input types.")
+                raise RequestParameterInvalidException("Not supported input types.")
             else:
                 # Some tests don't have data inputs at all,
                 # so we can generate a tour without them
@@ -105,7 +104,7 @@ class TourGenerator:
                 filename = test_datasets[input_name]
                 input_path = self._tool.test_data_path(filename)
                 if not input_path:
-                    raise ValueError(f'Test dataset "{input_name}" doesn\'t exist.')
+                    raise ObjectNotFound(f'Test dataset "{input_name}" doesn\'t exist.')
                 upload_tool: Tool = self._get_and_ensure_tool("upload1", None)
                 filename = os.path.basename(input_path)
                 with open(input_path, "rb") as f:
@@ -131,7 +130,7 @@ class TourGenerator:
                     output = upload_tool.handle_input(self._trans, incoming, history=None)
                     job_errors = output.get("job_errors", [])
                     if job_errors:
-                        raise ValueError("Cannot upload a dataset.")
+                        raise RequestParameterInvalidException("Cannot upload a dataset.")
                     else:
                         self._hids.update({input_name: output["out_data"][0][1].hid})
 
