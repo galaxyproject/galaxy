@@ -10,7 +10,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse } from "bootstrap-vue";
+import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -280,11 +280,14 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
         {
             id: `delete-${groupData.id}`,
             label: "",
-            title: "Delete this group",
+            title: isCurrentGroup
+                ? "Cannot delete the group currently in use. Clear selection first."
+                : "Delete this group (cannot be undone)",
             icon: faTrash,
             variant: "outline-danger",
             handler: () => deleteGroup(groupData),
-            visible: !isCurrentGroup && !isBeingEdited,
+            disabled: isBusy.value || isCurrentGroup,
+            visible: !isBeingEdited,
         },
         {
             id: `edit-${groupData.name}`,
@@ -302,7 +305,7 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
             icon: isCurrentGroup ? faX : faCheck,
             variant: "outline-info",
             handler: () => updateCurrentGroup(groupData),
-            disabled: isCurrentGroup,
+            disabled: isBusy.value,
             visible: !isBeingEdited && !isCurrentGroup,
         },
         {
@@ -317,7 +320,7 @@ const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): Card
         },
         {
             id: `save-${groupData.name}`,
-            label: "Save",
+            label: "Save Changes",
             title: "Save changes to this group",
             icon: isBusy.value ? faSpinner : faSave,
             variant: "outline-info",
@@ -345,7 +348,7 @@ const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAct
         },
         {
             id: `save-${groupId}`,
-            label: "Save",
+            label: "Create Group",
             title: "Save changes to this group",
             icon: isBusy.value ? faSpinner : faSave,
             variant: "outline-info",
@@ -376,17 +379,39 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
     <div>
         <div>
             <BButton class="service-title" block variant="outline-info" @click="isExpanded = !isExpanded">
-                <span>
+                <span class="d-flex align-items-center flex-gapx-1">
                     <FontAwesomeIcon v-if="!isExpanded" :icon="faCaretRight" />
                     <FontAwesomeIcon v-else :icon="faCaretRight" rotation="90" />
                     {{ serviceName }}
+
+                    <template v-if="!currentServiceCredentialsGroup?.id">
+                        <BBadge
+                            v-if="props.serviceDefinition.optional"
+                            v-b-tooltip.hover.noninteractive
+                            pill
+                            title="This service is optional. You may choose not to provide credentials for it."
+                            variant="secondary"
+                            class="outline-badge">
+                            Optional
+                        </BBadge>
+                        <BBadge
+                            v-else
+                            v-b-tooltip.hover.noninteractive
+                            pill
+                            title="This service is required. The tool may not function properly without providing credentials for it."
+                            :variant="currentServiceCredentialsGroup ? 'success' : 'warning'"
+                            class="outline-badge">
+                            Required
+                        </BBadge>
+                    </template>
                 </span>
 
-                <span class="text-muted selected-group-info">
-                    <span v-if="currentServiceCredentialsGroup?.id">
+                <span class="font-weight-normal align-self-center text-muted selected-group-info">
+                    <span v-if="currentServiceCredentialsGroup?.id" class="d-flex align-items-center flex-gapx-1">
+                        <FontAwesomeIcon :icon="faCheck" class="text-success" />
                         Using: <b>{{ currentServiceCredentialsGroup?.name }}</b>
                     </span>
-                    <span v-else> No credential group selected</span>
+                    <span v-else> No credential group selected </span>
                 </span>
             </BButton>
         </div>
@@ -395,34 +420,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
             <div class="d-flex flex-column mt-2">
                 <span class="text-md">{{ props.serviceDefinition.description }}</span>
 
-                <GCard
-                    v-for="usg in userServicesGroups"
-                    :id="`group-${usg.id}-${usg.name}`"
-                    :key="`${usg.id}-${usg.name}`"
-                    :title="usg.name"
-                    :selected="currentServiceCredentialsGroup?.id === usg.id && !editingGroups[usg.id]"
-                    :indicators="groupIndicators(usg)"
-                    :primary-actions="primaryActions(usg)">
-                    <template v-if="editingGroups[usg.id]" v-slot:description>
-                        <CredentialsGroupForm
-                            :group-data="editingGroups[usg.id]"
-                            :service-definition="props.serviceDefinition" />
-                    </template>
-                </GCard>
-
-                <GCard
-                    v-for="neg in newEditingGroups"
-                    :id="`group-${neg.groupId}`"
-                    :key="neg.groupId"
-                    :title="neg.groupId"
-                    :primary-actions="primaryActionsForNewGroup(neg)"
-                    class="mb-2">
-                    <template v-slot:description>
-                        <CredentialsGroupForm :group-data="neg" :service-definition="props.serviceDefinition" />
-                    </template>
-                </GCard>
-
-                <div class="d-flex flex-gapx-1 justify-content-center">
+                <div class="d-flex flex-gapx-1 justify-content-center my-2">
                     <GButton
                         color="blue"
                         outline
@@ -443,6 +441,33 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                         Clear Selection
                     </GButton>
                 </div>
+
+                <GCard
+                    v-for="neg in newEditingGroups"
+                    :id="`group-${neg.groupId}`"
+                    :key="neg.groupId"
+                    :title="neg.groupId"
+                    :primary-actions="primaryActionsForNewGroup(neg)"
+                    class="mb-2">
+                    <template v-slot:description>
+                        <CredentialsGroupForm :group-data="neg" :service-definition="props.serviceDefinition" />
+                    </template>
+                </GCard>
+
+                <GCard
+                    v-for="usg in userServicesGroups"
+                    :id="`group-${usg.id}-${usg.name}`"
+                    :key="`${usg.id}-${usg.name}`"
+                    :title="usg.name"
+                    :selected="currentServiceCredentialsGroup?.id === usg.id && !editingGroups[usg.id]"
+                    :indicators="groupIndicators(usg)"
+                    :primary-actions="primaryActions(usg)">
+                    <template v-if="editingGroups[usg.id]" v-slot:description>
+                        <CredentialsGroupForm
+                            :group-data="editingGroups[usg.id]"
+                            :service-definition="props.serviceDefinition" />
+                    </template>
+                </GCard>
             </div>
         </BCollapse>
     </div>
@@ -457,11 +482,9 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
     display: flex;
     justify-content: space-between;
     text-align: left;
-}
 
-.selected-group-info {
-    font-size: 0.8rem;
-    font-weight: normal;
-    align-self: center;
+    .selected-group-info {
+        font-size: 0.8rem;
+    }
 }
 </style>
