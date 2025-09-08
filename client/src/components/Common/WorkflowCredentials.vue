@@ -24,18 +24,18 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
-    hasUserProvidedAllRequiredToolsCredentials,
-    hasUserProvidedAllToolsCredentials,
-    hasSomeToolWithOptionalCredentials,
-    hasSomeToolWithRequiredCredentials,
     statusVariant,
+    someToolsHasRequiredServiceCredentials,
+    hasUserProvidedAllToolsServiceCredentials,
+    hasUserProvidedAllRequiredToolsServiceCredentials,
+    hasUserProvidedSomeOptionalToolsServiceCredentials,
     checkAllUserCredentials,
 } = useUserMultiToolCredentials(props.toolIdentifiers);
 
 const showModal = ref(false);
 
 const provideCredentialsButtonTitle = computed(() => {
-    return hasUserProvidedAllRequiredToolsCredentials.value ? "Manage credentials" : "Provide credentials";
+    return hasUserProvidedAllToolsServiceCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
 function toggleDialog() {
@@ -53,10 +53,10 @@ onMounted(async () => {
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="isAnonymous">
                 <FontAwesomeIcon :icon="faKey" fixed-width />
-                <span v-if="hasSomeToolWithRequiredCredentials">
+                <span v-if="someToolsHasRequiredServiceCredentials">
                     <strong>
-                        Some steps in this workflow require credentials to access its services and you need to be logged
-                        in to provide them.
+                        Some steps in this workflow <strong>require credentials</strong> to access its services and you
+                        need to be logged in to provide them.
                     </strong>
                 </span>
                 <span v-else>
@@ -71,30 +71,39 @@ onMounted(async () => {
                     <FontAwesomeLayers class="mr-1">
                         <FontAwesomeIcon :icon="faKey" fixed-width />
                         <FontAwesomeIcon
-                            v-if="hasUserProvidedAllRequiredToolsCredentials"
+                            v-if="hasUserProvidedAllToolsServiceCredentials"
                             :icon="faCheck"
                             fixed-width
                             transform="shrink-6 right-6 down-6" />
-                        <FontAwesomeIcon v-else :icon="faExclamation" fixed-width transform="shrink-6 right-8 down-7" />
+                        <FontAwesomeIcon
+                            v-else-if="hasUserProvidedAllRequiredToolsServiceCredentials"
+                            :icon="faExclamation"
+                            fixed-width
+                            transform="shrink-6 right-8 down-7" />
                     </FontAwesomeLayers>
 
-                    <span v-if="hasUserProvidedAllRequiredToolsCredentials">
+                    <span v-if="hasUserProvidedAllToolsServiceCredentials">
                         <strong>You have already provided credentials for this workflow.</strong> You can update or
                         delete your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
-                        <span v-if="hasSomeToolWithOptionalCredentials && !hasUserProvidedAllToolsCredentials">
-                            <br />
-                            You can still provide some optional credentials for this workflow.
+                    </span>
+                    <span v-else-if="someToolsHasRequiredServiceCredentials">
+                        <span v-if="hasUserProvidedAllRequiredToolsServiceCredentials">
+                            You have provided <strong>all the required credentials</strong> for this workflow, but you
+                            can still provide some other optional credentials for this workflow.
+                        </span>
+                        <span v-else>
+                            This workflow <strong>requires you to enter credentials</strong> to access its services.
+                            Please provide your credentials before using the workflow using the
+                            <i>{{ provideCredentialsButtonTitle }}</i> button.
                         </span>
                     </span>
-                    <span v-else-if="hasSomeToolWithRequiredCredentials">
-                        This workflow <strong>requires you to enter credentials</strong> to access its services. Please
-                        provide your credentials before using the workflow using the
-                        <i>{{ provideCredentialsButtonTitle }}</i> button.
+                    <span v-else-if="hasUserProvidedSomeOptionalToolsServiceCredentials">
+                        You have provided <strong>some optional credentials</strong> for this workflow, but you can
+                        still provide more optional credentials for this workflow.
                     </span>
                     <span v-else>
                         This workflow <strong>can use credentials</strong> to access its services. If you don't provide
-                        credentials, you can still use the workflow, but you will access its services
-                        <strong>anonymously</strong> and in some cases, with limited functionality.
+                        credentials, you can still use the workflow, and the tools will use their default values.
                     </span>
                 </div>
 
