@@ -31,6 +31,28 @@ const groupName = computed<string>({
     },
 });
 
+function getGroupNameState(): boolean | null {
+    const name = groupName.value;
+    if (!name) {
+        return false;
+    }
+    if (name.length < 3) {
+        return false;
+    }
+    return true;
+}
+
+function getGroupNameErrorMessage(): string | null {
+    const name = groupName.value;
+    if (!name) {
+        return "Group name is required";
+    }
+    if (name.length < 3) {
+        return "Group name must be at least 3 characters";
+    }
+    return null;
+}
+
 function getFieldId(fieldName: string, type: CredentialType): string {
     return `${props.groupData.groupId}-${fieldName}-${type}`;
 }
@@ -81,12 +103,13 @@ function getFieldState(value: string | null | undefined, name: string, type: Cre
         <BFormGroup
             :id="`${props.groupData.groupId}-name`"
             label="Group Name"
-            description="Enter a unique name for this group">
+            description="Enter a unique name for this group"
+            :invalid-feedback="getGroupNameErrorMessage()">
             <BFormInput
                 :id="`${props.groupData.groupId}-name-input`"
                 v-model="groupName"
                 type="text"
-                :state="groupName ? true : false"
+                :state="getGroupNameState()"
                 placeholder="Enter group name"
                 title="Group Name"
                 aria-label="Group Name"

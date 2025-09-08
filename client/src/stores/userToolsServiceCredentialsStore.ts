@@ -197,7 +197,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
             });
 
             if (error) {
-                throw Error(`Failed to fetch all user tools service credentials: ${error.err_msg}`);
+                throw Error(`${error.err_msg} - Failed to fetch all user tools service credentials.`);
             }
 
             for (const usc of data) {
@@ -246,7 +246,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
             const userToolKey = getUserToolKey(toolId, toolVersion);
 
             if (error) {
-                throw Error(`Failed to fetch user credentials for tool ${userToolKey}: ${error.err_msg}`);
+                throw Error(`${error.err_msg} - Failed to fetch user credentials for tool ${userToolKey}.`);
             }
 
             set(userToolsServices.value, userToolKey, data);
@@ -287,7 +287,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
             if (error) {
                 const userToolKey = getUserToolKey(toolId, toolVersion);
-                throw Error(`Failed to create new credentials group for tool ${userToolKey}: ${error.err_msg}`);
+                throw Error(`${error.err_msg} - Failed to create new credentials group for tool ${userToolKey}.`);
             }
 
             await fetchAllUserToolServices(toolId, toolVersion);
@@ -319,7 +319,8 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
     ): Promise<ServiceCredentialsGroup> {
         const userId = ensureUserIsRegistered();
 
-        removeSecretPlaceholders(serviceGroupPayload);
+        const serviceGroupPayloadCopy = structuredClone(serviceGroupPayload);
+        removeSecretPlaceholders(serviceGroupPayloadCopy);
 
         busyMessage.value = "Updating your credentials";
         isBusy.value = true;
@@ -329,12 +330,12 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
                 params: {
                     path: { user_id: userId, group_id: groupId },
                 },
-                body: serviceGroupPayload,
+                body: serviceGroupPayloadCopy,
             });
 
             if (error) {
                 const userToolKey = getUserToolKey(toolId, toolVersion);
-                throw Error(`Failed to save user credentials ${groupId} for ${userToolKey} : ${error.err_msg}`);
+                throw Error(`${error.err_msg} - Failed to save user credentials ${groupId} for ${userToolKey}.`);
             }
 
             updateUserToolServiceGroup(data);
@@ -380,7 +381,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
             if (error) {
                 const userToolKey = getUserToolKey(toolId, toolVersion);
-                throw Error(`Failed to delete user credentials group for tool ${userToolKey}: ${error.err_msg}`);
+                throw Error(`${error.err_msg} - Failed to delete user credentials group for tool ${userToolKey}.`);
             }
 
             await fetchAllUserToolServices(toolId, toolVersion);
