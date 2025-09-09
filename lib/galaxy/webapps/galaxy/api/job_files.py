@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 from typing import (
+    Annotated,
     cast,
     IO,
     Optional,
@@ -22,7 +23,6 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.params import Depends
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
