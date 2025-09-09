@@ -1,16 +1,23 @@
 <tool id="sort1" name="Sort" version="1.2.0">
     <description>data in ascending or descending order</description>
     <requirements>
-        <requirement type="package" version="3.8">python</requirement>
         <requirement type="package" version="2.14">grep</requirement>
         <requirement type="package" version="4.4">sed</requirement>
         <requirement type="package" version="8.31">coreutils</requirement>
     </requirements>
-    <command detect_errors="exit_code">
-python '$__tool_directory__/sorter.py'
-
---input='$input'
---output='$out_file1'
+    <command detect_errors="exit_code"><![CDATA[
+## Sorts tabular data on one or more columns. All comments of the file are
+## collected and placed at the beginning of the sorted output file.
+#if $header_lines > 0:
+    sed -n 1,${header_lines}p '$input' > '$out_file1' &&
+#end if
+grep '^#' '$input' >> '$out_file1';
+#if $header_lines > 0:
+    sed 1,${header_lines}d '$input' |
+#else:
+    < '$input'
+#end if
+grep '^[^#]' | sort -f -t \$'\t'
 
 #if (str($style) == 'num'):
     #set $style = 'n'
@@ -22,8 +29,7 @@ python '$__tool_directory__/sorter.py'
 
 #set $order = '' if (str($order) == 'ASC') else 'r'
 
---key=${column},${column}${style}${order}
-
+-k ${column},${column}${style}${order}
 
 #for $col in $column_set:
     #set $other_column = str($col.other_column)
@@ -37,10 +43,10 @@ python '$__tool_directory__/sorter.py'
     #end if
 
     #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
-    --key=${other_column},${other_column}${other_style}${other_order}
+    -k ${other_column},${other_column}${other_style}${other_order}
 #end for
---header $header_lines
-    </command>
+>> '$out_file1'
+    ]]></command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
         <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
