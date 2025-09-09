@@ -41,7 +41,7 @@ watch(
             userStore.loadUser(includeHistories);
             loadQuotaUsages();
         }
-    }
+    },
 );
 
 async function displayRecalculationForSeconds(seconds: number) {

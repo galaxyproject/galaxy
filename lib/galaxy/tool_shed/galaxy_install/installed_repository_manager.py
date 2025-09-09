@@ -8,11 +8,8 @@ import os
 import shutil
 from typing import (
     Any,
-    Dict,
-    List,
     no_type_check,
     Optional,
-    Tuple,
 )
 
 from galaxy import util
@@ -40,16 +37,16 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
-RepositoryTupleT = Tuple[str, str, str, str]
+RepositoryTupleT = tuple[str, str, str, str]
 
 
 class InstalledRepositoryManager:
     app: InstallationTarget
-    _tool_paths: List[str]
-    installed_repository_dicts: List[Dict[str, Any]]
-    repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
-    installed_repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
-    installed_dependent_repositories_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
+    _tool_paths: list[str]
+    installed_repository_dicts: list[dict[str, Any]]
+    repository_dependencies_of_installed_repositories: dict[RepositoryTupleT, list[RepositoryTupleT]]
+    installed_repository_dependencies_of_installed_repositories: dict[RepositoryTupleT, list[RepositoryTupleT]]
+    installed_dependent_repositories_of_installed_repositories: dict[RepositoryTupleT, list[RepositoryTupleT]]
 
     def __init__(self, app: InstallationTarget):
         """
@@ -83,7 +80,7 @@ class InstalledRepositoryManager:
         self.installed_dependent_repositories_of_installed_repositories = {}
 
     @property
-    def tool_paths(self) -> List[str]:
+    def tool_paths(self) -> list[str]:
         """Return all possible tool_path attributes of all tool config files."""
         if len(self._tool_paths) != len(self.tool_configs):
             # This could be happen at startup or after the creation of a new shed_tool_conf.xml file
@@ -211,19 +208,19 @@ class InstalledRepositoryManager:
     def get_dependencies_for_repository(
         self,
         tool_shed_url: str,
-        repo_info_dict: Dict[str, repository_util.AnyRepositoryTupleT],
+        repo_info_dict: dict[str, repository_util.AnyRepositoryTupleT],
         includes_tool_dependencies,
         updating=False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Return dictionaries containing the sets of installed and missing tool dependencies and repository
         dependencies associated with the repository defined by the received repo_info_dict.
         """
         rdim = repository_dependency_manager.RepositoryDependencyInstallManager(self.app)
         repository = None
-        installed_rd: Dict[str, Any] = {}
+        installed_rd: dict[str, Any] = {}
         installed_td: repository_util.ToolDependenciesDictT = {}
-        missing_rd: Dict[str, Any] = {}
+        missing_rd: dict[str, Any] = {}
         missing_td: repository_util.ToolDependenciesDictT = {}
         name = next(iter(repo_info_dict))
         repo_info_tuple = repo_info_dict[name]
@@ -338,7 +335,7 @@ class InstalledRepositoryManager:
 
     def get_installed_and_missing_repository_dependencies(
         self, repository: ToolShedRepository
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
         Return the installed and missing repository dependencies for a tool shed repository that has a record
         in the Galaxy database, but may or may not be installed.  In this case, the repository dependencies are
@@ -347,8 +344,8 @@ class InstalledRepositoryManager:
         dependencies are really a dependency of the dependent repository's contained tool dependency, and only
         if that tool dependency requires compilation.
         """
-        missing_repository_dependencies: Dict[str, Any] = {}
-        installed_repository_dependencies: Dict[str, Any] = {}
+        missing_repository_dependencies: dict[str, Any] = {}
+        installed_repository_dependencies: dict[str, Any] = {}
         has_repository_dependencies = repository.has_repository_dependencies
         if has_repository_dependencies:
             # The repository dependencies container will include only the immediate repository
@@ -408,7 +405,7 @@ class InstalledRepositoryManager:
 
     def get_installed_and_missing_repository_dependencies_for_new_or_updated_install(
         self, repo_info_tuple
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
         Parse the received repository_dependencies dictionary that is associated with a repository being
         installed into Galaxy for the first time and attempt to determine repository dependencies that are
@@ -508,7 +505,7 @@ class InstalledRepositoryManager:
     @no_type_check
     def get_installed_and_missing_tool_dependencies_for_repository(
         self, tool_dependencies_dict: repository_util.ToolDependenciesDictT
-    ) -> Tuple[repository_util.ToolDependenciesDictT, repository_util.ToolDependenciesDictT]:
+    ) -> tuple[repository_util.ToolDependenciesDictT, repository_util.ToolDependenciesDictT]:
         """
         Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
         being installed into Galaxy.
@@ -580,7 +577,7 @@ class InstalledRepositoryManager:
 
     def get_repository_dependency_tups_for_installed_repository(
         self, repository, dependency_tups=None, status=None
-    ) -> List[RepositoryTupleT]:
+    ) -> list[RepositoryTupleT]:
         """
         Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
         received repository.  The returned list defines the entire repository dependency tree.  This method is called
@@ -631,7 +628,7 @@ class InstalledRepositoryManager:
 
     def handle_existing_tool_dependencies_that_changed_in_update(
         self, repository: ToolShedRepository, original_dependency_dict, new_dependency_dict
-    ) -> Tuple[List[str], List[str]]:
+    ) -> tuple[list[str], list[str]]:
         """
         This method is called when a Galaxy admin is getting updates for an installed tool shed
         repository in order to cover the case where an existing tool dependency was changed (e.g.,

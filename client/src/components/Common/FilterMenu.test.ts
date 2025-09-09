@@ -87,7 +87,7 @@ describe("FilterMenu", () => {
                         total_disk_usage: 4,
                     },
                 ]);
-            })
+            }),
         );
     });
 
@@ -216,7 +216,7 @@ describe("FilterMenu", () => {
                 "filter_key:item-filter has_help:has-help-filter list_item:1234 " +
                 "number>1234 number<5678 name:name-filter radio:true bool_def:true",
             TestFilters,
-            false
+            false,
         );
     });
 

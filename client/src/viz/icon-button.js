@@ -162,7 +162,7 @@ var create_icon_buttons_menu = (config, global_config) => {
 
     // create and initialize menu
     var buttons = new IconButtonCollection(
-        _.map(config, (button_config) => new IconButton(_.extend(button_config, global_config)))
+        _.map(config, (button_config) => new IconButton(_.extend(button_config, global_config))),
     );
 
     // return menu

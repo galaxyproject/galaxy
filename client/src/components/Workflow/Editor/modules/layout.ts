@@ -112,7 +112,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         otherComments,
         stateStore,
         roundUpToSnappingDistance,
-        childLayoutOptions
+        childLayoutOptions,
     );
 
     const dataEdges = connectionStore.connections.map((connection) => {
@@ -154,10 +154,10 @@ function graphToElkGraph(
     comments: WorkflowComment[],
     stateStore: ReturnType<typeof useWorkflowStateStore>,
     roundingFunction: (value: number) => number,
-    layoutOptions: Record<string, string>
+    layoutOptions: Record<string, string>,
 ): ElkNode[] {
     const flatHierarchicalComments: Map<number, HierarchicalComment> = new Map(
-        comments.map((comment) => [comment.id, { comment, root: true, children: [] }])
+        comments.map((comment) => [comment.id, { comment, root: true, children: [] }]),
     );
 
     const rootSteps = new Map(Object.entries(steps));
@@ -185,7 +185,7 @@ function graphToElkGraph(
     });
 
     const rootHierarchicalComments: HierarchicalComment[] = [...flatHierarchicalComments.values()].filter(
-        (c) => c.root
+        (c) => c.root,
     );
 
     const elkRootSteps = [...rootSteps.values()].map((step) => {
@@ -193,7 +193,7 @@ function graphToElkGraph(
     });
 
     const elkRootComments = rootHierarchicalComments.map((c) =>
-        commentToElkStep(c, stateStore, roundingFunction, layoutOptions)
+        commentToElkStep(c, stateStore, roundingFunction, layoutOptions),
     );
 
     return [...elkRootSteps, ...elkRootComments];
@@ -202,7 +202,7 @@ function graphToElkGraph(
 function stepToElkStep(
     step: Step,
     stateStore: ReturnType<typeof useWorkflowStateStore>,
-    roundingFunction: (value: number) => number
+    roundingFunction: (value: number) => number,
 ): ElkNode {
     const inputs = Object.values(step.inputs).map((input, index) => {
         return {
@@ -248,7 +248,7 @@ function commentToElkStep(
     hierarchicalComment: HierarchicalComment,
     stateStore: ReturnType<typeof useWorkflowStateStore>,
     roundingFunction: (value: number) => number,
-    layoutOptions: Record<string, string>
+    layoutOptions: Record<string, string>,
 ): ElkNode {
     const base: ElkNode = {
         id: `comment_${hierarchicalComment.comment.id}`,
@@ -282,7 +282,7 @@ interface Positions {
 function graphToPositions(
     graph: ElkNode[] | undefined,
     roundingFunction: (value: number) => number,
-    parentPosition?: { x: number; y: number }
+    parentPosition?: { x: number; y: number },
 ): Positions {
     const positions: Positions = {
         steps: [],
@@ -460,7 +460,7 @@ function populateClosestSteps(collapsedFreehandComments: CollapsedFreehandCommen
 /** resolve by how much to move the freehand comments */
 function resolveDeltaPositions(
     collapsedFreehandComments: CollapsedFreehandComment[],
-    stepPositions: Positions["steps"]
+    stepPositions: Positions["steps"],
 ): Positions["comments"] {
     const positions: Positions["comments"] = [];
     const stepPositionMap = new Map(stepPositions.map((p) => [p.id, p]));

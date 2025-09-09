@@ -192,7 +192,7 @@ export function useActivityLogic(options: Ref<ActivityLogicOptions>) {
         () => options.value.isNewTempWorkflow,
         (value) => {
             store.setMeta("workflow-run", "disabled", value);
-        }
+        },
     );
 }
 

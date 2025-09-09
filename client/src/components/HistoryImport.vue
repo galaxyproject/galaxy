@@ -137,7 +137,7 @@ export default {
             (val) => {
                 const url = val ?? "";
                 showImportUrlWarning.value = Boolean(url.match(mayBeHistoryUrlRegEx));
-            }
+            },
         );
 
         return {

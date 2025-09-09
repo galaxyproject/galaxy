@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
-import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
-import { useActiveElement } from "@/composables/useActiveElement";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -53,8 +52,6 @@ interface Props {
     isMultiViewItem?: boolean;
 }
 
-type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
-
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
@@ -72,14 +69,6 @@ const showAdvanced = ref(false);
 const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
-const contentItemRefs = computed(() => {
-    return historyItems.value.reduce((acc: ContentItemRef, item) => {
-        acc[itemUniqueKey(item)] = ref(null);
-        return acc;
-    }, {});
-});
-const currItemFocused = useActiveElement();
-const lastItemId = ref<string | null>(null);
 
 const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
@@ -191,10 +180,6 @@ const storeFilterText = computed(() => {
     return currentFilterText.value || "";
 });
 
-const lastItemFocused = computed(() => {
-    return lastItemId.value ? historyItems.value.find((item) => lastItemId.value === `dataset-${item.id}`) : null;
-});
-
 watch(offsetQueryParam, () => loadHistoryItems());
 
 watch(
@@ -203,13 +188,12 @@ watch(
         invisibleHistoryItems.value = {};
         offsetQueryParam.value = 0;
         loadHistoryItems();
-        lastItemId.value = null;
-    }
+    },
 );
 
 watch(
     () => props.filter,
-    (newVal) => (filterText.value = newVal)
+    (newVal) => (filterText.value = newVal),
 );
 
 watch(filterText, (newFilterTextValue) => {
@@ -231,9 +215,8 @@ watch(
     (newValue, currentValue) => {
         if (newValue !== currentValue) {
             operationRunning.value = null;
-            lastItemId.value = null;
         }
-    }
+    },
 );
 
 watch(historyItems, (newHistoryItems) => {
@@ -248,17 +231,6 @@ watch(historyItems, (newHistoryItems) => {
         }
     }
 });
-
-watch(
-    () => currItemFocused.value,
-    (newItem, oldItem) => {
-        // if user clicked elsewhere, set lastItemId to the last focused item
-        // (if it was indeed a history .content-item)
-        if (newItem && oldItem?.classList?.contains("content-item") && oldItem?.getAttribute("data-hid")) {
-            lastItemId.value = oldItem?.id || null;
-        }
-    }
-);
 
 function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
@@ -394,27 +366,41 @@ onMounted(async () => {
     await loadHistoryItems();
     // if there is a listOffset, we are coming from a collection view, so focus on item at that offset
     if (props.listOffset) {
-        const itemAtOffset = historyItems.value[props.listOffset];
-        if (itemAtOffset) {
-            const itemElement = contentItemRefs.value[itemUniqueKey(itemAtOffset)]?.value?.$el as HTMLElement;
-            itemElement?.focus();
-        }
+        resetFocusToOffset(props.listOffset);
     }
 });
 
-function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
-    let nextItem = null;
-    if (eventKey === "ArrowDown") {
-        nextItem = historyItems.value[historyItems.value.indexOf(item) + 1];
-    } else if (eventKey === "ArrowUp") {
-        nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
-    }
-    if (nextItem) {
-        const itemElement = contentItemRefs.value[itemUniqueKey(nextItem)]?.value?.$el as HTMLElement;
-        itemElement?.focus();
-    }
-    return nextItem;
-}
+const {
+    selectedItems,
+    showSelection,
+    isQuerySelection,
+    selectionSize,
+    setShowSelection,
+    selectAllInCurrentQuery,
+    isRangeSelectAnchor,
+    isSelected,
+    setSelected,
+    initKeySelection,
+    resetFocusToOffset,
+    resetSelection,
+    itemRefs,
+    onClick,
+    onKeyDown,
+} = useSelectedItems<HistoryItemSummary, typeof ContentItem>({
+    scopeKey: queryKey,
+    getItemKey: getItemKey,
+    filterText: filterText,
+    totalItemsInQuery: computed(() => totalMatchesCount.value ?? 0),
+    allItems: historyItems,
+    filterClass: HistoryFilters,
+    selectable: canEditHistory,
+    querySelectionBreak: () => {
+        querySelectionBreak.value = true;
+    },
+    onDelete,
+    expectedKeyDownClass: "content-item",
+    disallowedKeyDownClasses: ["sub-item"],
+});
 </script>
 
 <template>
@@ -422,202 +408,169 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
         v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
         :scope-key="props.history.id"
         :get-item-key="getItemKey">
-        <SelectedItems
-            v-slot="{
-                selectedItems,
-                showSelection,
-                isQuerySelection,
-                selectionSize,
-                setShowSelection,
-                selectAllInCurrentQuery,
-                isSelected,
-                rangeSelect,
-                setSelected,
-                shiftArrowKeySelect,
-                initKeySelection,
-                resetSelection,
-                initSelectedItem,
-            }"
-            :scope-key="queryKey"
-            :get-item-key="getItemKey"
-            :filter-text="filterText"
-            :all-items="historyItems"
-            :total-items-in-query="totalMatchesCount"
-            @query-selection-break="querySelectionBreak = true">
-            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <section
-                class="history-layout d-flex flex-column w-100 h-100"
-                @drop.prevent="onDrop"
-                @dragenter.prevent="onDragEnter"
-                @dragover="onDragOver"
-                @dragleave.prevent="onDragLeave">
-                <slot name="navigation" :history="history" />
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <section
+            class="history-layout d-flex flex-column w-100 h-100"
+            @drop.prevent="onDrop"
+            @dragenter.prevent="onDragEnter"
+            @dragover="onDragOver"
+            @dragleave.prevent="onDragLeave">
+            <slot name="navigation" :history="history" />
 
-                <FilterMenu
-                    v-if="filterable"
-                    :key="props.history.id"
-                    class="content-operations-filters mx-3"
-                    name="History Items"
-                    placeholder="search datasets"
-                    :filter-class="filterClass"
+            <FilterMenu
+                v-if="filterable"
+                :key="props.history.id"
+                class="content-operations-filters mx-3"
+                name="History Items"
+                placeholder="search datasets"
+                :filter-class="filterClass"
+                :filter-text.sync="filterText"
+                :loading="isLoading"
+                :search-error="searchError"
+                :show-advanced.sync="showAdvanced" />
+
+            <section v-if="!showAdvanced">
+                <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
+
+                <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
+
+                <HistoryCounter
+                    :history="history"
+                    :is-watching="isWatching"
+                    :last-checked="lastCheckedTime"
+                    :show-controls="canEditHistory"
+                    :owned-by-current-user="userOwnsHistory(currentUser, history)"
                     :filter-text.sync="filterText"
-                    :loading="isLoading"
-                    :search-error="searchError"
-                    :show-advanced.sync="showAdvanced" />
+                    :hide-reload="isMultiViewItem"
+                    @reloadContents="reloadContents" />
 
-                <section v-if="!showAdvanced">
-                    <HistoryDetails
-                        :history="history"
-                        :writeable="canEditHistory"
-                        :summarized="detailsSummarized"
-                        @update:history="historyStore.updateHistory($event)" />
+                <HistoryOperations
+                    :history="history"
+                    :editable="canEditHistory"
+                    :is-multi-view-item="isMultiViewItem"
+                    :show-selection="showSelection"
+                    :expanded-count="expandedCount"
+                    :has-matches="hasMatches(historyItems)"
+                    :operation-running.sync="operationRunning"
+                    @update:show-selection="setShowSelection"
+                    @collapse-all="collapseAll">
+                    <template v-slot:selection-operations>
+                        <HistorySelectionOperations
+                            :history="history"
+                            :is-multi-view-item="isMultiViewItem"
+                            :filter-text="filterText"
+                            :content-selection="selectedItems"
+                            :selection-size="selectionSize"
+                            :is-query-selection="isQuerySelection"
+                            :total-items-in-query="totalMatchesCount"
+                            :operation-running.sync="operationRunning"
+                            @update:show-selection="setShowSelection"
+                            @operation-error="onOperationError"
+                            @hide-selection="onHideSelection"
+                            @reset-selection="resetSelection" />
 
-                    <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
+                        <HistorySelectionStatus
+                            v-if="showSelection"
+                            :selection-size="selectionSize"
+                            @select-all="selectAllInCurrentQuery()"
+                            @reset-selection="resetSelection" />
+                    </template>
+                </HistoryOperations>
 
-                    <HistoryCounter
-                        :history="history"
-                        :is-watching="isWatching"
-                        :last-checked="lastCheckedTime"
-                        :show-controls="canEditHistory"
-                        :owned-by-current-user="userOwnsHistory(currentUser, history)"
-                        :filter-text.sync="filterText"
-                        :hide-reload="isMultiViewItem"
-                        @reloadContents="reloadContents" />
+                <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
 
-                    <HistoryOperations
-                        :history="history"
-                        :editable="canEditHistory"
-                        :is-multi-view-item="isMultiViewItem"
-                        :show-selection="showSelection"
-                        :expanded-count="expandedCount"
-                        :has-matches="hasMatches(historyItems)"
-                        :operation-running.sync="operationRunning"
-                        @update:show-selection="setShowSelection"
-                        @collapse-all="collapseAll">
-                        <template v-slot:selection-operations>
-                            <HistorySelectionOperations
-                                :history="history"
-                                :is-multi-view-item="isMultiViewItem"
-                                :filter-text="filterText"
-                                :content-selection="selectedItems"
-                                :selection-size="selectionSize"
-                                :is-query-selection="isQuerySelection"
-                                :total-items-in-query="totalMatchesCount"
-                                :operation-running.sync="operationRunning"
-                                @update:show-selection="setShowSelection"
-                                @operation-error="onOperationError"
-                                @hide-selection="onHideSelection"
-                                @reset-selection="resetSelection" />
-
-                            <HistorySelectionStatus
-                                v-if="showSelection"
-                                :selection-size="selectionSize"
-                                @select-all="selectAllInCurrentQuery()"
-                                @reset-selection="resetSelection" />
-                        </template>
-                    </HistoryOperations>
-
-                    <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
-
-                    <OperationErrorDialog
-                        v-if="operationError"
-                        :operation-error="operationError"
-                        @hide="operationError = null" />
-                </section>
-
-                <section v-show="!showAdvanced" class="position-relative flex-grow-1 scroller overflow-hidden">
-                    <HistoryDropZone v-if="showDropZone" />
-                    <div class="h-100">
-                        <div v-if="isLoading && historyItems && historyItems.length === 0">
-                            <BAlert class="m-2" variant="info" show>
-                                <LoadingSpan message="Loading History" />
-                            </BAlert>
-                        </div>
-                        <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
-                            <LoadingSpan message="Processing operation" />
-                        </BAlert>
-                        <div v-else-if="historyItems.length === 0">
-                            <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
-
-                            <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
-                                Error in filter:
-                                <a href="javascript:void(0)" @click="showAdvanced = true">
-                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
-                                </a>
-                            </BAlert>
-                            <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
-                        </div>
-                        <ListingLayout
-                            v-else
-                            :offset="listOffset"
-                            :items="visibleHistoryItems"
-                            :query-key="queryKey"
-                            data-key="hid"
-                            @scroll="onScroll">
-                            <template v-slot:item="{ item, currentOffset }">
-                                <ContentItem
-                                    :id="item.hid"
-                                    :ref="contentItemRefs[itemUniqueKey(item)]"
-                                    is-history-item
-                                    :item="item"
-                                    :name="item.name"
-                                    :writable="canEditHistory"
-                                    :expand-dataset="isExpanded(item)"
-                                    :is-dataset="isDataset(item)"
-                                    :is-range-select-anchor="
-                                        initSelectedItem && itemUniqueKey(item) === itemUniqueKey(initSelectedItem)
-                                    "
-                                    :highlight="getHighlight(item)"
-                                    :selected="isSelected(item)"
-                                    :selectable="showSelection"
-                                    :filterable="filterable"
-                                    @arrow-navigate="arrowNavigate(item, $event)"
-                                    @drag-start="
-                                        setItemDragstart(
-                                            item,
-                                            $event,
-                                            showSelection && isSelected(item),
-                                            selectionSize,
-                                            selectedItems
-                                        )
-                                    "
-                                    @hide-selection="setShowSelection(false)"
-                                    @init-key-selection="initKeySelection"
-                                    @shift-arrow-select="
-                                        (eventKey) => shiftArrowKeySelect(item, arrowNavigate(item, eventKey), eventKey)
-                                    "
-                                    @select-all="selectAllInCurrentQuery(false)"
-                                    @selected-to="rangeSelect(item, lastItemFocused)"
-                                    @tag-click="updateFilterValue('tag', $event)"
-                                    @tag-change="onTagChange"
-                                    @toggleHighlights="updateFilterValue('related', item.hid)"
-                                    @update:expand-dataset="setExpanded(item, $event)"
-                                    @update:selected="setSelected(item, $event)"
-                                    @view-collection="$emit('view-collection', item, currentOffset)"
-                                    @delete="onDelete"
-                                    @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)">
-                                    <template v-slot:sub_items="slotProps">
-                                        <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
-                                            <ContentItem
-                                                v-for="subItem in item.sub_items"
-                                                :id="subItem.hid"
-                                                :key="subItem.id"
-                                                :item="subItem"
-                                                :name="subItem.name"
-                                                :expand-dataset="isExpanded(subItem)"
-                                                :is-dataset="isDataset(subItem)"
-                                                :is-sub-item="true"
-                                                @update:expand-dataset="setExpanded(subItem, $event)" />
-                                        </div>
-                                    </template>
-                                </ContentItem>
-                            </template>
-                        </ListingLayout>
-                    </div>
-                </section>
+                <OperationErrorDialog
+                    v-if="operationError"
+                    :operation-error="operationError"
+                    @hide="operationError = null" />
             </section>
-        </SelectedItems>
+
+            <section v-show="!showAdvanced" class="position-relative flex-grow-1 scroller overflow-hidden">
+                <HistoryDropZone v-if="showDropZone" />
+                <div class="h-100">
+                    <div v-if="isLoading && historyItems && historyItems.length === 0">
+                        <BAlert class="m-2" variant="info" show>
+                            <LoadingSpan message="Loading History" />
+                        </BAlert>
+                    </div>
+                    <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
+                        <LoadingSpan message="Processing operation" />
+                    </BAlert>
+                    <div v-else-if="historyItems.length === 0">
+                        <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
+
+                        <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                            Error in filter:
+                            <a href="javascript:void(0)" @click="showAdvanced = true">
+                                {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
+                            </a>
+                        </BAlert>
+                        <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
+                    </div>
+                    <ListingLayout
+                        v-else
+                        :offset="listOffset"
+                        :items="visibleHistoryItems"
+                        :query-key="queryKey"
+                        data-key="hid"
+                        @scroll="onScroll">
+                        <template v-slot:item="{ item, currentOffset }">
+                            <ContentItem
+                                :id="item.hid"
+                                :ref="itemRefs[itemUniqueKey(item)]"
+                                is-history-item
+                                :item="item"
+                                :name="item.name"
+                                :writable="canEditHistory"
+                                :expand-dataset="isExpanded(item)"
+                                :is-dataset="isDataset(item)"
+                                :is-range-select-anchor="isRangeSelectAnchor(item)"
+                                :highlight="getHighlight(item)"
+                                :selected="isSelected(item)"
+                                :selectable="showSelection"
+                                :filterable="filterable"
+                                :get-item-key="getItemKey"
+                                :select-click-handler="onClick"
+                                @on-key-down="onKeyDown(item, $event)"
+                                @drag-start="
+                                    setItemDragstart(
+                                        item,
+                                        $event,
+                                        showSelection && isSelected(item),
+                                        selectionSize,
+                                        selectedItems,
+                                    )
+                                "
+                                @init-key-selection="initKeySelection"
+                                @tag-click="updateFilterValue('tag', $event)"
+                                @tag-change="onTagChange"
+                                @toggleHighlights="updateFilterValue('related', item.hid)"
+                                @update:expand-dataset="setExpanded(item, $event)"
+                                @update:selected="setSelected(item, $event)"
+                                @view-collection="$emit('view-collection', item, currentOffset)"
+                                @delete="onDelete"
+                                @undelete="onUndelete(item)"
+                                @unhide="onUnhide(item)">
+                                <template v-slot:sub_items="slotProps">
+                                    <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                        <ContentItem
+                                            v-for="subItem in item.sub_items"
+                                            :id="subItem.hid"
+                                            :key="subItem.id"
+                                            :item="subItem"
+                                            :name="subItem.name"
+                                            :expand-dataset="isExpanded(subItem)"
+                                            :is-dataset="isDataset(subItem)"
+                                            :is-sub-item="true"
+                                            @update:expand-dataset="setExpanded(subItem, $event)" />
+                                    </div>
+                                </template>
+                            </ContentItem>
+                        </template>
+                    </ListingLayout>
+                </div>
+            </section>
+        </section>
     </ExpandedItems>
 </template>
 

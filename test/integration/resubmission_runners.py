@@ -1,6 +1,5 @@
 import subprocess
 import time
-from typing import List
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
@@ -64,7 +63,7 @@ class AssertionJobRunner(LocalJobRunner):
 class FailOnlyFirstJobRunner(LocalJobRunner):
     """Job runner that knows about test cases and checks final state assumptions."""
 
-    tests_seen: List[str] = []
+    tests_seen: list[str] = []
 
     def queue_job(self, job_wrapper):
         resource_parameters = job_wrapper.get_resource_parameters()

@@ -122,7 +122,7 @@ async function getSelected() {
                 props.folderId,
                 props.unselected,
                 props.searchText,
-                totalRows.value
+                totalRows.value,
             );
 
             emit("setBusy", false);
@@ -148,7 +148,7 @@ async function deleteSelected() {
             selected,
             (deletedItem: any) => emit("deleteFromTable", deletedItem),
             () => emit("refreshTable"),
-            () => emit("refreshTableContent")
+            () => emit("refreshTableContent"),
         );
     } catch (err) {
         console.error(err);
@@ -205,7 +205,7 @@ async function importToHistoryModal(isCollection: boolean) {
                 onCollectionImport: async (
                     collectionType: string,
                     selection: { models: CollectionElement[] },
-                    historyId: string
+                    historyId: string,
                 ) => {
                     try {
                         collectionHistoryId.value = historyId;
@@ -240,7 +240,7 @@ function resetProgress() {
 
 async function addDatasets(
     selectedDatasets: SelectionItem[] | Record<string, string | boolean>[],
-    datasetApiCall: Function
+    datasetApiCall: Function,
 ) {
     resetProgress();
 
@@ -444,6 +444,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             v-if="collectionModalType && collectionHistoryId"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
+            :extended-collection-type="{}"
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
             default-hide-source-items />

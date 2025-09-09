@@ -44,7 +44,7 @@ useResizable(
     computed(() => props.comment.size),
     ([width, height]) => {
         emit("resize", [width, height]);
-    }
+    },
 );
 
 const textAreaId = useUid("textarea-");
@@ -97,7 +97,7 @@ watch(
         if (!focused.value) {
             showColorSelector.value = false;
         }
-    }
+    },
 );
 
 function onSetColor(color: WorkflowCommentColor) {
@@ -366,7 +366,9 @@ $min-height: 1.5em;
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

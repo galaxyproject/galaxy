@@ -1,6 +1,4 @@
 from typing import (
-    Dict,
-    List,
     Literal,
     Optional,
 )
@@ -26,13 +24,13 @@ RuleBuilderModes = Literal[
 class ColumnTarget(BaseModel):
     label: str
     help: Optional[str]
-    modes: Optional[List[RuleBuilderModes]] = None
+    modes: Optional[list[RuleBuilderModes]] = None
     importType: Optional[RuleBuilderImportType] = None
     multiple: Optional[bool] = False
     columnHeader: Optional[str] = None
     advanced: Optional[bool] = False
     requiresFtp: Optional[bool] = False
-    example_column_names: Optional[List[str]] = None
+    example_column_names: Optional[list[str]] = None
 
     @property
     def example_column_names_as_str(self) -> Optional[str]:
@@ -60,10 +58,14 @@ RuleBuilderMappingTargetKey = Literal[
     "url_deferred",
     "info",
     "ftp_path",
+    "deferred",
+    "to_posix_lines",
+    "space_to_tab",
+    "auto_decompress",
 ]
 
 
-ColumnTargetsConfig = Dict[RuleBuilderMappingTargetKey, ColumnTarget]
+ColumnTargetsConfig = dict[RuleBuilderMappingTargetKey, ColumnTarget]
 ColumnTargetsConfigRootModel = RootModel[ColumnTargetsConfig]
 
 

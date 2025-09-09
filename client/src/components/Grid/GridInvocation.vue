@@ -61,7 +61,7 @@ const extraProps = computed(() => {
     if (forBatch.value) {
         return Object.fromEntries(
             // invocationsList is possibly undefined
-            (props.invocationsList ?? []).map((invocation) => [invocation.id, invocation])
+            (props.invocationsList ?? []).map((invocation) => [invocation.id, invocation]),
         );
     }
     const params: {

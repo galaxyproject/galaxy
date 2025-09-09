@@ -23,7 +23,7 @@ async function mountJobDestinationParams() {
     server.use(
         http.get("/api/jobs/{job_id}/destination_params", ({ response }) => {
             return response(200).json(jobDestinationResponse);
-        })
+        }),
     );
 
     const pinia = createPinia();
@@ -63,7 +63,7 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
             expect(responseKeys.includes(parameterTitle)).toBeTruthy();
             // since we render null as an empty string, rendered empty string should always equal null in test data
             expect(
-                jobDestinationResponse[parameterTitle] === (parameterValue === "" ? null : parameterValue)
+                jobDestinationResponse[parameterTitle] === (parameterValue === "" ? null : parameterValue),
             ).toBeTruthy();
         }
     });

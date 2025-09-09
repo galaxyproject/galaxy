@@ -8,7 +8,6 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
 import { fetchCollectionDetails } from "@/api/datasetCollections";
@@ -18,9 +17,8 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import { getWorkflowFull } from "@/components/Workflow/workflows.services";
-import { useInvocationStore } from "@/stores/invocationStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
@@ -80,7 +78,7 @@ export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
     stepsJobsSummary: Ref<StepJobSummary[]>,
     workflowId: string | undefined,
-    workflowVersion: number | undefined
+    workflowVersion: number | undefined,
 ) {
     library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
@@ -89,20 +87,25 @@ export function useInvocationGraph(
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
     const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
-    const invocationStore = useInvocationStore();
-    const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
-    /** The full invocation mapped onto the original workflow */
+    /** The full invocation mapped onto the original workflow.
+     * _(Needed to map the invocation onto the workflow editor graph.)_
+     */
     const invocationGraph = ref<InvocationGraph | null>(null);
 
     /** The workflow that was invoked */
     const loadedWorkflow = ref<any>(null);
 
+    const workflowStore = useWorkflowStore();
+
     const loading = ref(true);
 
     provideScopedWorkflowStores(storeId);
 
-    async function loadInvocationGraph() {
+    /** Load the invocation graph and steps onto the editor canvas.
+     * @param loadOntoEditor - If set to false, initializes graph steps but does not load them onto the editor.
+     */
+    async function loadInvocationGraph(loadOntoEditor = true) {
         loading.value = true;
 
         try {
@@ -115,7 +118,7 @@ export function useInvocationGraph(
 
             // initialize the original full workflow and invocation graph refs (only on the first load)
             if (!loadedWorkflow.value) {
-                loadedWorkflow.value = await getWorkflowFull(workflowId, workflowVersion);
+                loadedWorkflow.value = await workflowStore.getFullWorkflowCached(workflowId, workflowVersion);
             }
             if (!invocationGraph.value) {
                 invocationGraph.value = {
@@ -130,7 +133,7 @@ export function useInvocationGraph(
             }
 
             // Load the invocation graph into the editor the first time
-            if (!stepsPopulated.value) {
+            if (!stepsPopulated.value && loadOntoEditor) {
                 invocationGraph.value!.steps = { ...steps.value };
                 await fromSimple(storeId.value, invocationGraph.value as any);
                 stepsPopulated.value = true;
@@ -191,10 +194,6 @@ export function useInvocationGraph(
             if (!steps.value[i]) {
                 set(steps.value, i, graphStepFromWfStep);
             }
-
-            // update the invocation store's graph steps object
-            // TODO: Find a better way of doing this, instead of using two separate objects...?
-            set(graphStepsByStoreId.value, storeId.value, steps.value);
         }
 
         lastStepsJobsSummary.value = stepsJobsSummary;
@@ -209,7 +208,7 @@ export function useInvocationGraph(
     function updateStep(
         graphStep: GraphStep,
         invocationStep: InvocationStep | undefined,
-        invocationStepSummary: StepJobSummary | undefined
+        invocationStepSummary: StepJobSummary | undefined,
     ) {
         /** The new state for the graph step */
         let newState = graphStep.state;
@@ -341,7 +340,7 @@ export function useInvocationGraph(
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
         return Object.values(invocation.input_step_parameters).find(
-            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id,
         );
     }
 

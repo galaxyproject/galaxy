@@ -68,7 +68,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 /** if pinned histories and selected histories are equal */

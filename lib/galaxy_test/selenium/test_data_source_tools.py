@@ -1,3 +1,4 @@
+import pytest
 from selenium.webdriver.support.ui import Select
 
 from galaxy.util.unittest_utils import skip_if_site_down
@@ -12,6 +13,7 @@ from .framework import (
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
+    @pytest.mark.skip("Skipping UCSC table direct1 data source test, chromedriver fails captcha")
     @selenium_test
     @managed_history
     @skip_if_site_down("https://genome.ucsc.edu/cgi-bin/hgTables")
@@ -31,6 +33,8 @@ class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
         # It doesn't seem to me this should be needed but we're getting occasional failures about inaccessible
         # history I cannot explain otherwise. -John
         self.wait_for_masthead()
-        self.history_panel_wait_for_hid_ok(1)
+        # Data source tools like UCSC can take longer to process external requests,
+        # so we allow force refreshes to give the test more time to complete
+        self.history_panel_wait_for_hid_ok(1, allowed_force_refreshes=2)
         # Make sure we're still logged in (xref https://github.com/galaxyproject/galaxy/issues/11374)
         self.components.masthead.logged_in_only.wait_for_visible()

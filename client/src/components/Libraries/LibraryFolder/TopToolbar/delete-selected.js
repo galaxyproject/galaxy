@@ -82,7 +82,7 @@ function templateDeletingItemsProgressBar() {
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`
+            </div>`,
     );
 }
 
@@ -100,7 +100,7 @@ function chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refresh
             Toast.success("Selected items were deleted.");
         } else if (chain_call_control.failed_number === chain_call_control.total_number) {
             Toast.error(
-                "There was an error and no items were deleted. Please make sure you have sufficient permissions."
+                "There was an error and no items were deleted. Please make sure you have sufficient permissions.",
             );
         } else if (chain_call_control.failed_number < chain_call_control.total_number) {
             Toast.warning("Some of the items could not be deleted. Please make sure you have sufficient permissions.");

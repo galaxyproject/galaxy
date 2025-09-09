@@ -9,10 +9,7 @@ import time
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from beaker.cache import CacheManager
@@ -42,10 +39,8 @@ from galaxy.files import (
     ConfiguredFileSourcesConf,
     UserDefinedFileSources,
 )
-from galaxy.files.plugins import (
-    FileSourcePluginLoader,
-    FileSourcePluginsConfig,
-)
+from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
@@ -188,7 +183,7 @@ app = None
 
 
 class HaltableContainer(Container):
-    haltables: List[Tuple[str, Callable]]
+    haltables: list[tuple[str, Callable]]
 
     def __init__(self) -> None:
         super().__init__()
@@ -593,7 +588,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.job_config = self._register_singleton(jobs.JobConfiguration)
 
         # Setup infrastructure for short term storage manager.
-        short_term_storage_config_kwds: Dict[str, Any] = {}
+        short_term_storage_config_kwds: dict[str, Any] = {}
         short_term_storage_config_kwds["short_term_storage_directory"] = self.config.short_term_storage_dir
         short_term_storage_default_duration = self.config.short_term_storage_default_duration
         short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
@@ -624,6 +619,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
         self.notification_manager = self._register_singleton(NotificationManager)
+        self.interactivetool_manager = InteractiveToolManager(self)
 
         self.task_manager = self._register_abstract_singleton(
             AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
@@ -844,8 +840,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        # We need InteractiveToolManager before the job handler starts
-        self.interactivetool_manager = InteractiveToolManager(self)
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if

@@ -7,6 +7,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.workflow.errors import WorkflowEmailErrorReporter
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,23 @@ class EmailPlugin(ErrorPlugin):
             return ("Your error report has been sent", "success")
         except Exception as e:
             msg = f"An error occurred sending the report by email: {unicodify(e)}"
+            log.exception(msg)
+            return (msg, "danger")
+
+    def submit_invocation_report(self, invocation, **kwargs):
+        """Send report for a workflow invocation as an email"""
+        try:
+            error_reporter = WorkflowEmailErrorReporter(invocation, self.app)
+            error_reporter.send_report(
+                user=invocation.history.user,
+                email=kwargs.get("email", None),
+                message=kwargs.get("message", None),
+                redact_user_details_in_bugreport=self.redact_user_details_in_bugreport,
+                trans=kwargs.get("trans", None),
+            )
+            return ("Your workflow error report has been sent", "success")
+        except Exception as e:
+            msg = f"An error occurred sending the workflow report by email: {unicodify(e)}"
             log.exception(msg)
             return (msg, "danger")
 

@@ -1,9 +1,8 @@
 import tarfile
+from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import (
-    Iterator,
-    List,
     Optional,
     Union,
 )
@@ -243,7 +242,7 @@ class ToolShedPopulator:
             api_asserts.assert_status_code_is_ok(response)
         return RepositoryUpdate(root=response.json())
 
-    def new_repository(self, category_ids: Union[List[str], str], prefix: str = DEFAULT_PREFIX) -> Repository:
+    def new_repository(self, category_ids: Union[list[str], str], prefix: str = DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
         synopsis = random_name(prefix=prefix)
         request = CreateRepositoryRequest(
@@ -273,7 +272,7 @@ class ToolShedPopulator:
         response.raise_for_status()
         return Category(**response.json())
 
-    def get_categories(self) -> List[Category]:
+    def get_categories(self) -> list[Category]:
         response = self._api_interactor.get("categories")
         response.raise_for_status()
         return [Category(**c) for c in response.json()]
@@ -335,7 +334,7 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(repository_response)
         return PaginatedRepositoryIndexResults(**repository_response.json())
 
-    def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
+    def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> list[str]:
         repository_id = self._repository_id(repository)
         show_response = self._api_interactor.get(f"repositories/{repository_id}/allow_push")
         show_response.raise_for_status()

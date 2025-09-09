@@ -37,7 +37,7 @@ const mergedConfigs = input.pipe(
     filter((fragment) => fragment instanceof Object),
     scan((config, fragment) => {
         return Object.assign({}, config, fragment);
-    }, defaultConfigs)
+    }, defaultConfigs),
 );
 
 // keep running config value

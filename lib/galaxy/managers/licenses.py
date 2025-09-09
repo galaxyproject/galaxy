@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import List
 
 from pydantic import (
     BaseModel,
@@ -34,7 +33,7 @@ class LicenseMetadataModel(BaseModel):
         description="Indicates if the [OSI](https://opensource.org/) has approved the license",
         examples=[True],
     )
-    seeAlso: List[HttpUrl] = Field(
+    seeAlso: list[HttpUrl] = Field(
         title="Reference URLs", description="Cross reference URL pointing to additional copies of the license"
     )
     detailsUrl: HttpUrl = Field(
@@ -98,7 +97,7 @@ class LicensesManager:
             log.warning(f"Unknown license URI encountered [{uri}]")
         return {"url": uri}
 
-    def get_licenses(self) -> List[LicenseMetadataModel]:
+    def get_licenses(self) -> list[LicenseMetadataModel]:
         return SPDX_LICENSES["licenses"]
 
     def get_license_by_id(self, id: str) -> LicenseMetadataModel:

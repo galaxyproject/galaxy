@@ -55,7 +55,7 @@ jest.mock("@/stores/workflowStore", () => {
     };
 });
 
-jest.mock("@/stores/historyStore"),
+(jest.mock("@/stores/historyStore"),
     () => {
         const originalModule = jest.requireActual("@/stores/historyStore");
         return {
@@ -65,7 +65,7 @@ jest.mock("@/stores/historyStore"),
                 getHistoryById: jest.fn().mockImplementation(() => TEST_HISTORY),
             }),
         };
-    };
+    });
 
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
@@ -80,12 +80,12 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
             return response(200).json(TEST_HISTORY);
-        })
+        }),
     );
     server.use(
         http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
             return response(200).json({ scheduled: SAMPLE_RUN_COUNT });
-        })
+        }),
     );
 
     const wrapper = mount(WorkflowAnnotation as object, {

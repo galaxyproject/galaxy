@@ -50,6 +50,7 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
         self.settargexec = kwds.get("settargexec", DEFAULT_SETTARG_PATH)
         self.modulepath = kwds.get("modulepath", DEFAULT_MODULEPATH)
         self.module_checker = AvailModuleChecker(self, self.modulepath)
+        self.skip_availability_check = _string_as_bool(kwds.get("skip_availability_check", "false"))
 
     def _set_default_mapping_file(self, resolver_attributes):
         if "mapping_files" not in resolver_attributes:
@@ -62,6 +63,9 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
 
         if type != "package":
             return NullDependency(version=version, name=name)
+
+        if self.skip_availability_check:
+            return LmodDependency(self, name, version, exact=True, dependency_resolver=self)
 
         if self.__has_module(name, version):
             return LmodDependency(self, name, version, exact=True, dependency_resolver=self)
@@ -176,8 +180,8 @@ class LmodDependency(Dependency):
 
         # Build the list of command to add to run script
         # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
-        # - Set the MODULEPATH environment variable
-        command = f"MODULEPATH={self.lmod_dependency_resolver.modulepath}; "
+        # - Set and/or prepend the MODULEPATH environment variable
+        command = f"MODULEPATH={self.lmod_dependency_resolver.modulepath}${{MODULEPATH:+:${{MODULEPATH}}}}; "
         command += "export MODULEPATH; "
         # - Execute the "module load" command (or rather the "/path/to/lmod load" command)
         command += f"eval `{self.lmod_dependency_resolver.lmodexec} load {module_to_load}` "

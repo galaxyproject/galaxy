@@ -46,6 +46,10 @@ import asyncio
 import logging
 import re
 from abc import ABC
+from collections.abc import (
+    AsyncIterator,
+    Iterable,
+)
 from datetime import (
     datetime,
     timezone,
@@ -54,18 +58,13 @@ from pathlib import Path
 from textwrap import dedent
 from time import time
 from typing import (
-    Any,
-    AsyncIterator,
     cast,
-    Dict,
     Generic,
     get_type_hints,
-    Iterable,
-    List,
     Literal,
     Optional,
-    Tuple,
     TypeVar,
+    Union,
 )
 from urllib.parse import (
     ParseResult,
@@ -78,22 +77,24 @@ from requests import Session as RequestsSession
 from typing_extensions import (
     NotRequired,
     TypedDict,
-    Unpack,
 )
 
 from galaxy import exceptions as galaxy_exceptions
-from galaxy.files import OptionalUserContext
-from galaxy.files.sources import (
+from galaxy.files.models import (
     AnyRemoteEntry,
-    BaseFilesSource,
-    DEFAULT_SCHEME,
-    FilesSourceOptions,
-    FilesSourceProperties,
-    PluginKind,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.util import requests
+from galaxy.util.config_templates import TemplateExpansion
 
 __all__ = ("eLabFTWFilesSource",)
 
@@ -149,17 +150,22 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
         """
         Get the entity type, entity id or attachment id for the wrapped entry.
         """
-        path = self.entry["path"]
+        path = self.entry.path
         entity_type, entity_id, attachment_id = split_path(path)
         return locals()[part]
 
 
-class eLabFTWFilesSourceProperties(FilesSourceProperties, total=False):  # noqa
+class eLabFTWFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    endpoint: Union[str, TemplateExpansion]
+    api_key: Union[str, TemplateExpansion]
+
+
+class eLabFTWFileSourceConfiguration(BaseFileSourceConfiguration):
     endpoint: str
     api_key: str
 
 
-class eLabFTWFilesSource(BaseFilesSource):  # noqa
+class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration, eLabFTWFileSourceConfiguration]):
 
     plugin_type = "elabftw"
     plugin_kind = PluginKind.rfs
@@ -169,17 +175,11 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
     supports_search = True
     supports_sorting = True
 
-    def __init__(self, *args, **kwargs: Unpack[eLabFTWFilesSourceProperties]):
-        """Initialize the eLabFTW files source with an API key and an endpoint URL."""
-        super().__init__()
-        props = self._parse_common_config_opts(kwargs)
-        self._props = props
+    template_config_class = eLabFTWFileSourceTemplateConfiguration
+    resolved_config_class = eLabFTWFileSourceConfiguration
 
-        self._endpoint = kwargs["endpoint"]  # meant to be accessed only from `_get_endpoint()`
-        self._api_key = kwargs["api_key"]  # meant to be accessed only from `_create_session()`
-
-    def get_prefix(self, user_context: OptionalUserContext = None) -> Optional[str]:
-        endpoint: ParseResult = self._get_endpoint(user_context=user_context)
+    def get_prefix(self) -> Optional[str]:
+        endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)
         # it would make better sense to return
         # `self.id if self.scheme == USER_FILE_SOURCES_SCHEME else (endpoint.netloc or None)`, where
@@ -209,97 +209,50 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             path = f"/{path}"
         return path
 
-    def _create_session(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> RequestsSession:
+    def _create_session(self, config: eLabFTWFileSourceConfiguration) -> RequestsSession:
         """
-        Create a Galaxy ``requests`` session, overriding initial settings via a :class:`FileSourceOptions` object.
+        Create a Galaxy ``requests`` session.
         """
         return requests.Session(
-            headers=self._get_session_headers(options=options, user_context=user_context),  # type: ignore[call-arg]
+            headers=self._get_session_headers(config),  # type: ignore[call-arg]
         )
 
-    def _create_session_async(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> aiohttp.ClientSession:
+    def _create_session_async(self, config: eLabFTWFileSourceConfiguration) -> aiohttp.ClientSession:
         """
-        Create an ``aiohttp`` session, overriding initial settings via a :class:`FileSourceOptions` object.
+        Create an ``aiohttp`` session.
         """
         connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,
-            headers=self._get_session_headers(options=options, user_context=user_context),
+            headers=self._get_session_headers(config),
         )
 
-    def _get_session_headers(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> dict:
+    def _get_session_headers(self, config: eLabFTWFileSourceConfiguration) -> dict:
         """
         Construct a dictionary of HTTP client session headers.
 
-        Optionally, override initial settings via a :class:`FileSourceOptions` object and/or a
-        :class:`FileSourcesUserContext` object.
-
         Meant to be used only by `_create_session()` and `_create_session_async()`.
         """
-        props = {}
-        props.update(self._props)
-        props.update(options.extra_props if options and options.extra_props else {})
-        props.update(
-            {key: value for key, value in self._serialization_props(user_context).items() if value is not None}
-        )
+
         headers = {
-            "Authorization": props.get("api_key", self._api_key),
+            "Authorization": config.api_key,
             "Accept": "application/json",
         }
         return headers
 
-    def _get_endpoint(
-        self,
-        options: Optional[FilesSourceOptions] = None,
-        user_context: OptionalUserContext = None,
-    ) -> ParseResult:
+    def _get_endpoint(self) -> ParseResult:
         """
-        Retrieve the endpoint from the constructor, or override it via a :class:`FileSourceOptions` object.
+        Retrieve the endpoint from the constructor.
         """
-        props = {}
-        props.update(self._props)
-        props.update(options.extra_props if options and options.extra_props else {})
-        props.update(
-            {key: value for key, value in self._serialization_props(user_context).items() if value is not None}
-        )
-        endpoint = props.get("endpoint", self._endpoint)
-        # given that `options.extra_props` is of `eLabFTWFilesSourceProperties` type, it should be a string
-        endpoint = cast(str, endpoint)
-
-        return urlparse(endpoint)
-
-    def _serialization_props(self, user_context: OptionalUserContext = None) -> eLabFTWFilesSourceProperties:
-        effective_props: Dict[str, Any] = {}
-
-        for key, val in self._props.items():
-            if key in {"api_key", "endpoint"} and user_context is None:
-                # prevent exception while expanding `${user.user_vault.read_secret('preferences/elabftw/api_key')}` or
-                # `${user.preferences['elabftw|endpoint']}` without `user_context`
-                effective_props[key] = None
-                continue
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-
-        return cast(eLabFTWFilesSourceProperties, effective_props)
+        return urlparse(self.template_config.endpoint)
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration],
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
@@ -308,7 +261,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
         # from Python 3.9 on, the following would be possible, although barely readable
         # `sort_by: Optional[Literal[*(get_type_hints(RemoteDirectory) | get_type_hints(RemoteFile)).keys()]] = None,`
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List the contents of an eLabFTW endpoint.
 
@@ -325,10 +278,9 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             asyncio.set_event_loop(event_loop)
             return event_loop.run_until_complete(
                 self._list_async(
+                    context=context,
                     path=path,
                     recursive=recursive,
-                    user_context=user_context,
-                    opts=opts,
                     limit=limit,
                     offset=offset,
                     query=query,
@@ -340,17 +292,16 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
     async def _list_async(
         self,
+        context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration],
         path="/",
         recursive=False,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
         # in particular, expecting
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List remote entries in a remote directory.
 
@@ -364,10 +315,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :param recursive: List recursively, including all entity types for the root, all entities for each entity type
                           and all attachments for each entity.
         :type recursive: bool
-        :param user_context: Alter behavior using information from a user context (e.g. override the API key).
-        :type user_context: OptionalUserContext
-        :param opts: Alter behavior using information from a file source options object (e.g. ignore locked resources).
-        :type opts: Optional[FilesSourceOptions]
         :param limit: Show at most this amount of results, defaults to unlimited.
         :type limit: Optional[int]
         :param offset: Filter out this amount of results from the beginning of the sequence, defaults to zero.
@@ -384,8 +331,8 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :raises InvalidPath: Path constraints described in the docstring of :class:`InvalidPath` are not satisfied.
         :raises ResourceNotFound: If the path refers to a non-existing experiment, resource, or attachment.
         """
-        session = self._create_session_async(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        session = self._create_session_async(context.config)
+        endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(path)
 
@@ -408,7 +355,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 """
                 return [value async for value in async_iter]
 
-            fetch_entity_types_tasks: List[asyncio.Task] = (
+            fetch_entity_types_tasks: list[asyncio.Task] = (
                 # fmt: off
                 [
                     asyncio.create_task(
@@ -416,7 +363,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                             self._yield_entity_types(
                                 endpoint,
                                 session,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -425,7 +371,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 if retrieve_entity_types
                 else []
             )
-            fetch_entities_tasks: List[asyncio.Task] = (
+            fetch_entities_tasks: list[asyncio.Task] = (
                 [
                     asyncio.create_task(
                         collect_async_iterator(
@@ -457,7 +403,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                                     else None
                                 ),
                                 writable=self.writable,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -474,7 +419,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 if retrieve_entities
                 else []
             )
-            fetch_attachments_tasks: List[asyncio.Task] = (
+            fetch_attachments_tasks: list[asyncio.Task] = (
                 # fetching attachments is "bearable" for the user up to ~500 experiments + resources with attachments;
                 # if eLabFTW allowed listing attachments without having to send individual requests for each experiment
                 # or resource, this would not be a concern
@@ -488,7 +433,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                                 cast(str, wrapped_entity.entity_id) if retrieve_entities else cast(str, entity_id),
                                 endpoint,
                                 session,
-                                user_context=user_context,
                             )
                         )
                     )
@@ -507,17 +451,17 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 else []
             )
 
-            wrapped_entity_types: List[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
+            wrapped_entity_types: list[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
                 wrapped_entity_type
                 for wrapped_entity_types in await asyncio.gather(*fetch_entity_types_tasks)
                 for wrapped_entity_type in wrapped_entity_types
             ]
-            wrapped_entities: List[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
+            wrapped_entities: list[eLabFTWRemoteEntryWrapper[RemoteDirectory]] = [
                 wrapped_entity
                 for wrapped_entities in await asyncio.gather(*fetch_entities_tasks)
                 for wrapped_entity in wrapped_entities
             ]
-            wrapped_attachments: List[eLabFTWRemoteEntryWrapper[RemoteFile]] = [
+            wrapped_attachments: list[eLabFTWRemoteEntryWrapper[RemoteFile]] = [
                 wrapped_attachment
                 for wrapped_attachments in await asyncio.gather(*fetch_attachments_tasks)
                 for wrapped_attachment in wrapped_attachments
@@ -544,18 +488,16 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             wrapped_entries,
             key=lambda x: (
                 (
-                    x.entry.get(sort_by, constructors[sort_by]())  # fall back to the default object for this key type
+                    getattr(x.entry, sort_by, constructors[sort_by]())  # fall back to the default object for this key type
                     if sort_by is not None else None  # fmt: skip
                 ),
-                x.entry["uri"],  # ensure deterministic ordering (URIs are unique)
+                x.entry.uri,  # ensure deterministic ordering (URIs are unique)
             ),
         )
 
         # filter out remaining items locally; by `query`, `offset` and `limit`
         if query is not None:
-            wrapped_entries = [
-                wrapped_entry for wrapped_entry in wrapped_entries if query in wrapped_entry.entry.get("name", "")
-            ]
+            wrapped_entries = [wrapped_entry for wrapped_entry in wrapped_entries if query in wrapped_entry.entry.name]
         if offset is not None:
             wrapped_entries = wrapped_entries[offset - (retrieve_entities_server_side_offset or 0) :]
         if limit is not None:
@@ -570,7 +512,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         self,
         endpoint: ParseResult,
         session: aiohttp.ClientSession,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """
         List the root directory, i.e. "/".
@@ -599,22 +540,16 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
         experiments = eLabFTWRemoteEntryWrapper(
             RemoteDirectory(
-                **{
-                    "name": "Experiments",
-                    "uri": f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}/experiments",
-                    "path": "/experiments",
-                    "class": "Directory",
-                }
+                name="Experiments",
+                uri=f"{self.get_scheme()}://{self.get_prefix()}/experiments",
+                path="/experiments",
             )
         )
         resources = eLabFTWRemoteEntryWrapper(
             RemoteDirectory(
-                **{
-                    "name": "Resources",
-                    "uri": f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}/resources",
-                    "path": "/resources",
-                    "class": "Directory",
-                }
+                name="Resources",
+                uri=f"{self.get_scheme()}://{self.get_prefix()}/resources",
+                path="/resources",
             )
         )
 
@@ -631,7 +566,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         query: Optional[str] = None,
         order: Optional[str] = None,
         writable: bool = False,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """List an entity type, i.e. either "/experiments" or "/resources"."""
         url = urljoin(
@@ -659,10 +593,10 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         if query:
             params.update({"q": query})
 
-        content: List[dict] = [{}] * params["limit"]  # stores JSON responses (entities) from the server
+        content: list[dict] = [{}] * params["limit"]  # stores JSON responses (entities) from the server
         start, timeout = time(), False
         while len(content) >= params["limit"] and not (timeout := ((time() - start) >= PAGINATION_TIMEOUT)):
-            entities: Dict[int, dict] = {}
+            entities: dict[int, dict] = {}
 
             async with session.get(
                 url,
@@ -674,7 +608,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     status: int = response.status
                     content = await response.json()
 
-                    def validate_and_register_entity(item, mapping: Dict[int, dict]) -> Literal[True]:
+                    def validate_and_register_entity(item, mapping: dict[int, dict]) -> Literal[True]:
                         valid = isinstance(item, dict) and isinstance(item.get("id"), int)
                         if not valid:
                             raise ValidationError(err_msg="Invalid response from eLabFTW")
@@ -698,10 +632,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                     RemoteDirectory(
                         **{
                             "name": entity["title"],
-                            "uri": (
-                                f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}"
-                                f"/{entity_type}/{entity['id']}"
-                            ),
+                            "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity['id']}",
                             "path": f"/{entity_type}/{entity['id']}",
                             "class": "Directory",
                         }
@@ -720,7 +651,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         entity_id: str,
         endpoint: ParseResult,
         session: aiohttp.ClientSession,
-        user_context: OptionalUserContext = None,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteFile]]:
         """List attachments of a specific entity, e.g. "/resources/48"."""
         url = urljoin(
@@ -755,10 +685,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                 RemoteFile(
                     **{
                         "name": upload["real_name"],
-                        "uri": (
-                            f"{self.get_scheme()}://{self.get_prefix(user_context=user_context)}"
-                            f"/{entity_type}/{entity_id}/{upload['id']}"
-                        ),
+                        "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity_id}/{upload['id']}",
                         "path": f"/{entity_type}/{entity_id}/{upload['id']}",
                         "class": "File",
                         "size": upload["filesize"],
@@ -769,11 +696,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             )
 
     def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration]
     ) -> str:
         """
         Attach the file located at ``native_path`` on the filesystem to an eLabFTW resource or experiment with URI
@@ -784,10 +707,6 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :type target_path: str
         :param native_path: The local file to upload, e.g. ``/tmp/myfile.txt``
         :type native_path: str
-        :param user_context: A user context, defaults to ``None``
-        :type user_context: OptionalUserContext
-        :param opts: A set of options to exercise additional control over this method. Defaults to ``None``
-        :type opts: Optional[FilesSourceOptions], optional
         :return: Path *assigned by eLabFTW* to the uploaded file.
         :rtype: str
 
@@ -801,8 +720,8 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
                              three components.
         :raises EntityExpected: When attempting to attach the file to the root "/" or an entity type.
         """
-        session = self._create_session(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        session = self._create_session(context.config)
+        endpoint = self._get_endpoint()
 
         target_path_obj = Path(target_path)
         attachment_name = target_path_obj.name
@@ -853,11 +772,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         return f"/{entity_type}/{entity_id}/{attachment_id}"
 
     def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        user_context: OptionalUserContext = None,
-        opts: Optional[FilesSourceOptions] = None,
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration]
     ):
         """
         Save the file attachment from an eLabFTW resource or experiment located at ``source_path`` to ``native_path``.
@@ -866,16 +781,13 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         :type source_path: str
         :param native_path: The path on the filesystem to save the file to, e.g. ``/tmp/myfile.txt``
         :type native_path: str
-        :param user_context: A user context, defaults to ``None``
-        :type user_context: OptionalUserContext
-        :param opts: A set of options to exercise additional control over this method. Defaults to ``None``
 
         :raises requests.RequestException: When there is a connection error.
         :raises ValidationError: If the HTTP response from the eLabFTW server is invalid.
         :raises AttachmentExpected: When referencing an entity type, an entity or the root rather than an attachment.
         """
-        session = self._create_session(options=opts, user_context=user_context)
-        endpoint = self._get_endpoint(options=opts, user_context=user_context)
+        session = self._create_session(context.config)
+        endpoint = self._get_endpoint()
 
         entity_type, entity_id, attachment_id = split_path(source_path)
         if not all((entity_type, entity_id, attachment_id)):
@@ -904,7 +816,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
             raise exception
 
 
-def split_path(path: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def split_path(path: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Split and validate an eLabFTW path.
 

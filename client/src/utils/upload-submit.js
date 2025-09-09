@@ -73,7 +73,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         },
         onSuccess: function () {
             console.log(
-                `Upload of ${uploadable.name} to ${upload.url} took ${(performance.now() - startTime) / 1000} seconds`
+                `Upload of ${uploadable.name} to ${upload.url} took ${(performance.now() - startTime) / 1000} seconds`,
             );
             data[`files_${index}|file_data`] = {
                 session_id: upload.url.split("/").at(-1),

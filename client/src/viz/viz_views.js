@@ -45,7 +45,7 @@ var TrackHeaderView = Backbone.View.extend({
                 icon_dict.css_class,
                 icon_dict.on_click_fn,
                 icon_dict.prepend,
-                icon_dict.hide
+                icon_dict.hide,
             );
         });
 

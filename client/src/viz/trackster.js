@@ -141,7 +141,7 @@ export class TracksterUI extends Backbone.Model {
                         this.view.add_drawable(
                             new tracks.DrawableGroup(this.view, this.view, {
                                 name: "New Group",
-                            })
+                            }),
                         );
                     },
                 },
@@ -174,7 +174,7 @@ export class TracksterUI extends Backbone.Model {
             ],
             {
                 tooltip_config: { placement: "bottom" },
-            }
+            },
         );
 
         this.buttonMenu = menu;
@@ -386,7 +386,7 @@ export class TracksterUIView extends Backbone.View {
         // configure right panel
         $("#right .unified-panel-title").append("Bookmarks");
         $("#right .unified-panel-icons").append(
-            "<a id='add-bookmark-button' class='icon-button menu-button plus-button' href='javascript:void(0);' title='Add bookmark'></a>"
+            "<a id='add-bookmark-button' class='icon-button menu-button plus-button' href='javascript:void(0);' title='Add bookmark'></a>",
         );
 
         // resize view when showing/hiding right panel (bookmarks for now).
@@ -418,7 +418,7 @@ export class TracksterUIView extends Backbone.View {
             viz_config.viewport,
             viz_config.tracks,
             viz_config.bookmarks,
-            true
+            true,
         );
 
         // initialize editor
@@ -545,7 +545,7 @@ export class TracksterUIView extends Backbone.View {
                 name: name,
                 dbkey: dbkey,
             },
-            window.galaxy_config.app.gene_region
+            window.galaxy_config.app.gene_region,
         );
 
         // initialize editor

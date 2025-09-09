@@ -275,6 +275,29 @@ class AddColumnSubstrRuleDefinition(BaseRuleDefinition):
         return list(map(new_row, data)), sources
 
 
+class AddColumnFromSampleSheetByIndex(BaseRuleDefinition):
+    rule_type = "add_column_from_sample_sheet_index"
+
+    def validate_rule(self, rule):
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "value": int,
+            },
+        )
+
+    def apply(self, rule, data, sources):
+        sample_sheet_column_index = rule["value"]
+
+        new_rows = []
+        for index, row in enumerate(data):
+            source = sources[index]
+            columns = source["columns"]
+            new_rows.append(row + [columns[sample_sheet_column_index]])
+
+        return new_rows, sources
+
+
 class RemoveColumnsRuleDefinition(BaseRuleDefinition):
     rule_type = "remove_columns"
 
@@ -636,6 +659,7 @@ RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnRownumRuleDefinition,
     AddColumnValueRuleDefinition,
     AddColumnSubstrRuleDefinition,
+    AddColumnFromSampleSheetByIndex,
     RemoveColumnsRuleDefinition,
     AddFilterRegexRuleDefinition,
     AddFilterCountRuleDefinition,

@@ -115,7 +115,7 @@ async function loadBroadcastData() {
                 params: {
                     path: { notification_id: props.id },
                 },
-            }
+            },
         );
 
         if (error) {
@@ -220,7 +220,7 @@ if (props.id) {
                             @click="
                                 broadcastData.content.action_links?.splice(
                                     broadcastData.content.action_links.indexOf(actionLink),
-                                    1
+                                    1,
                                 )
                             ">
                             <FontAwesomeIcon icon="times" />

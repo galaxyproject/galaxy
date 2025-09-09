@@ -30,13 +30,13 @@ watch(
     () => localValue.value,
     (newFilter: FilterType) => {
         emit("change", props.name, newFilter);
-    }
+    },
 );
 watch(
     () => propValue.value,
     (newFilter: FilterType) => {
         localValue.value = newFilter;
-    }
+    },
 );
 
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();

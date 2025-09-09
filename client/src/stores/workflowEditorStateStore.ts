@@ -67,11 +67,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     }
 
     const getInputTerminalPosition = computed(
-        () => (stepId: number, inputName: string) => inputTerminals.value[stepId]?.[inputName]
+        () => (stepId: number, inputName: string) => inputTerminals.value[stepId]?.[inputName],
     );
 
     const getOutputTerminalPosition = computed(
-        () => (stepId: number, outputName: string) => outputTerminals.value[stepId]?.[outputName]
+        () => (stepId: number, outputName: string) => outputTerminals.value[stepId]?.[outputName],
     );
 
     const getStepLoadingState = computed(() => (stepId: number) => stepLoadingState.value[stepId]);
@@ -81,7 +81,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const multiSelectedStepIds = computed(() =>
         Object.entries(multiSelectedSteps.value)
             .filter(([_id, selected]) => selected)
-            .map(([id]) => parseInt(id))
+            .map(([id]) => parseInt(id)),
     );
 
     function clearStepMultiSelection() {

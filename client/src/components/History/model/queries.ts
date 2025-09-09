@@ -16,7 +16,7 @@ export function filtersToQueryValues(filters: QueryFilters) {
  */
 export async function deleteContent(
     content: HistoryItemSummary,
-    deleteParams: Partial<{ purge: boolean; recursive: boolean }> = {}
+    deleteParams: Partial<{ purge: boolean; recursive: boolean }> = {},
 ) {
     const defaults = { purge: false, recursive: false, stop_job: true };
     const params = Object.assign({}, defaults, deleteParams);
@@ -61,7 +61,7 @@ export async function bulkUpdate(
     operation: BulkOperation,
     filters: QueryFilters,
     items = [],
-    params = null
+    params = null,
 ) {
     const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
         params: {

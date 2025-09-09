@@ -1,7 +1,6 @@
 from typing import (
     Any,
     cast,
-    Dict,
 )
 
 from galaxy.tools.parameters import (
@@ -47,7 +46,7 @@ def test_populate_state():
     f.cases = [mock_when(value="true", inputs={"h": h}), mock_when(value="false", inputs={"i": i})]
     inputs = {"a": a, "b": b}
     flat = {"a": 1, "b_0|c": 2, "b_0|d_0|e": 3, "b_0|d_0|f|h": 4, "b_0|d_0|f|g": True}
-    state: Dict[str, Any] = {}
+    state: dict[str, Any] = {}
     populate_state(trans, cast(ToolInputsT, inputs), flat, state, check=False)
     assert state["a"] == 1
     assert state["b"][0]["c"] == 2
@@ -55,7 +54,7 @@ def test_populate_state():
     assert state["b"][0]["d"][0]["f"]["h"] == 4
     # now test with input_format='21.01'
     nested = {"a": 1, "b": [{"c": 2, "d": [{"e": 3, "f": {"h": 4, "g": True}}]}]}
-    state_new: Dict[str, Any] = {}
+    state_new: dict[str, Any] = {}
     populate_state(trans, cast(ToolInputsT, inputs), nested, state_new, check=False, input_format="21.01")
     assert state_new["a"] == 1
     assert state_new["b"][0]["c"] == 2

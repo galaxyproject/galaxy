@@ -127,7 +127,6 @@ export default {
     props: {
         invocation: Object,
         workflowStep: Object,
-        workflow: Object,
         graphStep: { type: Object, default: undefined },
         expanded: { type: Boolean, default: undefined },
         inGraphView: { type: Boolean, default: false },
@@ -174,8 +173,9 @@ export default {
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         ...mapActions(useToolStore, ["fetchToolForId"]),
         fetchTool() {
-            if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
-                this.fetchToolForId(this.workflowStep.tool_id);
+            const toolId = this.workflowStep.tool_uuid || this.workflowStep.tool_id;
+            if (toolId && !this.getToolForId(toolId)) {
+                this.fetchToolForId(toolId);
             }
         },
         fetchSubworkflow() {
@@ -185,7 +185,7 @@ export default {
         },
         getParamInput(stepDetails) {
             return Object.values(this.invocation.input_step_parameters).find(
-                (param) => param.workflow_step_id === stepDetails.workflow_step_id
+                (param) => param.workflow_step_id === stepDetails.workflow_step_id,
             );
         },
         jobStepHeading(stepDetails) {
@@ -202,13 +202,13 @@ export default {
         },
         titleProps(stepIndex) {
             const invocationStep = this.invocation.steps[stepIndex];
-            const workflowStep = this.workflow.steps[stepIndex];
             const rval = {
                 stepIndex: stepIndex,
                 stepLabel: invocationStep && invocationStep.workflow_step_label,
-                stepType: workflowStep.type,
-                stepToolId: workflowStep.tool_id,
-                stepSubworkflowId: workflowStep.workflow_id,
+                stepType: this.workflowStep.type,
+                stepToolId: this.workflowStep.tool_id,
+                stepToolUuid: this.workflowStep.tool_uuid,
+                stepSubworkflowId: this.workflowStep.workflow_id,
             };
             return rval;
         },

@@ -10,6 +10,24 @@ History
 
 
 -------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Correct visualization response schema by `@guerler <https://github.com/guerler>`_ in `#20627 <https://github.com/galaxyproject/galaxy/pull/20627>`_
+* Fix dataset serializers and response models by `@arash77 <https://github.com/arash77>`_ in `#20694 <https://github.com/galaxyproject/galaxy/pull/20694>`_
+
+=============
+Other changes
+=============
+
+* Merge 24.2 into 25.0 by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20681 <https://github.com/galaxyproject/galaxy/pull/20681>`_
+
+-------------------
 25.0.1 (2025-06-20)
 -------------------
 

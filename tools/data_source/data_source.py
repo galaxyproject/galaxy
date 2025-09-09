@@ -8,7 +8,10 @@ from urllib.parse import (
     urlencode,
     urlparse,
 )
-from urllib.request import urlopen
+from urllib.request import (
+    Request,
+    urlopen,
+)
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -17,6 +20,7 @@ from galaxy.util import (
     get_charset_from_http_headers,
     stream_to_open_named_file,
 )
+from galaxy.util.user_agent import get_default_headers
 
 GALAXY_PARAM_PREFIX = "GALAXY"
 GALAXY_ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -51,15 +55,16 @@ def __main__():
             sys.exit("The remote data source application has not sent back a URL parameter in the request.")
 
         # The following calls to urlopen() will use the above default timeout
+        headers = get_default_headers()
         try:
             if URL_method == "get":
-                page = urlopen(cur_URL, timeout=DEFAULT_SOCKET_TIMEOUT)
+                req = Request(cur_URL, headers=headers)
             elif URL_method == "post":
-                page = urlopen(
-                    cur_URL,
-                    urlencode(params["param_dict"]["incoming_request_params"]).encode("utf-8"),
-                    timeout=DEFAULT_SOCKET_TIMEOUT,
-                )
+                data = urlencode(params["param_dict"]["incoming_request_params"]).encode("utf-8")
+                req = Request(cur_URL, data=data, headers=headers)
+            else:
+                raise Exception("Unknown URL_method specified: %s" % URL_method)
+            page = urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
         except Exception as e:
             sys.exit("The remote data source application may be off line, please try again later. Error: %s" % str(e))
         if max_file_size:

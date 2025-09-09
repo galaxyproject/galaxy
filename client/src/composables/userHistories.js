@@ -11,7 +11,7 @@ export function useUserHistories(user) {
                 await historyStore.loadHistories();
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     const currentHistoryId = computed(() => historyStore.currentHistoryId);

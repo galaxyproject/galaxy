@@ -77,7 +77,7 @@ const primaryActions = computed(() => {
                       parseISO(props.notification.expiration_time),
                       {
                           addSuffix: true,
-                      }
+                      },
                   )}`
                 : "This notification will never be automatically deleted",
             icon: faHourglassHalf,

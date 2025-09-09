@@ -166,7 +166,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         () => hashedUserId.value,
         () => {
             sync();
-        }
+        },
     );
 
     return {

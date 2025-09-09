@@ -36,7 +36,7 @@ watch(
     () => {
         init();
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const jobContent = computed(() => {

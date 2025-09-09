@@ -6,9 +6,9 @@ import $ from "jquery";
 import { Dataset } from "mvc/dataset/data";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
-import config_mod from "utils/config";
 import _l from "utils/localization";
 import bbi from "viz/bbi-data-manager";
+import config_mod from "viz/config";
 import tools_mod from "viz/tools";
 import filters_mod from "viz/trackster/filters";
 import painters from "viz/trackster/painters";
@@ -255,7 +255,7 @@ var Drawable = function (view, container, obj_dict) {
     // -- Set up drawable configuration. --
     this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(
         this.build_config_params(),
-        obj_dict.prefs
+        obj_dict.prefs,
     );
 
     // If there's no saved name, use object name.
@@ -290,7 +290,7 @@ var Drawable = function (view, container, obj_dict) {
             },
             () => {
                 icons_div.hide();
-            }
+            },
         );
     }
 };
@@ -946,7 +946,7 @@ var TracksterView = Backbone.View.extend({
                     default_value: "#AAAAAA",
                 },
             ],
-            { name: obj_dict.name }
+            { name: obj_dict.name },
         );
     },
 
@@ -1061,7 +1061,7 @@ var TracksterView = Backbone.View.extend({
                     var feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), (t) =>
                         t.data_manager.search_features(request.term).success((dataset_features) => {
                             all_features = all_features.concat(dataset_features);
-                        })
+                        }),
                     );
 
                     // When all searching is done, fill autocomplete.
@@ -1070,7 +1070,7 @@ var TracksterView = Backbone.View.extend({
                             $.map(all_features, (feature) => ({
                                 label: feature[0],
                                 value: feature[1],
-                            }))
+                            })),
                         );
                     });
                 },
@@ -1137,7 +1137,7 @@ var TracksterView = Backbone.View.extend({
                 var delta = d.offsetX - this.current_x;
                 this.current_x = d.offsetX;
                 var delta_chrom = Math.round(
-                    (delta / view.viewport_container.width()) * (view.max_high - view.max_low)
+                    (delta / view.viewport_container.width()) * (view.max_high - view.max_low),
                 );
                 view.move_delta(-delta_chrom);
             });
@@ -1206,7 +1206,7 @@ var TracksterView = Backbone.View.extend({
                 var width = view.viewport_container.width();
                 view.update_location(
                     Math.round((min / width) * span) + view.low,
-                    Math.round((max / width) * span) + view.low
+                    Math.round((max / width) * span) + view.low,
                 );
             })
             .bind("dragend", (e, d) => {
@@ -1705,7 +1705,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     /** Resize viewport. Use this method if header/footer content has changed in size. */
     resize_viewport: function () {
         this.viewport_container.height(
-            this.container.height() - this.top_container.height() - this.bottom_container.height()
+            this.container.height() - this.top_container.height() - this.bottom_container.height(),
         );
     },
 
@@ -1738,7 +1738,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.overview_drawable.postdraw_actions = () => {
             view.overview_highlight.show().height(view.overview_drawable.content_div.height());
             view.overview_viewport.height(
-                view.overview_drawable.content_div.height() + view.overview_box.outerHeight()
+                view.overview_drawable.content_div.height() + view.overview_box.outerHeight(),
             );
             view.overview_close.show();
             view.resize_window();
@@ -1920,7 +1920,7 @@ var TracksterToolView = Backbone.View.extend({
                 Galaxy.modal.show({
                     title: `${tool.get("name")} is Running`,
                     body: `${tool.get(
-                        "name"
+                        "name",
                     )} is running on the complete dataset. Tool outputs are in dataset's history.`,
                     buttons: {
                         Close: function () {
@@ -1928,7 +1928,7 @@ var TracksterToolView = Backbone.View.extend({
                         },
                     },
                 });
-            }
+            },
         );
     },
 
@@ -2105,7 +2105,7 @@ var FeatureTrackTile = function (
     all_slotted,
     feature_mapper,
     incomplete_features,
-    seq_data
+    seq_data,
 ) {
     // Attribute init.
     Tile.call(this, track, region, w_scale, canvas, data);
@@ -2438,7 +2438,7 @@ extend(Track.prototype, Drawable.prototype, {
                         (elt) =>
                             new visualization.GenomeRegion({
                                 from_str: $(elt).children(".position").text(),
-                            })
+                            }),
                     );
 
                     // Get regions for visualization.
@@ -2532,7 +2532,7 @@ extend(Track.prototype, Drawable.prototype, {
                 if (!in_drag) {
                     drag_control.hide();
                 }
-            }
+            },
         );
         // Update height and force redraw of current view while dragging,
         // clear cache to force redraw of other tiles.
@@ -2545,7 +2545,7 @@ extend(Track.prototype, Drawable.prototype, {
             .bind("drag", (e, d) => {
                 var new_height = Math.min(
                     Math.max(d.original_height + d.deltaY, track.min_height_px),
-                    track.max_height_px
+                    track.max_height_px,
                 );
                 $(track.tiles_div).css("height", new_height);
                 track.visible_height_px = track.max_height_px === new_height ? 0 : new_height;
@@ -2675,7 +2675,7 @@ extend(Track.prototype, Drawable.prototype, {
                                         },
                                     },
                                 });
-                            })
+                            }),
                     );
                     msg_elt.append($("<span/>").text(" "));
                     msg_elt.append(
@@ -2683,7 +2683,7 @@ extend(Track.prototype, Drawable.prototype, {
                             .text("Try again")
                             .click(() => {
                                 track.init(true);
-                            })
+                            }),
                     );
                 }
             } else if (result === "no converter") {
@@ -2762,7 +2762,7 @@ extend(Track.prototype, Drawable.prototype, {
                     track.config.set_value("min_value", min_value);
                     track.config.set_value("max_value", max_value);
                 }
-            }
+            },
         );
     },
 
@@ -2793,7 +2793,7 @@ var TiledTrack = function (view, container, obj_dict) {
               _.extend(obj_dict.tool, {
                   track: this,
                   tool_state: obj_dict.tool_state,
-              })
+              }),
           )
         : null;
     this.tile_cache = new visualization.Cache(TILE_CACHE_SIZE);
@@ -2919,7 +2919,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                     track.config.set_value("min_value", min_value);
                     track.config.set_value("max_value", max_value);
                 }
-            }
+            },
         );
     },
 
@@ -3231,7 +3231,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Map drawable object to data needed for drawing.
             var tile_data = _.map(drawables, (d) =>
                 // Get the track data/promise.
-                d.data_manager.get_data(region, data_mode, resolution, this.data_url_extra_params)
+                d.data_manager.get_data(region, data_mode, resolution, this.data_url_extra_params),
             );
 
             // Get reference data/promise.
@@ -3241,8 +3241,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                         region,
                         mode,
                         resolution,
-                        this.view.reference_track.data_url_extra_params
-                    )
+                        this.view.reference_track.data_url_extra_params,
+                    ),
                 );
             }
 
@@ -3354,7 +3354,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             region.get("start"),
             region.get("end"),
             this.config.to_key_value_dict(),
-            mode
+            mode,
         );
 
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -3544,7 +3544,7 @@ extend(LabelTrack.prototype, Track.prototype, {
             new_div.append(
                 $("<div/>").addClass("pos-label").text(util.commatize(position)).css({
                     left: screenPosition,
-                })
+                }),
             );
             position += tickDistance;
         }
@@ -4071,7 +4071,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
             (result) => {
                 // What does this do?  Is it meant to be attached to some higher scope state object?
                 // var data = result.data;
-            }
+            },
         );
     },
 
@@ -4087,7 +4087,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
             region.get("start"),
             region.get("end"),
             this.config.to_key_value_dict(),
-            mode
+            mode,
         );
 
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -4220,7 +4220,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 // Remove features already drawn on tile originally.
                 var tile_incomplete_features = _.omit(
                     all_incomplete_features,
-                    _.map(tile.incomplete_features, (f) => f[0])
+                    _.map(tile.incomplete_features, (f) => f[0]),
                 );
 
                 // Remove features already drawn on tile in past postdraw actions.
@@ -4238,7 +4238,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     var new_canvas_ctx = new_canvas.getContext("2d");
                     new_canvas.height = Math.max(
                         tile.canvas.height,
-                        this.get_canvas_height(features, tile.mode, tile.w_scale, 100)
+                        this.get_canvas_height(features, tile.mode, tile.w_scale, 100),
                     );
                     new_canvas.width = tile.canvas.width;
                     new_canvas_ctx.drawImage(tile.canvas, 0, 0);
@@ -4249,7 +4249,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         tile.mode,
                         tile.region,
                         tile.w_scale,
-                        tile.seq_data
+                        tile.seq_data,
                     );
                     $(tile.canvas).replaceWith($(new_tile.canvas));
                     tile.canvas = new_canvas;
@@ -4491,7 +4491,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             filter_height_scaler,
             // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
             ref_seq,
-            (b) => track.view.get_base_color(b)
+            (b) => track.view.get_base_color(b),
         );
 
         var feature_mapper = null;
@@ -4522,7 +4522,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 all_slotted,
                 feature_mapper,
                 incomplete_features,
-                ref_seq
+                ref_seq,
             );
         }
     },
@@ -4606,7 +4606,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 region.get("end"),
                 this.config.to_key_value_dict(),
                 mode,
-                (b) => view.get_base_color(b)
+                (b) => view.get_base_color(b),
             );
 
             painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
@@ -4689,7 +4689,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         .css({
                             "font-size": `${font_size}px`,
                             top: `${(this.config.get_value("summary_height") - font_size) / 2}px`,
-                        })
+                        }),
                 );
 
                 // Show sample labels.
@@ -4702,7 +4702,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                             .addClass("yaxislabel variant top sample")
                             .css({
                                 top: this.config.get_value("summary_height"),
-                            })
+                            }),
                     );
                 }
             }

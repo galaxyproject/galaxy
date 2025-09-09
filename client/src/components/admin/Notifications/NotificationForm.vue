@@ -81,7 +81,7 @@ const isUrgent = computed(() => notificationData.value.notification.variant === 
 async function loadData<T>(
     getData: () => Promise<T[]>,
     target: Ref<SelectOption[]>,
-    formatter: (item: T) => SelectOption
+    formatter: (item: T) => SelectOption,
 ) {
     const tmp = await getData();
     target.value = tmp.map(formatter);

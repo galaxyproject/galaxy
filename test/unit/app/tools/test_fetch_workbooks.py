@@ -17,6 +17,7 @@ from galaxy.tools.fetch.workbooks import (
     generate,
     GenerateFetchWorkbookRequest,
     parse,
+    ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
 from galaxy.util.resources import resource_path
@@ -104,12 +105,34 @@ def test_parse_datasets():
         content=content,
     )
     parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
+
+
+def assert_is_simple_example_parsed(parsed: ParsedFetchWorkbook):
     assert len(parsed.rows) == 1
     row0 = parsed.rows[0]
     assert row0["url"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
     assert row0["name"] == "4.bed"
 
     assert len(parsed.columns) == 2
+
+
+def test_parse_datasets_csv():
+    content = unittest_file_to_base64("fetch_workbook.csv")
+    parse_request = ParseFetchWorkbook(
+        content=content,
+    )
+    parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
+
+
+def test_parse_datasets_tsv():
+    content = unittest_file_to_base64("fetch_workbook.tsv")
+    parse_request = ParseFetchWorkbook(
+        content=content,
+    )
+    parsed = parse(parse_request)
+    assert_is_simple_example_parsed(parsed)
 
 
 def test_parse_paired_list():
@@ -193,7 +216,7 @@ def test_parsed_list_of_pairs_with_auto_identifiers():
 
 def test_read_column_headers_from_titles():
     # datasets...
-    column_headers = column_titles_to_headers(["URI", "Name", "Genome"])
+    column_headers = column_titles_to_headers(["URI", "Name", "Genome"])[0]
     assert len(column_headers) == 3
     assert column_headers[0].type == "url"
     assert column_headers[0].title == "URI"
@@ -203,7 +226,7 @@ def test_read_column_headers_from_titles():
     assert column_headers[2].title == "Genome"
 
     # simple list...
-    column_headers = column_titles_to_headers(["URI", "List Identifier"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier"])[0]
     assert len(column_headers) == 2
     assert column_headers[0].type == "url"
     assert column_headers[0].title == "URI"
@@ -211,7 +234,7 @@ def test_read_column_headers_from_titles():
     assert column_headers[1].title == "List Identifier"
 
     # paired list with list two URIs per row....
-    column_headers = column_titles_to_headers(["URI 1 (Forward)", "URI 2 (Reverse)", "List Identifier"])
+    column_headers = column_titles_to_headers(["URI 1 (Forward)", "URI 2 (Reverse)", "List Identifier"])[0]
     assert len(column_headers) == 3
     assert column_headers[0].type == "url"
     assert column_headers[0].title == "URI 1 (Forward)"
@@ -225,7 +248,7 @@ def test_read_column_headers_from_titles():
     assert column_headers[2].title == "List Identifier"
 
     # paired list with paired identifier as a row...
-    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier"])[0]
     assert len(column_headers) == 3
     assert column_headers[0].type == "url"
     assert column_headers[0].title == "URI"
@@ -236,7 +259,7 @@ def test_read_column_headers_from_titles():
     assert column_headers[2].type_index == 0
 
     # nested list
-    column_headers = column_titles_to_headers(["URI", "Outer List Identifier", "Inner List Identifier"])
+    column_headers = column_titles_to_headers(["URI", "Outer List Identifier", "Inner List Identifier"])[0]
 
     assert len(column_headers) == 3
     assert column_headers[0].type == "url"
@@ -253,40 +276,40 @@ def test_read_column_headers_from_titles():
 
 
 def test_infer_fetch_workbook_collection_type():
-    column_headers = column_titles_to_headers(["URI", "List Identifier", "Genome"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list"
 
-    column_headers = column_titles_to_headers(["URI", "List Identifier 1", "List Identifier 2", "Genome"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier 1", "List Identifier 2", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:list"
 
-    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier", "Genome"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:paired"
 
     # probably more usable - two URI style list:paired
-    column_headers = column_titles_to_headers(["URI 1", "URI 2", "List Identifier", "Genome"])
+    column_headers = column_titles_to_headers(["URI 1", "URI 2", "List Identifier", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:paired"
 
     column_headers = column_titles_to_headers(
         ["URI", "List Identifier 1", "List Identifier 2", "Paired Identifier", "Genome"]
-    )
+    )[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:list:paired"
 
-    column_headers = column_titles_to_headers(["URI 1", "URI 2", "List Identifier 1", "List Identifier 2", "Genome"])
+    column_headers = column_titles_to_headers(["URI 1", "URI 2", "List Identifier 1", "List Identifier 2", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:list:paired"
 
     # paired/unpaired sheets
-    column_headers = column_titles_to_headers(["URI 1", "URI 2 (Optional)", "List Identifier", "Genome"])
+    column_headers = column_titles_to_headers(["URI 1", "URI 2 (Optional)", "List Identifier", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:paired_or_unpaired"
 
     # paired/unpaired sheets
-    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier (Optional)", "Genome"])
+    column_headers = column_titles_to_headers(["URI", "List Identifier", "Paired Identifier (Optional)", "Genome"])[0]
     collection_type = _infer_fetch_workbook_collection_type(column_headers)[0]
     assert collection_type == "list:paired_or_unpaired"
 
@@ -296,12 +319,12 @@ def test_column_target_model_parsing():
 
 
 def test_validate_parsed_column_headers():
-    headers = column_titles_to_headers(["URI 1", "URI 2", "URI 3"])
+    headers = column_titles_to_headers(["URI 1", "URI 2", "URI 3"])[0]
     with pytest.raises(RequestParameterInvalidException) as exception_info:
         _validate_parsed_column_headers(headers)
     assert EXCEPTION_TOO_MANY_URI_COLUMNS in str(exception_info.value)
 
-    headers = column_titles_to_headers(["Name", "Paired Indicator"])
+    headers = column_titles_to_headers(["Name", "Paired Indicator"])[0]
     with pytest.raises(RequestParameterInvalidException) as exception_info:
         _validate_parsed_column_headers(headers)
     assert EXCEPTION_NO_URIS_FOUND in str(exception_info.value)

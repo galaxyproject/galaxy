@@ -1,6 +1,7 @@
 import functools
 import logging
 import os
+from typing import Union
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -199,14 +200,15 @@ class ChronosJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(ajs)
 
     @handle_exception_call
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         job_name = job_state.job_id
         # TODO: how can stopped GxIT jobs be handled here?
         if job := self._retrieve_job(job_name):
             succeeded = job["successCount"]
             errors = job["errorCount"]
             if succeeded > 0:
-                return self._mark_as_successful(job_state)
+                self._mark_as_successful(job_state)
+                return None
             elif not succeeded and not errors:
                 return self._mark_as_active(job_state)
             elif errors:
@@ -216,11 +218,13 @@ class ChronosJobRunner(AsynchronousJobRunner):
                 else:
                     msg = "Job {name!r} failed more than {retries!s} times."
                 reason = msg.format(name=job_name, retries=str(max_retries))
-                return self._mark_as_failed(job_state, reason)
+                self._mark_as_failed(job_state, reason)
+                return None
         reason = f"Job {job_name!r} not found"
-        return self._mark_as_failed(job_state, reason)
+        self._mark_as_failed(job_state, reason)
+        return None
 
-    def _mark_as_successful(self, job_state):
+    def _mark_as_successful(self, job_state: AsynchronousJobState) -> None:
         msg = "Job {name!r} finished successfully"
         _write_logfile(job_state.output_file, msg.format(name=job_state.job_id))
         _write_logfile(job_state.error_file, "")
@@ -229,12 +233,12 @@ class ChronosJobRunner(AsynchronousJobRunner):
         self.mark_as_finished(job_state)
         return None
 
-    def _mark_as_active(self, job_state):
+    def _mark_as_active(self, job_state: AsynchronousJobState) -> AsynchronousJobState:
         job_state.running = True
         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
         return job_state
 
-    def _mark_as_failed(self, job_state, reason):
+    def _mark_as_failed(self, job_state: AsynchronousJobState, reason: str) -> None:
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
         job_state.stop_job = True

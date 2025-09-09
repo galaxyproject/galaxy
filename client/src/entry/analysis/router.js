@@ -20,7 +20,7 @@ import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
-import PageDisplay from "components/PageDisplay/PageDisplay";
+import PageView from "components/Page/PageView";
 import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolReport from "components/Tool/ToolReport";
@@ -28,7 +28,6 @@ import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
-import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -61,7 +60,6 @@ import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance";
-import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
 import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
 import { requireAuth } from "@/router/guards";
@@ -69,6 +67,7 @@ import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
+import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
@@ -82,6 +81,7 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
+import HistoryList from "@/components/History/HistoryList.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
@@ -169,8 +169,12 @@ export function getRouter(Galaxy) {
             },
             {
                 path: "/published/page",
-                component: PageDisplay,
-                props: (route) => ({ pageId: route.query.id }),
+                component: PageView,
+                props: (route) => ({
+                    pageId: route.query.id,
+                    embed: route.query.embed ? parseBool(route.query.embed) : undefined,
+                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                }),
             },
             {
                 path: "/published/visualization",
@@ -182,6 +186,7 @@ export function getRouter(Galaxy) {
                 component: WorkflowPublished,
                 props: (route) => ({
                     id: route.query.id,
+                    version: route.query.version,
                     zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
@@ -267,6 +272,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             datasetId: route.params.datasetId,
                             tab: route.params.tab,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
@@ -322,7 +328,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_published",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: (route) => ({
                             activeList: "published",
                             username: route.query["f-username"],
@@ -330,7 +336,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/archived",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "archived",
                         },
@@ -338,7 +344,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "my",
                         },
@@ -346,7 +352,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_shared",
-                        component: GridHistory,
+                        component: HistoryList,
                         props: {
                             activeList: "shared",
                         },
@@ -524,8 +530,10 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "tours/:tourId",
-                        component: TourRunner,
-                        props: true,
+                        component: CenterFrame,
+                        props: (route) => ({
+                            src: "/welcome",
+                        }),
                     },
                     {
                         path: "rules",
@@ -553,14 +561,19 @@ export function getRouter(Galaxy) {
                     {
                         path: "tool_landings/:uuid",
                         component: ToolLanding,
-                        props: true,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: Boolean(route.query.public),
+                            secret: route.query.client_secret,
+                        }),
+                        beforeEnter: requireAuth,
                     },
                     {
                         path: "workflow_landings/:uuid",
                         component: WorkflowLanding,
                         props: (route) => ({
                             uuid: route.params.uuid,
-                            public: route.query.public.toLowerCase() === "true",
+                            public: (route.query.public || "").toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
                         beforeEnter: requireAuth,
@@ -568,10 +581,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "user",
                         component: UserPreferences,
-                        props: {
-                            enableQuotas: Galaxy.config.enable_quotas,
-                            userId: Galaxy.user.id,
-                        },
                         redirect: redirectAnon(),
                     },
                     {
@@ -663,9 +672,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "visualizations/list_published",
                         component: GridVisualization,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "visualizations/list_shared",
@@ -712,10 +722,13 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "workflows/invocations/:invocationId",
+                        // Consolidated route for workflow invocation state with optional success query param
+                        // Handles /workflows/invocations/{id}, /workflows/invocations/{id}/steps, /workflows/invocations/{id}/inputs, etc.
+                        path: "workflows/invocations/:invocationId/:tab?",
                         component: WorkflowInvocationState,
                         props: (route) => ({
                             invocationId: route.params.invocationId,
+                            tab: route.params.tab,
                             isFullPage: true,
                             success: Boolean(route.query.success),
                         }),

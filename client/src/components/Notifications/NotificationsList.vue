@@ -37,7 +37,7 @@ const filteredNotifications = computed(() => {
     return notifications.value.filter(filterNotifications);
 });
 const allSelected = computed(
-    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
+    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length,
 );
 
 function filterNotifications(notification: UserNotification) {

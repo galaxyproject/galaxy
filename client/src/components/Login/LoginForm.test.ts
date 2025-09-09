@@ -38,7 +38,7 @@ describe("LoginForm", () => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
-            })
+            }),
         );
     });
 

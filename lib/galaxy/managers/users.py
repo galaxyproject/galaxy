@@ -10,8 +10,6 @@ import time
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -171,7 +169,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             job.mark_deleted(self.app.config.track_jobs_in_database)
         session.commit()
 
-    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
+    def _get_all_active_jobs_from_user(self, user: User) -> list[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
         stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
         jobs = self.session().scalars(stmt)
@@ -580,7 +578,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
-        if not reset_user and email != email.lower():
+        if not reset_user:
             reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
         if reset_user and not reset_user.deleted:
             prt = self.app.model.PasswordResetToken(reset_user)
@@ -697,9 +695,9 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             }
         )
 
-    def serialize_disk_usage(self, user: model.User) -> List[UserQuotaUsage]:
+    def serialize_disk_usage(self, user: model.User) -> list[UserQuotaUsage]:
         usages = user.dictify_usage(self.app.object_store)
-        rval: List[UserQuotaUsage] = []
+        rval: list[UserQuotaUsage] = []
         for usage in usages:
             quota_source_label = usage.quota_source_label
             quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
@@ -741,7 +739,7 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        user_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: dict[str, base.Deserializer] = {
             "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,

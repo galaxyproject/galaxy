@@ -34,7 +34,7 @@ const currentObjectStore = computed<ConcreteObjectStoreModel | null>(() => {
         return null;
     }
     const filtered: ConcreteObjectStoreModel[] = objectStores.filter(
-        (objectStore) => objectStore.object_store_id == currentObjectStoreId
+        (objectStore) => objectStore.object_store_id == currentObjectStoreId,
     );
     return filtered && filtered.length > 0 ? (filtered[0] as ConcreteObjectStoreModel) : null;
 });
@@ -61,7 +61,7 @@ const validTargets = computed<SelectableObjectStore[]>(() => {
         (objectStore) =>
             objectStore.device == currentDevice &&
             objectStore.object_store_id &&
-            objectStore.object_store_id != currentObjectStoreId
+            objectStore.object_store_id != currentObjectStoreId,
     ) as SelectableObjectStore[];
     return validTargets;
 });

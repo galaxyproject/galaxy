@@ -93,7 +93,7 @@ export var View = Backbone.View.extend({
             this.options.body = $(
                 '<div class="progress progress-striped active">' +
                     '<div class="progress-bar progress-bar-info" style="width:100%"/>' +
-                    "</div>"
+                    "</div>",
             );
         }
 

@@ -30,7 +30,7 @@ async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
     server.use(
         http.get("/api/notifications/broadcast", ({ response }) => {
             return response(200).json(broadcasts ?? []);
-        })
+        }),
     );
 
     const wrapper = mount(BroadcastsList as object, {

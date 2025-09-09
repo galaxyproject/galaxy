@@ -7639,6 +7639,11 @@ jest-environment-node@^29.7.0:
     jest-mock "^29.7.0"
     jest-util "^29.7.0"
 
+jest-fail-on-console@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jest-fail-on-console/-/jest-fail-on-console-3.3.1.tgz#7d17e3a155cd0452b5be0d0906b6cb35e8594000"
+  integrity sha512-dmq/dmh5OBgJlD1MJdpznzwFQP8S7msf3ghTGWQLGhagWwHKzGtqXza76nuJUKOK7BdwqcTK6CCE49Xxv4ckUQ==
+
 jest-fixed-jsdom@^0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/jest-fixed-jsdom/-/jest-fixed-jsdom-0.0.2.tgz#2a15d2db64cf9276afd162c451ae727b89a8811e"
@@ -9652,15 +9657,15 @@ prelude-ls@~1.1.2:
   resolved "https://registry.npmjs.org/prettier/-/prettier-2.7.1.tgz"
   integrity sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==
 
-prettier@^2.8.8:
-  version "2.8.8"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
-  integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
-
 prettier@^3.0.0:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.5.3.tgz#4fc2ce0d657e7a02e602549f053b239cb7dfe1b5"
   integrity sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==
+
+prettier@^3.6.2:
+  version "3.6.2"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.6.2.tgz#ccda02a1003ebbb2bfda6f83a074978f608b9393"
+  integrity sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==
 
 pretty-bytes@^6.1.1:
   version "6.1.1"
@@ -12045,6 +12050,11 @@ vue-infinite-scroll@^2.0.2:
   version "2.0.2"
   resolved "https://registry.npmjs.org/vue-infinite-scroll/-/vue-infinite-scroll-2.0.2.tgz"
   integrity sha512-n+YghR059YmciANGJh9SsNWRi1YZEBVlODtmnb/12zI+4R72QZSWd+EuZ5mW6auEo/yaJXgxzwsuhvALVnm73A==
+
+vue-json-pretty@^1.9.5:
+  version "1.9.5"
+  resolved "https://registry.yarnpkg.com/vue-json-pretty/-/vue-json-pretty-1.9.5.tgz#b59861710e352ee50dc8fafde1090382fa655111"
+  integrity sha512-fwbiH/ky/raX1D4MXRZZLFeKm157e9AkumMD7Y+djdLU1Sb0Tp5q2iOPvCnkWNzRpUfxx/zUjONUG+MIWsqx/w==
 
 vue-loader@15.11.1, vue-loader@^15.11.1:
   version "15.11.1"

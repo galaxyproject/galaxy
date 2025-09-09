@@ -70,7 +70,7 @@ export function useZipExplorer() {
         zipUrl: string,
         filesToImport: ImportableFile[],
         historyId: string | null,
-        zipExplorer: IZipExplorer
+        zipExplorer: IZipExplorer,
     ) {
         const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
@@ -132,7 +132,7 @@ export function useZipExplorer() {
     async function handleLocalZip(
         filesToImport: ImportableFile[],
         historyId: string | null,
-        zipExplorer: IZipExplorer
+        zipExplorer: IZipExplorer,
     ) {
         const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
@@ -152,7 +152,7 @@ export function useZipExplorer() {
                     // workflows are usually relatively small.
                     const fileData = await entry.data();
                     const formData = new FormData();
-                    formData.append("archive_file", new Blob([fileData]), file.name);
+                    formData.append("archive_file", new Blob([new Uint8Array(fileData)]), file.name);
 
                     await axios.post(getFullAppUrl("api/workflows"), formData);
                 } catch (e) {
@@ -411,7 +411,7 @@ export type ArchiveSource = File | string;
 export type ArchiveExplorerEventBusKey = "set-archive-source";
 
 export const archiveExplorerEventBus = useEventBus<ArchiveExplorerEventBusKey, ArchiveSource>(
-    "archive-explorer-event-bus"
+    "archive-explorer-event-bus",
 );
 
 interface DatasetAttrs {

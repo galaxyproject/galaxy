@@ -1,9 +1,9 @@
 <script setup>
+import { NON_TERMINAL_STATES } from "api/jobs";
 import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
-import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -123,7 +123,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

@@ -3,6 +3,7 @@ import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGr
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
@@ -51,7 +52,9 @@ interface InvocationExportData {
     destination: InvocationExportDestination;
     remoteUri: string;
     outputFileName: string;
-    includeData: boolean;
+    includeFiles: boolean;
+    includeDeleted: boolean;
+    includeHidden: boolean;
     bcoDatabase: BcoDatabaseExportData;
 }
 
@@ -85,14 +88,14 @@ const exportButtonLabel = computed(() => {
 });
 
 const needsFileName = computed(
-    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository"
+    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository",
 );
 
 const canIncludeData = computed(() => exportData.exportPluginFormat !== "bco");
 
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
-        (target) => target.destination === exportData.destination
+        (target) => target.destination === exportData.destination,
     );
     return exportDestination?.label ?? "Unknown Destination";
 });
@@ -154,7 +157,7 @@ const wizard = useWizard({
                 exportData.bcoDatabase.serverBaseUrl &&
                     exportData.bcoDatabase.authorization &&
                     exportData.bcoDatabase.table &&
-                    exportData.bcoDatabase.ownerGroup
+                    exportData.bcoDatabase.ownerGroup,
             ),
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
@@ -176,7 +179,7 @@ watch(
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
         }
-    }
+    },
 );
 
 watch(
@@ -185,7 +188,7 @@ watch(
         if (oldValue && !newValue) {
             resetWizard();
         }
-    }
+    },
 );
 
 function onRecordSelected(recordUri: string) {
@@ -212,13 +215,14 @@ async function exportInvocation() {
 }
 
 async function exportToSts() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
         params: { path: { invocation_id: props.invocationId } },
         body: {
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -232,16 +236,17 @@ async function exportToSts() {
 }
 
 async function exportToFileSource() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/write_store", {
         params: {
             path: { invocation_id: props.invocationId },
         },
         body: {
             target_uri: exportDestinationUri.value,
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -306,7 +311,9 @@ function initializeExportData(): InvocationExportData {
         destination: "download",
         remoteUri: "",
         outputFileName: "",
-        includeData: true,
+        includeFiles: true,
+        includeDeleted: false,
+        includeHidden: false,
         bcoDatabase: {
             serverBaseUrl: "https://biocomputeobject.org",
             table: "GALXY",
@@ -320,6 +327,25 @@ function resetWizard() {
     const initialExportData = initializeExportData();
     Object.assign(exportData, initialExportData);
     wizard.goTo("select-format");
+}
+
+function getExportParams(): ExportParams {
+    const modelStoreFormat = selectedExportPlugin.value.exportParams.modelStoreFormat;
+    if (modelStoreFormat === "bco.json") {
+        // BCO export never includes files
+        return {
+            modelStoreFormat,
+            includeDeleted: false,
+            includeHidden: false,
+            includeFiles: false,
+        };
+    }
+    return {
+        modelStoreFormat,
+        includeDeleted: exportData.includeDeleted,
+        includeHidden: exportData.includeHidden,
+        includeFiles: exportData.includeFiles,
+    };
 }
 
 onUnmounted(() => {
@@ -469,9 +495,15 @@ onUnmounted(() => {
                         required />
                 </BFormGroup>
 
-                <BFormCheckbox v-if="canIncludeData" id="include-data" v-model="exportData.includeData" switch>
-                    Include data files in the export package.
-                </BFormCheckbox>
+                <BFormGroup v-if="canIncludeData" label="Dataset files included in the package:">
+                    <BFormCheckbox v-model="exportData.includeFiles" switch> Include Active Files </BFormCheckbox>
+
+                    <BFormCheckbox v-model="exportData.includeDeleted" switch>
+                        Include Deleted (not purged)
+                    </BFormCheckbox>
+
+                    <BFormCheckbox v-model="exportData.includeHidden" switch> Include Hidden </BFormCheckbox>
+                </BFormGroup>
 
                 <br />
 

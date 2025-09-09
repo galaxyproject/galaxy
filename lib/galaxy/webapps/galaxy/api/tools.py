@@ -8,8 +8,6 @@ from json import loads
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
 )
 
@@ -22,6 +20,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import FileResponse
+from pydantic import UUID4
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from starlette.responses import StreamingResponse
 
@@ -32,13 +31,23 @@ from galaxy import (
 )
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
     FetchDataFormPayload,
     FetchDataPayload,
+)
+from galaxy.schema.schema import (
+    ClaimLandingPayload,
+    CreateToolLandingRequestPayload,
+    ToolLandingRequest,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
@@ -73,6 +82,7 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    LandingUuidPathParam,
     Router,
 )
 
@@ -120,9 +130,9 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
-async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
         data = await request.form()
         for value in data.values():
@@ -134,6 +144,7 @@ async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
@@ -148,7 +159,7 @@ class FetchTools:
         self,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         trans: ProvidesHistoryContext = DependsOnTrans,
-        files: List[StarletteUploadFile] = Depends(get_files),
+        files: list[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
 
@@ -239,6 +250,45 @@ class FetchTools:
         response.headers["Last-Modified"] = last_modified
         return response
 
+    @router.post("/api/data_landings", public=True)
+    def create_data_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        data_landing_request: CreateDataLandingPayload = Body(...),
+    ) -> ToolLandingRequest:
+        tool_landing_request = self.service.data_landing_to_tool_landing(trans, data_landing_request)
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings", public=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        tool_landing_request: CreateToolLandingRequestPayload = Body(...),
+    ) -> ToolLandingRequest:
+        tool_id = tool_landing_request.tool_id
+        if tool_id in PROTECTED_TOOLS:
+            raise exceptions.RequestParameterInvalidException(
+                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.claim_tool_landing_request(trans, uuid, payload)
+
+    @router.get("/api/tool_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> ToolLandingRequest:
+        return self.landing_manager.get_tool_landing_request(trans, uuid)
+
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
@@ -311,7 +361,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         except exceptions.MessageException:
             raise
         except Exception:
-            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+            msg = "Error: Could not convert toolbox to dictionary"
+            log.exception(msg)
+            raise exceptions.InternalServerError(msg)
 
     @expose_api_anonymous_and_sessionless
     def panel_views(self, trans: GalaxyWebTransaction, **kwds):
@@ -363,7 +415,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         io_details = util.string_as_bool(kwd.get("io_details", False))
         link_details = util.string_as_bool(kwd.get("link_details", False))
         tool_version = kwd.get("tool_version")
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version)
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=id)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -438,7 +490,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
-        test_counts_by_tool: Dict[str, Dict] = {}
+        test_counts_by_tool: dict[str, dict] = {}
         for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
@@ -453,7 +505,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> List[ToolTestDescriptionDict]:
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -739,7 +791,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self.service._create(trans, payload, **kwd)
 
 
-def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
+def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(Dict[str, Any], kwd.get("payload"))
+        kwd = cast(dict[str, Any], kwd.get("payload"))
     return kwd

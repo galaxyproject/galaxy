@@ -287,7 +287,7 @@ export default {
                                 errorFormatting,
                                 "WorkflowRunForm::onExecute()",
                                 "Invalid server error response format.",
-                                errorData
+                                errorData,
                             );
                             this.$emit("submissionError", e);
                         }

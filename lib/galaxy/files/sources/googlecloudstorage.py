@@ -6,43 +6,75 @@ except ImportError:
     GCSFS = None
 
 from typing import (
-    cast,
     Optional,
+    Union,
 )
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class GoogleCloudStorageFilesSourceProperties(FilesSourceProperties, total=False):
+class GoogleCloudStorageFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    bucket_name: Union[str, TemplateExpansion]
+    root_path: Union[str, TemplateExpansion, None] = None
+    project: Union[str, TemplateExpansion, None] = None
+    anonymous: Union[bool, TemplateExpansion, None] = True
+    token: Union[str, TemplateExpansion, None] = None
+    token_uri: Union[str, TemplateExpansion, None] = None
+    client_id: Union[str, TemplateExpansion, None] = None
+    client_secret: Union[str, TemplateExpansion, None] = None
+    refresh_token: Union[str, TemplateExpansion, None] = None
+
+
+class GoogleCloudStorageFileSourceConfiguration(BaseFileSourceConfiguration):
     bucket_name: str
-    root_path: str
-    project: str
-    anonymous: bool
+    root_path: Optional[str] = None
+    project: Optional[str] = None
+    anonymous: Optional[bool] = True
+    token: Optional[str] = None
+    token_uri: Optional[str] = None
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    refresh_token: Optional[str] = None
 
 
-class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
+class GoogleCloudStorageFilesSource(
+    PyFilesystem2FilesSource[
+        GoogleCloudStorageFileSourceTemplateConfiguration, GoogleCloudStorageFileSourceConfiguration
+    ]
+):
     plugin_type = "googlecloudstorage"
     required_module = GCSFS
     required_package = "fs-gcsfs"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props: GoogleCloudStorageFilesSourceProperties = cast(
-            GoogleCloudStorageFilesSourceProperties, opts.extra_props or {} if opts else {}
-        )
-        bucket_name = props.pop("bucket_name", None)
-        root_path = props.pop("root_path", None)
-        project = props.pop("project", None)
-        args = {}
-        if props.get("anonymous"):
-            args["client"] = Client.create_anonymous_client()
-        elif props.get("token"):
-            args["client"] = Client(project=project, credentials=Credentials(**props))
-        handle = GCSFS(bucket_name, root_path=root_path, retry=0, **{**args, **extra_props})
+    template_config_class = GoogleCloudStorageFileSourceTemplateConfiguration
+    resolved_config_class = GoogleCloudStorageFileSourceConfiguration
+
+    def _open_fs(self, context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration]):
+        if GCSFS is None:
+            raise self.required_package_exception
+
+        config = context.config
+        if config.anonymous:
+            client = Client.create_anonymous_client()
+        elif config.token:
+            client = Client(
+                project=config.project,
+                credentials=Credentials(
+                    token=config.token,
+                    token_uri=config.token_uri,
+                    client_id=config.client_id,
+                    client_secret=config.client_secret,
+                    refresh_token=config.refresh_token,
+                ),
+            )
+
+        handle = GCSFS(bucket_name=config.bucket_name, root_path=config.root_path or "", retry=0, client=client)
         return handle
 
 

@@ -45,7 +45,7 @@ const historyName = computed(() => {
 
 const mostUpToDateExport = computed(() => {
     return existingExports.value.find(
-        (exportRecord) => exportRecord.isPermanent && (exportRecord.isUpToDate || exportRecord.isPreparing)
+        (exportRecord) => exportRecord.isPermanent && (exportRecord.isUpToDate || exportRecord.isPreparing),
     );
 });
 

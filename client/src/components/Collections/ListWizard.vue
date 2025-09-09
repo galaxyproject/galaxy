@@ -136,7 +136,7 @@ const wizard = useWizard({
 });
 
 const collectionTypeForPairedOrUnpairedBuilder = computed(
-    () => whichBuilder.value as SupportedPairedOrPairedBuilderCollectionTypes
+    () => whichBuilder.value as SupportedPairedOrPairedBuilderCollectionTypes,
 );
 
 const buildButtonLabel = computed(() => {
@@ -175,7 +175,7 @@ async function ruleOnAttemptCreate(createRequest: RuleCreationRequestT) {
             request.name,
             request.collectionType,
             request.elementIdentifiers,
-            request.hide_source_items
+            request.hide_source_items,
         );
         await onCreate(payload);
     }

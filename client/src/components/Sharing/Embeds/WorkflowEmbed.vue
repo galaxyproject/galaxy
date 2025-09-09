@@ -59,7 +59,7 @@ const embedStyle = computed(() => {
     }
 });
 const embed = computed(
-    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`
+    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
 );
 
 // These Embed settings are not reactive, to we have to key them
@@ -171,7 +171,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
 
 .workflow-embed {
     display: flex;
-    gap: 0.5rem;
+    gap: 2rem;
 }
 
 @container (max-width: 1200px) {
@@ -187,16 +187,22 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
         align-items: flex-start;
         justify-content: flex-start;
         flex-direction: column;
+        padding: 1rem;
+        background-color: $brand-light;
+        border-radius: 0.5rem;
+        min-width: 250px;
     }
 
     .preview {
         flex: 1;
 
         .published-preview {
-            border: 2px solid $brand-primary;
+            border: 2px solid $border-color;
             border-radius: 4px;
             width: 100%;
-            height: 550px;
+            height: 500px;
+            min-height: 300px;
+            padding: 0.5rem;
         }
 
         .embed-code-input {

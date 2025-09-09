@@ -47,7 +47,7 @@ describe("ActivitySettings", () => {
         server.use(
             http.get("/api/unprivileged_tools", ({ params, query, response }) => {
                 return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
-            })
+            }),
         );
         activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {

@@ -71,18 +71,16 @@ const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
-const invocationRef = computed(() => props.invocation);
-
 const { datatypesMapper } = useDatatypesMapper();
 
 const workflowId = computed(() => props.workflow?.id);
 const workflowVersion = computed(() => props.workflow?.version);
 
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
-    invocationRef,
+    computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
     workflowId.value,
-    workflowVersion.value
+    workflowVersion.value,
 );
 
 onMounted(async () => {
@@ -101,7 +99,7 @@ watch(
             await pollInvocationGraph();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const stateStore = useWorkflowStateStore(storeId.value);
@@ -110,7 +108,7 @@ const { activeNodeId } = storeToRefs(stateStore);
 watch(
     () => props.zoom,
     () => (stateStore.scale = props.zoom),
-    { immediate: true }
+    { immediate: true },
 );
 
 onUnmounted(() => {
@@ -233,7 +231,6 @@ function stepClicked(nodeId: number | null) {
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
-                        :workflow="props.workflow"
                         :workflow-step="props.workflow.steps[activeNodeId]"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"

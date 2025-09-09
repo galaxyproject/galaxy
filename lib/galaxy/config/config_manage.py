@@ -11,11 +11,8 @@ from textwrap import TextWrapper
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Tuple,
 )
 
 import yaml
@@ -70,9 +67,9 @@ DROP_OPTION_VALUE = object()
 
 
 class App(NamedTuple):
-    config_paths: List[str]
+    config_paths: list[str]
     default_port: str
-    expected_app_factories: List[str]
+    expected_app_factories: list[str]
     destination: str
     schema_path: Traversable
 
@@ -90,7 +87,7 @@ class App(NamedTuple):
 
 
 class _OptionAction:
-    def converted(self, args: Namespace, app_desc: App, key: str, value: Any) -> Tuple[str, Any]:
+    def converted(self, args: Namespace, app_desc: App, key: str, value: Any) -> tuple[str, Any]:
         raise NotImplementedError()
 
     def lint(self, args: Namespace, app_desc: App, key: str, value: Any) -> None:
@@ -157,7 +154,7 @@ class _RenameAction(_OptionAction):
         )
 
 
-OPTION_ACTIONS: Dict[str, _OptionAction] = {
+OPTION_ACTIONS: dict[str, _OptionAction] = {
     "use_beaker_session": _DeprecatedAndDroppedAction(),
     "use_interactive": _DeprecatedAndDroppedAction(),
     "session_type": _DeprecatedAndDroppedAction(),
@@ -213,7 +210,7 @@ OPTION_ACTIONS: Dict[str, _OptionAction] = {
 class OptionValue(NamedTuple):
     name: str
     value: Any
-    option: Dict[str, Any]
+    option: dict[str, Any]
 
 
 GALAXY_APP = App(
@@ -240,7 +237,7 @@ REPORTS_APP = App(
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: Optional[list[str]] = None) -> None:
     """Entry point for conversion process."""
     if argv is None:
         argv = sys.argv[1:]
@@ -316,7 +313,7 @@ def _find_config(args: Namespace, app_desc: App) -> str:
     return path
 
 
-def _find_app_options(app_desc: App, path: str) -> Dict[str, Any]:
+def _find_app_options(app_desc: App, path: str) -> dict[str, Any]:
     """Load app (as opposed to server) options from specified path.
 
     Supplied ``path`` may be either YAML or ini file.
@@ -330,7 +327,7 @@ def _find_app_options(app_desc: App, path: str) -> Dict[str, Any]:
     return app_items
 
 
-def _find_app_options_from_config_parser(p: NicerConfigParser) -> Dict[str, Any]:
+def _find_app_options_from_config_parser(p: NicerConfigParser) -> dict[str, Any]:
     if not p.has_section("app:main"):
         _warn(NO_APP_MAIN_MESSAGE)
         app_items = {}
@@ -363,7 +360,7 @@ def _validate(args: Namespace, app_desc: App) -> None:
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
 
-    def _clean(p: Tuple[str, ...], k: str, v: Any) -> bool:
+    def _clean(p: tuple[str, ...], k: str, v: Any) -> bool:
         return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias", "resolves_to"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
@@ -395,7 +392,7 @@ def _run_conversion(args: Namespace, app_desc: App) -> None:
 
     p = nice_config_parser(ini_config)
     app_items = _find_app_options_from_config_parser(p)
-    app_dict: Dict[str, OptionValue] = {}
+    app_dict: dict[str, OptionValue] = {}
     schema = app_desc.schema
     for key, value in app_items.items():
         if key in ["__file__", "here"]:
@@ -464,7 +461,7 @@ def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
             to_f.write(contents)
 
 
-def _order_load_path(path: str) -> Dict[str, Any]:
+def _order_load_path(path: str) -> dict[str, Any]:
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
@@ -482,7 +479,7 @@ def _write_sample_section(args: Namespace, f: StringIO, section_header: str, sch
         _write_option(args, f, key, option_value, as_comment=True)
 
 
-def _write_section(args: Namespace, f: StringIO, section_header: str, section_dict: Dict[str, OptionValue]) -> None:
+def _write_section(args: Namespace, f: StringIO, section_header: str, section_dict: dict[str, OptionValue]) -> None:
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
         _write_option(args, f, key, option_value)
@@ -509,7 +506,7 @@ def _write_option(args: Namespace, f: StringIO, key: str, option_value: OptionVa
     f.write(f"{lines_indented}\n\n")
 
 
-def _parse_option_value(option_value: OptionValue) -> Tuple[Dict[str, Any], Any]:
+def _parse_option_value(option_value: OptionValue) -> tuple[dict[str, Any], Any]:
     option = option_value.option
     value = option_value.value
     # Hack to get nicer YAML values during conversion
@@ -526,7 +523,7 @@ def _warn(message: str) -> None:
     print(f"WARNING: {message}")
 
 
-def _get_option_desc(option: Dict[str, Any]) -> str:
+def _get_option_desc(option: dict[str, Any]) -> str:
     desc = option["desc"]
     if parent_dir := option.get("path_resolves_to"):
         path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
@@ -534,7 +531,7 @@ def _get_option_desc(option: Dict[str, Any]) -> str:
     return desc
 
 
-ACTIONS: Dict[str, Callable] = {
+ACTIONS: dict[str, Callable] = {
     "convert": _run_conversion,
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,

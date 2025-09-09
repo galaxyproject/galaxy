@@ -118,7 +118,7 @@ export function monitorInit() {
     console.groupCollapsed("monitor init");
     console.log(
         "The following global properties are monitored because they were setup in the javascript source manually:",
-        monitoredProps
+        monitoredProps,
     );
     console.log("To toggle messages on/off, type toggleGlobalMonitor('Galaxy', true|false) into the console");
     console.log("You can set up any other variable by typing installMonitor('a window variable name')");

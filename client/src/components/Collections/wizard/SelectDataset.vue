@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { useTableSummary } from "@/components/Collections/tables";
@@ -41,6 +41,10 @@ function inputDialog() {
         allowUpload: false,
     });
 }
+
+onMounted(() => {
+    inputDialog();
+});
 
 watch(table, (newValue: string[][]) => {
     emit("onChange", table.value);

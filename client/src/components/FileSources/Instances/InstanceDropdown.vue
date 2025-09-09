@@ -18,7 +18,7 @@ const props = defineProps<Props>();
 const routeEdit = computed(() => `/file_source_instances/${props.fileSource.uuid}/edit`);
 const routeUpgrade = computed(() => `/file_source_instances/${props.fileSource.uuid}/upgrade`);
 const isUpgradable = computed(() =>
-    fileSourceTemplatesStore.canUpgrade(props.fileSource.template_id, props.fileSource.template_version)
+    fileSourceTemplatesStore.canUpgrade(props.fileSource.template_id, props.fileSource.template_version),
 );
 
 async function onRemove() {

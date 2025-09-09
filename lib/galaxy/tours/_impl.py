@@ -4,7 +4,6 @@ This module manages loading/etc of Galaxy interactive tours.
 
 import logging
 import os
-from typing import List
 
 import yaml
 from pydantic import parse_obj_as
@@ -78,7 +77,7 @@ def is_yaml(filename: str) -> bool:
     return False
 
 
-def tour_paths(target_path: StrPath) -> List[str]:
+def tour_paths(target_path: StrPath) -> list[str]:
     paths = []
     if os.path.isdir(target_path):
         for filename in os.listdir(target_path):

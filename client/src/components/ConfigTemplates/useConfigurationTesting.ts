@@ -41,7 +41,7 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     uuid: Ref<string | undefined>,
     testUrl: CreateTestUrl,
     createUrl: CreateUrl,
-    onCreate: (result: R) => unknown
+    onCreate: (result: R) => unknown,
 ) {
     const error = ref<string | null>(null);
     const { testRunning, testResults } = useConfigurationTesting();
@@ -162,7 +162,7 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
      * Callback to be called when the object store is updated.
      * By default, no action is taken.
      */
-    onUpdated: (result: R) => void = (__: R) => {}
+    onUpdated: (result: R) => void = (__: R) => {},
 ) {
     const { testRunning, testResults } = useConfigurationTesting();
     const showForceActionButton = ref<boolean>(false);
@@ -281,7 +281,7 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     template: Ref<T>,
     testUpdateUrl: TestUpdateUrl,
     updateUrl: UpdateUrl,
-    useRouting: InstanceRoutingComposableType
+    useRouting: InstanceRoutingComposableType,
 ) {
     const { goToIndex } = useRouting();
 

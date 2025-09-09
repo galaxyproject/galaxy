@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import io
 import json
 import os
@@ -9,9 +10,7 @@ from tempfile import mkdtemp
 from typing import (
     Any,
     cast,
-    Dict,
     Optional,
-    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -201,11 +200,11 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
 
     def _setup_workflow_run(
         self,
-        workflow: Optional[Dict[str, Any]] = None,
+        workflow: Optional[dict[str, Any]] = None,
         inputs_by: str = "step_id",
         history_id: Optional[str] = None,
         workflow_id: Optional[str] = None,
-    ) -> Tuple[Dict[str, Any], str, str]:
+    ) -> tuple[dict[str, Any], str, str]:
         return self.workflow_populator.setup_workflow_run(workflow, inputs_by, history_id, workflow_id)
 
     def _ds_entry(self, history_content):
@@ -217,7 +216,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[Dict[str, Any], RunJobsSummary]:
+    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[dict[str, Any], RunJobsSummary]:
         return self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
 
     def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:
@@ -1193,6 +1192,8 @@ test_data:
         # do the raw re-import as a regular user we expect a 403 error.
         response = self.workflow_populator.create_workflow_response(downloaded_workflow)
         self._assert_status_code_is(response, 403)
+        response_dict = response.json()
+        assert response_dict["err_msg"] == "Only admin users can create tools dynamically."
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
@@ -1669,42 +1670,71 @@ steps:
     @skip_without_tool("cat1")
     def test_run_workflow_with_valid_url_hashes(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
-            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
-            deferred = False
-            hashes_1 = [{"hash_function": "MD5", "hash_value": "5ba48b6e5a7c4d4930fda256f411e55b"}]
-            hashes_2 = [{"hash_function": "MD5", "hash_value": "ad0f811416f7ed2deb9122007d649fb0"}]
-            inputs = {
-                "WorkflowInput1": {
-                    "src": "url",
-                    "url": f"base64://{input_b64_1}",
-                    "ext": "txt",
-                    "deferred": deferred,
-                    "hashes": hashes_1,
-                },
-                "WorkflowInput2": {
-                    "src": "url",
-                    "url": f"base64://{input_b64_2}",
-                    "ext": "txt",
-                    "deferred": deferred,
-                    "hashes": hashes_2,
-                },
-            }
-            workflow_request = dict(
-                history=f"hist_id={history_id}",
+            self.run_workflow_with_valid_hashes(history_id=history_id, content_1="1 2 3", content_2="4 5 6")
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_with_valid_url_hashes_cached(self):
+        with self.dataset_populator.test_history() as history_id:
+            content_1 = uuid4().hex
+            content_2 = uuid4().hex
+            invocation_1 = self.run_workflow_with_valid_hashes(
+                history_id=history_id, content_1=content_1, content_2=content_2, use_cached_job=False
             )
-            workflow_request["inputs"] = json.dumps(inputs)
-            workflow_request["inputs_by"] = "name"
-            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-                workflow_id, request=workflow_request
-            ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
-            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-            for job in invocation_jobs:
-                assert job["state"] == "ok"
+            invocation_2 = self.run_workflow_with_valid_hashes(
+                history_id=history_id, content_1=content_1, content_2=content_2, use_cached_job=True
+            )
+            invocation_1_jobs = self.dataset_populator.invocation_jobs(invocation_1)
+            for job in invocation_1_jobs:
+                job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+                assert job_details["state"] == "ok"
+                assert not job_details["copied_from_job_id"]
+            invocation_2_jobs = self.dataset_populator.invocation_jobs(invocation_2)
+            for job in invocation_2_jobs:
+                job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+                assert job_details["state"] == "ok"
+                assert job_details["copied_from_job_id"]
+
+    def run_workflow_with_valid_hashes(
+        self, history_id: str, content_1: str, content_2: str, use_cached_job: bool = False
+    ):
+        workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        input_b64_1 = base64.b64encode(content_1.encode()).decode("utf-8")
+        input_b64_2 = base64.b64encode(content_2.encode()).decode("utf-8")
+        deferred = False
+        hashes_1 = [{"hash_function": "MD5", "hash_value": hashlib.md5(content_1.encode()).hexdigest()}]
+        hashes_2 = [{"hash_function": "MD5", "hash_value": hashlib.md5(content_2.encode()).hexdigest()}]
+        inputs = {
+            "WorkflowInput1": {
+                "src": "url",
+                "url": f"base64://{input_b64_1}",
+                "ext": "txt",
+                "deferred": deferred,
+                "hashes": hashes_1,
+            },
+            "WorkflowInput2": {
+                "src": "url",
+                "url": f"base64://{input_b64_2}",
+                "ext": "txt",
+                "deferred": deferred,
+                "hashes": hashes_2,
+            },
+        }
+        workflow_request = dict(
+            history=f"hist_id={history_id}",
+            use_cached_job=use_cached_job,
+        )
+        workflow_request["inputs"] = json.dumps(inputs)
+        workflow_request["inputs_by"] = "name"
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
+            "id"
+        ]
+        invocation = self._invocation_details(workflow_id, invocation_id)
+        assert invocation["state"] == "scheduled", invocation
+        invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+        for job in invocation_jobs:
+            assert job["state"] == "ok"
+        return invocation_id
 
     @skip_without_tool("cat1")
     def test_run_workflow_with_invalid_url_hashes(self):
@@ -7773,6 +7803,38 @@ input:
         workflow_object = self._download_workflow(workflow_id, style="editor")
         put_response = self._update_workflow(workflow_id, workflow_object)
         assert put_response.status_code == 200
+
+    @skip_without_tool("multi_data_optional")
+    def test_invalid_collection_input_rejected(self):
+        valid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: "list"
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(valid_collection_type)})
+        assert r.status_code == 200
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: "listx"
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
+        assert "Invalid collection type:" in r.json()["err_msg"]
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):

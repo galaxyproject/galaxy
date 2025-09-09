@@ -1,27 +1,14 @@
 import abc
+import builtins
 import os
 import time
-from dataclasses import (
-    dataclass,
-    field,
-)
 from enum import Enum
 from typing import (
     Any,
     ClassVar,
-    List,
+    Generic,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TYPE_CHECKING,
-    Union,
-)
-
-from typing_extensions import (
-    Literal,
-    NotRequired,
-    TypedDict,
 )
 
 from galaxy.exceptions import (
@@ -29,15 +16,27 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
-from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    COMMON_FILE_SOURCE_PROP_NAMES,
+    Entry,
+    EntryData,
+    FilesSourceOptions,
+    FilesSourceProperties,
+    FilesSourceRuntimeContext,
+    FilesSourceTemplateContext,
+    resolve_file_source_template,
+    TResolvedConfig,
+    TTemplateConfig,
+    UserData,
+)
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
 )
-from galaxy.util.template import fill_template
 
-DEFAULT_SCHEME = "gxfiles"
-DEFAULT_WRITABLE = False
 DEFAULT_PAGE_LIMIT = 25
 
 if TYPE_CHECKING:
@@ -81,108 +80,19 @@ class PluginKind(str, Enum):
     """
 
 
-class FileSourceSupports(TypedDict):
-    """Feature support flags for a file source plugin"""
-
-    # Indicates whether the file source supports pagination for listing files
-    pagination: NotRequired[bool]
-    # Indicates whether the file source supports server-side search for listing files
-    search: NotRequired[bool]
-    # Indicates whether the file source supports server-side sorting for listing files
-    sorting: NotRequired[bool]
-
-
-class FilesSourceProperties(TypedDict):
-    """Initial set of properties used to initialize a filesource.
-
-    Filesources can extend this typed dict to define any additional
-    filesource specific properties.
-    """
-
-    file_sources_config: NotRequired[FileSourcePluginsConfig]
-    id: NotRequired[str]
-    label: NotRequired[str]
-    doc: NotRequired[Optional[str]]
-    scheme: NotRequired[str]
-    writable: NotRequired[bool]
-    requires_roles: NotRequired[Optional[str]]
-    requires_groups: NotRequired[Optional[str]]
-    disable_templating: NotRequired[Optional[bool]]
-    # API helper values
-    uri_root: NotRequired[str]
-    type: NotRequired[str]
-    browsable: NotRequired[bool]
-    url: NotRequired[Optional[str]]
-    supports: NotRequired[FileSourceSupports]
-
-
-@dataclass
-class FilesSourceOptions:
-    """Options to control behavior of file source operations, such as realize_to, write_from and list."""
-
-    # Indicates access to the FS operation with intent to write.
-    # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
-    # so those should be skipped while browsing with writeable=True.
-    writeable: Optional[bool] = False
-
-    # Property overrides for values initially configured through the constructor. For example
-    # the HTTPFilesSource passes in additional http_headers through these properties, which
-    # are merged with constructor defined http_headers. The interpretation of these properties
-    # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
-
-
-class EntryData(TypedDict):
-    """Provides data to create a new entry in a file source."""
-
-    name: str
-    # May contain additional properties depending on the file source
-
-
-class Entry(TypedDict):
-    """Represents the result of creating a new entry in a file source."""
-
-    name: str
-    uri: str
-    # May contain additional properties depending on the file source
-    external_link: NotRequired[str]
-
-
-class RemoteEntry(TypedDict):
-    name: str
-    uri: str
-    path: str
-
-
-TDirectoryClass = TypedDict("TDirectoryClass", {"class": Literal["Directory"]})
-TFileClass = TypedDict("TFileClass", {"class": Literal["File"]})
-
-
-class RemoteDirectory(RemoteEntry, TDirectoryClass):
-    pass
-
-
-class RemoteFile(RemoteEntry, TFileClass):
-    size: int
-    ctime: str
-
-
-AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
-
-
 class SingleFileSource(metaclass=abc.ABCMeta):
     """
     Represents a protocol handler for a single remote file that can be read by or written to by Galaxy.
     A remote file source can typically handle a url like `https://galaxyproject.org/myfile.txt` or
     `drs://myserver/123456`. The filesource abstraction allows programmatic control over the specific source
-    to access, injection of credentials and access control. Filesources are typically listed and configured
+    to access, injection of credentials and access control. File sources are typically listed and configured
     through `file_sources_conf.yml` or programmatically, as required.
 
-    Filesources can be contextualized with a `user_context`, which contains information related to the current
+    File sources can be contextualized with a `user_context`, which contains information related to the current
     user attempting to access that filesource such as the username, preferences, roles etc., which can then
     be used by the filesource to make authorization decisions or inject credentials.
 
-    Filesources are loaded through Galaxy's plugin system in `galaxy.util.plugin_config`.
+    File sources are loaded through Galaxy's plugin system in `galaxy.util.plugin_config`.
     """
 
     @abc.abstractmethod
@@ -273,7 +183,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         returned unchanged."""
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -288,7 +198,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
 class SupportsBrowsing(metaclass=abc.ABCMeta):
     """An interface indicating that this filesource is browsable.
 
-    Browsable filesources will typically have a root uri from which to start browsing.
+    Browsable file sources will typically have a root uri from which to start browsing.
     e.g. In an s3 bucket, the root uri may be gxfiles://bucket1/
 
     They will also have a list method to list files in a specific path within the filesource.
@@ -309,12 +219,12 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
-    """Represents a combined interface for single or browsable filesources.
+    """Represents a combined interface for single or browsable file sources.
     The `get_browsable` method can be used to determine whether the filesource is browsable and
     implements the `SupportsBrowsing` interface.
     """
@@ -326,16 +236,61 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
-def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
+def file_source_type_is_browsable(target_type: type["BaseFilesSource"]) -> bool:
     # Check whether the list method has been overridden
     return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
 
 
-class BaseFilesSource(FilesSource):
+class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
+    """A base class for file sources that can resolve a template configuration to a specific configuration.
+
+    Implementations of this class should define 2 configuration models and assign them to the
+    `template_config_class` and `resolved_config_class` class variables.
+
+    The `template_config_class` should be a subclass of `BaseFileSourceTemplateConfiguration` and
+    the `resolved_config_class` should be a subclass of `BaseFileSourceConfiguration`.
+
+    Assuming a File Source named `MyFileSource`:
+    - `MyFileSourceTemplateConfiguration`: A template configuration class that defines the template variables.
+    - `MyFileSourceConfiguration`: A resolved configuration class that defines the final configuration after template resolution.
+    """
+
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
+
+    # Implementations must define these classes with their specific configuration models.
+    template_config_class: type[TTemplateConfig]
+    resolved_config_class: type[TResolvedConfig]
+
+    def __init__(self, template_config: TTemplateConfig):
+        self.template_config = template_config
+        self._parse_common_props(self.template_config)
+
+    @classmethod
+    def build_template_config(cls, **kwargs) -> TTemplateConfig:
+        """Build a template configuration instance from the provided keyword arguments."""
+        cls._ensure_config_models_defined()
+        return cls.template_config_class(**kwargs)
+
+    @classmethod
+    def _ensure_config_models_defined(cls):
+        try:
+            _ = cls.resolved_config_class
+        except AttributeError:
+            raise NotImplementedError(
+                f"Resolved configuration class not defined for plugin type '{cls.plugin_type}'. "
+                "Subclasses of BaseFilesSource must set 'resolved_config_class'."
+            )
+
+        try:
+            _ = cls.template_config_class
+        except AttributeError:
+            raise NotImplementedError(
+                f"Template configuration class not defined for plugin type '{cls.plugin_type}'. "
+                "Subclasses of BaseFilesSource must set 'template_config_class'."
+            )
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -388,26 +343,20 @@ class BaseFilesSource(FilesSource):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
-    def _parse_common_config_opts(self, kwd: FilesSourceProperties):
-        self._file_sources_config = kwd.pop("file_sources_config")
-        self.id = kwd.pop("id")
-        self.label = kwd.pop("label", self.id)
-        self.doc = kwd.pop("doc", None)
-        self.scheme = kwd.pop("scheme", DEFAULT_SCHEME)
-        self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
-        self.requires_roles = kwd.pop("requires_roles", None)
-        self.requires_groups = kwd.pop("requires_groups", None)
-        self.disable_templating = kwd.pop("disable_templating", False)
+    def _parse_common_props(self, config: FilesSourceProperties):
+        self._file_sources_config = config.file_sources_config
+        self.id = config.id
+        self.label = config.label or f"Unlabeled {self.plugin_kind.value.capitalize()} File Source [{self.id}]"
+        self.doc = config.doc
+        self.scheme = config.scheme
+        self.writable = config.writable
+        self.requires_roles = config.requires_roles
+        self.requires_groups = config.requires_groups
+        self.disable_templating = config.disable_templating
         self._validate_security_rules()
-        # If coming from to_dict, strip API helper values
-        kwd.pop("uri_root", None)
-        kwd.pop("type", None)
-        kwd.pop("browsable", None)
-        kwd.pop("supports", None)
-        return kwd
 
-    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
-        rval: FilesSourceProperties = {
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
+        rval: dict[str, Any] = {
             "id": self.id,
             "type": self.plugin_type,
             "label": self.label,
@@ -429,10 +378,24 @@ class BaseFilesSource(FilesSource):
         if self.get_url() is not None:
             rval["url"] = self.get_url()
         if for_serialization:
-            rval.update(self._serialization_props(user_context=user_context))
+            context = self._get_runtime_context(user_context=user_context)
+            serialized_config = self._serialize_config(context.config)
+            rval.update(serialized_config)
         return rval
 
-    def to_dict_time(self, ctime):
+    def _serialize_config(self, config: TResolvedConfig) -> dict[str, Any]:
+        """Serialize properties needed to recover plugin configuration.
+        Used in to_dict method if for_serialization is True.
+
+        Override this method in subclasses to customize serialization of the configuration.
+        """
+        return config.model_dump(
+            exclude_unset=True,
+            exclude_none=True,
+            exclude=COMMON_FILE_SOURCE_PROP_NAMES,
+        )
+
+    def to_dict_time(self, ctime) -> Optional[str]:
         if ctime is None:
             return None
         elif isinstance(ctime, (int, float)):
@@ -440,11 +403,50 @@ class BaseFilesSource(FilesSource):
         else:
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
-    @abc.abstractmethod
-    def _serialization_props(self, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
-        """Serialize properties needed to recover plugin configuration.
-        Used in to_dict method if for_serialization is True.
+    def _get_runtime_context(
+        self,
+        opts: Optional[FilesSourceOptions] = None,
+        user_context: "OptionalUserContext" = None,
+    ) -> FilesSourceRuntimeContext:
         """
+        Get the runtime context for this file source, resolving the template configuration
+        with the provided user context and options.
+        """
+        user_data = UserData(context=user_context)
+
+        # Update template config with extra properties if provided
+        if opts and opts.extra_props:
+            extra_props = opts.extra_props.model_dump(exclude_unset=True)
+            self.template_config = self.template_config.model_copy(update=extra_props)
+
+        resolved_config = self._evaluate_template_config(user_data)
+        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config)
+
+    def _apply_defaults_to_template(
+        self, defaults: dict[str, Any], template_config: TTemplateConfig
+    ) -> TTemplateConfig:
+        """
+        Merge default values into the template config.
+
+        Values set in the template config take precedence over defaults.
+        Returns a new template config instance with all required fields set.
+        """
+        template_updates = template_config.model_dump(exclude_none=True, exclude_defaults=True)
+        defaults.update(template_updates)
+        return self.template_config_class(**defaults)
+
+    def _evaluate_template_config(self, user_data: Optional[UserData] = None) -> TResolvedConfig:
+        if self.disable_templating:
+            # Convert template config to resolved config without template evaluation
+            config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
+            return self.resolved_config_class(**config_dict)
+
+        runtime_context = FilesSourceTemplateContext(
+            user_data=user_data,
+            environment=dict(os.environ),
+            file_sources_config=self._file_sources_config,
+        )
+        return resolve_file_source_template(self.template_config, self.resolved_config_class, runtime_context)
 
     def list(
         self,
@@ -456,7 +458,7 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
@@ -470,19 +472,21 @@ class BaseFilesSource(FilesSource):
             if offset is not None and offset < 0:
                 raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
-        return self._list(path, recursive, user_context, opts, limit, offset, query)
+        resolved_config = self._get_runtime_context(opts, user_context)
+        write_intent = opts.write_intent if opts else False
+        return self._list(resolved_config, path, recursive, write_intent, limit, offset, query)
 
     def _list(
         self,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
         path="/",
         recursive=False,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        write_intent: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[builtins.list[AnyRemoteEntry], int]:
         raise NotImplementedError()
 
     def create_entry(
@@ -493,14 +497,10 @@ class BaseFilesSource(FilesSource):
     ) -> Entry:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        return self._create_entry(entry_data, user_context, opts)
+        context = self._get_runtime_context(opts, user_context)
+        return self._create_entry(entry_data, context)
 
-    def _create_entry(
-        self,
-        entry_data: EntryData,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-    ) -> Entry:
+    def _create_entry(self, entry_data: EntryData, context: FilesSourceRuntimeContext[TResolvedConfig]) -> Entry:
         """Create a new entry (directory) in the file source.
 
         The file source must be writeable.
@@ -517,15 +517,15 @@ class BaseFilesSource(FilesSource):
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        return self._write_from(target_path, native_path, user_context=user_context, opts=opts) or target_path
+        resolved_config = self._get_runtime_context(opts, user_context)
+        return self._write_from(target_path, native_path, resolved_config) or target_path
 
     @abc.abstractmethod
     def _write_from(
         self,
         target_path: str,
         native_path: str,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
     ) -> Optional[str]:
         pass
 
@@ -537,15 +537,15 @@ class BaseFilesSource(FilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ):
         self._check_user_access(user_context)
-        self._realize_to(source_path, native_path, user_context, opts=opts)
+        resolved_config = self._get_runtime_context(opts, user_context)
+        self._realize_to(source_path, native_path, resolved_config)
 
     @abc.abstractmethod
     def _realize_to(
         self,
         source_path: str,
         native_path: str,
-        user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        context: FilesSourceRuntimeContext[TResolvedConfig],
     ):
         pass
 
@@ -562,27 +562,6 @@ class BaseFilesSource(FilesSource):
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
-    def _evaluate_prop(self, prop_val: Any, user_context: "OptionalUserContext"):
-        rval = prop_val
-
-        # just return if we've disabled templating for this plugin
-        if self.disable_templating:
-            return rval
-
-        if isinstance(prop_val, str) and "$" in prop_val:
-            template_context = dict(
-                user=user_context,
-                environ=os.environ,
-                config=self._file_sources_config,
-            )
-            rval = fill_template(prop_val, context=template_context, futurized=True)
-        elif isinstance(prop_val, dict):
-            rval = {key: self._evaluate_prop(childprop, user_context) for key, childprop in prop_val.items()}
-        elif isinstance(prop_val, list):
-            rval = [self._evaluate_prop(childprop, user_context) for childprop in prop_val]
-
-        return rval
-
     def _user_has_required_roles(self, user_context: "FileSourcesUserContext") -> bool:
         if self.requires_roles:
             return self._evaluate_security_rules(self.requires_roles, user_context.role_names)
@@ -593,7 +572,7 @@ class BaseFilesSource(FilesSource):
             return self._evaluate_security_rules(self.requires_groups, user_context.group_names)
         return True
 
-    def _evaluate_security_rules(self, rule_expression: str, user_credentials: Set[str]) -> bool:
+    def _evaluate_security_rules(self, rule_expression: str, user_credentials: set[str]) -> bool:
         token_evaluator = TokenContainedEvaluator(user_credentials)
         evaluator = BooleanExpressionEvaluator(token_evaluator)
         return evaluator.evaluate_expression(rule_expression)
@@ -624,3 +603,10 @@ def uri_join(*args: str) -> str:
 def slash_join(*args: str) -> str:
     # https://codereview.stackexchange.com/questions/175421/joining-strings-to-form-a-url
     return "/".join(arg.strip("/") for arg in args)
+
+
+class DefaultBaseFilesSource(BaseFilesSource[BaseFileSourceTemplateConfiguration, BaseFileSourceConfiguration]):
+    """A default implementation of BaseFilesSource that uses the base configuration models without any custom configuration."""
+
+    template_config_class = BaseFileSourceTemplateConfiguration
+    resolved_config_class = BaseFileSourceConfiguration

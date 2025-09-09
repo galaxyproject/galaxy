@@ -26,7 +26,7 @@ import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
 
-import type { DataOption } from "./types";
+import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
@@ -60,6 +60,7 @@ const props = withDefaults(
         tag?: string;
         userDefinedTitle?: string;
         workflowRun?: boolean;
+        extendedCollectionType?: ExtendedCollectionType;
     }>(),
     {
         loading: false,
@@ -72,7 +73,8 @@ const props = withDefaults(
         flavor: undefined,
         tag: undefined,
         userDefinedTitle: undefined,
-    }
+        extendedCollectionType: () => ({}) as ExtendedCollectionType,
+    },
 );
 
 const eventStore = useEventStore();
@@ -136,7 +138,7 @@ const currentValue = computed({
         if (props.value) {
             for (const v of props.value.values) {
                 const foundEntry = formattedOptions.value.find(
-                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
+                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src,
                 );
                 if (foundEntry && foundEntry.value) {
                     value.push(foundEntry.value);
@@ -263,7 +265,7 @@ const formSelectionRef = ref<InstanceType<typeof FormSelection> | null>(null);
 const usingSimpleSelect = computed(
     () =>
         !formSelectionRef.value ||
-        ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false)
+        ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false),
 );
 
 /**
@@ -295,7 +297,7 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
 
             // Identify matching variant
             const variantIndex = variant.value.findIndex(
-                (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
+                (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType,
             );
 
             // Determine batch mode
@@ -363,8 +365,8 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
                 values
                     .map(getExtensionsForItem)
                     .flat()
-                    .filter((v) => v !== null && v !== undefined)
-            )
+                    .filter((v) => v !== null && v !== undefined),
+            ),
         ) as string[];
 
         if (!canAcceptDatatype(extensions)) {
@@ -463,7 +465,7 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         const itemCollectionType = v.collection_type;
         if (!props.collectionTypes.includes(itemCollectionType as CollectionType)) {
             const mapOverType = props.collectionTypes.find((collectionType) =>
-                itemCollectionType.endsWith(collectionType)
+                itemCollectionType.endsWith(collectionType),
             );
             if (!mapOverType) {
                 return null;
@@ -507,7 +509,7 @@ function onBrowse() {
                 format: null,
                 library,
                 multiple,
-            }
+            },
         );
     }
 }
@@ -526,7 +528,7 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
         datatypes = itemDatatypes;
     }
     const incompatibleItem = datatypes.find(
-        (extension) => !datatypesMapper.value?.isSubTypeOfAny(extension, props.extensions)
+        (extension) => !datatypesMapper.value?.isSubTypeOfAny(extension, props.extensions),
     );
     if (incompatibleItem) {
         return false;
@@ -568,8 +570,8 @@ function getElementAttributes(element: HistoryOrCollectionItem): {
             "src" in element && typeof element.src === "string"
                 ? element.src
                 : historyContentType === "dataset_collection"
-                ? SOURCE.COLLECTION
-                : SOURCE.DATASET;
+                  ? SOURCE.COLLECTION
+                  : SOURCE.DATASET;
     }
     return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
 }
@@ -610,8 +612,8 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
                 $emit(
                     "alert",
                     `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
-                        props.collectionTypes
-                    )} type dataset collection parameter.`
+                        props.collectionTypes,
+                    )} type dataset collection parameter.`,
                 );
                 return false;
             }
@@ -628,15 +630,19 @@ const collectionTypesWithBuilders: CollectionBuilderType[] = [
     "list:list",
     "list:list:paired",
     "list:paired_or_unpaired",
+    "sample_sheet",
+    "sample_sheet:paired",
+    "sample_sheet:paired_or_unpaired",
+    "sample_sheet:record",
 ];
 
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType: string) =>
-    (collectionTypesWithBuilders as string[]).includes(collectionType)
+    (collectionTypesWithBuilders as string[]).includes(collectionType),
 );
 
 const currentCollectionTypeTab = ref<CollectionBuilderType | undefined>(
-    effectiveCollectionTypes?.[0] as CollectionBuilderType | undefined
+    effectiveCollectionTypes?.[0] as CollectionBuilderType | undefined,
 );
 
 /**
@@ -780,7 +786,7 @@ watch(
     () => [props.options, currentLinked.value, currentVariant.value],
     () => {
         $emit("input", createValue(currentValue.value));
-    }
+    },
 );
 
 const formatsVisible = ref(false);
@@ -932,6 +938,7 @@ const noOptionsWarningMessage = computed(() => {
             :can-browse="canBrowse"
             :extensions="props.extensions"
             :collection-type="currentCollectionTypeTab"
+            :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"

@@ -10,10 +10,7 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -405,7 +402,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         offset: Optional[int],
         limit: Optional[int],
         order: Optional[StoredItemOrderBy],
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         stmt = (
             select(
                 HistoryDatasetAssociation.id,
@@ -437,11 +434,11 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         ]
         return discarded
 
-    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+    def cleanup_items(self, user: model.User, item_ids: set[int]) -> StorageItemsCleanupResult:
         success_item_count = 0
         total_free_bytes = 0
-        errors: List[StorageItemCleanupError] = []
-        dataset_ids_to_remove: Set[int] = set()
+        errors: list[StorageItemCleanupError] = []
+        dataset_ids_to_remove: set[int] = set()
 
         for hda_id in item_ids:
             try:
@@ -469,7 +466,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             errors=errors,
         )
 
-    def _request_full_delete_all(self, dataset_ids_to_remove: Set[int], user: Optional[model.User]):
+    def _request_full_delete_all(self, dataset_ids_to_remove: set[int], user: Optional[model.User]):
         use_tasks = self.dataset_manager.app.config.enable_celery_tasks
         request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
         if use_tasks:
@@ -576,26 +573,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             ["accessible", "id", "name", "history_id", "hid", "history_content_type", "state", "deleted", "visible"],
         )
 
-    def serialize_copied_from_ldda_id(self, item, key, **context):
-        """
-        Serialize an id attribute of `item`.
-        """
-        if item.copied_from_library_dataset_dataset_association is not None:
-            return self.app.security.encode_id(item.copied_from_library_dataset_dataset_association.id)
-        return None
-
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
             "type_id": self.serialize_type_id,
-            "copied_from_ldda_id": self.serialize_copied_from_ldda_id,
+            "copied_from_ldda_id": lambda item, key, **context: self.serialize_id(
+                item, "copied_from_library_dataset_dataset_association_id", **context
+            ),
             "history_id": self.serialize_id,
             # remapped
             "misc_info": self._remap_from("info"),
@@ -651,7 +642,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing new-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if hda.state == HistoryDatasetAssociation.states.OK and not hda.deleted:
             for display_app in hda.get_display_applications(trans).values():
                 app_links = []
@@ -673,7 +664,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing old-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if (
             self.app.config.enable_old_display_applications
             and hda.state == HistoryDatasetAssociation.states.OK

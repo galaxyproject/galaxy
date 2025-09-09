@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
-import { useHistoryStore } from "@/stores/historyStore";
+import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
 
 import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
 
@@ -15,7 +16,7 @@ interface HistoryDatasetPermissionsProps {
 }
 const props = defineProps<HistoryDatasetPermissionsProps>();
 
-const historyStore = useHistoryStore();
+const route = useRoute();
 
 const loading = ref(true);
 
@@ -43,17 +44,7 @@ const formConfig = computed(() => {
     };
 });
 
-const breadcrumbItems = computed(() => {
-    return [
-        { title: "Histories", to: "/histories/list" },
-        {
-            title: historyStore.getHistoryNameById(props.historyId),
-            to: `/histories/view?id=${props.historyId}`,
-            superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
-        },
-        { title: "Dataset Permissions" },
-    ];
-});
+const { breadcrumbItems } = useHistoryBreadCrumbsToForProps(props, "Dataset Permissions");
 
 async function change(value: unknown) {
     const managePermissionValue: number = managePermissions.value[0] as number;
@@ -79,7 +70,7 @@ const { onSuccess, onError } = useCallbacks(init);
 
 <template>
     <div>
-        <BreadcrumbHeading :items="breadcrumbItems" />
+        <BreadcrumbHeading v-if="route.path === '/histories/permissions'" :items="breadcrumbItems" />
 
         <DatasetPermissionsForm
             :loading="loading"

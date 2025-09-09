@@ -3,10 +3,10 @@ API operations on FormDefinition objects.
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import Path
 from sqlalchemy import select
-from typing_extensions import Annotated
 
 from galaxy import web
 from galaxy.forms.forms import form_factory

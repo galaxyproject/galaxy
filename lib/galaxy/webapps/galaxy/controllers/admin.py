@@ -1,5 +1,4 @@
 import logging
-from typing import Set
 
 from sqlalchemy import (
     false,
@@ -399,7 +398,7 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def data_types_list(self, trans, **kwd) -> DatatypesEntryT:
         datatypes = []
-        keys: Set[str] = set()
+        keys: set[str] = set()
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
         for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dt: dt.get("extension")):

@@ -76,7 +76,7 @@ describe("FormElementLabel.vue", () => {
             },
             {
                 default: "<div class='slot-content'>Hello Slot</div>",
-            }
+            },
         );
         expect(wrapper.find(".slot-content").exists()).toBe(true);
         expect(wrapper.text()).toContain("Hello Slot");

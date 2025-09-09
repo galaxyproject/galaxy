@@ -63,7 +63,7 @@ jest.spyOn(console, "debug").mockImplementation(
         if (msg != NO_COLLECTION_TYPE_INFORMATION_MESSAGE) {
             console.debug(msg);
         }
-    })
+    }),
 );
 
 function setupAdvanced() {
@@ -176,7 +176,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
@@ -191,7 +191,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "paired", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
@@ -286,7 +286,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
@@ -337,7 +337,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
@@ -385,7 +385,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output."
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.",
         );
     });
     it("rejects list:paired_or_unpaired -> paired connection", () => {
@@ -394,7 +394,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output."
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.",
         );
     });
     it("rejects list:paired_or_unpaired -> list connection", () => {
@@ -460,7 +460,7 @@ describe("canAccept", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
         expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
-            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
         );
     });
     it("rejects paired_or_unpaired input on multi-data input", () => {
@@ -468,7 +468,7 @@ describe("canAccept", () => {
         const pairedOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
         expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
-            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
         );
     });
     it("rejects list:paired input on multi-data input", () => {
@@ -476,7 +476,7 @@ describe("canAccept", () => {
         const pairedOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
         expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
-            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
         );
     });
     it("rejects list:paired_or_unpaired input on multi-data input", () => {
@@ -484,7 +484,7 @@ describe("canAccept", () => {
         const pairedOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
         expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
-            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
         );
     });
     it("rejects collections on multi data inputs if non-collection already connected", () => {
@@ -494,7 +494,7 @@ describe("canAccept", () => {
         multiDataIn.connect(dataOut);
         expect(multiDataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach collections to data parameters with individual data inputs already attached."
+            "Cannot attach collections to data parameters with individual data inputs already attached.",
         );
     });
     it("maps list:list over multi data input", () => {
@@ -511,7 +511,7 @@ describe("canAccept", () => {
         multiDataIn.connect(collectionOut);
         expect(multiDataIn.canAccept(otherCollectionOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(otherCollectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
     });
     it("rejects data -> collection connection", () => {
@@ -525,7 +525,7 @@ describe("canAccept", () => {
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         expect(dataIn.canAccept(optionalDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(optionalDataOut).reason).toBe(
-            "Cannot connect an optional output to a non-optional input"
+            "Cannot connect an optional output to a non-optional input",
         );
     });
     it("rejects parameter to data connection", () => {
@@ -547,7 +547,7 @@ describe("canAccept", () => {
         const textOutputParam = terminals["text parameter input"]!["output"] as OutputParameterTerminal;
         expect(integerInputParam.canAccept(textOutputParam).canAccept).toBe(false);
         expect(integerInputParam.canAccept(textOutputParam).reason).toBe(
-            "Cannot attach a text parameter to a integer input"
+            "Cannot attach a text parameter to a integer input",
         );
     });
     it("rejects optional integer to required parameter connection", () => {
@@ -557,7 +557,7 @@ describe("canAccept", () => {
         ] as OutputParameterTerminal;
         expect(integerInputParam.canAccept(optionalIntegerOutputParam).canAccept).toBe(false);
         expect(integerInputParam.canAccept(optionalIntegerOutputParam).reason).toBe(
-            "Cannot attach an optional output to a required parameter"
+            "Cannot attach an optional output to a required parameter",
         );
     });
     it("rejects data to parameter connection", () => {
@@ -576,7 +576,7 @@ describe("canAccept", () => {
         // now we can't connect a collection out to the data input of simple data
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
+            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry.",
         );
     });
     it("rejects increasing map over to list:list if data is mapped over a list input", () => {
@@ -595,7 +595,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(listListOut).canAccept).toBe(false);
         expect(dataIn.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("rejects attaching non-collection outputs to mapped-over inputs", () => {
@@ -617,7 +617,7 @@ describe("canAccept", () => {
         expect(dataIn.localMapOver.isCollection).toBe(true);
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping.",
         );
         dataInTwo.disconnect(dataOut);
         // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
@@ -645,14 +645,14 @@ describe("canAccept", () => {
         const listListOut = terminals["list:list input"]?.["output"] as OutputCollectionTerminal;
         expect(multiSimpleInputTwo.canAccept(listListOut).canAccept).toBe(false);
         expect(multiSimpleInputTwo.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
         // disconnect, map over should be maintained
         multiSimpleInputOne.disconnect(collectionOut);
         expect(multiSimpleInputOne.localMapOver.isCollection).toBe(true);
         expect(multiSimpleInputOne.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(multiSimpleInputOne.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping.",
         );
     });
     // TODO: test mapOver reset when constraint removed
@@ -721,7 +721,7 @@ describe("canAccept", () => {
         // but cannot accept on the constrained input
         expect(listOneIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(listOneIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("tracks transitive map over", () => {
@@ -739,7 +739,7 @@ describe("canAccept", () => {
         expect(otherDataInTwo.canAccept(collectionOut).canAccept).toBe(true);
         expect(otherDataInTwo.canAccept(listListListOut).canAccept).toBe(false);
         expect(otherDataInTwo.canAccept(listListListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
     });
     it("tracks transitive map over through collection inputs", () => {
@@ -770,7 +770,7 @@ describe("canAccept", () => {
         // Can't connect list:list because output acts like "list""
         expect(collectionIn.canAccept(listListOut).canAccept).toBe(false);
         expect(collectionIn.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("rejects connections to input collection constrained by other input", () => {
@@ -786,7 +786,7 @@ describe("canAccept", () => {
         // Can't connect list as output acts like "list:list"
         expect(listTwoIn.canAccept(listListListOut).canAccept).toBe(false);
         expect(listTwoIn.canAccept(listListListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
     });
     it("disconnects invalid input terminals", () => {
@@ -802,7 +802,7 @@ describe("canAccept", () => {
         // disconnects and connection will be invalid
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(dataOut).reason).toBe(
-            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt].",
         );
     });
     it("disconnects invalid output terminals", () => {
@@ -815,7 +815,7 @@ describe("canAccept", () => {
         // disconnects and connection will be invalid
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(dataOut).reason).toBe(
-            "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1]."
+            "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1].",
         );
     });
     it("resolves collection type source", () => {
@@ -829,7 +829,7 @@ describe("canAccept", () => {
         const listPairedOutput = terminals["list:paired input"]?.["output"] as OutputCollectionTerminal;
         filterFailedInput.connect(listPairedOutput);
         expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
-            new CollectionTypeDescription("list:paired")
+            new CollectionTypeDescription("list:paired"),
         );
     });
 });
@@ -871,7 +871,7 @@ describe("Input terminal", () => {
         const canAccept = firstInputTerminal.canAccept(dataInputOutputTerminal);
         expect(canAccept.canAccept).toBe(false);
         expect(canAccept.reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         // bypasses _inputFilled check
         expect(firstInputTerminal.attachable(dataInputOutputTerminal).canAccept).toBe(true);
@@ -907,16 +907,16 @@ describe("producesAcceptableDatatype", () => {
     });
     it("rejects connections for unknown output datatypes", () => {
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).canAccept).toBe(
-            false
+            false,
         );
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).reason).toBe(
-            "Effective output data type(s) [i am not an extension] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator."
+            "Effective output data type(s) [i am not an extension] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.",
         );
     });
     it("rejects incompatible datatypes", () => {
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).canAccept).toBe(false);
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).reason).toBe(
-            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt].",
         );
     });
 });

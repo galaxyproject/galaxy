@@ -99,7 +99,7 @@ watch(
             });
             downloadTracker.trackDownloadRequest(props.monitorRequest);
         }
-    }
+    },
 );
 
 watch(
@@ -110,7 +110,7 @@ watch(
         if (completed && props.enableAutoDownload && downloadUrl.value && props.taskId) {
             window.open(downloadUrl.value, "_blank");
         }
-    }
+    },
 );
 
 function dismissAlert() {

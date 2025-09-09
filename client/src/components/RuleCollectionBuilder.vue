@@ -91,6 +91,15 @@
                             </label>
                         </RuleComponent>
                         <RuleComponent
+                            rule-type="add_column_from_sample_sheet_index"
+                            :display-rule-type.sync="displayRuleType"
+                            @saveRule="handleRuleSave">
+                            <label>
+                                {{ l("Value") }}
+                                <input v-model="addColumnSampleSheetIndexValue" type="number" min="0" />
+                            </label>
+                        </RuleComponent>
+                        <RuleComponent
                             rule-type="add_column_group_tag_value"
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
@@ -451,6 +460,10 @@
                                             rule-type="add_column_metadata"
                                             @addNewRule="addNewRule" />
                                         <RuleTargetComponent
+                                            v-if="sampleSheetMetadataAvailable"
+                                            rule-type="add_column_from_sample_sheet_index"
+                                            @addNewRule="addNewRule" />
+                                        <RuleTargetComponent
                                             v-if="hasTagsMetadata"
                                             rule-type="add_column_group_tag_value"
                                             @addNewRule="addNewRule" />
@@ -563,14 +576,14 @@
         <RuleModalHeader v-if="importType == 'datasets'">
             {{
                 l(
-                    "Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete."
+                    "Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete.",
                 )
             }}
         </RuleModalHeader>
         <RuleModalHeader v-else-if="importType == 'collections'">
             {{
                 l(
-                    "Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete."
+                    "Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete.",
                 )
             }}
         </RuleModalHeader>
@@ -595,6 +608,8 @@
 
 <script>
 import HotTable from "@handsontable/vue";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
+import { fetch, fetchJobErrorMessage } from "api/tools";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -614,7 +629,6 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
@@ -674,7 +688,7 @@ export default {
             required: false,
             default: "datasets",
         },
-        // required if elementsType is "datasets" - hook into Backbone code for creating
+        // required if elementsType is "datasets" - hook into backbone code for creating
         // collections from HDAs, etc...
         creationFn: {
             required: false,
@@ -774,7 +788,7 @@ export default {
                     {
                         type: "add_column_metadata",
                         value: "name",
-                    }
+                    },
                 );
             } else if (this.elementsType == "library_datasets") {
                 rules.push({
@@ -806,13 +820,13 @@ export default {
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers",
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
             titleInvertFilterMatches: _l("Remove rows matching supplied value"),
             titleViewSource: _l(
-                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
+                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data",
             ),
             titleSourceCancel: _l("Stop editing rules and dismiss changes"),
             titleSourceReset: _l("Reset text area to current set of rules"),
@@ -833,6 +847,7 @@ export default {
             addColumnRegexAllowUnmatched: false,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnSampleSheetIndexValue: 0,
             addColumnGroupTagValueValue: "",
             addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
@@ -1024,6 +1039,19 @@ export default {
             }
             return asDict;
         },
+        sampleSheetMetadataAvailable() {
+            if (this.elementsType !== "collection_contents") {
+                return false;
+            }
+            if (this.initialElements !== null) {
+                const collectionType = this.initialElements.collection_type;
+                const collectionTypeRanks = collectionType.split(":");
+                return collectionTypeRanks[0] == "sample_sheet";
+            } else {
+                // input type unknown right? just have to allow it
+                return true;
+            }
+        },
         metadataOptions() {
             let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
@@ -1032,7 +1060,11 @@ export default {
                 let flatishList = false;
                 if (this.initialElements) {
                     collectionType = this.initialElements.collection_type;
-                    if (collectionType == "list:paired" || collectionType == "list") {
+                    if (
+                        collectionType == "list:paired" ||
+                        collectionType == "list" ||
+                        collectionType.startsWith("sample_sheet")
+                    ) {
                         flatishList = true;
                     }
                 } else {
@@ -1042,7 +1074,7 @@ export default {
                 const collectionTypeRanks = collectionType.split(":");
                 for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
-                    if (collectionTypeRank == "list") {
+                    if (collectionTypeRank == "list" || collectionTypeRank == "sample_sheet") {
                         if (flatishList) {
                             metadataOptions["identifier" + index] = _l("List Identifier");
                             metadataOptions["index" + index] = _l("List Index");
@@ -1204,7 +1236,7 @@ export default {
                 if (collection) {
                     const obj = this.populateElementsFromCollectionDescription(
                         collection.elements,
-                        collection.collection_type
+                        collection.collection_type,
                     );
                     data = obj.data;
                     sources = obj.sources;
@@ -1430,7 +1462,7 @@ export default {
             this.waitOnJob(response);
         },
         waitOnJob(response) {
-            const jobId = response.data.jobs[0].id;
+            const jobId = response;
             const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
@@ -1457,14 +1489,8 @@ export default {
         },
         doFullJobCheck(jobId) {
             const handleJobShow = (jobResponse) => {
-                const stderr = jobResponse.data.stderr;
-                if (stderr) {
-                    let errorMessage = "An error was encountered while running your upload job. ";
-                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
-                        errorMessage +=
-                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
-                    }
-                    errorMessage += "Upload job completed with standard error: " + stderr;
+                const errorMessage = fetchJobErrorMessage(jobResponse.data);
+                if (errorMessage) {
                     this.errorMessage = errorMessage;
                 }
             };
@@ -1582,14 +1608,12 @@ export default {
                 }
 
                 if (this.state !== "error") {
-                    axios
-                        .post(`${getAppRoot()}api/tools/fetch`, {
-                            history_id: historyId,
-                            targets: targets,
-                            auto_decompress: true,
-                        })
-                        .then(this.refreshAndWait)
-                        .catch(this.renderFetchError);
+                    const fetchPayload = {
+                        history_id: historyId,
+                        targets: targets,
+                        auto_decompress: true,
+                    };
+                    fetch(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
                 }
             }
         },
@@ -1757,7 +1781,7 @@ export default {
                 (identifier) => {
                     return { name: identifier, src: "new_collection" };
                 },
-                "element_identifiers"
+                "element_identifiers",
             );
             return elementsByCollectionName;
         },
@@ -1775,7 +1799,7 @@ export default {
                 (identifier) => {
                     return { name: identifier };
                 },
-                "elements"
+                "elements",
             );
 
             return elementsByCollectionName;
@@ -1794,7 +1818,13 @@ export default {
 
             return datasets;
         },
-        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_, parentIndices_) {
+        populateElementsFromCollectionDescription(
+            elements,
+            collectionType,
+            parentIdentifiers_,
+            parentIndices_,
+            parentColumns_,
+        ) {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             const parentIndices = parentIndices_ ? parentIndices_ : [];
             let data = [];
@@ -1805,6 +1835,10 @@ export default {
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
                 const indices = parentIndices.concat([index]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                let columns = parentColumns_;
+                if (!columns && collectionType.startsWith("sample_sheet")) {
+                    columns = element.columns ? element.columns : [];
+                }
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
@@ -1814,6 +1848,7 @@ export default {
                         indices: indices,
                         dataset: elementObject,
                         tags: elementObject.tags,
+                        columns: columns,
                     };
                     sources.push(source);
                 } else {
@@ -1822,7 +1857,8 @@ export default {
                         elementObject.elements,
                         restCollectionType,
                         identifiers,
-                        indices
+                        indices,
+                        columns,
                     );
                     const elementData = elementObj.data;
                     const elementSources = elementObj.sources;

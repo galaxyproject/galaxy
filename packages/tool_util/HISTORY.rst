@@ -10,6 +10,20 @@ History
 
 
 -------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix restricting user defined tool input datasets extensions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20545 <https://github.com/galaxyproject/galaxy/pull/20545>`_
+* Don't fail volume mount construction for tools without tool directory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20593 <https://github.com/galaxyproject/galaxy/pull/20593>`_
+* Input linter: add missing attribute to `sort_by` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20693 <https://github.com/galaxyproject/galaxy/pull/20693>`_
+* Fix ``test_base_image_for_targets`` mulled test to use mzmine by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20713 <https://github.com/galaxyproject/galaxy/pull/20713>`_
+
+-------------------
 25.0.1 (2025-06-20)
 -------------------
 

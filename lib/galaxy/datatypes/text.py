@@ -11,7 +11,6 @@ import tempfile
 from typing import (
     IO,
     Optional,
-    Tuple,
 )
 
 import yaml
@@ -197,7 +196,7 @@ class Ipynb(Json):
             try:
                 with open(file_prefix.filename) as f:
                     ipynb = json.load(f)
-                if ipynb.get("nbformat", False) is not False and ipynb.get("metadata", False):
+                if ipynb.get("nbformat", False) is not False and "metadata" in ipynb:
                     return True
                 else:
                     return False
@@ -229,7 +228,7 @@ class Ipynb(Json):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         **kwd,
-    ) -> Tuple[IO, Headers]:
+    ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:

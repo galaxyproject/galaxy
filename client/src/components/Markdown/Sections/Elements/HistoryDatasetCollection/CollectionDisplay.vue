@@ -106,7 +106,7 @@ const getContent = async () => {
 watch(
     () => props.collectionId,
     () => getContent(),
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

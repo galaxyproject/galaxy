@@ -17,7 +17,7 @@ import { AxisAlignedBoundingBox } from "../modules/geometry";
 export function useViewportBoundingBox(
     bounds: UseElementBoundingReturn,
     zoom: Ref<number>,
-    pan: Ref<{ x: number; y: number }>
+    pan: Ref<{ x: number; y: number }>,
 ) {
     const { throttle } = useAnimationFrameThrottle(100);
 
@@ -63,7 +63,7 @@ export function useViewportBoundingBox(
             throttle(() => {
                 updateViewportBoundingBox();
             });
-        }
+        },
     );
 
     return { viewportBoundingBox, updateViewportBoundingBox, viewportBaseBoundingBox, updateViewportBaseBoundingBox };

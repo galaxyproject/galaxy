@@ -35,7 +35,7 @@ const filesSources = useFileSources();
 
 interface FilesDialogProps {
     /** Callback function to be called passing the results when selection is complete */
-    callback?: (files: any) => void;
+    callback?: (files: SelectionItem | SelectionItem[]) => void;
     /** Options to filter the file sources */
     filterOptions?: FilterFileSourcesOptions;
     /** Decide wether to keep the underlying modal static or dynamic */
@@ -106,7 +106,7 @@ const fields = computed(() => {
 const fileMode = computed(() => props.mode == "file");
 
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
+    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot()),
 );
 
 const canCreateNewFileSource = computed(() => {
@@ -388,6 +388,7 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
+        entry: entry,
     };
     return result;
 }

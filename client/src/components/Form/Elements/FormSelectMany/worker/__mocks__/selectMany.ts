@@ -24,7 +24,7 @@ export const useSelectMany: typeof UseSelectMany = (options) => {
             moreSelected.value = result.moreSelected;
             moreUnselected.value = result.moreUnselected;
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     return {

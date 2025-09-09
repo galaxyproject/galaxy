@@ -1,10 +1,7 @@
 import abc
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -44,10 +41,10 @@ class WorkRequestContext(ProvidesHistoryContext):
     ):
         self._app = app
         self.__user = user
-        self.__user_current_roles: Optional[List[Role]] = None
+        self.__user_current_roles: Optional[list[Role]] = None
         self.__history = history
         self._url_builder = url_builder
-        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[str, ...], Any] = {}
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 

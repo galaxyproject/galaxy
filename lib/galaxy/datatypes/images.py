@@ -5,14 +5,12 @@ Image classes
 import base64
 import json
 import logging
+import math
 import struct
+from collections.abc import Iterator
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -79,6 +77,14 @@ class Image(data.Data):
     MetadataElement(
         name="dtype",
         desc="Data type of the image pixels or voxels",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="num_unique_values",
+        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
         readonly=True,
         visible=True,
         optional=True,
@@ -212,7 +218,7 @@ class Png(Image):
             reader = png.Reader(filename=dataset.get_file_name())
             width, height, pixels, metadata = reader.asDirect()
 
-            unique_values: List[Any] = []
+            unique_values: list[Any] = []
             for row in pixels:
                 values = np.array(row, dtype="uint8")
                 unique_values = list(np.unique(unique_values + list(values)))
@@ -253,7 +259,7 @@ class Tiff(Image):
                 offsets = [page.offset for page in tif.pages]
 
                 # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
-                metadata: Dict[str, List[Any]] = {
+                metadata: dict[str, list[Any]] = {
                     key: []
                     for key in [
                         "axes",
@@ -263,6 +269,7 @@ class Tiff(Image):
                         "channels",
                         "depth",
                         "frames",
+                        "num_unique_values",
                     ]
                 }
 
@@ -279,6 +286,9 @@ class Tiff(Image):
                     metadata["channels"].append(Tiff._get_axis_size(series.shape, axes, "C"))
                     metadata["depth"].append(Tiff._get_axis_size(series.shape, axes, "Z"))
                     metadata["frames"].append(Tiff._get_axis_size(series.shape, axes, "T"))
+
+                    # Determine the metadata values that require reading the image data
+                    metadata["num_unique_values"].append(Tiff._get_num_unique_values(series))
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
@@ -312,7 +322,7 @@ class Tiff(Image):
             pass
 
     @staticmethod
-    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
+    def _get_axis_size(shape: tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
 
@@ -321,7 +331,7 @@ class Tiff(Image):
         """
         Determines the number of unique values in a TIFF series of pages.
         """
-        unique_values: List[Any] = []
+        unique_values: list[Any] = []
         try:
             for page in series.pages:
 
@@ -356,7 +366,8 @@ class Tiff(Image):
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
             else:
-                yield from np.array_split(arr_flat, mmap_chunk_size)
+                chunks_count = math.ceil(len(arr_flat) / mmap_chunk_size)
+                yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
     def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:

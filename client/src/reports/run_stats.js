@@ -10,7 +10,7 @@ function date_by_subtracting_days(date, days) {
         date.getHours(),
         date.getMinutes(),
         date.getSeconds(),
-        date.getMilliseconds()
+        date.getMilliseconds(),
     );
 }
 
@@ -22,7 +22,7 @@ function date_by_subtracting_hours(date, hours) {
         date.getHours() - hours,
         date.getMinutes(),
         date.getSeconds(),
-        date.getMilliseconds()
+        date.getMilliseconds(),
     );
 }
 

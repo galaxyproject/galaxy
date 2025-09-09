@@ -1,3 +1,6 @@
+import pytest
+
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections.type_description import CollectionTypeDescriptionFactory
 
 factory = CollectionTypeDescriptionFactory(None)
@@ -41,3 +44,21 @@ def test_paired_or_unpaired_handling():
     assert mixed_list_type_description.can_match_type("list:paired_or_unpaired")
     assert mixed_list_type_description.can_match_type("list:paired")
     assert mixed_list_type_description.can_match_type("list")
+
+
+def test_validate():
+    c_t("list").validate()
+    c_t("list:paired").validate()
+    c_t("list:list:list:list:paired:list").validate()
+    c_t("paired:paired").validate()
+    c_t("list:paired_or_unpaired").validate()
+    c_t("paired_or_unpaired:paired").validate()
+
+    with pytest.raises(RequestParameterInvalidException):
+        c_t("foo").validate()
+
+    with pytest.raises(RequestParameterInvalidException):
+        c_t("listx").validate()
+
+    with pytest.raises(RequestParameterInvalidException):
+        c_t("list:list:paired_or").validate()

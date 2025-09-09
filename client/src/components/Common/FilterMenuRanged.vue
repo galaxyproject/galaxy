@@ -56,28 +56,28 @@ watch(
     () => localValueGt.value,
     (newFilter) => {
         emit("change", localNameGt.value, newFilter);
-    }
+    },
 );
 
 watch(
     () => localValueLt.value,
     (newFilter) => {
         emit("change", localNameLt.value, newFilter);
-    }
+    },
 );
 
 watch(
     () => valueGt.value,
     (newFilter) => {
         localValueGt.value = newFilter;
-    }
+    },
 );
 
 watch(
     () => valueLt.value,
     (newFilter) => {
         localValueLt.value = newFilter;
-    }
+    },
 );
 </script>
 

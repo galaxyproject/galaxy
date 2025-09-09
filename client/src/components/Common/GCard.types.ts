@@ -62,6 +62,8 @@ interface StylingProps {
     class?: string;
     /** FontAwesome icon to display */
     icon?: IconDefinition;
+    /** Whether to spin the icon */
+    spin?: boolean;
     /** Bootstrap component size */
     size?: BootstrapSize;
     /** Bootstrap variant for styling */
@@ -93,7 +95,10 @@ export interface TitleIcon {
 }
 
 /** Card badge for displaying status or metadata */
-export interface CardBadge extends BaseCardElement, NavigationProps, Pick<StylingProps, "variant" | "icon" | "class"> {
+export interface CardBadge
+    extends BaseCardElement,
+        NavigationProps,
+        Pick<StylingProps, "variant" | "icon" | "class" | "spin"> {
     /** Badge display type */
     type?: CardBadgeType;
 }

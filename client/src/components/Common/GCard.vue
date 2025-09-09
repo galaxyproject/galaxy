@@ -216,7 +216,7 @@ const emit = defineEmits<{
     /** Emitted when card is clicked
      * @event click
      */
-    (e: "click"): void;
+    (e: "click", event: MouseEvent | KeyboardEvent): void;
 
     /** Emitted when bookmark button is clicked
      * @event bookmark
@@ -252,6 +252,7 @@ const emit = defineEmits<{
      * @event tagsUpdate
      */
     (e: "tagsUpdate", tags: string[]): void;
+    (e: "keydown", event: KeyboardEvent): void;
 }>();
 
 const bookmarkLoading = ref(false);
@@ -279,6 +280,14 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
  * Number of lines before title truncation (undefined = no truncation)
  */
 const allowedTitleLines = computed(() => props.titleNLines);
+
+function onKeyDown(event: KeyboardEvent) {
+    if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        emit("click", event);
+    } else if (props.clickable) {
+        emit("keydown", event);
+    }
+}
 </script>
 
 <template>
@@ -292,11 +301,12 @@ const allowedTitleLines = computed(() => props.titleNLines);
             { 'g-card-selected': selected },
             { 'g-card-current': current },
             { 'g-card-published': published },
+            { 'g-card-clickable': props.clickable },
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click') : undefined"
-        @keydown.enter="props.clickable ? emit('click') : undefined">
+        @click="props.clickable ? emit('click', $event) : undefined"
+        @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
@@ -405,7 +415,7 @@ const allowedTitleLines = computed(() => props.titleNLines);
                                         :id="
                                             getElementId(
                                                 props.id,
-                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add'
+                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add',
                                             )
                                         "
                                         v-b-tooltip.hover.noninteractive
@@ -489,7 +499,11 @@ const allowedTitleLines = computed(() => props.titleNLines);
                                                 :to="badge.to"
                                                 :href="badge.href"
                                                 @click.stop="badge.handler">
-                                                <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                                <FontAwesomeIcon
+                                                    v-if="badge.icon"
+                                                    :icon="badge.icon"
+                                                    fixed-width
+                                                    :spin="badge.spin" />
                                                 {{ localize(badge.label) }}
                                             </BBadge>
                                         </template>
@@ -685,6 +699,19 @@ const allowedTitleLines = computed(() => props.titleNLines);
 
     &.g-card-published .g-card-content {
         border-left: 0.25rem solid $brand-primary;
+    }
+
+    &.g-card-clickable {
+        cursor: pointer;
+
+        &:hover,
+        &:focus-within {
+            .g-card-content {
+                border-color: $brand-secondary;
+                box-shadow: 0 0 0 0.5px;
+                background-color: lighten($brand-light, 0.5);
+            }
+        }
     }
 
     .g-card-rename {

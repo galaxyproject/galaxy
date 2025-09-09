@@ -1,7 +1,7 @@
 import logging
 from typing import (
     Any,
-    Dict,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -21,12 +21,15 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     DynamicTool,
+    User,
     UserDynamicToolAssociation,
 )
 from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util.toolbox import AbstractToolBox
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -47,9 +50,29 @@ if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
 
 
-def tool_payload_to_tool(app, tool_dict: Dict[str, Any]) -> Optional[Tool]:
+def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
     tool_source = YamlToolSource(tool_dict)
     tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=None)
+    return tool
+
+
+class ToolRunReference(NamedTuple):
+    tool_id: Optional[str]
+    tool_uuid: Optional[str]
+    tool_version: Optional[str]
+
+
+def get_tool_from_trans(trans: ProvidesUserContext, tool_ref: ToolRunReference) -> Tool:
+    return get_tool_from_toolbox(trans.app.toolbox, tool_ref, trans.user)
+
+
+def get_tool_from_toolbox(toolbox: AbstractToolBox, tool_ref: ToolRunReference, user: Optional[User]) -> Tool:
+    tool = toolbox.get_tool(
+        tool_id=tool_ref.tool_id, tool_uuid=tool_ref.tool_uuid, tool_version=tool_ref.tool_version, user=user
+    )
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
     return tool
 
 
@@ -77,7 +100,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             return self.get_tool_by_uuid(id_or_uuid)
 
     def get_tool_by_uuid(self, uuid: Optional[Union[UUID, str]]):
-        stmt = select(DynamicTool).where(DynamicTool.uuid == uuid)
+        stmt = select(DynamicTool).where(DynamicTool.uuid == uuid, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
     def get_tool_by_tool_id(self, tool_id):

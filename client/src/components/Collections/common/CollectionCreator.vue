@@ -108,14 +108,14 @@ watch(
     () => localHideSourceItems.value,
     () => {
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
-    }
+    },
 );
 
 watch(
     () => props.collectionName,
     () => {
         name.value = props.collectionName;
-    }
+    },
 );
 </script>
 

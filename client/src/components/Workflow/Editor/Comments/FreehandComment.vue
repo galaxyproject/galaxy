@@ -97,7 +97,9 @@ function onClick() {
 
     &.multi-selected {
         border-radius: 0.25rem;
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 </style>

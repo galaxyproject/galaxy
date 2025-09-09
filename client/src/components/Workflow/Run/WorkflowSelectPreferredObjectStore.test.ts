@@ -34,14 +34,14 @@ describe("WorkflowSelectPreferredObjectStore.vue", () => {
         expect(els.length).toBe(3);
 
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_card({ object_store_id: "__null__" }).selector
+            PREFERENCES.object_store_selection.option_card({ object_store_id: "__null__" }).selector,
         );
 
         expect(galaxyDefaultOption.exists()).toBeTruthy();
 
         const objectStoreOptionButton = wrapper.find(
             ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "object_store_1" })
-                .selector
+                .selector,
         );
 
         expect(objectStoreOptionButton.exists()).toBeTruthy();

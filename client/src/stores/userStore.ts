@@ -34,7 +34,7 @@ export const useUserStore = defineStore("userStore", () => {
     const currentListViewPreferences = useUserLocalStorageFromHashId<UserListViewPreferences>(
         "user-store-list-view-preferences",
         {},
-        hashedUserId
+        hashedUserId,
     );
 
     const hasSeenUploadHelp = useUserLocalStorageFromHashId("user-store-seen-upload-help", false, hashedUserId);

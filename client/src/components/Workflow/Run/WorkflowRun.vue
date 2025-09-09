@@ -64,9 +64,13 @@ const workflowModel: any = ref(null);
 const owner = ref<string>();
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
-const editorLink = computed(
-    () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
-);
+const editorLink = computed(() => {
+    const queryArgs = {
+        [props.instance ? "workflow_id" : "id"]: props.workflowId,
+        ...(props.version && { version: props.version }),
+    };
+    return router.resolve({ path: "/workflows/edit", query: queryArgs }).href;
+});
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
 const isOwner = computed(() => userStore.matchesCurrentUsername(owner.value));
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
@@ -196,7 +200,7 @@ watch(
         if (invocations.value.length === 0) {
             loadRun();
         }
-    }
+    },
 );
 
 defineExpose({

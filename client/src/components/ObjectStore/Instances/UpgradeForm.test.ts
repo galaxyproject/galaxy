@@ -119,7 +119,7 @@ describe("UpgradeForm", () => {
             }),
             http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response(200).json(INSTANCE);
-            })
+            }),
         );
 
         await flushPromises();
@@ -146,7 +146,7 @@ describe("UpgradeForm", () => {
             }),
             http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response("4XX").json({ err_msg: "problem upgrading", err_code: 400 }, { status: 400 });
-            })
+            }),
         );
         await flushPromises();
         const submitElement = wrapper.find("#submit");

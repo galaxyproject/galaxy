@@ -2,7 +2,7 @@ import json
 import logging
 from time import strftime
 from typing import (
-    List,
+    Annotated,
     Optional,
 )
 
@@ -14,7 +14,6 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
 )
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -423,7 +422,7 @@ class FastAPIToolShedRepositories:
         changeset: Optional[str] = ChangesetQueryParam,
         deleted: Optional[bool] = DeletedQueryParam,
         uninstalled: Optional[bool] = UninstalledQueryParam,
-    ) -> List[InstalledToolShedRepository]:
+    ) -> list[InstalledToolShedRepository]:
         request = InstalledToolShedRepositoryIndexRequest(
             name=name,
             owner=owner,

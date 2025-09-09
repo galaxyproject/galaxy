@@ -29,10 +29,12 @@ const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistent
 interface Props {
     datasetId: string;
     tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
+    displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: "preview",
+    displayOnly: false,
 });
 
 const iframeLoading = ref(true);
@@ -49,13 +51,13 @@ const isLoading = computed(() => {
 });
 
 const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
+    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
 );
 const isAutoDownloadType = computed(
-    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext)
+    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
 );
 const preferredVisualization = computed(
-    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
@@ -83,14 +85,14 @@ watch(
             isDatatypeLoading.value = false;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
     <div v-else class="dataset-view d-flex flex-column h-100">
-        <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
+        <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
                     h1
@@ -100,11 +102,15 @@ watch(
                     class="flex-grow-1"
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
-                    <span class="dataset-hid">{{ dataset?.hid }}:</span>
-                    <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
-                    <span class="dataset-state-header">
-                        <DatasetState :dataset-id="datasetId" />
-                    </span>
+                    <div class="dataset-header-content">
+                        <div class="dataset-title-row">
+                            <span class="dataset-hid">{{ dataset?.hid }}:</span>
+                            <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
+                        </div>
+                        <span class="dataset-state-header">
+                            <DatasetState :dataset-id="datasetId" />
+                        </span>
+                    </div>
                 </Heading>
             </div>
             <transition v-if="dataset" name="header">
@@ -132,7 +138,7 @@ watch(
                 </div>
             </transition>
         </header>
-        <BNav pills class="my-2 p-2 bg-light border-bottom">
+        <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
                 title="View a preview of the dataset contents"
                 :active="tab === 'preview'"
@@ -277,23 +283,34 @@ watch(
     opacity: 0;
 }
 
-.dataset-hid,
-.dataset-state-header {
-    white-space: nowrap;
+.dataset-header-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.dataset-title-row {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .dataset-hid {
+    white-space: nowrap;
     margin-right: 0.25rem;
 }
 
 .dataset-name {
     word-break: break-word;
+    min-width: 0;
 }
 
 .dataset-state-header {
     font-size: $h5-font-size;
-    vertical-align: middle;
-    margin-left: 0.5rem;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .tab-content-panel {

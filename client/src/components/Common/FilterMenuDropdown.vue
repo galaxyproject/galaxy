@@ -44,13 +44,13 @@ watch(
     () => localValue.value,
     () => {
         emit("change", props.name, localValue.value);
-    }
+    },
 );
 watch(
     () => propValue.value,
     () => {
         localValue.value = propValue.value;
-    }
+    },
 );
 
 // datalist refs
@@ -88,7 +88,7 @@ async function loadQuotaUsages() {
         // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
         if (propValue.value && typeof propValue.value === "string") {
             localValue.value = quotaUsages.value.find(
-                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value
+                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
             );
         }
     } catch (e) {

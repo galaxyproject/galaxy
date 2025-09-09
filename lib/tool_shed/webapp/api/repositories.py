@@ -5,7 +5,6 @@ from io import StringIO
 from time import strftime
 from typing import (
     Callable,
-    Dict,
 )
 
 from webob.compat import cgi_FieldStorage
@@ -227,7 +226,7 @@ class RepositoriesController(BaseShedAPIController):
             return []
         return repository.installable_revisions(self.app)
 
-    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
+    def __get_value_mapper(self, trans) -> dict[str, Callable]:
         return get_value_mapper(self.app)
 
     @expose_api_raw_anonymous_and_sessionless

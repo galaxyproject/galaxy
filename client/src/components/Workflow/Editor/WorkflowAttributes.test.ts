@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
@@ -22,6 +22,8 @@ const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
 describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
+        suppressBootstrapVueWarnings();
+
         const pinia = createPinia();
         const localVue = getLocalVue(true);
 

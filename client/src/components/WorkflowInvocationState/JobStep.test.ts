@@ -46,17 +46,17 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
                     return response("4XX").json({ err_msg: "Job not found", err_code: 404 }, { status: 404 });
                 }
                 return response(200).json(summary);
-            })
+            }),
         );
         server.use(
             http.get("/api/invocations", ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
         server.use(
             http.get("/api/jobs/{job_id}/parameters_display", ({ response }) => {
                 return response(200).json(paramResponse as JobDisplayParametersSummary);
-            })
+            }),
         );
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
@@ -67,9 +67,9 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
                     HttpResponse.json({
                         id: dataset_id,
                         creating_job: `job-${dataset_id}`,
-                    })
+                    }),
                 );
-            })
+            }),
         );
 
         propsData = {

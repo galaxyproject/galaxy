@@ -70,7 +70,7 @@ function checkPageInBounds() {
 }
 
 const displayedBroadcast = computed(
-    () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification
+    () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification,
 );
 
 type Variant = BroadcastNotification["variant"];
@@ -107,7 +107,7 @@ watch(
     () => sortedBroadcasts.value,
     () => {
         checkPageInBounds();
-    }
+    },
 );
 
 function actionLinkBind(link: string) {

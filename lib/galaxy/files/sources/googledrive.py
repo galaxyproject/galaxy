@@ -1,26 +1,56 @@
 try:
-    from fs.googledrivefs import GoogleDriveFS
+    from fs.googledrivefs.googledrivefs import GoogleDriveFS
     from google.oauth2.credentials import Credentials
 except ImportError:
     GoogleDriveFS = None
 
-from typing import Optional
 
-from . import FilesSourceOptions
+from typing import (
+    Annotated,
+    Union,
+)
+
+from pydantic import (
+    AliasChoices,
+    Field,
+)
+
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
+AccessTokenField = Field(
+    ...,
+    validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
+)
 
-class GoogleDriveFilesSource(PyFilesystem2FilesSource):
+
+class GoogleDriveFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+
+
+class GoogleDriveFilesSourceConfiguration(BaseFileSourceConfiguration):
+    access_token: Annotated[str, AccessTokenField]
+
+
+class GoogleDriveFilesSource(
+    PyFilesystem2FilesSource[GoogleDriveFileSourceTemplateConfiguration, GoogleDriveFilesSourceConfiguration]
+):
     plugin_type = "googledrive"
     required_module = GoogleDriveFS
     required_package = "fs.googledrivefs"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        access_token = props.pop("oauth2_access_token")
-        if access_token:
-            props["token"] = access_token
-        credentials = Credentials(**props)
+    template_config_class = GoogleDriveFileSourceTemplateConfiguration
+    resolved_config_class = GoogleDriveFilesSourceConfiguration
+
+    def _open_fs(self, context: FilesSourceRuntimeContext[GoogleDriveFilesSourceConfiguration]):
+        if GoogleDriveFS is None:
+            raise self.required_package_exception
+        credentials = Credentials(token=context.config.access_token)
         handle = GoogleDriveFS(credentials)
         return handle
 

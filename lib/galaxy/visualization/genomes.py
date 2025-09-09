@@ -4,7 +4,6 @@ import re
 import sys
 from json import loads
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -204,7 +203,7 @@ class Genomes:
     def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
-        self.genomes: Dict[str, Genome] = {}
+        self.genomes: dict[str, Genome] = {}
         # Store internal versions of data tables for twobit and __dbkey__
         self._table_versions = {"twobit": None, "__dbkeys__": None}
         self.reload_genomes()

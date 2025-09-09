@@ -46,7 +46,7 @@ describe("ToLink.vue", () => {
         waitOnJob.mockReturnValue(
             new Promise((then_) => {
                 then = then_;
-            })
+            }),
         );
         await mountWithInitialExports([
             {

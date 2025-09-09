@@ -1,9 +1,6 @@
 import os
 import tempfile
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any
 
 import pytest
 
@@ -48,29 +45,32 @@ def test_posix():
     res = list_root(file_sources, "gxfiles://test1", recursive=False)
     file_a = find_file_a(res)
     assert file_a
-    assert file_a["uri"] == "gxfiles://test1/a"
-    assert file_a["name"] == "a"
+    assert file_a.uri == "gxfiles://test1/a"
+    assert file_a.name == "a"
 
     subdir1 = find(res, name="subdir1")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
 
     res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
 
     file_c = find(res, name="c")
     assert file_c, res
-    assert file_c["uri"] == "gxfiles://test1/subdir1/c"
+    assert file_c.uri == "gxfiles://test1/subdir1/c"
 
     res = list_root(file_sources, "gxfiles://test1", recursive=True)
     subdir1 = find(res, name="subdir1")
     subdir2 = find(res, name="subdir2")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
-    assert subdir2["class"] == "Directory"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
+    assert subdir2
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.class_ == "Directory"
 
 
 def test_posix_link_security():
@@ -159,6 +159,7 @@ def test_user_ftp_explicit_config():
         ftp_upload_purge=False,
     )
     plugin = {
+        "id": "_ftp",
         "type": "gxftp",
     }
     tmp, root = setup_root()
@@ -233,6 +234,7 @@ def test_import_dir_explicit_config():
         library_import_dir=root,
     )
     plugin = {
+        "id": "test-gximport",
         "type": "gximport",
     }
     file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
@@ -487,7 +489,7 @@ def _configured_file_sources_with_root(
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = FileSourcePluginsConfig(**config_kwd)
-    plugin: Dict[str, Any] = {
+    plugin: dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:

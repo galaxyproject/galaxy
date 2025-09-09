@@ -78,7 +78,7 @@ function pinRecent() {
     historyStore.pinnedHistories = [];
     Toast.info(
         "Showing the 4 most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
-        "History Multiview"
+        "History Multiview",
     );
 }
 

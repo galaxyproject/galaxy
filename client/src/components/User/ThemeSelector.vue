@@ -30,7 +30,7 @@ watch(
         if (!themes.includes(currentTheme.value)) {
             setCurrentTheme(themes[0]);
         }
-    }
+    },
 );
 </script>
 

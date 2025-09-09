@@ -7,8 +7,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
-from seletools.actions import drag_and_drop
 
+from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
@@ -27,6 +27,27 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+
+CHIPSEQ_COLUMNS = [
+    ColumnDefinition(
+        "Condition",
+        "The column is used to specify the specific experimental condition that each sample represents. There is no formal restriction on this column, but values should be kept short for readable reports.",
+        "Text",
+    ),
+    ColumnDefinition(
+        "Replicate",
+        "This column is used to specify a replicate number for the experiment.",
+        "Integer",
+        optional=True,
+        default_value="",
+    ),
+    ColumnDefinition(
+        "Control",
+        "If set, this should reference the element identifier corresponding to the control for this sample.",
+        "Element Identifier",
+        optional=True,
+    ),
+]
 
 
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
@@ -249,6 +270,45 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
+
+    @selenium_test
+    def test_collection_input_sample_sheet_chipseq_example(self):
+        editor = self.components.workflow_editor
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_new")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("chipseq example input")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+
+        self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
+
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_filled_in")
+        self.workflow_editor_click_save()
+
+        workflow = self._download_current_workflow()
+        tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
+        assert tool_state["collection_type"] == "sample_sheet:paired"
+        column_definitions = tool_state["column_definitions"]
+        assert len(column_definitions) == len(CHIPSEQ_COLUMNS)
+        condition = column_definitions[0]
+        assert condition["name"] == "Condition"
+        assert condition["description"] == CHIPSEQ_COLUMNS[0].description
+        assert condition["type"] == "string"
+        assert condition["optional"] is False
+
+        replicate = column_definitions[1]
+        assert replicate["name"] == "Replicate"
+        assert replicate["type"] == "int"
+        assert replicate["optional"] is True
+        assert replicate["default_value"] is None
+
+        control = column_definitions[2]
+        assert control["name"] == "Control"
+        assert control["type"] == "element_identifier"
+        assert control["optional"] is True
 
     @selenium_test
     def test_data_column_input_editing(self):
@@ -956,9 +1016,14 @@ steps:
         self.workflow_editor_add_steps(steps_to_insert)
         self.assert_connected("input1#output", "first_cat#input1")
         self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        assert len(workflow["steps"]) == 3
+
+    def _download_current_workflow(self):
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
         workflow_id = self.driver.current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
-        assert len(workflow["steps"]) == 3
+        return workflow
 
     @selenium_test
     def test_editor_create_conditional_step(self):
@@ -1558,19 +1623,6 @@ steps:
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def workflow_editor_connect(self, source, sink, screenshot_partial=None):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.find_element_by_selector(f"#{source_id}")
-        sink_element = self.find_element_by_selector(f"#{sink_id}")
-        ac = self.action_chains()
-        ac = ac.move_to_element(source_element).click_and_hold()
-        if screenshot_partial:
-            ac = ac.move_by_offset(10, 10)
-            ac.perform()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.screenshot(screenshot_partial)
-        drag_and_drop(self.driver, source_element, sink_element)
-
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
@@ -1591,29 +1643,6 @@ steps:
             self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
-
-    def workflow_editor_source_sink_terminal_ids(self, source, sink):
-        editor = self.components.workflow_editor
-
-        source_node_label, source_output = source.split("#", 1)
-        sink_node_label, sink_input = sink.split("#", 1)
-
-        source_node = editor.node._(label=source_node_label)
-        sink_node = editor.node._(label=sink_node_label)
-
-        source_node.wait_for_present()
-        sink_node.wait_for_present()
-
-        output_terminal = source_node.output_terminal(name=source_output)
-        input_terminal = sink_node.input_terminal(name=sink_input)
-
-        output_element = output_terminal.wait_for_present()
-        input_element = input_terminal.wait_for_present()
-
-        source_id = output_element.get_attribute("id").replace("|", r"\|")
-        sink_id = input_element.get_attribute("id").replace("|", r"\|")
-
-        return source_id, sink_id
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
@@ -1637,11 +1666,6 @@ steps:
         sink_node = editor.node._(label=sink_node_label)
         sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
         sink_mapping_icon.wait_for_absent_or_hidden()
-
-    def workflow_index_open_with_name(self, name):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.components.workflows.edit_button.wait_for_and_click()
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

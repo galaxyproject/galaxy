@@ -39,7 +39,7 @@ export class WorkflowRunModel {
                     expanded: i == 0 || isDataStep(step) || isParameterStep,
                     errors: step.messages,
                 },
-                step
+                step,
             );
             this.steps[i] = step;
             this.links[i] = [];

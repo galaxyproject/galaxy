@@ -57,7 +57,7 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
     function addOrUpdateObjectStore(objectStore: UserConcreteObjectStoreModel) {
         if (selectableObjectStores.value) {
             const index = selectableObjectStores.value.findIndex(
-                (store) => store.object_store_id === objectStore.object_store_id
+                (store) => store.object_store_id === objectStore.object_store_id,
             );
             if (index !== -1) {
                 set(selectableObjectStores.value, index, objectStore);

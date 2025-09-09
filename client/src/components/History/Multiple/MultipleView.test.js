@@ -46,7 +46,7 @@ describe("MultipleView", () => {
                     stats: { total_matches: 0 },
                     contents: [],
                 });
-            })
+            }),
         );
 
         const wrapper = mount(MultipleView, {

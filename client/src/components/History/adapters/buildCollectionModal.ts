@@ -26,7 +26,11 @@ export type CollectionBuilderType =
     | "rules"
     | "list:paired_or_unpaired"
     | "list:list"
-    | "list:list:paired";
+    | "list:list:paired"
+    | "sample_sheet"
+    | "sample_sheet:paired"
+    | "sample_sheet:paired_or_unpaired"
+    | "sample_sheet:record";
 
 interface HasName {
     name: string | null;
@@ -43,6 +47,7 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     "list:paired": "list of pairs",
     "list:paired_or_unpaired": "mixed list of paired and unpaired",
     paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
 };
 
 export type DatasetPair = GenericPair<HDASummary>;
@@ -52,7 +57,7 @@ export async function buildRuleCollectionModal(
     selectedContent: HistoryItemSummary[],
     historyId: string,
     fromRulesInput = false,
-    defaultHideSourceItems = true
+    defaultHideSourceItems = true,
 ) {
     // select legacy function
     const createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
@@ -77,7 +82,7 @@ const createBackboneContent = (historyId: string, selection: HistoryItemSummary[
             collection_type: CollectionType,
             name: string,
             hide_source_items: boolean,
-            options = {}
+            options = {},
         ) {
             const def = jQuery.Deferred();
             return def.resolve(null, {

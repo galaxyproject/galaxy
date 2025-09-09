@@ -59,14 +59,14 @@ watch(
     (newFilter) => {
         emit("change", props.name, newFilter);
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
     () => propValue.value,
     (newFilter) => {
         localValue.value = newFilter;
-    }
+    },
 );
 </script>
 

@@ -63,7 +63,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                     notifications.value,
                     data.notifications as UserNotification[],
                     "create_time",
-                    "desc"
+                    "desc",
                 );
                 broadcastsStore.updateBroadcasts(data.broadcasts);
             }

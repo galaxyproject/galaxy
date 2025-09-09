@@ -10,6 +10,21 @@ History
 
 
 -------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+============
+Enhancements
+============
+
+* add fasta.bz2 as auto_compressed type by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20496 <https://github.com/galaxyproject/galaxy/pull/20496>`_
+* Add datatype for LexicMap index by `@Smeds <https://github.com/Smeds>`_ in `#20586 <https://github.com/galaxyproject/galaxy/pull/20586>`_
+* Add mzMLb and MBI datatypes by `@chambm <https://github.com/chambm>`_ in `#20632 <https://github.com/galaxyproject/galaxy/pull/20632>`_
+* Pairtool updated format and sniffers by `@Smeds <https://github.com/Smeds>`_ in `#20634 <https://github.com/galaxyproject/galaxy/pull/20634>`_
+* Add support for M4A audio files by `@arash77 <https://github.com/arash77>`_ in `#20667 <https://github.com/galaxyproject/galaxy/pull/20667>`_
+
+-------------------
 25.0.1 (2025-06-20)
 -------------------
 

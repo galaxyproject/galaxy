@@ -8,8 +8,6 @@ projects (e.g. gxformat2).
 
 import re
 from typing import (
-    Dict,
-    List,
     Union,
 )
 
@@ -24,8 +22,8 @@ class DynamicArguments:
 
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
-SHARED_ARGUMENTS: List[str] = ["collapse"]
-VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
+SHARED_ARGUMENTS: list[str] = ["collapse"]
+VALID_ARGUMENTS: dict[str, Union[list[str], DynamicArguments]] = {
     "generate_galaxy_version": [],
     "generate_time": [],
     "history_dataset_as_image": ["history_dataset_id", "input", "invocation_id", "output", "path"],

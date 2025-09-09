@@ -18,7 +18,7 @@ const inverseCanvasTransform = computed(() =>
     new Transform()
         .translate([props.transform.x, props.transform.y])
         .scale([props.transform.k, props.transform.k])
-        .inverse()
+        .inverse(),
 );
 
 const zIndexLow = 0;
@@ -34,7 +34,7 @@ watch(
         } else {
             zIndex.value = zIndexHigh;
         }
-    }
+    },
 );
 
 toolbarStore.onInputCatcherEvent("pointerdown", () => {
@@ -75,7 +75,7 @@ watch(
                 position: lastPosition,
             });
         }
-    }
+    },
 );
 </script>
 

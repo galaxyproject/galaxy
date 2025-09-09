@@ -28,7 +28,7 @@ watch(
     () => {
         render();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

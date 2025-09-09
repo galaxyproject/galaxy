@@ -6,6 +6,6 @@ export function useSync<T>(source: MaybeRefOrGetter<T>, target: Ref<T>) {
     watch(
         () => toValue(source),
         (value) => (target.value = value),
-        { immediate: true }
+        { immediate: true },
     );
 }

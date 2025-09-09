@@ -22,7 +22,7 @@ const props = withDefaults(
         min: 0,
         max: Infinity,
         inner: false,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -53,14 +53,14 @@ useEmit(isDragging, emit, "dragging");
 const handlePosition = useClamp(
     ref(props.position),
     () => props.min,
-    () => props.max
+    () => props.max,
 );
 
 useEmit(handlePosition, emit, "positionChanged");
 
 watch(
     () => props.position,
-    () => (handlePosition.value = props.position)
+    () => (handlePosition.value = props.position),
 );
 
 const borderWidth = 6;
@@ -77,14 +77,14 @@ function updatePosition() {
 
 watch(
     () => draggablePosition.value,
-    () => throttle(updatePosition)
+    () => throttle(updatePosition),
 );
 
 const hoverDraggable = ref(false);
 
 const hoverDraggableDebounced = useDebounce(
     hoverDraggable,
-    computed(() => props.showDelay)
+    computed(() => props.showDelay),
 );
 
 const showHover = computed(() => (hoverDraggable.value && hoverDraggableDebounced.value) || isDragging.value);

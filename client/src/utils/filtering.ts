@@ -272,7 +272,7 @@ export default class Filtering<T> {
         validFilters: Record<string, ValidFilter<T>>,
         validAliases?: Array<[string, string]>,
         quoteStrings = true,
-        nameMatching = true
+        nameMatching = true,
     ) {
         this.validFilters = validFilters;
         this.validAliases = validAliases || defaultValidAliases;
@@ -532,7 +532,7 @@ export default class Filtering<T> {
                 }
 
                 const invalidValues = value.filter(
-                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T)
+                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T),
                 );
 
                 if (invalidValues.length > 0) {

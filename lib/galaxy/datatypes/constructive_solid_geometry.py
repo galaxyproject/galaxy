@@ -8,9 +8,7 @@ import abc
 import logging
 import re
 from typing import (
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -345,7 +343,7 @@ class Vtk:
                                 # FIELD FieldData 2
                                 processing_field_section = True
                                 num_fields = int(items[-1])
-                                fields_processed: List[str] = []
+                                fields_processed: list[str] = []
                             elif processing_field_section:
                                 if len(fields_processed) == num_fields:
                                     processing_field_section = False
@@ -396,7 +394,7 @@ class Vtk:
 
     def set_structure_metadata(
         self, line: str, dataset: DatasetProtocol, dataset_type: Optional[str]
-    ) -> Tuple[DatasetProtocol, Optional[str]]:
+    ) -> tuple[DatasetProtocol, Optional[str]]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.

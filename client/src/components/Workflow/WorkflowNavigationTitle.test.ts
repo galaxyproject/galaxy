@@ -71,7 +71,7 @@ const localVue = getLocalVue();
 async function mountWorkflowNavigationTitle(
     version: "run_form" | "invocation",
     ownsWorkflow = true,
-    unimportableWorkflow = false
+    unimportableWorkflow = false,
 ) {
     let workflowId: string;
     let invocation;
@@ -133,7 +133,7 @@ describe("WorkflowNavigationTitle renders", () => {
 
             const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
             expect(editButton.attributes("to")).toBe(
-                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
+                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`,
             );
         }
         await findEditButton("invocation");

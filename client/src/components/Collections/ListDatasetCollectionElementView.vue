@@ -40,7 +40,7 @@ watch(
     () => props.element.name,
     () => {
         elementName.value = props.element.name || "...";
-    }
+    },
 );
 </script>
 

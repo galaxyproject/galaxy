@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { components } from "@/api/schema";
@@ -13,6 +13,13 @@ import DatasetError from "./DatasetError.vue";
 const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
 
 const { server, http } = useServerMock();
 
@@ -38,6 +45,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     };
 
     server.use(
+        expectConfigurationRequest(http, {}),
         http.get("/api/datasets/{dataset_id}", ({ response }) => {
             // We need to use untyped here because this endpoint is not
             // described in the OpenAPI spec due to its complexity for now.
@@ -45,7 +53,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 HttpResponse.json({
                     id: DATASET_ID,
                     creating_job: "creating_job",
-                })
+                }),
             );
         }),
 
@@ -73,7 +81,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 has_duplicate_inputs: has_duplicate_inputs,
                 has_empty_inputs: has_empty_inputs,
             });
-        })
+        }),
     );
 
     const wrapper = mount(DatasetError as object, {
@@ -128,13 +136,13 @@ describe("DatasetError", () => {
                 return response(200).json({
                     messages: [["message"], ["success"]],
                 });
-            })
+            }),
         );
 
-        const FormAndSubmitButton = "#dataset-error-form";
+        const FormAndSubmitButton = "#email-report-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-        const submitButton = "#dataset-error-submit";
+        const submitButton = "#email-report-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
 
         await wrapper.find(submitButton).trigger("click");

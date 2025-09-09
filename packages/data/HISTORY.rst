@@ -10,6 +10,28 @@ History
 
 
 -------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Remove ``num_unique_values`` tiff metadata element by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20464 <https://github.com/galaxyproject/galaxy/pull/20464>`_
+* Propagate cached job output replacement to copies of outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20553 <https://github.com/galaxyproject/galaxy/pull/20553>`_
+* Fix deferred datasets in multiple dataset parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#20650 <https://github.com/galaxyproject/galaxy/pull/20650>`_
+* Add `num_unique_values` tiff metadata element, fixed by `@kostrykin <https://github.com/kostrykin>`_ in `#20669 <https://github.com/galaxyproject/galaxy/pull/20669>`_
+
+============
+Enhancements
+============
+
+* Improve workflow monitor loop times by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20522 <https://github.com/galaxyproject/galaxy/pull/20522>`_
+* Pairtool updated format and sniffers by `@Smeds <https://github.com/Smeds>`_ in `#20634 <https://github.com/galaxyproject/galaxy/pull/20634>`_
+* Add support for M4A audio files by `@arash77 <https://github.com/arash77>`_ in `#20667 <https://github.com/galaxyproject/galaxy/pull/20667>`_
+
+-------------------
 25.0.1 (2025-06-20)
 -------------------
 

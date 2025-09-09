@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 import VueRouter from "vue-router";
 
@@ -73,7 +73,7 @@ async function createWrapper(localVue, currentUserId, history) {
     server.use(
         http.get("/api/histories/{history_id}/contents", ({ response }) => {
             return response(200).json(history_contents_result);
-        })
+        }),
     );
 
     const router = new VueRouter();
@@ -98,6 +98,10 @@ async function createWrapper(localVue, currentUserId, history) {
 }
 
 describe("History center panel View", () => {
+    beforeEach(() => {
+        suppressLucideVue2Deprecation();
+    });
+
     function expectCorrectLayout(wrapper) {
         // HistoryFilters should exist in HistoryView
         expect(wrapper.find("[data-description='filter text input']").exists()).toBe(true);
@@ -199,7 +203,7 @@ describe("History center panel View", () => {
 
         // instead we have an alert
         expect(wrapper.find("[data-description='history messages']").text()).toBe(
-            "History has been permanently deleted"
+            "History has been permanently deleted",
         );
     });
 

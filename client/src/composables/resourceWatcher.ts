@@ -34,7 +34,7 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
  */
 export function useResourceWatcher<T = unknown>(
     watchHandler: WatchResourceHandler,
-    options: WatchOptions = DEFAULT_WATCH_OPTIONS
+    options: WatchOptions = DEFAULT_WATCH_OPTIONS,
 ) {
     const { shortPollingInterval, longPollingInterval, enableBackgroundPolling } = {
         ...DEFAULT_WATCH_OPTIONS,
@@ -59,6 +59,24 @@ export function useResourceWatcher<T = unknown>(
      */
     function stopWatchingResource() {
         stopWatcher();
+    }
+
+    /**
+     * Starts watching the resource if it is not already being watched.
+     */
+    function startWatchingResourceIfNeeded() {
+        if (!isWatchingResource.value) {
+            startWatchingResource();
+        }
+    }
+
+    /**
+     * Stops watching the resource if it is currently being watched.
+     */
+    function stopWatchingResourceIfNeeded() {
+        if (isWatchingResource.value) {
+            stopWatchingResource();
+        }
     }
 
     function stopWatcher() {
@@ -111,6 +129,8 @@ export function useResourceWatcher<T = unknown>(
          * Stops continuously watching the resource.
          */
         stopWatchingResource,
+        startWatchingResourceIfNeeded,
+        stopWatchingResourceIfNeeded,
         /**
          * Reactive boolean ref indicating whether the resource watcher is currently active.
          */

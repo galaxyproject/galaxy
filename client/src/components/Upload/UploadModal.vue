@@ -72,7 +72,7 @@ watch(
         if (!modalShown && !hasSeenUploadHelp.value) {
             hasSeenUploadHelp.value = true;
         }
-    }
+    },
 );
 
 defineExpose({

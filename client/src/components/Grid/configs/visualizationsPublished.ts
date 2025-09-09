@@ -76,7 +76,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: VisualizationEntry) => {
+            emit(`/visualizations/list_published?f-username=${data.username}`);
+        },
     },
     {
         key: "tags",
@@ -103,6 +106,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**

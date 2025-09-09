@@ -115,7 +115,7 @@ watch(
     () => props.queryFilter,
     () => {
         opened.value = checkFilter();
-    }
+    },
 );
 
 watch(
@@ -125,7 +125,7 @@ watch(
             const currentState = newVal ? "opened" : "closed";
             ariaAlert(`${name.value} tools menu ${currentState}`);
         }
-    }
+    },
 );
 
 onMounted(() => {

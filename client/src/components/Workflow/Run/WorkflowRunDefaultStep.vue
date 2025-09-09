@@ -121,7 +121,7 @@ export default {
                 },
                 (errorText) => {
                     this.errorText = errorText;
-                }
+                },
             );
         },
         onValidation(validation) {

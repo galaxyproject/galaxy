@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -55,7 +54,7 @@ class StoreExportTracker:
 
     def get_object_exports(
         self, object_id: int, object_type: ExportObjectType, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[StoreExportAssociation]:
+    ) -> list[StoreExportAssociation]:
         stmt = (
             select(
                 StoreExportAssociation,

@@ -105,12 +105,12 @@
 </template>
 
 <script>
+import { NON_TERMINAL_STATES } from "api/jobs";
 import axios from "axios";
 import JobsTable from "components/admin/JobsTable";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
 import { jobsProvider } from "components/providers/JobProvider";
-import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 

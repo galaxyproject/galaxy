@@ -6,6 +6,7 @@ import { useRouter } from "vue-router/composables";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
 import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipExplorer";
@@ -13,7 +14,8 @@ import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { ComponentSize } from "../BaseComponents/componentVariants";
-import { defaultModel, isLocalFile, type UploadFile, type UploadItem } from "./model";
+import type { UploadFile, UploadItem } from "./model";
+import { defaultModel, isLocalFile } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -75,7 +77,7 @@ const selectedItemsForModal = ref<HDASummary[]>([]);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const creatingPairedType = computed(
-    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value)
+    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value),
 );
 const enableBuild = computed(
     () =>
@@ -84,7 +86,7 @@ const enableBuild = computed(
         counterSuccess.value > 0 &&
         uploadedHistoryItemsReady.value &&
         uploadedHistoryItemsOk.value.length > 0 &&
-        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0)
+        (!creatingPairedType.value || uploadedHistoryItemsOk.value.length % 2 === 0),
 );
 const enableReset = computed(() => !isRunning.value && counterNonRunning.value > 0);
 const enableStart = computed(() => !isRunning.value && counterAnnounce.value > 0);
@@ -100,7 +102,7 @@ const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo
     uploadValues as Ref<UploadItem[]>,
     historyId,
     enableStart,
-    creatingPairedType
+    creatingPairedType,
 );
 
 function createUploadQueue() {
@@ -253,24 +255,25 @@ async function eventExplore(archiveSource: ArchiveSource) {
 /** Show remote files dialog or FTP files */
 function eventRemoteFiles() {
     filesDialog(
-        (items: UploadFile[]) => {
+        (items: SelectionItem[]) => {
             queue.value.add(
                 items.map((item) => {
                     const rval = {
                         mode: "url",
                         name: item.label,
-                        size: item.size,
+                        size: item.entry.size,
                         path: item.url,
+                        hashes: item.entry.hashes,
                     };
                     return rval;
-                })
+                }),
             );
         },
         { multiple: true },
         (route: string) => {
             router.push(route);
             emit("dismiss");
-        }
+        },
     );
 }
 
@@ -554,6 +557,7 @@ defineExpose({
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
+            :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
             :show.sync="collectionModalShow"
             default-hide-source-items />

@@ -2,8 +2,6 @@ import errno
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -30,7 +28,7 @@ class ToolPanelManager:
     def __init__(self, app: InstallationTarget):
         self.app = app
 
-    def add_to_shed_tool_config(self, shed_tool_conf_dict: Dict[str, Any], elem_list: list) -> None:
+    def add_to_shed_tool_config(self, shed_tool_conf_dict: dict[str, Any], elem_list: list) -> None:
         """
         "A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
         config file to generate the entire list of config_elems instead of using the in-memory list
@@ -180,7 +178,7 @@ class ToolPanelManager:
         currently be defined within the same tool section in the tool panel or
         outside of any sections.
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         if tool_section:
             section_id = tool_section.id
             section_name = tool_section.name
@@ -204,7 +202,7 @@ class ToolPanelManager:
 
     def generate_tool_panel_dict_for_tool_config(
         self, guid, tool_config, tool_sections=None
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Create a dictionary of the following type for a single tool config file name.
         The intent is to call this method for every tool config in a repository and
@@ -220,13 +218,13 @@ class ToolPanelManager:
                     name : <TooSection name>}]}
 
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         file_name = strip_path(tool_config)
         tool_section_dicts = self.generate_tool_section_dicts(tool_config=file_name, tool_sections=tool_sections)
         tool_panel_dict[guid] = tool_section_dicts
         return tool_panel_dict
 
-    def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> Dict[str, List[Dict[str, Any]]]:
+    def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> dict[str, list[dict[str, Any]]]:
         """
         Keep track of the section in the tool panel in which this repository's
         tools will be contained by parsing the shed_tool_conf in which the
@@ -235,7 +233,7 @@ class ToolPanelManager:
         repository is being deactivated or un-installed and allows for
         activation or re-installation using the original layout.
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir(
             self.app, repository
         )
@@ -289,11 +287,11 @@ class ToolPanelManager:
         repository_clone_url: str,
         changeset_revision: str,
         tool_panel_dict: dict,
-        repository_tools_tups: List[tuple],
+        repository_tools_tups: list[tuple],
         owner="",
     ):
         """Generate a list of ElementTree Element objects for each section or tool."""
-        elem_list: List[Element] = []
+        elem_list: list[Element] = []
         tool_elem = None
         cleaned_repository_clone_url = remove_protocol_and_user_from_clone_url(repository_clone_url)
         if not owner:
@@ -340,8 +338,8 @@ class ToolPanelManager:
                     elem_list.append(tool_elem)
         return elem_list
 
-    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> List[Dict[str, Any]]:
-        tool_section_dicts: List[Dict[str, Any]] = []
+    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> list[dict[str, Any]]:
+        tool_section_dicts: list[dict[str, Any]] = []
         if tool_config is None:
             tool_config = ""
         if tool_sections:
@@ -363,7 +361,7 @@ class ToolPanelManager:
             tool_section_dicts.append(dict(tool_config=tool_config, id="", version="", name=""))
         return tool_section_dicts
 
-    def generate_tool_section_element_from_dict(self, tool_section_dict: Dict[str, str]) -> Element:
+    def generate_tool_section_element_from_dict(self, tool_section_dict: dict[str, str]) -> Element:
         # The value of tool_section_dict looks like the following.
         # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
         tool_section = Element("section")

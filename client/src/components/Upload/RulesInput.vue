@@ -89,7 +89,7 @@ function inputDialog() {
             library: false,
             format: null,
             allowUpload: false,
-        }
+        },
     );
 }
 

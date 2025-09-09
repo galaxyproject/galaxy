@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -38,12 +38,14 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => {
                 // We need to use untyped here because this endpoint is not
                 // described in the OpenAPI spec due to its complexity for now.
                 return response.untyped(HttpResponse.json(item));
-            })
+            }),
         );
 
         wrapper = mount(ContentItem, {

@@ -1,8 +1,6 @@
 import threading
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     runtime_checkable,
     TYPE_CHECKING,
@@ -31,7 +29,7 @@ class DataManagerInterface(Protocol):
 
     def process_result(self, out_data): ...
 
-    def write_bundle(self, out: Dict[str, OutputDataset]) -> Dict[str, OutputDataset]: ...
+    def write_bundle(self, out: dict[str, OutputDataset]) -> dict[str, OutputDataset]: ...
 
 
 class DataManagersInterface(Protocol):
@@ -44,7 +42,7 @@ class DataManagersInterface(Protocol):
 
     def get_manager(self, data_manager_id: str) -> Optional[DataManagerInterface]: ...
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None: ...
+    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None: ...
 
 
 ToolBoxType = TypeVar("ToolBoxType", bound="AbstractToolBox", contravariant=True)

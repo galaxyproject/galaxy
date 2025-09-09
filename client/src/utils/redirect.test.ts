@@ -12,7 +12,7 @@ test("route prefix changes", async () => {
     expect(withPrefix("/home")).toEqual("/prefix/home");
     // keep protocols in query parameters intact
     expect(withPrefix("/authz/cilogon/login?idphint=https://test.com")).toEqual(
-        "/prefix/authz/cilogon/login?idphint=https://test.com"
+        "/prefix/authz/cilogon/login?idphint=https://test.com",
     );
     // ensure that it can only be called once
     expect(withPrefix(withPrefix("/home"))).toEqual("/prefix/prefix/home");

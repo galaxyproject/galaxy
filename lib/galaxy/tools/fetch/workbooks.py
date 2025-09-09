@@ -1,14 +1,10 @@
 from dataclasses import dataclass
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
 from openpyxl import Workbook
-from openpyxl.worksheet.worksheet import Worksheet
 from pydantic import (
     BaseModel,
     Field,
@@ -25,6 +21,7 @@ from galaxy.model.dataset_collections.rule_target_columns import (
     column_titles_to_headers,
     HeaderColumn,
     implied_paired_or_unpaired_column_header,
+    InferredColumnMapping,
     ParsedColumn,
 )
 from galaxy.model.dataset_collections.rule_target_models import (
@@ -35,13 +32,16 @@ from galaxy.model.dataset_collections.workbook_util import (
     add_extra_column_help_as_new_sheet,
     add_instructions_to_sheet,
     Base64StringT,
+    ContentTypeMessage,
+    CsvDialectInferenceMessage,
     ExtraColumnsHelpConfiguration,
     freeze_header_row,
     HasHelp,
     HelpConfiguration,
     load_workbook_from_base64,
     make_headers_bold,
-    read_column_header_titles,
+    parse_format_messages,
+    ReadOnlyWorkbook,
     set_column_width,
     uri_data_validation,
 )
@@ -64,7 +64,7 @@ INSTRUCTION_ONCE_COMPLETE_COLLECTION = (
 INSTRUCTION_ONCE_COMPLETE_COLLECTIONS = (
     "Once data entry is complete, drop this file back into Galaxy to finish creating collections for your inputs."
 )
-INSTRUCTIONS_BY_TYPE: Dict[FetchWorkbookType, List[str]] = {
+INSTRUCTIONS_BY_TYPE: dict[FetchWorkbookType, list[str]] = {
     "datasets": [
         INSTRUCTION_USE_THIS,
         INSTRUCTION_EXTRA_COLUMNS,
@@ -149,8 +149,8 @@ def generate(request: GenerateFetchWorkbookRequest) -> Workbook:
     return workbook
 
 
-ParsedRow = Dict[str, Optional[str]]
-ParsedRows = List[ParsedRow]
+ParsedRow = dict[str, Optional[str]]
+ParsedRows = list[ParsedRow]
 
 
 class ParseLogEntry(BaseModel):
@@ -166,17 +166,25 @@ class SplitUpPairedDataLogEntry(ParseLogEntry):
 
 class InferredCollectionTypeLogEntry(ParseLogEntry):
     message: str
-    from_columns: List[ParsedColumn]
+    from_columns: list[ParsedColumn]
 
 
-ParseLog = List[ParseLogEntry]
+AnyLogMessage = Union[
+    SplitUpPairedDataLogEntry,
+    InferredCollectionTypeLogEntry,
+    InferredColumnMapping,
+    ContentTypeMessage,
+    CsvDialectInferenceMessage,
+]
+
+FetchParseLog = list[AnyLogMessage]
 
 
 class BaseParsedFetchWorkbook(BaseModel):
     rows: ParsedRows
-    columns: List[ParsedColumn]
+    columns: list[ParsedColumn]
     workbook_type: FetchWorkbookType
-    parse_log: ParseLog
+    parse_log: FetchParseLog
 
 
 class ParsedFetchWorkbookForDatasets(BaseParsedFetchWorkbook):
@@ -192,11 +200,13 @@ ParsedFetchWorkbook = Union[ParsedFetchWorkbookForDatasets, ParsedFetchWorkbookF
 
 
 def parse(payload: ParseFetchWorkbook) -> ParsedFetchWorkbook:
-    parse_log: ParseLog = []
-    workbook = load_workbook_from_base64(payload.content)
-    column_headers = _read_column_headers(workbook.active)
+    parse_log: FetchParseLog = []
+    workbook: ReadOnlyWorkbook = load_workbook_from_base64(payload.content)
+    parse_log.extend(parse_format_messages(workbook))
+    column_headers, inferred_column_log = column_titles_to_headers(workbook.column_titles())
+    parse_log.extend(inferred_column_log)
     _validate_parsed_column_headers(column_headers)
-    raw_rows = _load_row_data(workbook, payload)
+    raw_rows = _load_row_data(workbook, column_headers, payload)
     # the rule builder does require splitting the paired data in this way but it might
     # be worth it to do it with an "initial rule" instead to demo how you'd do it
     # with actual rule builder rules? Not sure.
@@ -216,7 +226,7 @@ def parse(payload: ParseFetchWorkbook) -> ParsedFetchWorkbook:
         return ParsedFetchWorkbookForDatasets(rows=rows, columns=columns, parse_log=parse_log)
 
 
-def _validate_parsed_column_headers(column_headers: List[HeaderColumn]) -> None:
+def _validate_parsed_column_headers(column_headers: list[HeaderColumn]) -> None:
     uri_like_columns = _uri_like_columns(column_headers)
     if len(uri_like_columns) > 2:
         raise RequestParameterInvalidException(
@@ -226,7 +236,7 @@ def _validate_parsed_column_headers(column_headers: List[HeaderColumn]) -> None:
         raise RequestParameterInvalidException(EXCEPTION_NO_URIS_FOUND)
 
 
-def _request_to_columns(request: GenerateFetchWorkbookRequest) -> List[HeaderColumn]:
+def _request_to_columns(request: GenerateFetchWorkbookRequest) -> list[HeaderColumn]:
     if request.type == "datasets":
         return [
             HeaderColumn("url", "URI", 0),
@@ -276,16 +286,15 @@ def _request_to_columns(request: GenerateFetchWorkbookRequest) -> List[HeaderCol
         return header_columns
 
 
-def _load_row_data(workbook: Workbook, payload: ParseFetchWorkbook) -> ParsedRows:
-    sheet = workbook.active  # Get the first sheet
-
+def _load_row_data(
+    workbook: ReadOnlyWorkbook, column_headers: list[HeaderColumn], payload: ParseFetchWorkbook
+) -> ParsedRows:
     rows: ParsedRows = []
 
-    column_headers = _read_column_headers(sheet)
     columns_to_read = len(column_headers)
     index_of_first_uri = _index_of_fist_uri_column(column_headers)
 
-    for row_index, row in enumerate(sheet.iter_rows(max_col=columns_to_read, values_only=True)):
+    for row_index, row in enumerate(workbook.iter_rows(columns_to_read)):
         if row_index == 0:  # skip column headers
             continue
         if not row[index_of_first_uri]:
@@ -298,14 +307,14 @@ def _load_row_data(workbook: Workbook, payload: ParseFetchWorkbook) -> ParsedRow
 
 
 def _split_paired_data_if_needed(
-    rows: ParsedRows, column_headers: List[HeaderColumn]
-) -> Tuple[ParsedRows, List[HeaderColumn], Optional[SplitUpPairedDataLogEntry]]:
+    rows: ParsedRows, column_headers: list[HeaderColumn]
+) -> tuple[ParsedRows, list[HeaderColumn], Optional[SplitUpPairedDataLogEntry]]:
     split_rows: ParsedRows = []
     uri_like_columns = _uri_like_columns(column_headers)
     if len(_uri_like_columns(column_headers)) != 2:
         return rows, column_headers, None
 
-    hash_columns_to_split: List[Tuple[HeaderColumn, HeaderColumn]] = []
+    hash_columns_to_split: list[tuple[HeaderColumn, HeaderColumn]] = []
     for column_type in ["hash_sha1", "hash_md5", "hash_sha256", "hash_sha512"]:
         hash_columns = [c for c in column_headers if c.type == column_type]
         if len(hash_columns) == 2:
@@ -374,7 +383,7 @@ def _split_paired_data_if_needed(
 
 
 def _fill_in_identifier_column_if_needed(
-    rows: ParsedRows, columns: List[HeaderColumn], config: Optional[FillIdentifiers]
+    rows: ParsedRows, columns: list[HeaderColumn], config: Optional[FillIdentifiers]
 ) -> ParsedRows:
     list_identifiers_columns = [c for c in columns if c.type == "list_identifiers"]
     uri_columns = _uri_like_columns(columns)
@@ -387,7 +396,7 @@ def _fill_in_identifier_column_if_needed(
 
     uri_column = uri_columns[0]
     inner_list_identifier_column = list_identifiers_columns[-1]
-    uris_to_identifiers: List[Tuple[str, Optional[str]]] = []
+    uris_to_identifiers: list[tuple[str, Optional[str]]] = []
     for row in rows:
         uri = row.get(uri_column.name)
         if not uri:
@@ -400,16 +409,11 @@ def _fill_in_identifier_column_if_needed(
     return rows
 
 
-def _read_column_headers(worksheet: Worksheet) -> List[HeaderColumn]:
-    column_titles = read_column_header_titles(worksheet)
-    return column_titles_to_headers(column_titles)
-
-
-def _uri_like_columns(column_headers: List[HeaderColumn]) -> List[HeaderColumn]:
+def _uri_like_columns(column_headers: list[HeaderColumn]) -> list[HeaderColumn]:
     return [c for c in column_headers if c.type == "url" or c.type == "url_deferred"]
 
 
-def _index_of_fist_uri_column(column_headers: List[HeaderColumn]) -> int:
+def _index_of_fist_uri_column(column_headers: list[HeaderColumn]) -> int:
     for index, column_header in enumerate(column_headers):
         if column_header.type == "url" or column_header.type == "url_deferred":
             return index
@@ -419,15 +423,15 @@ def _index_of_fist_uri_column(column_headers: List[HeaderColumn]) -> int:
 
 
 def _infer_fetch_workbook_collection_type(
-    column_headers: List[HeaderColumn],
-) -> Tuple[str, InferredCollectionTypeLogEntry]:
+    column_headers: list[HeaderColumn],
+) -> tuple[str, InferredCollectionTypeLogEntry]:
     paired_identifier_columns = [c for c in column_headers if c.type == "paired_identifier"]
     paired_or_unpaired_identifier_columns = [c for c in column_headers if c.type == "paired_or_unpaired_identifier"]
     any_paired = len(paired_identifier_columns) > 0
     uri_columns = _uri_like_columns(column_headers)
     num_uris = len(uri_columns)
 
-    inference_on_columns: List[ParsedColumn] = []
+    inference_on_columns: list[ParsedColumn] = []
 
     list_type: str = ""
     for column_header in column_headers:
@@ -463,5 +467,5 @@ def _infer_fetch_workbook_collection_type(
     )
 
 
-def _is_fetch_workbook_for_collections(column_headers: List[HeaderColumn]) -> bool:
+def _is_fetch_workbook_for_collections(column_headers: list[HeaderColumn]) -> bool:
     return _infer_fetch_workbook_collection_type(column_headers)[0] != ""

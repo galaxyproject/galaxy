@@ -8,9 +8,8 @@ export type Tuple<L extends number, T = any, R extends T[] = []> = R extends { l
 export type Add<A extends number, B extends number> = Length<[...Tuple<A>, ...Tuple<B>]>;
 
 /** subtracts one constant positive whole number type from another */
-export type Subtract<A extends number, B extends number> = Tuple<A> extends [...infer U, ...Tuple<B>]
-    ? Length<U>
-    : never;
+export type Subtract<A extends number, B extends number> =
+    Tuple<A> extends [...infer U, ...Tuple<B>] ? Length<U> : never;
 
 /** type of the last element of a readonly array or tuple */
 export type Last<A extends readonly [...any]> = A[Subtract<Length<A>, 1>];
@@ -24,7 +23,7 @@ export type First<A extends readonly [...any]> = A[Length<A>];
  * type MyComponentPropsType = GetComponentPropTypes<typeof MyComponent>;
  */
 export type GetComponentPropTypes<
-    T extends import("vue/types/v3-component-public-instance").ComponentPublicInstanceConstructor
+    T extends import("vue/types/v3-component-public-instance").ComponentPublicInstanceConstructor,
 > = InstanceType<T>["$props"];
 
 /** Convert snake case string literal to camel case string literal */
@@ -38,19 +37,21 @@ export type CamelToSnakeCase<S extends string> = S extends `${infer T}${infer U}
     : S;
 
 /** Converts an object type or interface to the same type with camel case keys */
-export type AsCamelCase<T> = T extends Array<any>
-    ? T
-    : T extends object
-    ? {
-          [K in keyof T as SnakeToCamelCase<K & string>]: AsCamelCase<T[K]>;
-      }
-    : T;
+export type AsCamelCase<T> =
+    T extends Array<any>
+        ? T
+        : T extends object
+          ? {
+                [K in keyof T as SnakeToCamelCase<K & string>]: AsCamelCase<T[K]>;
+            }
+          : T;
 
 /** Converts an object type or interface to the same type with snake case keys */
-export type AsSnakeCase<T> = T extends Array<any>
-    ? T
-    : T extends object
-    ? {
-          [K in keyof T as CamelToSnakeCase<K & string>]: AsSnakeCase<T[K]>;
-      }
-    : T;
+export type AsSnakeCase<T> =
+    T extends Array<any>
+        ? T
+        : T extends object
+          ? {
+                [K in keyof T as CamelToSnakeCase<K & string>]: AsSnakeCase<T[K]>;
+            }
+          : T;

@@ -61,7 +61,7 @@ export function useDatasetsToDisplay() {
                 okVariant: "danger",
                 okTitle: localize("Permanently delete"),
                 cancelTitle: localize("Cancel"),
-            }
+            },
         );
         if (!confirmed) {
             return;

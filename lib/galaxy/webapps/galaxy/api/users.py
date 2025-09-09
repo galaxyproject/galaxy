@@ -7,9 +7,8 @@ import json
 import logging
 import re
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -23,7 +22,6 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -211,7 +209,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -306,7 +304,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserQuotaUsage]:
+    ) -> list[UserQuotaUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
@@ -322,7 +320,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserObjectstoreUsage]:
+    ) -> list[UserObjectstoreUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             return user.dictify_objectstore_usage()
         else:
@@ -485,7 +483,7 @@ class FastAPIUsers:
             )
         else:
             # Have everything needed; create new build.
-            build_dict: Dict[str, Any] = {"name": name}
+            build_dict: dict[str, Any] = {"name": name}
             if len_type in ["text", "file"]:
                 # Create new len file
                 new_len = HistoryDatasetAssociation(extension="len", create_dataset=True, sa_session=trans.sa_session)
@@ -646,7 +644,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(

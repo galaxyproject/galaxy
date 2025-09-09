@@ -122,7 +122,7 @@ watch(
         }
         resetWizard();
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 async function onZipSourceChanged(source?: ArchiveSource) {

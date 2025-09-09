@@ -102,7 +102,7 @@ function getDatasetId(invocation: Invocation, datasetLabel: DatasetLabel) {
 watch(
     () => props.content,
     () => processContent(),
-    { immediate: true }
+    { immediate: true },
 );
 
 defineExpose({ visualizationConfig });

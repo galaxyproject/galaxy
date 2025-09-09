@@ -8,7 +8,7 @@ const { server, http } = useServerMock();
 server.use(
     http.get("/api/datatypes/types_and_mapping", ({ response }) => {
         return response(200).json(typesAndMappingResponse);
-    })
+    }),
 );
 
 describe("Datatypes/index.js", () => {

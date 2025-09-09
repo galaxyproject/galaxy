@@ -183,13 +183,13 @@ export default {
                     this.$refs.deleteAndResetModal.show();
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
-                            "in order to avoid being locked out of your account."
+                            "in order to avoid being locked out of your account.",
                     );
                 }
             } else {
                 this.setError(
                     "Before disconnecting this identity, you need to set your account password, " +
-                        "in order to avoid being locked out of your account."
+                        "in order to avoid being locked out of your account.",
                 );
             }
         },

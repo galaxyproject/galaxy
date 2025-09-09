@@ -1,9 +1,8 @@
 import json
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -15,7 +14,6 @@ from pydantic import (
 )
 from pydantic.functional_validators import field_validator
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -67,7 +65,7 @@ class LibraryContentsCreatePayload(Model):
         False,
         description="create tags on datasets using the file's original name",
     )
-    tags: List[str] = Field(
+    tags: list[str] = Field(
         [],
         description="create the given list of tags on datasets",
     )
@@ -83,7 +81,7 @@ class LibraryContentsCreatePayload(Model):
         "",
         description="the new message attribute of the LDDA created",
     )
-    extended_metadata: Optional[Dict[str, Any]] = Field(
+    extended_metadata: Optional[dict[str, Any]] = Field(
         None,
         description="sub-dictionary containing any extended metadata to associate with the item",
     )
@@ -131,7 +129,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         None,
         title="UUID of the dataset to upload",
     )
-    upload_files: Optional[List[Dict[str, Any]]] = Field(
+    upload_files: Optional[list[dict[str, Any]]] = Field(
         None,
         title="list of the uploaded files",
     )
@@ -156,7 +154,7 @@ class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
         ...,
         title="the type of collection to create",
     )
-    element_identifiers: List[Dict[str, Any]] = Field(
+    element_identifiers: list[dict[str, Any]] = Field(
         ...,
         title="list of dictionaries containing the element identifiers for the collection",
     )
@@ -203,7 +201,7 @@ class LibraryContentsIndexDatasetResponse(LibraryContentsIndexResponse):
 
 
 class LibraryContentsIndexListResponse(RootModel):
-    root: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]]
+    root: list[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]]
 
 
 class LibraryContentsShowResponse(Model):
@@ -220,7 +218,7 @@ class LibraryContentsShowFolderResponse(LibraryContentsShowResponse):
     description: str
     item_count: int
     deleted: bool
-    library_path: List[str]
+    library_path: list[str]
 
 
 class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
@@ -261,11 +259,11 @@ class LibraryContentsCreateFileResponse(LibraryContentsCreateResponse):
 
 
 class LibraryContentsCreateFolderListResponse(RootModel):
-    root: List[LibraryContentsCreateFolderResponse]
+    root: list[LibraryContentsCreateFolderResponse]
 
 
 class LibraryContentsCreateFileListResponse(RootModel):
-    root: List[LibraryContentsCreateFileResponse]
+    root: list[LibraryContentsCreateFileResponse]
 
 
 class LibraryContentsCreateDatasetResponse(Model):
@@ -299,7 +297,7 @@ class LibraryContentsCreateDatasetResponse(Model):
 
 
 class LibraryContentsCreateDatasetCollectionResponse(RootModel):
-    root: List[LibraryContentsCreateDatasetResponse]
+    root: list[LibraryContentsCreateDatasetResponse]
 
 
 class LibraryContentsDeleteResponse(Model):

@@ -319,6 +319,42 @@ blast/2.24.0-mpi
         assert module.module_version == "2.22.0-mpi", module.module_version
 
 
+def test_module_dependency_resolver_skip_availability_check():
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(
+            temp_directory,
+            """
+-------------------------- /soft/modules/modulefiles ---------------------------
+BlastPlus/2.4.0+
+Infernal/1.1.2
+Mothur/1.36.1
+""",
+        )
+        resolver = ModuleDependencyResolver(
+            _SimpleDependencyManager(), modulecmd=module_script, skip_availability_check="true"
+        )
+
+        module = resolver.resolve(ToolRequirement(name="Mothur", version="1.36.1", type="package"))
+        assert module.module_name == "Mothur"
+        assert module.module_version == "1.36.1"
+
+        module = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.3", type="package"))
+        assert module.module_name == "BlastPlus"
+        assert module.module_version == "2.3"
+
+        module = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
+        assert module.module_name == "Infernal"
+        assert module.module_version is None
+
+        module = resolver.resolve(ToolRequirement(name="Foo", version="0.1", type="package"))
+        assert module.module_name == "Foo"
+        assert module.module_version == "0.1"
+
+        module = resolver.resolve(ToolRequirement(name="Bar", version=None, type="package"))
+        assert module.module_name == "Bar"
+        assert module.module_version is None
+
+
 def _setup_module_command(temp_directory, contents):
     module_script = os.path.join(temp_directory, "modulecmd")
     __write_script(
@@ -477,6 +513,45 @@ Mothur/1.38.1.1
         lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.38", type="package"))
         assert lmod.module_name == "Mothur"
         assert lmod.module_version == "1.38.1.1", lmod.module_version
+
+
+def test_lmod_dependency_resolver_skip_availability_check():
+    with __test_base_path() as temp_directory:
+        lmod_script = _setup_lmod_command(
+            temp_directory,
+            """
+/opt/apps/modulefiles:
+BlastPlus/2.4.0+
+Infernal/1.1.2
+Mothur/1.36.1
+""",
+        )
+        resolver = LmodDependencyResolver(
+            _SimpleDependencyManager(),
+            lmodexec=lmod_script,
+            skip_availability_check="true",
+            modulepath="/path/to/modulefiles",
+        )
+
+        lmod = resolver.resolve(ToolRequirement(name="Mothur", version="1.36.1", type="package"))
+        assert lmod.module_name == "Mothur"
+        assert lmod.module_version == "1.36.1"
+
+        lmod = resolver.resolve(ToolRequirement(name="BlastPlus", version="2.3", type="package"))
+        assert lmod.module_name == "BlastPlus"
+        assert lmod.module_version == "2.3"
+
+        lmod = resolver.resolve(ToolRequirement(name="Infernal", version=None, type="package"))
+        assert lmod.module_name == "Infernal"
+        assert lmod.module_version is None
+
+        lmod = resolver.resolve(ToolRequirement(name="Foo", version="0.1", type="package"))
+        assert lmod.module_name == "Foo"
+        assert lmod.module_version == "0.1"
+
+        lmod = resolver.resolve(ToolRequirement(name="Bar", version=None, type="package"))
+        assert lmod.module_name == "Bar"
+        assert lmod.module_version is None
 
 
 def _setup_lmod_command(temp_directory, contents):

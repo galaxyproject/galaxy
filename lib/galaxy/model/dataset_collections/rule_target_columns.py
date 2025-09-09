@@ -1,8 +1,6 @@
 import re
 from dataclasses import dataclass
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -14,7 +12,7 @@ from galaxy.model.dataset_collections.rule_target_models import (
     target_model_by_type,
 )
 
-COLUMN_TITLE_PREFIXES: Dict[str, RuleBuilderMappingTargetKey] = {
+COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
     "name": "name",
     "listname": "collection_name",
     "collectionname": "collection_name",
@@ -128,11 +126,20 @@ class ParsedColumn(BaseModel):
             return f"{self.type}_{self.type_index}"
 
 
-def column_titles_to_headers(column_titles: List[str]) -> List[HeaderColumn]:
-    headers: List[HeaderColumn] = []
-    headers_of_type_seen: Dict[RuleBuilderMappingTargetKey, int] = {}
+class InferredColumnMapping(BaseModel):
+    column_index: int
+    column_title: str
+    parsed_column: ParsedColumn
 
-    for column_title in column_titles:
+
+def column_titles_to_headers(
+    column_titles: list[str], column_offset: int = 0
+) -> tuple[list[HeaderColumn], list[InferredColumnMapping]]:
+    headers: list[HeaderColumn] = []
+    headers_of_type_seen: dict[RuleBuilderMappingTargetKey, int] = {}
+    inferred_columns: list[InferredColumnMapping] = []
+
+    for column_index, column_title in enumerate(column_titles):
         column_type_: Optional[RuleBuilderMappingTargetKey] = column_title_to_target_type(column_title)
         if not column_type_:
             # make a note in parse log that this column was skipped
@@ -152,8 +159,14 @@ def column_titles_to_headers(column_titles: List[str]) -> List[HeaderColumn]:
         if header_column.type == "paired_identifier" and implied_paired_or_unpaired_column_header(header_column):
             header_column.type = "paired_or_unpaired_identifier"
         headers.append(header_column)
-
-    return headers
+        inferred_columns.append(
+            InferredColumnMapping(
+                column_index=column_index + column_offset,
+                column_title=column_title,
+                parsed_column=header_column.parsed_column,
+            )
+        )
+    return headers, inferred_columns
 
 
 def implied_paired_or_unpaired_column_header(column_header: HeaderColumn) -> bool:

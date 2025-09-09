@@ -112,7 +112,7 @@ describe("HistoryExportWizard.vue", () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
     });
 
@@ -167,7 +167,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json(REMOTE_FILES_API_RESPONSE);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -186,7 +186,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json([ZENODO_PLUGIN]);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -205,7 +205,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json([ZENODO_PLUGIN, USER_ZENODO_PLUGIN]);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -229,7 +229,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json(REMOTE_FILES_API_RESPONSE);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -263,7 +263,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json(REMOTE_FILES_API_RESPONSE);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -341,7 +341,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json(REMOTE_FILES_API_RESPONSE);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -375,7 +375,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json(REMOTE_FILES_API_RESPONSE);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();
@@ -406,7 +406,7 @@ describe("HistoryExportWizard.vue", () => {
             server.use(
                 http.get("/api/remote_files/plugins", ({ response }) => {
                     return response(200).json([ZENODO_PLUGIN]);
-                })
+                }),
             );
 
             const wrapper = await mountHistoryExportWizard();

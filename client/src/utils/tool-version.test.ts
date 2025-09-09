@@ -17,17 +17,17 @@ describe("Tool Version Utilities", () => {
 
         it("should handle tool shed tools with versions", () => {
             expect(extractBaseToolId("toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio/1.1.0")).toBe(
-                "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio"
+                "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio",
             );
 
             expect(extractBaseToolId("toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2/2.4.2+galaxy0")).toBe(
-                "toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2"
+                "toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2",
             );
         });
 
         it("should handle tool shed tools without versions", () => {
             expect(extractBaseToolId("toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio")).toBe(
-                "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio"
+                "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio",
             );
         });
 
@@ -82,17 +82,17 @@ describe("Tool Version Utilities", () => {
                 createMockTool(
                     "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio/1.1.0",
                     "1.1.0",
-                    "RStudio Interactive"
+                    "RStudio Interactive",
                 ),
                 createMockTool(
                     "toolshed.g2.bx.psu.edu/repos/owner/rstudio/interactive_rstudio/1.2.0",
                     "1.2.0",
-                    "RStudio Interactive"
+                    "RStudio Interactive",
                 ),
                 createMockTool(
                     "toolshed.g2.bx.psu.edu/repos/owner/jupyter/interactive_jupyter/2.0",
                     "2.0",
-                    "Jupyter Interactive"
+                    "Jupyter Interactive",
                 ),
             ];
 

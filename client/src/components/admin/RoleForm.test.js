@@ -90,7 +90,7 @@ describe("RoleForm.vue", () => {
                 expect(body.group_ids).toEqual(["g1"]);
                 expect(body.user_ids).toEqual(["u1"]);
                 return response(200).json({ id: "new-role" });
-            })
+            }),
         );
         const wrapper = mountTarget();
         await flushPromises();

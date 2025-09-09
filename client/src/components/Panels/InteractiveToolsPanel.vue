@@ -34,7 +34,7 @@ const filteredTools = computed(() => {
         (tool) =>
             !query.value ||
             tool.name.toLowerCase().includes(queryLower) ||
-            (tool.description && tool.description.toLowerCase().includes(queryLower))
+            (tool.description && tool.description.toLowerCase().includes(queryLower)),
     );
 });
 

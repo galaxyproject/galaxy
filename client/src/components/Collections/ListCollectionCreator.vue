@@ -317,7 +317,7 @@ watch(
         // for any new/removed elements, add them to working elements
         _elementsSetUp();
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function addUploadedFiles(files: HDASummary[]) {
@@ -331,13 +331,13 @@ function addUploadedFiles(files: HDASummary[]) {
             invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
-                localize("Uploaded item is invalid")
+                localize("Uploaded item is invalid"),
             );
         } else if (!file) {
             invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
-                localize("Uploaded item is invalid")
+                localize("Uploaded item is invalid"),
             );
         }
     });
@@ -447,7 +447,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                     "you to create and re-order a list of datasets. The datasets in a Galaxy collection have an identifier that is preserved accross ",
                                     "tool executions and serves as a form of sample tracking - setting the name in this form will pick the identifier for that element ",
                                     "of the list but will not change the dataset's actual name in Galaxy.",
-                                ].join("")
+                                ].join(""),
                             )
                         }}
                     </p>
@@ -482,7 +482,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         <li v-if="fromSelection">
                             {{
                                 localize(
-                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on",
                                 )
                             }}
                             <i data-target=".collection-element">
@@ -490,7 +490,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             </i>
                             {{
                                 localize(
-                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the",
                                 )
                             }}
                             <i data-target=".clear-selected">
@@ -563,7 +563,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             {{
                                 localize(
                                     "No elements in your history are valid for this list. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    You may need to switch to a different history or upload valid datasets.",
                                 )
                             }}
                             <div v-if="extensions?.length">

@@ -21,7 +21,6 @@ import shutil
 import tempfile
 from typing import (
     Any,
-    Dict,
     IO,
     Optional,
 )
@@ -49,7 +48,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
     input_hda: model.HistoryDatasetAssociation
-    input_hda_dict: Dict[str, Any]
+    input_hda_dict: dict[str, Any]
     _nginx_upload_job_files_store: str
 
     @classmethod
@@ -155,11 +154,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert path
 
         upload_url = self._api_url(f"job_files/resumable_upload?job_key={job_key}", use_key=False)
-        headers: Dict[str, str] = {}
+        headers: dict[str, str] = {}
         my_client = client.TusClient(upload_url, headers=headers)
 
         storage = None
-        metadata: Dict[str, str] = {}
+        metadata: dict[str, str] = {}
         t_file = tempfile.NamedTemporaryFile("w")
         t_file.write("some initial text data")
         t_file.flush()

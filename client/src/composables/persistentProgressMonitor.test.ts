@@ -78,7 +78,7 @@ describe("usePersistentProgressTaskMonitor", () => {
     it("should throw an error if trying to start monitoring without monitoring data", async () => {
         const { start } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor);
         await expect(start()).rejects.toThrow(
-            "No monitoring data provided or stored. Cannot start monitoring progress."
+            "No monitoring data provided or stored. Cannot start monitoring progress.",
         );
     });
 
@@ -94,7 +94,7 @@ describe("usePersistentProgressTaskMonitor", () => {
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(
             MOCK_REQUEST,
             mockUseMonitor,
-            monitoringData
+            monitoringData,
         );
         expect(hasMonitoringData.value).toBeTruthy();
         reset();

@@ -45,7 +45,7 @@ const {
     editTestUrl,
     editUrl,
     useInstanceRouting,
-    addOrUpdateObjectStore
+    addOrUpdateObjectStore,
 );
 </script>
 <template>

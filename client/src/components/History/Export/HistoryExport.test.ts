@@ -67,7 +67,7 @@ describe("HistoryExport.vue", () => {
                 if (historyId === FAKE_HISTORY_ID) {
                     return response(200).json(FAKE_HISTORY);
                 }
-            })
+            }),
         );
     });
 
@@ -111,9 +111,9 @@ describe("HistoryExport.vue", () => {
                         err_code: 404,
                         err_msg: "History not found",
                     },
-                    { status: 404 }
-                )
-            )
+                    { status: 404 },
+                ),
+            ),
         );
 
         const wrapper = await mountHistoryExport();

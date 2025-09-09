@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDCASummary } from "@/api";
 
+import { DatasetStateSummary } from "./DatasetStateSummary";
 import { JobStateSummary } from "./JobStateSummary";
 
 import CollectionProgress from "./CollectionProgress.vue";
+import DatasetProgress from "./DatasetProgress.vue";
 
 interface Props {
     hdca: HDCASummary;
@@ -19,15 +22,33 @@ const labels = new Map([
     ["list:paired_or_unpaired", "list"],
     ["list:list", "list"],
     ["paired", "pair"],
+    ["sample_sheet", "sample sheet"],
+    ["sample_sheet:paired", "sample sheet"],
+    ["sample_sheet:paired_or_unpaired", "sample sheet"],
 ]);
 
 const jobStateSummary = computed(() => {
     return new JobStateSummary(props.hdca);
 });
 
+const datasetStateSummary = computed(() => {
+    return new DatasetStateSummary(props.hdca);
+});
+
 const collectionLabel = computed(() => {
     const collectionType = props.hdca.collection_type;
-    return labels.get(collectionType) ?? "nested list";
+    const isList = collectionType.startsWith("list");
+    if (labels.get(collectionType)) {
+        return labels.get(collectionType);
+    } else if (isList) {
+        // call everything like list:list:paired or list:list:list a nested list
+        return "nested list";
+    } else if (collectionType.indexOf(":") > -1) {
+        // e.g. paired:paired or paired:list:list
+        return "nested collection";
+    } else {
+        return "collection";
+    }
 });
 const hasSingleElement = computed(() => {
     return props.hdca.element_count === 1;
@@ -42,10 +63,13 @@ const pluralizedItem = computed(() => {
     if (props.hdca.collection_type === "list:list") {
         return pluralize("list");
     }
-    if (props.hdca.collection_type === "list:paired") {
+    if (props.hdca.collection_type === "list:paired" || props.hdca.collection_type === "sample_sheet:paired") {
         return pluralize("pair");
     }
-    if (props.hdca.collection_type === "list:paired_or_unpaired") {
+    if (
+        props.hdca.collection_type === "list:paired_or_unpaired" ||
+        props.hdca.collection_type === "sample_sheet:paired_or_unpaired"
+    ) {
         if (!hasSingleElement.value) {
             return "paired and unpaired datasets";
         } else {
@@ -72,15 +96,30 @@ function pluralize(word: string) {
 
 <template>
     <div>
-        <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
-            a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-        </span>
-        <span v-else class="description mt-1 mb-1">
-            a {{ collectionLabel }} with {{ hdca.element_count || 0
-            }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-        </span>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
+                    a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                </span>
+                <span v-else class="description mt-1 mb-1">
+                    a {{ collectionLabel }} with {{ hdca.element_count || 0
+                    }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                </span>
+            </div>
+
+            <BBadge
+                v-if="datasetStateSummary.elements_deleted > 0"
+                variant="warning"
+                class="ml-2"
+                :title="`${datasetStateSummary.elements_deleted} deleted ${
+                    datasetStateSummary.elements_deleted === 1 ? 'dataset' : 'datasets'
+                } in collection`">
+                <icon icon="trash" /> {{ datasetStateSummary.elements_deleted }} deleted
+            </BBadge>
+        </div>
 
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
+        <DatasetProgress v-else-if="datasetStateSummary.datasetCount > 0" :summary="datasetStateSummary" />
     </div>
 </template>
 

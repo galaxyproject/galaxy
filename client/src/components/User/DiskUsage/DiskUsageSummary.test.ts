@@ -44,11 +44,11 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
         }),
         http.get("/api/users/{user_id}/usage", ({ response }) => {
             return response(200).json(fakeQuotaUsages);
-        })
+        }),
     );
 
     const pinia = createPinia();
-    const wrapper = mount(DiskUsageSummary, {
+    const wrapper = mount(DiskUsageSummary as object, {
         localVue,
         pinia,
     });
@@ -104,7 +104,7 @@ describe("DiskUsageSummary.vue", () => {
             }),
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("PENDING");
-            })
+            }),
         );
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
@@ -115,7 +115,7 @@ describe("DiskUsageSummary.vue", () => {
         server.use(
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("SUCCESS");
-            })
+            }),
         );
         jest.runAllTimers();
         await flushPromises();

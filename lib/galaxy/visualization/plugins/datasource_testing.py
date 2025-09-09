@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -27,7 +26,7 @@ def _build_getattr_lambda(attr_name_list):
     return lambda o: getattr(_build_getattr_lambda(attr_name_list[:-1])(o), next_attr_name)
 
 
-def _check_uri_support(target_object, supported_protocols: List[str]) -> bool:
+def _check_uri_support(target_object, supported_protocols: list[str]) -> bool:
     """Test if the target object is deferred and has a supported protocol."""
 
     if not _is_deferred(target_object):
@@ -39,8 +38,7 @@ def _check_uri_support(target_object, supported_protocols: List[str]) -> bool:
     if "*" in supported_protocols:
         return True  # wildcard support for all protocols
 
-    deferred_source_uri = _deferred_source_uri(target_object)
-    if deferred_source_uri:
+    if deferred_source_uri := _deferred_source_uri(target_object):
         protocol = deferred_source_uri.split("://")[0]
         return protocol in supported_protocols
     return False

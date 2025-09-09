@@ -4,7 +4,6 @@ import os
 import socket
 import string
 from typing import (
-    List,
     TYPE_CHECKING,
 )
 
@@ -333,7 +332,7 @@ def is_path_within_repo(app: "ToolShedApp", path: str, repository_id: str) -> bo
 
 def open_repository_files_folder(
     app: "ToolShedApp", folder_path: str, repository_id: str, is_admin: bool = False
-) -> List:
+) -> list:
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.

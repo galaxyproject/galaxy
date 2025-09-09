@@ -405,7 +405,7 @@ describe("FormData", () => {
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
         expect(wrapper.emitted().alert[0][0]).toEqual(
-            "dataset pair dataset collection is not a valid input for list type dataset collection parameter."
+            "dataset pair dataset collection is not a valid input for list type dataset collection parameter.",
         );
     });
 
@@ -464,12 +464,12 @@ describe("FormData", () => {
         await wrapper.setProps({ value: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".custom-switch span").text()).toBe(
-            "Linked: Datasets will be run in matched order with other datasets."
+            "Linked: Datasets will be run in matched order with other datasets.",
         );
         expect(checkLinked.element.checked).toBeTruthy();
         await checkLinked.setChecked(false);
         expect(wrapper.find(".custom-switch span").text()).toBe(
-            "Unlinked: Dataset will be run against *all* other datasets."
+            "Unlinked: Dataset will be run against *all* other datasets.",
         );
         expect(wrapper.emitted().input[4][0]).toEqual({
             batch: true,

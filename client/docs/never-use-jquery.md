@@ -15,5 +15,5 @@ from our source, along with all its invasive plugins.
 
 ### References
 
--   [You Don't Need jQuery](https://github.com/nefe/You-Dont-Need-jQuery)
--   [document.querySelector](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector)
+- [You Don't Need jQuery](https://github.com/nefe/You-Dont-Need-jQuery)
+- [document.querySelector](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector)

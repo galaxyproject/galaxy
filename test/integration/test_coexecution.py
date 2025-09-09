@@ -20,7 +20,6 @@ import tempfile
 import time
 from typing import (
     Any,
-    Dict,
 )
 
 import yaml
@@ -378,7 +377,7 @@ class TestTesDependencyResolutionIntegration(TestCoexecution):
         assert "0.7.15-r1140" in output
 
 
-def set_infrastucture_url(config: Dict[str, Any]) -> None:
+def set_infrastucture_url(config: dict[str, Any]) -> None:
     hostname = to_infrastructure_uri("0.0.0.0")
     infrastructure_url = f"http://{hostname}:$GALAXY_WEB_PORT"
     config["galaxy_infrastructure_url"] = infrastructure_url

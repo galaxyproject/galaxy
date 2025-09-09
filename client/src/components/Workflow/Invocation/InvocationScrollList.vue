@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { getData } from "@/components/Grid/configs/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -15,6 +17,9 @@ import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const currentUser = computed(() => useUserStore().currentUser);
+
+const invocationStore = useInvocationStore();
+const { sortedStoredInvocations, scrollListScrollTop, totalInvocationCount } = storeToRefs(invocationStore);
 
 interface Props {
     inPanel?: boolean;
@@ -40,6 +45,11 @@ async function loadInvocations(offset: number, limit: number) {
     }
     const extraProps = { user_id: currentUser.value.id };
     const [data, totalMatches] = await getData(offset, limit, "", "create_time", true, extraProps);
+
+    for (const item of data) {
+        invocationStore.updateInvocation(item.id, item);
+    }
+    totalInvocationCount.value = totalMatches ?? 0;
     return { items: data, total: totalMatches! };
 }
 
@@ -93,9 +103,14 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
     <ScrollList
         :loader="loadInvocations"
         :item-key="(invocation) => invocation.id"
-        :in-panel="inPanel"
+        :in-panel="props.inPanel"
+        :prop-items="sortedStoredInvocations"
+        :prop-total-count="totalInvocationCount"
+        adjust-for-total-count-changes
         name="invocation"
-        name-plural="invocations">
+        name-plural="invocations"
+        :load-disabled="!currentUser || currentUser.isAnonymous"
+        :prop-scroll-top.sync="scrollListScrollTop">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"
