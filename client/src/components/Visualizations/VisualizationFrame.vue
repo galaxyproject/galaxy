@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const emit = defineEmits(["load", "update:confirmation"]);
+const emit = defineEmits(["load"]);
 
 export interface Props {
     datasetId?: string;
@@ -61,7 +61,6 @@ function setupChangeDetection() {
             const markAsChanged = () => {
                 if (!hasUnsavedChanges.value) {
                     hasUnsavedChanges.value = true;
-                    emit("update:confirmation", true);
                 }
             };
 
@@ -97,6 +96,7 @@ onMounted(() => {
     window.addEventListener("beforeunload", (e) => {
         if (hasUnsavedChanges.value) {
             e.preventDefault();
+            e.returnValue = "";
         }
     });
 });
