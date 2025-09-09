@@ -179,7 +179,7 @@ class UserCredentialsConfigurator:
                 raise ValueError(
                     f"Credentials not found for {source_type}|{source_id}|{service_name}|{service_version}."
                 )
-            current_group = result[0][1].name
+            current_group = result[0][1].id
             for secret in credential.secrets:
                 vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{current_group}|{secret.name}"
                 vault_value = user_vault.read_secret(vault_ref) or ""
