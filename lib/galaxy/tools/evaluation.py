@@ -176,9 +176,9 @@ class UserCredentialsConfigurator:
             )
             result = self.session.execute(stmt).tuples().all()
             if not result:
-                raise ValueError(
-                    f"Credentials not found for {source_type}|{source_id}|{service_name}|{service_version}."
-                )
+                # No credentials found for this user and service - we skip setting environment variables and
+                # let the tool handle missing credentials or provide defaults if applicable.
+                return
             current_group = result[0][1].id
             for secret in credential.secrets:
                 vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{current_group}|{secret.name}"
