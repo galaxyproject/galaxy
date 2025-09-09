@@ -1,5 +1,5 @@
 """
-API for asynchronous job running mechanisms can use to fetch or put files related to running and queued jobs.
+API that asynchronous job running mechanisms can use to fetch or put files related to running and queued jobs.
 """
 
 import logging
@@ -60,7 +60,7 @@ def path_query_or_form(
 
     This method does not force the client to provide the parameter, it could simply not submit the parameter in either
     format. To force the client to provide the parameter, coerce the output of the method to a string, i.e.
-    `path: str = Depends(path_query_or_form)` so that FastAPI responds with status code 500 when the parameter is not
+    `path: str = Depends(path_query_or_form)` so that FastAPI responds with status code 400 when the parameter is not
     provided.
     """
     return path_query or path
@@ -92,7 +92,7 @@ def job_key_query_or_form(
 
     This method does not force the client to provide the parameter, it could simply not submit the parameter in either
     format. To force the client to provide the parameter, coerce the output of the method to a string, i.e.
-    `job_key: str = Depends(job_key_query_or_form)` so that FastAPI responds with status code 500 when the parameter is
+    `job_key: str = Depends(job_key_query_or_form)` so that FastAPI responds with status code 400 when the parameter is
     not provided.
     """
     return job_key_query or job_key
