@@ -122,11 +122,19 @@ class OIDCAuthnzBase(IdentityProvider):
             return False
         if not custos_authnz_token.refresh_token:
             return False
-        refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
-        # do not attempt to use refresh token that is already expired
-        if int(refresh_token_decoded["exp"]) <= int(time.time()):
-            # in the future we might want to log out the user here
+
+        # Try to extract expiration date from the refresh token. If expired, do not refresh token.
+        try:
+            refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
+            # do not attempt to use refresh token that is already expired
+            if int(refresh_token_decoded["exp"]) <= int(time.time()):
+                # in the future we might want to log out the user here
+                return False
+        except jwt.exceptions.DecodeError:
+            log.warning("Refresh token cannot be decoded. Galaxy does not support non-decodable refresh tokens.")
+            # If the refresh token is non-decodable, we do not use it because we cannot reliably determine its expiration date. See discussion in https://github.com/galaxyproject/galaxy/pull/20821
             return False
+
         oauth2_session = self._create_oauth2_session()
         token_endpoint = self.config.token_endpoint
         if self.config.iam_client_secret:
