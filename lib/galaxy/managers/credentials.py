@@ -4,7 +4,10 @@ from typing import (
 )
 
 from sqlalchemy import select
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    scoped_session,
+)
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
@@ -183,7 +186,7 @@ class UserCredentialsConfigurator:
     def __init__(
         self,
         vault: Vault,
-        session: galaxy_scoped_session,
+        session: scoped_session,
         user: User,
         environment_variables: list[dict[str, str]],
     ):

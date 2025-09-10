@@ -216,23 +216,6 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        if self.tool.credentials is not None:
-            if not isinstance(self.app, StructuredApp):
-                log.warning(
-                    "Tool credentials specified but app is not a StructuredApp, cannot set environment variables"
-                )
-                return
-            if (
-                bool(self.app.vault)
-                and bool(self.app.model.session)
-                and self.tool.id is not None
-                and self.job.user is not None
-            ):
-                user_credentials_configurator = UserCredentialsConfigurator(
-                    self.app.vault, self.app.model.session, self.job.user, self.environment_variables
-                )
-                user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
-
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
@@ -868,6 +851,8 @@ class ToolEvaluator:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
 
+        self._inject_credentials()
+
     def get_oidc_token(self, inject):
         if not self._user:
             return "token-unavailable"
@@ -973,6 +958,18 @@ class ToolEvaluator:
         compat.
         """
         return self.compute_environment.sep().join(args)
+
+    def _inject_credentials(self):
+        if not self.tool.credentials:
+            return
+        if not isinstance(self.app, StructuredApp):
+            log.warning("Tool credentials specified but app is not a StructuredApp, cannot set environment variables")
+            return
+        if self.tool.id is not None and self._user is not None:
+            user_credentials_configurator = UserCredentialsConfigurator(
+                self.app.vault, self.app.model.session, self._user, self.environment_variables
+            )
+            user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
 
     @property
     def _history(self):
