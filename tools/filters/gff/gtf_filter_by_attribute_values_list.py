@@ -55,10 +55,11 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
     # Filter GFF file using ids.
     with open(output_file, "w") as output, open(gff_file) as ingff:
         for line in ingff:
-            if not line or line.startswith("#"):
+            if not line.rstrip() or line.startswith("#"):
                 output.write(line)
                 continue
             fields = line.split("\t")
+            assert len(fields) == 9, f"Line should have exactly 9 fields: {line}"
             attributes = parse_gff_attributes(fields[8])
             if attribute_name in attributes and attributes[attribute_name] in ids_dict:
                 output.write(line)
