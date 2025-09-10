@@ -29,6 +29,7 @@ from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
 from galaxy.selenium.navigates_galaxy import (
+    exception_seems_to_indicate_transition,
     NavigatesGalaxy,
     retry_during_transitions,
 )
@@ -223,8 +224,17 @@ def selenium_test(f):
     return func_wrapper
 
 
+def exception_is_assertion_or_transition(e: Exception) -> bool:
+    """Drive the retry_assertion_during_transitions decorator.
+
+    Reuse logic for checking for transition exceptions but also retry
+    if there is an assertion error.
+    """
+    return exception_seems_to_indicate_transition(e) or isinstance(e, AssertionError)
+
+
 retry_assertion_during_transitions = partial(
-    retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError)
+    retry_during_transitions, exception_check=exception_is_assertion_or_transition
 )
 
 
