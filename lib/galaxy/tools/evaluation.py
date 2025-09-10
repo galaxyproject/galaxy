@@ -16,28 +16,19 @@ from typing import (
 )
 
 from packaging.version import Version
-from sqlalchemy import select
-from sqlalchemy.orm import (
-    aliased,
-    scoped_session,
-)
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
-from galaxy.managers.credentials import build_vault_credential_reference
+from galaxy.managers.credentials import UserCredentialsConfigurator
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.security.vault import (
-    UserVaultWrapper,
-    Vault,
-)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
@@ -45,7 +36,6 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
-from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -140,58 +130,6 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
         ) from e
 
 
-class UserCredentialsConfigurator:
-    def __init__(
-        self,
-        vault: Vault,
-        session: scoped_session,
-        user: model.User,
-        environment_variables: list[dict[str, str]],
-    ):
-        self.vault = vault
-        self.session = session
-        self.user = user
-        self.environment_variables = environment_variables
-
-    def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
-        user_vault = UserVaultWrapper(self.vault, self.user)
-        user_id = self.user.id
-        if not user_id:
-            raise ValueError("User does not exist.")
-        for credential in credentials:
-            service_name = credential.name
-            service_version = credential.version
-            user_cred_alias = aliased(model.UserCredentials)
-            group_alias = aliased(model.CredentialsGroup)
-            cred_alias = aliased(model.Credential)
-            stmt = (
-                select(user_cred_alias, group_alias, cred_alias)
-                .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
-                .outerjoin(cred_alias, cred_alias.group_id == group_alias.id)
-                .where(user_cred_alias.current_group_id == group_alias.id)
-                .where(user_cred_alias.user_id == user_id)
-                .where(user_cred_alias.source_type == source_type)
-                .where(user_cred_alias.source_id == source_id)
-                .where(user_cred_alias.name == service_name)
-                .where(user_cred_alias.version == service_version)
-            )
-            result = self.session.execute(stmt).tuples().all()
-            if not result:
-                # No credentials found for this user and service - we skip setting environment variables and
-                # let the tool handle missing credentials or provide defaults if applicable.
-                return
-            current_group = result[0][1].id
-            for secret in credential.secrets:
-                vault_ref = build_vault_credential_reference(
-                    source_type, source_id, service_name, service_version, current_group, secret.name
-                )
-                vault_value = user_vault.read_secret(vault_ref) or ""
-                self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
-            for variable in credential.variables:
-                variable_value = str(next((c.value for _, _, c in result if c.name == variable.name), ""))
-                self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
-
-
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -278,29 +216,22 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        def tool_uses_credentials() -> bool:
-            return hasattr(self.tool, "credentials") and bool(self.tool.credentials)
-
-        if isinstance(self.app, StructuredApp):
+        if self.tool.credentials is not None:
+            if not isinstance(self.app, StructuredApp):
+                log.warning(
+                    "Tool credentials specified but app is not a StructuredApp, cannot set environment variables"
+                )
+                return
             if (
-                tool_uses_credentials()
+                bool(self.app.vault)
+                and bool(self.app.model.session)
                 and self.tool.id is not None
                 and self.job.user is not None
-                and bool(self.app.vault)
-                and bool(self.app.model.session)
             ):
                 user_credentials_configurator = UserCredentialsConfigurator(
                     self.app.vault, self.app.model.session, self.job.user, self.environment_variables
                 )
                 user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
-        else:
-            if tool_uses_credentials():
-                pass
-                # for credential in credentials:
-                #     for secret in credential.secrets:
-                #         self.environment_variables.append({"name": secret.name, "value": secret.value})
-                #     for variable in credential.variables:
-                #         self.environment_variables.append({"name": variable.name, "value": variable.value})
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution

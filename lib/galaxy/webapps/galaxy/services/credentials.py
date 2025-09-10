@@ -6,6 +6,8 @@ from typing import (
     Union,
 )
 
+from sqlalchemy.orm import scoped_session
+
 from galaxy.exceptions import (
     AuthenticationFailed,
     AuthenticationRequired,
@@ -27,7 +29,6 @@ from galaxy.model import (
     User,
     UserCredentials,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
     CredentialGroupResponse,
@@ -347,7 +348,7 @@ class CredentialsService:
 
     def _update_credentials(
         self,
-        session: galaxy_scoped_session,
+        session: scoped_session,
         user: User,
         group_id: DecodedDatabaseIdField,
         payload: ServiceGroupPayload,
@@ -404,7 +405,7 @@ class CredentialsService:
 
     def _create_credentials(
         self,
-        session: galaxy_scoped_session,
+        session: scoped_session,
         user: User,
         payload: CreateSourceCredentialsPayload,
     ) -> CredentialGroupResponse:

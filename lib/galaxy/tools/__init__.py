@@ -64,6 +64,7 @@ from galaxy.tool_util.deps import (
     CachedDependencyManager,
     NullDependencyManager,
 )
+from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.fetcher import ToolLocationFetcher
 from galaxy.tool_util.loader import (
     imported_macro_paths,
@@ -1074,6 +1075,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.arguments: Optional[list[str]] = []
         self.shell_command: Optional[str] = None
         self.javascript_requirements: Optional[list[JavascriptRequirement]] = None
+        self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None
@@ -2956,7 +2958,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 "warnings": tool_warnings,
                 "versions": self.tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
-                "credentials": [credential.to_dict() for credential in self.credentials],
+                "credentials": [credential.to_dict() for credential in self.credentials] if self.credentials else [],
                 "errors": state_errors,
                 "tool_errors": self.tool_errors,
                 "state_inputs": state_inputs_json,

@@ -10,11 +10,17 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Credential,
     CredentialsGroup,
+    User,
     UserCredentials,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import SOURCE_TYPE
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.security.vault import (
+    UserVaultWrapper,
+    Vault,
+)
+from galaxy.tool_util.deps.requirements import CredentialsRequirement
 
 CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
 CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
@@ -171,3 +177,55 @@ class CredentialsManager:
         for row in rows_to_delete:
             self.session.delete(row)
         self.session.commit()
+
+
+class UserCredentialsConfigurator:
+    def __init__(
+        self,
+        vault: Vault,
+        session: galaxy_scoped_session,
+        user: User,
+        environment_variables: list[dict[str, str]],
+    ):
+        self.vault = vault
+        self.session = session
+        self.user = user
+        self.environment_variables = environment_variables
+
+    def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
+        user_vault = UserVaultWrapper(self.vault, self.user)
+        user_id = self.user.id
+        if not user_id:
+            raise ValueError("User does not exist.")
+        for credential in credentials:
+            service_name = credential.name
+            service_version = credential.version
+            user_cred_alias = aliased(UserCredentials)
+            group_alias = aliased(CredentialsGroup)
+            cred_alias = aliased(Credential)
+            stmt = (
+                select(user_cred_alias, group_alias, cred_alias)
+                .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
+                .outerjoin(cred_alias, cred_alias.group_id == group_alias.id)
+                .where(user_cred_alias.current_group_id == group_alias.id)
+                .where(user_cred_alias.user_id == user_id)
+                .where(user_cred_alias.source_type == source_type)
+                .where(user_cred_alias.source_id == source_id)
+                .where(user_cred_alias.name == service_name)
+                .where(user_cred_alias.version == service_version)
+            )
+            result = self.session.execute(stmt).tuples().all()
+            if not result:
+                # No credentials found for this user and service - we skip setting environment variables and
+                # let the tool handle missing credentials or provide defaults if applicable.
+                return
+            current_group = result[0][1].id
+            for secret in credential.secrets:
+                vault_ref = build_vault_credential_reference(
+                    source_type, source_id, service_name, service_version, current_group, secret.name
+                )
+                vault_value = user_vault.read_secret(vault_ref) or ""
+                self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
+            for variable in credential.variables:
+                variable_value = str(next((c.value for _, _, c in result if c.name == variable.name), ""))
+                self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
