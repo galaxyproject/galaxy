@@ -2789,7 +2789,13 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     @property
     def job_list(self):
-        return [icjja.job for icjja in self.jobs]
+        return (
+            required_object_session(self)
+            .query(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+            .all()
+        )
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
