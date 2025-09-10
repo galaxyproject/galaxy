@@ -20,6 +20,14 @@ CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
 CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
 
 
+def build_vault_credential_reference(
+    source_type: str, source_id: str, service_name: str, service_version: str, group_id: int, secret_name: str
+) -> str:
+    """Builds a unique reference string for a credential stored in the vault."""
+    vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{group_id}|{secret_name}"
+    return vault_ref
+
+
 class CredentialsManager:
     """Manager object shared by controllers for interacting with credentials."""
 

@@ -27,6 +27,7 @@ from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.managers.credentials import build_vault_credential_reference
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
@@ -181,7 +182,9 @@ class UserCredentialsConfigurator:
                 return
             current_group = result[0][1].id
             for secret in credential.secrets:
-                vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{current_group}|{secret.name}"
+                vault_ref = build_vault_credential_reference(
+                    source_type, source_id, service_name, service_version, current_group, secret.name
+                )
                 vault_value = user_vault.read_secret(vault_ref) or ""
                 self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
             for variable in credential.variables:
