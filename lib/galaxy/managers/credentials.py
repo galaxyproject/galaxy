@@ -182,27 +182,26 @@ class CredentialsManager:
         self.session.commit()
 
 
-class UserCredentialsConfigurator:
+class UserCredentialsEnvironmentBuilder:
     def __init__(
         self,
         vault: Vault,
         session: scoped_session,
         user: User,
-        environment_variables: list[dict[str, str]],
     ):
         self.vault = vault
         self.session = session
         self.user = user
-        self.environment_variables = environment_variables
 
-    def set_environment_variables(self, source_type: str, source_id: str, credentials: list[CredentialsRequirement]):
+    def build_environment_variables(
+        self, source_type: str, source_id: str, requirements: list[CredentialsRequirement]
+    ) -> list[dict[str, str]]:
+        env_variables: list[dict[str, str]] = []
         user_vault = UserVaultWrapper(self.vault, self.user)
         user_id = self.user.id
-        if not user_id:
-            raise ValueError("User does not exist.")
-        for credential in credentials:
-            service_name = credential.name
-            service_version = credential.version
+        for service in requirements:
+            service_name = service.name
+            service_version = service.version
             user_cred_alias = aliased(UserCredentials)
             group_alias = aliased(CredentialsGroup)
             cred_alias = aliased(Credential)
@@ -221,14 +220,15 @@ class UserCredentialsConfigurator:
             if not result:
                 # No credentials found for this user and service - we skip setting environment variables and
                 # let the tool handle missing credentials or provide defaults if applicable.
-                return
+                return env_variables
             current_group = result[0][1].id
-            for secret in credential.secrets:
+            for secret in service.secrets:
                 vault_ref = build_vault_credential_reference(
                     source_type, source_id, service_name, service_version, current_group, secret.name
                 )
-                vault_value = user_vault.read_secret(vault_ref) or ""
-                self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
-            for variable in credential.variables:
+                secret_value = user_vault.read_secret(vault_ref) or ""
+                env_variables.append({"name": secret.inject_as_env, "value": secret_value})
+            for variable in service.variables:
                 variable_value = str(next((c.value for _, _, c in result if c.name == variable.name), ""))
-                self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
+                env_variables.append({"name": variable.inject_as_env, "value": variable_value})
+        return env_variables

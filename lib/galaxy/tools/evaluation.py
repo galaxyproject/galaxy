@@ -22,7 +22,7 @@ from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
-from galaxy.managers.credentials import UserCredentialsConfigurator
+from galaxy.managers.credentials import UserCredentialsEnvironmentBuilder
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
@@ -966,10 +966,13 @@ class ToolEvaluator:
             log.warning("Tool credentials specified but app is not a StructuredApp, cannot set environment variables")
             return
         if self.tool.id is not None and self._user is not None:
-            user_credentials_configurator = UserCredentialsConfigurator(
-                self.app.vault, self.app.model.session, self._user, self.environment_variables
+            user_credentials_configurator = UserCredentialsEnvironmentBuilder(
+                self.app.vault, self.app.model.session, self._user
             )
-            user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
+            user_credential_env_vars = user_credentials_configurator.build_environment_variables(
+                source_type="tool", source_id=self.tool.id, requirements=self.tool.credentials
+            )
+            self.environment_variables.extend(user_credential_env_vars)
 
     @property
     def _history(self):
