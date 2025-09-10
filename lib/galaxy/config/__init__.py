@@ -600,7 +600,7 @@ class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
     sentry_dsn: str
-    config_dict: dict[str, str]
+    config_dict: dict[str, Any]
 
     @property
     def admin_users(self):
@@ -1253,11 +1253,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self.themes = {}
 
-        if "themes_config_file_by_host" in self.config_dict:
+        if themes_config_file_by_host := self.config_dict.get("themes_config_file_by_host", {}):
             self.themes_by_host = {}
             resolve_to_dir = self.schema.paths_to_resolve["themes_config_file"]
             resolve_dir_path = getattr(self, resolve_to_dir)
-            for host, file_name in self.config_dict["themes_config_file_by_host"].items():
+            for host, file_name in themes_config_file_by_host.items():
                 self.themes_by_host[host] = {}
                 file_path = self._in_dir(resolve_dir_path, file_name)
                 _load_theme(file_path, self.themes_by_host[host])
