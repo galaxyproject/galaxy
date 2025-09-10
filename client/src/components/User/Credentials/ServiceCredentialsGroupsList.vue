@@ -6,7 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { ServiceCredentialsDefinition, ServiceGroupPayload } from "@/api/users";
-import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
+import type { CardAction, CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
@@ -48,6 +48,8 @@ const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredent
 const showModal = ref(false);
 const saveButtonText = ref("Save Changes");
 const editData = ref<EditData>();
+
+const cardTitleIcon: TitleIcon = { icon: faKey, size: "sm" };
 
 const cardTitle = computed(() => (group: ServiceCredentialsGroupDetails) => {
     return `${group.serviceDefinition.name} (v${group.serviceDefinition.version}) - ${group.name}`;
@@ -197,17 +199,18 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
             v-for="group in props.serviceGroups"
             :id="`group-${group.id}-${group.name}`"
             :key="`group-${group.id}-${group.name}`"
+            :title="cardTitle(group)"
+            :title-icon="cardTitleIcon"
             :description="group.serviceDefinition.description"
             :badges="getBadgesFor(group)"
             :published="isGroupInUse(group)"
-            :primary-actions="getPrimaryActions(group)"
-            :title-icon="{ icon: faKey, size: 'sm' }"
-            :title="cardTitle(group)">
+            :primary-actions="getPrimaryActions(group)">
         </GCard>
 
         <BModal
             v-model="showModal"
             visible
+            centered
             scrollable
             no-close-on-backdrop
             no-close-on-esc
