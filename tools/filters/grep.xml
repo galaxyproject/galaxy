@@ -76,7 +76,8 @@
       <param name="keep_header" value="true"/>
       <output name="out_file1">
         <assert_contents>
-          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <has_n_lines n="1"></has_n_lines>
         </assert_contents>
       </output>
     </test>
