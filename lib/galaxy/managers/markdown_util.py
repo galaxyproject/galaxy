@@ -13,7 +13,6 @@ context specific processing.
 
 import abc
 import base64
-import codecs
 import logging
 import os
 import re
@@ -851,7 +850,7 @@ def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> by
     directory = tempfile.mkdtemp("gxmarkdown")
     index = os.path.join(directory, "index.html")
     try:
-        output_file = codecs.open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
+        output_file = open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
         output_file.write(as_html)
         output_file.close()
         html = weasyprint.HTML(filename=index)
