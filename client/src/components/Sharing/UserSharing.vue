@@ -126,7 +126,7 @@ const noChanges = computed(() => {
 const canChangeCount = computed(() => props.item.extra?.can_change.length ?? 0);
 const cannotChangeCount = computed(() => props.item.extra?.cannot_change.length ?? 0);
 
-const selectedSharingOption = ref<ShareOption>("make_public");
+const selectedSharingOption = ref<ShareOption>("make_accessible_to_shared");
 
 function onUpdatePermissions() {
     emit("share", sharingCandidatesAsEmails.value, selectedSharingOption.value);
