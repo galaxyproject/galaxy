@@ -139,7 +139,7 @@ const cannotChangeDatasets = computed(() => {
     return isShareableHistoryWithStatus(props.item) ? props.item.extra.cannot_change : [];
 });
 
-const selectedSharingOption = ref<ShareOption>("make_public");
+const selectedSharingOption = ref<ShareOption>("make_accessible_to_shared");
 
 function onUpdatePermissions() {
     emit("share", sharingCandidatesAsEmails.value, selectedSharingOption.value);
