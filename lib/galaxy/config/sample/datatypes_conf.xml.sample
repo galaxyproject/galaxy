@@ -35,7 +35,7 @@
     </datatype>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="A pairwise alignment format." description_url="https://genome.ucsc.edu/goldenPath/help/axt.html"/>
+    <datatype extension="axt" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="A pairwise alignment format." description_url="https://genome.ucsc.edu/goldenPath/help/axt.html"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
         <infer_from suffix="bam" />
@@ -470,7 +470,7 @@
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
     <datatype extension="lav" type="galaxy.datatypes.sequence:Lav" display_in_upload="true" description="Lav is the primary output format for BLASTZ.  The first line of a .lav file begins with #:lav.."/>
-    <datatype extension="maf" type="galaxy.datatypes.sequence:Maf" display_in_upload="true" description="TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 'variable=value' pairs. There should be no white space surrounding the '='." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#MAF">
+    <datatype extension="maf" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Maf" display_in_upload="true" description="Multiple Alignment Format. The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 'variable=value' pairs. There should be no white space surrounding the '='." description_url="https://genome.ucsc.edu/FAQ/FAQformat.html#format5">
         <infer_from suffix="maf" />
         <converter file="maf_to_fasta_converter.xml" target_datatype="fasta"/>
         <converter file="maf_to_interval_converter.xml" target_datatype="interval"/>
