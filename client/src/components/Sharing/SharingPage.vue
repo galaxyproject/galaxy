@@ -5,13 +5,13 @@ import axios from "axios";
 import { BFormCheckbox } from "bootstrap-vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 
+import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
+import { isShareableHistoryWithStatus } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { getFullAppUrl } from "@/app/utils";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import type { Item, ShareOption } from "./item";
 
 import EditableUrl from "./EditableUrl.vue";
 import PageEmbed from "./Embeds/PageEmbed.vue";
@@ -40,19 +40,15 @@ function onErrorDismissed(index: number) {
     errors.value.splice(index, 1);
 }
 
-const defaultExtra = () =>
-    ({
-        can_change: [],
-        cannot_change: [],
-    }) as Item["extra"];
-
-const item = ref<Item>({
+const item = ref<AnyShareableItemWithStatus>({
+    id: "_placeholder_",
     title: "title",
     username_and_slug: "__username__/__slug__",
     importable: false,
     published: false,
     users_shared_with: [],
-    extra: defaultExtra(),
+    extra: null,
+    errors: [],
 });
 
 const itemUrl = reactive({
@@ -112,8 +108,8 @@ async function getSharing() {
 
 getSharing();
 
-function permissionsChangeRequired(data: Item) {
-    if (data.extra) {
+function permissionsChangeRequired(data: AnyShareableItemWithStatus) {
+    if (isShareableHistoryWithStatus(data)) {
         return data.extra.can_change.length > 0 || data.extra.cannot_change.length > 0;
     } else {
         return false;
@@ -167,15 +163,11 @@ async function setSharing(
 
 const userSharing = ref<InstanceType<typeof UserSharing>>();
 
-async function assignItem(newItem: Item, overwriteCandidates: boolean) {
+async function assignItem(newItem: AnyShareableItemWithStatus, overwriteCandidates: boolean) {
     if (newItem.errors) {
         errors.value = newItem.errors;
     }
     item.value = newItem;
-
-    if ((!item.value.extra || newItem.errors?.length) ?? 0 > 0) {
-        item.value.extra = defaultExtra();
-    }
 
     if (overwriteCandidates) {
         await nextTick();

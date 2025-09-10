@@ -338,3 +338,12 @@ export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollect
 export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
 export type UserToolSource = components["schemas"]["UserToolSource-Input"];
 export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+
+export type ShareableItemWithStatus = components["schemas"]["ShareWithStatus"];
+export type ShareableHistoryWithStatus = components["schemas"]["ShareHistoryWithStatus"];
+export type AnyShareableItemWithStatus = ShareableItemWithStatus | ShareableHistoryWithStatus;
+export type ShareOption = components["schemas"]["SharingOptions"];
+
+export function isShareableHistoryWithStatus(item: AnyShareableItemWithStatus): item is ShareableHistoryWithStatus {
+    return item.extra != null && "accessible_count" in item.extra;
+}
