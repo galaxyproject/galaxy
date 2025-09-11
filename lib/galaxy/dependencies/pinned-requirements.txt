@@ -82,7 +82,7 @@ greenlet==3.2.4 ; (python_full_version < '3.14' and platform_machine == 'AMD64')
 grpcio==1.74.0
 grpcio-status==1.74.0
 gunicorn==23.0.0
-gxformat2==0.20.0
+gxformat2==0.21.0
 h11==0.16.0
 h5grove==2.3.0
 h5py==3.14.0
