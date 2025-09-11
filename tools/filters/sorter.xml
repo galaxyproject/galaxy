@@ -1,9 +1,9 @@
 <tool id="sort1" name="Sort" version="1.2.0">
     <description>data in ascending or descending order</description>
     <requirements>
-        <requirement type="package" version="2.14">grep</requirement>
-        <requirement type="package" version="4.4">sed</requirement>
-        <requirement type="package" version="8.31">coreutils</requirement>
+        <requirement type="package" version="3.11">grep</requirement>
+        <requirement type="package" version="4.9">sed</requirement>
+        <requirement type="package" version="9.5">coreutils</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
 ## Sorts tabular data on one or more columns. All comments of the file are
