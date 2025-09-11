@@ -236,37 +236,46 @@ class UserCredentialsEnvironmentBuilder:
     def build_environment_variables(
         self, source_type: str, source_id: str, requirements: list[CredentialsRequirement]
     ) -> list[dict[str, str]]:
+        """
+        Build environment variables for the given service requirements.
+
+        Returns environment variables for all services that have credentials configured.
+        Services without credentials are skipped, allowing tools to handle missing
+        credentials or provide defaults.
+        """
         env_variables: list[dict[str, str]] = []
         user_vault = UserVaultWrapper(self.vault, self.user)
         user_id = self.user.id
 
         for service in requirements:
-            service_name = service.name
-            service_version = service.version
-
             stmt = _build_user_credentials_query(
                 user_id=user_id,
                 source_type=source_type,
                 source_id=source_id,
-                service_name=service_name,
-                service_version=service_version,
+                service_name=service.name,
+                service_version=service.version,
                 current_group_only=True,
             )
             result = self.session.execute(stmt).tuples().all()
 
             if not result:
-                # No credentials found for this user and service - we skip setting environment variables and
-                # let the tool handle missing credentials or provide defaults if applicable.
-                return env_variables
+                # Skip this service if no credentials found - continue with other services
+                continue
 
-            current_group = result[0][1].id
+            current_group_id = result[0][1].id
+
+            # Only include credentials that have been set by the user
+            credential_value_map = {c.name: c.value for _, _, c in result if c is not None and c.is_set}
+
             for secret in service.secrets:
                 vault_ref = build_vault_credential_reference(
-                    source_type, source_id, service_name, service_version, current_group, secret.name
+                    source_type, source_id, service.name, service.version, current_group_id, secret.name
                 )
                 secret_value = user_vault.read_secret(vault_ref) or ""
                 env_variables.append({"name": secret.inject_as_env, "value": secret_value})
+
             for variable in service.variables:
-                variable_value = str(next((c.value for _, _, c in result if c.name == variable.name), ""))
+                variable_value = str(credential_value_map.get(variable.name, ""))
                 env_variables.append({"name": variable.inject_as_env, "value": variable_value})
+
         return env_variables
