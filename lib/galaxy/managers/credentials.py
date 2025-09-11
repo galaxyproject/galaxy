@@ -4,10 +4,7 @@ from typing import (
 )
 
 from sqlalchemy import select
-from sqlalchemy.orm import (
-    aliased,
-    scoped_session,
-)
+from sqlalchemy.orm import scoped_session
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
@@ -27,6 +24,65 @@ from galaxy.tool_util.deps.requirements import CredentialsRequirement
 
 CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
 CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
+
+
+def _build_user_credentials_query(
+    user_id: DecodedDatabaseIdField,
+    source_type: Optional[str] = None,
+    source_id: Optional[str] = None,
+    source_version: Optional[str] = None,
+    service_name: Optional[str] = None,
+    service_version: Optional[str] = None,
+    user_credentials_id: Optional[DecodedDatabaseIdField] = None,
+    group_id: Optional[DecodedDatabaseIdField] = None,
+    current_group_only: bool = False,
+):
+    """
+    Builds a common SQLAlchemy query for fetching user credentials with optional filters.
+
+    Args:
+        user_id: ID of the user
+        source_type: Filter by source type
+        source_id: Filter by source ID
+        source_version: Filter by source version
+        service_name: Filter by service name (maps to UserCredentials.name)
+        service_version: Filter by service version (maps to UserCredentials.version)
+        user_credentials_id: Filter by specific user credentials ID
+        group_id: Filter by specific group ID
+        current_group_only: If True, only return credentials from the current active group
+
+    Returns:
+        SQLAlchemy query object that can be executed
+    """
+    if source_id and not source_type:
+        raise RequestParameterInvalidException("Source type is required when source ID is provided.")
+
+    stmt = (
+        select(UserCredentials, CredentialsGroup, Credential)
+        .join(CredentialsGroup, CredentialsGroup.user_credentials_id == UserCredentials.id)
+        .outerjoin(Credential, Credential.group_id == CredentialsGroup.id)
+        .where(UserCredentials.user_id == user_id)
+    )
+
+    if current_group_only:
+        stmt = stmt.where(UserCredentials.current_group_id == CredentialsGroup.id)
+
+    if source_type:
+        stmt = stmt.where(UserCredentials.source_type == source_type)
+    if source_id:
+        stmt = stmt.where(UserCredentials.source_id == source_id)
+    if source_version:
+        stmt = stmt.where(UserCredentials.source_version == source_version)
+    if service_name:
+        stmt = stmt.where(UserCredentials.name == service_name)
+    if service_version:
+        stmt = stmt.where(UserCredentials.version == service_version)
+    if user_credentials_id:
+        stmt = stmt.where(UserCredentials.id == user_credentials_id)
+    if group_id:
+        stmt = stmt.where(CredentialsGroup.id == group_id)
+
+    return stmt
 
 
 def build_vault_credential_reference(
@@ -52,31 +108,14 @@ class CredentialsManager:
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
         group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> CredentialsAssociation:
-        if source_id and not source_type:
-            raise RequestParameterInvalidException("Source type is required when source ID is provided.")
-
-        user_cred_alias, group_alias, cred_alias = (
-            aliased(UserCredentials),
-            aliased(CredentialsGroup),
-            aliased(Credential),
+        stmt = _build_user_credentials_query(
+            user_id=user_id,
+            source_type=source_type,
+            source_id=source_id,
+            source_version=source_version,
+            user_credentials_id=user_credentials_id,
+            group_id=group_id,
         )
-        stmt = (
-            select(user_cred_alias, group_alias, cred_alias)
-            .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
-            .outerjoin(cred_alias, cred_alias.group_id == group_alias.id)
-            .where(user_cred_alias.user_id == user_id)
-        )
-        if source_type:
-            stmt = stmt.where(user_cred_alias.source_type == source_type)
-        if source_id:
-            stmt = stmt.where(user_cred_alias.source_id == source_id)
-        if source_version:
-            stmt = stmt.where(user_cred_alias.source_version == source_version)
-        if user_credentials_id:
-            stmt = stmt.where(user_cred_alias.id == user_credentials_id)
-        if group_id:
-            stmt = stmt.where(group_alias.id == group_id)
-
         result = self.session.execute(stmt).tuples().all()
         return list(result)
 
@@ -85,6 +124,7 @@ class CredentialsManager:
         dict[tuple[DecodedDatabaseIdField, str], CredentialsGroup],
         dict[tuple[DecodedDatabaseIdField, str, bool], Credential],
     ]:
+        """Creates index maps for quick lookup of existing credentials by unique keys."""
         user_cred_map = {}
         group_map = {}
         cred_map = {}
@@ -199,28 +239,26 @@ class UserCredentialsEnvironmentBuilder:
         env_variables: list[dict[str, str]] = []
         user_vault = UserVaultWrapper(self.vault, self.user)
         user_id = self.user.id
+
         for service in requirements:
             service_name = service.name
             service_version = service.version
-            user_cred_alias = aliased(UserCredentials)
-            group_alias = aliased(CredentialsGroup)
-            cred_alias = aliased(Credential)
-            stmt = (
-                select(user_cred_alias, group_alias, cred_alias)
-                .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
-                .outerjoin(cred_alias, cred_alias.group_id == group_alias.id)
-                .where(user_cred_alias.current_group_id == group_alias.id)
-                .where(user_cred_alias.user_id == user_id)
-                .where(user_cred_alias.source_type == source_type)
-                .where(user_cred_alias.source_id == source_id)
-                .where(user_cred_alias.name == service_name)
-                .where(user_cred_alias.version == service_version)
+
+            stmt = _build_user_credentials_query(
+                user_id=user_id,
+                source_type=source_type,
+                source_id=source_id,
+                service_name=service_name,
+                service_version=service_version,
+                current_group_only=True,
             )
             result = self.session.execute(stmt).tuples().all()
+
             if not result:
                 # No credentials found for this user and service - we skip setting environment variables and
                 # let the tool handle missing credentials or provide defaults if applicable.
                 return env_variables
+
             current_group = result[0][1].id
             for secret in service.secrets:
                 vault_ref = build_vault_credential_reference(
