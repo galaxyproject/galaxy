@@ -43,11 +43,7 @@ __all__ = ("FastAPIJobFiles", "JobFilesAPIController", "router")
 log = logging.getLogger(__name__)
 
 
-router = Router(
-    # keep the endpoint in the undocumented section of the API docs `/api/docs`, as all endpoints from `FastAPIJobFiles`
-    # are certainly not meant to represent part of Galaxy's stable, user facing API
-    tags=["undocumented"]
-)
+router = Router(tags=["jobs"])
 
 
 def path_query_or_form(
