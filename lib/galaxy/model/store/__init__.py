@@ -651,7 +651,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     if dataset_state == dataset_instance.states.DEFERRED:
                         dataset_instance.state = dataset_instance.states.DEFERRED
                         dataset_instance.deleted = False
-                        dataset_instance.purged = False
+                        if isinstance(dataset_instance, model.HistoryDatasetAssociation):
+                            dataset_instance.purged = False
+                        assert dataset_instance.dataset
                         dataset_instance.dataset.deleted = False
                         dataset_instance.dataset.purged = False
                     elif (
@@ -666,7 +668,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.state = target_state
                         deleted = is_discarded and (discarded_data == ImportDiscardedDataType.FORBID)
                         dataset_instance.deleted = deleted
-                        dataset_instance.purged = deleted
+                        if isinstance(dataset_instance, model.HistoryDatasetAssociation):
+                            dataset_instance.purged = deleted
+                        assert dataset_instance.dataset
                         dataset_instance.dataset.state = target_state
                         dataset_instance.dataset.deleted = deleted
                         dataset_instance.dataset.purged = deleted

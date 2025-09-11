@@ -6282,6 +6282,11 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
+    @property
+    def purged(self):
+        # For uniformity with HistoryDatasetAssociation
+        return self.dataset and self.dataset.purged
+
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
     ):
