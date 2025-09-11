@@ -460,7 +460,9 @@ class CredentialsService:
             if (user_credential_group_id, secret_name, True) in cred_map:
                 raise Conflict(f"Secret '{secret_name}' already exists in group '{group_name}'.")
             if secret_value is not None:
-                vault_ref = f"{source_type}|{source_id}|{service_name}|{service_version}|{user_credential_group_id}|{secret_name}"
+                vault_ref = build_vault_credential_reference(
+                    source_type, source_id, service_name, service_version, user_credential_group_id, secret_name
+                )
                 user_vault.write_secret(vault_ref, secret_value)
             self.credentials_manager.add_credential(
                 user_credential_group_id,
