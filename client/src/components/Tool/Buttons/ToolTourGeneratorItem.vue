@@ -14,6 +14,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const INVALID_UPLOAD_STATES = ["discarded", "failed", "error"];
+
 const props = defineProps<{
     toolId: string;
     toolVersion: string;
@@ -69,6 +71,11 @@ const allStatesOk = computed(() => {
     return states.value.length === 0 || states.value.every((state) => state && state === "ok");
 });
 
+/** Checks if any of the states are invalid. */
+const anyStateInvalid = computed(() => {
+    return states.value.some((state) => state && INVALID_UPLOAD_STATES.includes(state));
+});
+
 const waitedForItemsOk = computed<boolean>(() => localTourData.value !== null && allStatesOk.value);
 
 watch(
@@ -81,6 +88,20 @@ watch(
 
             Toast.success("You can now start the tour", "Tour is ready!");
             tourStore.setTour(generatedTourId.value);
+        }
+    },
+);
+
+// If any of the uploaded datasets are in an invalid state, show an error and reset.
+watch(
+    () => anyStateInvalid.value,
+    (invalid) => {
+        if (invalid) {
+            Toast.error(
+                "This tour uploads datasets that failed to be created. You can try generating the tour again.",
+                "Failed to generate tour",
+            );
+            reset();
         }
     },
 );

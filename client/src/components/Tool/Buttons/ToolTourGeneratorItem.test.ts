@@ -49,7 +49,7 @@ jest.mock("@/stores/tourStore", () => {
 });
 
 // Mock the toast composable to track the messages
-const toastMock = jest.fn((message, type: "success" | "info") => {
+const toastMock = jest.fn((message, type: "success" | "info" | "error") => {
     return { message, type };
 });
 jest.mock("@/composables/toast", () => ({
@@ -59,6 +59,9 @@ jest.mock("@/composables/toast", () => ({
         }),
         info: jest.fn().mockImplementation((message) => {
             toastMock(message, "info");
+        }),
+        error: jest.fn().mockImplementation((message) => {
+            toastMock(message, "error");
         }),
     },
 }));
@@ -97,6 +100,8 @@ describe("Tool Generated Tour Dropdown Item", () => {
 
     afterEach(() => {
         wrapper.destroy();
+        server.resetHandlers();
+        currentItemState.value = null;
     });
 
     it("generates a basic tour (that doesn't wait on datasets) on click", async () => {
@@ -153,6 +158,37 @@ describe("Tool Generated Tour Dropdown Item", () => {
         expect(toastMock).toHaveBeenCalledTimes(2);
     });
 
+    it("generates a tour that that uploads datasets but they become invalid", async () => {
+        server.use(
+            http.get("/api/tours/generate", ({ response }) => {
+                return response(200).json({
+                    tour: TEST_TOUR,
+                    uploaded_hids: [1, 2, 3],
+                    use_datasets: true,
+                });
+            }),
+        );
+
+        const dropdownItem = await clickDropdownItem();
+
+        // Now we mock history items going through states, and the tour generation failing when one is invalid
+
+        await mockItemsState("new");
+        tourIsGenerating(dropdownItem);
+
+        await mockItemsState("running");
+        tourIsGenerating(dropdownItem);
+
+        await mockItemsState("error");
+        tourGenerationFailedWith(
+            dropdownItem,
+            "This tour uploads datasets that failed to be created. You can try generating the tour again.",
+        );
+
+        // We know by now this is the 2nd toast
+        expect(toastMock).toHaveBeenCalledTimes(2);
+    });
+
     // LOCAL METHODS: ----------------------------------------------------------------------
 
     /** Finds and confirms the tool generated tour dropdown item exists, and clicks it. */
@@ -192,5 +228,15 @@ describe("Tool Generated Tour Dropdown Item", () => {
 
         // The tour is now in the store, with the expected key
         expect(setTourMock).toHaveBeenCalledWith(`tool-generated-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`);
+    }
+
+    /** Confirms the tour generation failed, the dropdown item is enabled, the tour store not updated
+     * and the expected error is message shown in a toast.
+     */
+    function tourGenerationFailedWith(dropdownItem: Wrapper<Vue>, message: string) {
+        // The second toast confirms the tour generation failed
+        expect(toastMock).toHaveBeenCalledWith(message, "error");
+        expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();
+        expect(setTourMock).toHaveBeenCalledTimes(0);
     }
 });
