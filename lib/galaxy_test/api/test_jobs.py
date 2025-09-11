@@ -860,17 +860,22 @@ steps:
             }
         )
         tool_response = self._job_search(tool_id="collection_creates_list", history_id=history_id, inputs=inputs)
-        output_id = tool_response.json()["outputs"][0]["id"]
+        output_dict = tool_response.json()["outputs"][0]
+        assert output_dict["history_content_type"] == "dataset"
+        output_id = output_dict["id"]
+        # Wait for job search to register the job, make sure initial conditions set.
+        search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
+        self._search(search_payload, expected_search_count=1)
         # We delete a single tool output, no job should be returned
-        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
+        delete_response = self._delete(f"histories/{history_id}/contents/datasets/{output_id}")
         self._assert_status_code_is_ok(delete_respone)
         search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
         tool_response = self._job_search(tool_id="collection_creates_list", history_id=history_id, inputs=inputs)
         output_collection_id = tool_response.json()["output_collections"][0]["id"]
         # We delete a collection output, no job should be returned
-        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{output_collection_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/dataset_collections/{output_collection_id}")
+        self._assert_status_code_is_ok(delete_response)
         search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
