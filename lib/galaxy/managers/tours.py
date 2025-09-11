@@ -117,9 +117,13 @@ class TourGenerator:
                     input_file = cgi_FieldStorage(headers=headers)
                     input_file.file = input_file.make_file()
                     input_file.file.write(content)
+
+                    # Use "auto" for generic 'data' extensions, otherwise use the specific extension
+                    file_type = input.extensions[0] if input.extensions[0] != "data" else "auto"
+
                     inputs = {
                         "dbkey": "?",  # is it always a question mark?
-                        "file_type": input.extensions[0],
+                        "file_type": file_type,
                         "files_0|type": "upload_dataset",
                         "files_0|space_to_tab": None,
                         "files_0|to_posix_lines": "Yes",
