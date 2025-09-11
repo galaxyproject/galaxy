@@ -36,6 +36,7 @@
             :disabled="disabled || showExecuting"
             :allow-object-store-selection="config.object_store_allows_id_selection"
             :preferred-object-store-id="preferredObjectStoreId"
+            has-complete-inputs
             itemscope="itemscope"
             itemtype="https://schema.org/CreativeWork"
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
