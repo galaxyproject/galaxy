@@ -109,12 +109,11 @@ class FastAPIJobFiles:
     for tool execution.
     """
 
-    # FastAPI answers HEAD requests automatically for GET endpoints. However, because of the way legacy WSGI endpoints
-    # are injected into the FastAPI app (using `app.mount("/", wsgi_handler)`), the built-in support for `HEAD` requests
-    # breaks, because such requests are passed to the `wsgi_handler` sub-application. This means that the endpoint still
-    # needs to include some code to handle this behavior, as tests existing before the migration to FastAPI expect HEAD
-    # requests to work.
-    #
+    # FastAPI answers HEAD requests automatically for GET endpoints returning `FileResponse`. However, because of the
+    # way legacy WSGI endpoints are injected into the FastAPI app (using `app.mount("/", wsgi_handler)`), the built-in
+    # support for `HEAD` requests breaks, because such requests are passed to the `wsgi_handler` sub-application. This
+    # means that the endpoint still needs to include some code to handle this behavior, as tests existing before the
+    # migration to FastAPI expect HEAD requests to work.
     @router.get(
         # simplify me (remove `_args` and `_kwargs` defined using the walrus operator) when ALL endpoints have been
         # migrated to FastAPI, this is a workaround for FastAPI bug https://github.com/fastapi/fastapi/issues/13175
