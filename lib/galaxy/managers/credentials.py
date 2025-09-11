@@ -264,10 +264,14 @@ class UserCredentialsEnvironmentBuilder:
 
             current_group_id = result[0][1].id
 
-            # Only include credentials that have been set by the user
-            credential_value_map = {c.name: c.value for _, _, c in result if c is not None and c.is_set}
-            # Create a set of secret names that have been set for quick lookup
-            set_secret_names = {c.name for _, _, c in result if c is not None and c.is_secret and c.is_set}
+            # Build maps for credentials and secrets that have been set by the user
+            credential_value_map = {}
+            set_secret_names = set()
+            for _, _, c in result:
+                if c is not None and c.is_set:
+                    credential_value_map[c.name] = c.value
+                    if c.is_secret:
+                        set_secret_names.add(c.name)
 
             for secret in service.secrets:
                 # Only read from vault if the secret has been set by the user
