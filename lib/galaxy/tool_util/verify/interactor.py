@@ -674,11 +674,14 @@ class GalaxyInteractorApi:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
+            outputs = self.__dictify_outputs(submit_response_object)
+            output_collections = self.__dictify_output_collections(submit_response_object)
+            jobs = submit_response_object["jobs"]
             return RunToolResponse(
                 inputs=inputs_tree,
-                outputs=self.__dictify_outputs(submit_response_object),
-                output_collections=self.__dictify_output_collections(submit_response_object),
-                jobs=submit_response_object["jobs"],
+                outputs=outputs,
+                output_collections=output_collections,
+                jobs=jobs,
             )
         except KeyError:
             message = (
@@ -766,7 +769,11 @@ class GalaxyInteractorApi:
             dataset = history_content
 
             print(ERROR_MESSAGE_DATASET_SEP)
-            dataset_id = dataset.get("id", None)
+            dataset_id: Optional[str] = dataset.get("id")
+            if dataset_id is None:
+                print("| *TEST FRAMEWORK ERROR - NO DATASET ID*")
+                continue
+
             print(f"| {dataset['hid']} - {dataset['name']} (HID - NAME) ")
             if history_content["history_content_type"] == "dataset_collection":
                 history_contents_json = self._get(
@@ -819,15 +826,15 @@ class GalaxyInteractorApi:
         contents = "\n".join(f"{prefix}{line.strip()}" for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
         return contents or f"{prefix}*{empty_message}*"
 
-    def _dataset_provenance(self, history_id, id):
+    def _dataset_provenance(self, history_id: str, id: str) -> Dict[str, Any]:
         provenance = self._get(f"histories/{history_id}/contents/{id}/provenance").json()
         return provenance
 
-    def _dataset_info(self, history_id, id):
+    def _dataset_info(self, history_id: str, id: str) -> Dict[str, Any]:
         dataset_json = self._get(f"histories/{history_id}/contents/{id}").json()
         return dataset_json
 
-    def __contents(self, history_id):
+    def __contents(self, history_id: str) -> List[Dict[str, Any]]:
         history_contents_response = self._get(f"histories/{history_id}/contents")
         history_contents_response.raise_for_status()
         return history_contents_response.json()
@@ -843,7 +850,15 @@ class GalaxyInteractorApi:
             )
         return None
 
-    def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None, tool_version=None):
+    def __submit_tool(
+        self,
+        history_id: str,
+        tool_id: str,
+        tool_input: Optional[dict],
+        extra_data: Optional[dict] = None,
+        files: Optional[dict] = None,
+        tool_version: Optional[str] = None,
+    ):
         extra_data = extra_data or {}
         data = dict(
             history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
