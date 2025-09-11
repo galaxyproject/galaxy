@@ -266,13 +266,17 @@ class UserCredentialsEnvironmentBuilder:
 
             # Only include credentials that have been set by the user
             credential_value_map = {c.name: c.value for _, _, c in result if c is not None and c.is_set}
+            # Create a set of secret names that have been set for quick lookup
+            set_secret_names = {c.name for _, _, c in result if c is not None and c.is_secret and c.is_set}
 
             for secret in service.secrets:
-                vault_ref = build_vault_credential_reference(
-                    source_type, source_id, service.name, service.version, current_group_id, secret.name
-                )
-                secret_value = user_vault.read_secret(vault_ref) or ""
-                env_variables.append({"name": secret.inject_as_env, "value": secret_value})
+                # Only read from vault if the secret has been set by the user
+                if secret.name in set_secret_names:
+                    vault_ref = build_vault_credential_reference(
+                        source_type, source_id, service.name, service.version, current_group_id, secret.name
+                    )
+                    secret_value = user_vault.read_secret(vault_ref) or ""
+                    env_variables.append({"name": secret.inject_as_env, "value": secret_value})
 
             for variable in service.variables:
                 variable_value = str(credential_value_map.get(variable.name, ""))
