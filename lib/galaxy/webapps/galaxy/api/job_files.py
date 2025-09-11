@@ -136,7 +136,7 @@ class FastAPIJobFiles:
             )
         ),
     )
-    @router.head(*_args, **_kwargs)  # type: ignore[name-defined]
+    @router.head(*_args, **_kwargs, include_in_schema=False)  # type: ignore[name-defined]
     # remove `@router.head(...)` when ALL endpoints have been migrated to FastAPI
     def index(
         self,

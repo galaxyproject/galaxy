@@ -3157,14 +3157,7 @@ export interface paths {
         post: operations["create_api_jobs__job_id__files_post"];
         delete?: never;
         options?: never;
-        /**
-         * Get a file required to staging a job.
-         * @description Get a file required to staging a job (proper datasets, extra inputs, task-split inputs, working directory
-         *     files).
-         *
-         *     This API method is intended only for consumption by job runners, not end users.
-         */
-        head: operations["index_api_jobs__job_id__files_head"];
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -33230,62 +33223,6 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    index_api_jobs__job_id__files_head: {
-        parameters: {
-            query: {
-                /** @description Path to file. */
-                path: string;
-                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job. */
-                job_key: string;
-            };
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description Encoded id string of the job. */
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Contents of file. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/octet-stream": unknown;
-                };
-            };
-            /** @description File not found, path does not refer to a file, or input dataset(s) for job have been purged. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Request Error */
             "4XX": {
