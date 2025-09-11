@@ -18,6 +18,7 @@ from urllib.parse import quote
 import jwt
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
+from sqlalchemy import func
 
 from galaxy import (
     exceptions,
@@ -246,7 +247,7 @@ class OIDCAuthnzBase(IdentityProvider):
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config.provider)
         if custos_authnz_token is None:
             user = trans.user
-            existing_user = trans.sa_session.query(User).filter_by(email=email).first()
+            existing_user = trans.sa_session.query(User).filter(func.lower(User.email) == email.lower()).first()
             if not user:
                 if existing_user:
                     if trans.app.config.fixed_delegated_auth:
