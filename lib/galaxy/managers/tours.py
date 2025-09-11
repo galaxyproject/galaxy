@@ -79,6 +79,10 @@ class TourGenerator:
         if not self._tool.tests:
             raise RequestParameterInvalidException("Tests are not defined.")
         self._test = self._tool.tests[0]
+
+        if any(v.type in ("repeat", "data_collection") for v in self._tool.inputs.values()):
+            raise RequestParameterInvalidException("Not supported input types.")
+
         # All inputs with the type 'data'
         self._data_inputs = {x.name: x for x in self._tool.input_params if x.type == "data"}
         # Datasets from the <test></test> section
@@ -93,19 +97,10 @@ class TourGenerator:
                 input_name = name.split("|")[1]
                 if input_name in self._data_inputs.keys():
                     test_datasets.update({input_name: self._test.inputs[name][0]})
-        if not test_datasets.keys():
-            not_supported_input_types = [
-                k for k, v in self._tool.inputs.items() if v.type == "repeat" or v.type == "data_collection"
-            ]
-            if not_supported_input_types:
-                raise RequestParameterInvalidException("Not supported input types.")
-            else:
-                # Some tests don't have data inputs at all,
-                # so we can generate a tour without them
-                self._use_datasets = False
-                return
 
-        if not performs_upload:
+        # Some tests don't have data inputs at all,
+        # so we can generate a tour without them
+        if not test_datasets.keys() or not performs_upload:
             self._use_datasets = False
             return
 
