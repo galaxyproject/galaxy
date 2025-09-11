@@ -153,9 +153,12 @@ class TourGenerator:
             cond_case_steps: list[TourStep] = []
             if input.type == "repeat":
                 continue
+
+            step_element = f"[id='form-element-{name}']"
+
             step: TourStep = TourStep(
                 title=getattr(input, "label", name),
-                element=f"[id='form-element-{name}']",
+                element=step_element,
                 placement="right",
                 content="",
             )
@@ -163,12 +166,22 @@ class TourGenerator:
                 if name in test_inputs:
                     param = self._test.inputs[name]
                     step.content = f"Enter value(s): <b>{param}</b>"
+
+                    # For text input, the element is at: #form-element-{name} input#{name}
+                    step_element += f" input[id='{name}']"
+                    step.element = step_element
+                    step.textinsert = param
                 else:
                     step.content = "Enter a value"
             elif input.type == "integer" or input.type == "float":
                 if name in test_inputs:
                     num_param = self._test.inputs[name][0]
                     step.content = f"Enter number: <b>{num_param}</b>"
+
+                    #  For integer/float input, the element is at: #form-element-{name} div#{name} input.ui-input.form-control
+                    step_element += f" div[id='{name}'] input[class='ui-input form-control']"
+                    step.element = step_element
+                    step.textinsert = num_param
                 else:
                     step.content = "Enter a number"
             elif input.type == "boolean":
