@@ -14,6 +14,7 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.schema import GenerateTourResponse
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tools import Tool
 from galaxy.tools.parameters.grouping import Conditional
 from galaxy.tours import (
@@ -27,7 +28,9 @@ class ToursManager:
     def __init__(self, app: StructuredApp):
         self._app = app
 
-    def generate_tour(self, tool_id: str, tool_version: str, trans: ProvidesAppContext) -> GenerateTourResponse:
+    def generate_tour(
+        self, tool_id: str, tool_version: str, trans: ProvidesAppContext, performs_upload=True
+    ) -> GenerateTourResponse:
         """
         Generate a tour designed for the given tool.
 
@@ -35,6 +38,8 @@ class ToursManager:
         :type   tool_id:       str
         :param  tool_version:  The version of the tool
         :type   tool_version:  str
+        :param  performs_upload:  Whether to perform upload of test data (default: `True`)
+        :type   performs_upload:  bool
         :returns:             An object containing the tour and any uploaded dataset hids (if applicable)
         :rtype:               dict
         """
@@ -43,20 +48,21 @@ class ToursManager:
         if not tool_version:
             raise RequestParameterInvalidException("Tool version is missing.")
 
-        tour_generator = TourGenerator(trans, tool_id, tool_version)
+        tour_generator = TourGenerator(trans, tool_id, tool_version, performs_upload=performs_upload)
         return tour_generator.get_data()
 
 
 class TourGenerator:
-    def __init__(self, trans: ProvidesAppContext, tool_id: str, tool_version: str) -> None:
+    def __init__(self, trans: ProvidesAppContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
         self._trans = trans
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
         self._use_datasets = True
         self._data_inputs: Dict[str, Any] = {}
         self._tour: Optional[TourDetails] = None
         self._hids: Dict[str, Any] = {}
-        self._upload_test_data()
-        self._generate_tour()
+        self._test: ToolTestDescription
+        self._upload_test_data(performs_upload=performs_upload)
+        self._generate_tour(performs_upload=performs_upload)
 
     def _get_and_ensure_tool(self, tool_id: str, tool_version: Optional[str]) -> Tool:
         """Get the tool and ensure it exists."""
@@ -65,7 +71,7 @@ class TourGenerator:
             raise ObjectNotFound(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
         return tool
 
-    def _upload_test_data(self):
+    def _upload_test_data(self, performs_upload=True):
         """
         Upload test datasets, which are defined in the <test></test>
         section of the provided tool.
@@ -98,6 +104,11 @@ class TourGenerator:
                 # so we can generate a tour without them
                 self._use_datasets = False
                 return
+
+        if not performs_upload:
+            self._use_datasets = False
+            return
+
         # Upload all test datasets
         for input_name, input in self._data_inputs.items():
             if input_name in test_datasets.keys():
@@ -138,7 +149,7 @@ class TourGenerator:
                     else:
                         self._hids.update({input_name: output["out_data"][0][1].hid})
 
-    def _generate_tour(self):
+    def _generate_tour(self, performs_upload=True):
         """Generate a tour."""
         tour_name = f"{self._tool.name} Tour"
         test_inputs = self._test.inputs.keys()
@@ -203,7 +214,7 @@ class TourGenerator:
                 else:
                     step.content = "Select a parameter"
             elif input.type == "data":
-                if name in test_inputs:
+                if name in test_inputs and performs_upload:
                     hid = self._hids[name]
                     dataset = self._test.inputs[name][0]
                     step.content = f"Select dataset: <b>{hid}: {dataset}</b>"
@@ -237,7 +248,7 @@ class TourGenerator:
                     for case_id, case_title in cases.items():
                         tour_id = f"{input.name}|{case_id}"
                         if tour_id in self._test.inputs.keys():
-                            if case_id in self._data_inputs.keys():
+                            if case_id in self._data_inputs.keys() and performs_upload:
                                 hid = self._hids[case_id]
                                 dataset = self._test.inputs[tour_id][0]
                                 step_msg = f"Select dataset: <b>{hid}: {dataset}</b>"

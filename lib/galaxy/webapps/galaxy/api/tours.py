@@ -36,10 +36,10 @@ class FastAPITours:
 
     @router.get("/api/tours/generate", public=True)
     def generate_tour(
-        self, tool_id: str, tool_version: str, trans: ProvidesAppContext = DependsOnTrans
+        self, tool_id: str, tool_version: str, performs_upload: bool = True, trans: ProvidesAppContext = DependsOnTrans
     ) -> GenerateTourResponse:
         """Generate a tour designed for the given tool."""
-        return self.manager.generate_tour(tool_id, tool_version, trans)
+        return self.manager.generate_tour(tool_id, tool_version, trans, performs_upload=performs_upload)
 
     @router.get("/api/tours/{tour_id}", public=True)
     def show(self, tour_id: str) -> TourDetails:

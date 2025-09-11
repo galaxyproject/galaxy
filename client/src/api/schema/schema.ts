@@ -38476,6 +38476,7 @@ export interface operations {
             query: {
                 tool_id: string;
                 tool_version: string;
+                performs_upload?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
