@@ -247,7 +247,7 @@ class OIDCAuthnzBase(IdentityProvider):
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config.provider)
         if custos_authnz_token is None:
             user = trans.user
-            existing_user = trans.sa_session.query(User).filter(func.lower(User.email) == email.lower()).first()
+            existing_user = trans.sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
             if not user:
                 if existing_user:
                     if trans.app.config.fixed_delegated_auth:
