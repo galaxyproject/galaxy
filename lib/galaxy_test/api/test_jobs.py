@@ -1148,13 +1148,7 @@ steps:
         return search_payload
 
     def _search(self, payload, expected_search_count=1):
-        # in case job and history aren't updated at exactly the same
-        # time give time to wait
-        for _ in range(5):
-            search_count = self._search_count(payload)
-            if search_count == expected_search_count:
-                break
-            time.sleep(1)
+        search_count = self._search_count(payload)
         assert (
             search_count == expected_search_count
         ), f"expected to find {expected_search_count} jobs, got {search_count} jobs"
