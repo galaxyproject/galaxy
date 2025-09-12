@@ -54,16 +54,13 @@ onMounted(async () => {
             <div v-else-if="isAnonymous">
                 <FontAwesomeIcon :icon="faKey" fixed-width />
                 <span v-if="someToolsHasRequiredServiceCredentials">
-                    <strong>
-                        Some steps in this workflow <strong>require credentials</strong> to access its services and you
-                        need to be logged in to provide them.
-                    </strong>
+                    Some steps in this workflow <strong>require credentials</strong> to access its services and you need
+                    to be logged in to provide them.
                 </span>
                 <span v-else>
                     Some steps in this workflow <strong>can use additional credentials</strong> to access its services
-                    <strong>or you can use it anonymously</strong>.
+                    <strong>or tools will use their default values</strong>.
                 </span>
-                <br />
                 Please <a href="/login/start">log in or register here</a>.
             </div>
             <div v-else class="d-flex justify-content-between align-items-center">

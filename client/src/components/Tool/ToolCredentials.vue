@@ -53,16 +53,13 @@ onMounted(async () => {
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="isAnonymous">
                 <span v-if="toolHasRequiredServiceCredentials">
-                    <strong>
-                        This tool <strong>requires credentials</strong> to access its services and you need to be logged
-                        in to provide them.
-                    </strong>
+                    This tool <strong>requires credentials</strong> to access its services and you need to be logged in
+                    to provide them.
                 </span>
                 <span v-else>
                     This tool <strong>can use additional credentials</strong> to access its services
-                    <strong>or you can use it anonymously</strong>.
+                    <strong>or the tool will use its default values.</strong>.
                 </span>
-                <br />
                 Please <a href="/login/start">log in or register here</a>.
             </div>
             <div v-else class="d-flex justify-content-between align-items-center">
