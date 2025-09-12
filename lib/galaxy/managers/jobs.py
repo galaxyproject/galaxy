@@ -27,6 +27,7 @@ from sqlalchemy import (
     exists,
     false,
     func,
+    join,
     null,
     or_,
     true,
@@ -677,21 +678,39 @@ class JobSearch:
         outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
         outer_stmt = select(*outer_select_columns).select_from(subquery_alias)
         job_id_from_subquery = subquery_alias.c.job_id
-        deleted_collection_exists = exists().where(
-            and_(
-                model.JobToOutputDatasetCollectionAssociation.job_id == job_id_from_subquery,
-                model.JobToOutputDatasetCollectionAssociation.dataset_collection_id
-                == model.HistoryDatasetCollectionAssociation.id,
-                model.HistoryDatasetCollectionAssociation.deleted == true(),
+        deleted_collection_exists = (
+            exists()
+            .select_from(
+                join(
+                    model.JobToOutputDatasetCollectionAssociation,
+                    model.HistoryDatasetCollectionAssociation,
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id
+                    == model.HistoryDatasetCollectionAssociation.id,
+                )
+            )
+            .where(
+                and_(
+                    model.JobToOutputDatasetCollectionAssociation.job_id == job_id_from_subquery,
+                    model.HistoryDatasetCollectionAssociation.deleted == true(),
+                )
             )
         )
 
         # Subquery for deleted output datasets
-        deleted_dataset_exists = exists().where(
-            and_(
-                model.JobToOutputDatasetAssociation.job_id == job_id_from_subquery,
-                model.JobToOutputDatasetAssociation.dataset_id == model.HistoryDatasetAssociation.id,
-                model.HistoryDatasetAssociation.deleted == true(),
+        deleted_dataset_exists = (
+            exists()
+            .select_from(
+                join(
+                    model.JobToOutputDatasetAssociation,
+                    model.HistoryDatasetAssociation,
+                    model.JobToOutputDatasetAssociation.dataset_id == model.HistoryDatasetAssociation.id,
+                )
+            )
+            .where(
+                and_(
+                    model.JobToOutputDatasetAssociation.job_id == job_id_from_subquery,
+                    model.HistoryDatasetAssociation.deleted == true(),
+                )
             )
         )
 
