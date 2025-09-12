@@ -5,6 +5,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
@@ -42,8 +43,16 @@ function toggleDialog() {
     showModal.value = !showModal.value;
 }
 
+async function refreshCredentials() {
+    try {
+        await checkUserCredentials();
+    } catch (err) {
+        Toast.error(`Could not load your credentials: ${err}`);
+    }
+}
+
 onMounted(async () => {
-    await checkUserCredentials();
+    await refreshCredentials();
 });
 </script>
 
