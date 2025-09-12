@@ -139,7 +139,7 @@ function generateUniqueName(template: string, currentGroups: ServiceCredentialsG
 
 function createTemporaryGroup() {
     const editableGroup: ServiceGroupPayload = {
-        name: generateUniqueName("new credential", userServicesGroups.value),
+        name: generateUniqueName("new group", userServicesGroups.value),
         variables: props.serviceDefinition.variables.map((variable) => ({
             name: variable.name,
             value: "",
