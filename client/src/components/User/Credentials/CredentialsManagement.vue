@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { watch } from "vue";
 
 import { isRegisteredUser } from "@/api";
+import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -19,12 +21,20 @@ const { currentUser } = storeToRefs(userStore);
 const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 const { isBusy, busyMessage, userToolsGroups } = storeToRefs(userToolsServiceCredentialsStore);
 
+async function fetchData() {
+    if (isRegisteredUser(currentUser.value)) {
+        try {
+            await userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
+        } catch (error) {
+            Toast.error(`${errorMessageAsString(error)}. Could not fetch your credentials for data.`);
+        }
+    }
+}
+
 watch(
     () => currentUser.value,
     async () => {
-        if (isRegisteredUser(currentUser.value)) {
-            await userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
-        }
+        await fetchData();
     },
     { immediate: true }
 );
