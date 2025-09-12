@@ -268,9 +268,11 @@ class CredentialsService:
         )
         user_credentials_dict: dict[int, dict[str, Any]] = {}
         groups_dict: dict[tuple[int, int], dict[str, Any]] = {}
+        group_update_times: dict[int, list] = {}
 
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
+            group_update_times.setdefault(cred_id, []).append(credentials_group.update_time)
             definition = self._get_credentials_definition(
                 user,
                 cast(SOURCE_TYPE, user_credentials.source_type),
@@ -331,6 +333,9 @@ class CredentialsService:
 
         # Convert groups from dictionary to list for each user credentials
         for cred_id, cred_data in user_credentials_dict.items():
+            # Calculate the latest update_time from tracked update times for groups
+            if group_update_times.get(cred_id):
+                cred_data["update_time"] = max(group_update_times[cred_id])
             cred_data["groups"] = [
                 CredentialGroupResponse(**group_data)
                 for (c_id, g_id), group_data in groups_dict.items()

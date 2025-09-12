@@ -89,6 +89,27 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert second_group in groups_after
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_update_time_in_user_credentials_response(self):
+        import time
+
+        first_group = random_name()
+        payload1 = self._build_credentials_payload(group_name=first_group)
+        self._provide_user_credentials(payload1)
+
+        # Wait a small amount to ensure different update times
+        time.sleep(0.1)
+
+        second_group = random_name()
+        payload2 = self._build_credentials_payload(group_name=second_group)
+        self._provide_user_credentials(payload2)
+
+        user_credentials = self._check_credentials_exist()[0]
+
+        assert user_credentials is not None
+        assert "update_time" in user_credentials
+        assert user_credentials["update_time"] is not None
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_delete_service_credentials(self):
         # Create credentials
         self._provide_user_credentials()

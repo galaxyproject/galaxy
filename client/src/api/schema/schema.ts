@@ -11131,6 +11131,12 @@ export interface components {
              */
             source_version: string;
             /**
+             * Update Time
+             * Format: date-time
+             * @description The latest update time based on the most recently updated credential group.
+             */
+            update_time: string;
+            /**
              * User Id
              * @description The ID of the user who owns these credentials.
              * @example 0123456789ABCDEF
@@ -22321,6 +22327,12 @@ export interface components {
              * @description The version of the source.
              */
             source_version: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The latest update time based on the most recently updated credential group.
+             */
+            update_time: string;
             /**
              * User Id
              * @description The ID of the user who owns these credentials.

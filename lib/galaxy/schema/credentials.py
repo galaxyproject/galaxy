@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import (
     Annotated,
     Literal,
@@ -140,6 +141,12 @@ class UserCredentialsResponse(Model):
         Field(
             None,
             description="The ID of the currently active credential group.",
+        ),
+    ]
+    update_time: Annotated[
+        datetime,
+        Field(
+            description="The latest update time based on the most recently updated credential group.",
         ),
     ]
     groups: list[CredentialGroupResponse]
