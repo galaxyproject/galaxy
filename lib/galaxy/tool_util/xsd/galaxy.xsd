@@ -623,7 +623,18 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+        <!-- Ensure unique credential names across variables and secrets -->
+        <xs:unique name="uniqueCredentialNames">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+        <!-- Ensure unique inject_as_env values across variables and secrets -->
+        <xs:unique name="uniqueInjectAsEnv">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@inject_as_env"/>
+        </xs:unique>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Requirement">
@@ -763,10 +774,15 @@ It can contain multiple ``variable`` and ``secret`` tags.
       <xs:element name="variable" type="CredentialsVariable" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="secret" type="CredentialsSecret" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required">
+    <xs:attribute name="name" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="version" type="xs:string" use="required">
       <xs:annotation>
@@ -796,15 +812,25 @@ This element defines a variable for credentials. The variable is injected into t
 environment of the tool process as an environment variable.
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="name" type="xs:string" use="required">
+    <xs:attribute name="name" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The name of the variable.</xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="inject_as_env" type="xs:string" use="required">
+    <xs:attribute name="inject_as_env" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="optional" type="xs:boolean">
       <xs:annotation>
@@ -829,15 +855,25 @@ This element defines a secret for credentials. The secret is injected into the
 environment of the tool process as an environment variable.
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="name" type="xs:string" use="required">
+    <xs:attribute name="name" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The name of the secret.</xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="inject_as_env" type="xs:string" use="required">
+    <xs:attribute name="inject_as_env" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="optional" type="xs:boolean">
       <xs:annotation>
