@@ -3184,6 +3184,7 @@ class Docx(Binary):
 
     file_ext = "docx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Docx is compressed in zip format and must not be uncompressed in Galaxy.
@@ -3204,6 +3205,22 @@ class Xlsx(Binary):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
         return file_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@build_sniff_from_prefix
+class Pptx(Binary):
+    """Class for PowerPoint 2007 (pptx) files"""
+
+    file_ext = "pptx"
+    compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Pptx is compressed in zip format and must not be uncompressed in Galaxy.
+        return (
+            file_prefix.compressed_mime_type
+            == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
 
 @build_sniff_from_prefix
