@@ -757,22 +757,46 @@ Read more about configuring Galaxy to run Docker jobs
   <xs:complexType name="Credentials">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-This is possible to add credentials into tools directly by adding a requirement of
-type ``credentials``. This requirement type is used to define a set of credentials
-that are required by the tool. The credentials are defined by a name, a version
-to the source of the credentials, and a set of variables and secrets that are
-required by the tool. The variables and secrets are injected into the environment
-of the tool process as environment variables.
-It can contain multiple ``variable`` and ``secret`` tags.
+The ``credentials`` element allows tools to securely access external services by defining
+a set of authentication credentials. These credentials are managed separately from the tool
+configuration and are injected into the tool's execution environment as environment variables.
+
+Credentials consist of:
+- **Variables**: Non-sensitive configuration values (e.g., server URLs, usernames)
+- **Secrets**: Sensitive authentication data (e.g., passwords, API keys, tokens)
+
+The credentials system provides secure credential management while keeping sensitive
+information separate from tool definitions. Multiple credentials sets can be defined
+within a single ``requirements`` block, each with a unique name. Before executing a tool
+that requires credentials, users must provide the necessary credentials through the Galaxy UI.
+
+### Example
 
 ```xml
 <requirements>
-    <credentials name="service1" version="54687" label="Your credentials set" description="Optional description of the service using credentials">
-        <variable name="server" inject_as_env="service1_url" optional="false" label="Your Service1 server" description="You can set the server..." />
-        <secret name="username" inject_as_env="service1_user" optional="false" label="Your Service1 username" description="Your username is your email" />
-        <secret name="password" inject_as_env="service1_pass" optional="false" label="Your Service1 password" description="This needs to be a strong password" />
+    <credentials name="aws_s3" version="1.0" label="AWS S3 Access" description="Credentials for accessing AWS S3 buckets">
+        <variable name="region" inject_as_env="AWS_REGION" optional="false" label="AWS Region" description="The AWS region where your S3 bucket is located" />
+        <secret name="access_key" inject_as_env="AWS_ACCESS_KEY_ID" optional="false" label="Access Key ID" description="Your AWS access key ID" />
+        <secret name="secret_key" inject_as_env="AWS_SECRET_ACCESS_KEY" optional="false" label="Secret Access Key" description="Your AWS secret access key" />
+    </credentials>
+    <credentials name="database" version="2.1" label="Database Connection" description="Database connection credentials">
+        <variable name="host" inject_as_env="DB_HOST" optional="false" label="Database Host" description="The hostname or IP address of the database server" />
+        <variable name="port" inject_as_env="DB_PORT" optional="true" label="Database Port" description="The port number (default: 5432)" />
+        <secret name="password" inject_as_env="DB_PASSWORD" optional="false" label="Database Password" description="The password for database authentication" />
     </credentials>
 </requirements>
+```
+
+### Tool Access
+
+Within your tool, access the injected credentials using the specified environment variable names:
+
+```bash
+# Access AWS credentials
+aws s3 ls s3://my-bucket --region $AWS_REGION --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
+
+# Access database credentials
+psql -h $DB_HOST -p $DB_PORT -U myuser -d mydb -W $DB_PASSWORD
 ```
 ]]></xs:documentation>
     </xs:annotation>
