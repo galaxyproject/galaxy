@@ -96,9 +96,6 @@ function getFieldState(value: string | null | undefined, name: string, type: Cre
 
 <template>
     <div class="p-2">
-        <span v-if="props.groupData.isNewGroup"> Creating new group of credentials </span>
-        <span v-else> Editing credentials group </span>
-
         <BFormGroup
             :id="`${props.groupData.groupId}-name`"
             label="Group Name"
