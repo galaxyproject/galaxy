@@ -105,7 +105,13 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
         <xs:element name="creator" type="Creator" minOccurs="0"/>
-        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="requirements" type="Requirements" minOccurs="0">
+          <!-- Ensure unique credentials names across all credentials elements -->
+          <xs:unique name="uniqueCredentialsNames">
+            <xs:selector xpath="credentials"/>
+            <xs:field xpath="@name"/>
+          </xs:unique>
+        </xs:element>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
