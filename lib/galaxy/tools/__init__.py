@@ -150,6 +150,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
+    ParameterValueError,
     SelectTagParameter,
     SelectToolParameter,
     ToolParameter,
@@ -1497,7 +1498,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
     def __parse_legacy_features(self, tool_source: ToolSource):
-        self.code_namespace: dict[str, str] = {}
+        self.code_namespace: dict[str, Any] = {}
         self.hook_map: dict[str, str] = {}
         self.uihints: dict[str, str] = {}
 
@@ -2064,7 +2065,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
     ) -> tuple[
         list[ToolStateJobInstancePopulatedT],
-        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
         Optional[int],
         Optional[MatchingCollections],
     ]:
@@ -2150,7 +2151,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def _handle_validate_input_hook(
         self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
-    ):
+    ) -> None:
         # If the tool provides a `validate_input` hook, call it.
         if validate_input := self.get_hook("validate_input"):
             # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
@@ -2200,11 +2201,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         there were no errors).
         """
         request_context = proxy_work_context_for_history(trans, history=history)
-        expanded = self.expand_incoming(request_context, incoming=incoming, input_format=input_format)
-        all_params: list[ToolStateJobInstancePopulatedT] = expanded[0]
-        all_errors: list[ParameterValidationErrorsT] = expanded[1]
-        rerun_remap_job_id: Optional[int] = expanded[2]
-        collection_info: Optional[MatchingCollections] = expanded[3]
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(
+            request_context, incoming=incoming, input_format=input_format
+        )
 
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
@@ -2254,7 +2253,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             param_errors = {}
             for d in all_errors:
                 for key, value in d.items():
-                    if hasattr(value, "to_dict"):
+                    if isinstance(value, ParameterValueError):
                         value_obj = value.to_dict()
                     else:
                         value_obj = {"message": unicodify(value)}
@@ -2454,16 +2453,18 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         param_dict = job.raw_param_dict()
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
-    def check_and_update_param_values(self, values, trans, update_values=True, workflow_building_mode=False):
+    def check_and_update_param_values(
+        self, values, trans, update_values: bool = True, workflow_building_mode: bool = False
+    ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
         """
-        messages = {}
+        messages: dict[str, Any] = {}
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
 
-        def validate_inputs(input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs):
+        def validate_inputs(input, value, error, parent, context, prefixed_name: str, prefixed_label, **kwargs):
             if not error:
                 value, error = check_param(request_context, input, value, context)
             if error:
