@@ -108,16 +108,6 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         };
     });
 
-    const userServicesExistForTool = computed(() => {
-        return (toolId: string, toolVersion: string) => {
-            if (!isRegisteredUser(currentUser.value)) {
-                return undefined;
-            }
-            const userToolKey = getUserToolKey(toolId, toolVersion);
-            return userToolsServices.value[userToolKey];
-        };
-    });
-
     const userToolServicesFor = computed(() => (toolId: string, toolVersion: string) => {
         if (!isRegisteredUser(currentUser.value)) {
             return undefined;
@@ -505,7 +495,6 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         isBusy: readonly(isBusy),
         busyMessage: readonly(busyMessage),
         userToolsServices,
-        userServicesExistForTool,
         userToolServicesFor,
         userToolServiceCredentialsGroups,
         userToolsServicesCurrentGroupIds,

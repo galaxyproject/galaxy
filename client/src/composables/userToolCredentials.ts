@@ -186,7 +186,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
 
         try {
-            if (!userToolsServiceCredentialsStore.userServicesExistForTool(toolId, toolVersion)) {
+            if (!userToolsServiceCredentialsStore.userToolServicesFor(toolId, toolVersion)) {
                 await userToolsServiceCredentialsStore.fetchAllUserToolServices(toolId, toolVersion);
             }
         } catch (error) {
