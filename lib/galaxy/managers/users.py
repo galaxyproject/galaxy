@@ -236,11 +236,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
                 role.name = role.name.replace(user.username, uname_hash)
-                role.description = role.description.replace(user.username, uname_hash)
+                if role.description:
+                    role.description = role.description.replace(user.username, uname_hash)
 
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
-                role.description = role.description.replace(user.email, email_hash)
+                if role.description:
+                    role.description = role.description.replace(user.email, email_hash)
             self.session().add(role)
         private_role.name = email_hash
         private_role.description = f"Private Role for {email_hash}"

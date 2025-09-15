@@ -136,16 +136,12 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
 
-    def show(self, trans, invocation_id, serialization_params, eager=False):
-        wfi = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager, check_ownership=False, check_accessible=True
-        )
+    def show(self, trans, invocation_id, serialization_params):
+        wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
     def as_request(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocationRequestModel:
-        wfi = self._workflows_manager.get_invocation(
-            trans, invocation_id, True, check_ownership=True, check_accessible=True
-        )
+        wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=True, check_accessible=True)
         return self.serialize_workflow_invocation_to_request(trans, wfi)
 
     def cancel(self, trans, invocation_id, serialization_params):
@@ -208,7 +204,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         ensure_celery_tasks_enabled(trans.app.config)
         model_store_format = payload.model_store_format
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
         if not workflow_invocation:
             raise ObjectNotFound()
@@ -236,7 +232,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     ) -> AsyncTaskResultSummary:
         ensure_celery_tasks_enabled(trans.app.config)
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
         if not workflow_invocation:
             raise ObjectNotFound()
