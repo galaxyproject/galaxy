@@ -47,6 +47,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     History,
@@ -57,6 +58,7 @@ from galaxy.model import (
     StoredWorkflow,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
@@ -2198,6 +2200,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         history: Optional[History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         input_format: InputFormatT = "legacy",
     ):
         """
@@ -2225,6 +2228,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             history=request_context.history,
             rerun_remap_job_id=rerun_remap_job_id,
             preferred_object_store_id=preferred_object_store_id,
+            credentials_context=credentials_context,
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
@@ -2292,6 +2296,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections],
         job_callback: Optional[JobCallbackT],
         preferred_object_store_id: Optional[str],
+        credentials_context: Optional[CredentialsContext],
         flush_job: bool,
         skip: bool,
     ):
@@ -2311,6 +2316,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 collection_info=collection_info,
                 job_callback=job_callback,
                 preferred_object_store_id=preferred_object_store_id,
+                credentials_context=credentials_context,
                 flush_job=flush_job,
                 skip=skip,
             )
@@ -2425,6 +2431,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -2445,6 +2452,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 collection_info=collection_info,
                 job_callback=job_callback,
                 preferred_object_store_id=preferred_object_store_id,
+                credentials_context=credentials_context,
                 set_output_hid=set_output_hid,
                 flush_job=flush_job,
                 skip=skip,
@@ -2946,6 +2954,11 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
         state_inputs_json: ToolStateDumpedToJsonT = params_to_json(self.inputs, state_inputs, self.app)
 
+        job_credentials_context = None
+        # if we have a job, we can extract the credentials context used for the job
+        if job and job.credentials_context_associations:
+            job_credentials_context = build_credentials_context_response(job.credentials_context_associations)
+
         # update tool model
         tool_model.update(
             {
@@ -2964,6 +2977,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 "state_inputs": state_inputs_json,
                 "job_id": trans.security.encode_id(job.id) if job else None,
                 "job_remap": job.remappable() if job else None,
+                "job_credentials_context": job_credentials_context.model_dump() if job_credentials_context else None,
                 "history_id": trans.security.encode_id(history.id) if history else None,
                 "display": self.display_interface,
                 "action": action,

@@ -27,6 +27,7 @@ from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
 )
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.execution_helpers import (
     filter_output,
@@ -77,6 +78,7 @@ def execute(
     history: model.History,
     rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
     preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    credentials_context: Optional[CredentialsContext] = None,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
@@ -143,6 +145,7 @@ def execute(
             collection_info,
             job_callback,
             preferred_object_store_id,
+            credentials_context=credentials_context,
             flush_job=False,
             skip=skip,
         )

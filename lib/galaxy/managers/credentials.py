@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Optional,
     Union,
@@ -10,11 +11,17 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Credential,
     CredentialsGroup,
+    JobCredentialsContextAssociation,
     User,
     UserCredentials,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.credentials import SOURCE_TYPE
+from galaxy.schema.credentials import (
+    CredentialsContextResponse,
+    SelectedGroupResponse,
+    ServiceCredentialsContextResponse,
+    SOURCE_TYPE,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.vault import (
     UserVaultWrapper,
@@ -22,8 +29,28 @@ from galaxy.security.vault import (
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 
+log = logging.getLogger(__name__)
+
 CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
 CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
+
+
+def build_credentials_context_response(
+    associations: list[JobCredentialsContextAssociation],
+) -> CredentialsContextResponse:
+    service_credentials_list = []
+    for association in associations:
+        service_credential = ServiceCredentialsContextResponse(
+            user_credentials_id=association.user_credentials_id,
+            name=association.service_name,
+            version=association.service_version,
+            selected_group=SelectedGroupResponse(
+                id=association.selected_group_id,
+                name=association.selected_group_name,
+            ),
+        )
+        service_credentials_list.append(service_credential)
+    return CredentialsContextResponse(root=service_credentials_list)
 
 
 def _build_user_credentials_query(
@@ -233,36 +260,51 @@ class UserCredentialsEnvironmentBuilder:
         self.session = session
         self.user = user
 
-    def build_environment_variables(
-        self, source_type: str, source_id: str, requirements: list[CredentialsRequirement]
+    def build_from_job_context(
+        self, requirements: list[CredentialsRequirement], context: list[JobCredentialsContextAssociation]
     ) -> list[dict[str, str]]:
         """
-        Build environment variables for the given service requirements.
+        Build environment variables for a given job credentials context.
 
-        Returns environment variables for all services that have credentials configured.
-        Services without credentials are skipped, allowing tools to handle missing
-        credentials or provide defaults.
+        Job credentials context contains specific user-selected credentials for multiple services
+        that were used when a job was created.
+
+        Returns a list of environment variable dictionaries.
         """
         env_variables: list[dict[str, str]] = []
         user_vault = UserVaultWrapper(self.vault, self.user)
         user_id = self.user.id
 
+        if not context:
+            return env_variables
+
+        # Create a mapping of (service_name, service_version) -> job credentials context for quick lookup
+        context_map = {(ctx.service_name, ctx.service_version): ctx for ctx in context}
+
         for service in requirements:
+            # Check if we have context for this service requirement
+            job_context = context_map.get((service.name, service.version))
+            if not job_context:
+                # Skip this service if no context found - continue with other services
+                continue
+
+            # Query for the specific user credentials and selected group from job context
             stmt = _build_user_credentials_query(
                 user_id=user_id,
-                source_type=source_type,
-                source_id=source_id,
-                service_name=service.name,
-                service_version=service.version,
-                current_group_only=True,
+                user_credentials_id=job_context.user_credentials_id,
+                group_id=job_context.selected_group_id,
             )
             result = self.session.execute(stmt).tuples().all()
 
             if not result:
-                # Skip this service if no credentials found - continue with other services
+                # Skip if no matching credentials found in database
                 continue
 
-            current_group_id = result[0][1].id
+            # Get source_type and source_id from the first UserCredentials record
+            user_credentials, _, _ = result[0]
+            source_type = user_credentials.source_type
+            source_id = user_credentials.source_id
+            current_group_id = job_context.selected_group_id
 
             # Build maps for credentials and secrets that have been set by the user
             credential_value_map = {}
@@ -277,7 +319,12 @@ class UserCredentialsEnvironmentBuilder:
                 # Only read from vault if the secret has been set by the user
                 if secret.name in set_secret_names:
                     vault_ref = build_vault_credential_reference(
-                        source_type, source_id, service.name, service.version, current_group_id, secret.name
+                        source_type,
+                        source_id,
+                        service.name,
+                        service.version,
+                        current_group_id,
+                        secret.name,
                     )
                     secret_value = user_vault.read_secret(vault_ref) or ""
                     env_variables.append({"name": secret.inject_as_env, "value": secret_value})
