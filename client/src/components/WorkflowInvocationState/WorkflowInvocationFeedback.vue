@@ -3,6 +3,7 @@ import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowStepTyped } from "@/api/workflows";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -54,7 +55,7 @@ const stepsWithErrors = computed(() => {
                 }
                 return false;
             })
-            .map(([_, step]) => step);
+            .map(([_, step]) => step as unknown as WorkflowStepTyped);
     }
     return [];
 });

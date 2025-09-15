@@ -1,5 +1,148 @@
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { computed, onUnmounted, ref, watch } from "vue";
+
+import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowStepTyped } from "@/api/workflows";
+import type { GraphStep } from "@/composables/useInvocationGraph";
+import { useInvocationStore } from "@/stores/invocationStore";
+
+import Heading from "../Common/Heading.vue";
+import JobStep from "./JobStep.vue";
+import ParameterStep from "./ParameterStep.vue";
+import WorkflowInvocationState from "./WorkflowInvocationState.vue";
+import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
+import WorkflowStepTitle from "./WorkflowStepTitle.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
+
+const props = defineProps<{
+    /** The invocation the step belongs to */
+    invocation: WorkflowInvocationElementView;
+    /** The workflow step being displayed */
+    workflowStep: WorkflowStepTyped;
+    /** The invocation graph step being displayed (if any) */
+    graphStep?: GraphStep;
+    /** Whether the step details are expanded (if undefined, component manages expansion state) */
+    expanded?: boolean;
+    /** Whether the step is being displayed in the graph view (affects styling) */
+    inGraphView?: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: "update:expanded", value: boolean): void;
+}>();
+
+const invocationStore = useInvocationStore();
+
+const localExpanded = ref(Boolean(props.expanded));
+const stepFetchInterval = ref<any>(undefined);
+
+const computedExpanded = computed({
+    get() {
+        return props.expanded === undefined ? localExpanded.value : props.expanded;
+    },
+    set(value) {
+        if (props.expanded === undefined) {
+            localExpanded.value = value;
+        } else {
+            emit("update:expanded", value);
+        }
+    },
+});
+
+const workflowStepType = computed(() => props.workflowStep.type);
+
+const isDataStep = computed(() => ["data_input", "data_collection_input"].includes(workflowStepType.value));
+
+const invocationInput = computed(() => props.invocation.inputs[props.workflowStep.id]);
+
+const invocationStep = computed(() => props.invocation.steps[props.workflowStep.id]);
+
+const invocationStepId = computed(() => invocationStep.value?.id);
+
+const stepDetails = computed(() =>
+    invocationStepId.value ? invocationStore.getInvocationStepById(invocationStepId.value) : null,
+);
+
+const isReady = computed(() => props.invocation.steps.length > 0);
+
+const loading = computed(() => {
+    if (!isReady.value || !invocationStepId.value) {
+        return true;
+    }
+    if (!stepDetails.value && invocationStep.value) {
+        return invocationStore.isLoadingInvocationStep(invocationStepId.value);
+    }
+    return false;
+});
+
+const paramInput = computed(() => {
+    if (stepDetails.value) {
+        return Object.values(props.invocation.input_step_parameters).find(
+            (param) => param.workflow_step_id === stepDetails.value?.workflow_step_id,
+        );
+    }
+    return undefined;
+});
+
+/** Whether the step has a terminal state or jobs.
+ *
+ * If null, step state is unknown (e.g. step details not loaded yet) and we
+ * do not poll. If false, we poll until it becomes terminal (true).
+ */
+const stepIsTerminal = computed<boolean | null>(() => {
+    if (!stepDetails.value || !stepDetails.value.state) {
+        return null;
+    }
+    const isTerminal =
+        ["scheduled", "cancelled", "failed"].includes(stepDetails.value.state) &&
+        stepDetails.value.jobs.every((job) => TERMINAL_JOB_STATES.includes(job.state));
+    return isTerminal;
+});
+
+watch(
+    () => stepIsTerminal.value,
+    (newVal) => {
+        if (newVal === false) {
+            pollStepUntilTerminal();
+        }
+    },
+    { immediate: true },
+);
+
+async function pollStepUntilTerminal() {
+    if (!stepIsTerminal.value && invocationStepId.value) {
+        await invocationStore.fetchInvocationStepById({ id: invocationStepId.value });
+        stepFetchInterval.value = setTimeout(pollStepUntilTerminal, 3000);
+    }
+}
+
+const jobStepHeading = computed(() => {
+    if (stepDetails.value?.jobs && stepDetails.value.jobs.length > 1) {
+        return "Jobs (Click on any job to view its details)";
+    } else if (stepDetails.value?.jobs?.length === 1) {
+        return "Job";
+    } else {
+        return "No jobs";
+    }
+});
+
+function toggleStep() {
+    computedExpanded.value = !computedExpanded.value;
+}
+
+onUnmounted(() => {
+    if (stepFetchInterval.value) {
+        clearTimeout(stepFetchInterval.value);
+    }
+});
+</script>
+
 <template>
-    <div class="d-flex" :data-step="workflowStep.id">
+    <div class="d-flex" :data-step="props.workflowStep.id">
         <div :class="{ 'ui-portlet-section': !inGraphView }" style="width: 100%">
             <div
                 v-if="!inGraphView"
@@ -10,20 +153,22 @@
                 @keyup.enter="toggleStep"
                 @click="toggleStep">
                 <WorkflowInvocationStepHeader
-                    :workflow-step="workflowStep"
+                    :workflow-step="props.workflowStep"
                     :graph-step="graphStep"
-                    :invocation-step="step"
+                    :invocation-step="invocationStep"
                     can-expand
                     :expanded="computedExpanded" />
             </div>
+
             <div v-if="computedExpanded" class="portlet-content">
-                <InvocationStepProvider
-                    v-if="isReady && invocationStepId !== undefined"
-                    :id="invocationStepId"
-                    v-slot="{ result: stepDetails, loading }"
-                    auto-refresh>
+                <div v-if="isReady && invocationStepId !== undefined">
                     <div style="min-width: 1">
-                        <LoadingSpan v-if="loading" :message="`Loading invocation step details`"> </LoadingSpan>
+                        <BAlert v-if="loading" variant="info" show>
+                            <LoadingSpan message="Loading invocation step details" />
+                        </BAlert>
+
+                        <BAlert v-else-if="!stepDetails" variant="info" show> Unable to load step details. </BAlert>
+
                         <div v-else>
                             <div
                                 v-if="!isDataStep && Object.values(stepDetails.outputs).length > 0"
@@ -34,6 +179,7 @@
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </div>
+
                             <div
                                 v-if="!isDataStep && Object.values(stepDetails.output_collections).length > 0"
                                 class="invocation-step-output-collection-details">
@@ -43,40 +189,57 @@
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </div>
+
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
                                 <div
                                     v-if="workflowStepType == 'tool'"
                                     class="invocation-step-job-details"
                                     :open="inGraphView">
-                                    <Heading size="md" separator>{{ jobStepHeading(stepDetails) }}</Heading>
+                                    <Heading size="md" separator>{{ jobStepHeading }}</Heading>
                                     <JobStep v-if="stepDetails.jobs?.length" class="mt-1" :jobs="stepDetails.jobs" />
-                                    <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
+                                    <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
                                 </div>
+
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
-                                    :parameters="[getParamInput(stepDetails)]" />
+                                    :parameters="paramInput ? [paramInput] : []" />
+
                                 <GenericHistoryItem
                                     v-else-if="
-                                        isDataStep &&
-                                        invocation &&
-                                        invocation.inputs &&
-                                        invocation.inputs[workflowStep.id]
+                                        isDataStep && props.invocation.inputs && invocationInput && invocationInput.id
                                     "
-                                    :item-id="invocation.inputs[workflowStep.id].id"
-                                    :item-src="invocation.inputs[workflowStep.id].src" />
+                                    :item-id="invocationInput.id"
+                                    :item-src="invocationInput.src" />
+
                                 <div v-else-if="workflowStepType == 'subworkflow'">
                                     <div v-if="!stepDetails.subworkflow_invocation_id">
                                         Workflow invocation for this step is not yet scheduled.
-                                        <br />
-                                        This step consumes outputs from these steps:
-                                        <ul v-if="workflowStep">
-                                            <li
-                                                v-for="stepInput in Object.values(workflowStep.input_steps)"
-                                                :key="stepInput.source_step">
-                                                <WorkflowStepTitle v-bind="titleProps(stepInput.source_step)" />
-                                            </li>
-                                        </ul>
+                                        <template v-if="props.workflowStep">
+                                            <div class="mt-1">This step consumes outputs from these steps:</div>
+                                            <ul>
+                                                <li
+                                                    v-for="stepInput in Object.values(props.workflowStep.input_steps)"
+                                                    :key="stepInput.source_step">
+                                                    <WorkflowStepTitle
+                                                        :step-index="stepInput.source_step"
+                                                        :step-label="
+                                                            props.invocation.steps[stepInput.source_step]
+                                                                ?.workflow_step_label ||
+                                                            `Step ${stepInput.source_step + 1}`
+                                                        "
+                                                        :step-type="props.workflowStep.type"
+                                                        :step-tool-id="props.workflowStep.tool_id"
+                                                        :step-tool-uuid="props.workflowStep.tool_uuid"
+                                                        :step-subworkflow-id="
+                                                            'workflow_id' in props.workflowStep
+                                                                ? props.workflowStep.workflow_id
+                                                                : null
+                                                        " />
+                                                </li>
+                                            </ul>
+                                        </template>
                                     </div>
+
                                     <WorkflowInvocationState
                                         v-else
                                         is-subworkflow
@@ -85,7 +248,8 @@
                             </div>
                         </div>
                     </div>
-                </InvocationStepProvider>
+                </div>
+
                 <LoadingSpan
                     v-else
                     :message="`This invocation has not been scheduled yet, step information is unavailable`">
@@ -97,124 +261,6 @@
         </div>
     </div>
 </template>
-<script>
-import GenericHistoryItem from "components/History/Content/GenericItem";
-import LoadingSpan from "components/LoadingSpan";
-import { InvocationStepProvider } from "components/providers";
-import { mapActions, mapState } from "pinia";
-import { useToolStore } from "stores/toolStore";
-import { useWorkflowStore } from "stores/workflowStore";
-
-import ParameterStep from "./ParameterStep";
-import WorkflowStepTitle from "./WorkflowStepTitle";
-
-import Heading from "../Common/Heading.vue";
-import JobStep from "./JobStep.vue";
-import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
-
-export default {
-    components: {
-        LoadingSpan,
-        Heading,
-        JobStep,
-        ParameterStep,
-        InvocationStepProvider,
-        GenericHistoryItem,
-        WorkflowInvocationStepHeader,
-        WorkflowStepTitle,
-        WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
-    },
-    props: {
-        invocation: Object,
-        workflowStep: Object,
-        graphStep: { type: Object, default: undefined },
-        expanded: { type: Boolean, default: undefined },
-        inGraphView: { type: Boolean, default: false },
-    },
-    data() {
-        return {
-            polling: null,
-            localExpanded: this.expanded === undefined ? false : this.expanded,
-        };
-    },
-    computed: {
-        ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
-        ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
-        isReady() {
-            return this.invocation.steps.length > 0;
-        },
-        // a computed property that assesses whether we have an expanded prop
-        computedExpanded: {
-            get() {
-                return this.expanded === undefined ? this.localExpanded : this.expanded;
-            },
-            set(value) {
-                if (this.expanded === undefined) {
-                    this.localExpanded = value;
-                } else {
-                    this.$emit("update:expanded", value);
-                }
-            },
-        },
-        invocationStepId() {
-            return this.step?.id;
-        },
-        workflowStepType() {
-            return this.workflowStep.type;
-        },
-        step() {
-            return this.invocation.steps[this.workflowStep.id];
-        },
-        isDataStep() {
-            return ["data_input", "data_collection_input"].includes(this.workflowStepType);
-        },
-    },
-    methods: {
-        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
-        ...mapActions(useToolStore, ["fetchToolForId"]),
-        fetchTool() {
-            const toolId = this.workflowStep.tool_uuid || this.workflowStep.tool_id;
-            if (toolId && !this.getToolForId(toolId)) {
-                this.fetchToolForId(toolId);
-            }
-        },
-        fetchSubworkflow() {
-            if (this.workflowStep.workflow_id) {
-                this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
-            }
-        },
-        getParamInput(stepDetails) {
-            return Object.values(this.invocation.input_step_parameters).find(
-                (param) => param.workflow_step_id === stepDetails.workflow_step_id,
-            );
-        },
-        jobStepHeading(stepDetails) {
-            if (stepDetails.jobs?.length > 1) {
-                return "Jobs (Click on any job to view its details)";
-            } else if (stepDetails.jobs?.length === 1) {
-                return "Job";
-            } else {
-                return "No jobs";
-            }
-        },
-        toggleStep() {
-            this.computedExpanded = !this.computedExpanded;
-        },
-        titleProps(stepIndex) {
-            const invocationStep = this.invocation.steps[stepIndex];
-            const rval = {
-                stepIndex: stepIndex,
-                stepLabel: invocationStep && invocationStep.workflow_step_label,
-                stepType: this.workflowStep.type,
-                stepToolId: this.workflowStep.tool_id,
-                stepToolUuid: this.workflowStep.tool_uuid,
-                stepSubworkflowId: this.workflowStep.workflow_id,
-            };
-            return rval;
-        },
-    },
-};
-</script>
 
 <style scoped lang="scss">
 .portlet-header {

@@ -19,7 +19,6 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -120,9 +119,7 @@ const initialPosition = computed(() => ({
     y: -props.initialY * props.zoom,
 }));
 
-function activeStepFor(activeNodeId: number): Step {
-    return props.workflow.steps[activeNodeId] as unknown as Step;
-}
+const activeStep = computed(() => (activeNodeId.value !== null ? props.workflow.steps[activeNodeId.value] : undefined));
 
 /** Updates and loads the invocation graph */
 async function loadGraph() {
@@ -208,13 +205,13 @@ function stepClicked(nodeId: number | null) {
                     </BCard>
                 </div>
             </div>
-            <BCard v-if="activeNodeId !== null" ref="stepCard" class="mt-2" no-body>
+            <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="mt-2" no-body>
                 <BCardHeader
                     class="d-flex justify-content-between align-items-center px-3 py-1"
                     :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
                     <WorkflowInvocationStepHeader
                         class="w-100 pr-2"
-                        :workflow-step="activeStepFor(activeNodeId)"
+                        :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
                         :invocation-step="props.invocation.steps[activeNodeId]" />
                     <div class="d-flex flex-gapx-1">
@@ -231,7 +228,7 @@ function stepClicked(nodeId: number | null) {
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
-                        :workflow-step="props.workflow.steps[activeNodeId]"
+                        :workflow-step="activeStep"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
