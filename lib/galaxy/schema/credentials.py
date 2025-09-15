@@ -313,3 +313,107 @@ class SelectServiceCredentialPayload(SourceCredentialPayload):
             description="List of user credentials to update with current group selections.",
         ),
     ]
+
+
+class SelectedGroup(Model):
+    id: Annotated[
+        DecodedDatabaseIdField,
+        Field(
+            description="The ID of the selected credential group.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the selected credential group.",
+        ),
+    ]
+
+
+class SelectedGroupResponse(Model):
+    id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            description="The encoded ID of the selected credential group.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the selected credential group.",
+        ),
+    ]
+
+
+class ServiceCredentialsContext(Model):
+    user_credentials_id: Annotated[
+        DecodedDatabaseIdField,
+        Field(
+            description="The ID of the user credentials.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the service.",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the service.",
+        ),
+    ]
+    selected_group: Annotated[
+        SelectedGroup,
+        Field(
+            ...,
+            description="The currently selected credential group.",
+        ),
+    ]
+
+
+class ServiceCredentialsContextResponse(Model):
+    user_credentials_id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            description="The encoded ID of the user credentials.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the service.",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the service.",
+        ),
+    ]
+    selected_group: Annotated[
+        SelectedGroupResponse,
+        Field(
+            ...,
+            description="The currently selected credential group.",
+        ),
+    ]
+
+
+class CredentialsContext(RootModel):
+    """Context for credentials to be used during tool execution.
+
+    Contains the list of selected service credentials provided by the user.
+    """
+
+    root: list[ServiceCredentialsContext]
+
+
+class CredentialsContextResponse(RootModel):
+    """Response model for credentials context used during tool execution.
+
+    Contains the list of selected service credentials provided by the user.
+    """
+
+    root: list[ServiceCredentialsContextResponse]
