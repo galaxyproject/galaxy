@@ -8,7 +8,7 @@ import type { OptionType } from "@/components/SelectionField/types";
 import { useMarkdown } from "@/composables/markdown";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { getTestExtensions, getTestUrls } from "./utilities";
+import { getRequiresDataset, getTestExtensions, getTestUrls } from "./utilities";
 
 import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -27,11 +27,12 @@ const props = defineProps<{
 }>();
 
 const errorMessage = ref("");
+const formatsVisible = ref(false);
 const plugin: Ref<Plugin | undefined> = ref();
 
-const urlData = computed(() => getTestUrls(plugin.value));
 const extensions = computed(() => getTestExtensions(plugin.value));
-const formatsVisible = ref(false);
+const requiresDataset = computed(() => getRequiresDataset(plugin.value));
+const urlData = computed(() => getTestUrls(plugin.value));
 
 function addHidToName(hdas: Array<Dataset>) {
     return hdas.map((entry) => ({ id: entry.id, name: `${entry.hid}: ${entry.name}` }));
@@ -40,7 +41,11 @@ function addHidToName(hdas: Array<Dataset>) {
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
-        return addHidToName(data.hdas);
+        const entries = addHidToName(data.hdas);
+        if (!requiresDataset.value) {
+            entries.unshift({ id: "", name: "Create a new visualization..." });
+        }
+        return entries;
     } else {
         return [];
     }

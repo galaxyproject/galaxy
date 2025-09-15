@@ -29,16 +29,21 @@ export interface Plugin {
     html: string;
     logo?: string;
     name: string;
+    params?: Record<string, ParamType>;
     target?: string;
     tags?: Array<string>;
     tests?: Array<TestType>;
+}
+
+export interface ParamType {
+    required?: boolean;
 }
 
 export interface PluginData {
     hdas: Array<Dataset>;
 }
 
-export interface ParamType {
+export interface TestParamType {
     ftype?: string;
     label?: string;
     name: string;
@@ -46,7 +51,7 @@ export interface ParamType {
 }
 
 export interface TestType {
-    param: ParamType;
+    param: TestParamType;
 }
 
 export async function fetchPlugins(datasetId?: string): Promise<Array<Plugin>> {
