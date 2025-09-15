@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSignInAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { InvocationStep } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { type GraphStep, statePlaceholders } from "@/composables/useInvocationGraph";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 import ToolLinkPopover from "../Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "./WorkflowStepIcon.vue";
@@ -22,6 +24,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const invocationStore = useInvocationStore();
+
 const stepLabel = computed(() => {
     const rawStepLabel = props.invocationStep?.workflow_step_label;
     if (rawStepLabel == null) {
@@ -29,6 +33,10 @@ const stepLabel = computed(() => {
     }
     return rawStepLabel;
 });
+
+const isPolling = computed(() =>
+    props.invocationStep ? invocationStore.isLoadingInvocationStep(props.invocationStep.id) : false,
+);
 </script>
 
 <template>
@@ -58,6 +66,15 @@ const stepLabel = computed(() => {
         </div>
 
         <span v-if="props.graphStep">
+            <BBadge
+                v-if="isPolling"
+                v-b-tooltip.hover.noninteractive
+                class="mr-1"
+                title="Polling for updates"
+                variant="link">
+                <FontAwesomeIcon :icon="faSpinner" spin />
+            </BBadge>
+
             <span v-if="isWorkflowInput(props.workflowStep.type)">
                 <i>workflow input</i>
                 <FontAwesomeIcon class="ml-1" :icon="faSignInAlt" />
