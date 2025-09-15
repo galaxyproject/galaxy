@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -2282,13 +2282,22 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
-  # Sets a custom series of steps in the authentication pipeline
-  # for OIDC authentication. The default is
-  # galaxy.authnz.psa_authnz.AUTH_PIPELINE
-  #oidc_auth_pipeline:
-  #  - social_core.pipeline.social_auth.social_details
-  #  - social_core.pipeline.social_auth.social_uid
+  # Sets the full sequence of steps that Python Social Auth goes through
+  # when authenticating an OIDC login. Use when you want to completely
+  # customize the pipeline (e.g. for testing).
+  # By default, Galaxy uses galaxy.authnz.psa_authnz.AUTH_PIPELINE - see
+  # there for example steps.
+  # Each element should be an import path to a function, e.g.
+  # galaxy.authnz.psa_authnz.contains_required_data
+  #oidc_auth_pipeline: null
 
+  # Sets additional authentication pipeline steps, added after the
+  # default steps (from galaxy.authnz.psa_authnz.AUTH_PIPELINE).
+  # Use when you want to keep the default pipeline, but add additional
+  # custom processing.
+  # Each element should be an import path to a function, e.g.
+  # galaxy.authnz.psa_authnz.contains_required_data
+  #oidc_auth_pipeline_extra: null
 
   # Sets the prefix for OIDC scopes specific to this Galaxy instance. If
   # an API call is made against this Galaxy instance using an OIDC
@@ -3106,4 +3115,3 @@ galaxy:
   # default) if enable_failed_jobs_working_directory_cleanup is
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
-
