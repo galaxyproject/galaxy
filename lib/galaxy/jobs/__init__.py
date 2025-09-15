@@ -3015,7 +3015,7 @@ class TaskWrapper(JobWrapper):
     def get_output_destination(self, output_path):
         """
         Destination for outputs marked as from_work_dir. These must be copied with
-        the same basenme as the path for the ultimate output destination. This is
+        the same basename as the path for the ultimate output destination. This is
         required in the task case so they can be merged.
         """
         return os.path.join(self.working_directory, os.path.basename(output_path))

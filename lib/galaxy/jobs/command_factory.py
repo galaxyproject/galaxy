@@ -288,13 +288,17 @@ def __handle_metadata(
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
+    is_directory = True if destination.endswith("_files") else False
+    test_flag = "-d" if is_directory else "-f"
+    recursive_flag = " -r" if is_directory else ""
+    delete_destination_dir = f"rmdir {destination}; " if is_directory else ""
     if "?" in source_file or "*" in source_file:
         source_file = source_file.replace("*", '"*"').replace("?", '"?"')
     # Check if source and destination exist.
     # Users can purge outputs before the job completes,
     # in that case we don't want to copy the output to a purged path.
     # Static, non work_dir_output files are handled in job_finish code.
-    return f'\nif [ -f "{source_file}" -a -f "{destination}" ] ; then cp "{source_file}" "{destination}" ; fi'
+    return f'\nif [ {test_flag} "{source_file}" -a {test_flag} "{destination}" ] ; then{delete_destination_dir} cp{recursive_flag} "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:
