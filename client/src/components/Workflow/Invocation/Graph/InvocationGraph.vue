@@ -78,8 +78,8 @@ const workflowVersion = computed(() => props.workflow?.version);
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
-    workflowId.value,
-    workflowVersion.value,
+    workflowId,
+    workflowVersion,
 );
 
 onMounted(async () => {

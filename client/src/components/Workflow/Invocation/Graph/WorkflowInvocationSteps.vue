@@ -2,7 +2,7 @@
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -25,6 +25,8 @@ const stepsDiv = ref<HTMLDivElement>();
 
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
+const workflowId = computed(() => workflow.value?.id);
+const workflowVersion = computed(() => workflow.value?.version);
 const workflowInputSteps = workflow.value
     ? Object.values(workflow.value.steps).filter((step) => isWorkflowInput(step.type))
     : [];
@@ -38,11 +40,19 @@ const {
 } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
-    workflow.value?.id,
-    workflow.value?.version,
+    workflowId,
+    workflowVersion,
 );
 
-loadInvocationGraph(false);
+watch(
+    () => workflowId.value,
+    (newVal) => {
+        if (newVal) {
+            loadInvocationGraph(false);
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>

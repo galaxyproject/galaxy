@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -27,11 +27,19 @@ const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
 const { steps, loadInvocationGraph } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
-    workflow.value?.id,
-    workflow.value?.version,
+    computed(() => workflow.value?.id),
+    computed(() => workflow.value?.version),
 );
 
-loadInvocationGraph(false);
+watch(
+    () => workflow.value?.id,
+    (newVal) => {
+        if (newVal) {
+            loadInvocationGraph(false);
+        }
+    },
+    { immediate: true },
+);
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
