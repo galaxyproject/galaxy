@@ -250,7 +250,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         self, trans: ProvidesUserContext, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
     ):
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
         email = payload.email
         if not email and not trans.anonymous:
