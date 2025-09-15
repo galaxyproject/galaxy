@@ -132,7 +132,8 @@ async function submit(message: string): Promise<string[][] | undefined> {
                     :data-index="step.id"
                     :invocation="props.invocation"
                     :workflow-step="step"
-                    :graph-step="steps[step.id]" />
+                    :graph-step="steps[step.id]"
+                    :expanded="undefined" />
             </div>
         </div>
 

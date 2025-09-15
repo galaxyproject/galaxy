@@ -81,13 +81,20 @@ watch(
             </div>
         </div>
         <div v-for="step in workflow.steps" :key="step.id">
+            <!-- TODO: This may or may not be needed (factor being how performant the step API calls are; seem pretty quick):
+                We potentially need to consider the fact that in this Steps view, we are constantly fetching all steps
+                until they are terminal, as opposed to the graph (Overview) view where we only fetch the singular step
+                that is visible. The advantage of this is that we can show reactive step status in the steps list without needing to
+                click into each step. If we only fetch expanded steps, the steps wouldn't update their status until clicked on.
+            -->
             <WorkflowInvocationStep
                 v-if="!isWorkflowInput(step.type) || (isWorkflowInput(step.type) && expandInvocationInputs)"
                 :class="{ 'mx-1': !oneOrNoInput && isWorkflowInput(step.type) }"
                 :data-index="step.id"
                 :invocation="props.invocation"
                 :workflow-step="step"
-                :graph-step="graphSteps[step.id]" />
+                :graph-step="graphSteps[step.id]"
+                :expanded="undefined" />
         </div>
     </div>
     <BAlert v-else variant="info" show> There are no steps to display. </BAlert>
