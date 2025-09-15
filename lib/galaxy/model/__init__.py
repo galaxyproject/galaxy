@@ -1636,6 +1636,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
         back_populates="job", uselist=False
     )
+    credentials_context_associations: Mapped[list["JobCredentialsContextAssociation"]] = relationship(
+        back_populates="job"
+    )
 
     dict_collection_visible_keys = ["id", "state", "exit_code", "update_time", "create_time", "galaxy_version"]
     dict_element_visible_keys = [
@@ -2719,6 +2722,38 @@ class JobStateHistory(Base, RepresentById):
         self.job_id = job.id
         self.state = job.state
         self.info = job.info
+
+
+class JobCredentialsContextAssociation(Base, RepresentById):
+    __tablename__ = "job_credentials_context"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True)
+    service_name: Mapped[str] = mapped_column(String(255))
+    service_version: Mapped[str] = mapped_column(String(255))
+    selected_group_id: Mapped[int] = mapped_column(ForeignKey("credentials_group.id"), index=True)
+    selected_group_name: Mapped[str] = mapped_column(String(255))
+
+    job: Mapped["Job"] = relationship(back_populates="credentials_context_associations")
+    user_credentials: Mapped["UserCredentials"] = relationship()
+    selected_group: Mapped["CredentialsGroup"] = relationship()
+
+    def __init__(
+        self,
+        job: "Job",
+        user_credentials_id: int,
+        service_name: str,
+        service_version: str,
+        selected_group_id: int,
+        selected_group_name: str,
+    ):
+        self.job = job
+        self.user_credentials_id = user_credentials_id
+        self.service_name = service_name
+        self.service_version = service_version
+        self.selected_group_id = selected_group_id
+        self.selected_group_name = selected_group_name
 
 
 class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
