@@ -63,6 +63,12 @@ class CredentialGroupResponse(Model):
     ]
     variables: list[VariableResponse]
     secrets: list[SecretResponse]
+    update_time: Annotated[
+        datetime,
+        Field(
+            description="The last time the credential group was updated.",
+        ),
+    ]
 
 
 class CredentialDefinitionResponse(Model):
@@ -141,12 +147,6 @@ class UserCredentialsResponse(Model):
         Field(
             None,
             description="The ID of the currently active credential group.",
-        ),
-    ]
-    update_time: Annotated[
-        datetime,
-        Field(
-            description="The latest update time based on the most recently updated credential group.",
         ),
     ]
     groups: list[CredentialGroupResponse]

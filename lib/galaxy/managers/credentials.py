@@ -15,6 +15,7 @@ from galaxy.model import (
     User,
     UserCredentials,
 )
+from galaxy.model.orm.now import now
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CredentialsContextResponse,
@@ -193,6 +194,13 @@ class CredentialsManager:
         group_name: str,
     ) -> None:
         credentials_group.name = group_name
+        self.session.add(credentials_group)
+
+    def set_group_last_updated(
+        self,
+        credentials_group: CredentialsGroup,
+    ) -> None:
+        credentials_group.update_time = now()
         self.session.add(credentials_group)
 
     def add_group(

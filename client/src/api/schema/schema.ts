@@ -8660,6 +8660,12 @@ export interface components {
             name: string;
             /** Secrets */
             secrets: components["schemas"]["SecretResponse"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time the credential group was updated.
+             */
+            update_time: string;
             /** Variables */
             variables: components["schemas"]["VariableResponse"][];
         };
@@ -11130,12 +11136,6 @@ export interface components {
              * @description The version of the source.
              */
             source_version: string;
-            /**
-             * Update Time
-             * Format: date-time
-             * @description The latest update time based on the most recently updated credential group.
-             */
-            update_time: string;
             /**
              * User Id
              * @description The ID of the user who owns these credentials.
@@ -22327,12 +22327,6 @@ export interface components {
              * @description The version of the source.
              */
             source_version: string;
-            /**
-             * Update Time
-             * Format: date-time
-             * @description The latest update time based on the most recently updated credential group.
-             */
-            update_time: string;
             /**
              * User Id
              * @description The ID of the user who owns these credentials.

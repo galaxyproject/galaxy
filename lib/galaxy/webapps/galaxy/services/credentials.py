@@ -268,11 +268,9 @@ class CredentialsService:
         )
         user_credentials_dict: dict[int, dict[str, Any]] = {}
         groups_dict: dict[tuple[int, int], dict[str, Any]] = {}
-        group_update_times: dict[int, list] = {}
 
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
-            group_update_times.setdefault(cred_id, []).append(credentials_group.update_time)
             definition = self._get_credentials_definition(
                 user,
                 cast(SOURCE_TYPE, user_credentials.source_type),
@@ -315,6 +313,7 @@ class CredentialsService:
                     "name": credentials_group.name,
                     "variables": [],
                     "secrets": [],
+                    "update_time": credentials_group.update_time,
                 },
             )
 
@@ -333,9 +332,6 @@ class CredentialsService:
 
         # Convert groups from dictionary to list for each user credentials
         for cred_id, cred_data in user_credentials_dict.items():
-            # Calculate the latest update_time from tracked update times for groups
-            if group_update_times.get(cred_id):
-                cred_data["update_time"] = max(group_update_times[cred_id])
             cred_data["groups"] = [
                 CredentialGroupResponse(**group_data)
                 for (c_id, g_id), group_data in groups_dict.items()
@@ -366,6 +362,9 @@ class CredentialsService:
         user_credentials, credentials_group = next((uc, cg) for uc, cg, _ in existing_user_credentials)
         if credentials_group.name != group_name:
             self.credentials_manager.update_group(credentials_group, group_name)
+        else:
+            # Always update the group update_time timestamp
+            self.credentials_manager.set_group_last_updated(credentials_group)
 
         existing_credentials_map: dict[tuple[str, bool], Credential] = {}
         for *_, credential in existing_user_credentials:
@@ -516,6 +515,7 @@ class CredentialsService:
             "name": group_name,
             "variables": updated_variables,
             "secrets": updated_secrets,
+            "update_time": group_credentials[0][1].update_time,
         }
         return CredentialGroupResponse(**group_data)
 

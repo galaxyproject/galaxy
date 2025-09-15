@@ -89,25 +89,112 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert second_group in groups_after
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
-    def test_update_time_in_user_credentials_response(self):
-        import time
+    def test_update_credentials_update_time(self):
+        payload = self._build_credentials_payload()
+        created_group = self._provide_user_credentials(payload)
+        created_group_id = created_group["id"]
 
-        first_group = random_name()
-        payload1 = self._build_credentials_payload(group_name=first_group)
-        self._provide_user_credentials(payload1)
+        update_payload = self._build_update_credentials_payload(group_name=random_name())
+        group_name_updated_group = self._update_credentials(created_group_id, update_payload)
+        assert group_name_updated_group["update_time"] > created_group["update_time"]
 
-        # Wait a small amount to ensure different update times
-        time.sleep(0.1)
+        update_payload = self._build_update_credentials_payload(variables=[{"name": "server", "value": random_name()}])
+        variable_updated_group = self._update_credentials(created_group_id, update_payload)
+        assert variable_updated_group["update_time"] > group_name_updated_group["update_time"]
+        assert variable_updated_group["update_time"] > created_group["update_time"]
 
-        second_group = random_name()
-        payload2 = self._build_credentials_payload(group_name=second_group)
-        self._provide_user_credentials(payload2)
+        update_payload = self._build_update_credentials_payload(
+            secrets=[{"name": "username", "value": random_name()}, {"name": "password", "value": None}]
+        )
+        secret_updated_group = self._update_credentials(created_group_id, update_payload)
+        assert secret_updated_group["update_time"] > variable_updated_group["update_time"]
+        assert secret_updated_group["update_time"] > group_name_updated_group["update_time"]
+        assert secret_updated_group["update_time"] > created_group["update_time"]
 
-        user_credentials = self._check_credentials_exist()[0]
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_update_credentials(self):
+        # Create initial credentials
+        initial_group = self._provide_user_credentials()
+        group_id = initial_group["id"]
 
-        assert user_credentials is not None
-        assert "update_time" in user_credentials
-        assert user_credentials["update_time"] is not None
+        # Update only group name
+        new_name = random_name()
+        result = self._update_credentials(group_id, self._build_update_credentials_payload(group_name=new_name))
+        assert result["name"] == new_name
+
+        # Update only variables
+        new_variables = [{"name": "server", "value": "https://new-server.com"}]
+        result = self._update_credentials(group_id, self._build_update_credentials_payload(variables=new_variables))
+        assert result["variables"][0]["value"] == "https://new-server.com"
+
+        # Update only secrets
+        new_secrets = [{"name": "username", "value": "newuser"}, {"name": "password", "value": "newpass"}]
+        result = self._update_credentials(group_id, self._build_update_credentials_payload(secrets=new_secrets))
+        assert any(s["name"] == "username" and s["is_set"] for s in result["secrets"])
+
+        # Update all fields at once
+        final_name = random_name()
+        final_variables = [{"name": "server", "value": "https://final-server.com"}]
+        final_secrets = [{"name": "username", "value": "finaluser"}, {"name": "password", "value": "finalpass"}]
+        result = self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(
+                group_name=final_name, variables=final_variables, secrets=final_secrets
+            ),
+        )
+        assert result["name"] == final_name
+        assert result["variables"][0]["value"] == "https://final-server.com"
+        assert any(s["name"] == "username" and s["is_set"] for s in result["secrets"])
+
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_update_credentials_error_cases(self):
+        """Test update error scenarios."""
+        group = self._provide_user_credentials()
+        group_id = group["id"]
+
+        # Invalid group name - use empty string which should be invalid
+        self._update_credentials(group_id, self._build_update_credentials_payload(group_name=""), status_code=400)
+
+        # Missing required variable
+        self._update_credentials(group_id, self._build_update_credentials_payload(variables=[]), status_code=400)
+
+        # Missing required secret
+        self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(secrets=[{"name": "password", "value": "pass"}]),
+            status_code=400,
+        )
+
+        # Invalid credential names
+        self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(variables=[{"name": "invalid_name", "value": "value"}]),
+            status_code=400,
+        )
+        self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(secrets=[{"name": "invalid_secret", "value": "value"}]),
+            status_code=400,
+        )
+
+        # Empty required values
+        self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(variables=[{"name": "server", "value": ""}]),
+            status_code=400,
+        )
+        self._update_credentials(
+            group_id,
+            self._build_update_credentials_payload(
+                secrets=[{"name": "username", "value": ""}, {"name": "password", "value": "pass"}]
+            ),
+            status_code=400,
+        )
+
+        # Test non-existent group ID
+        self._update_credentials(
+            "f2db41e1fa331b3e", self._build_update_credentials_payload(group_name="test"), status_code=400
+        )
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_delete_service_credentials(self):
@@ -378,6 +465,27 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 },
             },
         }
+
+    def _update_credentials(self, group_id, payload=None, status_code=200):
+        payload = payload or self._build_update_credentials_payload()
+        response = self._put(f"/api/users/current/credentials/group/{group_id}", data=payload, json=True)
+        self._assert_status_code_is(response, status_code)
+        return response.json()
+
+    def _build_update_credentials_payload(
+        self,
+        group_name=None,
+        variables=None,
+        secrets=None,
+    ):
+        update_payload = self._build_credentials_payload()["service_credential"]["group"]
+        if group_name is not None:
+            update_payload["name"] = group_name
+        if variables is not None:
+            update_payload["variables"] = variables
+        if secrets is not None:
+            update_payload["secrets"] = secrets
+        return update_payload
 
     def _check_credentials_exist(self, source_id: str = CREDENTIALS_TEST_TOOL, num_credentials: int = 1):
         response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
