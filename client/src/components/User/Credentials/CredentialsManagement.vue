@@ -36,7 +36,7 @@ watch(
     async () => {
         await fetchData();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

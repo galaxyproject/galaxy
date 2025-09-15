@@ -27,7 +27,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const { currentUser } = storeToRefs(useUserStore());
 
     const sourceCredentialsDefinition = ref<SourceCredentialsDefinition>(
-        transformToSourceCredentials(toolId, toolVersion)
+        transformToSourceCredentials(toolId, toolVersion),
     );
 
     const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
@@ -53,14 +53,14 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         const definition = sourceCredentialsDefinition.value.services.get(key);
         if (!definition) {
             throw new Error(
-                `No definition found for credential service '${key}' in tool ${getToolKey(toolId, toolVersion)}`
+                `No definition found for credential service '${key}' in tool ${getToolKey(toolId, toolVersion)}`,
             );
         }
         return definition;
     }
 
     function getToolServiceCredentialsDefinitionFor(
-        serviceIdentifier: ServiceCredentialsIdentifier
+        serviceIdentifier: ServiceCredentialsIdentifier,
     ): ServiceCredentialsDefinition {
         const key = getKeyFromCredentialsIdentifier(serviceIdentifier);
         return getServiceCredentialsDefinitionByKey(key);
@@ -68,7 +68,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     function buildGroupsFromUserCredentials(
         definition: ServiceCredentialsDefinition,
-        initialUserCredentials?: UserSourceService
+        initialUserCredentials?: UserSourceService,
     ): ServiceGroupPayload[] {
         const groups: ServiceGroupPayload[] = [];
         if (initialUserCredentials) {
@@ -98,7 +98,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
         for (const definition of sourceCredentialsDefinition.value.services.values()) {
             const userService = currentUserToolServices.value.find(
-                (service) => getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+                (service) => getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition),
             );
             if (!userService || !serviceHasCurrentGroupId(userService)) {
                 return false;
@@ -125,7 +125,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             if (definition.optional === false) {
                 const userService = currentUserToolServices.value.find(
                     (service) =>
-                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition),
                 );
                 if (!userService || !serviceHasCurrentGroupId(userService)) {
                     return false;
@@ -144,7 +144,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             if (definition.optional === true) {
                 const userService = currentUserToolServices.value.find(
                     (service) =>
-                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition)
+                        getKeyFromCredentialsIdentifier(service) === getKeyFromCredentialsIdentifier(definition),
                 );
                 if (userService && serviceHasCurrentGroupId(userService)) {
                     return true;
@@ -200,7 +200,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             const serviceIdentifier = createSourceCredentialsPayload.service_credential;
             await userToolsServiceCredentialsStore.createNewCredentialsGroupForTool(
                 serviceIdentifier,
-                createSourceCredentialsPayload
+                createSourceCredentialsPayload,
             );
         } catch (error) {
             console.error("Error creating user credentials", error);
@@ -217,7 +217,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
                 toolId,
                 toolVersion,
                 groupId,
-                serviceGroupPayload
+                serviceGroupPayload,
             );
         } catch (error) {
             console.error("Error updating user credentials", error);
@@ -234,7 +234,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
                 toolId,
                 toolVersion,
                 serviceIdentifier,
-                groupId
+                groupId,
             );
         } catch (error) {
             console.error("Error deleting user credentials group", error);
@@ -247,7 +247,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             await userToolsServiceCredentialsStore.selectCurrentCredentialsGroupsForTool(
                 toolId,
                 toolVersion,
-                serviceCredentials
+                serviceCredentials,
             );
         } catch (error) {
             console.error("Error selecting current credentials groups", error);

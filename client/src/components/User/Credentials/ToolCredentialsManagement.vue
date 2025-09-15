@@ -28,7 +28,7 @@ const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredent
 
 const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGroups } = useUserToolCredentials(
     props.toolId,
-    props.toolVersion
+    props.toolVersion,
 );
 
 const okTitle = "Save Group Selection";
@@ -70,7 +70,7 @@ function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, g
             props.toolId,
             props.toolVersion,
             userServiceCredentialsId,
-            groupId
+            groupId,
         );
     }
 }

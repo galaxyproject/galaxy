@@ -174,7 +174,7 @@ describe("useUserToolCredentials", () => {
         const { provideCredentialsButtonTitle, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         expect(provideCredentialsButtonTitle.value).toBe("Provide credentials");
@@ -187,7 +187,7 @@ describe("useUserToolCredentials", () => {
         const { statusVariant, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         expect(statusVariant.value).toBe("warning");
@@ -200,7 +200,7 @@ describe("useUserToolCredentials", () => {
         const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         expect(hasUserProvidedRequiredCredentials.value).toBe(false);
@@ -213,7 +213,7 @@ describe("useUserToolCredentials", () => {
         const { hasUserProvidedAllCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         expect(hasUserProvidedAllCredentials.value).toBe(false);
@@ -277,7 +277,7 @@ describe("useUserToolCredentials", () => {
         const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         updateUserCredentials(credentialsWithOptional);
@@ -319,7 +319,7 @@ describe("useUserToolCredentials", () => {
         const { updateUserCredentials, mutableUserCredentials, refreshMutableCredentials } = useUserToolCredentials(
             "test-tool",
             "1.0",
-            mockServiceCredentialsDefinition
+            mockServiceCredentialsDefinition,
         );
 
         // Update with user credentials

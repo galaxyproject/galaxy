@@ -26,8 +26,8 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
             throw new Error(
                 `No credentials found for tool ${getToolKey(
                     toolId,
-                    toolVersion
-                )}. Make sure it's included in the tools array.`
+                    toolVersion,
+                )}. Make sure it's included in the tools array.`,
             );
         }
         return userToolCredentials.sourceCredentialsDefinition.value;
@@ -38,30 +38,30 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
             const toolKey = getToolKey(toolId, toolVersion);
             const userToolCredentials = userToolCredentialsByKey.get(toolKey);
             return userToolCredentials?.userServiceFor.value(sd);
-        }
+        },
     );
 
     const someToolsHasRequiredServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value
+            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value,
         );
     });
 
     const hasUserProvidedAllToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value,
         );
     });
 
     const hasUserProvidedAllRequiredToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value,
         );
     });
 
     const hasUserProvidedSomeOptionalToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value
+            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value,
         );
     });
 
@@ -104,8 +104,8 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
             throw new Error(
                 `No credentials found for tool ${getToolKey(
                     toolId,
-                    toolVersion
-                )}. Make sure it's included in the tools array.`
+                    toolVersion,
+                )}. Make sure it's included in the tools array.`,
             );
         }
         return userToolCredentials;
@@ -114,7 +114,7 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     function selectCurrentCredentialsGroupsForTool(
         toolId: string,
         toolVersion: string,
-        serviceCredentials: SelectCurrentGroupPayload[]
+        serviceCredentials: SelectCurrentGroupPayload[],
     ) {
         const toolCredentials = getToolCredentials(toolId, toolVersion);
         return toolCredentials.selectCurrentCredentialsGroups(serviceCredentials);

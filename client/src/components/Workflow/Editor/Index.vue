@@ -623,7 +623,7 @@ export default {
 
         const credentialSteps = computed(() => {
             return Object.values(steps.value).filter(
-                (step) => step.type === "tool" && step.config_form?.credentials?.length > 0
+                (step) => step.type === "tool" && step.config_form?.credentials?.length > 0,
             );
         });
 

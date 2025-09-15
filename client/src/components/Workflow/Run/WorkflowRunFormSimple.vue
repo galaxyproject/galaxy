@@ -341,7 +341,7 @@ const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDef
 
 const credentialTools = computed<ToolIdentifier[]>(() => {
     const credentialSteps = props.model.steps.filter(
-        (step: any) => step.step_type === "tool" && step.credentials?.length
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
     );
 
     const toolIdentifiers: ToolIdentifier[] = [];
@@ -359,11 +359,11 @@ const credentialTools = computed<ToolIdentifier[]>(() => {
 
 onBeforeMount(() => {
     const credentialSteps = props.model.steps.filter(
-        (step: any) => step.step_type === "tool" && step.credentials?.length
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
     );
     if (credentialSteps.length) {
         const promises = credentialSteps.map((step: any) =>
-            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials)
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials),
         );
         return Promise.all(promises);
     }

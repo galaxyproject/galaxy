@@ -17,15 +17,15 @@ export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServ
     function setToolServiceCredentialsDefinitionFor(
         toolId: string,
         toolVersion: string,
-        serviceDefinitions: ServiceCredentialsDefinition[]
+        serviceDefinitions: ServiceCredentialsDefinition[],
     ) {
         const toolKey = getToolKey(toolId, toolVersion);
         const existingDefinitions = toolsServiceCredentialsDefinitions.value[toolKey] || [];
         const uniqueDefinitions = serviceDefinitions.filter(
             (newDef) =>
                 !existingDefinitions.some(
-                    (existing) => existing.name === newDef.name && existing.version === newDef.version
-                )
+                    (existing) => existing.name === newDef.name && existing.version === newDef.version,
+                ),
         );
         toolsServiceCredentialsDefinitions.value[toolKey] = [...existingDefinitions, ...uniqueDefinitions];
     }
@@ -33,13 +33,14 @@ export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServ
     function getToolServiceCredentialsDefinitionFor(
         toolId: string,
         toolVersion: string,
-        serviceCredentialsIdentifier: ServiceCredentialsIdentifier
+        serviceCredentialsIdentifier: ServiceCredentialsIdentifier,
     ): ServiceCredentialsDefinition | undefined {
         const definition = getToolServiceCredentialsDefinitionsFor
             .value(toolId, toolVersion)
             .find(
                 (sd) =>
-                    sd.name === serviceCredentialsIdentifier.name && sd.version === serviceCredentialsIdentifier.version
+                    sd.name === serviceCredentialsIdentifier.name &&
+                    sd.version === serviceCredentialsIdentifier.version,
             );
         return definition;
     }

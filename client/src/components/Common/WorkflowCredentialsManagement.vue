@@ -45,7 +45,7 @@ function onToolServiceCurrentGroupChange(
     toolId: string,
     toolVersion: string,
     serviceDefinition: ServiceCredentialsIdentifier,
-    groupId?: string
+    groupId?: string,
 ) {
     const userToolServiceCredentialsId = userToolServiceIdFor.value(toolId, toolVersion, serviceDefinition);
     if (userToolServiceCredentialsId) {
@@ -53,7 +53,7 @@ function onToolServiceCurrentGroupChange(
             toolId,
             toolVersion,
             userToolServiceCredentialsId,
-            groupId
+            groupId,
         );
     }
 }

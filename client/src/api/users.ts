@@ -55,7 +55,7 @@ export function transformToSourceCredentials(toolId: string, toolVersion: string
     const toolCredentialsDefinitions = getToolServiceCredentialsDefinitionsFor(toolId, toolVersion);
 
     const services = new Map(
-        toolCredentialsDefinitions.map((service) => [getKeyFromCredentialsIdentifier(service), service])
+        toolCredentialsDefinitions.map((service) => [getKeyFromCredentialsIdentifier(service), service]),
     );
 
     return {
@@ -77,7 +77,7 @@ export interface ServiceCredentialsIdentifier {
 type ServiceCredentialsIdentifierKey = string;
 
 export function getKeyFromCredentialsIdentifier(
-    credentialsIdentifier: ServiceCredentialsIdentifier
+    credentialsIdentifier: ServiceCredentialsIdentifier,
 ): ServiceCredentialsIdentifierKey {
     return `${credentialsIdentifier.name}-${credentialsIdentifier.version}`;
 }

@@ -83,7 +83,7 @@ const currentServiceCredentialsGroup = computed(() => {
     const currentGroupId = getUserToolServiceCurrentGroupId.value(
         props.sourceId,
         props.sourceVersion,
-        userToolService.id
+        userToolService.id,
     );
     return userServicesGroups.value.find((group) => group.id === currentGroupId);
 });
@@ -104,11 +104,11 @@ function validateGroupData(groupData: ServiceGroupPayload): boolean {
     }
 
     const hasInvalidVariable = groupData.variables.some(
-        (variable) => !variable.value && !isVariableOptional(variable.name, "variable")
+        (variable) => !variable.value && !isVariableOptional(variable.name, "variable"),
     );
 
     const hasInvalidSecret = groupData.secrets.some(
-        (secret) => !secret.value && !isVariableOptional(secret.name, "secret")
+        (secret) => !secret.value && !isVariableOptional(secret.name, "secret"),
     );
 
     const hasDuplicateName = userServicesGroups.value.filter((group) => group.name === groupData.name).length > 1;
