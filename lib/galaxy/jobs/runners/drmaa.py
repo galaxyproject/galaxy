@@ -8,6 +8,7 @@ import os
 import shlex
 import string
 import time
+from typing import Union
 
 from galaxy import model
 from galaxy.jobs import JobDestination
@@ -234,7 +235,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(ajs)
 
-    def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
+    def _complete_terminal_job(self, ajs: AsynchronousJobState, drmaa_state: str, **kwargs):
         """
         Handle a job upon its termination in the DRM. This method is meant to
         be overridden by subclasses to improve post-mortem and reporting of
@@ -244,6 +245,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         does not determine if a job was terminal, but the implementation
         in the subclasses is supposed to do this.)
         """
+        assert drmaa is not None
         job_state = ajs.job_wrapper.get_state()
         if drmaa_state == drmaa.JobState.FAILED and job_state != model.Job.states.STOPPED:
             if job_state != model.Job.states.DELETED:
@@ -258,7 +260,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
 
-    def check_watched_item(self, ajs, new_watched):
+    def check_watched_item_drmaa(
+        self, ajs: AsynchronousJobState, new_watched: list[AsynchronousJobState]
+    ) -> Union[str, None]:
         """
         look at a single watched job, determine its state, and deal with errors
         that could happen in this process. to be called from check_watched_items()
@@ -278,6 +282,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         Note that None is returned in all cases where the loop in check_watched_items
         is to be continued
         """
+        assert drmaa is not None
         external_job_id = ajs.job_id
         galaxy_id_tag = ajs.job_wrapper.get_id_tag()
         state = None
@@ -337,12 +342,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         Called by the monitor thread to look at each watched job and deal
         with state changes.
         """
-        new_watched = []
+        new_watched: list[AsynchronousJobState] = []
         for ajs in self.watched:
             external_job_id = ajs.job_id
             galaxy_id_tag = ajs.job_wrapper.get_id_tag()
             old_state = ajs.old_state
-            state = self.check_watched_item(ajs, new_watched)
+            state = self.check_watched_item_drmaa(ajs, new_watched)
             if state is None:
                 continue
             if state != old_state:

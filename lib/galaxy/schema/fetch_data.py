@@ -15,9 +15,7 @@ from pydantic import (
     Json,
     TypeAdapter,
 )
-from typing_extensions import (
-    Literal,
-)
+from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -27,6 +25,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.terms import HelpTerms
 from galaxy.schema.types import CoercedStringType
+from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
 
@@ -112,7 +111,7 @@ class ExtraFiles(FetchBaseModel):
 
 
 class FetchDatasetHash(Model):
-    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
+    hash_function: HashFunctionNames
     hash_value: str
 
     model_config = ConfigDict(extra="forbid")

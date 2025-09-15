@@ -17,6 +17,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     FilesSourceRuntimeContext,
     RemoteDirectory,
+    RemoteFileHash,
 )
 
 try:
@@ -105,6 +106,13 @@ class HuggingFaceFilesSource(
         """Extract timestamp from Hugging Face file info to use it in the RemoteFile entry."""
         last_commit: dict = info.get("last_commit", {})
         return last_commit.get("date")
+
+    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+        """Get optional file hashes provided by Hugging Face for the RemoteFile entry."""
+        # Files stored in Hugging Face repositories using Git LFS may have SHA-256 hashes.
+        lfs = info.get("lfs") or {}
+        sha256 = lfs.get("sha256")
+        return [RemoteFileHash(hash_function="SHA-256", hash_value=sha256)] if sha256 else None
 
     def _list(
         self,

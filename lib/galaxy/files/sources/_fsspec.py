@@ -25,6 +25,7 @@ from galaxy.files.models import (
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
+    RemoteFileHash,
     StrictModel,
 )
 from galaxy.files.sources import BaseFilesSource
@@ -228,6 +229,14 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         formatted_timestamp = self.to_dict_time(mtime)
         return formatted_timestamp
 
+    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+        """Get optional file hashes provided by the remote filesystem for the RemoteFile entry.
+
+        Subclasses can override this to extract hashes from the file info.
+        By default, it returns None.
+        """
+        return None
+
     def _info_to_entry(self, info: dict) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
         filesystem_path = info["name"]
@@ -240,7 +249,8 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         else:
             size = int(info.get("size", 0))
             ctime = self._get_formatted_timestamp(info)
-            return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path)
+            hashes = self._get_file_hashes(info)
+            return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path, hashes=hashes)
 
     def _list_recursive(self, fs: AbstractFileSystem, path: str) -> tuple[list[AnyRemoteEntry], int]:
         """Handle recursive directory listing with item limit."""

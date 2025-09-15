@@ -15,17 +15,17 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
+import { isShareableHistoryWithStatus } from "@/api";
 import { useConfig } from "@/composables/config";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 import { assertArray } from "@/utils/assertions";
 
-import type { Item, ShareOption } from "./item";
-
 import Heading from "../Common/Heading.vue";
 
 const props = defineProps<{
-    item: Item;
+    item: AnyShareableItemWithStatus;
     modelClass: string;
 }>();
 
@@ -39,7 +39,7 @@ const { currentUser } = storeToRefs(useUserStore());
 const { config, isConfigLoaded } = useConfig(false);
 
 const permissionsChangeRequired = computed(() => {
-    if (props.item.extra) {
+    if (isShareableHistoryWithStatus(props.item)) {
         return props.item.extra.can_change.length > 0 || props.item.extra.cannot_change.length > 0;
     } else {
         return false;
@@ -123,10 +123,23 @@ const noChanges = computed(() => {
     return !(newCandidates.length !== 0 || removedShared.length !== 0);
 });
 
-const canChangeCount = computed(() => props.item.extra?.can_change.length ?? 0);
-const cannotChangeCount = computed(() => props.item.extra?.cannot_change.length ?? 0);
+const canChangeCount = computed(() => {
+    return isShareableHistoryWithStatus(props.item) ? props.item.extra.can_change.length : 0;
+});
 
-const selectedSharingOption = ref<ShareOption>("make_public");
+const cannotChangeCount = computed(() => {
+    return isShareableHistoryWithStatus(props.item) ? props.item.extra.cannot_change.length : 0;
+});
+
+const canChangeDatasets = computed(() => {
+    return isShareableHistoryWithStatus(props.item) ? props.item.extra.can_change : [];
+});
+
+const cannotChangeDatasets = computed(() => {
+    return isShareableHistoryWithStatus(props.item) ? props.item.extra.cannot_change : [];
+});
+
+const selectedSharingOption = ref<ShareOption>("make_accessible_to_shared");
 
 function onUpdatePermissions() {
     emit("share", sharingCandidatesAsEmails.value, selectedSharingOption.value);
@@ -251,7 +264,7 @@ defineExpose({
                     v-if="canChangeCount > 0"
                     header="The following datasets can be shared by updating their permissions">
                     <BListGroup>
-                        <BListGroupItem v-for="dataset in props.item.extra?.can_change ?? []" :key="dataset.id">
+                        <BListGroupItem v-for="dataset in canChangeDatasets" :key="dataset.id">
                             {{ dataset.name }}
                         </BListGroupItem>
                     </BListGroup>
@@ -261,7 +274,7 @@ defineExpose({
                     v-if="cannotChangeCount > 0"
                     header="The following datasets cannot be shared, you are not authorized to change their permissions">
                     <BListGroup>
-                        <BListGroupItem v-for="dataset in props.item.extra?.cannot_change ?? []" :key="dataset.id">
+                        <BListGroupItem v-for="dataset in cannotChangeDatasets" :key="dataset.id">
                             {{ dataset.name }}
                         </BListGroupItem>
                     </BListGroup>

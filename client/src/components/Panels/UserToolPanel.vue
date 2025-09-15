@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faEdit, faPlus, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCancel } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -88,6 +89,15 @@ function getToolBadges(tool: UnprivilegedToolResponse) {
 
 function getToolSecondaryActions(tool: UnprivilegedToolResponse) {
     return [
+        {
+            id: "deactivate",
+            label: "Deactivate",
+            icon: faCancel,
+            title: "Deactivate this custom tool",
+            handler: () => {
+                unprivilegedToolStore.deactivateTool(tool.uuid);
+            },
+        },
         {
             id: "edit",
             label: "Edit",

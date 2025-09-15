@@ -10,7 +10,7 @@ export async function updateToolFormData(tool_id, tool_uuid, tool_version, histo
         inputs: inputs,
         history_id: history_id,
     };
-    const url = `${getAppRoot()}api/tools/${tool_id}/build`;
+    const url = `${getAppRoot()}api/tools/${tool_uuid || tool_id}/build`;
     try {
         const { data } = await axios.post(url, current_state);
         return data;

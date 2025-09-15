@@ -17,6 +17,7 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
+    Sequence,
     TYPE_CHECKING,
     Union,
 )
@@ -115,8 +116,11 @@ from galaxy.tool_util.version import (
     parse_version,
 )
 from galaxy.tool_util_models.tool_source import (
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     JavascriptRequirement,
+    TemplateConfigFile,
 )
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
@@ -1093,7 +1097,23 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     @property
     def version_object(self):
-        return parse_version(self.version)
+        """Parse version string, handling special Galaxy version format."""
+        GALAXY_VERSION_SUFFIX = "+galaxy"
+        version = self.version
+
+        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
+        if GALAXY_VERSION_SUFFIX not in version:
+            return parse_version(version)
+
+        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
+
+        # Handle Galaxy versions that need numeric sorting
+        if suffix:
+            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
+            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
+            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
+
+        return parse_version(version)
 
     @property
     def sa_session(self):
@@ -1523,32 +1543,12 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             for key, value in uihints_elem.attrib.items():
                 self.uihints[key] = value
 
-    def __parse_config_files(self, tool_source):
-        self.config_files = []
-        if not hasattr(tool_source, "root"):
-            return
+    def __parse_config_files(self, tool_source: ToolSource):
+        self.config_files: Sequence[Union[TemplateConfigFile, InputConfigFile, FileSourceConfigFile]] = []
 
-        root = tool_source.root
-        if (conf_parent_elem := root.find("configfiles")) is not None:
-            inputs_elem = conf_parent_elem.find("inputs")
-            if inputs_elem is not None:
-                name = inputs_elem.get("name")
-                filename = inputs_elem.get("filename", None)
-                format = inputs_elem.get("format", "json")
-                data_style = inputs_elem.get("data_style", "skip")
-                content = dict(format=format, handle_files=data_style, type="inputs")
-                self.config_files.append((name, filename, content))
-            file_sources_elem = conf_parent_elem.find("file_sources")
-            if file_sources_elem is not None:
-                name = file_sources_elem.get("name")
-                filename = file_sources_elem.get("filename", None)
-                content = dict(type="files")
-                self.config_files.append((name, filename, content))
-            for conf_elem in conf_parent_elem.findall("configfile"):
-                name = conf_elem.get("name")
-                filename = conf_elem.get("filename", None)
-                content = conf_elem.text
-                self.config_files.append((name, filename, content))
+        self.config_files.extend(tool_source.parse_input_configfiles())
+        self.config_files.extend(tool_source.parse_template_configfiles())
+        self.config_files.extend(tool_source.parse_file_sources())
 
     def __parse_trackster_conf(self, tool_source):
         self.trackster_conf = None

@@ -3042,7 +3042,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TEXT)
-    token: Mapped[Optional[str]] = mapped_column(TEXT)
+    token: Mapped[str] = mapped_column(TEXT)
     tool_port: Mapped[Optional[int]]
     host: Mapped[Optional[str]] = mapped_column(TEXT)
     port: Mapped[Optional[int]]
@@ -3051,7 +3051,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     requires_domain: Mapped[Optional[bool]] = mapped_column(default=True)
     requires_path_in_url: Mapped[Optional[bool]] = mapped_column(default=False)
     requires_path_in_header_named: Mapped[Optional[str]] = mapped_column(TEXT)
-    info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    info: Mapped[Optional[dict]] = mapped_column(MutableJSONType)
     configured: Mapped[Optional[bool]] = mapped_column(default=False)
     deleted: Mapped[Optional[bool]] = mapped_column(default=False)
     created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
@@ -3086,6 +3086,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         requires_path_in_url=False,
         configured=False,
         deleted=False,
+        token: Union[str, None] = None,
         **kwd,
     ):
         super().__init__(**kwd)
@@ -3093,7 +3094,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         self.requires_path_in_url = requires_path_in_url
         self.configured = configured
         self.deleted = deleted
-        self.token = self.token or hex_to_lowercase_alphanum(token_hex(8))
+        self.token = token or hex_to_lowercase_alphanum(token_hex(8))
         self.info = self.info or {}
 
     @property

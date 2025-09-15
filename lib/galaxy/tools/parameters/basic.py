@@ -1948,7 +1948,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if isinstance(value, MutableMapping) and "values" in value:
             if hasattr(self, "multiple") and self.multiple is True:
-                return [history_item_dict_to_python(v, app, self.name) for v in value["values"]]
+                history_items = [history_item_dict_to_python(v, app, self.name) for v in value["values"]]
+                if len(history_items) == 1 and isinstance(history_items[0], HistoryDatasetCollectionAssociation):
+                    return history_items[0]
+                return history_items
             elif len(value["values"]) > 0:
                 return history_item_dict_to_python(value["values"][0], app, self.name)
 

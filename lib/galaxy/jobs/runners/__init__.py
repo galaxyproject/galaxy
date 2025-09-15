@@ -67,6 +67,7 @@ if TYPE_CHECKING:
         JobWrapper,
         MinimalJobWrapper,
     )
+    from galaxy.schema.schema import JobState as JobStateEnum
 
 log = get_logger(__name__)
 
@@ -100,7 +101,7 @@ class BaseJobRunner:
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
-    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner"""
         self.app = app
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
@@ -760,7 +761,7 @@ class AsynchronousJobState(JobState):
         self,
         files_dir=None,
         job_wrapper=None,
-        job_id=None,
+        job_id: Union[str, None] = None,
         job_file=None,
         output_file=None,
         error_file=None,
@@ -769,7 +770,7 @@ class AsynchronousJobState(JobState):
         job_destination=None,
     ):
         super().__init__(job_wrapper, job_destination)
-        self.old_state = None
+        self.old_state: Union[JobStateEnum, None] = None
         self._running = False
         self.check_count = 0
         self.start_time = None
@@ -825,15 +826,15 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
     to the correct methods (queue, finish, cleanup) at appropriate times..
     """
 
-    def __init__(self, app, nworkers, **kwargs):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         super().__init__(app, nworkers, **kwargs)
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
         # be modified by the monitor thread, which will move items from 'queue'
         # to 'watched' and then manage the watched jobs.
-        self.watched = []
-        self.monitor_queue = Queue()
+        self.watched: list[AsynchronousJobState] = []
+        self.monitor_queue: Queue[AsynchronousJobState] = Queue()
 
     def _init_monitor_thread(self):
         name = f"{self.runner_name}.monitor_thread"
@@ -876,7 +877,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 
-    def monitor_job(self, job_state):
+    def monitor_job(self, job_state: AsynchronousJobState) -> None:
         self.monitor_queue.put(job_state)
 
     def shutdown(self):
@@ -903,7 +904,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         raise NotImplementedError()
 
     def finish_job(self, job_state: AsynchronousJobState):

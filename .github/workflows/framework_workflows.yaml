@@ -5,11 +5,13 @@ on:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
@@ -66,16 +68,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework-workflows
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
       - name: Run tests
         run: ./run_tests.sh --coverage --framework-workflows
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v3
         with:
-          flags: framework
+          flags: framework-workflows
           working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: Framework test results (${{ matrix.python-version }})
+          name: Workflow framework test results (${{ matrix.python-version }})
           path: 'galaxy root/run_framework_workflows_tests.html'
