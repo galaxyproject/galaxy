@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from types import SimpleNamespace
 from typing import Optional
 from unittest.mock import MagicMock
 
@@ -287,10 +288,11 @@ def test_decode_access_token_opaque_token():
 def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backend_config_file):
     custom_auth_pipeline = ("custom", "auth", "steps")
     mock_app = MagicMock()
-    mock_app.config.get.side_effect = lambda k, default=None: {"oidc_auth_pipeline": custom_auth_pipeline}.get(
-        k, default
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=custom_auth_pipeline,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
     )
-    mock_app.config.oidc = defaultdict(dict)
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
@@ -309,10 +311,11 @@ def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backen
     """
     custom_auth_pipeline_extra = ["extra", "auth", "steps"]
     mock_app = MagicMock()
-    mock_app.config.get.side_effect = lambda k, default=None: {
-        "oidc_auth_pipeline_extra": custom_auth_pipeline_extra
-    }.get(k, default)
-    mock_app.config.oidc = defaultdict(dict)
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
+        oidc=defaultdict(dict),
+    )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
@@ -333,11 +336,11 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
     custom_auth_pipeline = ("custom", "auth", "steps")
     custom_auth_pipeline_extra = ["extra", "auth", "steps"]
     mock_app = MagicMock()
-    mock_app.config.get.side_effect = lambda k, default=None: {
-        "oidc_auth_pipeline": custom_auth_pipeline,
-        "oidc_auth_pipeline_extra": custom_auth_pipeline_extra,
-    }.get(k, default)
-    mock_app.config.oidc = defaultdict(dict)
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=custom_auth_pipeline,
+        oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
+        oidc=defaultdict(dict),
+    )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
     )
