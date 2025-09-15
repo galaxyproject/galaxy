@@ -4181,6 +4181,37 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``oidc_auth_pipeline``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the full sequence of steps that Python Social Auth goes
+    through when authenticating an OIDC login. Use when you want to
+    completely customize the pipeline (e.g. for testing).
+    By default, Galaxy uses galaxy.authnz.psa_authnz.AUTH_PIPELINE -
+    see there for example steps.
+    Each element should be an import path to a function, e.g.
+    galaxy.authnz.psa_authnz.contains_required_data
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_auth_pipeline_extra``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets additional authentication pipeline steps, added after the
+    default steps (from galaxy.authnz.psa_authnz.AUTH_PIPELINE).
+    Use when you want to keep the default pipeline, but add additional
+    custom processing.
+    Each element should be an import path to a function, e.g.
+    galaxy.authnz.psa_authnz.contains_required_data
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``oidc_scope_prefix``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -5835,6 +5866,3 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
-
-
-
