@@ -85,10 +85,10 @@ class PatchGenericPickle:
 
         if not issubclass(cls, BaseModel):
             raise TypeError("PatchGenericPickle can only be used with subclasses of pydantic.BaseModel")
-        if not issubclass(cls, Generic):  # type: ignore [arg-type]
+        if not issubclass(cls, Generic):  # type: ignore[unreachable]  # https://github.com/python/mypy/issues/19377
             raise TypeError("PatchGenericPickle can only be used with Generic models")
 
-        qualname = cls.__qualname__
+        qualname = cls.__qualname__  # type: ignore[unreachable]  # https://github.com/python/mypy/issues/19377
         declaring_module = sys.modules[cls.__module__]
         if qualname not in declaring_module.__dict__:
             # This should work in all cases, but we might need to make this check and update more

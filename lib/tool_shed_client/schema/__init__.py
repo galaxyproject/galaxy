@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    cast,
     Optional,
     Union,
 )
@@ -515,9 +514,7 @@ def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> Ins
     extra_info: Union[ExtraRepoInfo, EmptyDict]
     _, repo_metadata_install_info, extra_info = legacy_install_info
     if repo_metadata_install_info:
-        metadata_info = RepositoryMetadataInstallInfo.from_legacy_dict(
-            cast(RepositoryMetadataInstallInfoDict, repo_metadata_install_info)
-        )
+        metadata_info = RepositoryMetadataInstallInfo.from_legacy_dict(repo_metadata_install_info)
     else:
         metadata_info = None
     if extra_info:

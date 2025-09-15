@@ -12,7 +12,7 @@ alembic==1.16.5
 amqp==5.3.1
 annotated-types==0.7.0
 anyio==4.10.0
-apispec==6.8.2
+apispec==6.8.3
 appdirs==1.4.4
 arcp==0.2.1
 argcomplete==3.6.2
@@ -36,7 +36,7 @@ cachecontrol==0.14.3
 cachetools==5.5.2
 celery==5.5.3
 certifi==2025.8.3
-cffi==1.17.1
+cffi==2.0.0 ; implementation_name == 'pypy' or platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.3
 circus==0.19.0
 click==8.1.8 ; python_full_version < '3.10'
@@ -52,13 +52,14 @@ conda-package-streaming==0.12.0
 cryptography==45.0.7
 ct3==3.4.0
 cwl-upgrader==1.2.12
-cwl-utils==0.39
+cwl-utils==0.40
 cwltool==3.1.20250715140722
 defusedxml==0.7.1
 deprecated==1.2.18
 deprecation==2.1.0
 dictobj==0.4
-dnspython==2.7.0
+dnspython==2.7.0 ; python_full_version < '3.10'
+dnspython==2.8.0 ; python_full_version >= '3.10'
 docopt==0.6.2
 docutils==0.21.2
 dparse==0.6.4
@@ -94,25 +95,25 @@ importlib-metadata==8.7.0 ; python_full_version < '3.10'
 importlib-resources==6.5.2 ; python_full_version < '3.12'
 invoke==2.2.0
 isa-rwval==0.10.11
-isal==1.7.2
+isal==1.8.0
 isodate==0.7.2 ; python_full_version < '3.11'
 jinja2==3.1.6
 jmespath==1.0.1
 jsonref==1.1.0
 jsonschema==4.25.1
-jsonschema-specifications==2025.4.1
+jsonschema-specifications==2025.9.1
 kombu==5.5.4
 lagom==2.7.7
 legacy-cgi==2.6.3 ; python_full_version >= '3.13'
 limits==4.2 ; python_full_version < '3.10'
 limits==5.5.0 ; python_full_version >= '3.10'
-lxml==5.4.0
+lxml==6.0.1
 mako==1.3.10
 markdown==3.9
 markdown-it-py==3.0.0
 markupsafe==3.0.2
 mdurl==0.1.2
-mercurial==7.1
+mercurial==7.1.1
 mistune==3.0.2
 mrcfile==1.5.4
 msal==1.33.0
@@ -125,7 +126,7 @@ networkx==3.5 ; python_full_version >= '3.11'
 nodeenv==1.9.1
 numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'
-numpy==2.3.2 ; python_full_version >= '3.11'
+numpy==2.3.3 ; python_full_version >= '3.11'
 oauthlib==3.3.1
 openpyxl==3.1.5
 orjson==3.11.3
@@ -141,15 +142,15 @@ pillow==11.3.0
 prompt-toolkit==3.0.52
 propcache==0.3.2
 proto-plus==1.26.1
-protobuf==6.32.0
+protobuf==6.32.1
 prov==1.5.1
 psutil==7.0.0
 pulsar-galaxy-lib==0.15.10
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
-pycparser==2.22
+pycparser==2.23 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
-pydantic==2.11.7
+pydantic==2.11.8
 pydantic-core==2.33.2
 pydantic-tes==0.2.0
 pydot==4.0.1
@@ -159,7 +160,7 @@ pygments==2.19.2
 pyjwt==2.10.1
 pykwalify==1.8.0
 pylibmagic==0.5.0
-pynacl==1.5.0
+pynacl==1.6.0
 pyparsing==3.2.3
 pypng==0.20220715.0
 pyreadline3==3.5.4 ; sys_platform == 'win32'
@@ -171,7 +172,7 @@ python-slugify==8.0.4
 python3-openid==3.2.0
 pytz==2025.2
 pyyaml==6.0.2
-pyzmq==27.0.2
+pyzmq==27.1.0
 rdflib==7.1.4
 referencing==0.36.2
 refgenconf==0.12.2
@@ -209,14 +210,14 @@ tenacity==9.1.2
 text-unidecode==1.3
 tifffile==2024.8.30 ; python_full_version < '3.10'
 tifffile==2025.5.10 ; python_full_version == '3.10.*'
-tifffile==2025.8.28 ; python_full_version >= '3.11'
+tifffile==2025.9.9 ; python_full_version >= '3.11'
 tinydb==4.8.2
 tomli==2.2.1 ; python_full_version < '3.11'
 tornado==6.5.2
 tqdm==4.67.1
 tuspy==1.1.0
 tuswsgi==0.5.5
-typing-extensions==4.15.0
+typing-extensions==4.14.1
 typing-inspection==0.4.1
 tzdata==2025.2
 tzlocal==5.3.1
