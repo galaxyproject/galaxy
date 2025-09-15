@@ -819,7 +819,7 @@ mapping:
 
       enable_tool_generated_tours:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Allow tools to show the option of and create interactive tours crafted for them

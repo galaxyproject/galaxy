@@ -895,7 +895,7 @@ galaxy:
 
   # Allow tools to show the option of and create interactive tours
   # crafted for them by the backend.
-  #enable_tool_generated_tours: false
+  #enable_tool_generated_tours: true
 
   # Webhooks directory: where to store webhooks - plugins to extend the
   # Galaxy UI. By default none will be loaded.  Set to
