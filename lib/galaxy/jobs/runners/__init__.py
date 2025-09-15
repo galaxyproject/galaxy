@@ -818,6 +818,13 @@ class AsynchronousJobState(JobState):
         if attribute not in self.cleanup_file_attributes:
             self.cleanup_file_attributes.append(attribute)
 
+    def init_job_stream_files(self):
+        """For runners that don't create explicit job scripts - create job stream files."""
+        with open(self.output_file, "w"):
+            pass
+        with open(self.error_file, "w"):
+            pass
+
 
 class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
@@ -907,17 +914,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
     def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         raise NotImplementedError()
 
-    def finish_job(self, job_state: AsynchronousJobState):
-        """
-        Get the output/error for a finished job, pass to `job_wrapper.finish`
-        and cleanup all the job's temporary files.
-        """
-        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
-        external_job_id = job_state.job_id
-
-        # To ensure that files below are readable, ownership must be reclaimed first
-        job_state.job_wrapper.reclaim_ownership()
-
+    def _collect_job_output(self, job_id: int, external_job_id: Optional[str], job_state: JobState):
         # wait for the files to appear
         which_try = 0
         collect_output_success = True
@@ -931,11 +928,25 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ""
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error("(%s/%s) %s: %s", galaxy_id_tag, external_job_id, stderr, unicodify(e))
+                    log.error("(%s/%s) %s: %s", job_id, external_job_id, stderr, unicodify(e))
                     collect_output_success = False
                 else:
                     time.sleep(1)
                 which_try += 1
+        return collect_output_success, stdout, stderr
+
+    def finish_job(self, job_state: AsynchronousJobState):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the job's temporary files.
+        """
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        external_job_id = job_state.job_id
+
+        # To ensure that files below are readable, ownership must be reclaimed first
+        job_state.job_wrapper.reclaim_ownership()
+
+        collect_output_success, stdout, stderr = self._collect_job_output(galaxy_id_tag, external_job_id, job_state)
 
         if not collect_output_success:
             job_state.fail_message = stderr

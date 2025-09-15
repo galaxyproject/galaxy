@@ -7,7 +7,6 @@ import logging
 import math
 import os
 import re
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Union
@@ -50,7 +49,6 @@ from galaxy.jobs.runners.util.pykube_util import (
     Service,
     service_object_dict,
 )
-from galaxy.util import unicodify
 from galaxy.util.bytesize import ByteSize
 
 log = logging.getLogger(__name__)
@@ -175,12 +173,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
         )
-        # Kubernetes doesn't really produce meaningful "job stdout", but file needs to be present
-        with open(ajs.output_file, "w"):
-            pass
-        with open(ajs.error_file, "w"):
-            pass
-
+        # Kubernetes doesn't really produce a "job script", but job stream files needs to be present
+        ajs.init_job_stream_files()
         if not self.prepare_job(
             job_wrapper,
             include_metadata=False,
@@ -680,26 +674,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         return ByteSize(mem_value).value
 
-    def __assemble_k8s_container_image_name(self, job_wrapper):
-        """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
-        job_destination = job_wrapper.job_destination
-
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination
-        # definition
-        repo = ""
-        owner = ""
-        if "repo" in job_destination.params:
-            repo = f"{job_destination.params['repo']}/"
-        if "owner" in job_destination.params:
-            owner = f"{job_destination.params['owner']}/"
-
-        k8s_cont_image = repo + owner + job_destination.params["image"]
-
-        if "tag" in job_destination.params:
-            k8s_cont_image += f":{job_destination.params['tag']}"
-
-        return k8s_cont_image
-
     def __get_k8s_container_name(self, job_wrapper):
         # These must follow a specific regex for Kubernetes.
         raw_id = job_wrapper.job_destination.id
@@ -1115,22 +1089,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # To ensure that files below are readable, ownership must be reclaimed first
         job_state.job_wrapper.reclaim_ownership()
 
-        # wait for the files to appear
-        which_try = 0
-        while which_try < self.app.config.retry_job_output_collection + 1:
-            try:
-                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, "rb") as stderr_file:
-                    job_stdout = self._job_io_for_db(stdout_file)
-                    job_stderr = self._job_io_for_db(stderr_file)
-                break
-            except Exception as e:
-                if which_try == self.app.config.retry_job_output_collection:
-                    job_stdout = ""
-                    job_stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error(f"{gxy_job.id}/{gxy_job.job_runner_external_id} {job_stderr}: {unicodify(e)}")
-                else:
-                    time.sleep(1)
-                which_try += 1
+        _, job_stdout, job_stderr = self._collect_job_output(gxy_job.id, gxy_job.job_runner_external_id, job_state)
 
         # get stderr and stdout to database
         outputs_directory = os.path.join(job_state.job_wrapper.working_directory, "outputs")
