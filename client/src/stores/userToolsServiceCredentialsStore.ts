@@ -5,6 +5,7 @@ import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
     CreateSourceCredentialsPayload,
     SelectCurrentGroupPayload,
+    ServiceCredentialsContext,
     ServiceCredentialsDefinition,
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
@@ -438,6 +439,48 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Get the currently selected credentials provided by the user for a specific tool.
+     *
+     * This information is used when executing a tool to provide the appropriate credentials.
+     * In addition to the corresponding service credentials ID and group ID, the service name and version
+     * are also provided to facilitate the identification of the credentials being used.
+     */
+    function getCredentialsExecutionContextForTool(toolId: string, toolVersion: string) {
+        const services = userToolServicesFor.value(toolId, toolVersion);
+        if (!services) {
+            console.warn(
+                "Cannot get selected credentials execution context, no services found for tool",
+                toolId,
+                toolVersion,
+            );
+            return [];
+        }
+        const selectedCredentials: ServiceCredentialsContext[] = [];
+        for (const service of services) {
+            const currentGroupId = getUserToolServiceCurrentGroupId.value(toolId, toolVersion, service.id);
+            if (currentGroupId) {
+                const group = userToolServiceCredentialsGroups.value[currentGroupId];
+                if (group) {
+                    selectedCredentials.push({
+                        user_credentials_id: service.id,
+                        name: service.name,
+                        version: service.version,
+                        selected_group: {
+                            id: group.id,
+                            name: group.name,
+                        },
+                    });
+                } else {
+                    console.warn(
+                        `Current group ID ${currentGroupId} for service ${service.name}:${service.version} not found in store`,
+                    );
+                }
+            }
+        }
+        return selectedCredentials;
+    }
+
     function getUserToolKey(toolId: string, toolVersion: string): string {
         const userId = ensureUserIsRegistered();
         return `${userId}-${toolId}-${toolVersion}`;
@@ -478,5 +521,6 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         updateUserCredentialsForTool,
         deleteCredentialsGroupForTool,
         selectCurrentCredentialsGroupsForTool,
+        getCredentialsExecutionContextForTool,
     };
 });

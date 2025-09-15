@@ -126,6 +126,7 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import ToolRecommendation from "../ToolRecommendation";
@@ -172,7 +173,10 @@ export default {
     },
     setup() {
         const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
-        return { config, isConfigLoaded };
+
+        const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
+
+        return { config, isConfigLoaded, getCredentialsExecutionContextForTool };
     },
     data() {
         return {
@@ -396,6 +400,16 @@ export default {
             }
             if (this.dataManagerMode === "bundle") {
                 jobDef.data_manager_mode = this.dataManagerMode;
+            }
+            if (this.formConfig.credentials?.length) {
+                if (this.formConfig.job_credentials_context === null) {
+                    jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                        this.formConfig.id,
+                        this.formConfig.version,
+                    );
+                } else {
+                    jobDef.credentials_context = this.formConfig.job_credentials_context;
+                }
             }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
