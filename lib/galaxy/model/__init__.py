@@ -17,10 +17,7 @@ import pwd
 import random
 import string
 from collections import defaultdict
-from collections.abc import (
-    Callable,
-    Iterable,
-)
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -131,7 +128,6 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql import exists
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     Literal,
@@ -2766,7 +2762,13 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     @property
     def job_list(self):
-        return [icjja.job for icjja in self.jobs]
+        return (
+            required_object_session(self)
+            .query(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+            .all()
+        )
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -6443,6 +6445,11 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
+    @property
+    def purged(self):
+        # For uniformity with HistoryDatasetAssociation
+        return self.dataset and self.dataset.purged
+
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
     ):
@@ -6831,15 +6838,6 @@ class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 
 
-class InnerCollectionFilter(NamedTuple):
-    column: str
-    operator_function: Callable
-    expected_value: Union[str, int, float, bool]
-
-    def produce_filter(self, table):
-        return self.operator_function(getattr(table, self.column), self.expected_value)
-
-
 class CollectionStateSummary(NamedTuple):
     dbkeys: list[Union[str, None]]
     extensions: list[str]
@@ -6914,7 +6912,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 ]
             ]
         ] = None,
-        inner_filter: Optional[InnerCollectionFilter] = None,
     ):
         collection_attributes = collection_attributes or ()
         element_attributes = element_attributes or ()
@@ -6950,7 +6947,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             order_by_columns.append(inner_dce.c.element_index)
             q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
             if collection_attributes:
-                q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
+                q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
                 q = q.add_columns(
                     *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
                 )
@@ -6958,8 +6955,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             dce = inner_dce
             dc = inner_dc
             depth_collection_type = depth_collection_type.split(":", 1)[1]
-        if inner_filter:
-            q = q.filter(inner_filter.produce_filter(dc.c))
 
         if (
             hda_attributes
@@ -7088,15 +7083,12 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             else:
                 stmt = self._build_nested_collection_attributes_stmt(
                     collection_attributes=("populated_state",),
-                    inner_filter=InnerCollectionFilter(
-                        "populated_state", operator.__ne__, DatasetCollection.populated_states.OK
-                    ),
                 )
-                stmt = stmt.subquery()
-                stmt = select(~exists(stmt))
                 session = required_object_session(self)
-                _populated_optimized = session.scalar(stmt)
-
+                for row in session.execute(stmt):
+                    if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
+                        _populated_optimized = False
+                        break
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
@@ -7109,7 +7101,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def populated(self):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(e.child_collection and e.child_collection.populated for e in self.elements)
+            if self.id:
+                return self.populated_optimized
+            else:
+                return all(e.child_collection and e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
@@ -9190,7 +9185,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship(
+    steps: Mapped[list["WorkflowInvocationStep"]] = relationship(
         "WorkflowInvocationStep",
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,

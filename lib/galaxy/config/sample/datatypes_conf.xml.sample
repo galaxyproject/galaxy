@@ -234,11 +234,12 @@
     <datatype extension="h5ad" type="galaxy.datatypes.binary:Anndata" description="An HDF5-based anndata File" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5mu" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="MuData is a format analogous to Anndata for multimodal datasets and is based on HDF5" description_url="https://github.com/scverse/mudata"/>
     <datatype extension="visium.tar.gz" type="galaxy.datatypes.binary:Visium" subclass="true" display_in_upload="true" description="Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file." />
-    <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="Mz5 is an HDF5-based open mass spectrometry file format modeled after mzML." /> 
+    <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="Mz5 is an HDF5-based open mass spectrometry file format modeled after mzML." />
     <datatype extension="mzmlb" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="MzMLb is an HDF5-based open mass spectrometry file format that stores metadata as mzML and binary data as native HDF5 types." />
     <datatype extension="mbi" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="MBI is MOBILion's proprietary HDF5-based format for its ion mobility mass spectrometry data." />
     <datatype extension="hyphy_results.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="hivtrace" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="hic" type="galaxy.datatypes.binary:Hic" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cool" type="galaxy.datatypes.binary:Cool" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mcool" type="galaxy.datatypes.binary:MCool" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5mlm" type="galaxy.datatypes.binary:H5MLM" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -697,6 +698,9 @@
     </datatype>
     <datatype extension="docx" type="galaxy.datatypes.binary:Docx" display_in_upload="true" decription="DOCX is an XML-based file format that is natively used for Microsoft Word documents" description_url="https://www.iso.org/standard/71691.html">
         <infer_from suffix="docx" />
+    </datatype>
+    <datatype extension="pptx" type="galaxy.datatypes.binary:Pptx" display_in_upload="true" decription="PPTX is an XML-based file format that is natively used for Microsoft PowerPoint presentations" description_url="https://www.iso.org/standard/71691.html">
+        <infer_from suffix="pptx" />
     </datatype>
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -1228,6 +1232,7 @@
     <sniffer type="galaxy.datatypes.binary:NcbiTaxonomySQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:H5MLM"/>
+    <sniffer type="galaxy.datatypes.binary:Hic"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:MCool"/>
     <sniffer type="galaxy.datatypes.binary:Loom"/>
@@ -1273,6 +1278,8 @@
     <sniffer type="galaxy.datatypes.binary:Edr"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
     <sniffer type="galaxy.datatypes.binary:Xlsx"/>
+    <sniffer type="galaxy.datatypes.binary:Docx"/>
+    <sniffer type="galaxy.datatypes.binary:Pptx"/>
     <sniffer type="galaxy.datatypes.binary:Numpy"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Metadata"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Artifact"/>

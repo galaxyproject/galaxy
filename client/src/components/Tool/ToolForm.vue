@@ -87,7 +87,7 @@
                     id="execute"
                     class="text-nowrap"
                     title="Run Tool"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     size="small"
                     :wait="showExecuting"
                     :tooltip="tooltip"
@@ -97,7 +97,7 @@
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -205,6 +205,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            formConfigInitialized: false,
         };
     },
     computed: {
@@ -226,6 +227,12 @@ export default {
         tooltip() {
             if (!this.canMutateHistory) {
                 return this.immutableHistoryMessage;
+            }
+            if (this.hasConfigOrValErrors) {
+                return "Please resolve highlighted issues before running the tool.";
+            }
+            if (this.showExecuting) {
+                return "Tool is being executed...";
             }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
@@ -252,8 +259,15 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
-        runButtonTitle() {
-            return "Run Tool";
+        runButtonDisabled() {
+            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors;
+        },
+        /** If there are any backend returned `formConfig.errors` or internal/client checked validation errors. */
+        hasConfigOrValErrors() {
+            return (
+                (this.formConfig.errors && Object.values(this.formConfig.errors).length > 0) ||
+                this.validationInternal?.length
+            );
         },
     },
     watch: {
@@ -286,7 +300,12 @@ export default {
             this.formData = newData;
             if (refreshRequest) {
                 this.onUpdate();
+            } else if (this.formConfigInitialized && this.hasConfigOrValErrors) {
+                // After the first manual change to a form input, for every change, if there isn't a request to refresh,
+                // we reset the errors since we haven't received a tool form update via the backend.
+                this.formConfig.errors = null;
             }
+            this.formConfigInitialized = true;
         },
         onUpdate() {
             this.disabled = true;
