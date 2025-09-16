@@ -14,7 +14,7 @@ alignment:
     version: 0.0.9
 alignmentviewer:
     package: "@galaxyproject/alignmentviewer"
-    version: 0.0.1
+    version: 0.0.3
 annotateimage:
     package: "@galaxyproject/annotateimage"
     version: 0.0.0
