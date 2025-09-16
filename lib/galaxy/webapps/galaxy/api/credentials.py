@@ -99,6 +99,7 @@ class FastAPICredentials:
     @router.put(
         "/api/users/{user_id}/credentials",
         summary="Updates the current credentials group",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def update_user_credentials_group(
         self,
@@ -112,6 +113,7 @@ class FastAPICredentials:
     @router.delete(
         "/api/users/{user_id}/credentials/{user_credentials_id}",
         summary="Deletes all credentials for a specific service",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_service_credentials(
         self,
@@ -125,6 +127,7 @@ class FastAPICredentials:
     @router.delete(
         "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
         summary="Deletes a specific credential",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_credentials(
         self,
