@@ -16,8 +16,6 @@ on:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
 env:
-  GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
@@ -33,19 +31,6 @@ jobs:
       matrix:
         python-version: ['3.9']
         chunk: ['0', '1', '2', '3']
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-      rabbitmq:
-        image: rabbitmq
-        ports:
-          - 5672:5672
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -57,9 +42,8 @@ jobs:
       - name: Clean dotnet folder for space
         run: rm -Rf /usr/share/dotnet
       - name: Install packages
-        # conntrack: mandatory for later k8s versions
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install conntrack ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
