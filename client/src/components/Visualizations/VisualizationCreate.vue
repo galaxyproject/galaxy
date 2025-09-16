@@ -32,7 +32,7 @@ const plugin: Ref<Plugin | undefined> = ref();
 
 const extensions = computed(() => getTestExtensions(plugin.value));
 const requiresDataset = computed(() => getRequiresDataset(plugin.value));
-const urlData = computed(() => getTestUrls(plugin.value));
+const testUrls = computed(() => getTestUrls(plugin.value));
 
 function addHidToName(hdas: Array<Dataset>) {
     return hdas.map((entry) => ({ id: entry.id, name: `${entry.hid}: ${entry.name}` }));
@@ -78,7 +78,7 @@ defineExpose({ doQuery });
         :logo="plugin?.logo"
         :name="plugin?.html">
         <template v-slot:buttons>
-            <VisualizationExamples :url-data="urlData" />
+            <VisualizationExamples :url-data="testUrls" />
         </template>
         <div class="my-3">
             <SelectionField
