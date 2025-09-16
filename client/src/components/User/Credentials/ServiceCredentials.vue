@@ -92,6 +92,14 @@ const newEditingGroups = computed(() => {
     return Object.values(editingGroups.value).filter((g) => g.isNewGroup);
 });
 
+function ensureEditingGroup(groupId: string): EditGroup {
+    const group = editingGroups.value[groupId];
+    if (!group) {
+        throw new Error(`No editing group found for ID: ${groupId}`);
+    }
+    return group;
+}
+
 function isVariableOptional(name: string, type: CredentialType): boolean {
     const definitions = type === "variable" ? props.serviceDefinition.variables : props.serviceDefinition.secrets;
     const definition = definitions.find((variable) => variable.name === name);
@@ -464,7 +472,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                     :primary-actions="primaryActions(usg)">
                     <template v-if="editingGroups[usg.id]" v-slot:description>
                         <CredentialsGroupForm
-                            :group-data="editingGroups[usg.id]"
+                            :group-data="ensureEditingGroup(usg.id)"
                             :service-definition="props.serviceDefinition" />
                     </template>
                 </GCard>
