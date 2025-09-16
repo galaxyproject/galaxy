@@ -543,6 +543,7 @@ class DataInternalJson(StrictModel):
     nameext: Annotated[
         Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
     ]
+    format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     # "secondaryFiles": List[Any],
     checksum: Optional[str]
     size: int
