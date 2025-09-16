@@ -1,368 +1,419 @@
-import type { ServiceCredentialsDefinition, ServiceVariableDefinition, UserCredentials } from "@/api/users";
+import flushPromises from "flush-promises";
+
+import type { RegisteredUser } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
+import type {
+    ServiceCredentialsDefinition,
+    ServiceCredentialsGroup,
+    ServiceCredentialsIdentifier,
+    UserSourceService,
+} from "@/api/users";
+import { setupTestPinia } from "@/stores/testUtils";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import { useUserToolCredentials } from "./userToolCredentials";
 
-// Mock the dependencies
-jest.mock("@/api", () => ({
-    isRegisteredUser: jest.fn((user) => user && user.id !== "anonymous"),
-}));
+// Mock data
+const TEST_TOOL_ID = "test-tool";
+const TEST_TOOL_VERSION = "1.0.0";
+const TEST_USER_ID = "test-user-123";
 
-jest.mock("@/stores/userCredentials", () => ({
-    SECRET_PLACEHOLDER: "***",
-    useUserCredentialsStore: jest.fn(() => ({
-        getAllUserCredentialsForTool: jest.fn(),
-        fetchAllUserCredentialsForTool: jest.fn(),
-        saveUserCredentialsForTool: jest.fn(),
-        deleteCredentialsGroupForTool: jest.fn(),
-    })),
-}));
-
-jest.mock("@/stores/userStore", () => ({
-    useUserStore: jest.fn(() => ({
-        currentUser: { id: "test-user" },
-        isAnonymous: false,
-    })),
-}));
-
-jest.mock("./toolCredentials", () => ({
-    useToolCredentials: jest.fn(() => {
-        const servicesMap = new Map();
-        servicesMap.set("test-service-1.0", {
-            name: "test-service",
-            version: "1.0",
-            label: "Test Service",
-            description: "A test service",
-            secrets: [
-                {
-                    name: "api_key",
-                    label: "API Key",
-                    description: "Your service API key",
-                    optional: false,
-                },
-            ],
-            variables: [
-                {
-                    name: "base_url",
-                    label: "Base URL",
-                    description: "Service base URL",
-                    optional: false,
-                },
-            ],
-        });
-
-        return {
-            sourceCredentialsDefinition: {
-                value: {
-                    sourceType: "tool",
-                    sourceId: "test-tool",
-                    services: servicesMap,
-                },
-            },
-            hasSomeOptionalCredentials: { value: false },
-            hasSomeRequiredCredentials: { value: true },
-            hasAnyCredentials: { value: true },
-            servicesCount: { value: 1 },
-        };
-    }),
-}));
-
-const baseUserCredentials: UserCredentials = {
-    id: "cred-1",
-    name: "test-service",
+const TEST_SERVICE_DEFINITION: ServiceCredentialsDefinition = {
+    name: "aws-s3",
     version: "1.0",
-    label: "Test Service",
-    description: "A test service",
-    source_id: "test-tool",
-    source_type: "tool",
-    source_version: "1.0",
-    user_id: "test-user",
-    current_group_name: "default",
-    groups: {
-        default: {
-            id: "group-1",
-            name: "default",
-            secrets: [],
-            variables: [],
+    description: "AWS S3 Service",
+    label: "AWS S3",
+    optional: false,
+    variables: [
+        {
+            name: "bucket_name",
+            label: "Bucket Name",
+            description: "The S3 bucket name",
+            optional: false,
         },
-    },
-    credential_definitions: {
-        secrets: [],
-        variables: [],
-    },
+    ],
+    secrets: [
+        {
+            name: "access_key",
+            label: "Access Key",
+            description: "AWS Access Key",
+            optional: false,
+        },
+        {
+            name: "secret_key",
+            label: "Secret Key",
+            description: "AWS Secret Key",
+            optional: false,
+        },
+    ],
 };
 
+const TEST_OPTIONAL_SERVICE_DEFINITION: ServiceCredentialsDefinition = {
+    name: "azure-blob",
+    version: "1.0",
+    description: "Azure Blob Storage",
+    label: "Azure Blob",
+    optional: true,
+    variables: [
+        {
+            name: "account_name",
+            label: "Account Name",
+            description: "Azure storage account name",
+            optional: false,
+        },
+    ],
+    secrets: [
+        {
+            name: "account_key",
+            label: "Account Key",
+            description: "Azure storage account key",
+            optional: false,
+        },
+    ],
+};
+
+const TEST_CREDENTIALS_GROUP: ServiceCredentialsGroup = {
+    id: "group-123",
+    name: "Test Group",
+    update_time: "2023-01-01T00:00:00Z",
+    variables: [
+        {
+            name: "bucket_name",
+            value: "my-test-bucket",
+        },
+    ],
+    secrets: [
+        {
+            name: "access_key",
+            is_set: true,
+        },
+        {
+            name: "secret_key",
+            is_set: true,
+        },
+    ],
+};
+
+const TEST_USER_SOURCE_SERVICE: UserSourceService = {
+    id: "service-123",
+    user_id: TEST_USER_ID,
+    source_type: "tool",
+    source_id: TEST_TOOL_ID,
+    source_version: TEST_TOOL_VERSION,
+    name: "aws-s3",
+    version: "1.0",
+    current_group_id: "group-123",
+    groups: [TEST_CREDENTIALS_GROUP],
+};
+
+const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserSourceService = {
+    id: "service-456",
+    user_id: TEST_USER_ID,
+    source_type: "tool",
+    source_id: TEST_TOOL_ID,
+    source_version: TEST_TOOL_VERSION,
+    name: "azure-blob",
+    version: "1.0",
+    current_group_id: null,
+    groups: [
+        {
+            id: "group-456",
+            name: "Azure Group",
+            update_time: "2023-01-01T00:00:00Z",
+            variables: [{ name: "account_name", value: "test-account" }],
+            secrets: [{ name: "account_key", is_set: false }],
+        },
+    ],
+};
+
+const TEST_CURRENT_USER: RegisteredUser = {
+    id: TEST_USER_ID,
+    email: "test@example.com",
+    username: "testuser",
+    is_admin: false,
+    preferences: {},
+    total_disk_usage: 0,
+    nice_total_disk_usage: "0 bytes",
+    quota_percent: 0,
+    quota: "0 bytes",
+    deleted: false,
+    purged: false,
+    isAnonymous: false as const,
+};
+
+// Mock the server responses
+const { server, http } = useServerMock();
+
 describe("useUserToolCredentials", () => {
-    const mockSecretDefinition: ServiceVariableDefinition = {
-        name: "api_key",
-        label: "API Key",
-        description: "Your service API key",
-        optional: false,
-    };
-
-    const mockVariableDefinition: ServiceVariableDefinition = {
-        name: "base_url",
-        label: "Base URL",
-        description: "Service base URL",
-        optional: false,
-    };
-
-    const mockServiceCredentialsDefinition: ServiceCredentialsDefinition[] = [
-        {
-            name: "test-service",
-            version: "1.0",
-            label: "Test Service",
-            description: "A test service",
-            secrets: [mockSecretDefinition],
-            variables: [mockVariableDefinition],
-        },
-    ];
-
-    const mockUserCredentials: UserCredentials[] = [
-        {
-            ...baseUserCredentials,
-            groups: {
-                default: {
-                    id: "group-1",
-                    name: "default",
-                    secrets: [{ id: "secret-1", name: "api_key", is_set: true, value: "***" }],
-                    variables: [{ id: "var-1", name: "base_url", is_set: true, value: "https://api.example.com" }],
-                },
-            },
-            credential_definitions: {
-                secrets: [mockSecretDefinition],
-                variables: [mockVariableDefinition],
-            },
-        },
-    ];
+    let userStore: ReturnType<typeof useUserStore>;
+    let toolsServiceCredentialsDefinitionsStore: ReturnType<typeof useToolsServiceCredentialsDefinitionsStore>;
+    let userToolsServiceCredentialsStore: ReturnType<typeof useUserToolsServiceCredentialsStore>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
-    });
+        setupTestPinia();
 
-    it("initializes with tool credentials data", () => {
-        const {
-            sourceCredentialsDefinition,
-            hasSomeOptionalCredentials,
-            hasSomeRequiredCredentials,
-            hasAnyCredentials,
-            servicesCount,
-        } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
+        userStore = useUserStore();
+        toolsServiceCredentialsDefinitionsStore = useToolsServiceCredentialsDefinitionsStore();
+        userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 
-        expect(sourceCredentialsDefinition.value.sourceType).toBe("tool");
-        expect(sourceCredentialsDefinition.value.sourceId).toBe("test-tool");
-        expect(hasSomeRequiredCredentials.value).toBe(true);
-        expect(hasSomeOptionalCredentials.value).toBe(false);
-        expect(hasAnyCredentials.value).toBe(true);
-        expect(servicesCount.value).toBe(1);
-    });
+        // Set up current user
+        userStore.currentUser = TEST_CURRENT_USER;
 
-    it("initializes with default user credentials state", () => {
-        const { userCredentials, mutableUserCredentials, isBusy, busyMessage, hasUserProvidedRequiredCredentials } =
-            useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
-
-        expect(userCredentials.value).toBeUndefined();
-        expect(mutableUserCredentials.value).toBeDefined();
-        expect(mutableUserCredentials.value.source_type).toBe("tool");
-        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
-        expect(mutableUserCredentials.value.source_version).toBe("1.0");
-        expect(isBusy.value).toBe(false);
-        expect(busyMessage.value).toBe("");
-        expect(hasUserProvidedRequiredCredentials.value).toBe(false);
-    });
-
-    it("provides correct button title based on credential state", () => {
-        const { provideCredentialsButtonTitle, updateUserCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
+        // Set up service definitions
+        toolsServiceCredentialsDefinitionsStore.setToolServiceCredentialsDefinitionFor(
+            TEST_TOOL_ID,
+            TEST_TOOL_VERSION,
+            [TEST_SERVICE_DEFINITION, TEST_OPTIONAL_SERVICE_DEFINITION],
         );
 
-        expect(provideCredentialsButtonTitle.value).toBe("Provide credentials");
+        // Mock API endpoints
+        server.use(
+            http.get("/api/users/{user_id}/credentials", ({ query, response }) => {
+                const sourceType = query.get("source_type");
+                const sourceId = query.get("source_id");
+                const sourceVersion = query.get("source_version");
 
-        updateUserCredentials(mockUserCredentials);
-        expect(provideCredentialsButtonTitle.value).toBe("Manage credentials");
-    });
+                if (sourceType === "tool" && sourceId === TEST_TOOL_ID && sourceVersion === TEST_TOOL_VERSION) {
+                    return response(200).json([TEST_USER_SOURCE_SERVICE, TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP]);
+                }
+                return response(200).json([]);
+            }),
 
-    it("provides correct status variant based on state", () => {
-        const { statusVariant, updateUserCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
+            http.post("/api/users/{user_id}/credentials", ({ response }) => {
+                return response(200).json(TEST_CREDENTIALS_GROUP);
+            }),
+
+            http.put("/api/users/{user_id}/credentials/group/{group_id}", ({ response }) => {
+                return response(200).json({
+                    ...TEST_CREDENTIALS_GROUP,
+                    variables: [{ name: "bucket_name", value: "updated-bucket" }],
+                });
+            }),
+
+            http.delete("/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}", ({ response }) => {
+                return response(204).empty();
+            }),
+
+            http.put("/api/users/{user_id}/credentials", ({ response }) => {
+                return response(204).empty();
+            }),
         );
-
-        expect(statusVariant.value).toBe("warning");
-
-        updateUserCredentials(mockUserCredentials);
-        expect(statusVariant.value).toBe("success");
     });
 
-    it("detects when user has provided required credentials", () => {
-        const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
-        );
-
-        expect(hasUserProvidedRequiredCredentials.value).toBe(false);
-
-        updateUserCredentials(mockUserCredentials);
-        expect(hasUserProvidedRequiredCredentials.value).toBe(true);
+    afterEach(() => {
+        server.resetHandlers();
     });
 
-    it("detects when user has provided all credentials", () => {
-        const { hasUserProvidedAllCredentials, updateUserCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
-        );
+    describe("initialization", () => {
+        it("should initialize with correct tool ID and version", () => {
+            const { sourceCredentialsDefinition } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        expect(hasUserProvidedAllCredentials.value).toBe(false);
+            expect(sourceCredentialsDefinition.value.sourceType).toBe("tool");
+            expect(sourceCredentialsDefinition.value.sourceId).toBe(TEST_TOOL_ID);
+            expect(sourceCredentialsDefinition.value.services.size).toBe(2);
+            expect(sourceCredentialsDefinition.value.services.has("aws-s3-1.0")).toBe(true);
+            expect(sourceCredentialsDefinition.value.services.has("azure-blob-1.0")).toBe(true);
+        });
 
-        updateUserCredentials(mockUserCredentials);
-        expect(hasUserProvidedAllCredentials.value).toBe(true);
+        it("should have proper reactive state initially", () => {
+            const {
+                currentUserToolServices,
+                hasUserProvidedAllServiceCredentials,
+                hasUserProvidedAllRequiredServiceCredentials,
+                toolHasRequiredServiceCredentials,
+                statusVariant,
+            } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            expect(currentUserToolServices.value).toBeUndefined();
+            expect(hasUserProvidedAllServiceCredentials.value).toBe(false);
+            expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(false);
+            expect(toolHasRequiredServiceCredentials.value).toBe(true);
+            expect(statusVariant.value).toBe("warning");
+        });
     });
 
-    it("handles incomplete credentials correctly", () => {
-        const incompleteCredentials: UserCredentials[] = [
-            {
-                ...baseUserCredentials,
-                groups: {
-                    default: {
-                        id: "group-1",
-                        name: "default",
-                        secrets: [{ id: "secret-1", name: "api_key", is_set: false, value: null }], // Missing required secret
-                        variables: [{ id: "var-1", name: "base_url", is_set: true, value: "https://api.example.com" }],
-                    },
-                },
-                credential_definitions: {
-                    secrets: [mockSecretDefinition],
-                    variables: [mockVariableDefinition],
-                },
-            },
-        ];
+    describe("checkUserCredentials", () => {
+        it("should fetch user credentials successfully", async () => {
+            const { checkUserCredentials, currentUserToolServices } = useUserToolCredentials(
+                TEST_TOOL_ID,
+                TEST_TOOL_VERSION,
+            );
 
-        const { hasUserProvidedRequiredCredentials, hasUserProvidedAllCredentials, updateUserCredentials } =
-            useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
+            await checkUserCredentials();
+            await flushPromises();
 
-        updateUserCredentials(incompleteCredentials);
+            expect(currentUserToolServices.value).toHaveLength(2);
+            expect(currentUserToolServices.value![0]).toEqual(TEST_USER_SOURCE_SERVICE);
+            expect(currentUserToolServices.value![1]).toEqual(TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP);
+        });
 
-        expect(hasUserProvidedRequiredCredentials.value).toBe(false);
-        expect(hasUserProvidedAllCredentials.value).toBe(false);
+        it("should not fetch if user is not registered", async () => {
+            userStore.currentUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
+            const { checkUserCredentials, currentUserToolServices } = useUserToolCredentials(
+                TEST_TOOL_ID,
+                TEST_TOOL_VERSION,
+            );
+
+            await checkUserCredentials();
+            await flushPromises();
+
+            expect(currentUserToolServices.value).toBeUndefined();
+        });
+
+        it("should not fetch if credentials already exist", async () => {
+            const { checkUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            // First call
+            await checkUserCredentials();
+            await flushPromises();
+
+            // Mock the store to track if fetch was called again
+            const fetchSpy = jest.spyOn(userToolsServiceCredentialsStore, "fetchAllUserToolServices");
+
+            // Second call
+            await checkUserCredentials();
+            await flushPromises();
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
     });
 
-    it("handles optional credentials correctly", () => {
-        const optionalSecretDefinition: ServiceVariableDefinition = {
-            ...mockSecretDefinition,
-            optional: true,
-        };
+    describe("computed properties", () => {
+        beforeEach(async () => {
+            const { checkUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+            await checkUserCredentials();
+            await flushPromises();
+        });
 
-        const credentialsWithOptional: UserCredentials[] = [
-            {
-                ...baseUserCredentials,
-                groups: {
-                    default: {
-                        id: "group-1",
-                        name: "default",
-                        secrets: [{ id: "secret-1", name: "api_key", is_set: false, value: null }], // Optional secret not set
-                        variables: [{ id: "var-1", name: "base_url", is_set: true, value: "https://api.example.com" }],
-                    },
-                },
-                credential_definitions: {
-                    secrets: [optionalSecretDefinition],
-                    variables: [mockVariableDefinition],
-                },
-            },
-        ];
+        it("should correctly compute userServiceFor", () => {
+            const { userServiceFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        const { hasUserProvidedRequiredCredentials, updateUserCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
-        );
+            const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
+            const service = userServiceFor.value(serviceIdentifier);
 
-        updateUserCredentials(credentialsWithOptional);
+            expect(service).toEqual(TEST_USER_SOURCE_SERVICE);
+        });
 
-        // Should be true because the secret is optional
-        expect(hasUserProvidedRequiredCredentials.value).toBe(true);
+        it("should correctly compute userServiceGroupsFor", () => {
+            const { userServiceGroupsFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
+            const groups = userServiceGroupsFor.value(serviceIdentifier);
+
+            expect(groups).toEqual([TEST_CREDENTIALS_GROUP]);
+        });
+
+        it("should correctly compute hasUserProvidedAllServiceCredentials", () => {
+            const { hasUserProvidedAllServiceCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            // One service has current group, one doesn't
+            expect(hasUserProvidedAllServiceCredentials.value).toBe(false);
+        });
+
+        it("should correctly compute hasUserProvidedAllRequiredServiceCredentials", () => {
+            const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
+                TEST_TOOL_ID,
+                TEST_TOOL_VERSION,
+            );
+
+            // Required service (aws-s3) has current group, optional service (azure-blob) doesn't
+            expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(true);
+        });
+
+        it("should correctly compute hasUserProvidedSomeOptionalServiceCredentials", () => {
+            const { hasUserProvidedSomeOptionalServiceCredentials } = useUserToolCredentials(
+                TEST_TOOL_ID,
+                TEST_TOOL_VERSION,
+            );
+
+            // Optional service (azure-blob) doesn't have current group
+            expect(hasUserProvidedSomeOptionalServiceCredentials.value).toBe(false);
+        });
+
+        it("should correctly compute toolHasRequiredServiceCredentials", () => {
+            const { toolHasRequiredServiceCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            expect(toolHasRequiredServiceCredentials.value).toBe(true);
+        });
+
+        it("should correctly compute statusVariant", () => {
+            const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            // Should be success since required credentials are provided
+            expect(statusVariant.value).toBe("success");
+        });
     });
 
-    it("creates mutable user credentials payload correctly", () => {
-        const { mutableUserCredentials } = useUserToolCredentials("test-tool", "1.0", mockServiceCredentialsDefinition);
+    describe("utility functions", () => {
+        it("should get service credentials definition by key", () => {
+            const { getToolServiceCredentialsDefinitionFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        expect(mutableUserCredentials.value.source_type).toBe("tool");
-        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
-        expect(mutableUserCredentials.value.source_version).toBe("1.0");
-        expect(mutableUserCredentials.value.credentials).toHaveLength(1);
+            const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
+            const definition = getToolServiceCredentialsDefinitionFor(serviceIdentifier);
 
-        // Check the default structure when no user credentials exist
-        const credential = mutableUserCredentials.value.credentials[0];
-        expect(credential!.name).toBe("test-service");
-        expect(credential!.version).toBe("1.0");
-        expect(credential!.current_group).toBe("default");
-        expect(credential!.groups).toHaveLength(1);
+            expect(definition).toEqual(TEST_SERVICE_DEFINITION);
+        });
 
-        const group = credential!.groups[0];
-        expect(group!.name).toBe("default");
-        expect(group!.variables).toHaveLength(1);
-        expect(group!.secrets).toHaveLength(1);
+        it("should throw error for non-existent service definition", () => {
+            const { getToolServiceCredentialsDefinitionFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        // Variables should have null values initially
-        expect(group!.variables[0]!.name).toBe("base_url");
-        expect(group!.variables[0]!.value).toBeNull();
+            const serviceIdentifier: ServiceCredentialsIdentifier = { name: "non-existent", version: "1.0" };
 
-        // Secrets should have null values initially
-        expect(group!.secrets[0]!.name).toBe("api_key");
-        expect(group!.secrets[0]!.value).toBeNull();
+            expect(() => getToolServiceCredentialsDefinitionFor(serviceIdentifier)).toThrow(
+                `No definition found for credential service 'non-existent-1.0' in tool ${TEST_TOOL_ID}@${TEST_TOOL_VERSION}`,
+            );
+        });
+
+        it("should build groups from user credentials", () => {
+            const { buildGroupsFromUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            const groups = buildGroupsFromUserCredentials(TEST_SERVICE_DEFINITION, TEST_USER_SOURCE_SERVICE);
+
+            expect(groups).toHaveLength(1);
+            expect(groups[0]?.name).toBe("Test Group");
+            expect(groups[0]?.variables).toHaveLength(1);
+            expect(groups[0]?.variables[0]?.name).toBe("bucket_name");
+            expect(groups[0]?.variables[0]?.value).toBe("my-test-bucket");
+            expect(groups[0]?.secrets).toHaveLength(2);
+            expect(groups[0]?.secrets[0]?.name).toBe("access_key");
+            expect(groups[0]?.secrets[0]?.value).toBe("********");
+        });
     });
 
-    it("handles mutable credentials with existing user credentials", () => {
-        const { updateUserCredentials, mutableUserCredentials, refreshMutableCredentials } = useUserToolCredentials(
-            "test-tool",
-            "1.0",
-            mockServiceCredentialsDefinition,
-        );
+    describe("status variant computation", () => {
+        it("should return info when busy", () => {
+            // Mock the isBusy property to return true
+            jest.spyOn(userToolsServiceCredentialsStore, "isBusy", "get").mockReturnValue(true);
 
-        // Update with user credentials
-        updateUserCredentials(mockUserCredentials);
+            const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        refreshMutableCredentials();
+            expect(statusVariant.value).toBe("info");
+        });
 
-        // The mutable credentials structure should be available for editing
-        expect(mutableUserCredentials.value).toBeDefined();
-        expect(mutableUserCredentials.value.source_type).toBe("tool");
-        expect(mutableUserCredentials.value.source_id).toBe("test-tool");
-        expect(mutableUserCredentials.value.source_version).toBe("1.0");
+        it("should return success when all credentials provided", async () => {
+            // Set up both services with current groups
+            const serviceWithCurrentGroup: UserSourceService = {
+                ...TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP,
+                current_group_id: "group-456",
+            };
 
-        // Check that credentials are properly structured
-        expect(mutableUserCredentials.value.credentials).toHaveLength(1);
+            userToolsServiceCredentialsStore.userToolsServices[`${TEST_USER_ID}-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`] =
+                [TEST_USER_SOURCE_SERVICE, serviceWithCurrentGroup];
 
-        const credential = mutableUserCredentials.value.credentials[0];
-        expect(credential).toBeDefined();
-        expect(credential!.name).toBe("test-service");
-        expect(credential!.version).toBe("1.0");
-        expect(credential!.current_group).toBe("default");
+            const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-        // Check groups structure
-        expect(credential!.groups).toHaveLength(1);
-        const group = credential!.groups[0];
-        expect(group).toBeDefined();
-        expect(group!.name).toBe("default");
+            expect(statusVariant.value).toBe("success");
+        });
 
-        // Check variables are correctly mapped
-        expect(group!.variables).toHaveLength(1);
-        const variable = group!.variables[0];
-        expect(variable).toBeDefined();
-        expect(variable!.name).toBe("base_url");
-        expect(variable!.value).toBe("https://api.example.com");
+        it("should return warning when not all credentials provided", () => {
+            userToolsServiceCredentialsStore.userToolsServices[`${TEST_USER_ID}-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`] =
+                [TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP];
 
-        // Check secrets are correctly mapped
-        expect(group!.secrets).toHaveLength(1);
-        const secret = group!.secrets[0];
-        expect(secret).toBeDefined();
-        expect(secret!.name).toBe("api_key");
-        expect(secret!.value).toBe("***"); // Should use SECRET_PLACEHOLDER when is_set is true
-        if ("alreadySet" in secret!) {
-            expect((secret as { alreadySet?: boolean }).alreadySet).toBe(true);
-        }
+            const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
+
+            expect(statusVariant.value).toBe("warning");
+        });
     });
 });
