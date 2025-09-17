@@ -1793,7 +1793,6 @@ gx_data_column:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
   test_case_xml_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
-  test_case_xml_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "c2: With name" }
 
 gx_data_column_optional:
