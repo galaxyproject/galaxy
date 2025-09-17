@@ -296,6 +296,10 @@ class UserCredentialsEnvironmentBuilder:
                 # Skip this service if no context found - continue with other services
                 continue
 
+            if job_context.user_credentials_id is None or job_context.selected_group_id is None:
+                # The group or the associated user credentials have been deleted - skip
+                continue
+
             # Query for the specific user credentials and selected group from job context
             stmt = _build_user_credentials_query(
                 user_id=user_id,

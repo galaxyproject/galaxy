@@ -2729,23 +2729,27 @@ class JobCredentialsContextAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
-    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True)
+    user_credentials_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user_credentials.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     service_name: Mapped[str] = mapped_column(String(255))
     service_version: Mapped[str] = mapped_column(String(255))
-    selected_group_id: Mapped[int] = mapped_column(ForeignKey("credentials_group.id"), index=True)
+    selected_group_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("credentials_group.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     selected_group_name: Mapped[str] = mapped_column(String(255))
 
     job: Mapped["Job"] = relationship(back_populates="credentials_context_associations")
-    user_credentials: Mapped["UserCredentials"] = relationship()
-    selected_group: Mapped["CredentialsGroup"] = relationship()
+    user_credentials: Mapped[Optional["UserCredentials"]] = relationship()
+    selected_group: Mapped[Optional["CredentialsGroup"]] = relationship()
 
     def __init__(
         self,
         job: "Job",
-        user_credentials_id: int,
+        user_credentials_id: Optional[int],
         service_name: str,
         service_version: str,
-        selected_group_id: int,
+        selected_group_id: Optional[int],
         selected_group_name: str,
     ):
         self.job = job

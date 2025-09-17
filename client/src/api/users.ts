@@ -97,11 +97,11 @@ export interface SourceCredentialsDefinition {
 
 // TODO: temporal definition, should be imported from the corresponding ServiceCredentialsContext API schema model
 export interface ServiceCredentialsContext {
-    user_credentials_id: string;
+    user_credentials_id: string | null;
     name: string;
     version: string;
     selected_group: {
-        id: string;
+        id: string | null;
         name: string;
     };
 }

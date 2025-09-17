@@ -332,9 +332,9 @@ class SelectedGroup(Model):
 
 class SelectedGroupResponse(Model):
     id: Annotated[
-        EncodedDatabaseIdField,
+        Optional[EncodedDatabaseIdField],
         Field(
-            description="The encoded ID of the selected credential group.",
+            description="The encoded ID of the user credentials. If null, the group has been deleted by the user.",
         ),
     ]
     name: Annotated[
@@ -375,9 +375,9 @@ class ServiceCredentialsContext(Model):
 
 class ServiceCredentialsContextResponse(Model):
     user_credentials_id: Annotated[
-        EncodedDatabaseIdField,
+        Optional[EncodedDatabaseIdField],
         Field(
-            description="The encoded ID of the user credentials.",
+            description="The encoded ID of the user credentials. If null, the credentials have been deleted by the user.",
         ),
     ]
     name: Annotated[
