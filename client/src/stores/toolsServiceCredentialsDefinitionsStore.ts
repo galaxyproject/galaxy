@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { getToolKey } from "@/api/tools";
-import type { ServiceCredentialsDefinition, ServiceCredentialsIdentifier } from "@/api/users";
+import type { ServiceCredentialsDefinition, ServiceCredentialsIdentifier } from "@/api/userCredentials";
 
 export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServiceCredentialsDefinitionsStore", () => {
     const toolsServiceCredentialsDefinitions = ref<{ [key: string]: ServiceCredentialsDefinition[] }>({});

@@ -12,7 +12,7 @@ import type {
     ServiceGroupPayload,
     UserSourceService,
     UserToolsServiceCredentialsFull,
-} from "@/api/users";
+} from "@/api/userCredentials";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -97,9 +97,6 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
     const getUserToolServiceCurrentGroupId = computed(() => {
         return (toolId: string, toolVersion: string, userServiceCredentialsId: string): string | undefined => {
-            if (!isRegisteredUser(currentUser.value)) {
-                return undefined;
-            }
             const userToolKey = getUserToolKey(toolId, toolVersion);
             if (!userToolsServicesCurrentGroupIds.value[userToolKey]) {
                 return undefined;

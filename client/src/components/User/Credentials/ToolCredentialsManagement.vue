@@ -3,7 +3,7 @@ import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 
-import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
+import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/userCredentials";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";

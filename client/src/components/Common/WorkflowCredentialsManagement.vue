@@ -6,7 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
-import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
+import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/userCredentials";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";

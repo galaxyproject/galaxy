@@ -3,7 +3,7 @@ import { computed, reactive } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
 import { getToolKey } from "@/api/tools";
-import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/users";
+import type { SelectCurrentGroupPayload, ServiceCredentialsIdentifier } from "@/api/userCredentials";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 

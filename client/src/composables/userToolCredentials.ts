@@ -11,8 +11,8 @@ import type {
     ServiceGroupPayload,
     SourceCredentialsDefinition,
     UserSourceService,
-} from "@/api/users";
-import { getKeyFromCredentialsIdentifier, transformToSourceCredentials } from "@/api/users";
+} from "@/api/userCredentials";
+import { getKeyFromCredentialsIdentifier, transformToSourceCredentials } from "@/api/userCredentials";
 import { useUserStore } from "@/stores/userStore";
 import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 

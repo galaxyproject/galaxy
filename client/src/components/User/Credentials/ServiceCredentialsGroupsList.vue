@@ -5,7 +5,7 @@ import { faCheck } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import type { ServiceCredentialsDefinition, ServiceGroupPayload } from "@/api/users";
+import type { ServiceCredentialsDefinition, ServiceGroupPayload } from "@/api/userCredentials";
 import type { CardAction, CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";

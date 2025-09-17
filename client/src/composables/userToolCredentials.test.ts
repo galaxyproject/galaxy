@@ -7,7 +7,7 @@ import type {
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
     UserSourceService,
-} from "@/api/users";
+} from "@/api/userCredentials";
 import { setupTestPinia } from "@/stores/testUtils";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";

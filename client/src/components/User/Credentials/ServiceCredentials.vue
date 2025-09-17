@@ -15,13 +15,13 @@ import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import type { CredentialType } from "@/api/userCredentials";
 import type {
     CreateSourceCredentialsPayload,
+    CredentialType,
     ServiceCredentialsDefinition,
     ServiceCredentialsGroup,
     ServiceGroupPayload,
-} from "@/api/users";
+} from "@/api/userCredentials";
 import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
