@@ -82,7 +82,7 @@ defineExpose({ doQuery });
         </template>
         <div class="my-3">
             <SelectionField
-                object-name="Select a dataset..."
+                object-name="Make a selection..."
                 object-title="Select to Visualize"
                 object-type="history_dataset_id"
                 :object-query="doQuery"
