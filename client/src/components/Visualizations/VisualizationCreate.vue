@@ -51,7 +51,8 @@ async function getPlugin() {
 }
 
 function onSelect(dataset: OptionType) {
-    router.push(`/visualizations/display?visualization=${plugin.value?.name}&dataset_id=${dataset.id}`, {
+    const query = dataset.id ? `&dataset_id=${dataset.id}` : "";
+    router.push(`/visualizations/display?visualization=${plugin.value?.name}${query}`, {
         // @ts-ignore
         title: dataset.name,
     });
