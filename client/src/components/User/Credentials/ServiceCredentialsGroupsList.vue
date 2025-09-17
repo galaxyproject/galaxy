@@ -204,7 +204,8 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
             :description="group.serviceDefinition.description"
             :badges="getBadgesFor(group)"
             :published="isGroupInUse(group)"
-            :primary-actions="getPrimaryActions(group)">
+            :primary-actions="getPrimaryActions(group)"
+            :update-time="group.update_time">
         </GCard>
 
         <BModal

@@ -469,7 +469,8 @@ const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardInd
                     :title="usg.name"
                     :selected="currentServiceCredentialsGroup?.id === usg.id && !editingGroups[usg.id]"
                     :indicators="groupIndicators(usg)"
-                    :primary-actions="primaryActions(usg)">
+                    :primary-actions="primaryActions(usg)"
+                    :update-time="usg.update_time">
                     <template v-if="editingGroups[usg.id]" v-slot:description>
                         <CredentialsGroupForm
                             :group-data="ensureEditingGroup(usg.id)"
