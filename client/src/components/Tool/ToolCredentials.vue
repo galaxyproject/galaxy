@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
+import { faCaretRight, faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -22,10 +22,12 @@ const props = defineProps<Props>();
 
 const { isAnonymous } = storeToRefs(useUserStore());
 
-const { isBusy, busyMessage } = storeToRefs(useUserToolsServiceCredentialsStore());
+const { isBusy, busyMessage, userToolServiceCredentialsGroups } = storeToRefs(useUserToolsServiceCredentialsStore());
 
 const {
     statusVariant,
+    userServiceFor,
+    sourceCredentialsDefinition,
     toolHasRequiredServiceCredentials,
     hasUserProvidedAllServiceCredentials,
     hasUserProvidedAllRequiredServiceCredentials,
@@ -38,6 +40,36 @@ const showModal = ref(false);
 const provideCredentialsButtonTitle = computed(() => {
     return hasUserProvidedAllServiceCredentials.value ? "Manage credentials" : "Provide credentials";
 });
+
+const currentServiceGroups = computed(() => {
+    const mappings: {
+        serviceName: string;
+        isRequired: boolean;
+        groupName?: string;
+    }[] = [];
+
+    for (const serviceDefinition of sourceCredentialsDefinition.value.services.values()) {
+        const userService = userServiceFor.value(serviceDefinition);
+
+        let selectedGroup;
+        if (userService?.current_group_id) {
+            const group = userToolServiceCredentialsGroups.value[userService.current_group_id];
+            selectedGroup = group?.name;
+        }
+
+        mappings.push({
+            serviceName: serviceDefinition.label || serviceDefinition.name,
+            isRequired: !serviceDefinition.optional,
+            groupName: selectedGroup,
+        });
+    }
+
+    return mappings;
+});
+
+function getBadgeTitle(isRequired: boolean, groupName?: string) {
+    return `This service is ${isRequired ? "required" : "optional"} and you ${groupName ? "have selected the credentials group: " + groupName : "have not selected a credentials group for it."}`;
+}
 
 function toggleDialog() {
     showModal.value = !showModal.value;
@@ -58,7 +90,7 @@ onMounted(async () => {
 
 <template>
     <div class="mt-2">
-        <BAlert show :variant="statusVariant">
+        <BAlert show :variant="statusVariant" class="d-flex flex-column flex-gapy-1">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="isAnonymous">
                 <span v-if="toolHasRequiredServiceCredentials">
@@ -67,7 +99,7 @@ onMounted(async () => {
                 </span>
                 <span v-else>
                     This tool <strong>can use additional credentials</strong> to access its services
-                    <strong>or the tool will use its default values.</strong>.
+                    <strong>or the tool will use its default values.</strong>
                 </span>
                 Please <a href="/login/start">log in or register here</a>.
             </div>
@@ -89,7 +121,7 @@ onMounted(async () => {
 
                     <span v-if="hasUserProvidedAllServiceCredentials">
                         <strong>You have already provided credentials for this tool.</strong> You can update or delete
-                        your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
+                        your credentials using the <i>{{ provideCredentialsButtonTitle }}</i> button.
                     </span>
                     <span v-else-if="toolHasRequiredServiceCredentials">
                         <span v-if="hasUserProvidedAllRequiredServiceCredentials">
@@ -116,6 +148,23 @@ onMounted(async () => {
                     <BButton variant="primary" size="sm" @click="toggleDialog">
                         {{ provideCredentialsButtonTitle }}
                     </BButton>
+                </div>
+            </div>
+
+            <div v-if="!isAnonymous && currentServiceGroups" class="d-flex flex-wrap flex-gapx-1 flex-gapy-1">
+                <div v-for="csg in currentServiceGroups" :key="csg.serviceName" class="d-flex align-items-center">
+                    <BBadge
+                        v-b-tooltip.hover
+                        :title="getBadgeTitle(csg.isRequired, csg.groupName)"
+                        :variant="csg.isRequired ? 'primary' : 'secondary'">
+                        <FontAwesomeIcon :icon="csg.groupName ? faCheck : faExclamation" fixed-width />
+                        {{ csg.serviceName }}
+                        <FontAwesomeIcon :icon="faCaretRight" class="mx-1" />
+                        <span v-if="csg.groupName">{{ csg.groupName }}</span>
+                        <em v-else>
+                            {{ csg.isRequired ? "Required - No group selected" : "Optional - No group selected" }}
+                        </em>
+                    </BBadge>
                 </div>
             </div>
         </BAlert>
