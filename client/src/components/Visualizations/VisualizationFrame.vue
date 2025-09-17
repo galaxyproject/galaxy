@@ -23,16 +23,17 @@ const iframeRef = ref<HTMLIFrameElement | null>(null);
 const srcWithRoot = computed(() => {
     let url = "";
     if (props.visualization === "trackster") {
-        if (props.datasetId) {
-            url = `/visualization/trackster?dataset_id=${props.datasetId}`;
-        } else {
+        if (props.visualizationId) {
             url = `/visualization/trackster?id=${props.visualizationId}`;
+        } else {
+            url = `/visualization/trackster?dataset_id=${props.datasetId}`;
         }
     } else {
-        if (props.datasetId) {
-            url = `/plugins/visualizations/${props.visualization}/show?dataset_id=${props.datasetId}`;
-        } else {
+        if (props.visualizationId) {
             url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
+        } else {
+            const query = props.datasetId ? `?dataset_id=${props.datasetId}` : "";
+            url = `/plugins/visualizations/${props.visualization}/show${query}`;
         }
     }
 

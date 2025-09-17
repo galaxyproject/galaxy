@@ -4,10 +4,19 @@ import { createPinia, defineStore, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
 
-import { fetchPluginHistoryItems } from "@/api/plugins";
+import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
 
 import VisualizationCreate from "./VisualizationCreate.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
+
+const PLUGIN = {
+    name: "scatterplot",
+    description: "A great scatterplot plugin.",
+    html: "Scatterplot Plugin",
+    logo: "/logo.png",
+    help: "Some help text",
+    tags: ["tag1", "tag2"],
+};
 
 jest.mock("vue-router/composables", () => ({
     useRouter: () => ({
@@ -18,20 +27,11 @@ jest.mock("vue-router/composables", () => ({
 jest.mock("@/api/plugins", () => ({
     fetchPlugin: jest.fn(() =>
         Promise.resolve({
-            name: "scatterplot",
-            description: "A great scatterplot plugin.",
-            html: "Scatterplot Plugin",
-            logo: "/logo.png",
-            help: "Some help text",
-            tags: ["tag1", "tag2"],
+            params: { dataset_id: { required: true } },
+            ...PLUGIN,
         }),
     ),
     fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] })),
-}));
-
-jest.mock("./utilities", () => ({
-    getTestExtensions: jest.fn(() => ["txt"]),
-    getTestUrls: jest.fn(() => [{ name: "Example", url: "https://example.com/data.txt" }]),
 }));
 
 let mockedStore;
@@ -94,4 +94,17 @@ it("adds hid to dataset names when fetching history items", async () => {
         { id: "dataset1", name: "101: First Dataset" },
         { id: "dataset2", name: "102: Second Dataset" },
     ]);
+});
+
+it("displays create new visualization option if dataset is not required", async () => {
+    fetchPlugin.mockResolvedValueOnce(PLUGIN);
+    const wrapper = mount(VisualizationCreate, {
+        localVue,
+        propsData: {
+            visualization: "scatterplot",
+        },
+    });
+    await wrapper.vm.$nextTick();
+    const results = await wrapper.vm.doQuery();
+    expect(results).toEqual([{ id: "", name: "Open visualization..." }]);
 });
