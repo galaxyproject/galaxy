@@ -7580,7 +7580,8 @@ class HistoryDatasetCollectionAssociation(
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             stmt = self.collection._build_nested_collection_attributes_stmt(
-                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+                hda_attributes=("_metadata", "extension", "deleted"),
+                dataset_attributes=("state", "object_store_id", "create_time"),
             )
             tuples = required_object_session(self).execute(stmt)
 
@@ -7588,6 +7589,7 @@ class HistoryDatasetCollectionAssociation(
             dbkeys = set()
             states = defaultdict(int)
             deleted = 0
+            store_times = {}
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7602,7 +7604,13 @@ class HistoryDatasetCollectionAssociation(
                         deleted += 1
                     if row.state:
                         states[row.state] += 1
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted)
+                    store_id = row.object_store_id
+                    create_time = row.create_time
+                    if store_id is not None and create_time is not None:
+                        store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
+            # Convert to set of (object_store_id, oldest_create_time) pairs
+            store_times_summary = set(store_times.items())
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted, store_times_summary)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property

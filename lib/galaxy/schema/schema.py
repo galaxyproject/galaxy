@@ -749,6 +749,11 @@ class HDASummary(HDACommon):
         description="Whether this dataset has been removed from disk.",
     )
     genome_build: Optional[str] = GenomeBuildField
+    object_store_id: Optional[str] = Field(
+        None,
+        title="Object Store ID",
+        description="The ID of the object store that this dataset is stored in.",
+    )
 
 
 class HDAInaccessible(HDACommon):
@@ -1189,6 +1194,21 @@ class HDCACommon(HistoryItemCommon):
     ]
 
 
+class OldestCreateTimeByObjectStoreId(Model):
+    """Represents the oldest creation time of a set of datasets stored in a specific object store."""
+
+    object_store_id: str = Field(
+        ...,
+        title="Object Store ID",
+        description="The ID of the object store.",
+    )
+    oldest_create_time: datetime = Field(
+        ...,
+        title="Oldest Create Time",
+        description="The oldest creation time of a set of datasets stored in this object store.",
+    )
+
+
 class HDCASummary(HDCACommon, WithModelClass):
     """History Dataset Collection Association summary information."""
 
@@ -1233,6 +1253,15 @@ class HDCASummary(HDCACommon, WithModelClass):
     )
     contents_url: ContentsUrlField
     collection_id: DatasetCollectionId
+    store_times_summary: Optional[list[OldestCreateTimeByObjectStoreId]] = Field(
+        None,
+        title="Store Times Summary",
+        description=(
+            "A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store "
+            "for this collection."
+            "This is used to determine the age of the datasets in the collection when the object store is short-lived."
+        ),
+    )
 
 
 class HDCADetailed(HDCASummary):

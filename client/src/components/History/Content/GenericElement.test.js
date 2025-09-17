@@ -3,9 +3,13 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
+
 import GenericElement from "./GenericElement";
 
 jest.mock("components/History/model/queries");
+
+setupSelectableMock();
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);

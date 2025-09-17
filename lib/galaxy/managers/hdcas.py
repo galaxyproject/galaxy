@@ -6,9 +6,7 @@ history.
 """
 
 import logging
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -22,6 +20,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.schema import OldestCreateTimeByObjectStoreId
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -301,6 +300,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "update_time",
                 "tags",
                 "contents_url",
+                "store_times_summary",
             ],
         )
         self.add_view(
@@ -338,6 +338,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
             "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
             "collection_id": self.serialize_id,
+            "store_times_summary": self.serialize_store_times_summary,
         }
         self.serializers.update(serializers)
 
@@ -356,3 +357,9 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
         return list(extensions_set)
+
+    def serialize_store_times_summary(self, item, key, **context):
+        store_times_summary = item.dataset_dbkeys_and_extensions_summary[4]
+        return [
+            OldestCreateTimeByObjectStoreId(object_store_id=t[0], oldest_create_time=t[1]) for t in store_times_summary
+        ]

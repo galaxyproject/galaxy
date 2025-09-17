@@ -756,6 +756,7 @@ class ConcreteObjectStore(BaseObjectStore):
         self.description = config_dict.get("description", None)
         # Annotate this as true to prevent sharing of data.
         self.private = config_dict.get("private", DEFAULT_PRIVATE)
+        self.object_expires_after_days = config_dict.get("object_expires_after_days", None)
         # short label describing the quota source or null to use default
         # quota source right on user object.
         quota_config = config_dict.get("quota", {})
@@ -776,6 +777,7 @@ class ConcreteObjectStore(BaseObjectStore):
         }
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
+        rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
     def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
@@ -787,6 +789,7 @@ class ConcreteObjectStore(BaseObjectStore):
             quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
             badges=self._get_concrete_store_badges(None),
             device=self.device_id,
+            object_expires_after_days=self.object_expires_after_days,
         )
 
     def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
@@ -1778,6 +1781,7 @@ class ConcreteObjectStoreModel(BaseModel):
     quota: QuotaModel
     badges: List[BadgeDict]
     device: Optional[str] = None
+    object_expires_after_days: Optional[int] = None
 
 
 def type_to_object_store_class(
