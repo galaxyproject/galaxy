@@ -106,5 +106,5 @@ it("displays create new visualization option if dataset is not required", async 
     });
     await wrapper.vm.$nextTick();
     const results = await wrapper.vm.doQuery();
-    expect(results).toEqual([{ id: "", name: "Create a new visualization..." }]);
+    expect(results).toEqual([{ id: "", name: "Open visualization..." }]);
 });

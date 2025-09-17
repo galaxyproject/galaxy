@@ -38,7 +38,7 @@ async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
         return [
-            ...(!requiresDataset.value ? [{ id: "", name: "Create a new visualization..." }] : []),
+            ...(!requiresDataset.value ? [{ id: "", name: `Open visualization...` }] : []),
             ...data.hdas.map((hda) => ({ id: hda.id, name: `${hda.hid}: ${hda.name}` })),
         ];
     } else {
