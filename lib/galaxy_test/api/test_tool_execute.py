@@ -605,7 +605,7 @@ def test_null_to_text_tools(required_tools: list[RequiredTool], tool_input_forma
 
 
 @requires_tool_id("gx_text_optional")
-def test_null_to_optinal_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+def test_null_to_optional_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
     execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
     execute.assert_has_single_job.with_output("output").with_contents_stripped("")
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
