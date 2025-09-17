@@ -42,15 +42,19 @@ const filteredUserToolsGroups = computed(() => {
         return userToolsGroups.value;
     }
 
-    const filters = {
-        name: credentialsFilterClass.getFilterValue(filterText.value, "name") as string,
-        tool: credentialsFilterClass.getFilterValue(filterText.value, "tool") as string,
-        service: credentialsFilterClass.getFilterValue(filterText.value, "service") as string,
-    };
-
-    const hasFilterSyntax = Boolean(filters.name && (filters.tool || filters.service));
-
+    const untaggedText = filterText.value
+        .replace(/\b(name|tool|service):[^\s]+/g, "")
+        .trim()
+        .toLowerCase();
     const generalSearch = filterText.value.toLowerCase();
+    const nameFilter = (credentialsFilterClass.getFilterValue(filterText.value, "name") as string) ?? untaggedText;
+    const toolFilter = credentialsFilterClass.getFilterValue(filterText.value, "tool") as string;
+    const serviceFilter = credentialsFilterClass.getFilterValue(filterText.value, "service") as string;
+    const filters = {
+        name: nameFilter,
+        tool: toolFilter,
+        service: serviceFilter,
+    };
 
     return userToolsGroups.value.filter((group) => {
         const searchableValues = {
@@ -59,11 +63,9 @@ const filteredUserToolsGroups = computed(() => {
             toolName: getToolNameById(group.sourceId)?.toLowerCase() || "",
         };
 
-        if (hasFilterSyntax) {
-            return matchesSpecificFilters(filters, searchableValues);
-        } else {
-            return matchesGeneralSearch(generalSearch, searchableValues);
-        }
+        return (
+            matchesSpecificFilters(filters, searchableValues) || matchesGeneralSearch(generalSearch, searchableValues)
+        );
     });
 });
 
@@ -85,6 +87,10 @@ function matchesSpecificFilters(
 ): boolean {
     const { name: nameFilter, tool: toolFilter, service: serviceFilter } = filters;
     const { groupName, serviceName, toolName } = values;
+
+    if (!nameFilter && !toolFilter && !serviceFilter) {
+        return true;
+    }
 
     if (toolFilter && !toolName.includes(toolFilter.toLowerCase())) {
         return false;
