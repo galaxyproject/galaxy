@@ -32,7 +32,8 @@ const srcWithRoot = computed(() => {
         if (props.visualizationId) {
             url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
         } else {
-            url = `/plugins/visualizations/${props.visualization}/show?dataset_id=${props.datasetId}`;
+            const query = props.datasetId ? `?dataset_id=${props.datasetId}` : "";
+            url = `/plugins/visualizations/${props.visualization}/show${query}`;
         }
     }
 
