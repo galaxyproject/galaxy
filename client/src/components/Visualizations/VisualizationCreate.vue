@@ -3,7 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type Dataset, fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
+import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useMarkdown } from "@/composables/markdown";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -34,18 +34,13 @@ const extensions = computed(() => getTestExtensions(plugin.value));
 const requiresDataset = computed(() => getRequiresDataset(plugin.value));
 const testUrls = computed(() => getTestUrls(plugin.value));
 
-function addHidToName(hdas: Array<Dataset>) {
-    return hdas.map((entry) => ({ id: entry.id, name: `${entry.hid}: ${entry.name}` }));
-}
-
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
-        const entries = addHidToName(data.hdas);
-        if (!requiresDataset.value) {
-            entries.unshift({ id: "", name: "Create a new visualization..." });
-        }
-        return entries;
+        return [
+            ...(!requiresDataset.value ? [{ id: "", name: "Create a new visualization..." }] : []),
+            ...data.hdas.map((hda) => ({ id: hda.id, name: `${hda.hid}: ${hda.name}` })),
+        ];
     } else {
         return [];
     }
