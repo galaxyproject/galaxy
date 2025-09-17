@@ -74,9 +74,9 @@ const userServicesGroups = computed<ServiceCredentialsGroup[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
 
-const userToolService = userServiceFor.value(props.serviceDefinition);
-
 const currentServiceCredentialsGroup = computed(() => {
+    const userToolService = userServiceFor.value(props.serviceDefinition);
+
     if (!userToolService?.id) {
         return undefined;
     }
