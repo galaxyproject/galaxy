@@ -667,6 +667,7 @@
     </datatype>
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true">
+        <visualization plugin="jupyterlite" />
         <infer_from suffix="ipynb" />
     </datatype>
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true">
