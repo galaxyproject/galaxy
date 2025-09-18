@@ -6,11 +6,9 @@ import { computed, nextTick, ref } from "vue";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { withPrefix } from "@/utils/redirect";
 
-import ExternalLink from "../ExternalLink.vue";
-import HelpText from "../Help/HelpText.vue";
 import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
+import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationError from "./WorkflowInvocationError.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -46,12 +44,7 @@ async function showStep(stepId: number) {
 
 <template>
     <div class="mb-3 workflow-invocation-state-component">
-        <BAlert v-if="isSubworkflow" variant="secondary" show>
-            This subworkflow is
-            <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
-            <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
-            to view this subworkflow in graph view.
-        </BAlert>
+        <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
                 v-for="message in props.invocationMessages"

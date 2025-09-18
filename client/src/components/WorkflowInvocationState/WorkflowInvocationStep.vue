@@ -10,7 +10,7 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import Heading from "../Common/Heading.vue";
 import JobStep from "./JobStep.vue";
 import ParameterStep from "./ParameterStep.vue";
-import WorkflowInvocationState from "./WorkflowInvocationState.vue";
+import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
@@ -240,10 +240,7 @@ onUnmounted(() => {
                                         </template>
                                     </div>
 
-                                    <WorkflowInvocationState
-                                        v-else
-                                        is-subworkflow
-                                        :invocation-id="stepDetails.subworkflow_invocation_id" />
+                                    <SubworkflowAlert v-else :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
                             </div>
                         </div>

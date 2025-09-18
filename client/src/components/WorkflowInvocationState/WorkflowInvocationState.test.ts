@@ -232,14 +232,14 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
 
 describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state and header", () => {
     it("for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBe("true");
         const exportTab = wrapper.find(selectors.invocationExportTab);
         expect(exportTab.attributes("disabled")).toBe("true");
     });
     it("for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id);
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, true);
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBeUndefined();
         const exportTab = wrapper.find(selectors.invocationExportTab);
@@ -249,13 +249,13 @@ describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state
 
 describe("WorkflowInvocationState check 'Debug' tab", () => {
     it("does not exist for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs", true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
         expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(false);
     });
 
     it("exists for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs");
+        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs", true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
         expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(true);
     });

@@ -338,7 +338,7 @@ async function onCancel() {
             </template>
         </WorkflowAnnotation>
 
-        <BNav pills class="mb-2 p-2 bg-light border-bottom">
+        <BNav v-if="props.isFullPage" pills class="mb-2 p-2 bg-light border-bottom">
             <BNavItem title="Overview" :active="!props.tab" :to="`/workflows/invocations/${props.invocationId}`">
                 Overview
             </BNavItem>
