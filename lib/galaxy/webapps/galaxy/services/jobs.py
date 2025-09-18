@@ -54,7 +54,9 @@ from galaxy.schema.tasks import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import (
     decode,
+    RelaxedRequestToolState,
     RequestToolState,
+    strictify,
 )
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
@@ -77,6 +79,11 @@ class JobRequest(BaseModel):
     tool_version: Optional[str] = Field(default=None, title="tool_version", description="TODO")
     history_id: Optional[DecodedDatabaseIdField] = Field(default=None, title="history_id", description="TODO")
     inputs: Optional[dict[str, Any]] = Field(default_factory=lambda: {}, title="Inputs", description="TODO")
+    strict: bool = Field(
+        default=True,
+        title="Strict",
+        description="Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.",
+    )
     use_cached_jobs: Optional[bool] = Field(default=None, title="use_cached_jobs")
     rerun_remap_job_id: Optional[DecodedDatabaseIdField] = Field(
         default=None, title="rerun_remap_job_id", description="TODO"
@@ -239,7 +246,13 @@ class JobsService(ServiceBase):
         if history_id is not None:
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         inputs = job_request.inputs
-        request_state = RequestToolState(inputs or {})
+        strict = job_request.strict
+        if not strict:
+            relaxed_request_state = RelaxedRequestToolState(inputs or {})
+            relaxed_request_state.validate(tool, f"{tool.id} (relaxed request model)")
+            request_state = strictify(relaxed_request_state, tool)
+        else:
+            request_state = RequestToolState(inputs or {})
         request_state.validate(tool, f"{tool.id} (request model)")
         request_internal_state = decode(request_state, tool, trans.security.decode_id)
         tool_request = ToolRequest()

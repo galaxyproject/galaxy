@@ -15,9 +15,11 @@ from galaxy.tool_util.parameters import (
     landing_decode,
     landing_encode,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
+    strictify,
 )
 from galaxy.tool_util.parser.util import parse_profile_version
 from .test_parameter_test_cases import tool_source_for
@@ -257,6 +259,25 @@ def test_fill_defaults():
     assert "conditional_parameter" in with_defaults
     assert "boolean_parameter" in with_defaults["conditional_parameter"]
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
+
+
+def test_strictify():
+    strict_state = strictify_for({"parameter": 1}, "parameters/gx_int")
+    assert strict_state["parameter"] == 1
+
+    strict_state = strictify_for({}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+    strict_state = strictify_for({"parameter": None}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+
+def strictify_for(tool_state: Dict[str, Any], tool_path: str) -> Dict[str, Any]:
+    tool_source = tool_source_for(tool_path)
+    bundle = input_models_for_tool_source(tool_source)
+    relaxed_state = RelaxedRequestToolState(tool_state)
+    relaxed_state.validate(bundle)
+    return strictify(relaxed_state, bundle).input_state
 
 
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:

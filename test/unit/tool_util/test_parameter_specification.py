@@ -20,6 +20,7 @@ from galaxy.tool_util.parameters import (
     validate_internal_request,
     validate_internal_request_dereferenced,
     validate_landing_request,
+    validate_relaxed_request,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -91,6 +92,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
     assert parameter_bundle
 
     assertion_functions = {
+        "relaxed_request_valid": _assert_relaxed_requests_validate,
+        "relaxed_request_invalid": _assert_relaxed_requests_invalid,
         "request_valid": _assert_requests_validate,
         "request_invalid": _assert_requests_invalid,
         "request_internal_valid": _assert_internal_requests_validate,
@@ -150,6 +153,9 @@ def model_assertion_function_factory(validate_function: ValidationFunctionT, wha
     return _assert_validates, _assert_invalid
 
 
+_assert_relaxed_request_validates, _assert_relaxed_request_invalid = model_assertion_function_factory(
+    validate_relaxed_request, "relaxed request"
+)
 _assert_request_validates, _assert_request_invalid = model_assertion_function_factory(validate_request, "request")
 _assert_internal_request_validates, _assert_internal_request_invalid = model_assertion_function_factory(
     validate_internal_request, "internal request"
@@ -176,6 +182,8 @@ _assert_internal_landing_request_validates, _assert_internal_landing_request_inv
     validate_internal_landing_request, " internallanding request"
 )
 
+_assert_relaxed_requests_validate = partial(_for_each, _assert_relaxed_request_validates)
+_assert_relaxed_requests_invalid = partial(_for_each, _assert_relaxed_request_invalid)
 _assert_requests_validate = partial(_for_each, _assert_request_validates)
 _assert_requests_invalid = partial(_for_each, _assert_request_invalid)
 _assert_internal_requests_validate = partial(_for_each, _assert_internal_request_validates)
