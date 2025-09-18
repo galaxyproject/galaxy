@@ -23480,6 +23480,13 @@ export interface components {
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /**
+             * Headers
+             * @description Optional headers to include in the URL fetch request
+             */
+            headers?: {
+                [key: string]: string;
+            } | null;
+            /**
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.

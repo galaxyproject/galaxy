@@ -158,6 +158,7 @@ class PastedDataElement(BaseDataElement):
 class UrlDataElement(BaseDataElement):
     src: Literal["url"]
     url: str = Field(..., description="URL to upload")
+    headers: Optional[dict[str, str]] = Field(None, description="Optional headers to include in the URL fetch request")
 
 
 class ServerDirElement(BaseDataElement):
