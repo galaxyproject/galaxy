@@ -1,6 +1,7 @@
 """Utilities for converting between request states."""
 
 import logging
+from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -35,6 +36,7 @@ from .state import (
     JobInternalToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
@@ -80,7 +82,10 @@ def cwl_runtime_model(input_models: ToolParameterBundle):
 
 
 def decode(
-    external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int], name_base: Optional[str] = None
+    external_state: RequestToolState,
+    input_models: ToolParameterBundle,
+    decode_id: Callable[[str], int],
+    name_base: Optional[str] = None,
 ) -> RequestInternalToolState:
     """Prepare an internal representation of tool state (request_internal) for storing in the database."""
 
@@ -143,6 +148,59 @@ def landing_encode(
         encode_callback,
     )
     request_state = LandingRequestToolState(request_state_dict)
+    request_state.validate(input_models)
+    return request_state
+
+
+def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle) -> RequestToolState:
+    """Convert a relaxed request state into a strict request state by applying legacy behavior."""
+
+    tool_state = deepcopy(relaxed_state.input_state)
+
+    def _strictify_parameter(tool_state: Dict[str, Any], parameter: ToolParameterT) -> None:
+        if parameter.parameter_type == "gx_conditional":
+            conditional_state = _initialize_conditional_state(parameter, tool_state)
+
+            test_parameter = parameter.test_parameter
+            test_parameter_name = test_parameter.name
+
+            explicit_test_value: Optional[DiscriminatorType] = (
+                conditional_state[test_parameter_name] if test_parameter_name in conditional_state else None
+            )
+            test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
+            when = _select_which_when(parameter, test_value, conditional_state)
+            _strictify_parameter(conditional_state, test_parameter)
+            _strictify_parameters(conditional_state, when)
+        elif parameter.parameter_type == "gx_repeat":
+            repeat_instances = _initialize_repeat_state(parameter, tool_state)
+            for instance_state in repeat_instances:
+                _strictify_parameters(instance_state, parameter)
+        elif parameter.parameter_type == "gx_section":
+            section_state = _initialize_section_state(parameter, tool_state)
+            _fill_defaults(section_state, parameter)
+        elif parameter.parameter_type == "gx_text":
+            parameter_name = parameter.name
+            text_parameter = parameter
+            if parameter_name not in tool_state:
+                if not text_parameter.optional:
+                    # restore legacy behavior of allowing empty string implicit default
+                    # for these non-optional inputs.
+                    tool_state[parameter_name] = ""
+                else:
+                    tool_state[parameter_name] = None
+            else:
+                # legacy behavior of converting explicit None into implicit null. We should introduce
+                # a layer somewhere to deal with this behavior further up the stack and clean up these models.
+                if not text_parameter.optional and tool_state[parameter_name] is None:
+                    tool_state[parameter_name] = ""
+
+    def _strictify_parameters(tool_state: Dict[str, Any], input_models: ToolParameterBundle) -> None:
+        for parameter in input_models.parameters:
+            _strictify_parameter(tool_state, parameter)
+
+    _strictify_parameters(tool_state, input_models)
+
+    request_state = RequestToolState(tool_state)
     request_state.validate(input_models)
     return request_state
 
@@ -296,12 +354,7 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
                 if option is not None:
                     tool_state[parameter_name] = option
     elif parameter.parameter_type == "gx_conditional":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = {}
-
-        raw_conditional_state = tool_state[parameter_name]
-        assert isinstance(raw_conditional_state, dict)
-        conditional_state = cast(Dict[str, Any], raw_conditional_state)
+        conditional_state = _initialize_conditional_state(parameter, tool_state)
 
         test_parameter = parameter.test_parameter
         test_parameter_name = test_parameter.name
@@ -314,19 +367,11 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         _fill_default_for(conditional_state, test_parameter)
         _fill_defaults(conditional_state, when)
     elif parameter.parameter_type == "gx_repeat":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = []
-        repeat_instances = cast(List[Dict[str, Any]], tool_state[parameter_name])
-        if parameter.min:
-            while len(repeat_instances) < parameter.min:
-                repeat_instances.append({})
-
-        for instance_state in tool_state[parameter_name]:
+        repeat_instances = _initialize_repeat_state(parameter, tool_state)
+        for instance_state in repeat_instances:
             _fill_defaults(instance_state, parameter)
     elif parameter.parameter_type == "gx_section":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = {}
-        section_state = cast(Dict[str, Any], tool_state[parameter_name])
+        section_state = _initialize_section_state(parameter, tool_state)
         _fill_defaults(section_state, parameter)
     elif parameter.parameter_type == "gx_data_collection":
         collection_parameter = parameter
@@ -347,6 +392,38 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not text_parameter.optional and tool_state[parameter_name] is None:
                 tool_state[parameter_name] = ""
 
+
+def _initialize_section_state(parameter: ToolParameterT, tool_state: Dict[str, Any]) -> Dict[str, Any]:
+    assert parameter.parameter_type == "gx_section"
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = {}
+    section_state = cast(Dict[str, Any], tool_state[parameter_name])
+    return section_state
+
+
+def _initialize_conditional_state(parameter: ToolParameterT, tool_state: Dict[str, Any]) -> Dict[str, Any]:
+    assert parameter.parameter_type == "gx_conditional"
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = {}
+
+    raw_conditional_state = tool_state[parameter_name]
+    assert isinstance(raw_conditional_state, dict)
+    conditional_state = cast(Dict[str, Any], raw_conditional_state)
+    return conditional_state
+
+
+def _initialize_repeat_state(parameter: ToolParameterT, tool_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    assert parameter.parameter_type == "gx_repeat"
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = []
+    repeat_instances = cast(List[Dict[str, Any]], tool_state[parameter_name])
+    if parameter.min:
+        while len(repeat_instances) < parameter.min:
+            repeat_instances.append({})
+    return repeat_instances
 
 
 def _select_which_when(

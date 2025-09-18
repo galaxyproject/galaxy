@@ -10,6 +10,12 @@ input_state: Dict[str, Any]
 + {abstract} _to_base_model(parameters: ToolParameterBundle): Optional[Type[BaseModel]]
 }
 
+class RelaxedRequestToolState {
+state_representation = "request"
++ _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs. Relaxed syntax to allow some of the odd stuff allowed in legacy tool input format.
+
 class RequestToolState {
 state_representation = "request"
 + _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
@@ -53,6 +59,7 @@ state_representation = "workflow_step_linked"
 }
 note bottom: Expect pre-process ``in`` dictionaries and bring in representation\n of links and defaults and validate them in model.\n
 
+ToolState <|-- RelaxedRequestToolState
 ToolState <|-- RequestToolState
 ToolState <|-- RequestInternalToolState
 ToolState <|-- RequestInternalDereferencedToolState
@@ -60,6 +67,8 @@ ToolState <|-- JobInternalToolState
 ToolState <|-- TestCaseToolState
 ToolState <|-- WorkflowStepToolState
 ToolState <|-- WorkflowStepLinkedToolState
+
+RelaxedRequestToolState - RequestToolState : strictify >
 
 RequestToolState - RequestInternalToolState : decode >
 

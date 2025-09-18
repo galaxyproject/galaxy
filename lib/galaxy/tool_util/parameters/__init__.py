@@ -46,6 +46,7 @@ from .convert import (
     fill_static_defaults,
     landing_decode,
     landing_encode,
+    strictify,
 )
 from .factory import (
     from_input_source,
@@ -63,6 +64,7 @@ from .model_validation import (
     validate_internal_request,
     validate_internal_request_dereferenced,
     validate_landing_request,
+    validate_relaxed_request,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -74,6 +76,7 @@ from .state import (
     JobInternalToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
@@ -138,6 +141,7 @@ __all__ = (
     "validate_internal_request",
     "validate_internal_request_dereferenced",
     "validate_landing_request",
+    "validate_relaxed_request",
     "validate_request",
     "validate_test_case",
     "validate_workflow_step",
@@ -151,6 +155,7 @@ __all__ = (
     "to_json_schema_string",
     "test_case_state",
     "validate_test_cases_for_tool_source",
+    "RelaxedRequestToolState",
     "RequestToolState",
     "RequestInternalToolState",
     "RequestInternalDereferencedToolState",
@@ -168,6 +173,7 @@ __all__ = (
     "landing_decode",
     "landing_encode",
     "dereference",
+    "strictify",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
 )

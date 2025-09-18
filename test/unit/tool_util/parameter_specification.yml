@@ -16,17 +16,32 @@
 # - non optional, multi-selects require a selection (see TODO below...)
 # - https://github.com/galaxyproject/galaxy/issues/18541
 gx_int:
-  request_valid:
+  request_valid: &gx_int_request_valid
     - parameter: 5
     - parameter: 6
     # galaxy parameters created with a value - so doesn't need to appear in request even though non-optional
     - {}
-  request_invalid:
+  request_invalid: &gx_int_request_invalid
+    - parameter: "5"
     - parameter: null
     - parameter: "null"
     - parameter: "None"
     - parameter: { 5 }
     - parameter: {__class__: 'ConnectedValue'}
+  # int parameters have no differences between relaxed and strict, internal or external
+  # requests, or dereferenced or not.
+  relaxed_request_valid:
+    *gx_int_request_valid
+  relaxed_request_invalid:
+    *gx_int_request_invalid
+  request_internal_valid:
+    *gx_int_request_valid
+  request_internal_invalid:
+    *gx_int_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_int_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_int_request_invalid
   job_internal_valid:
    - parameter: 5
   job_internal_invalid:
@@ -114,16 +129,28 @@ gx_boolean:
     - parameter: {__class__: 'ConnectedValue3'}
 
 gx_int_optional:
-  request_valid:
+  request_valid: &gx_int_optional_request_valid
    - parameter: 5
    - parameter: null
    - {}
-  request_invalid:
+  request_invalid: &gx_int_optional_request_invalid
    - parameter: "5"
    - parameter: "None"
    - parameter: "null"
    - parameter: [5]
    - parameter: {__class__: 'ConnectedValue'}
+  relaxed_request_valid:
+    *gx_int_optional_request_valid
+  relaxed_request_invalid:
+    *gx_int_optional_request_invalid
+  request_internal_valid:
+    *gx_int_optional_request_valid
+  request_internal_invalid:
+    *gx_int_optional_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_int_optional_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_int_optional_request_invalid
   job_internal_valid:
    - parameter: 5
    - parameter: null
@@ -362,6 +389,20 @@ gx_text_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+
+gx_text_optional_false:
+  request_valid:
+  - parameter: "mytext"
+  # Should this be invalid? -John
+  - {}
+  request_invalid:
+  - parameter: null
+  relaxed_request_valid:
+  - parameter: "mytext"
+  - parameter: null
+  - {}
+  relaxed_request_invalid:
+  - parameter: 5
 
 gx_text_length_validation: 
   request_valid:

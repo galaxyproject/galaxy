@@ -1211,11 +1211,12 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
-    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str) -> Response:
+    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True) -> Response:
         payload = {
             "tool_id": tool_id,
             "history_id": history_id,
             "inputs": inputs,
+            "strict": strict,
         }
         response = self._post("jobs", data=payload, json=True)
         return response
@@ -4128,7 +4129,9 @@ class DescribeToolExecution:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
         if self._input_format == "request":
-            execute_response = self._dataset_populator.tool_request_raw(self._tool_id, self._inputs, history_id)
+            execute_response = self._dataset_populator.tool_request_raw(
+                self._tool_id, self._inputs, history_id, strict=False
+            )
             if execute_response.status_code == 200:
                 response_json = execute_response.json()
                 tool_request_id = response_json.get("tool_request_id")

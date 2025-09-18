@@ -76,6 +76,7 @@ from .tool_source import (
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
 # in particular dataset and collection references should be decoded integers.
 StateRepresentationT = Literal[
+    "relaxed_request",
     "request",
     "request_internal",
     "request_internal_dereferenced",
@@ -275,15 +276,15 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(StrictStr, self.optional)
 
     @property
-    def py_type_request(self) -> Type:
+    def py_type_relaxed_request(self) -> Type:
         # such a hack but explicit nulls are always allowed in the API even for non-optional
         # parameters - it becomes "" in the internal state.
         return optional(StrictStr)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type
-        if state_representation in ["request", "request_internal", "request_internal_dereferenced"]:
-            py_type = self.py_type_request
+        if state_representation == "relaxed_request":
+            py_type = self.py_type_relaxed_request
         py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
@@ -313,15 +314,8 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type(self) -> Type:
         return optional_if_needed(StrictInt, self.optional)
 
-    #@property
-    #def py_type_request(self) -> Type:
-    #    # ugh... we allow explicit nulls in the API even if the input is not optional
-    #    return optional_if_needed(StrictInt, True)
-
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type
-        # if state_representation == "request":
-        #    py_type = self.py_type_request
         validators = self.validators[:]
         if self.min is not None or self.max is not None:
             validators.append(InRangeParameterValidatorModel(min=self.min, max=self.max, implicit=True))
@@ -685,9 +679,9 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        if state_representation == "request":
+        if state_representation in ["request", "relaxed_request"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchDataInstance)
-        if state_representation == "landing_request":
+        elif state_representation == "landing_request":
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type, requires_value=False), BatchDataInstance
             )
@@ -715,6 +709,10 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
+        else:
+            raise NotImplementedError(
+                f"Have not implemented data collection parameter models for state representation {state_representation}"
+            )
 
     @property
     def request_requires_value(self) -> bool:
@@ -844,7 +842,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        if state_representation == "request":
+        if state_representation in ["request", "relaxed_request"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
         elif state_representation == "landing_request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type, requires_value=False))
@@ -1821,6 +1819,7 @@ def create_model_factory(state_representation: StateRepresentationT):
     return create_method
 
 
+create_relaxed_request_model = create_model_factory("relaxed_request")
 create_request_model = create_model_factory("request")
 create_request_internal_model = create_model_factory("request_internal")
 create_request_internal_dereferenced_model = create_model_factory("request_internal_dereferenced")
