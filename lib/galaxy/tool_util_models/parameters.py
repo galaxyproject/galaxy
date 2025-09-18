@@ -1790,7 +1790,7 @@ def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolPar
 
 
 def create_model_strict(*args, **kwd) -> Type[BaseModel]:
-    # proteted_namespaces here prevents tool with model_ parameter names from issueing warnings
+    # protected_namespaces here prevents tool with model_ parameter names from issuing warnings
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     return create_model(*args, __config__=model_config, **kwd)
