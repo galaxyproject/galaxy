@@ -45,5 +45,6 @@ test_tools = integration_util.integration_tool_runner(
         "detect_errors",
         "tool_directory_copy",
         "metadata_columns",
+        "create_directory_index",
     ]
 )
