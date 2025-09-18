@@ -1,0 +1,39 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - dev
+      - master
+      - 'release_*'
+  pull_request:
+    types: [opened, reopened, synchronize]
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate Year Version
+        id: year
+        run: |
+          # Get current year in YY format
+          YEAR=$(date +%y)
+          echo "year=${YEAR}" >> $GITHUB_OUTPUT
+
+          # Get the latest release to check if year transition is needed
+          # This is optional and can be enhanced with actual API calls
+
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          disable-autolabeler: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
