@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -55,8 +58,6 @@ const computedExpanded = computed({
 
 const workflowStepType = computed(() => props.workflowStep.type);
 
-const isDataStep = computed(() => ["data_input", "data_collection_input"].includes(workflowStepType.value));
-
 const invocationInput = computed(() => props.invocation.inputs[props.workflowStep.id]);
 
 const invocationStep = computed(() => props.invocation.steps[props.workflowStep.id]);
@@ -65,6 +66,11 @@ const invocationStepId = computed(() => invocationStep.value?.id);
 
 const stepDetails = computed(() =>
     invocationStepId.value ? invocationStore.getInvocationStepById(invocationStepId.value) : null,
+);
+
+const hasOutputDatasets = computed(() => stepDetails.value && Object.values(stepDetails.value.outputs).length > 0);
+const hasOutputCollections = computed(
+    () => stepDetails.value && Object.values(stepDetails.value.output_collections).length > 0,
 );
 
 const isReady = computed(() => props.invocation.steps.length > 0);
@@ -120,13 +126,30 @@ async function pollStepUntilTerminal() {
     }
 }
 
-const jobStepHeading = computed(() => {
-    if (stepDetails.value?.jobs && stepDetails.value.jobs.length > 1) {
-        return "Jobs (Click on any job to view its details)";
-    } else if (stepDetails.value?.jobs?.length === 1) {
-        return "Job";
+const jobsTabIcon = computed(() =>
+    hasOutputDatasets.value || hasOutputCollections.value ? faInfoCircle : faTimesCircle,
+);
+
+const jobsTabTitle = computed(() => {
+    if (hasOutputDatasets.value || hasOutputCollections.value) {
+        if (stepDetails.value?.jobs && stepDetails.value.jobs.length > 1) {
+            return "Jobs (Click on any job to view its details)";
+        } else if (stepDetails.value?.jobs?.length === 1) {
+            return "Job";
+        }
+    }
+    return "No jobs";
+});
+
+const outputsTabTitle = computed(() => {
+    if (hasOutputDatasets.value && hasOutputCollections.value) {
+        return "Outputs";
+    } else if (hasOutputDatasets.value) {
+        return "Output Datasets";
+    } else if (hasOutputCollections.value) {
+        return "Output Collections";
     } else {
-        return "No jobs";
+        return "No outputs";
     }
 });
 
@@ -170,48 +193,22 @@ onUnmounted(() => {
                         <BAlert v-else-if="!stepDetails" variant="info" show> Unable to load step details. </BAlert>
 
                         <div v-else>
-                            <div
-                                v-if="!isDataStep && Object.values(stepDetails.outputs).length > 0"
-                                class="invocation-step-output-details">
-                                <Heading size="md" separator>Output Datasets</Heading>
-                                <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
-                                    <b>{{ name }}</b>
-                                    <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
-                                </div>
-                            </div>
+                            <ParameterStep
+                                v-if="workflowStepType === 'parameter_input'"
+                                :parameters="paramInput ? [paramInput] : []" />
 
-                            <div
-                                v-if="!isDataStep && Object.values(stepDetails.output_collections).length > 0"
-                                class="invocation-step-output-collection-details">
-                                <Heading size="md" separator>Output Dataset Collections</Heading>
-                                <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
-                                    <b>{{ name }}</b>
-                                    <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
-                                </div>
-                            </div>
-
-                            <div class="portlet-body" style="width: 100%; overflow-x: auto">
-                                <div
-                                    v-if="workflowStepType == 'tool'"
-                                    class="invocation-step-job-details"
-                                    :open="inGraphView">
-                                    <Heading size="md" separator>{{ jobStepHeading }}</Heading>
-                                    <JobStep v-if="stepDetails.jobs?.length" class="mt-1" :jobs="stepDetails.jobs" />
-                                    <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
-                                </div>
-
-                                <ParameterStep
-                                    v-else-if="workflowStepType == 'parameter_input'"
-                                    :parameters="paramInput ? [paramInput] : []" />
-
+                            <template
+                                v-else-if="
+                                    workflowStepType === 'data_input' || workflowStepType === 'data_collection_input'
+                                ">
                                 <GenericHistoryItem
-                                    v-else-if="
-                                        isDataStep && props.invocation.inputs && invocationInput && invocationInput.id
-                                    "
+                                    v-if="invocationInput && invocationInput.id"
                                     :item-id="invocationInput.id"
                                     :item-src="invocationInput.src" />
+                            </template>
 
-                                <div v-else-if="workflowStepType == 'subworkflow'">
+                            <div v-else>
+                                <div v-if="workflowStepType === 'subworkflow'">
                                     <div v-if="!stepDetails.subworkflow_invocation_id">
                                         Workflow invocation for this step is not yet scheduled.
                                         <template v-if="props.workflowStep">
@@ -242,6 +239,52 @@ onUnmounted(() => {
 
                                     <SubworkflowAlert v-else :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
+
+                                <BTabs justified>
+                                    <BTab v-if="hasOutputDatasets || hasOutputCollections" :title="outputsTabTitle">
+                                        <div v-if="hasOutputDatasets" class="invocation-step-output-details">
+                                            <Heading v-if="hasOutputCollections" size="md" separator>
+                                                Output Datasets
+                                            </Heading>
+                                            <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
+                                                <b>{{ name }}</b>
+                                                <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            v-if="hasOutputCollections"
+                                            class="invocation-step-output-collection-details">
+                                            <Heading v-if="hasOutputDatasets" size="md" separator>
+                                                Output Dataset Collections
+                                            </Heading>
+                                            <div
+                                                v-for="(value, name) in stepDetails.output_collections"
+                                                :key="value.id">
+                                                <b>{{ name }}</b>
+                                                <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
+                                            </div>
+                                        </div>
+                                    </BTab>
+
+                                    <BTab
+                                        v-if="workflowStepType === 'tool'"
+                                        class="portlet-body"
+                                        style="width: 100%; overflow-x: auto">
+                                        <template v-slot:title>
+                                            <FontAwesomeIcon :icon="jobsTabIcon" />
+                                            <span v-localize>{{ jobsTabTitle }}</span>
+                                        </template>
+
+                                        <div class="invocation-step-job-details" :open="inGraphView">
+                                            <JobStep
+                                                v-if="stepDetails.jobs?.length"
+                                                class="mt-1"
+                                                :jobs="stepDetails.jobs" />
+                                            <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
+                                        </div>
+                                    </BTab>
+                                </BTabs>
                             </div>
                         </div>
                     </div>
