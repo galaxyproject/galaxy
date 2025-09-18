@@ -22,10 +22,10 @@
             </tr>
         </JobInformation>
         <br />
-        <h2 class="h-md">Job Parameters</h2>
+        <Heading id="job-parameters-heading" h1 separator inline size="md"> Job Parameters </Heading>
         <JobParameters :job-id="id" :include-title="false" />
         <br />
-        <h2 class="h-md">Job Metrics</h2>
+        <Heading id="job-metrics-heading" h1 separator inline size="md"> Job Metrics </Heading>
         <JobMetrics :job-id="id" :include-title="false" />
     </b-card>
 </template>
@@ -35,12 +35,14 @@ import JobMetrics from "components/JobMetrics/JobMetrics";
 
 import JobInformation from "./JobInformation";
 
+import Heading from "../Common/Heading.vue";
 import CodeRow from "./CodeRow.vue";
 import JobParameters from "components/JobParameters/JobParameters.vue";
 
 export default {
     components: {
         CodeRow,
+        Heading,
         JobInformation,
         JobMetrics,
         JobParameters,

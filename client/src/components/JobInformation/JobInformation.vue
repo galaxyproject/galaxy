@@ -11,6 +11,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { getJobDuration } from "./utilities";
 
+import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 
@@ -139,7 +140,7 @@ watch(
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
             @update:result="updateConsoleOutputs" />
-        <h2 class="h-md">Job Information</h2>
+        <Heading id="job-information-heading" h1 separator inline size="md"> Job Information </Heading>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
