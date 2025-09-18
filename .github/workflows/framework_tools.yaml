@@ -71,7 +71,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage --framework-tools
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: framework
           working-directory: 'galaxy root'
