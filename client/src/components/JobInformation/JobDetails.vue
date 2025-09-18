@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <div>
         <JobInformation :job_id="id" :include-times="true">
             <!-- only needed for admin job component -->
             <tr v-if="hasTraceback">
@@ -27,7 +27,7 @@
         <br />
         <Heading id="job-metrics-heading" h1 separator inline size="md"> Job Metrics </Heading>
         <JobMetrics :job-id="id" :include-title="false" />
-    </b-card>
+    </div>
 </template>
 
 <script>
