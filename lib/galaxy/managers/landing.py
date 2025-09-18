@@ -37,6 +37,7 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import Vault
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -52,6 +53,10 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
+from .headers_encryption import (
+    decrypt_headers_in_data,
+    encrypt_headers_in_data,
+)
 from .tools import (
     get_tool_from_toolbox,
     ToolRunReference,
@@ -70,11 +75,13 @@ class LandingRequestManager:
         security: IdEncodingHelper,
         workflow_contents_manager: WorkflowContentsManager,
         app: MinimalManagerApp,
+        vault: Optional[Vault] = None,
     ):
         self.sa_session = sa_session
         self.security = security
         self.workflow_contents_manager = workflow_contents_manager
         self.app = app
+        self.vault = vault
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
         tool_id = payload.tool_id
@@ -131,13 +138,18 @@ class LandingRequestManager:
         model = ToolLandingRequestModel()
         model.tool_id = tool_id
         model.tool_version = tool_version
-        model.request_state = internal_landing_request_state.input_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.public = payload.public
         model.origin = str(payload.origin) if payload.origin else None
         if user_id:
             model.user_id = user_id
+
+        request_state = self._encrypt_headers_in_request_state(
+            internal_landing_request_state.input_state, tool_id, str(model.uuid)
+        )
+        model.request_state = request_state
+
         self._save(model)
         return self._tool_response(model)
 
@@ -285,10 +297,12 @@ class LandingRequestManager:
         return request
 
     def _tool_response(self, model: ToolLandingRequestModel) -> ToolLandingRequest:
+        request_state = self._decrypt_headers_in_request_state(model.request_state, model.tool_id, str(model.uuid))
+
         response_model = ToolLandingRequest(
             tool_id=model.tool_id,
             tool_version=model.tool_version,
-            request_state=model.request_state,
+            request_state=request_state,
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
@@ -331,3 +345,31 @@ class LandingRequestManager:
         sa_session = self.sa_session
         sa_session.add(model)
         sa_session.commit()
+
+    def _encrypt_headers_in_request_state(
+        self, request_state: Optional[dict], tool_id: str, landing_uuid: str
+    ) -> Optional[dict]:
+        if request_state is not None and self.vault and tool_id == FETCH_TOOL_ID:
+            try:
+                return encrypt_headers_in_data(
+                    request_state,
+                    landing_uuid,
+                    self.vault,
+                    key_prefix="landing_request/headers",
+                )
+            except Exception:
+                pass  # Continue without encryption if vault fails
+        return request_state
+
+    def _decrypt_headers_in_request_state(self, request_state: Optional[dict], tool_id: str, landing_uuid: str):
+        if request_state is not None and self.vault and tool_id == FETCH_TOOL_ID:
+            try:
+                return decrypt_headers_in_data(
+                    request_state,
+                    landing_uuid,
+                    self.vault,
+                    key_prefix="landing_request/headers",
+                )
+            except Exception:
+                pass  # Continue with encrypted state if decryption fails
+        return request_state
