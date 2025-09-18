@@ -76,7 +76,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api -- --num-shards=2 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: api
           working-directory: 'galaxy root'

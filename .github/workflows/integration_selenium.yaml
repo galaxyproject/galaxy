@@ -84,7 +84,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: integration-selenium
           working-directory: 'galaxy root'

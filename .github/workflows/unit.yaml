@@ -57,7 +57,7 @@ jobs:
       - name: Run tests
         run: tox -e unit-coverage
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: py-unit
           working-directory: 'galaxy root'
