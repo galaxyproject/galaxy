@@ -51,6 +51,8 @@ from .tools import (
 
 LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
 
+FETCH_TOOL_ID = "__DATA_FETCH__"
+
 
 class LandingRequestManager:
 
@@ -79,7 +81,7 @@ class LandingRequestManager:
         if hasattr(tool, "parameters"):
             internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
         else:
-            assert tool.id == "__DATA_FETCH__"
+            assert tool.id == FETCH_TOOL_ID
             # we have validated the payload as part of the API request
             # nothing else to decode ideally so just swap to internal model state object
             internal_landing_request_state = LandingRequestInternalToolState(
