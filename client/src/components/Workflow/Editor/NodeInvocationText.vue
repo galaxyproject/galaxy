@@ -4,8 +4,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput } from "bootstrap-vue";
 import { sanitize } from "dompurify";
 
+import type { JobState } from "@/api/jobs";
 import { isWorkflowInput } from "@/components/Workflow/constants";
-import { type GraphStep, iconClasses, statePlaceholders } from "@/composables/useInvocationGraph";
+import type { GraphStep } from "@/composables/useInvocationGraph";
+
+import InvocationStepStateDisplay from "@/components/WorkflowInvocationState/InvocationStepStateDisplay.vue";
 
 const props = defineProps<{
     invocationStep: GraphStep;
@@ -18,21 +21,17 @@ function isColor(value?: string): boolean {
 function textHtml(value: string): string {
     return sanitize(value, { ALLOWED_TAGS: ["b"] });
 }
+
+// Helper function to convert the key to JobState type
+function toJobState(key: string | number): JobState {
+    return key as JobState;
+}
 </script>
 <template>
     <div class="p-1 unselectable">
         <div v-if="props.invocationStep.jobs">
             <div v-for="(value, key) in props.invocationStep.jobs" :key="key">
-                <span v-if="value !== undefined" class="d-flex align-items-center">
-                    <FontAwesomeIcon
-                        v-if="iconClasses[key]"
-                        :icon="iconClasses[key]?.icon"
-                        :class="iconClasses[key]?.class"
-                        :spin="iconClasses[key]?.spin"
-                        size="sm"
-                        class="mr-1" />
-                    {{ value }} job{{ value > 1 ? "s" : "" }} {{ statePlaceholders[key] || key }}.
-                </span>
+                <InvocationStepStateDisplay v-if="value !== undefined" :state="toJobState(key)" :job-count="value" />
             </div>
         </div>
         <div v-else-if="isWorkflowInput(props.invocationStep.type)" class="truncate w-100">

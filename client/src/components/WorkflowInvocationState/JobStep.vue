@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import { computed } from "vue";
+import { BAlert, BNav, BNavItem, BTab, BTabs } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
-import type { JobBaseModel } from "@/api/jobs";
-import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
+import type { JobBaseModel, JobState } from "@/api/jobs";
+import { getHeaderClass, iconClasses, statePlaceholders } from "@/composables/useInvocationGraph";
 
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
+import InvocationStepStateDisplay from "./InvocationStepStateDisplay.vue";
 
 interface Props {
     jobs: JobBaseModel[];
@@ -18,6 +19,21 @@ const props = withDefaults(defineProps<Props>(), {
 
 const firstJob = computed(() => props.jobs[0]);
 const jobCount = computed(() => props.jobs.length);
+
+/** Jobs grouped by their state */
+const jobsByState = computed(() => {
+    const jobsMap: { [key: string]: JobBaseModel[] } = {};
+    props.jobs.forEach((job) => {
+        if (!jobsMap[job.state]) {
+            jobsMap[job.state] = [];
+        }
+        jobsMap[job.state]?.push(job);
+    });
+    return jobsMap as Record<JobState, JobBaseModel[]>;
+});
+
+/** Currently selected/filtered job state */
+const currentState = ref<JobState | null>(firstJob.value?.state || null);
 
 function getIcon(job: JobBaseModel) {
     return iconClasses[job.state];
@@ -37,24 +53,39 @@ function getTabClass(job: JobBaseModel) {
     <div v-else-if="jobCount === 1 && firstJob">
         <JobDetailsDisplayed :job-id="firstJob.id" />
     </div>
-    <BTabs v-else lazy vertical pills card nav-class="p-0" active-tab-class="p-0">
-        <BTab
-            v-for="job in jobs"
-            :key="job.id"
-            data-description="workflow invocation job"
-            :title-item-class="getTabClass(job)"
-            title-link-class="w-100">
-            <template v-slot:title>
-                {{ job.state }}
-                <FontAwesomeIcon
-                    v-if="getIcon(job)"
-                    :class="getIcon(job)?.class"
-                    :icon="getIcon(job)?.icon"
-                    :spin="getIcon(job)?.spin" />
-            </template>
-            <div>
-                <JobDetailsDisplayed :job-id="job.id" />
-            </div>
-        </BTab>
-    </BTabs>
+    <div v-else>
+        <BNav justified pills class="mb-2 p-2">
+            <BNavItem
+                v-for="(stateJobs, state) in jobsByState"
+                :key="state"
+                :title="`Click to view ${statePlaceholders[state] || state} jobs`"
+                :active="currentState === state"
+                link-classes="d-flex justify-content-center"
+                @click="currentState = state">
+                <InvocationStepStateDisplay :state="state" :job-count="stateJobs.length" />
+            </BNavItem>
+        </BNav>
+
+        <BAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </BAlert>
+        <BTabs v-else lazy vertical pills card nav-class="p-0" active-tab-class="p-0">
+            <BTab
+                v-for="job in jobsByState[currentState]"
+                :key="job.id"
+                data-description="workflow invocation job"
+                :title-item-class="getTabClass(job)"
+                title-link-class="w-100">
+                <template v-slot:title>
+                    {{ job.state }}
+                    <FontAwesomeIcon
+                        v-if="getIcon(job)"
+                        :class="getIcon(job)?.class"
+                        :icon="getIcon(job)?.icon"
+                        :spin="getIcon(job)?.spin" />
+                </template>
+                <div class="m-3">
+                    <JobDetailsDisplayed :job-id="job.id" />
+                </div>
+            </BTab>
+        </BTabs>
+    </div>
 </template>
