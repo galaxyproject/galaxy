@@ -22,7 +22,7 @@ jobs:
         id: node-version
         run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
