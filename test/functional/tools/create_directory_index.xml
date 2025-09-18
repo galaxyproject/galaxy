@@ -7,7 +7,7 @@ cp '$reference' 'out_dir/1.fasta'
         <param name="reference" type="data" label="Select a genome to index" help="Build an index for this FASTA sequence." format="fasta"/>
     </inputs>
     <outputs>
-        <data name="index" format="bwa_mem2_index" from_work_dir="out_dir"/>
+        <data name="index" format="bwa_mem2_index" precreate_directory="true" from_work_dir="out_dir"/>
     </outputs>
     <tests>
         <test>

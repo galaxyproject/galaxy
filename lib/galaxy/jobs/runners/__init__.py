@@ -399,8 +399,11 @@ class BaseJobRunner:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
                     source_file = os.path.join(tool_working_directory, hda_tool_output.from_work_dir)
-                    if dataset.datatype.is_directory:
+                    if hda_tool_output.precreate_directory:
+                        # precreate directory, allows using `-d` check to avoid copying data to purged outputs
+                        dataset.dataset.create_extra_files_path()
                         output_path = output_extra_paths[dataset.dataset_id]
+                        os.makedirs(output_path, exist_ok=True)
                     else:
                         output_path = output_paths[dataset.dataset_id]
                     if in_directory(source_file, tool_working_directory):

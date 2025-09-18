@@ -14259,6 +14259,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Precreate Directory
+             * @default false
+             */
+            precreate_directory: boolean | null;
+            /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */

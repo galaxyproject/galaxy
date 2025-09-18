@@ -6041,9 +6041,14 @@ One prominent use case is interval data with a non-standard column order that ca
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Relative path to a file produced by the
-tool in its working directory. Output's contents are set to this file's
-contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
+        <xs:documentation xml:lang="en">Relative path to a file or directory produced by the
+tool in its working directory. Output's contents are set to this paths'
+contents. The behaviour when this path does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail. To collect directory contents set ``precreate`` to true</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="precreate_directory" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Boolean indicating whether to precreate output directory. (Default is ``false``.)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
@@ -6346,7 +6351,7 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
 ``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
 tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
-the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``. 
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``.
 In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of

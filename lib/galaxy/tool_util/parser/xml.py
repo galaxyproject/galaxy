@@ -589,6 +589,7 @@ class XmlToolSource(ToolSource):
         output.count = int(data_elem.get("count", 1))
         output.filters = data_elem.findall("filter")
         output.from_work_dir = data_elem.get("from_work_dir", None)
+        output.precreate_directory = data_elem.get("precreate_directory") or False
         profile_version = Version(self.parse_profile())
         if output.from_work_dir and profile_version < Version("21.09"):
             # We started quoting from_work_dir outputs in 21.09.

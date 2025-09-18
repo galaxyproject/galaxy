@@ -291,7 +291,7 @@ def __copy_if_exists_command(work_dir_output):
     is_directory = True if destination.endswith("_files") else False
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
-    delete_destination_dir = f"rmdir {destination}; " if is_directory else ""
+    delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
     if "?" in source_file or "*" in source_file:
         source_file = source_file.replace("*", '"*"').replace("?", '"?"')
     # Check if source and destination exist.

@@ -229,7 +229,6 @@ class Data(metaclass=DataMeta):
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary: Union[bool, Literal["maybe"]] = True
-    is_directory: bool = False
     # Composite datatypes
     composite_type: Optional[str] = None
     composite_files: dict[str, Any] = {}
@@ -1238,7 +1237,6 @@ class Directory(Data):
     """Class representing a directory of files."""
 
     file_ext = "directory"
-    is_directory = True
 
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str

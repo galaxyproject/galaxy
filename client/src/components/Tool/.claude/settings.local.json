@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/mvandenb/src/galaxy/lib/galaxy/tool_util_models/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
