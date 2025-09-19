@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Optional,
     Union,
@@ -65,6 +66,8 @@ from .tools import (
 LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
 
 FETCH_TOOL_ID = "__DATA_FETCH__"
+
+log = logging.getLogger(__name__)
 
 
 class LandingRequestManager:
@@ -363,6 +366,7 @@ class LandingRequestManager:
                     key_prefix="landing_request/headers",
                 )
             except Exception:
+                log.warning("Failed to encrypt headers in landing request state", exc_info=True)
                 pass  # Continue without encryption if vault fails
         return request_state
 
@@ -376,5 +380,6 @@ class LandingRequestManager:
                     key_prefix="landing_request/headers",
                 )
             except Exception:
+                log.warning("Failed to decrypt headers in landing request state", exc_info=True)
                 pass  # Continue with encrypted state if decryption fails
         return request_state
