@@ -14,6 +14,13 @@ const props = defineProps<{
     draggingConnection: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
     transform: { x: number; y: number; k: number };
+    /** Stores the step IDs for steps in the invocation which should have a
+     * "breathing" or "flowing" animation applied to their connections.
+     */
+    stepConnectionClasses?: {
+        breathing: number[];
+        flowing: number[];
+    };
 }>();
 
 const { connectionStore } = useWorkflowStores();
@@ -43,6 +50,19 @@ function key(connection: Connection) {
 function id(connection: Connection) {
     return `connection-node-${connection.input.stepId}-input-${connection.input.name}-node-${connection.output.stepId}-output-${connection.output.name}`;
 }
+
+/** Checks the connection's input and output step IDs to determine if a "breathing"
+ * or "flowing" class should be applied in the `SVGConnection` component.
+ */
+function getConnectionState(connection: Connection, stateType: "breathing" | "flowing") {
+    if (props.stepConnectionClasses) {
+        return (
+            props.stepConnectionClasses[stateType].includes(connection.output.stepId) ||
+            props.stepConnectionClasses[stateType].includes(connection.input.stepId)
+        );
+    }
+    return false;
+}
 </script>
 
 <template>
@@ -50,13 +70,16 @@ function id(connection: Connection) {
         <svg class="workflow-edges">
             <SVGConnection
                 v-if="draggingConnection"
+                id="dragging-connection"
                 :connection="draggingConnection[0]"
                 :terminal-position="draggingConnection[1]" />
             <SVGConnection
                 v-for="connection in connections"
                 :id="id(connection)"
                 :key="key(connection)"
-                :connection="connection" />
+                :connection="connection"
+                :flowing="getConnectionState(connection, 'flowing')"
+                :breathing="getConnectionState(connection, 'breathing')" />
         </svg>
     </div>
 </template>

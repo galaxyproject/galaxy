@@ -366,3 +366,7 @@ export function getHeaderClass(state: string) {
         [`header-${state}`]: !!state,
     };
 }
+
+export function isGraphStep(step: Step | GraphStep): step is GraphStep {
+    return "jobs" in step;
+}
