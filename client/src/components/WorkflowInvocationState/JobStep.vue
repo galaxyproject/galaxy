@@ -60,6 +60,16 @@ watch(
         currentPage.value = 1;
     },
 );
+
+// For a running workflow, if the available states change, ensure the current state is still valid
+watch(
+    () => Object.keys(jobsByState.value),
+    (newStates) => {
+        if (currentState.value && !newStates.includes(currentState.value)) {
+            currentState.value = (newStates[0] as JobState) || null;
+        }
+    },
+);
 </script>
 
 <template>

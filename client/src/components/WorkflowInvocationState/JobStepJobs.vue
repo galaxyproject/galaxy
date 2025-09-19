@@ -29,11 +29,30 @@ const emit = defineEmits<{
 }>();
 
 const showModal = ref(false);
-/** The table index of the job selected for viewing details */
-const viewedJobIndex = ref<number | null>(null);
 
-/** The job currently being viewed in the modal, computed from the index */
-const viewedJob = computed(() => (viewedJobIndex.value !== null ? props.jobs[viewedJobIndex.value] : null));
+/** The job currently being viewed in the modal */
+const viewedJob = ref<JobBaseModel | null>(null);
+
+/** The computed table index of the job selected for viewing details
+ *
+ * _Note: Sometimes, if the `viewedJob` doesn't exist in `props.jobs` by now (somehow `props.jobs` has changed
+ * since the job was selected), this will be `null` while `viewedJob` will not be null._
+ */
+const viewedJobIndex = computed<number | null>({
+    get() {
+        if (viewedJob.value === null) {
+            return null;
+        }
+        return props.jobs.findIndex((job) => job.id === viewedJob.value?.id);
+    },
+    set(newIndex: number | null) {
+        if (newIndex !== null && props.jobs[newIndex]) {
+            viewedJob.value = props.jobs[newIndex];
+        } else {
+            viewedJob.value = null;
+        }
+    },
+});
 
 function getTrClass(job: JobBaseModel) {
     return {
@@ -42,8 +61,8 @@ function getTrClass(job: JobBaseModel) {
     };
 }
 
-function jobClicked(_: JobBaseModel, index: number) {
-    viewedJobIndex.value = (props.currentPage - 1) * props.perPage + index;
+function jobClicked(job: JobBaseModel) {
+    viewedJob.value = job;
     showModal.value = true;
 }
 
@@ -52,7 +71,7 @@ function onSort(sortInfo: { sortDesc: boolean }) {
 }
 
 function navigateJob(direction: "previous" | "next") {
-    if (viewedJobIndex.value === null || !props.jobs.length) {
+    if (viewedJobIndex.value === null || viewedJob.value === null || !props.jobs.length) {
         return;
     }
     if (viewedJobIndex.value === 0 && direction === "previous") {
@@ -73,6 +92,17 @@ watch(
             if (pageOfJob !== props.currentPage) {
                 emit("update:current-page", pageOfJob);
             }
+        }
+    },
+);
+
+// If the number of jobs changes such that the current page is out of range, adjust the current page
+watch(
+    () => props.jobs.length,
+    (newLength) => {
+        const maxPage = Math.ceil(newLength / props.perPage) || 1;
+        if (props.currentPage > maxPage) {
+            emit("update:current-page", maxPage);
         }
     },
 );
@@ -129,7 +159,7 @@ watch(
             </template>
         </BTable>
 
-        <GModal :show.sync="showModal" fixed-height size="medium" @close="viewedJobIndex = null">
+        <GModal :show.sync="showModal" fixed-height size="medium" @close="viewedJob = null">
             <template v-slot:header>
                 <div v-if="viewedJob" class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-gapx-1 align-items-center">
