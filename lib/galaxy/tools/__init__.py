@@ -4143,6 +4143,38 @@ class FlattenTool(DatabaseOperationTool):
         )
 
 
+class NestTool(DatabaseOperationTool):
+    tool_type = "nest_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        new_elements = {}
+        copied_datasets = []
+
+        for dce in hdca.collection.elements:
+            element_identifier = dce.element_identifier
+
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_dataset = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
+            else:
+                copied_dataset = dce.element_object.copy(flush=False)
+            copied_datasets.append(copied_dataset)
+
+            sub_collection: dict[str, Any] = {}
+            sub_collection["src"] = "new_collection"
+            sub_collection["collection_type"] = "list"
+            sub_collection["elements"] = {element_identifier: copied_dataset}
+
+            new_elements[element_identifier] = sub_collection
+
+        self._add_datasets_to_history(history, copied_datasets)
+        output_collections.create_collection(
+            self.outputs["output"], "output", elements=new_elements, propagate_hda_tags=False
+        )
+
+
 class SortTool(DatabaseOperationTool):
     tool_type = "sort_collection"
     require_terminal_states = True

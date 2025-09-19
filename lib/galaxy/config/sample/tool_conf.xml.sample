@@ -40,6 +40,7 @@
     <tool file="${model_tools_path}/keep_success_collection.xml" />
     <tool file="${model_tools_path}/keep_success_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/flatten_collection.xml" />
+    <tool file="${model_tools_path}/nest_collection.xml" />
     <tool file="${model_tools_path}/merge_collection.xml" />
     <tool file="${model_tools_path}/relabel_from_file.xml" />
     <tool file="${model_tools_path}/filter_from_file.xml" />
