@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BNav, BNavItem, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { JobBaseModel, JobState } from "@/api/jobs";
 import { getHeaderClass, iconClasses, statePlaceholders } from "@/composables/useInvocationGraph";
 
+import GButton from "../BaseComponents/GButton.vue";
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
 import InvocationStepStateDisplay from "./InvocationStepStateDisplay.vue";
 
@@ -54,17 +55,18 @@ function getTabClass(job: JobBaseModel) {
         <JobDetailsDisplayed :job-id="firstJob.id" />
     </div>
     <div v-else>
-        <BNav justified pills class="mb-2 p-2">
-            <BNavItem
+        <nav class="mb-2 p-2 d-flex flex-gapx-1">
+            <GButton
                 v-for="(stateJobs, state) in jobsByState"
                 :key="state"
+                outline
+                color="blue"
                 :title="`Click to view ${statePlaceholders[state] || state} jobs`"
-                :active="currentState === state"
-                link-classes="d-flex justify-content-center"
+                :pressed="currentState === state"
                 @click="currentState = state">
                 <InvocationStepStateDisplay :state="state" :job-count="stateJobs.length" />
-            </BNavItem>
-        </BNav>
+            </GButton>
+        </nav>
 
         <BAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </BAlert>
         <BTabs v-else lazy vertical pills card nav-class="p-0" active-tab-class="p-0">
