@@ -241,6 +241,24 @@ onUnmounted(() => {
                                 </div>
 
                                 <BTabs justified>
+                                    <BTab
+                                        v-if="workflowStepType === 'tool'"
+                                        class="portlet-body"
+                                        style="width: 100%; overflow-x: auto">
+                                        <template v-slot:title>
+                                            <FontAwesomeIcon :icon="jobsTabIcon" />
+                                            <span v-localize>{{ jobsTabTitle }}</span>
+                                        </template>
+
+                                        <div class="invocation-step-job-details" :open="inGraphView">
+                                            <JobStep
+                                                v-if="stepDetails.jobs?.length"
+                                                class="mt-1"
+                                                :jobs="stepDetails.jobs" />
+                                            <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
+                                        </div>
+                                    </BTab>
+
                                     <BTab v-if="hasOutputDatasets || hasOutputCollections" :title="outputsTabTitle">
                                         <div v-if="hasOutputDatasets" class="invocation-step-output-details">
                                             <Heading v-if="hasOutputCollections" size="md" separator>
@@ -264,24 +282,6 @@ onUnmounted(() => {
                                                 <b>{{ name }}</b>
                                                 <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                             </div>
-                                        </div>
-                                    </BTab>
-
-                                    <BTab
-                                        v-if="workflowStepType === 'tool'"
-                                        class="portlet-body"
-                                        style="width: 100%; overflow-x: auto">
-                                        <template v-slot:title>
-                                            <FontAwesomeIcon :icon="jobsTabIcon" />
-                                            <span v-localize>{{ jobsTabTitle }}</span>
-                                        </template>
-
-                                        <div class="invocation-step-job-details" :open="inGraphView">
-                                            <JobStep
-                                                v-if="stepDetails.jobs?.length"
-                                                class="mt-1"
-                                                :jobs="stepDetails.jobs" />
-                                            <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
                                         </div>
                                     </BTab>
                                 </BTabs>
