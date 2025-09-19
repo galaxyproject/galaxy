@@ -20,20 +20,14 @@ from galaxy.security.vault import Vault
 
 # Headers that should always be encrypted when stored in the database
 SENSITIVE_HEADER_PATTERNS = [
-    # Authorization patterns (Authorization, Proxy-Authorization, etc.)
-    re.compile(r".*authorization$", re.IGNORECASE),
-    # Authentication patterns (Authentication, WWW-Authenticate, etc.)
-    re.compile(r".*authenticat.*", re.IGNORECASE),
+    # Auth patterns (covers authorization, authentication, auth, oauth, x-auth, etc.)
+    re.compile(r".*auth.*", re.IGNORECASE),
     # Key patterns (API-Key, Auth-Key, X-API-Key, etc.)
     re.compile(r".*key$", re.IGNORECASE),
     # Token patterns (Bearer-Token, API-Token, X-TOKEN, etc.)
     re.compile(r".*token$", re.IGNORECASE),
     # Secret patterns (Client-Secret, API-Secret, etc.)
     re.compile(r".*secret$", re.IGNORECASE),
-    # Auth patterns (Custom-Auth, Basic-Auth, OAuth, etc.)
-    re.compile(r".*auth$", re.IGNORECASE),
-    re.compile(r"^x-auth", re.IGNORECASE),
-    re.compile(r"^oauth", re.IGNORECASE),
     # Cookie patterns
     re.compile(r".*cookie.*", re.IGNORECASE),
     # Bearer (standalone)
