@@ -146,7 +146,7 @@ class LandingRequestManager:
             model.user_id = user_id
 
         request_state = self._encrypt_headers_in_request_state(
-            internal_landing_request_state.input_state, tool_id, str(model.uuid)
+            internal_landing_request_state.input_state, str(model.uuid)
         )
         model.request_state = request_state
 
@@ -168,7 +168,11 @@ class LandingRequestManager:
             model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
-        model.request_state = self.validate_workflow_request_state(payload.request_state)
+
+        validated_request_state = self.validate_workflow_request_state(payload.request_state)
+        request_state = self._encrypt_headers_in_request_state(validated_request_state, str(model.uuid))
+        model.request_state = request_state
+
         model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
@@ -297,7 +301,7 @@ class LandingRequestManager:
         return request
 
     def _tool_response(self, model: ToolLandingRequestModel) -> ToolLandingRequest:
-        request_state = self._decrypt_headers_in_request_state(model.request_state, model.tool_id, str(model.uuid))
+        request_state = self._decrypt_headers_in_request_state(model.request_state, str(model.uuid))
 
         response_model = ToolLandingRequest(
             tool_id=model.tool_id,
@@ -322,10 +326,13 @@ class LandingRequestManager:
             target_type = model.workflow_source_type
             workflow_id = model.workflow_source
         assert workflow_id
+
+        request_state = self._decrypt_headers_in_request_state(model.request_state, str(model.uuid))
+
         response_model = WorkflowLandingRequest(
             workflow_id=self.security.encode_id(workflow_id) if isinstance(workflow_id, int) else workflow_id,
             workflow_target_type=target_type,
-            request_state=model.request_state,
+            request_state=request_state,
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
@@ -346,10 +353,8 @@ class LandingRequestManager:
         sa_session.add(model)
         sa_session.commit()
 
-    def _encrypt_headers_in_request_state(
-        self, request_state: Optional[dict], tool_id: str, landing_uuid: str
-    ) -> Optional[dict]:
-        if request_state is not None and self.vault and tool_id == FETCH_TOOL_ID:
+    def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
+        if request_state is not None and self.vault:
             try:
                 return encrypt_headers_in_data(
                     request_state,
@@ -361,8 +366,8 @@ class LandingRequestManager:
                 pass  # Continue without encryption if vault fails
         return request_state
 
-    def _decrypt_headers_in_request_state(self, request_state: Optional[dict], tool_id: str, landing_uuid: str):
-        if request_state is not None and self.vault and tool_id == FETCH_TOOL_ID:
+    def _decrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str):
+        if request_state is not None and self.vault:
             try:
                 return decrypt_headers_in_data(
                     request_state,
