@@ -4,7 +4,7 @@ import { computed } from "vue";
 
 interface UtcDateProps {
     date: string;
-    mode?: "date" | "elapsed" | "pretty";
+    mode?: "date" | "elapsed" | "pretty" | "timeonly";
 }
 
 const props = withDefaults(defineProps<UtcDateProps>(), {
@@ -15,6 +15,7 @@ const parsedDate = computed(() => parseISO(`${props.date}Z`));
 const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
 const fullISO = computed(() => parsedDate.value.toISOString());
 const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
+const timeonly = computed(() => format(parsedDate.value, "H:mm:ss zz"));
 </script>
 
 <template>
@@ -23,6 +24,9 @@ const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy
     </span>
     <span v-else-if="mode === 'elapsed'" class="utc-time utc-time-elapsed" :title="fullISO">
         {{ elapsedTime }}
+    </span>
+    <span v-else-if="mode === 'timeonly'" class="utc-time" :title="fullISO">
+        {{ timeonly }}
     </span>
     <span v-else class="utc-time" :title="elapsedTime">
         {{ pretty }}
