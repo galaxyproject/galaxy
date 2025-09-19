@@ -7093,6 +7093,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
         return self._populated_optimized
 
+    def expire_populated_state(self):
+        required_object_session(self).expire(self, ("populated_state",))
+
     @property
     def allow_implicit_mapping(self):
         return self.collection_type != "record"
