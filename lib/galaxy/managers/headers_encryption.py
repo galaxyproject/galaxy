@@ -103,17 +103,7 @@ def encrypt_headers_in_data(
 
     for key, value in data.items():
         if key == "headers" and isinstance(value, dict):
-            encrypted_headers = {}
-            for header_name, header_value in value.items():
-                if is_sensitive_header(header_name):
-                    # Encrypt sensitive header
-                    vault_key = create_vault_key(context_id, header_name, key_prefix)
-                    vault.write_secret(vault_key, header_value)
-                    encrypted_headers[header_name] = create_vault_reference(header_name, reference_prefix)
-                else:
-                    # Keep non-sensitive headers as-is
-                    encrypted_headers[header_name] = header_value
-            encrypted_data[key] = encrypted_headers
+            encrypted_data[key] = _encrypt_headers_dict(value, context_id, vault, key_prefix, reference_prefix)
         elif isinstance(value, dict):
             encrypted_data[key] = encrypt_headers_in_data(value, context_id, vault, key_prefix, reference_prefix)
         elif isinstance(value, list):
@@ -157,22 +147,7 @@ def decrypt_headers_in_data(
 
     for key, value in data.items():
         if key == "headers" and isinstance(value, dict):
-            decrypted_headers = {}
-            for header_name, header_value in value.items():
-                if isinstance(header_value, str) and header_value.startswith(f"__{reference_prefix}_"):
-                    # Decrypt vault reference
-                    vault_key = create_vault_key(context_id, header_name, key_prefix)
-                    decrypted_value = vault.read_secret(vault_key)
-                    if decrypted_value is not None:
-                        decrypted_headers[header_name] = decrypted_value
-                    else:
-                        # Handle case where vault key doesn't exist (shouldn't happen in normal flow)
-                        # Log warning and skip this header
-                        decrypted_headers[header_name] = header_value  # Keep vault reference as fallback
-                else:
-                    # Keep non-vault headers as-is
-                    decrypted_headers[header_name] = header_value
-            decrypted_data[key] = decrypted_headers
+            decrypted_data[key] = _decrypt_headers_dict(value, context_id, vault, key_prefix, reference_prefix)
         elif isinstance(value, dict):
             decrypted_data[key] = decrypt_headers_in_data(value, context_id, vault, key_prefix, reference_prefix)
         elif isinstance(value, list):
@@ -188,3 +163,74 @@ def decrypt_headers_in_data(
             decrypted_data[key] = value
 
     return decrypted_data
+
+
+def _encrypt_headers_dict(
+    headers: dict[str, str],
+    context_id: str,
+    vault: Vault,
+    key_prefix: Optional[str] = None,
+    reference_prefix: str = "VAULT_HEADER",
+) -> dict[str, str]:
+    """
+    Encrypt sensitive headers in a headers dictionary.
+
+    Args:
+        headers: Dictionary of header name -> header value
+        context_id: Unique identifier for the context
+        vault: Vault instance for encryption
+        key_prefix: Optional custom prefix for vault keys
+        reference_prefix: Prefix for vault references
+
+    Returns:
+        Dictionary with sensitive headers replaced by vault references
+    """
+    encrypted_headers = {}
+    for header_name, header_value in headers.items():
+        if is_sensitive_header(header_name):
+            # Encrypt sensitive header
+            vault_key = create_vault_key(context_id, header_name, key_prefix)
+            vault.write_secret(vault_key, header_value)
+            encrypted_headers[header_name] = create_vault_reference(header_name, reference_prefix)
+        else:
+            # Keep non-sensitive headers as-is
+            encrypted_headers[header_name] = header_value
+    return encrypted_headers
+
+
+def _decrypt_headers_dict(
+    headers: dict[str, str],
+    context_id: str,
+    vault: Vault,
+    key_prefix: Optional[str] = None,
+    reference_prefix: str = "VAULT_HEADER",
+) -> dict[str, str]:
+    """
+    Decrypt vault references in a headers dictionary.
+
+    Args:
+        headers: Dictionary of header name -> header value (may contain vault references)
+        context_id: Unique identifier for the context
+        vault: Vault instance for decryption
+        key_prefix: Optional custom prefix for vault keys
+        reference_prefix: Prefix for vault references
+
+    Returns:
+        Dictionary with vault references replaced by actual header values
+    """
+    decrypted_headers = {}
+    for header_name, header_value in headers.items():
+        if isinstance(header_value, str) and header_value.startswith(f"__{reference_prefix}_"):
+            # Decrypt vault reference
+            vault_key = create_vault_key(context_id, header_name, key_prefix)
+            decrypted_value = vault.read_secret(vault_key)
+            if decrypted_value is not None:
+                decrypted_headers[header_name] = decrypted_value
+            else:
+                # Handle case where vault key doesn't exist (shouldn't happen in normal flow)
+                # Log warning and skip this header
+                decrypted_headers[header_name] = header_value  # Keep vault reference as fallback
+        else:
+            # Keep non-vault headers as-is
+            decrypted_headers[header_name] = header_value
+    return decrypted_headers
