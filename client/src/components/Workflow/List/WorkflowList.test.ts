@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -13,6 +14,8 @@ import { generateRandomWorkflowList } from "../testUtils";
 import WorkflowList from "./WorkflowList.vue";
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 const { server, http } = useServerMock();
 
@@ -29,19 +32,10 @@ async function mountWorkflowList() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const mockRouter = {
-        push: jest.fn(),
-        currentRoute: {
-            query: {},
-        },
-    };
-
     const wrapper = mount(WorkflowList as object, {
         localVue,
         pinia,
-        mocks: {
-            $router: mockRouter,
-        },
+        router,
     });
 
     const userStore = useUserStore();
@@ -57,15 +51,18 @@ describe("WorkflowList", () => {
         server.use(
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
+
+        // The use of the tool tip in statelesstag without a real dom is causing issues
+        suppressBootstrapVueWarnings();
     });
 
     it("render empty workflow list", async () => {
         server.use(
             http.get("/api/workflows", ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -81,7 +78,7 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -101,7 +98,7 @@ describe("WorkflowList", () => {
             http.get("/api/workflows", ({ response }) => {
                 // TODO: We use untyped here because the response is not yet defined in the schema
                 return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
+            }),
         );
 
         const wrapper = await mountWorkflowList();
@@ -122,5 +119,6 @@ describe("WorkflowList", () => {
         await wrapper.vm.$nextTick();
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
+        await flushPromises();
     });
 });

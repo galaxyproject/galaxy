@@ -3,10 +3,7 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from sqlalchemy import or_
@@ -15,7 +12,6 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
@@ -48,7 +44,7 @@ log = logging.getLogger(__name__)
 
 def get_install_info_from_tool_shed(
     tool_shed_url: str, tool_shed_registry: Registry, name: str, owner: str, changeset_revision: str
-) -> Tuple[RepositoryMetadataInstallInfoDict, ExtraRepoInfo]:
+) -> tuple[RepositoryMetadataInstallInfoDict, ExtraRepoInfo]:
     params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
     pathspec = ["api", "repositories", "get_repository_revision_install_info"]
     try:
@@ -111,7 +107,7 @@ class InstallRepositoryManager:
 
     def __get_install_info_from_tool_shed(
         self, tool_shed_url: str, name: str, owner: str, changeset_revision: str
-    ) -> Tuple[RepositoryMetadataInstallInfoDict, List[ExtraRepoInfo]]:
+    ) -> tuple[RepositoryMetadataInstallInfoDict, list[ExtraRepoInfo]]:
         repository_revision_dict, repo_info_dict = get_install_info_from_tool_shed(
             tool_shed_url, self.app.tool_shed_registry, name, owner, changeset_revision
         )
@@ -172,8 +168,7 @@ class InstallRepositoryManager:
 
         session = self.install_model.context
         session.add(tool_shed_repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
@@ -333,7 +328,7 @@ class InstallRepositoryManager:
         return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 
     def install(
-        self, tool_shed_url: str, name: str, owner: str, changeset_revision: str, install_options: Dict[str, Any]
+        self, tool_shed_url: str, name: str, owner: str, changeset_revision: str, install_options: dict[str, Any]
     ):
         # Get all of the information necessary for installing the repository from the specified tool shed.
         repository_revision_dict, repo_info_dicts = self.__get_install_info_from_tool_shed(
@@ -360,8 +355,8 @@ class InstallRepositoryManager:
         self,
         tool_shed_url: str,
         repository_revision_dict: RepositoryMetadataInstallInfoDict,
-        repo_info_dicts: List[ExtraRepoInfo],
-        install_options: Dict[str, Any],
+        repo_info_dicts: list[ExtraRepoInfo],
+        install_options: dict[str, Any],
     ):
         try:
             has_repository_dependencies = repository_revision_dict["has_repository_dependencies"]
@@ -565,8 +560,7 @@ class InstallRepositoryManager:
         tool_panel_section_mapping = tool_panel_section_mapping or {}
 
         session = self.app.install_model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
@@ -803,7 +797,7 @@ class InstallRepositoryManager:
         )
         return (None, None)
 
-    def order_components_for_installation(self, tsr_ids, repo_info_dicts, tool_panel_section_keys):
+    def order_components_for_installation(self, tsr_ids: list[str], repo_info_dicts, tool_panel_section_keys):
         """
         Some repositories may have repository dependencies that are required to be installed
         before the dependent repository.  This method will inspect the list of repositories
@@ -823,7 +817,7 @@ class InstallRepositoryManager:
         prior_install_required_dict = repository_util.get_prior_import_or_install_required_dict(
             self.app, tsr_ids, repo_info_dicts
         )
-        processed_tsr_ids = []
+        processed_tsr_ids: list[str] = []
         while len(processed_tsr_ids) != len(prior_install_required_dict.keys()):
             tsr_id = suc.get_next_prior_import_or_install_required_dict_entry(
                 prior_install_required_dict, processed_tsr_ids
@@ -865,8 +859,7 @@ class InstallRepositoryManager:
 
         session = self.install_model.context
         session.add(tool_shed_repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

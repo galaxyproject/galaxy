@@ -14,7 +14,6 @@ from galaxy.util import requests
 
 try:
     from cwltool import (
-        job,
         main,
         pathmapper,
         process,
@@ -23,7 +22,6 @@ try:
 except ImportError:
     main = None  # type: ignore[assignment]
     workflow = None  # type: ignore[assignment]
-    job = None  # type: ignore[assignment]
     process = None  # type: ignore[assignment]
     pathmapper = None  # type: ignore[assignment]
 
@@ -63,11 +61,20 @@ except ImportError:
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
+    from cwltool.process import Process
+except ImportError:
+    Process = None  # type: ignore[assignment, misc]
+
+try:
     from cwltool.utils import (
+        CWLObjectType,
+        JobsType,
         normalizeFilesDirs,
         visit_class,
     )
 except ImportError:
+    CWLObjectType = object  # type: ignore[assignment, misc]
+    JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
 
@@ -115,9 +122,11 @@ def ensure_cwltool_available():
 
 __all__ = (
     "CommentedMap",
+    "CWLObjectType",
     "default_loader",
     "ensure_cwltool_available",
     "getdefault",
+    "JobsType",
     "load_tool",
     "LoadingContext",
     "main",
@@ -125,6 +134,7 @@ __all__ = (
     "normalizeFilesDirs",
     "pathmapper",
     "process",
+    "Process",
     "ref_resolver",
     "relink_initialworkdir",
     "resolve_and_validate_document",

@@ -15,13 +15,13 @@ import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
 import { GalaxyApi } from "@/api";
-import { type GalaxyConfiguration } from "@/stores/configurationStore";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -106,7 +106,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -157,7 +157,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -181,7 +181,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -250,7 +250,7 @@ const fields: FieldArray = [
                             return {
                                 status: "danger",
                                 message: `Failed to permanently delete '${data.username}': ${errorMessageAsString(
-                                    error
+                                    error,
                                 )}`,
                             };
                         }
@@ -366,7 +366,7 @@ const gridConfig: GridConfig = {
     getData: getData,
     plural: "Users",
     sortBy: "email",
-    sortDesc: true,
+    sortDesc: false,
     sortKeys: ["active", "create_time", "disk_usage", "email", "external", "last_login", "username"],
     title: "Users",
 };

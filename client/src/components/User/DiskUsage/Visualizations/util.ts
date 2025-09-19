@@ -6,7 +6,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
-import { type DataValuePoint } from "./Charts";
+import type { DataValuePoint } from "./Charts";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { type ItemSizeSummary, purgeDatasetById, undeleteDatasetById } from "./service";
 
@@ -61,7 +61,7 @@ export function useDatasetsToDisplay() {
                 okVariant: "danger",
                 okTitle: localize("Permanently delete"),
                 cancelTitle: localize("Cancel"),
-            }
+            },
         );
         if (!confirmed) {
             return;

@@ -7,13 +7,10 @@ and from bootstrapped tool sheds.
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.unittest_utils import StandaloneInstallationTarget
 from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
@@ -26,9 +23,9 @@ def test_against_production_shed(tmp_path: Path):
     repo_name = "featurecounts"
     repo_revision = "f9d49f5cb597"
 
-    install_target: InstallationTarget = StandaloneInstallationTarget(tmp_path)
+    install_target = StandaloneInstallationTarget(tmp_path)
     install_manager = InstallRepositoryManager(install_target)
-    install_options: Dict[str, Any] = {}
+    install_options: dict[str, Any] = {}
     install_manager.install(
         DEFAULT_TOOL_SHED_URL,
         repo_name,
@@ -59,12 +56,12 @@ def test_against_production_shed(tmp_path: Path):
     assert tsr
     message, status = check_for_updates(
         install_target.tool_shed_registry,
-        install_model_context,  # type:ignore[arg-type]
+        install_model_context,
         tsr.id,
     )
     assert status
 
-    irm = InstalledRepositoryManager(install_target)
+    irm = install_target.installed_repository_manager
     errors = irm.uninstall_repository(repository=tsr, remove_from_disk=True)
     assert not errors
 

@@ -5,9 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getGalaxyInstance } from "@/app";
-import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
-import { getAppRoot } from "@/onload/loadConfig";
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
@@ -25,7 +23,7 @@ export type AnyObject = Record<string | number | symbol, any>;
  */
 export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
     object: Readonly<O>,
-    callback: (object: V | AnyObject) => void
+    callback: (object: V | AnyObject) => void,
 ): void {
     Object.values(object).forEach((value) => {
         if (Boolean(value) && typeof value === "object") {
@@ -78,7 +76,7 @@ export function isJSON(text: string): boolean {
         text
             .replace(/\\["\\/bfnrtu]/g, "@")
             .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/g, "]")
-            .replace(/(?:^|:|,)(?:\s*\[)+/g, "")
+            .replace(/(?:^|:|,)(?:\s*\[)+/g, ""),
     );
 }
 
@@ -122,12 +120,12 @@ export function isEmpty(value: any | Readonly<any[]>) {
  *
  * @param list List of strings to be converted in human readable list sentence
  */
-export function textify(list: Readonly<string[]>): string {
+export function textify(list: Readonly<string[]>, connectorWord = "or"): string {
     let string = list.toString().replace(/,/g, ", ");
     const pos = string.lastIndexOf(", ");
 
     if (pos !== -1) {
-        string = `${string.substring(0, pos)} or ${string.substring(pos + 2)}`;
+        string = `${string.substring(0, pos)} ${connectorWord} ${string.substring(pos + 2)}`;
     }
 
     return string;
@@ -167,26 +165,6 @@ export function get(options: getOptions): void {
                 options.error(error);
             }
         });
-}
-
-/**
- * Load a CSS file
- *
- * @param url Url of CSS file
- */
-export function cssLoadFile(url: string): void {
-    const fullUrl = getAppRoot() + url;
-    const links = document.head.getElementsByTagName("link");
-
-    if (Array.from(links).find((link) => link.href === fullUrl)) {
-        return;
-    }
-
-    const link = document.createElement("link");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    link.href = fullUrl;
-    document.head.appendChild(link);
 }
 
 /**
@@ -306,15 +284,6 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
     }
 }
 
-export function setWindowTitle(title: string): void {
-    const Galaxy = getGalaxyInstance();
-    if (title) {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
-    } else {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
-    }
-}
-
 /**
  * Calculate a 32 bit FNV-1a hash
  * Found here: https://gist.github.com/vaiorabbit/5657561
@@ -375,7 +344,7 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     oldList: T[],
     newList: T[],
     sortKey: string | null = null,
-    sortDirection: "asc" | "desc" = "desc"
+    sortDirection: "asc" | "desc" = "desc",
 ): T[] {
     const idToObjMap: { [key: string]: T } = oldList.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {});
 
@@ -442,23 +411,7 @@ export function hasKeys(object: unknown, keys: string[]) {
     }
 }
 
-/**
- * Get the full URL path of the app
- *
- * @param path Path to append to the URL path
- * @returns Full URL path of the app
- */
-export function getFullAppUrl(path: string = ""): string {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : "";
-    const appRoot = getAppRoot();
-
-    return `${protocol}//${hostname}${port}${appRoot}${path}`;
-}
-
 export default {
-    cssLoadFile,
     get,
     merge,
     bytesToString,
@@ -471,9 +424,7 @@ export default {
     clone,
     linkify,
     appendScriptStyle,
-    setWindowTitle,
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
-    getFullAppUrl,
 };

@@ -11,7 +11,7 @@ library.add(faCog);
 defineProps({
     deferred: {
         type: Boolean,
-        default: null,
+        default: undefined,
     },
     disabled: {
         type: Boolean,
@@ -31,7 +31,7 @@ const emit = defineEmits(["input"]);
 </script>
 
 <template>
-    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click-to-open">
+    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click">
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
@@ -49,7 +49,7 @@ const emit = defineEmits(["input"]);
                         :value="toPosixLines"
                         @click="emit('input', 'toPosixLines')" />
                     <UploadOption
-                        v-if="deferred !== null"
+                        v-if="deferred !== undefined"
                         class="upload-deferred"
                         title="Defer dataset resolution"
                         :value="deferred"

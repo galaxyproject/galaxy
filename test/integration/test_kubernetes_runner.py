@@ -11,7 +11,6 @@ import subprocess
 import tempfile
 import time
 from typing import (
-    List,
     Optional,
     overload,
 )
@@ -19,6 +18,7 @@ from typing import (
 import pytest
 from typing_extensions import Literal
 
+from galaxy.model import Job
 from galaxy.tool_util.verify.wait import timeout_type
 from galaxy.util import unicodify
 from galaxy_test.base.populators import (
@@ -120,13 +120,6 @@ def job_config(jobs_directory: str) -> Config:
             <param id="k8s_walltime_limit">10</param>
             <param id="k8s_run_as_user_id">$$uid</param>
         </plugin>
-        <plugin id="k8s_no_cleanup" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
-            <param id="k8s_config_path">$k8s_config_path</param>
-            <param id="k8s_galaxy_instance_id">gx-short-id</param>
-            <param id="k8s_cleanup_job">never</param>
-            <param id="k8s_run_as_user_id">$$uid</param>
-        </plugin>
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
@@ -143,20 +136,12 @@ def job_config(jobs_directory: str) -> Config:
             <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
-        <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
-            <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">100M</param>
-            <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
-            <env id="SOME_ENV_VAR">42</env>
-        </destination>
         <destination id="local_dest" runner="local">
         </destination>
     </destinations>
     <tools>
         <tool id="__DATA_FETCH__" destination="local_dest"/>
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
-        <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
 </job_conf>
 """
@@ -189,8 +174,8 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     dataset_populator: KubernetesDatasetPopulator
     job_config: Config
     jobs_directory: str
-    persistent_volume_claims: List[KubeSetupConfigTuple]
-    persistent_volumes: List[KubeSetupConfigTuple]
+    persistent_volume_claims: list[KubeSetupConfigTuple]
+    persistent_volumes: list[KubeSetupConfigTuple]
     container_type = "docker"
 
     def setUp(self) -> None:
@@ -270,12 +255,13 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             app = self._app
             sa_session = app.model.session
-            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            job = sa_session.get(Job, app.security.decode_id(job_dict["id"]))
+            assert job
+            self._wait_for_external_state(sa_session, job, Job.states.RUNNING)
             assert not job.finished
 
             external_id = job.job_runner_external_id
+            assert external_id
             output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
             status = json.loads(output)
             assert status["status"]["active"] == 1
@@ -307,11 +293,12 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             app = self._app
             sa_session = app.model.session
-            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
-
-            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            job = sa_session.get(Job, app.security.decode_id(job_dict["id"]))
+            assert job
+            self._wait_for_external_state(sa_session, job, Job.states.RUNNING)
 
             external_id = job.job_runner_external_id
+            assert external_id
             output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
             status = json.loads(output)
             assert status["status"]["active"] == 1
@@ -324,7 +311,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             ).json()
             details = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
 
-            assert details["state"] == app.model.Job.states.ERROR, details
+            assert details["state"] == Job.states.ERROR, details
 
     @skip_without_tool("job_properties")
     def test_exit_code_127(self, history_id: str) -> None:
@@ -341,8 +328,9 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         app = self._app
         job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
         sa_session = app.model.session
-        job = sa_session.get(app.model.Job, job_id)
-        self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
+        job = sa_session.get(Job, job_id)
+        assert job
+        self._wait_for_external_state(sa_session=sa_session, job=job, expected=Job.states.RUNNING)
 
         external_id = job.job_runner_external_id
 
@@ -396,19 +384,13 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             {},
             history_id,
         )
+        job_id = running_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
         dataset_content = self.dataset_populator.get_history_dataset_content(history_id, hid=1).strip()
-        CPU = "2"
+        CPU = "1"
         MEM = "100"
-        MEM_PER_SLOT = "50"
+        MEM_PER_SLOT = "100"
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split("\n"), dataset_content
-
-        # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API
-        job_dict = running_response["jobs"][0]
-        job = self.galaxy_interactor.get("jobs/{}".format(job_dict["id"]), admin=True).json()
-        external_id = job["external_id"]
-        output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
-        status = json.loads(output)
-        assert "active" not in status["status"]
 
     @skip_without_tool("create_2")
     def test_walltime_limit(self, history_id: str) -> None:

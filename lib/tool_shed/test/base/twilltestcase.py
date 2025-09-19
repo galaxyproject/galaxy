@@ -7,15 +7,12 @@ import string
 import tarfile
 import tempfile
 import time
+from collections.abc import Iterator
 from json import loads
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 from urllib.parse import (
@@ -41,7 +38,6 @@ import galaxy.model.tool_shed_install as galaxy_model
 from galaxy.schema.schema import CheckForUpdatesResponse
 from galaxy.security import idencoding
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -55,6 +51,8 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     smart_str,
 )
+from galaxy.util.compression_utils import CompressedFile
+from galaxy.util.resources import as_file
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.populators import wait_on_assertion
@@ -64,7 +62,6 @@ from tool_shed.util import (
     hgweb_config,
     xml_util,
 )
-from tool_shed.util.repository_content_util import tar_open
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
     Category,
@@ -113,7 +110,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def installed_repository_extended_info(
         self, installed_repository: galaxy_model.ToolShedRepository
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """"""
 
     @abc.abstractmethod
@@ -133,7 +130,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
         """"""
 
     @abc.abstractmethod
-    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
+    def reset_metadata_on_installed_repositories(self, repositories: list[galaxy_model.ToolShedRepository]) -> None:
         """"""
 
     @abc.abstractmethod
@@ -147,7 +144,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """"""
 
     @property
@@ -161,7 +158,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
         """"""
 
     @abc.abstractmethod
-    def get_tool_names(self) -> List[str]:
+    def get_tool_names(self) -> list[str]:
         """"""
 
     @abc.abstractmethod
@@ -173,17 +170,17 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_installed_repositories_by_name_owner(
         self, repository_name: str, repository_owner: str
-    ) -> List[galaxy_model.ToolShedRepository]:
+    ) -> list[galaxy_model.ToolShedRepository]:
         """"""
 
     @abc.abstractmethod
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """"""
 
     @abc.abstractmethod
-    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+    def get_all_installed_repositories(self) -> list[galaxy_model.ToolShedRepository]:
         """"""
 
     @abc.abstractmethod
@@ -194,7 +191,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
 class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     """A Galaxy API + Database as a installation target for the tool shed."""
 
-    def __init__(self, testcase):
+    def __init__(self, testcase: "ShedTwillTestCase"):
         self.testcase = testcase
 
     def setup(self):
@@ -252,7 +249,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def installed_repository_extended_info(
         self, installed_repository: galaxy_model.ToolShedRepository
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         params = {"id": self.testcase.security.encode_id(installed_repository.id)}
         self._visit_galaxy_url("/admin_toolshed/manage_repository_json", params=params)
         json = page_content()
@@ -297,7 +294,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         url = "/admin_toolshed/restore_repository"
         self._visit_galaxy_url(url, params=params)
 
-    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
+    def reset_metadata_on_installed_repositories(self, repositories: list[galaxy_model.ToolShedRepository]) -> None:
         repository_ids = []
         for repository in repositories:
             repository_ids.append(self.testcase.security.encode_id(repository.id))
@@ -321,7 +318,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         repository_id = self.testcase.security.encode_id(installed_repository.id)
         params = {
             "id": repository_id,
@@ -358,7 +355,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     def shed_tool_data_table_conf(self):
         return os.environ.get("TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF")
 
-    def get_tool_names(self) -> List[str]:
+    def get_tool_names(self) -> list[str]:
         response = self.testcase.galaxy_interactor._get("tools?in_panel=false")
         response.raise_for_status()
         tool_list = response.json()
@@ -371,17 +368,17 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def get_installed_repositories_by_name_owner(
         self, repository_name: str, repository_owner: str
-    ) -> List[galaxy_model.ToolShedRepository]:
+    ) -> list[galaxy_model.ToolShedRepository]:
         return test_db_util.get_installed_repository_by_name_owner(
             repository_name, repository_owner, return_multiple=True
         )
 
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         return self.testcase.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
 
-    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+    def get_all_installed_repositories(self) -> list[galaxy_model.ToolShedRepository]:
         repositories = test_db_util.get_all_installed_repositories()
         for repository in repositories:
             test_db_util.ga_refresh(repository)
@@ -447,7 +444,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
 
 class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
-    def __init__(self, testcase):
+    def __init__(self, testcase: "ShedTwillTestCase"):
         self.testcase = testcase
         self.temp_directory = Path(tempfile.mkdtemp(prefix="toolshedtestinstalltarget"))
         tool_shed_target = ToolShedTarget(
@@ -471,7 +468,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         ), f"Expected to find tool panel section *{expected_tool_panel_section}*, but instead found *{tool_panel_section}*\nMetadata: {metadata}\n"
 
     def deactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=False)
         if errors:
             raise Exception(
@@ -485,7 +482,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
     def installed_repository_extended_info(
         self, installed_repository: galaxy_model.ToolShedRepository
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         self._installation_target.install_model.context.refresh(installed_repository)
         return build_manage_repository_dict(self._installation_target, "ok", installed_repository)
 
@@ -518,10 +515,10 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
             )
 
     def reactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         irm.activate_repository(installed_repository)
 
-    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
+    def reset_metadata_on_installed_repositories(self, repositories: list[galaxy_model.ToolShedRepository]) -> None:
         for repository in repositories:
             irmm = InstalledRepositoryMetadataManager(self._installation_target)
             irmm.set_repository(repository)
@@ -533,7 +530,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         irmm.reset_all_metadata_on_installed_repository()
 
     def uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=True)
         if errors:
             raise Exception(
@@ -542,7 +539,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         message, status = check_for_updates(
             self._installation_target.tool_shed_registry,
             self._installation_target.install_model.context,
@@ -565,7 +562,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
     def get_installed_repositories_by_name_owner(
         self, repository_name: str, repository_owner: str
-    ) -> List[galaxy_model.ToolShedRepository]:
+    ) -> list[galaxy_model.ToolShedRepository]:
         return test_db_util.get_installed_repository_by_name_owner(
             repository_name,
             repository_owner,
@@ -575,14 +572,14 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         repository = get_installed_repository(self._installation_target.install_model.context, name, owner, changeset)
         if repository:
             return repository.to_dict()
         else:
             return None
 
-    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+    def get_all_installed_repositories(self) -> list[galaxy_model.ToolShedRepository]:
         repositories = test_db_util.get_all_installed_repositories(
             session=self._installation_target.install_model.context
         )
@@ -601,7 +598,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
     def tool_data_path(self):
         return self._installation_target.config.tool_data_path
 
-    def get_tool_names(self) -> List[str]:
+    def get_tool_names(self) -> list[str]:
         tool_names = []
         for _, tool in self._installation_target.toolbox.tools():
             tool_names.append(tool.name)
@@ -669,15 +666,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             for check_str in strings_not_displayed:
                 self.check_string_not_in_page(check_str)
 
-    def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
-        """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
-        for check_str in strings_displayed:
-            self.check_page_for_string(check_str)
-        for check_str, count in strings_displayed_count:
-            self.check_string_count_in_page(check_str, count)
-        for check_str in strings_not_displayed:
-            self.check_string_not_in_page(check_str)
-
     def check_page_for_string(self, patt):
         """Looks for 'patt' in the current browser page"""
         self._browser.check_page_for_string(patt)
@@ -707,7 +695,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         password: str = "testuser",
         username: str = "admin-user",
         redirect: Optional[str] = None,
-    ) -> Tuple[bool, bool, bool]:
+    ) -> tuple[bool, bool, bool]:
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
         params = dict(cntrller=cntrller, use_panels=False)
@@ -837,7 +825,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             url += f"?{urlencode(params)}"
         return url
 
-    def visit_url(self, url: str, params=None, allowed_codes: Optional[List[int]] = None) -> str:
+    def visit_url(self, url: str, params=None, allowed_codes: Optional[list[int]] = None) -> str:
         parsed_url = urlparse(url)
         if len(parsed_url.netloc) == 0:
             url = f"http://{self.host}:{self.port}{parsed_url.path}"
@@ -905,7 +893,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def check_count_of_metadata_revisions_associated_with_repository(self, repository: Repository, metadata_count):
+    def check_count_of_metadata_revisions_associated_with_repository(self, repository: Repository, metadata_count: int):
         self.check_repository_changelog(repository)
         self.check_string_count_in_page("Repository metadata is associated with this change set.", metadata_count)
 
@@ -1011,7 +999,7 @@ class ShedTwillTestCase(ShedApiTestCase):
                 strings_not_displayed=strings_not_displayed,
             )
 
-    def check_string_count_in_page(self, pattern, min_count, max_count=None):
+    def check_string_count_in_page(self, pattern, min_count: int, max_count: Optional[int] = None):
         """Checks the number of 'pattern' occurrences in the current browser page"""
         page = self.last_page()
         pattern_count = page.count(pattern)
@@ -1022,14 +1010,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         # than max_count.
         if pattern_count < min_count or pattern_count > max_count:
             fname = self.write_temp_file(page)
-            errmsg = "%i occurrences of '%s' found (min. %i, max. %i).\npage content written to '%s' " % (
-                pattern_count,
-                pattern,
-                min_count,
-                max_count,
-                fname,
+            raise AssertionError(
+                f"{pattern_count} occurrences of '{pattern}' found (min. {min_count}, max. {max_count}).\npage content written to '{fname}' "
             )
-            raise AssertionError(errmsg)
 
     def check_galaxy_repository_tool_panel_section(
         self, repository: galaxy_model.ToolShedRepository, expected_tool_panel_section: str
@@ -1160,7 +1143,8 @@ class ShedTwillTestCase(ShedApiTestCase):
                 target = os.path.basename(source)
             full_target = os.path.join(temp_directory, target)
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
-            shutil.copyfile(str(full_source), full_target)
+            with as_file(full_source) as full_source_path:
+                shutil.copyfile(full_source_path, full_target)
             commit_message = commit_message or "Uploaded revision with added file."
             self._upload_dir_to_repository(
                 repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed
@@ -1169,9 +1153,9 @@ class ShedTwillTestCase(ShedApiTestCase):
     def add_tar_to_repository(self, repository: Repository, source: str, strings_displayed=None):
         with self.cloned_repo(repository) as temp_directory:
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
-            tar = tar_open(full_source)
-            tar.extractall(path=temp_directory)
-            tar.close()
+            with full_source.open("rb") as full_source_fileobj:
+                with CompressedFile.open_tar(full_source_fileobj) as tar:
+                    tar.extractall(path=temp_directory)
             commit_message = "Uploaded revision with added files from tar."
             self._upload_dir_to_repository(
                 repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed
@@ -1196,7 +1180,7 @@ class ShedTwillTestCase(ShedApiTestCase):
                 if string_displayed not in text:
                     raise AssertionError(f"Failed to find {string_displayed} in JSON response {text}")
 
-    def delete_files_from_repository(self, repository: Repository, filenames: List[str]):
+    def delete_files_from_repository(self, repository: Repository, filenames: list[str]):
         with self.cloned_repo(repository) as temp_directory:
             for filename in filenames:
                 to_delete = os.path.join(temp_directory, filename)
@@ -1219,7 +1203,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         params = {"operation": "Delete", "id": repository_id}
         self.visit_url("/admin/browse_repositories", params=params)
         strings_displayed = ["Deleted 1 repository", repository.name]
-        strings_not_displayed: List[str] = []
+        strings_not_displayed: list[str] = []
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None):
@@ -1273,8 +1257,8 @@ class ShedTwillTestCase(ShedApiTestCase):
     def edit_repository_categories(
         self,
         repository: Repository,
-        categories_to_add: List[str],
-        categories_to_remove: List[str],
+        categories_to_add: list[str],
+        categories_to_remove: list[str],
         restore_original=True,
     ) -> None:
         params = {"id": repository.id}
@@ -1411,7 +1395,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             os.makedirs(temp_path)
         return temp_path
 
-    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+    def get_all_installed_repositories(self) -> list[galaxy_model.ToolShedRepository]:
         assert self._installation_client
         return self._installation_client.get_all_installed_repositories()
 
@@ -1425,7 +1409,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         return hg.repository(ui.ui(), path.encode("utf-8"))
 
     def get_repositories_category_api(
-        self, categories: List[Category], strings_displayed=None, strings_not_displayed=None
+        self, categories: list[Category], strings_displayed=None, strings_not_displayed=None
     ):
         for category in categories:
             url = f"/api/categories/{category.id}/repositories"
@@ -1470,7 +1454,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
 
-    def get_repository_file_list(self, repository: Repository, base_path: str, current_path=None) -> List[str]:
+    def get_repository_file_list(self, repository: Repository, base_path: str, current_path=None) -> list[str]:
         """Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder."""
         if current_path is None:
             request_param_path = base_path
@@ -1522,7 +1506,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             repository_id, changeset_revision
         ) or test_db_util.get_repository_metadata_by_repository_id_changeset_revision(repository_id, None)
 
-    def get_repository_metadata_revisions(self, repository: Repository) -> List[str]:
+    def get_repository_metadata_revisions(self, repository: Repository) -> list[str]:
         return [
             str(repository_metadata.changeset_revision)
             for repository_metadata in self._db_repository(repository).metadata_revisions
@@ -1544,8 +1528,8 @@ class ShedTwillTestCase(ShedApiTestCase):
         return str(repo[0])
 
     def _get_metadata_revision_count(self, repository: Repository) -> int:
-        repostiory_metadata: RepositoryMetadata = self.populator.get_metadata(repository, downloadable_only=False)
-        return len(repostiory_metadata.root)
+        repository_metadata: RepositoryMetadata = self.populator.get_metadata(repository, downloadable_only=False)
+        return len(repository_metadata.root)
 
     def get_tools_from_repository_metadata(self, repository, include_invalid=False):
         """Get a list of valid and (optionally) invalid tool dicts from the repository metadata."""
@@ -1614,7 +1598,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         install_tool_dependencies: bool = False,
         install_repository_dependencies: bool = True,
         changeset_revision: Optional[str] = None,
-        preview_strings_displayed: Optional[List[str]] = None,
+        preview_strings_displayed: Optional[list[str]] = None,
         new_tool_panel_section_label: Optional[str] = None,
     ) -> None:
         self.browse_tool_shed(url=self.url)
@@ -1658,6 +1642,9 @@ class ShedTwillTestCase(ShedApiTestCase):
             # Changeset revision should never be provided unless repository name also is.
             assert repository_name is not None, "Changeset revision is present, but repository name is not - aborting."
             url += f"/{changeset_revision}"
+        if self.is_v2:
+            # I think pagination broke this legacy test - so I added this
+            url += "?rows_per_page=250"
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         if self.is_v2:
@@ -1829,7 +1816,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         params = {"operation": "Undelete", "id": repository.id}
         self.visit_url("/admin/browse_repositories", params=params)
         strings_displayed = ["Undeleted 1 repository", repository.name]
-        strings_not_displayed: List[str] = []
+        strings_not_displayed: list[str] = []
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def _uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
@@ -1838,7 +1825,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         assert self._installation_client
         return self._installation_client.update_installed_repository(installed_repository, verify_no_updates=False)
 
@@ -1960,7 +1947,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def _get_installed_repositories_by_name_owner(
         self, repository_name: str, repository_owner: str
-    ) -> List[galaxy_model.ToolShedRepository]:
+    ) -> list[galaxy_model.ToolShedRepository]:
         assert self._installation_client
         return self._installation_client.get_installed_repositories_by_name_owner(repository_name, repository_owner)
 
@@ -2098,8 +2085,7 @@ def _wait_for_installation(repository: galaxy_model.ToolShedRepository, refresh)
         # This timeout currently defaults to 10 minutes.
         if timeout_counter > repository_installation_timeout:
             raise AssertionError(
-                "Repository installation timed out, %d seconds elapsed, repository state is %s."
-                % (timeout_counter, repository.status)
+                f"Repository installation timed out, {timeout_counter} seconds elapsed, repository state is {repository.status}."
             )
         time.sleep(1)
 

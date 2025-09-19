@@ -43,7 +43,7 @@ execution:
     local_environment:
       runner: local
 tools:
-  - id: upload1
+  - id: __DATA_FETCH__
     environment: local_environment
 """
 

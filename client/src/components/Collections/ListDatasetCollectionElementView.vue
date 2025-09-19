@@ -13,6 +13,9 @@ interface Props {
     selected?: boolean;
     hasActions?: boolean;
     notEditable?: boolean;
+    hideExtension?: boolean;
+    hideHid?: boolean;
+    textOnly?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -32,23 +35,32 @@ watch(elementName, () => {
 function clickDiscard() {
     emit("element-is-discarded", props.element);
 }
+
+watch(
+    () => props.element.name,
+    () => {
+        elementName.value = props.element.name || "...";
+    },
+);
 </script>
 
 <template>
     <div
-        class="collection-element d-flex justify-content-between"
-        :class="{ 'with-actions': hasActions }"
+        class="d-flex justify-content-between"
+        :data-hid="element.hid"
+        :class="{ 'collection-element': !textOnly, 'with-actions': hasActions }"
         role="button"
+        data-description="list dataset collection element"
         tabindex="0"
         @keyup.enter="emit('element-is-selected', element)"
         @click="emit('element-is-selected', element)">
-        <span class="d-flex flex-gapx-1">
-            <span v-if="element.hid">{{ element.hid }}:</span>
+        <span class="d-flex flex-gapx-1 align-items-center">
+            <span v-if="!hideHid && (element.hid ?? true)" data-description="dataset hid">{{ element.hid }}:</span>
             <strong>
                 <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
                 <span v-else>{{ elementName }}</span>
             </strong>
-            <i v-if="element.extension"> ({{ element.extension }}) </i>
+            <i v-if="!hideExtension && element.extension"> ({{ element.extension }}) </i>
         </span>
 
         <div v-if="hasActions" class="float-right">

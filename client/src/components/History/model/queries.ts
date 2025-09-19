@@ -1,4 +1,5 @@
 import { type components, GalaxyApi, type HistoryItemSummary, type HistorySummary } from "@/api";
+import { createHistoryDatasetCollectionInstanceSimple } from "@/api/datasetCollections";
 import { rethrowSimple } from "@/utils/simple-error";
 
 type BulkOperation = components["schemas"]["HistoryContentItemOperation"];
@@ -15,7 +16,7 @@ export function filtersToQueryValues(filters: QueryFilters) {
  */
 export async function deleteContent(
     content: HistoryItemSummary,
-    deleteParams: Partial<{ purge: boolean; recursive: boolean }> = {}
+    deleteParams: Partial<{ purge: boolean; recursive: boolean }> = {},
 ) {
     const defaults = { purge: false, recursive: false, stop_job: true };
     const params = Object.assign({}, defaults, deleteParams);
@@ -60,7 +61,7 @@ export async function bulkUpdate(
     operation: BulkOperation,
     filters: QueryFilters,
     items = [],
-    params = null
+    params = null,
 ) {
     const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
         params: {
@@ -86,17 +87,10 @@ export async function createDatasetCollection(history: HistorySummary, inputs = 
         copy_elements: true,
         name: "list",
         element_identifiers: [],
+        fields: "auto",
         hide_source_items: true,
+        history_id: history.id,
     };
     const payload = Object.assign({}, defaults, inputs);
-
-    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents", {
-        params: { path: { history_id: history.id } },
-        body: { ...payload, instance_type: "history", type: "dataset_collection" },
-    });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
+    return createHistoryDatasetCollectionInstanceSimple(payload);
 }

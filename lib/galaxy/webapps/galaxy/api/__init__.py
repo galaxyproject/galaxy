@@ -3,17 +3,15 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 """
 
 import inspect
+from collections.abc import AsyncGenerator
 from enum import Enum
 from string import Template
 from typing import (
     Any,
-    AsyncGenerator,
     Callable,
     cast,
     NamedTuple,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
 )
 from urllib.parse import (
@@ -126,7 +124,7 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T], app=get_app_with_request_session) -> T:
+def depends(dep_type: type[T], app=get_app_with_request_session) -> T:
     async def _do_resolve(request: Request):
         async for _dep in app():
             yield _dep.resolve(dep_type)
@@ -393,6 +391,8 @@ CORSPreflightRequired = Depends(cors_preflight)
 
 
 class BaseGalaxyAPIController(BaseAPIController):
+    app: StructuredApp
+
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
@@ -563,7 +563,7 @@ class APIContentTypeRoute(APIRoute):
 
     match_content_type: str
 
-    def accept_matches(self, scope: Scope) -> Tuple[Match, Scope]:
+    def accept_matches(self, scope: Scope) -> tuple[Match, Scope]:
         content_type_header = Headers(scope=scope).get("content-type", None)
         if not content_type_header:
             return Match.PARTIAL, scope
@@ -571,7 +571,7 @@ class APIContentTypeRoute(APIRoute):
             return Match.NONE, scope
         return Match.FULL, scope
 
-    def matches(self, scope: Scope) -> Tuple[Match, Scope]:
+    def matches(self, scope: Scope) -> tuple[Match, Scope]:
         accept_match, accept_scope = self.accept_matches(scope)
         if accept_match == Match.NONE:
             return accept_match, accept_scope
@@ -582,7 +582,7 @@ class APIContentTypeRoute(APIRoute):
         )
 
 
-def as_form(cls: Type[BaseModel]):
+def as_form(cls: type[BaseModel]):
     """
     Adds an as_form class method to decorated models. The as_form class method
     can be used with FastAPI endpoints.

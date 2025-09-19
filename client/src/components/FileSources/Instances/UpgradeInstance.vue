@@ -18,7 +18,7 @@ const { instance } = useInstanceAndTemplate(ref(props.instanceId));
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 
 const latestTemplate = computed(
-    () => instance.value && fileSourceTemplatesStore.getLatestTemplate(instance.value?.template_id)
+    () => instance.value && fileSourceTemplatesStore.getLatestTemplate(instance.value?.template_id),
 );
 </script>
 <template>

@@ -35,7 +35,7 @@ const CLEANUP_OPERATION: CleanupOperation = {
                 total_free_bytes: 1024,
                 errors: [],
             },
-            EXPECTED_ITEMS
+            EXPECTED_ITEMS,
         ),
 };
 /** Operation without items to clean*/
@@ -70,9 +70,9 @@ const ERROR_CLEANUP_OPERATION: CleanupOperation = {
 async function mountCleanupOperationSummaryWith(
     operation: CleanupOperation,
     refreshOperationId = null,
-    refreshDelay = 0
+    refreshDelay = 0,
 ) {
-    const wrapper = mount(CleanupOperationSummary, {
+    const wrapper = mount(CleanupOperationSummary as object, {
         propsData: { operation, refreshOperationId, refreshDelay },
         localVue,
     });

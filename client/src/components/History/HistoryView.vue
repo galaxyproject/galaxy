@@ -1,25 +1,30 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <div class="flex-row flex-grow-0 pb-3">
-            <b-button
-                v-if="userOwnsHistory"
-                size="sm"
-                :title="setAsCurrentTitle"
-                :disabled="isSetAsCurrentDisabled"
-                data-description="switch to history button"
-                @click="setCurrentHistory(history.id)">
-                Switch to this history
-            </b-button>
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <div class="d-flex flex-gapx-1">
+                <GButton
+                    v-if="userOwnsHistory"
+                    color="blue"
+                    :title="setAsCurrentTitle"
+                    :disabled="isSetAsCurrentDisabled"
+                    data-description="switch to history button"
+                    @click="setCurrentHistory(history.id)">
+                    Switch to this history
+                </GButton>
 
-            <b-button
-                v-if="canImportHistory"
-                v-b-modal:copy-history-modal
-                size="sm"
-                title="Import this history"
-                data-description="import history button">
-                Import this history
-            </b-button>
-        </div>
+                <GButton
+                    v-if="canImportHistory"
+                    v-b-modal:copy-history-modal
+                    color="blue"
+                    title="Import this history"
+                    data-description="import history button">
+                    <FontAwesomeIcon :icon="faFileImport" />
+                    Import this history
+                </GButton>
+
+                <HistoryOptions :history="history" minimal />
+            </div>
+        </BreadcrumbHeading>
 
         <b-alert :show="copySuccess">
             History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
@@ -38,6 +43,8 @@
 </template>
 
 <script>
+import { faFileImport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapActions, mapState } from "pinia";
 
 import { isAnonymousUser } from "@/api";
@@ -48,11 +55,19 @@ import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import HistoryOptions from "@/components/History/HistoryOptions.vue";
+
 export default {
     components: {
         HistoryPanel,
         CollectionPanel,
         CopyModal,
+        FontAwesomeIcon,
+        GButton,
+        BreadcrumbHeading,
+        HistoryOptions,
     },
     props: {
         id: {
@@ -62,6 +77,7 @@ export default {
     },
     data() {
         return {
+            faFileImport,
             selectedCollections: [],
             copySuccess: false,
         };
@@ -69,6 +85,16 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["getHistoryById", "currentHistory"]),
+        breadcrumbItems() {
+            return [
+                { title: "Histories", to: "/histories/list" },
+                {
+                    title: this.history.name,
+                    to: `/histories/view?id=${this.history.id}`,
+                    superText: this.isCurrentHistory ? "current" : undefined,
+                },
+            ];
+        },
         history() {
             return this.getHistoryById(this.id);
         },

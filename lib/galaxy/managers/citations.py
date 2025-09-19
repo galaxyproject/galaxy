@@ -1,9 +1,7 @@
 import functools
 import logging
 from typing import (
-    Dict,
     Optional,
-    Type,
     Union,
 )
 
@@ -11,7 +9,7 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.structured_app import BasicSharedApp
-from galaxy.tool_util.parser.interface import Citation
+from galaxy.tool_util_models.tool_source import Citation
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
@@ -175,7 +173,7 @@ class DoiCitation(BaseCitation):
             return str(self.raw_bibtex)
 
 
-CITATION_CLASSES: Dict[str, Type[CitationT]] = dict(
+CITATION_CLASSES: dict[str, type[CitationT]] = dict(
     bibtex=BibtexCitation,
     doi=DoiCitation,
 )

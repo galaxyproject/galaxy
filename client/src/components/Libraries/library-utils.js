@@ -19,7 +19,7 @@ export function onError(error) {
  */
 export function buildFields(fieldTitles, data) {
     return Object.entries(fieldTitles).flatMap(([property, title]) =>
-        data[property] ? { name: title, value: data[property] } : []
+        data[property] ? { name: title, value: data[property] } : [],
     );
 }
 

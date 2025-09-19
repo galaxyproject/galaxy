@@ -14,15 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8']
+        python-version: ['3.9']
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
       - name: Install Python dependencies
-        run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
+        run: pip install -r requirements.txt -r lib/galaxy/dependencies/pinned-test-requirements.txt
       - name: Run tests
         run: .ci/check_test_class_names.sh

@@ -5,7 +5,7 @@ import time
 import psutil
 from sqlalchemy import select
 
-from galaxy.model.base import transaction
+from galaxy.model import Job
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -45,14 +45,12 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             job_id = self._setup_cat_data_and_sleep(history_id)
             self._wait_for_job_running(job_id)
             sa_session = self._app.model.session
-            Job = self._app.model.Job
             job = self._get_job_by_tool("cat_data_and_sleep")
             # This is how the admin controller code cancels a job
             job.job_stderr = "admin cancelled job"
             job.set_state(Job.states.DELETING)
             sa_session.add(job)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
             self.galaxy_interactor.wait_for(
                 lambda: self._get(f"jobs/{job_id}").json()["state"] != "error",
                 what="Wait for job to end in error",
@@ -67,7 +65,6 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             sa_session = self._app.model.session
             external_id = None
             state = False
-            Job = self._app.model.Job
 
             job = self._get_job_by_tool("cat_data_and_sleep")
             # Not checking the state here allows the change from queued to running to overwrite
@@ -109,6 +106,5 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             assert not pid_exists, final_state
 
     def _get_job_by_tool(self, tool_id):
-        model = self._app.model
-        stmt = select(model.Job).filter_by(tool_id=tool_id).order_by(model.Job.create_time.desc()).limit(1)
-        return model.session.scalars(stmt).first()
+        stmt = select(Job).filter_by(tool_id=tool_id).order_by(Job.create_time.desc()).limit(1)
+        return self._app.model.session.scalars(stmt).first()

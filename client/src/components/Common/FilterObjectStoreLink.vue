@@ -4,7 +4,7 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelect from "./ObjectStoreSelect.vue";
@@ -27,8 +27,12 @@ const emit = defineEmits<{
     (e: "change", objectStoreId?: string): void;
 }>();
 
-function onSelect(objectStoreId?: string) {
-    emit("change", objectStoreId);
+function onSelect(objectStoreId?: string | null) {
+    if (objectStoreId == null) {
+        emit("change", undefined);
+    } else {
+        emit("change", objectStoreId);
+    }
     showModal.value = false;
 }
 

@@ -3,11 +3,103 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Do not set attribute on a namedtuple by `@jdavcs <https://github.com/jdavcs>`_ in `#20599 <https://github.com/galaxyproject/galaxy/pull/20599>`_
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+* Create rucio.cfg from inside Rucio objectstore by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#19863 <https://github.com/galaxyproject/galaxy/pull/19863>`_
+* Fix broken optimisation introduced in #19852 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19871 <https://github.com/galaxyproject/galaxy/pull/19871>`_
+
+============
+Enhancements
+============
+
+* Irods objectstore templates by `@pauldg <https://github.com/pauldg>`_ in `#19415 <https://github.com/galaxyproject/galaxy/pull/19415>`_
+* Use discriminated unions in object stores and file source template configs by `@davelopez <https://github.com/davelopez>`_ in `#19621 <https://github.com/galaxyproject/galaxy/pull/19621>`_
+* Format code with black 25.1.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19625 <https://github.com/galaxyproject/galaxy/pull/19625>`_
+* Rucio templates by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#19720 <https://github.com/galaxyproject/galaxy/pull/19720>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Handle special charater in raw SQL by `@jdavcs <https://github.com/jdavcs>`_ in `#19925 <https://github.com/galaxyproject/galaxy/pull/19925>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Fix job directory not being cleaned up by `@davelopez <https://github.com/davelopez>`_ in `#18997 <https://github.com/galaxyproject/galaxy/pull/18997>`_
+* Fix quota usage with user object stores by `@davelopez <https://github.com/davelopez>`_ in `#19323 <https://github.com/galaxyproject/galaxy/pull/19323>`_
+* Fix object not found handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19468 <https://github.com/galaxyproject/galaxy/pull/19468>`_
+
+============
+Enhancements
+============
+
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration) by `@jmchilton <https://github.com/jmchilton>`_ in `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`_
+* Add onedata templates by `@bwalkowi <https://github.com/bwalkowi>`_ in `#18457 <https://github.com/galaxyproject/galaxy/pull/18457>`_
+* Add missing version in the file sources and object store templates by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18497 <https://github.com/galaxyproject/galaxy/pull/18497>`_
+* Add a retry when deleting a k8s job by `@afgane <https://github.com/afgane>`_ in `#18744 <https://github.com/galaxyproject/galaxy/pull/18744>`_
+* Irods ssl connection by `@pauldg <https://github.com/pauldg>`_ in `#19014 <https://github.com/galaxyproject/galaxy/pull/19014>`_
 
 -------------------
 24.1.4 (2024-12-11)

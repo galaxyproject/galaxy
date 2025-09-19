@@ -1,5 +1,4 @@
 import logging
-from typing import Set
 
 from sqlalchemy import (
     false,
@@ -18,7 +17,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.quotas import QuotaManager
-from galaxy.model.base import transaction
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -190,7 +189,6 @@ class RoleListGrid(grids.GridData):
     ]
 
     def apply_query_filter(self, query, **kwargs):
-        # Note: we use Role._name (the column), not Role.name (which is a property)
         INDEX_SEARCH_FILTERS = {
             "description": "description",
             "name": "name",
@@ -205,7 +203,7 @@ class RoleListGrid(grids.GridData):
                     key = term.filter
                     q = term.text
                     if key == "name":
-                        query = query.filter(text_column_filter(self.model_class._name, term))
+                        query = query.filter(text_column_filter(self.model_class.name, term))
                     if key == "description":
                         query = query.filter(text_column_filter(self.model_class.description, term))
                     elif key == "is":
@@ -216,7 +214,7 @@ class RoleListGrid(grids.GridData):
                         raw_text_column_filter(
                             [
                                 self.model_class.description,
-                                self.model_class._name,
+                                self.model_class.name,
                             ],
                             term,
                         )
@@ -400,7 +398,7 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.require_admin
     def data_types_list(self, trans, **kwd) -> DatatypesEntryT:
         datatypes = []
-        keys: Set[str] = set()
+        keys: set[str] = set()
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
         for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dt: dt.get("extension")):
@@ -539,8 +537,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
                 "title": f"Quota '{quota.name}'",
-                "message": "Quota '%s' is currently associated with %d user(s) and %d group(s)."
-                % (quota.name, len(in_users), len(in_groups)),
+                "message": f"Quota '{quota.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
                 "status": "info",
                 "inputs": [
                     build_select_input("in_groups", "Groups", all_groups, in_groups),
@@ -648,96 +645,6 @@ class AdminGalaxy(controller.JSAppLauncher):
 
     @web.legacy_expose_api
     @web.require_admin
-    def create_role(self, trans, payload=None, **kwd):
-        if trans.request.method == "GET":
-            all_users = []
-            all_groups = []
-            for user in (
-                trans.sa_session.query(trans.app.model.User)
-                .filter(trans.app.model.User.table.c.deleted == false())
-                .order_by(trans.app.model.User.table.c.email)
-            ):
-                all_users.append((user.email, trans.security.encode_id(user.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": "Create Role",
-                "inputs": [
-                    {"name": "name", "label": "Name"},
-                    {"name": "description", "label": "Description"},
-                    build_select_input("in_groups", "Groups", all_groups, []),
-                    build_select_input("in_users", "Users", all_users, []),
-                    {
-                        "name": "auto_create",
-                        "label": "Create a new group of the same name for this role:",
-                        "type": "boolean",
-                        "optional": True,
-                    },
-                ],
-            }
-        else:
-            name = util.restore_text(payload.get("name", ""))
-            description = util.restore_text(payload.get("description", ""))
-            auto_create_checked = payload.get("auto_create")
-            in_users = [
-                trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_users"))
-            ]
-            in_groups = [
-                trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_groups"))
-            ]
-            if not name or not description:
-                return self.message_exception(trans, "Enter a valid name and a description.")
-            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
-                return self.message_exception(
-                    trans, "Role names must be unique and a role with that name already exists, so choose another name."
-                )
-            elif None in in_users or None in in_groups:
-                return self.message_exception(trans, "One or more invalid user/group id has been provided.")
-            else:
-                # Create the role
-                role = trans.app.model.Role(name=name, description=description, type=trans.app.model.Role.types.ADMIN)
-                trans.sa_session.add(role)
-                # Create the UserRoleAssociations
-                for user in in_users:
-                    ura = trans.app.model.UserRoleAssociation(user, role)
-                    trans.sa_session.add(ura)
-                # Create the GroupRoleAssociations
-                for group in in_groups:
-                    gra = trans.app.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                if auto_create_checked:
-                    # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
-                        return self.message_exception(
-                            trans,
-                            "A group with that name already exists, so choose another name or disable group creation.",
-                        )
-                    # Create the group
-                    group = trans.app.model.Group(name=name)
-                    trans.sa_session.add(group)
-                    # Associate the group with the role
-                    gra = trans.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                    num_in_groups = len(in_groups) + 1
-                else:
-                    num_in_groups = len(in_groups)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-                message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups."
-                if auto_create_checked:
-                    message += (
-                        "One of the groups associated with this role is the newly created group with the same name."
-                    )
-                return {"message": message}
-
-    @web.legacy_expose_api
-    @web.require_admin
     def rename_role(self, trans, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
@@ -768,8 +675,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                         role.name = new_name
                         role.description = new_description
                         trans.sa_session.add(role)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
             return {"message": f"Role '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -802,8 +708,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
                 "title": f"Role '{role.name}'",
-                "message": "Role '%s' is currently associated with %d user(s) and %d group(s)."
-                % (role.name, len(in_users), len(in_groups)),
+                "message": f"Role '{role.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
                 "status": "info",
                 "inputs": [
                     build_select_input("in_groups", "Groups", all_groups, in_groups),
@@ -855,8 +760,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     if not (group.name == new_name):
                         group.name = new_name
                         trans.sa_session.add(group)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
             return {"message": f"Group '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -879,6 +783,9 @@ class AdminGalaxy(controller.JSAppLauncher):
                 if user in [x.user for x in group.users]:
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+
             for role in (
                 trans.sa_session.query(trans.app.model.Role)
                 .filter(trans.app.model.Role.deleted == false())
@@ -886,11 +793,11 @@ class AdminGalaxy(controller.JSAppLauncher):
             ):
                 if role in [x.role for x in group.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
-                all_roles.append((role.name, trans.security.encode_id(role.id)))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                all_roles.append((displayed_name, trans.security.encode_id(role.id)))
             return {
                 "title": f"Group '{group.name}'",
-                "message": "Group '%s' is currently associated with %d user(s) and %d role(s)."
-                % (group.name, len(in_users), len(in_roles)),
+                "message": f"Group '{group.name}' is currently associated with {len(in_users)} user(s) and {len(in_roles)} role(s).",
                 "status": "info",
                 "inputs": [
                     build_select_input("in_roles", "Roles", all_roles, in_roles),
@@ -922,12 +829,16 @@ class AdminGalaxy(controller.JSAppLauncher):
                 .order_by(trans.app.model.User.table.c.email)
             ):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
+
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+
             for role in (
                 trans.sa_session.query(trans.app.model.Role)
                 .filter(trans.app.model.Role.deleted == false())
                 .order_by(trans.app.model.Role.name)
             ):
-                all_roles.append((role.name, trans.security.encode_id(role.id)))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                all_roles.append((displayed_name, trans.security.encode_id(role.id)))
             return {
                 "title": "Create Group",
                 "title_id": "create-group",
@@ -991,13 +902,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                     num_in_roles = len(in_roles) + 1
                 else:
                     num_in_roles = len(in_roles)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-                message = "Group '%s' has been created with %d associated users and %d associated roles." % (
-                    group.name,
-                    len(in_users),
-                    num_in_roles,
-                )
+                trans.sa_session.commit()
+                message = f"Group '{group.name}' has been created with {len(in_users)} associated users and {num_in_roles} associated roles."
                 if auto_create_checked:
                     message += (
                         "One of the roles associated with this group is the newly created role with the same name."
@@ -1032,9 +938,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-                return {"message": "Passwords reset for %d user(s)." % len(users)}
+                    trans.sa_session.commit()
+                return {"message": f"Passwords reset for {len(users)} user(s)."}
         else:
             return self.message_exception(trans, "Please specify user ids.")
 

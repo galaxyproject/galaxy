@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
@@ -12,11 +10,10 @@ import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faArchive);
 
 const historyStore = useHistoryStore();
 const { config } = useConfig(true);
@@ -65,16 +62,25 @@ async function onArchiveHistory(exportRecordId?: string) {
         isArchiving.value = false;
     }
 }
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: history.value?.name || "Archive History",
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Archive", icon: faArchive },
+]);
 </script>
 
 <template>
     <div class="history-archive-wizard">
-        <FontAwesomeIcon icon="archive" size="2x" class="text-primary float-left mr-2" />
-        <h1 class="h-lg">
-            Archive
-            <LoadingSpan v-if="!history" spinner-only />
-            <b v-else>{{ history.name }}</b>
-        </h1>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <BAlert v-if="!history" show>
+            <LoadingSpan spinner-only />
+        </BAlert>
 
         <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the

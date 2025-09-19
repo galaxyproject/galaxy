@@ -6,7 +6,10 @@ import logging
 from urllib.parse import urlencode
 
 from galaxy import web
-from galaxy.model.base import transaction
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
@@ -53,7 +56,7 @@ class ASync(BaseUIController):
             #
             # we have an incoming data_id
             #
-            data = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(data_id)
+            data = trans.sa_session.query(HistoryDatasetAssociation).get(data_id)
 
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
@@ -95,7 +98,7 @@ class ASync(BaseUIController):
             STATUS = params.get("STATUS")
 
             if STATUS == "OK":
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
                 if not params.get("GALAXY_URL"):
@@ -119,7 +122,7 @@ class ASync(BaseUIController):
                 if TOOL_OUTPUT_TYPE is None:
                     raise Exception("Error: ToolOutput object not found")
 
-                original_history = trans.sa_session.query(trans.app.model.History).get(data.history_id)
+                original_history = trans.sa_session.query(History).get(data.history_id)
                 job, *_ = tool.execute(trans, incoming=params, history=original_history)
                 trans.app.job_manager.enqueue(job, tool=tool)
             else:
@@ -128,8 +131,7 @@ class ASync(BaseUIController):
                 data.state = data.blurb = "error"
                 data.info = f"Error -> {STATUS}"
 
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
             return f"Data {data_id} with status {STATUS} received. OK"
         else:
@@ -184,9 +186,7 @@ class ASync(BaseUIController):
             # data.state = jobs.JOB_OK
             # history.datasets.add_dataset( data )
 
-            data = trans.app.model.HistoryDatasetAssociation(
-                create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE
-            )
+            data = HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
             trans.app.security_agent.set_all_dataset_permissions(
                 data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history)
             )
@@ -199,14 +199,13 @@ class ASync(BaseUIController):
             data.state = data.states.NEW
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
             trans.sa_session.add(trans.history)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             # Need to explicitly create the file
             data.dataset.object_store.create(data.dataset)
-            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
+            trans.log_event(f"Added dataset {data.id} to history {trans.history.id}", tool_id=tool_id)
 
             try:
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 params.update({"GALAXY_URL": galaxy_url})
                 params.update({"data_id": data.id})
@@ -229,7 +228,6 @@ class ASync(BaseUIController):
                 data.info = unicodify(e)
                 data.state = data.blurb = data.states.ERROR
 
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
         return trans.fill_template("root/tool_runner.mako", out_data={}, num_jobs=1, job_errors=[])

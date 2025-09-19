@@ -38,7 +38,7 @@
                 </b-button>
             </span>
             <b-button
-                v-if="currentUser.is_admin"
+                v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
                 :to="{
@@ -217,7 +217,7 @@ export default {
                     this.populateDatasetDetailsTable(response);
                     Toast.success("Changes to library dataset saved.");
                 },
-                (error) => Toast.error(error)
+                (error) => Toast.error(error),
             );
         },
         updateDataset() {
@@ -229,7 +229,7 @@ export default {
                         this.populateDatasetDetailsTable(response);
                         Toast.success("Changes to library dataset saved.");
                     },
-                    (error) => Toast.error(error)
+                    (error) => Toast.error(error),
                 );
             }
             this.isEditMode = false;

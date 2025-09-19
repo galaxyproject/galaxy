@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { BDropdown } from "bootstrap-vue";
+import { faStop } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import { BButton, BDropdown } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
 
+import { getAppRoot } from "@/onload/loadConfig";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { prependPath } from "@/utils/redirect";
 
 const props = defineProps({
@@ -12,6 +19,8 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
+    isRunningInteractiveTool: { type: Boolean, default: false },
+    interactiveToolId: { type: String, default: "" },
 });
 
 const emit = defineEmits<{
@@ -23,21 +32,16 @@ const emit = defineEmits<{
     (e: "unhide"): void;
 }>();
 
+const entryPointStore = useEntryPointStore();
+const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
-const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
-
-const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
-
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
-
 const editDisabled = computed(() =>
-    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
+    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state),
 );
-
-const displayUrl = computed(() => prependPath(props.itemUrls.display));
-
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
+const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.itemUrls.display) : undefined));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -46,10 +50,29 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
 function onDelete($event: MouseEvent) {
-    if (isCollection.value) {
+    if (props.isRunningInteractiveTool) {
+        stopInteractiveTool();
+    } else if (isCollection.value) {
         deleteCollectionMenu.value?.show();
     } else {
         onDeleteItem();
+    }
+}
+
+async function stopInteractiveTool() {
+    if (!props.interactiveToolId) {
+        console.error("No interactive tool ID provided");
+        return;
+    }
+
+    try {
+        const root = getAppRoot();
+        const url = `${root}api/entry_points/${props.interactiveToolId}`;
+        await axios.delete(url);
+        entryPointStore.removeEntryPoint(props.interactiveToolId);
+    } catch (error) {
+        console.error("Failed to stop interactive tool:", error);
+        errorMessage.value = "Failed to stop interactive tool";
     }
 }
 
@@ -76,8 +99,9 @@ function onDisplay($event: MouseEvent) {
 <template>
     <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
-        <b-button
+        <BButton
             v-if="isCollection && canShowCollectionDetails"
+            v-b-tooltip.hover
             class="collection-job-details-btn px-1"
             title="Show Details"
             size="sm"
@@ -85,22 +109,23 @@ function onDisplay($event: MouseEvent) {
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
             <icon icon="info-circle" />
-        </b-button>
+        </BButton>
         <!-- Common for all content items -->
-        <b-button
+        <BButton
             v-if="isDataset"
-            :disabled="displayDisabled"
-            :title="displayButtonTitle"
+            v-b-tooltip.hover
+            title="View"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <icon icon="eye" />
-        </b-button>
-        <b-button
+            <ScanEye absolute-stroke-width :size="16" />
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem"
+            v-b-tooltip.hover
             :disabled="editDisabled"
             :title="editButtonTitle"
             tabindex="0"
@@ -110,9 +135,20 @@ function onDisplay($event: MouseEvent) {
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
             <icon icon="pen" />
-        </b-button>
-        <b-button
-            v-if="writable && isHistoryItem && !isDeleted"
+        </BButton>
+        <BButton
+            v-if="isRunningInteractiveTool"
+            v-b-tooltip.hover
+            class="delete-btn px-1"
+            title="Stop this Interactive Tool"
+            size="sm"
+            variant="link"
+            @click.stop="onDelete($event)">
+            <FontAwesomeIcon :icon="faStop" />
+        </BButton>
+        <BButton
+            v-else-if="writable && isHistoryItem && !isDeleted"
+            v-b-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
             title="Delete"
@@ -133,9 +169,10 @@ function onDisplay($event: MouseEvent) {
                     Collection and elements
                 </b-dropdown-item>
             </BDropdown>
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem && isDeleted"
+            v-b-tooltip.hover
             tabindex="0"
             class="undelete-btn px-1"
             title="Undelete"
@@ -143,9 +180,10 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             @click.stop="emit('undelete')">
             <icon icon="trash-restore" />
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             v-if="writable && isHistoryItem && !isVisible"
+            v-b-tooltip.hover
             tabindex="0"
             class="unhide-btn px-1"
             title="Unhide"
@@ -153,7 +191,7 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             @click.stop="emit('unhide')">
             <icon icon="eye-slash" />
-        </b-button>
+        </BButton>
     </span>
 </template>
 

@@ -37,7 +37,7 @@ const filteredNotifications = computed(() => {
     return notifications.value.filter(filterNotifications);
 });
 const allSelected = computed(
-    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
+    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length,
 );
 
 function filterNotifications(notification: UserNotification) {
@@ -76,11 +76,16 @@ function togglePreferences() {
 <template>
     <div aria-labelledby="notifications-list" class="notifications-list-container">
         <div class="notifications-list-header">
-            <Heading id="notifications-title" h1 separator inline size="xl" class="flex-grow-1 mb-2">
+            <Heading id="notifications-title" h1 separator inline size="lg" class="flex-grow-1 mb-2">
                 Notifications
             </Heading>
 
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+            <BButton
+                class="mb-2"
+                size="sm"
+                variant="outline-primary"
+                :pressed="preferencesOpen"
+                @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
             </BButton>
@@ -164,14 +169,14 @@ function togglePreferences() {
                 name="notifications-list"
                 class="notifications-list"
                 tag="div">
-                <div v-for="item in filteredNotifications" :key="item.id">
-                    <NotificationCard
-                        selectable
-                        unread-border
-                        :notification="item"
-                        :selected="selectedNotificationIds?.includes(item.id)"
-                        @select="selectOrDeselectNotification" />
-                </div>
+                <NotificationCard
+                    v-for="notification in filteredNotifications"
+                    :key="notification.id"
+                    selectable
+                    unread-border
+                    :notification="notification"
+                    :selected="selectedNotificationIds?.includes(notification.id)"
+                    @select="selectOrDeselectNotification" />
             </TransitionGroup>
         </div>
     </div>

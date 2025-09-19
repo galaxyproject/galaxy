@@ -2,14 +2,14 @@ import { faArrowLeft, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
-import { type WorkflowInvocation } from "@/api/invocations";
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import type { WorkflowInvocation } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -27,7 +27,7 @@ async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     const userStore = useUserStore();
     if (userStore.currentUser?.isAnonymous || !userStore.currentUser || !extraProps || !extraProps["history_id"]) {
@@ -130,7 +130,7 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
             const workflow = workflowStore.getStoredWorkflowByInstanceId(
-                invocation.workflow_id
+                invocation.workflow_id,
             ) as unknown as StoredWorkflowDetailed;
             return !workflow?.deleted;
         },

@@ -3,11 +3,199 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+============
+Enhancements
+============
+
+* add fasta.bz2 as auto_compressed type by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20496 <https://github.com/galaxyproject/galaxy/pull/20496>`_
+* Add datatype for LexicMap index by `@Smeds <https://github.com/Smeds>`_ in `#20586 <https://github.com/galaxyproject/galaxy/pull/20586>`_
+* Add mzMLb and MBI datatypes by `@chambm <https://github.com/chambm>`_ in `#20632 <https://github.com/galaxyproject/galaxy/pull/20632>`_
+* Pairtool updated format and sniffers by `@Smeds <https://github.com/Smeds>`_ in `#20634 <https://github.com/galaxyproject/galaxy/pull/20634>`_
+* Add support for M4A audio files by `@arash77 <https://github.com/arash77>`_ in `#20667 <https://github.com/galaxyproject/galaxy/pull/20667>`_
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix `galaxy-config` script, move install to `galaxy-dependencies` in app package by `@natefoo <https://github.com/natefoo>`_ in `#20531 <https://github.com/galaxyproject/galaxy/pull/20531>`_
+
+=============
+Other changes
+=============
+
+* Fixes for static handling and the web_client package by `@natefoo <https://github.com/natefoo>`_ in `#20516 <https://github.com/galaxyproject/galaxy/pull/20516>`_
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+* Remove hgv_sift from tool_conf.xml.sample by `@natefoo <https://github.com/natefoo>`_ in `#19972 <https://github.com/galaxyproject/galaxy/pull/19972>`_
+* Add job config variable for singularity `--contain` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20400 <https://github.com/galaxyproject/galaxy/pull/20400>`_
+
+============
+Enhancements
+============
+
+* Isolate singularity containers more thoroughly for better reproducibility. by `@rhpvorderman <https://github.com/rhpvorderman>`_ in `#18628 <https://github.com/galaxyproject/galaxy/pull/18628>`_
+* Implement tool markdown reports. by `@jmchilton <https://github.com/jmchilton>`_ in `#19054 <https://github.com/galaxyproject/galaxy/pull/19054>`_
+* Calculate hash for new non-deferred datasets when finishing a job by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19181 <https://github.com/galaxyproject/galaxy/pull/19181>`_
+* eLabFTW integration via Galaxy file source by `@kysrpex <https://github.com/kysrpex>`_ in `#19319 <https://github.com/galaxyproject/galaxy/pull/19319>`_
+* Misc fixes 202412 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19341 <https://github.com/galaxyproject/galaxy/pull/19341>`_
+* Add Dataverse RDM repository integration by `@KaiOnGitHub <https://github.com/KaiOnGitHub>`_ in `#19367 <https://github.com/galaxyproject/galaxy/pull/19367>`_
+* Clarify that extra_scopes is sometimes non-optional by `@martenson <https://github.com/martenson>`_ in `#19385 <https://github.com/galaxyproject/galaxy/pull/19385>`_
+* Change galaxy system user uid for K8s image by `@afgane <https://github.com/afgane>`_ in `#19403 <https://github.com/galaxyproject/galaxy/pull/19403>`_
+* Prevent users from reusing a banned email after account is purged by `@jdavcs <https://github.com/jdavcs>`_ in `#19413 <https://github.com/galaxyproject/galaxy/pull/19413>`_
+* Add IGB display support for CRAM files by `@paige-kulzer <https://github.com/paige-kulzer>`_ in `#19428 <https://github.com/galaxyproject/galaxy/pull/19428>`_
+* Add config options for tool dependency installs by `@afgane <https://github.com/afgane>`_ in `#19565 <https://github.com/galaxyproject/galaxy/pull/19565>`_
+* Support setting masthead height in a theme by `@ksuderman <https://github.com/ksuderman>`_ in `#19581 <https://github.com/galaxyproject/galaxy/pull/19581>`_
+* Add failed jobs working directory cleanup as a celery periodic task by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#19594 <https://github.com/galaxyproject/galaxy/pull/19594>`_
+* Enhance OpenAI Chat Integration by `@uwwint <https://github.com/uwwint>`_ in `#19612 <https://github.com/galaxyproject/galaxy/pull/19612>`_
+* Data-source tool for DICED database (https://diced.lerner.ccf.org/) added. by `@jaidevjoshi83 <https://github.com/jaidevjoshi83>`_ in `#19689 <https://github.com/galaxyproject/galaxy/pull/19689>`_
+* Update RStudio IT by `@afgane <https://github.com/afgane>`_ in `#19711 <https://github.com/galaxyproject/galaxy/pull/19711>`_
+* Add bigbed to bed converter and tests by `@d-callan <https://github.com/d-callan>`_ in `#19787 <https://github.com/galaxyproject/galaxy/pull/19787>`_
+* Decrease sentry_sdk.errors log level to INFO by `@natefoo <https://github.com/natefoo>`_ in `#19951 <https://github.com/galaxyproject/galaxy/pull/19951>`_
+* Allow different AI providers (as long as they are openai compatible) by `@uwwint <https://github.com/uwwint>`_ in `#19989 <https://github.com/galaxyproject/galaxy/pull/19989>`_
+* Add vitesscejson datatype by `@guerler <https://github.com/guerler>`_ in `#20027 <https://github.com/galaxyproject/galaxy/pull/20027>`_
+* Add VTK Visualization Toolkit Plugin by `@guerler <https://github.com/guerler>`_ in `#20028 <https://github.com/galaxyproject/galaxy/pull/20028>`_
+* Add docx datatype by `@bgruening <https://github.com/bgruening>`_ in `#20055 <https://github.com/galaxyproject/galaxy/pull/20055>`_
+* Add markdown datatype by `@bgruening <https://github.com/bgruening>`_ in `#20056 <https://github.com/galaxyproject/galaxy/pull/20056>`_
+* Add flac audio format by `@bgruening <https://github.com/bgruening>`_ in `#20057 <https://github.com/galaxyproject/galaxy/pull/20057>`_
+* Add rd datatype by `@richard-burhans <https://github.com/richard-burhans>`_ in `#20060 <https://github.com/galaxyproject/galaxy/pull/20060>`_
+* Enhance external login interface styling by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20100 <https://github.com/galaxyproject/galaxy/pull/20100>`_
+* Add specific datatypes for Cytoscape and Kepler.gl by `@guerler <https://github.com/guerler>`_ in `#20117 <https://github.com/galaxyproject/galaxy/pull/20117>`_
+* Add more metadata, esp `infer_from` to datatypes configuration by `@bgruening <https://github.com/bgruening>`_ in `#20142 <https://github.com/galaxyproject/galaxy/pull/20142>`_
+* Add three AAI providers by `@martenson <https://github.com/martenson>`_ in `#20165 <https://github.com/galaxyproject/galaxy/pull/20165>`_
+* Add replacement_dataset option to collection filter tools by `@simonbray <https://github.com/simonbray>`_ in `#20166 <https://github.com/galaxyproject/galaxy/pull/20166>`_
+* Visualization-First Display functionality by `@dannon <https://github.com/dannon>`_ in `#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`_
+* Deprecate ``enable_tool_document_cache`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20433 <https://github.com/galaxyproject/galaxy/pull/20433>`_
+* Add Aladin as standard FITS viewer by `@bgruening <https://github.com/bgruening>`_ in `#20465 <https://github.com/galaxyproject/galaxy/pull/20465>`_
+* Add molstar as default viewer for some molecule formats by `@bgruening <https://github.com/bgruening>`_ in `#20467 <https://github.com/galaxyproject/galaxy/pull/20467>`_
+
+=============
+Other changes
+=============
+
+* Make job cache generally available by `@dannon <https://github.com/dannon>`_ in `#19798 <https://github.com/galaxyproject/galaxy/pull/19798>`_
+* Rename vitessce_json file_ext to vitessce.json by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20473 <https://github.com/galaxyproject/galaxy/pull/20473>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Reduce default framework tool test timeout to 60 seconds by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19819 <https://github.com/galaxyproject/galaxy/pull/19819>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Add rDock prm datatype by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19783 <https://github.com/galaxyproject/galaxy/pull/19783>`_
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix conditional dependency path resolution by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19723 <https://github.com/galaxyproject/galaxy/pull/19723>`_
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Updated registration warning message by `@dannon <https://github.com/dannon>`_ in `#19598 <https://github.com/galaxyproject/galaxy/pull/19598>`_
+
+============
+Enhancements
+============
+
+* Add fastk_ktab_tar datatype required for fastk tool by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#19615 <https://github.com/galaxyproject/galaxy/pull/19615>`_
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix loading error for built in tool `sift` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18357 <https://github.com/galaxyproject/galaxy/pull/18357>`_
+* Add gtf to auto_compressed_types by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19175 <https://github.com/galaxyproject/galaxy/pull/19175>`_
+* Partial backport of #19331 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19342 <https://github.com/galaxyproject/galaxy/pull/19342>`_
+* Fix to only show ChatGXY when available. by `@dannon <https://github.com/dannon>`_ in `#19389 <https://github.com/galaxyproject/galaxy/pull/19389>`_
+
+============
+Enhancements
+============
+
+* Experimental galactic wizard by `@dannon <https://github.com/dannon>`_ in `#15860 <https://github.com/galaxyproject/galaxy/pull/15860>`_
+* Improve usability of Directory datatype by `@wm75 <https://github.com/wm75>`_ in `#17614 <https://github.com/galaxyproject/galaxy/pull/17614>`_
+* Add pod5 datatype by `@TomHarrop <https://github.com/TomHarrop>`_ in `#18419 <https://github.com/galaxyproject/galaxy/pull/18419>`_
+* Add onedata templates by `@bwalkowi <https://github.com/bwalkowi>`_ in `#18457 <https://github.com/galaxyproject/galaxy/pull/18457>`_
+* Support high-availability setups for the interactive tools proxy by `@kysrpex <https://github.com/kysrpex>`_ in `#18481 <https://github.com/galaxyproject/galaxy/pull/18481>`_
+* Minor config documentation enhancements by `@bgruening <https://github.com/bgruening>`_ in `#18499 <https://github.com/galaxyproject/galaxy/pull/18499>`_
+* Add Tool-Centric APIs to the Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18524 <https://github.com/galaxyproject/galaxy/pull/18524>`_
+* Bring your own file sources: Add the WebDAV template and configuration by `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`_ in `#18598 <https://github.com/galaxyproject/galaxy/pull/18598>`_
+* Add BlobToolkit to the list of interactive tools by `@Delphine-L <https://github.com/Delphine-L>`_ in `#18630 <https://github.com/galaxyproject/galaxy/pull/18630>`_
+* Remove `defaults` channel for conda usage by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18757 <https://github.com/galaxyproject/galaxy/pull/18757>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Jupyter Interactive Tool 1.0.1/24.07 by `@natefoo <https://github.com/natefoo>`_ in `#18861 <https://github.com/galaxyproject/galaxy/pull/18861>`_
+* Allow setting a few global defaults for file source plugin types. by `@jmchilton <https://github.com/jmchilton>`_ in `#18909 <https://github.com/galaxyproject/galaxy/pull/18909>`_
+* Add filter null collection operation tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18928 <https://github.com/galaxyproject/galaxy/pull/18928>`_
+* Add hint to the tool schema about runtime conditional changes by `@martenson <https://github.com/martenson>`_ in `#18996 <https://github.com/galaxyproject/galaxy/pull/18996>`_
+* Irods ssl connection by `@pauldg <https://github.com/pauldg>`_ in `#19014 <https://github.com/galaxyproject/galaxy/pull/19014>`_
+* Add some Zarr-based datatypes by `@davelopez <https://github.com/davelopez>`_ in `#19040 <https://github.com/galaxyproject/galaxy/pull/19040>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+* Add XML based `vtk` datatype by `@tStehling <https://github.com/tStehling>`_ in `#19104 <https://github.com/galaxyproject/galaxy/pull/19104>`_
+* Allow a posix file source to prefer linking. by `@jmchilton <https://github.com/jmchilton>`_ in `#19132 <https://github.com/galaxyproject/galaxy/pull/19132>`_
+* Add bcsp datatype by `@SantaMcCloud <https://github.com/SantaMcCloud>`_ in `#19365 <https://github.com/galaxyproject/galaxy/pull/19365>`_
+* add MuData as subclass of H5 by `@pavanvidem <https://github.com/pavanvidem>`_ in `#19416 <https://github.com/galaxyproject/galaxy/pull/19416>`_
 
 -------------------
 24.1.4 (2024-12-11)

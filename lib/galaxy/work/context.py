@@ -1,21 +1,20 @@
 import abc
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
+    TYPE_CHECKING,
 )
 
 from typing_extensions import Literal
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.model import (
-    GalaxySession,
-    History,
-    Role,
-)
-from galaxy.model.base import transaction
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        GalaxySession,
+        History,
+        Role,
+    )
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -35,17 +34,17 @@ class WorkRequestContext(ProvidesHistoryContext):
         self,
         app,
         user=None,
-        history=None,
+        history: Optional["History"] = None,
         workflow_building_mode=False,
         url_builder=None,
-        galaxy_session: Optional[GalaxySession] = None,
+        galaxy_session: Optional["GalaxySession"] = None,
     ):
         self._app = app
         self.__user = user
-        self.__user_current_roles: Optional[List[Role]] = None
+        self.__user_current_roles: Optional[list[Role]] = None
         self.__history = history
         self._url_builder = url_builder
-        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[str, ...], Any] = {}
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
@@ -168,12 +167,11 @@ class SessionRequestContext(WorkRequestContext):
         if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
 
 def proxy_work_context_for_history(
-    trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False
+    trans: ProvidesHistoryContext, history: Optional["History"] = None, workflow_building_mode=False
 ) -> WorkRequestContext:
     """Create a WorkContext for supplied context with potentially different history.
 

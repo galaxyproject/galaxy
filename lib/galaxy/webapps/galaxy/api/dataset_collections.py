@@ -1,5 +1,8 @@
 from logging import getLogger
-from typing import Optional
+from typing import (
+    Annotated,
+    Optional,
+)
 
 from fastapi import (
     Body,
@@ -8,9 +11,14 @@ from fastapi import (
     Response,
     status,
 )
-from typing_extensions import Annotated
+from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
+    CreateWorkbookRequest,
+    ParsedWorkbook,
+    ParseWorkbook,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDCA,
@@ -27,11 +35,15 @@ from galaxy.webapps.galaxy.api import (
 from galaxy.webapps.galaxy.api.common import (
     DatasetCollectionElementIdPathParam,
     HistoryHDCAIDPathParam,
+    serve_workbook,
 )
 from galaxy.webapps.galaxy.services.dataset_collections import (
+    CreateWorkbookForCollectionApi,
     DatasetCollectionAttributesResult,
     DatasetCollectionContentElements,
     DatasetCollectionsService,
+    ParsedWorkbookForCollection,
+    ParseWorkbookForCollectionApi,
     SuitableConverters,
     UpdateCollectionAttributePayload,
 )
@@ -51,6 +63,19 @@ ViewTypeQueryParam: str = Query(
     description="The view of collection instance to return.",
 )
 
+Base64ColumnDefinitionsQueryParam: str = Query(
+    ...,
+    description="Base64 encoding of column definitions.",
+)
+Base64PrefixValuesQueryParam: str = Query(
+    None,
+    description="Prefix values for the seeding the workbook, base64 encoded.",
+)
+WorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
+
 
 @router.cbv
 class FastAPIDatasetCollections:
@@ -68,55 +93,111 @@ class FastAPIDatasetCollections:
         return self.service.create(trans, payload)
 
     @router.post(
-        "/api/dataset_collections/{id}/copy",
+        "/api/sample_sheet_workbook",
+        summary="Create an XLSX workbook for a sample sheet definition.",
+        response_class=StreamingResponse,
+        operation_id="dataset_collections__workbook_download",
+    )
+    def create_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        filename: Optional[str] = WorkbookFilenameQueryParam,
+        payload: CreateWorkbookRequest = Body(...),
+    ):
+        output = self.service.create_workbook(payload)
+        return serve_workbook(output, filename)
+
+    @router.post(
+        "/api/sample_sheet_workbook/parse",
+        summary="Parse an XLSX workbook for a sample sheet definition and supplied file contents.",
+        operation_id="dataset_collections__workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseWorkbook = Body(...),
+    ) -> ParsedWorkbook:
+        return self.service.parse_workbook(payload)
+
+    @router.post(
+        "/api/dataset_collections/{hdca_id}/sample_sheet_workbook",
+        summary="Create an XLSX workbook for a sample sheet definition targeting an existing collection.",
+        response_class=StreamingResponse,
+        operation_id="dataset_collections__workbook_download_for_collection",
+    )
+    def create_workbook_for_collection(
+        self,
+        hdca_id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        filename: Optional[str] = WorkbookFilenameQueryParam,
+        payload: CreateWorkbookForCollectionApi = Body(...),
+    ):
+        output = self.service.create_workbook_for_collection(trans, hdca_id, payload)
+        return serve_workbook(output, filename)
+
+    @router.post(
+        "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/parse",
+        summary="Parse an XLSX workbook for a sample sheet definition and supplied file contents.",
+        operation_id="dataset_collections__workbook_parse_for_collection",
+    )
+    def parse_workbook_for_collection(
+        self,
+        hdca_id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseWorkbookForCollectionApi = Body(...),
+    ) -> ParsedWorkbookForCollection:
+        return self.service.parse_workbook_for_collection(trans, hdca_id, payload)
+
+    @router.post(
+        "/api/dataset_collections/{hdca_id}/copy",
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def copy(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
-        self.service.copy(trans, id, payload)
+        self.service.copy(trans, hdca_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
-        "/api/dataset_collections/{id}/attributes",
+        "/api/dataset_collections/{hdca_id}/attributes",
         summary="Returns `dbkey`/`extension` attributes for all the collection elements.",
     )
     def attributes(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> DatasetCollectionAttributesResult:
-        return self.service.attributes(trans, id, instance_type)
+        return self.service.attributes(trans, hdca_id, instance_type)
 
     @router.get(
-        "/api/dataset_collections/{id}/suitable_converters",
+        "/api/dataset_collections/{hdca_id}/suitable_converters",
         summary="Returns a list of applicable converters for all datatypes in the given collection.",
     )
     def suitable_converters(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> SuitableConverters:
-        return self.service.suitable_converters(trans, id, instance_type)
+        return self.service.suitable_converters(trans, hdca_id, instance_type)
 
     @router.get(
-        "/api/dataset_collections/{id}",
+        "/api/dataset_collections/{hdca_id}",
         summary="Returns detailed information about the given collection.",
     )
     def show(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
         view: str = ViewTypeQueryParam,
     ) -> AnyHDCA:
-        return self.service.show(trans, id, instance_type, view=view)
+        return self.service.show(trans, hdca_id, instance_type, view=view)
 
     @router.get(
         "/api/dataset_collections/{hdca_id}/contents/{parent_id}",

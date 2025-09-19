@@ -10,7 +10,7 @@ maintainers = [
 ]
 license = {file = "LICENSE.txt"}
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "a2wsgi",
     "aiofiles",
@@ -24,12 +24,13 @@ dependencies = [
     "boltons",
     "boto",
     "bx-python",
-    "celery",
+    "celery>=5.4.0",  # prefer not downgrading this to upgrading typing-extensions
     "cloudauthz==0.6.0",
     "cloudbridge",
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
+    "cwl-utils>=0.13",
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
     "dictobj",
     "dnspython",
@@ -37,23 +38,20 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi-slim>=0.111.0",
-    "fissix ; python_version>='3.13'",
+    "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "graphene",
-    "graphene-sqlalchemy>=3.0.0rc1",  # need a beta release to be compat. with starlette plugin
-    "graphql-core",
-    "gravity>=1.0.4",
+    "gravity>=1.1.1",
     "gunicorn",
-    "gxformat2",
+    "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
-    "h5py",  # Python 3.8 support
-    "h5py>=3.12 ; python_version>='3.9'",  # Python 3.13 support
-    "importlib-resources ; python_version<'3.9'",  # for importlib.{abc.Traversable,resources.{files, Package}}
-    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "h5py>=3.12",  # Python 3.13 support
+    "httpx",
+    "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
+    "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
-    "kombu>=5.3",  # for importlib-metadata fix
+    "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
     "Mako",
     "Markdown",
@@ -62,9 +60,9 @@ dependencies = [
     "mrcfile",
     "msal",
     "nodeenv",
-    "numpy",
-    "numpy>=1.26.0 ; python_version=='3.9'",  # Python 3.12 support
+    "numpy>=1.26.0",  # Python 3.12 support
     "numpy>=2.1.0 ; python_version>='3.10'",  # Python 3.13 support
+    "openpyxl>=3.1.5",  # Minimum version ever tested with
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
     "Parsley",
@@ -72,13 +70,14 @@ dependencies = [
     "pebble",
     "pillow",
     "psutil",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.10",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "PyJWT",
     "pykwalify",
     "pylibmagic",
     "pyparsing",
+    "pypng",
     "pysam>=0.21",  # for Python 3.11 support on macOS
     "python-dateutil",
     "python-magic",
@@ -92,14 +91,13 @@ dependencies = [
     "Routes",
     "s3fs>=2023.1.0",
     "schema-salad>=8.7.20240905150001",  # Python 3.13 support
+    "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
-    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
-    "sqlitedict",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlparse",
     "starlette",
     "starlette-context",
-    "starlette-graphene3",
     "svgwrite",
     "tifffile",
     "tuswsgi",
@@ -109,6 +107,7 @@ dependencies = [
     "WebOb>=1.8.9",  # Python 3.13 support
     "Whoosh",
     "zipstream-new",
+    "fsspec>=2025.7.0",
 ]
 
 [project.urls]
@@ -118,21 +117,13 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "httpx",
-    "isort",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
@@ -148,17 +139,28 @@ dev = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "rucio-clients>=33.6.0 ; python_version>='3.9'",  # https://github.com/galaxyproject/galaxy/pull/17156
+    "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
+    "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
     "tuspy",
     "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",
@@ -182,7 +184,7 @@ typecheck = [
 
 [tool.black]
 line-length = 120
-target-version = ['py38']
+target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
@@ -195,7 +197,7 @@ extend-exclude = '''
 isort = true
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
@@ -211,7 +213,8 @@ select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
+# UP006 and UP035 are PEP 585 type annotations
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP006", "UP035"]
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true
@@ -230,14 +233,26 @@ keep-runtime-typing = true
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
-# Don't check some pyupgrade rules on generated files
-"lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
-"lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
-"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
-"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]
+# Don't check pyupgrade rules on generated files
+"lib/galaxy/schema/bco/*" = ["UP"]
+"lib/galaxy/schema/drs/*" = ["UP"]
+"lib/tool_shed_client/schema/trs.py" = ["UP"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
+# Don't check some pyupgrade rules on packages for Pulsar, which need to stay compatible with Python 3.7
+"lib/galaxy/exceptions/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"lib/galaxy/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"lib/galaxy/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"lib/galaxy/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"lib/galaxy/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"scripts/check_python.py" = ["UP006", "UP007", "UP010", "UP032", "UP033", "UP035", "UP036"]
+"test/unit/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"test/unit/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"test/unit/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+"test/unit/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
 
 [tool.uv]
 constraint-dependencies = [
+    "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
 ]
 default-groups = []

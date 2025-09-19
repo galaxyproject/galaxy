@@ -10,7 +10,8 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
+import type { UpdateHistoryPayload } from "@/api/histories";
+import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
@@ -37,6 +38,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
+    const changingCurrentHistory = ref(false);
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -96,12 +98,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
     });
 
     async function setCurrentHistory(historyId: string) {
-        try {
-            const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
-            selectHistory(currentHistory);
-            setFilterText(historyId, "");
-        } catch (error) {
-            rethrowSimple(error);
+        if (!changingCurrentHistory.value) {
+            try {
+                changingCurrentHistory.value = true;
+                const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
+                selectHistory(currentHistory);
+                setFilterText(historyId, "");
+            } catch (error) {
+                rethrowSimple(error);
+            } finally {
+                changingCurrentHistory.value = false;
+            }
         }
     }
 
@@ -299,7 +306,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param reduction Whether it is a reduction or addition (default)
      */
     async function handleTotalCountChange(count = 0, reduction = false) {
-        historiesOffset.value += !reduction ? count : -count;
+        const adjustment = !reduction ? count : -count;
+        historiesOffset.value = Math.max(0, historiesOffset.value + adjustment);
         await loadTotalHistoryCount();
     }
 
@@ -363,9 +371,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function secureHistory(history: HistorySummary) {
-        const securedHistory = (await secureHistoryOnServer(history)) as HistorySummaryExtended;
+    async function secureHistory(history: HistorySummary): Promise<{ sharingStatusChanged: boolean }> {
+        const { securedHistory, sharingStatusChanged } = await secureHistoryOnServer(history);
         setHistory(securedHistory);
+        return {
+            sharingStatusChanged,
+        };
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
@@ -416,7 +427,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return history;
     }
 
-    async function updateHistory({ id, ...update }: HistorySummary) {
+    async function updateHistory(id: string, update: UpdateHistoryPayload) {
         const savedHistory = (await updateHistoryFields(id, update)) as HistorySummaryExtended;
         setHistory(savedHistory);
     }
@@ -440,6 +451,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     return {
         histories,
+        changingCurrentHistory,
         currentHistory,
         currentHistoryId,
         currentFilterText,

@@ -183,7 +183,7 @@ class RequirementNameMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements_and_containers()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -195,7 +195,7 @@ class RequirementVersionMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements_and_containers()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -207,7 +207,7 @@ class RequirementVersionWhitespace(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements_and_containers()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -223,7 +223,7 @@ class ResourceRequirementExpression(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = tool_source.parse_requirements_and_containers()
         for rr in resource_requirements:
             if rr.runtime_required:
                 lint_ctx.warn(
@@ -237,7 +237,7 @@ class BioToolsValid(Linter):
         _, tool_node = _tool_xml_and_root(tool_source)
         xrefs = tool_source.parse_xrefs()
         for xref in xrefs:
-            if xref["reftype"] != "bio.tools":
+            if xref["type"] != "bio.tools":
                 continue
             metadata_source = ApiBiotoolsMetadataSource()
             if not metadata_source.get_biotools_metadata(xref["value"]):

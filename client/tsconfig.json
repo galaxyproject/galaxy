@@ -1,8 +1,9 @@
 {
     "extends": "@vue/tsconfig/tsconfig.json",
     "compilerOptions": {
-        "target": "es2016",
-        "module": "es2020",
+        "target": "es2022",
+        "module": "es2022",
+        "moduleResolution": "Bundler",
 
         "verbatimModuleSyntax": true,
 

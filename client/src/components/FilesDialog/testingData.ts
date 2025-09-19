@@ -1,4 +1,4 @@
-import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
@@ -68,6 +68,20 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             search: false,
             sorting: false,
         },
+    },
+    {
+        id: "c5504eb8-51cf-4b44-88f8-24347c031f52",
+        type: "ftp",
+        label: "My own FTP",
+        doc: "This FTP is accessible only by me",
+        browsable: true,
+        writable: true,
+        supports: {
+            pagination: true,
+            search: true,
+            sorting: false,
+        },
+        uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
     },
 ];
 

@@ -9,13 +9,11 @@ import os
 import re
 import string
 import subprocess
+from collections.abc import Iterable
 from itertools import islice
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     Optional,
 )
 
@@ -76,7 +74,7 @@ class SequenceSplitLocations(data.Text):
                 parsed_data = json.load(open(dataset.get_file_name()))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
                 dataset.peek = data.get_file_peek(dataset.get_file_name())
-                dataset.blurb = "%d sections" % len(parsed_data["sections"])
+                dataset.blurb = "{} sections".format(len(parsed_data["sections"]))
             except Exception:
                 dataset.peek = "Not FQTOC file"
                 dataset.blurb = "Not FQTOC file"
@@ -139,7 +137,7 @@ class Sequence(data.Text):
             dataset.blurb = "file purged from disk"
 
     @staticmethod
-    def get_sequences_per_file(total_sequences: int, split_params: Dict) -> List:
+    def get_sequences_per_file(total_sequences: int, split_params: dict) -> list:
         if split_params["split_mode"] == "number_of_parts":
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params["split_size"])
@@ -218,7 +216,7 @@ class Sequence(data.Text):
         return directories
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -227,7 +225,7 @@ class Sequence(data.Text):
     @staticmethod
     def get_split_commands_with_toc(
         input_name: str, output_name: str, toc_file: Any, start_sequence: int, sequence_count: int
-    ) -> List:
+    ) -> list:
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
@@ -299,7 +297,7 @@ class Sequence(data.Text):
     @staticmethod
     def get_split_commands_sequential(
         is_compressed: bool, input_name: str, output_name: str, start_sequence: int, sequence_count: int
-    ) -> List:
+    ) -> list:
         """
         Does a brain-dead sequential scan & extract of certain sequences
         >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
@@ -357,7 +355,7 @@ class Alignment(data.Text):
     )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -445,7 +443,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -465,7 +463,7 @@ class Fasta(Sequence):
             raise Exception("Tool does not define a split mode")
         elif split_params["split_mode"] == "number_of_parts":
             split_size = int(split_params["split_size"])
-            log.debug("Split %s into %i parts..." % (input_file, split_size))
+            log.debug("Split %s into %i parts...", input_file, split_size)
             # if split_mode = number_of_parts, and split_size = 10, and
             # we know the number of sequences (say 1234), then divide by
             # by ten, giving ten files of approx 123 sequences each.
@@ -484,7 +482,7 @@ class Fasta(Sequence):
             # Split the input file into as many sub-files as required,
             # each containing to_size many sequences
             batch_size = int(split_params["split_size"])
-            log.debug("Split %s into batches of %i records..." % (input_file, batch_size))
+            log.debug("Split %s into batches of %i records...", input_file, batch_size)
             cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
             raise Exception(f"Unsupported split mode {split_params['split_mode']}")
@@ -496,7 +494,7 @@ class Fasta(Sequence):
         This does of course preserve complete records - it only splits at the
         start of a new FASTQ sequence record.
         """
-        log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i bytes", input_file, chunk_size)
         with open(input_file) as f:
             part_file = None
             try:
@@ -530,7 +528,7 @@ class Fasta(Sequence):
     @classmethod
     def _count_split(cls, input_file: str, chunk_size: int, subdir_generator_function: Callable) -> None:
         """Split a FASTA file into chunks based on counting records."""
-        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences", input_file, chunk_size)
         with open(input_file) as f:
             part_file = None
             try:
@@ -793,7 +791,7 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -818,7 +816,7 @@ class BaseFastq(Sequence):
         return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
 
     @staticmethod
-    def process_split_file(data: Dict) -> bool:
+    def process_split_file(data: dict) -> bool:
         """
         This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
         to create the input files for the Task. The parameters:
@@ -855,7 +853,7 @@ class BaseFastq(Sequence):
         return cls.check_block(block)
 
     @classmethod
-    def check_block(cls, block: List) -> bool:
+    def check_block(cls, block: list) -> bool:
         if (
             len(block) == 4
             and block[0][0]
@@ -1065,7 +1063,7 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[List] = None) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

@@ -2,7 +2,6 @@ import os
 from functools import wraps
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -96,7 +95,7 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
 
 class ShedGalaxyInteractorApi(GalaxyInteractorApi):
     def __init__(self, galaxy_url: str):
-        interactor_kwds: Dict[str, Any] = {}
+        interactor_kwds: dict[str, Any] = {}
         interactor_kwds["galaxy_url"] = galaxy_url
         interactor_kwds["master_api_key"] = get_galaxy_admin_api_key()
         interactor_kwds["api_key"] = get_galaxy_user_key()

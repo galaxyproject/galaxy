@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import Tuple
+from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -10,7 +10,7 @@ from galaxy.files.plugins import FileSourcePluginsConfig
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
-    def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: str):
+    def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: Optional[str]):
         super().__init__(file_sources_config, ConfiguredFileSourcesConf(conf_dict=conf_dict))
         self.test_root = test_root
 
@@ -23,7 +23,7 @@ class TestPosixConfiguredFileSources(TestConfiguredFileSources):
             "type": "posix",
             "root": root,
         }
-        file_sources_config = FileSourcePluginsConfig({})
+        file_sources_config = FileSourcePluginsConfig()
         super().__init__(file_sources_config, {"test1": plugin}, root)
 
 
@@ -34,7 +34,7 @@ def setup_root():
     return tmp, root
 
 
-def write_file_fixtures(tmp: str, root: str) -> Tuple[str, str]:
+def write_file_fixtures(tmp: str, root: str) -> tuple[str, str]:
     if not os.path.exists(root):
         os.mkdir(root)
     os.symlink(os.path.join(tmp, "b"), os.path.join(root, "unsafe"))

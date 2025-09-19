@@ -8,7 +8,6 @@ import os
 from typing import (
     Any,
     cast,
-    List,
     Optional,
     Union,
 )
@@ -18,13 +17,15 @@ from galaxy import (
     util,
 )
 from galaxy.tool_util.parser.parameter_validators import (
+    parse_xml_validators as parse_xml_validators_models,
+)
+from galaxy.tool_util_models.parameter_validators import (
     AnyValidatorModel,
     EmptyFieldParameterValidatorModel,
     ExpressionParameterValidatorModel,
     InRangeParameterValidatorModel,
     MetadataParameterValidatorModel,
-    parse_xml_validators as parse_xml_validators_models,
-    raise_error_if_valiation_fails,
+    raise_error_if_validation_fails,
     RegexParameterValidatorModel,
 )
 
@@ -62,7 +63,7 @@ class Validator(abc.ABC):
 
         return None if positive validation, otherwise a ValueError is raised
         """
-        raise_error_if_valiation_fails(value, self, message=message, value_to_show=value_to_show)
+        raise_error_if_validation_fails(value, self, message=message, value_to_show=value_to_show)
 
 
 class RegexValidator(Validator):
@@ -204,8 +205,8 @@ class MetadataValidator(Validator):
     def __init__(
         self,
         message: str,
-        check: Optional[List[str]] = None,
-        skip: Optional[List[str]] = None,
+        check: Optional[list[str]] = None,
+        skip: Optional[list[str]] = None,
         negate: bool = False,
     ):
         super().__init__(message, negate)
@@ -345,7 +346,7 @@ class ValueInDataTableColumnValidator(Validator):
         negate: bool = False,
     ):
         super().__init__(message, negate)
-        self.valid_values: List[Any] = []
+        self.valid_values: list[Any] = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
         if isinstance(metadata_column, str):
@@ -510,11 +511,11 @@ deprecated_validator_types = dict(dataset_metadata_in_file=MetadataInFileColumnV
 validator_types.update(deprecated_validator_types)
 
 
-def parse_xml_validators(app, xml_el: util.Element) -> List[Validator]:
+def parse_xml_validators(app, xml_el: util.Element) -> list[Validator]:
     return to_validators(app, parse_xml_validators_models(xml_el))
 
 
-def to_validators(app, validator_models: List[AnyValidatorModel]) -> List[Validator]:
+def to_validators(app, validator_models: list[AnyValidatorModel]) -> list[Validator]:
     validators = []
     for validator_model in validator_models:
         validators.append(_to_validator(app, validator_model))

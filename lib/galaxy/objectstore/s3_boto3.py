@@ -1,5 +1,4 @@
-"""A more modern version of the S3 object store based on boto3 instead of boto.
-"""
+"""A more modern version of the S3 object store based on boto3 instead of boto."""
 
 import logging
 import os

@@ -43,34 +43,34 @@ def get_ref_based_read_seq_and_cigar(read_seq, read_start, ref_seq, ref_seq_star
                     new_op = "X"
                     # Include mismatched bases in new read sequence.
                     new_read_seq += read_seq[read_pos : read_pos + count]
-                new_cigar += "%i%s" % (count, new_op)
+                new_cigar += f"{count}{new_op}"
                 total_count += count
                 read_pos += count
                 ref_seq_pos += count
 
             # If end of read falls outside of ref_seq data, leave as M.
             if total_count < op_len:
-                new_cigar += "%iM" % (op_len - total_count)
+                new_cigar += "%sM" % (op_len - total_count)
         elif op == 1:  # Insertion
-            new_cigar += "%i%s" % (op_len, cigar_ops[op])
+            new_cigar += f"{op_len}{cigar_ops[op]}"
             # Include insertion bases in new read sequence.
             new_read_seq += read_seq[read_pos : read_pos + op_len]
             read_pos += op_len
         elif op in [2, 3, 6]:  # Deletion, Skip, or Padding
             ref_seq_pos += op_len
-            new_cigar += "%i%s" % (op_len, cigar_ops[op])
+            new_cigar += f"{op_len}{cigar_ops[op]}"
         elif op == 4:  # Soft clipping
             read_pos += op_len
-            new_cigar += "%i%s" % (op_len, cigar_ops[op])
+            new_cigar += f"{op_len}{cigar_ops[op]}"
         elif op == 5:  # Hard clipping
-            new_cigar += "%i%s" % (op_len, cigar_ops[op])
+            new_cigar += f"{op_len}{cigar_ops[op]}"
         elif op in [7, 8]:  # Match or mismatch
             if op == 8:
                 # Include mismatched bases in new read sequence.
                 new_read_seq += read_seq[read_pos : read_pos + op_len]
             read_pos += op_len
             ref_seq_pos += op_len
-            new_cigar += "%i%s" % (op_len, cigar_ops[op])
+            new_cigar += f"{op_len}{cigar_ops[op]}"
 
     return (new_read_seq, new_cigar)
 

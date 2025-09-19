@@ -1,33 +1,25 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
+import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-import { useInvocationStore } from "@/stores/invocationStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 
-library.add(faChevronDown, faChevronUp, faSignInAlt);
-
 const props = defineProps<{
-    /** The store id for the invocation graph */
-    storeId: string;
     /** The invocation to display */
     invocation: WorkflowInvocationElementView;
     /** Whether the steps are being rendered on the dedicated invocation page/route */
     isFullPage?: boolean;
+    /** The job summary for each step in the invocation */
+    stepsJobsSummary: StepJobSummary[];
 }>();
-
-const invocationStore = useInvocationStore();
-const { graphStepsByStoreId } = storeToRefs(invocationStore);
-const graphSteps = computed(() => graphStepsByStoreId.value[props.storeId]);
 
 const stepsDiv = ref<HTMLDivElement>();
 
@@ -38,11 +30,24 @@ const workflowInputSteps = workflow.value
     : [];
 const oneOrNoInput = computed(() => workflowInputSteps.length <= 1);
 const expandInvocationInputs = ref(oneOrNoInput.value);
+
+const {
+    steps: graphSteps,
+    loadInvocationGraph,
+    loading: graphLoading,
+} = useInvocationGraph(
+    computed(() => props.invocation),
+    computed(() => props.stepsJobsSummary),
+    workflow.value?.id,
+    workflow.value?.version,
+);
+
+loadInvocationGraph(false);
 </script>
 
 <template>
-    <BAlert v-if="loading" variant="info" show>
-        <LoadingSpan message="Loading workflow" />
+    <BAlert v-if="loading || graphLoading" variant="info" show>
+        <LoadingSpan message="Loading invocation steps" />
     </BAlert>
     <BAlert v-else-if="error" variant="danger" show>
         {{ error }}
@@ -71,7 +76,6 @@ const expandInvocationInputs = ref(oneOrNoInput.value);
                 :class="{ 'mx-1': !oneOrNoInput && isWorkflowInput(step.type) }"
                 :data-index="step.id"
                 :invocation="props.invocation"
-                :workflow="workflow"
                 :workflow-step="step"
                 :graph-step="graphSteps[step.id]" />
         </div>

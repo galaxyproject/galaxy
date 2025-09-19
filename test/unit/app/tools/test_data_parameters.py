@@ -1,12 +1,10 @@
 from typing import (
     Any,
     Optional,
-    Tuple,
 )
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.model.base import transaction
 from .util import BaseParameterTestCase
 
 
@@ -147,19 +145,17 @@ class TestDataToolParameter(BaseParameterTestCase):
         hda = model.HistoryDatasetAssociation()
         hda.visible = True
         hda.dataset = model.Dataset()
-        self.app.model.context.add(hda)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(hda)
+        session.commit()
         return hda
 
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.trans = galaxy_mock.MockTrans(history=self.test_history)
         self.multiple = False
         self.optional = False
@@ -200,7 +196,7 @@ class MockHistoryDatasetAssociation:
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination: Tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
+        self.conversion_destination: tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False

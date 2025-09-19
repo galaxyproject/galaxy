@@ -42,7 +42,7 @@ describe("JobParameters/JobParameters.vue", () => {
             jobId: JOB_ID,
         };
 
-        const wrapper = mount(JobParameters, {
+        const wrapper = mount(JobParameters as object, {
             propsData,
             stubs: {
                 DatasetProvider: DatasetProvider,
@@ -56,7 +56,7 @@ describe("JobParameters/JobParameters.vue", () => {
             element: Wrapper<any>,
             expectedTitle: string,
             expectedValue: string | { hid: number; name: string },
-            link?: string
+            link?: string,
         ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);
@@ -92,7 +92,7 @@ describe("JobParameters/JobParameters.vue", () => {
         };
 
         const getSingleParam = async (propsData: { jobId: string; param: string }) => {
-            const wrapper = mount(JobParameters, {
+            const wrapper = mount(JobParameters as object, {
                 propsData,
                 stubs: {
                     DatasetProvider: DatasetProvider,

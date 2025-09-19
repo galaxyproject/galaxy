@@ -1,33 +1,33 @@
 import logging
 import re
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import (
+    scoped_session,
+    sessionmaker,
+)
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
 from galaxy.exceptions import ItemOwnershipException
-from galaxy.model.base import transaction
-from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model import (
+    GalaxySession,
+    Tag,
+)
 from galaxy.util import (
     strip_control_characters,
     unicodify,
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        GalaxySession,
-        Tag,
-        User,
-    )
+    from galaxy.model import User
+    from galaxy.model.store import SessionlessContext
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,9 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session: galaxy_scoped_session, galaxy_session=None) -> None:
+    def __init__(
+        self, sa_session: Union[scoped_session, "SessionlessContext"], galaxy_session: Optional[GalaxySession] = None
+    ) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -58,14 +60,15 @@ class TagHandler:
         # Key-value separator.
         self.key_value_separators = "=:"
         # Initialize with known classes - add to this in subclasses.
-        self.item_tag_assoc_info: Dict[str, ItemTagAssocInfo] = {}
-        # Can't include type annotation in signature, because lagom will attempt to look up
-        # GalaxySession, but can't find it due to the circular import
-        self.galaxy_session: Optional[GalaxySession] = galaxy_session
+        self.item_tag_assoc_info: dict[str, ItemTagAssocInfo] = {}
+        self.galaxy_session = galaxy_session
 
-    def create_tag_handler_session(self, galaxy_session: Optional["GalaxySession"]):
+    def create_tag_handler_session(self, galaxy_session: Optional[GalaxySession]):
         # Creates a transient tag handler that avoids repeated flushes
-        return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
+        if isinstance(self.sa_session, scoped_session):
+            return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
+        else:
+            return self
 
     def add_tags_from_list(self, user, item, new_tags_list, flush=True):
         new_tags_set = set(new_tags_list)
@@ -93,8 +96,7 @@ class TagHandler:
         new_tags_str = ",".join(new_tags_list)
         self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush)
         if flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         item.update()
         return item.tags
 
@@ -114,7 +116,7 @@ class TagHandler:
         if not item_tag_assoc_class:
             return []
         # Build select statement.
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(galaxy.model.Tag.table)
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
         where_clause = self.get_id_col_in_item_tag_assoc_table(item_class) == item.id
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
@@ -198,7 +200,7 @@ class TagHandler:
         tag_name = None
         if isinstance(tag, str):
             tag_name = tag
-        elif isinstance(tag, galaxy.model.Tag):
+        elif isinstance(tag, Tag):
             tag_name = tag.name
         elif isinstance(tag, galaxy.model.ItemTagAssociation):
             tag_name = tag.user_tname
@@ -247,8 +249,7 @@ class TagHandler:
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
         if flush:
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         return item_tag_assoc
 
     def apply_item_tags(
@@ -266,13 +267,13 @@ class TagHandler:
         for name, value in parsed_tags:
             self.apply_item_tag(user, item, name, value, flush=flush)
 
-    def get_tags_list(self, tags) -> List[str]:
+    def get_tags_list(self, tags) -> list[str]:
         """Build a list of tags from an item's tags."""
         # Return empty list if there are no tags.
         if not tags:
             return []
         # Create list of tags.
-        tags_list: List[str] = []
+        tags_list: list[str] = []
         for tag in tags:
             tag_str = tag.user_tname
             if tag.value is not None:
@@ -288,12 +289,12 @@ class TagHandler:
 
     def get_tag_by_id(self, tag_id):
         """Get a Tag object from a tag id."""
-        return self.sa_session.get(galaxy.model.Tag, tag_id)
+        return self.sa_session.get(Tag, tag_id)
 
     def get_tag_by_name(self, tag_name):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return self.sa_session.scalars(select(galaxy.model.Tag).filter_by(name=tag_name.lower()).limit(1)).first()
+            return self.sa_session.scalars(select(Tag).filter_by(name=tag_name.lower()).limit(1)).first()
         return None
 
     def _create_tag(self, tag_str: str):
@@ -325,19 +326,18 @@ class TagHandler:
         return tag
 
     def _get_tag(self, tag_name):
-        return self.sa_session.scalars(select(galaxy.model.Tag).filter_by(name=tag_name).limit(1)).first()
+        return self.sa_session.scalars(select(Tag).filter_by(name=tag_name).limit(1)).first()
 
     def _create_tag_instance(self, tag_name):
         # For good performance caller should first check if there's already an appropriate tag
-        tag = galaxy.model.Tag(type=0, name=tag_name)
-        if not self.sa_session:
+        tag = Tag(type=0, name=tag_name)
+        if not isinstance(self.sa_session, scoped_session):
             return tag
         Session = sessionmaker(self.sa_session.bind)
         with Session() as separate_session:
             separate_session.add(tag)
             try:
-                with transaction(separate_session):
-                    separate_session.commit()
+                separate_session.commit()
             except IntegrityError:
                 # tag already exists, get from database
                 separate_session.rollback()
@@ -386,7 +386,7 @@ class TagHandler:
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
-    def parse_tags_list(self, tags_list: List[str]) -> List[Tuple[str, Optional[str]]]:
+    def parse_tags_list(self, tags_list: list[str]) -> list[tuple[str, Optional[str]]]:
         """
         Return a list of tag tuples (name, value) pairs derived from a list.
         Method scrubs tag names and values as well.
@@ -437,13 +437,13 @@ class TagHandler:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list
 
-    def _get_name_value_pair(self, tag_str) -> List[Optional[str]]:
+    def _get_name_value_pair(self, tag_str) -> list[Optional[str]]:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith("#"):
             tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile(f"[{self.key_value_separators}]")
-        name_value_pair: List[Optional[str]] = list(reg_exp.split(tag_str, 1))
+        name_value_pair: list[Optional[str]] = list(reg_exp.split(tag_str, 1))
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)
@@ -451,10 +451,10 @@ class TagHandler:
 
 
 class GalaxyTagHandler(TagHandler):
-    _item_tag_assoc_info: Dict[str, ItemTagAssocInfo] = {}
+    _item_tag_assoc_info: dict[str, ItemTagAssocInfo] = {}
 
-    def __init__(self, sa_session: galaxy_scoped_session, galaxy_session=None):
-        TagHandler.__init__(self, sa_session, galaxy_session=galaxy_session)
+    def __init__(self, sa_session: scoped_session, galaxy_session: Optional[GalaxySession] = None):
+        super().__init__(sa_session, galaxy_session=galaxy_session)
         if not GalaxyTagHandler._item_tag_assoc_info:
             GalaxyTagHandler.init_tag_associations()
         self.item_tag_assoc_info = GalaxyTagHandler._item_tag_assoc_info
@@ -500,9 +500,9 @@ class GalaxyTagHandler(TagHandler):
 class GalaxyTagHandlerSession(GalaxyTagHandler):
     """Like GalaxyTagHandler, but avoids one flush per created tag."""
 
-    def __init__(self, sa_session, galaxy_session: Optional["GalaxySession"]):
+    def __init__(self, sa_session: scoped_session, galaxy_session: Optional[GalaxySession]):
         super().__init__(sa_session, galaxy_session)
-        self.created_tags: Dict[str, Tag] = {}
+        self.created_tags: dict[str, Tag] = {}
 
     def _get_tag(self, tag_name):
         """Get tag from cache or database."""
@@ -531,5 +531,5 @@ class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
 
 
 class CommunityTagHandler(TagHandler):
-    def __init__(self, sa_session):
-        TagHandler.__init__(self, sa_session)
+    def __init__(self, sa_session: scoped_session):
+        super().__init__(sa_session)

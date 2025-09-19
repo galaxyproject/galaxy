@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { faArrowsAltV } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
-import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
-import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
+import { guessNameForPair } from "./pairing";
 
+import GButton from "../BaseComponents/GButton.vue";
+import DelayedInput from "../Common/DelayedInput.vue";
+import HelpText from "../Help/HelpText.vue";
+import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -26,22 +31,32 @@ interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
+    mode: Mode;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "clicked-create", selectedPair: DatasetPair, collectionName: string, hideSourceItems: boolean): void;
-    (event: "on-cancel"): void;
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
+    (e: "on-cancel"): void;
 }>();
 
 const state = ref("build");
-const removeExtensions = ref(true);
-const initialSuggestedName = ref("");
+const initialSuggestedName = ref(props.suggestedName);
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
+const filterText = ref("");
+
+const filteredElements = computed(() => {
+    return workingElements.value.filter((element) => {
+        return `${element.hid}: ${element.name}`.toLowerCase().includes(filterText.value.toLowerCase());
+    });
+});
 
 /** If not `fromSelection`, the manually added elements that will become the pair */
 const inListElements = ref<SelectedDatasetPair>({ forward: undefined, reverse: undefined });
@@ -55,7 +70,6 @@ const noElementsSelected = computed(() => {
 const exactlyTwoValidElements = computed(() => {
     return pairElements.value.forward && pairElements.value.reverse;
 });
-const hideSourceItems = ref(props.defaultHideSourceItems || false);
 const pairElements = computed<SelectedDatasetPair>(() => {
     if (props.fromSelection) {
         return {
@@ -66,13 +80,34 @@ const pairElements = computed<SelectedDatasetPair>(() => {
         return inListElements.value;
     }
 });
+const pairHasMixedExtensions = computed(() => {
+    return (
+        pairElements.value.forward?.extension &&
+        pairElements.value.reverse?.extension &&
+        pairElements.value.forward.extension !== pairElements.value.reverse.extension
+    );
+});
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
+const {
+    collectionName,
+    removeExtensions,
+    hideSourceItems,
+    onUpdateHideSourceItems,
+    isElementInvalid,
+    onCollectionCreate,
+    showButtonsForModal,
+    onUpdateCollectionName,
+} = useCollectionCreator(props, emit);
 
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+// check if we have scrolled to the top or bottom of the scrollable div
+const scrollableDiv = ref<HTMLDivElement | null>(null);
+const { arrived } = useAnimationFrameScroll(scrollableDiv);
+const isScrollable = ref(false);
+useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.height >= clientSize.height + 1;
+});
+const scrolledTop = computed(() => !isScrollable.value || arrived.top);
+const scrolledBottom = computed(() => !isScrollable.value || arrived.bottom);
 
 watch(
     () => props.initialElements,
@@ -85,11 +120,11 @@ watch(
             initialSuggestedName.value = _guessNameForPair(
                 workingElements.value[0] as HDASummary,
                 workingElements.value[1] as HDASummary,
-                removeExtensions.value
+                removeExtensions.value,
             );
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function _elementsSetUp() {
@@ -115,19 +150,19 @@ function _elementsSetUp() {
         if (!prevElem) {
             continue;
         }
-        const element = workingElements.value.find(
-            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id
+        const matchingElem = workingElements.value.find(
+            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id,
         );
-        const problem = _isElementInvalid(prevElem);
-        if (element) {
-            inListElements.value[key as keyof SelectedDatasetPair] = element;
-        } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+        if (matchingElem) {
+            const problem = isElementInvalid(matchingElem);
+            if (problem) {
+                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                Toast.error(invalidMsg, localize("Invalid element"));
+            } else {
+                inListElements.value[key as keyof SelectedDatasetPair] = matchingElem;
+            }
         } else {
             const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            invalidElements.value.push(invalidMsg);
             Toast.error(invalidMsg, localize("Invalid element"));
         }
     }
@@ -153,7 +188,7 @@ function _ensureElementIds() {
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
-        var problem = _isElementInvalid(element);
+        const problem = isElementInvalid(element);
 
         if (problem) {
             invalidElements.value.push(element.name + "  " + problem);
@@ -163,33 +198,6 @@ function _validateElements() {
     });
 
     return workingElements.value;
-}
-
-/** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary) {
-    if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
-    }
-
-    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
-
-    if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
-    }
-
-    if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
-    }
-
-    // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
-        return localize(`has an invalid extension: ${element.extension}`);
-    }
-    return null;
 }
 
 function getPairElement(key: string) {
@@ -230,25 +238,45 @@ function addUploadedFiles(files: HDASummary[]) {
     // Any added files are added to workingElements in _elementsSetUp
     // The user will have to manually select the files to add them to the pair
 
-    // Check for validity of uploads
+    let alreadyPopulated = false;
+
+    // Check for validity of uploads, and add them to the pair if space is available
     files.forEach((file) => {
-        const problem = _isElementInvalid(file);
-        if (problem) {
-            const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+        const element = workingElements.value.find((e) => e.id === file.id);
+        if (element) {
+            const problem = isElementInvalid(file);
+            if (problem) {
+                const invalidMsg = `${element.hid}: ${element.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                invalidElements.value.push(invalidMsg);
+                Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+            } else if (!props.fromSelection) {
+                if (inListElements.value.forward === undefined) {
+                    inListElements.value.forward = element;
+                } else if (inListElements.value.reverse === undefined) {
+                    inListElements.value.reverse = element;
+                } else if (!alreadyPopulated) {
+                    alreadyPopulated = true;
+                }
+            }
         }
     });
+    if (alreadyPopulated && files.length > 0) {
+        Toast.info(
+            localize("Forward and reverse datasets already selected. Uploaded files are available for replacement."),
+            localize("Uploads Available for Replacement"),
+        );
+    }
 }
 
-function clickedCreate(collectionName: string) {
+function attemptCreate() {
     if (state.value !== "error" && exactlyTwoValidElements.value) {
-        const returnedPair = {
-            forward: pairElements.value.forward as HDASummary,
-            reverse: pairElements.value.reverse as HDASummary,
-            name: collectionName,
-        };
-        emit("clicked-create", returnedPair, collectionName, hideSourceItems.value);
+        const forward = pairElements.value.forward as HDASummary;
+        const reverse = pairElements.value.reverse as HDASummary;
+        const returnedElems = [
+            { name: "forward", src: "src" in forward ? forward.src : "hda", id: forward.id },
+            { name: "reverse", src: "src" in reverse ? reverse.src : "hda", id: reverse.id },
+        ] as CollectionElementIdentifiers;
+        onCollectionCreate("paired", returnedElems);
     }
 }
 
@@ -258,82 +286,13 @@ function removeExtensionsToggle() {
     initialSuggestedName.value = _guessNameForPair(
         workingElements.value[0] as HDASummary,
         workingElements.value[1] as HDASummary,
-        removeExtensions.value
+        removeExtensions.value,
     );
 }
 
 function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: boolean) {
     removeExtensions = removeExtensions ? removeExtensions : removeExtensions;
-
-    var fwdName = fwd.name ?? "";
-    var revName = rev.name ?? "";
-    var lcs = _naiveStartingAndEndingLCS(fwdName, revName);
-
-    /** remove url prefix if files were uploaded by url */
-    var lastDotIndex = lcs.lastIndexOf(".");
-    var lastSlashIndex = lcs.lastIndexOf("/");
-    var extension = lcs.slice(lastDotIndex, lcs.length);
-
-    if (lastSlashIndex > 0) {
-        var urlprefix = lcs.slice(0, lastSlashIndex + 1);
-
-        lcs = lcs.replace(urlprefix, "");
-        fwdName = fwdName.replace(extension, "");
-        revName = revName.replace(extension, "");
-    }
-
-    if (removeExtensions) {
-        if (lastDotIndex > 0) {
-            lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
-        }
-    }
-
-    return lcs || `${fwdName} & ${revName}`;
-}
-
-function onUpdateHideSourceItems(newHideSourceItems: boolean) {
-    hideSourceItems.value = newHideSourceItems;
-}
-
-function _naiveStartingAndEndingLCS(s1: string, s2: string) {
-    var i = 0;
-    var j = 0;
-    var fwdLCS = "";
-    var revLCS = "";
-
-    while (i < s1.length && i < s2.length) {
-        if (s1[i] !== s2[i]) {
-            break;
-        }
-
-        fwdLCS += s1[i];
-        i += 1;
-    }
-
-    if (i === s1.length) {
-        return s1;
-    }
-
-    if (i === s2.length) {
-        return s2;
-    }
-
-    i = s1.length - 1;
-    j = s2.length - 1;
-
-    while (i >= 0 && j >= 0) {
-        if (s1[i] !== s2[j]) {
-            break;
-        }
-
-        revLCS = [s1[i], revLCS].join("");
-        i -= 1;
-        j -= 1;
-    }
-
-    return fwdLCS + revLCS;
+    return guessNameForPair(fwd, rev, "", "", removeExtensions);
 }
 </script>
 
@@ -355,17 +314,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </ul>
                 </BAlert>
             </div>
-            <div v-if="!exactlyTwoValidElements">
-                <BAlert show variant="warning" dismissible>
-                    {{ localize("Exactly two elements are needed for the pair.") }}
-                    <span v-if="fromSelection">
-                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                            {{ localize("Cancel") }}
-                        </a>
-                        {{ localize("and reselect new elements.") }}
-                    </span>
-                </BAlert>
-            </div>
 
             <CollectionCreator
                 :oncancel="() => emit('on-cancel')"
@@ -376,9 +324,14 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 :extensions-toggle="removeExtensions"
                 collection-type="paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                :show-upload="!fromSelection"
+                :show-buttons="showButtonsForModal"
+                :collection-name="collectionName"
+                :mode="mode"
+                @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                @clicked-create="clickedCreate"
+                @clicked-create="attemptCreate"
                 @remove-extensions-toggle="removeExtensionsToggle">
                 <template v-slot:help-content>
                     <!-- TODO: Update help content for case where `fromSelection` is false -->
@@ -390,7 +343,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
                                     "order to have analyses done on both datasets. This interface allows you to create a pair, name it, and ",
                                     "swap which is forward and which reverse.",
-                                ].join("")
+                                ].join(""),
                             )
                         }}
                     </p>
@@ -403,7 +356,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             </i>
                             {{
                                 localize(
-                                    "link to make your forward dataset the reverse and the reverse dataset forward"
+                                    "link to make your forward dataset the reverse and the reverse dataset forward",
                                 )
                             }}
                         </li>
@@ -446,11 +399,11 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             {{
                                 localize(
                                     "No elements in your history are valid for this pair. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    You may need to switch to a different history or upload valid datasets.",
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following extensions are required for this pair: ") }}
+                                {{ localize("The following formats are required for this pair: ") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -473,22 +426,51 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </BAlert>
                     </div>
                     <div v-else>
-                        <div class="collection-elements-controls">
-                            <BButton
-                                class="swap"
-                                size="sm"
-                                :disabled="!exactlyTwoValidElements"
-                                :title="localize('Swap forward and reverse datasets')"
-                                @click="swapButton">
-                                <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
-                                {{ localize("Swap") }}
-                            </BButton>
+                        <div class="collection-elements-controls flex-gapx-1">
+                            <div>
+                                <GButton
+                                    class="swap"
+                                    size="small"
+                                    :disabled="!exactlyTwoValidElements"
+                                    :title="localize('Swap forward and reverse datasets')"
+                                    @click="swapButton">
+                                    <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
+                                    {{ localize("Swap") }}
+                                </GButton>
+                            </div>
+                            <div class="flex-grow-1">
+                                <BAlert v-if="!exactlyTwoValidElements" show variant="warning">
+                                    {{ localize("Exactly two elements are needed for the pair.") }}
+                                    <span v-if="fromSelection">
+                                        <a
+                                            class="cancel-text"
+                                            href="javascript:void(0)"
+                                            role="button"
+                                            @click="emit('on-cancel')">
+                                            {{ localize("Cancel") }}
+                                        </a>
+                                        {{ localize("and reselect new elements.") }}
+                                    </span>
+                                </BAlert>
+                                <BAlert v-else-if="pairHasMixedExtensions" show variant="warning">
+                                    {{ localize("The selected datasets have mixed formats.") }}
+                                    {{ localize("You can still create the pair but generally") }}
+                                    {{ localize("dataset pairs should contain datasets of the same type.") }}
+                                    <HelpText
+                                        uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
+                                        :text="localize('Why?')" />
+                                </BAlert>
+                                <BAlert v-else show variant="success">
+                                    {{ localize("The Dataset Pair is ready to be created.") }}
+                                    {{ localize("Provide a name and click the button below to create the pair.") }}
+                                </BAlert>
+                            </div>
                         </div>
 
-                        <div class="collection-elements flex-row mb-3">
+                        <div class="flex-row mb-3">
                             <div v-for="dataset in ['forward', 'reverse']" :key="dataset">
                                 {{ localize(dataset) }}:
-                                <DatasetCollectionElementView
+                                <FixedIdentifierDatasetCollectionElementView
                                     v-if="getPairElement(dataset)"
                                     :key="getPairElement(dataset)?.id"
                                     :element="getPairElement(dataset)"
@@ -501,20 +483,33 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </div>
 
                         <div v-if="!fromSelection">
-                            {{ localize("Manually select a forward and reverse dataset to create a pair collection:") }}
-                            <div class="collection-elements">
-                                <DatasetCollectionElementView
-                                    v-for="element in workingElements"
-                                    :key="element.id"
-                                    :class="{
-                                        selected: [pairElements.forward, pairElements.reverse].includes(element),
-                                    }"
-                                    :element="element"
-                                    not-editable
-                                    :selected="[pairElements.forward, pairElements.reverse].includes(element)"
-                                    @element-is-selected="selectElement"
-                                    @onRename="(name) => (element.name = name)" />
+                            <DelayedInput v-model="filterText" placeholder="search datasets" :delay="800" />
+                            <strong>
+                                {{
+                                    localize("Manually select a forward and reverse dataset to create a dataset pair:")
+                                }}
+                            </strong>
+                            <div
+                                v-if="filteredElements.length"
+                                class="scroll-list-container"
+                                :class="{ 'scrolled-top': scrolledTop, 'scrolled-bottom': scrolledBottom }">
+                                <div ref="scrollableDiv" class="collection-elements">
+                                    <DatasetCollectionElementView
+                                        v-for="element in filteredElements"
+                                        :key="element.id"
+                                        :class="{
+                                            selected: [pairElements.forward, pairElements.reverse].includes(element),
+                                        }"
+                                        :element="element"
+                                        not-editable
+                                        :selected="[pairElements.forward, pairElements.reverse].includes(element)"
+                                        @element-is-selected="selectElement"
+                                        @onRename="(name) => (element.name = name)" />
+                                </div>
                             </div>
+                            <BAlert v-else show variant="info">
+                                {{ localize(`No datasets found${filterText ? " matching '" + filterText + "'" : ""}`) }}
+                            </BAlert>
                         </div>
                     </div>
                 </template>
@@ -530,11 +525,19 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
     }
 
     .collection-elements-controls {
-        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .alert {
+            padding: 0.25rem 0.5rem;
+            margin: 0;
+            text-align: center;
+        }
     }
 
     .collection-elements {
-        max-height: 400px;
+        max-height: 30vh;
         border: 0px solid lightgrey;
         overflow-y: auto;
         overflow-x: hidden;

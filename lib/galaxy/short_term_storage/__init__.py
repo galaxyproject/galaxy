@@ -1,4 +1,4 @@
-""" Short Term Storage service for Galaxy.
+"""Short Term Storage service for Galaxy.
 
 This service is used to store files for a short period of time (e.g. a few minutes, hours or days)
 and then serve them to the client. This is useful for large files that take a long time to
@@ -17,7 +17,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
     Optional,
     Union,
 )
@@ -57,14 +56,14 @@ class ShortTermStorageTargetSecurity:
     user_id: Optional[int] = None
     session_id: Optional[int] = None
 
-    def to_dict(self) -> Dict[str, Optional[int]]:
+    def to_dict(self) -> dict[str, Optional[int]]:
         return {
             "user_id": self.user_id,
             "session_id": self.session_id,
         }
 
     @classmethod
-    def from_dict(self, as_dict: Dict[str, Optional[int]]) -> "ShortTermStorageTargetSecurity":
+    def from_dict(self, as_dict: dict[str, Optional[int]]) -> "ShortTermStorageTargetSecurity":
         return ShortTermStorageTargetSecurity(
             user_id=as_dict.get("user_id"),
             session_id=as_dict.get("session_id"),
@@ -94,7 +93,7 @@ class ShortTermStorageServeCompletedInformation:
 class ShortTermStorageServeCancelledInformation:
     target: ShortTermStorageTarget
     status_code: int
-    exception: Optional[Dict[str, Any]]
+    exception: Optional[dict[str, Any]]
 
     @property
     def message_exception(self) -> MessageException:

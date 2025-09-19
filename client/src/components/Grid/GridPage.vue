@@ -7,6 +7,7 @@ import pagesGridConfig from "@/components/Grid/configs/pages";
 import pagesPublishedGridConfig from "@/components/Grid/configs/pagesPublished";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
@@ -28,12 +29,12 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Pages</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Pages</Heading>
             <div v-if="!userStore.isAnonymous">
-                <BButton id="page-create" size="sm" variant="outline-primary" to="/pages/create">
+                <GButton id="page-create" size="small" outline color="blue" to="/pages/create">
                     <Icon :icon="faPlus" />
                     <span v-localize>Create Page</span>
-                </BButton>
+                </GButton>
             </div>
         </div>
         <BNav pills justified class="mb-2">

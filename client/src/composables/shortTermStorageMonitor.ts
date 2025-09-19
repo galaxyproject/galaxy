@@ -3,7 +3,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { useGenericMonitor } from "./genericTaskMonitor";
 
-const DEFAULT_POLL_DELAY = 10000;
+export const DEFAULT_POLL_DELAY = 10000;
 const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
 const READY_STATE = "READY";
@@ -30,6 +30,7 @@ export function useShortTermStorageMonitor() {
         fetchStatus,
         completedCondition: (status?: string) => status === READY_STATE,
         failedCondition: (status?: string) => typeof status === "string" && !VALID_STATES.includes(status),
+        fetchFailureReason: fetchStatus, // The error message is the status itself for short-term storage requests
         defaultPollDelay: DEFAULT_POLL_DELAY,
         expirationTime: DEFAULT_EXPIRATION_TIME,
     });

@@ -4,27 +4,30 @@ import json
 import os
 import pathlib
 import shutil
+import sys
 from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
 )
 from typing import (
     Any,
-    Dict,
     NamedTuple,
     Optional,
 )
 
 import pytest
 from rocrate.rocrate import ROCrate
+from rocrate_validator import (
+    models,
+    services,
+)
 from sqlalchemy import select
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
-from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.model.orm.now import now
+from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
+from galaxy.model.store import SessionlessContext
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -383,7 +386,7 @@ def test_import_library_require_permissions():
     assert error_caught
 
 
-def test_import_export_library():
+def test_import_export_library(tmp_path):
     """Test basics of library, library folder, and library dataset import/export."""
     app = _mock_app()
     sa_session = app.model.context
@@ -412,12 +415,11 @@ def test_import_export_library():
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_library(library)
 
     import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True)
+        tmp_path, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True)
     )
     import_model_store.perform_import()
 
@@ -442,7 +444,6 @@ def test_import_export_library():
 def test_import_export_invocation():
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
@@ -484,6 +485,55 @@ def validate_has_mit_license(ro_crate: ROCrate):
     assert found_license
 
 
+def validate_creators(ro_crate: ROCrate):
+    """
+    Validate that creators (Person and Organization) are correctly added.
+    """
+    creators = ro_crate.mainEntity.get("creator")
+    assert creators, "No creators found in the RO-Crate"
+
+    for creator in creators:
+        assert creator["@type"] in {"Person", "Organization"}
+        if creator["@type"] == "Person":
+            assert "name" in creator
+            assert "orcid" in creator or "identifier" in creator
+            assert "email" in creator
+        elif creator["@type"] == "Organization":
+            assert "name" in creator
+            assert "url" in creator
+
+
+def validate_steps(ro_crate: ROCrate):
+    """
+    Validate that workflow steps (HowToStep) are correctly added.
+    """
+    steps = ro_crate.mainEntity.get("step")
+    assert steps, "No steps found in the RO-Crate"
+
+    for i, step in enumerate(steps, start=1):
+        assert step["@type"] == "HowToStep"
+        assert step["position"] == i
+        assert "name" in step
+        assert "description" in step or step["description"] is None
+
+
+def validate_tools(ro_crate: ROCrate):
+    """
+    Validate that tools (SoftwareApplication) are correctly added.
+    """
+    tools = ro_crate.mainEntity.get("hasPart")
+    assert tools, "No tools found in the RO-Crate"
+
+    tool_ids = set()
+    for tool in tools:
+        assert tool["@type"] == "SoftwareApplication"
+        assert "name" in tool
+        assert "version" in tool
+        assert "description" in tool or tool["description"] is None
+        assert tool.id not in tool_ids, "Duplicate tool found"
+        tool_ids.add(tool.id)
+
+
 def validate_has_readme(ro_crate: ROCrate):
     found_readme = False
     for e in ro_crate.get_entities():
@@ -505,6 +555,10 @@ def open_ro_crate(crate_directory):
 
 
 def validate_history_crate_directory(crate_directory):
+    # first validate against the base RO-Crate spec
+    validate_with_roc_validator(crate_directory=crate_directory, profile="ro-crate-1.1")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     validate_has_readme(crate)
 
@@ -557,19 +611,31 @@ def validate_other_entities(ro_crate: ROCrate):
 
 
 def validate_invocation_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+
+    # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     for e in crate.contextual_entities:
         print(e.type)
+
     validate_main_entity(crate)
     validate_create_action(crate)
     validate_other_entities(crate)
     validate_has_pl_galaxy(crate)
     validate_organize_action(crate)
     validate_has_mit_license(crate)
+    validate_creators(crate)
+    validate_steps(crate)
+    validate_tools(crate)
     # validate_has_readme(crate)
 
 
 def validate_invocation_collection_crate_directory(crate_directory):
+    # first validate against the Workflow Run Crate profile
+    validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+
+    # then do Galaxy-specific validation
     ro_crate = open_ro_crate(crate_directory)
     workflow = ro_crate.mainEntity
     root = ro_crate.root_dataset
@@ -593,7 +659,32 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
-def test_export_history_with_missing_hid():
+def validate_with_roc_validator(crate_directory, profile):
+    # roc-validator changed the ValidationSettings argument data_path to rocrate_uri in
+    # v5.0.0+, but also dropped support for Python 3.9
+    if sys.version_info >= (3, 10):
+        settings = services.ValidationSettings(
+            rocrate_uri=crate_directory,
+            profile_identifier=profile,
+            requirement_severity=models.Severity.REQUIRED,
+            abort_on_first=False,  # do not stop on first issue
+        )
+    else:
+        settings = services.ValidationSettings(
+            data_path=crate_directory,
+            profile_identifier=profile,
+            requirement_severity=models.Severity.REQUIRED,
+            abort_on_first=False,  # do not stop on first issue
+            http_cache_timeout=0,  # do not use cache
+        )
+
+    result = services.validate(settings)
+
+    issues = result.get_issues()
+    assert len(issues) == 0, f"RO-Crate is invalid: {[issue.message for issue in issues]}"
+
+
+def test_export_history_with_missing_hid(tmp_path):
     # The dataset's hid was used to compose the file name during the export but it
     # can be missing sometimes. We now use the dataset's encoded id instead.
     app = _mock_app()
@@ -603,8 +694,7 @@ def test_export_history_with_missing_hid():
     d1.hid = None
     app.commit()
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
         export_store.export_history(history)
 
 
@@ -612,37 +702,37 @@ def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
 
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_history(history)
-    validate_history_crate_directory(crate_directory)
+    validate_history_crate_directory(tmp_path)
 
 
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_crate_directory(crate_directory)
+    validate_invocation_crate_directory(tmp_path)
 
 
 def test_export_simple_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_simple_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_crate_directory(crate_directory)
+    validate_invocation_crate_directory(tmp_path)
 
 
+@pytest.mark.xfail(
+    sys.version_info >= (3, 10),
+    reason="Awaiting resolution of validator issue https://github.com/crs4/rocrate-validator/issues/62",
+)
 def test_export_collection_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_collection_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_collection_crate_directory(crate_directory)
+    validate_invocation_collection_crate_directory(tmp_path)
 
 
 def test_export_invocation_to_ro_crate_archive(tmp_path):
@@ -652,9 +742,9 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     crate_zip = tmp_path / "crate.zip"
     with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    compressed_file = CompressedFile(crate_zip)
-    assert compressed_file.file_type == "zip"
-    compressed_file.extract(tmp_path)
+    with CompressedFile(crate_zip) as compressed_file:
+        assert compressed_file.file_type == "zip"
+        compressed_file.extract(tmp_path)
     crate_directory = tmp_path / "crate"
     validate_invocation_crate_directory(crate_directory)
 
@@ -727,7 +817,7 @@ def test_import_export_edit_datasets():
     assert d1.dataset.object_store_id == "foo1", d1.dataset.object_store_id
 
 
-def test_import_export_edit_collection():
+def test_import_export_edit_collection(tmp_path):
     """Test modifying existing collections with imports."""
     app = _mock_app()
     sa_session = app.model.context
@@ -743,13 +833,12 @@ def test_import_export_edit_collection():
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True) as export_store:
         export_store.add_dataset_collection(hc1)
 
     # Fabric editing metadata for collection...
-    collections_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_COLLECTIONS)
-    datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    collections_metadata_path = os.path.join(tmp_path, store.ATTRS_FILENAME_COLLECTIONS)
+    datasets_metadata_path = os.path.join(tmp_path, store.ATTRS_FILENAME_DATASETS)
     with open(collections_metadata_path) as f:
         hdcas_metadata = json.load(f)
 
@@ -798,14 +887,14 @@ def test_import_export_edit_collection():
     with open(collections_metadata_path, "w") as collections_f:
         json.dump(hdcas_metadata, collections_f)
 
-    _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
+    _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
 
     sa_session.refresh(c1)
     assert c1.populated_state == model.DatasetCollection.populated_states.OK, c1.populated_state
     assert len(c1.elements) == 2
 
 
-def test_import_export_composite_datasets():
+def test_import_export_composite_datasets(tmp_path):
     app = _mock_app()
     sa_session = app.model.context
 
@@ -819,13 +908,12 @@ def test_import_export_composite_datasets():
     app.write_primary_file(d1, "cool primary file")
     app.write_composite_file(d1, "cool composite file", "child_file")
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
-    _perform_import_from_directory(temp_directory, app, u, import_history)
+    _perform_import_from_directory(tmp_path, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
     _assert_extra_files_has_parent_directory_with_single_file_containing(
@@ -848,7 +936,7 @@ def _assert_extra_files_has_parent_directory_with_single_file_containing(
         assert contents == expected_contents
 
 
-def test_edit_metadata_files():
+def test_edit_metadata_files(tmp_path):
     app = _mock_app(store_by="uuid")
     sa_session = app.model.context
 
@@ -864,15 +952,12 @@ def test_edit_metadata_files():
     assert d1.metadata.bam_index
     assert isinstance(d1.metadata.bam_index, model.MetadataFile)
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(
-        temp_directory, app=app, for_edit=True, strip_metadata_files=False
-    ) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True, strip_metadata_files=False) as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
-    _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
+    _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
 def test_sessionless_import_edit_datasets():
@@ -884,6 +969,7 @@ def test_sessionless_import_edit_datasets():
     import_model_store.perform_import()
     # Not using app.sa_session but a session mock that has a query/find pattern emulating usage
     # of real sa_session.
+    assert isinstance(import_model_store.sa_session, SessionlessContext)
     d1 = import_model_store.sa_session.query(model.HistoryDatasetAssociation).find(h.datasets[0].id)
     d2 = import_model_store.sa_session.query(model.HistoryDatasetAssociation).find(h.datasets[1].id)
     assert d1 is not None
@@ -983,31 +1069,64 @@ def _setup_simple_cat_job(app, state="ok"):
 def _setup_invocation(app):
     sa_session = app.model.context
 
+    # Set up a user, history, datasets, and job
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
+    # Create a workflow
+    workflow = model.Workflow()
+    workflow.license = "MIT"
+    workflow.name = "Test Workflow"
+    workflow.creator_metadata = [
+        {"class": "Person", "name": "Alice", "identifier": "0000-0001-2345-6789", "email": "alice@example.com"},
+    ]
+
+    # Create and associate a data_input step
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    sa_session.add(workflow_step_1)
-    workflow_1 = _workflow_from_steps(u, [workflow_step_1])
-    workflow_1.license = "MIT"
-    workflow_1.name = "Test Workflow"
-    sa_session.add(workflow_1)
-    workflow_invocation = _invocation_for_workflow(u, workflow_1)
-    invocation_step = model.WorkflowInvocationStep()
-    invocation_step.workflow_step = workflow_step_1
-    invocation_step.job = j
-    sa_session.add(invocation_step)
-    output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
-    output_assoc.dataset = d2
-    invocation_step.output_datasets = [output_assoc]
-    workflow_invocation.steps = [invocation_step]
+    workflow_step_1.label = "Input Step"
+    workflow.steps.append(workflow_step_1)
+    sa_session.add(workflow_step_1)  # Persist step in the session
+
+    # Create and associate a tool step
+    workflow_step_2 = model.WorkflowStep()
+    workflow_step_2.order_index = 0
+    workflow_step_2.type = "tool"
+    workflow_step_2.tool_id = "example_tool"
+    workflow_step_2.tool_version = "1.0"
+    workflow_step_2.label = "Example Tool Step"
+    workflow.steps.append(workflow_step_2)
+    sa_session.add(workflow_step_2)  # Persist step in the session
+
+    sa_session.add(workflow)  # Persist the workflow itself
+
+    # Create a workflow invocation
+    workflow_invocation = _invocation_for_workflow(u, workflow)
+
+    # Associate invocation step for data_input
+    invocation_step_1 = model.WorkflowInvocationStep()
+    invocation_step_1.workflow_step = workflow_step_1
+    invocation_step_1.job = j
+    sa_session.add(invocation_step_1)
+
+    # Associate invocation step for tool
+    invocation_step_2 = model.WorkflowInvocationStep()
+    invocation_step_2.workflow_step = workflow_step_2
+    sa_session.add(invocation_step_2)
+
+    # Add steps to the invocation
+    workflow_invocation.steps = [invocation_step_1, invocation_step_2]
     workflow_invocation.user = u
     workflow_invocation.add_input(d1, step=workflow_step_1)
-    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
-    workflow_invocation.add_output(wf_output, workflow_step_1, d2)
+
+    # Add workflow output associated with the tool step
+    wf_output = model.WorkflowOutput(workflow_step_2, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_2, d2)
+
+    # Commit the workflow and invocation
     app.add_and_commit(workflow_invocation)
+
     return workflow_invocation
 
 
@@ -1086,9 +1205,11 @@ def _setup_collection_invocation(app):
 def _setup_simple_invocation(app):
     sa_session = app.model.context
 
+    # Set up a simple user, history, datasets, and job
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
+    # Create a workflow
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
@@ -1097,16 +1218,30 @@ def _setup_simple_invocation(app):
     workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"
     workflow.name = "Test Workflow"
-    workflow.create_time = now()
-    workflow.update_time = now()
-    sa_session.add(workflow)
-    invocation = _invocation_for_workflow(u, workflow)
-    invocation.create_time = now()
-    invocation.update_time = now()
+    workflow.creator_metadata = [
+        {"class": "Person", "name": "Bob", "identifier": "0000-0002-3456-7890", "email": "bob@example.com"},
+    ]
 
-    invocation.add_input(d1, step=workflow_step_1)
-    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
-    invocation.add_output(wf_output, workflow_step_1, d2)
+    # Create and associate a tool step
+    workflow_step_tool = model.WorkflowStep()
+    workflow_step_tool.order_index = 1
+    workflow_step_tool.type = "tool"
+    workflow_step_tool.tool_id = "example_tool"
+    workflow_step_tool.tool_version = "1.0"
+    workflow_step_tool.label = "Example Tool Step"
+    workflow.steps.append(workflow_step_tool)
+
+    sa_session.add(workflow)
+
+    # Create a workflow invocation
+    invocation = _invocation_for_workflow(u, workflow)
+    invocation.add_input(d1, step=workflow_step_1)  # Associate input dataset
+    wf_output = model.WorkflowOutput(workflow_step_tool, label="output_label")
+    invocation.add_output(wf_output, workflow_step_tool, d2)  # Associate output dataset
+
+    # Commit the workflow and invocation to the database
+    app.add_and_commit(invocation)
+
     return invocation
 
 
@@ -1172,8 +1307,7 @@ class TestApp(GalaxyDataTestApp):
 
     def commit(self):
         session = self.model.session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def write_primary_file(self, dataset_instance, contents):
         primary = NamedTemporaryFile("w")
@@ -1203,7 +1337,8 @@ def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
     app = TestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
-    app.model.Dataset.object_store = app.object_store
+    model.Dataset.object_store = app.object_store
+
     return app
 
 
@@ -1241,7 +1376,7 @@ def setup_fixture_context_with_history(
 
 def perform_import_from_store_dict(
     fixture_context: StoreFixtureContextWithHistory,
-    import_dict: Dict[str, Any],
+    import_dict: dict[str, Any],
     import_options: Optional[store.ImportOptions] = None,
 ) -> None:
     import_options = import_options or store.ImportOptions()
@@ -1260,7 +1395,8 @@ class Options:
 
 def import_archive(archive_path, app, user, import_options=None):
     dest_parent = mkdtemp()
-    dest_dir = CompressedFile(archive_path).extract(dest_parent)
+    with CompressedFile(archive_path) as cf:
+        dest_dir = cf.extract(dest_parent)
 
     import_options = import_options or store.ImportOptions()
     model_store = store.get_import_model_store_for_directory(

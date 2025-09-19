@@ -16,7 +16,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_summary_includes(1, "28 lines")
@@ -28,7 +28,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
     @selenium_test
     def test_upload_pasted_url_content(self):
@@ -37,7 +37,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
     @selenium_test
     def test_upload_composite_dataset_pasted_data(self):
@@ -46,14 +46,17 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_elements(self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value")
-        request_json = param_values[1].text
+        param_values = self.driver.find_element(
+            self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree"
+        )
+        request_json = param_values.get_attribute("data-request-json")
+        assert request_json
         for data in paste_content:
-            assert f'"paste_content": "{data}"' in request_json
+            assert f'"paste_content":"{data}"' in request_json
 
     @selenium_test
     def test_upload_simplest(self):
@@ -62,7 +65,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(1)
         history_contents = self.history_contents()
         history_count = len(history_contents)
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         hda = history_contents[0]
         assert hda["name"] == "1.sam", hda
@@ -499,7 +502,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_deferred_list_7_named")
         rule_builder.main_button_ok.wait_for_and_click()
         hid = 2
-        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_wait_for_hid_state(hid, state="deferred", allowed_force_refreshes=1)
         self.screenshot("rules_deferred_list_7_download_complete")
 
     def _read_rules_test_data_file(self, name):
@@ -513,7 +516,10 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
-        first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, "td")[0]
+        # handsontable
+        # first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, "td")[0]
+        # aggrid
+        first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, ".ag-cell")[0]
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)

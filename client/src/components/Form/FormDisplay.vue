@@ -12,7 +12,13 @@
         :collapsed-disable-icon="collapsedDisableIcon"
         :on-change="onChange"
         :on-change-form="onChangeForm"
-        :workflow-building-mode="workflowBuildingMode" />
+        :workflow-building-mode="workflowBuildingMode"
+        :workflow-run="workflowRun"
+        :active-node-id="activeNodeId"
+        :sync-with-graph="syncWithGraph"
+        :steps-not-matching-request="stepsNotMatchingRequest"
+        @stop-flagging="$emit('stop-flagging')"
+        @update:active-node-id="updateActiveNode" />
 </template>
 
 <script>
@@ -86,9 +92,25 @@ export default {
             type: Boolean,
             default: false,
         },
+        workflowRun: {
+            type: Boolean,
+            default: false,
+        },
         allowEmptyValueOnRequiredInput: {
             type: Boolean,
             default: false,
+        },
+        activeNodeId: {
+            type: Number,
+            default: null,
+        },
+        syncWithGraph: {
+            type: Boolean,
+            default: false,
+        },
+        stepsNotMatchingRequest: {
+            type: Array,
+            default: null,
         },
     },
     data() {
@@ -104,6 +126,9 @@ export default {
         },
     },
     watch: {
+        activeNodeId() {
+            this.scrollToElement(this.activeNodeId);
+        },
         id() {
             this.onCloneInputs();
         },
@@ -223,12 +248,18 @@ export default {
                 const message = validation[1];
                 this.setError(inputId, message);
                 if (!silent && inputId) {
-                    const element = this.$el.querySelector(`[id='form-element-${inputId}']`);
-                    if (element) {
-                        const centerPanel = document.querySelector("#center");
-                        if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element));
-                        }
+                    this.scrollToElement(inputId);
+                }
+            }
+        },
+        scrollToElement(elementId) {
+            const element = this.$el.querySelector(`[id='form-element-${elementId}']`);
+            if (element) {
+                const centerPanel = document.querySelector("#center");
+                if (centerPanel) {
+                    element.scrollIntoView({ behavior: "smooth", block: "center" });
+                    if (this.syncWithGraph && this.activeNodeId !== elementId) {
+                        this.updateActiveNode(elementId);
                     }
                 }
             }
@@ -249,6 +280,9 @@ export default {
             Object.values(this.formIndex).forEach((input) => {
                 input.error = null;
             });
+        },
+        updateActiveNode(activeNodeId) {
+            this.$emit("update:active-node-id", activeNodeId);
         },
     },
 };

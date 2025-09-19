@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
-
-import { type FormEntry } from "./formUtil";
+import type { FormEntry } from "./formUtil";
 
 import ForceActionButton from "./ForceActionButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -51,9 +50,9 @@ async function handleForceSubmit() {
                 </template>
             </FormCard>
             <div class="mt-3">
-                <BButton id="submit" variant="primary" class="mr-1" :disabled="busy" @click="handleSubmit">
+                <GButton id="submit" color="blue" class="mr-1" :disabled="busy" @click="handleSubmit">
                     {{ submitTitle }}
-                </BButton>
+                </GButton>
                 <ForceActionButton v-show="showForceActionButton" :action="submitTitle" @click="handleForceSubmit">
                 </ForceActionButton>
             </div>

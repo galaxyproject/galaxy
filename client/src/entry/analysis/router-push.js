@@ -7,13 +7,13 @@ import { addSearchParams } from "utils/url";
  * refresh if needed.
  *
  * @param {String} Location as parsed to original router.push()
- * @param {Object} Custom options, to provide a title and/or force reload
+ * @param {Object} Custom options, to provide a title, force reload, and/or prevent window manager
  */
 export function patchRouterPush(VueRouter) {
     const originalPush = VueRouter.prototype.push;
     VueRouter.prototype.push = function push(location, options = {}) {
         // add key to location to force component refresh
-        const { title, force } = options;
+        const { title, force, preventWindowManager } = options;
         if (force) {
             location = addSearchParams(location, { __vkey__: Date.now() });
         }
@@ -27,7 +27,7 @@ export function patchRouterPush(VueRouter) {
         }
         // show location in window manager
         const Galaxy = getGalaxyInstance();
-        if (title && Galaxy.frame && Galaxy.frame.active) {
+        if (title && !preventWindowManager && Galaxy.frame && Galaxy.frame.active) {
             Galaxy.frame.add({ title: title, url: location });
             return;
         }

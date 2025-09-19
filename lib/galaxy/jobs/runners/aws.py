@@ -1,5 +1,4 @@
-""" Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
-"""
+"""Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch."""
 
 import bisect
 import hashlib
@@ -10,7 +9,6 @@ import re
 import time
 from queue import Empty
 from typing import (
-    Set,
     TYPE_CHECKING,
 )
 
@@ -341,7 +339,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "environment": _add_galaxy_environment_variables(
                 destination_params.get("vcpu"), destination_params.get("memory"),
             ),
-            "user": "%d:%d" % (os.getuid(), os.getgid()),
+            "user": f"{os.getuid()}:{os.getgid()}",
             "privileged": destination_params.get("privileged"),
             "logConfiguration": {"logDriver": "awslogs"},
         }
@@ -451,7 +449,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         # TODO: This is where any cleanup would occur
                         self.handle_stop()
                         return
-                    self.watched.append((async_job_state.job_id, async_job_state))
+                    self.watched.append(async_job_state)
             except Empty:
                 pass
             # Iterate over the list of watched jobs and check state
@@ -463,16 +461,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
     def check_watched_items(self):
-        done: Set[str] = set()
+        done: set[str] = set()
         self.check_watched_items_by_batch(0, len(self.watched), done)
-        self.watched = [x for x in self.watched if x[0] not in done]
+        self.watched = [ajs for ajs in self.watched if ajs.job_id not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int, done: Set[str]):
-        jobs = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
-        if not jobs:
+    def check_watched_items_by_batch(self, start: int, end: int, done: set[str]) -> None:
+        async_job_states = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
+        if not async_job_states:
             return
 
-        jobs_dict = dict(jobs)
+        jobs_dict = {ajs.job_id: ajs for ajs in async_job_states if ajs.job_id is not None}
+
         resp = self._batch_client.describe_jobs(jobs=list(jobs_dict.keys()))
 
         gotten = set()
@@ -494,27 +493,26 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             # remain queued for "SUBMITTED", "PENDING" and "RUNNABLE"
             # TODO else?
 
-        for job_id in jobs_dict:
+        for job_id, job_state in jobs_dict.items():
             if job_id in gotten:
                 continue
-            job_state = jobs_dict[job_id]
             reason = f"The track of Job {job_state} was lost for unknown reason!"
             self._mark_as_failed(job_state, reason)
             done.add(job_id)
 
         self.check_watched_items_by_batch(start + self.MAX_JOBS_PER_QUERY, end, done)
 
-    def _mark_as_successful(self, job_state):
+    def _mark_as_successful(self, job_state: AsynchronousJobState) -> None:
         _write_logfile(job_state.output_file, "")
         _write_logfile(job_state.error_file, "")
         job_state.running = False
         self.mark_as_finished(job_state)
 
-    def _mark_as_active(self, job_state):
+    def _mark_as_active(self, job_state: AsynchronousJobState) -> None:
         job_state.running = True
         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
 
-    def _mark_as_failed(self, job_state, reason):
+    def _mark_as_failed(self, job_state: AsynchronousJobState, reason: str) -> None:
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
         job_state.stop_job = False

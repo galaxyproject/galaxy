@@ -41,7 +41,7 @@ def valid_numeric_userid(userid):
     try:
         pwd.getpwuid(uid)
     except KeyError:
-        sys.stderr.write("error: User-ID (%d) is not valid.\n" % uid)
+        sys.stderr.write(f"error: User-ID ({uid}) is not valid.\n")
         exit(1)
     return True
 
@@ -63,7 +63,7 @@ def json_file_exists(json_filename):
     return True
 
 
-def validate_paramters():
+def validate_parameters():
     assign_all_groups = False
     if "--assign_all_groups" in sys.argv:
         assign_all_groups = True
@@ -88,7 +88,7 @@ def validate_paramters():
     return uid, json_filename, assign_all_groups
 
 
-def set_user(uid, assign_all_groups):
+def set_user(uid: int, assign_all_groups: bool):
     try:
         # Get user's default group and set it to current process to make sure
         # file permissions are inherited correctly
@@ -108,7 +108,7 @@ def set_user(uid, assign_all_groups):
     except OSError as e:
         if e.errno == errno.EPERM:
             sys.stderr.write(
-                "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid
+                f"error: setuid({uid}) failed: permission denied. Did you setup 'sudo' correctly for this script?\n"
             )
             exit(1)
         else:
@@ -128,7 +128,7 @@ def set_user(uid, assign_all_groups):
 
 
 def main():
-    userid, json_filename, assign_all_groups = validate_paramters()
+    userid, json_filename, assign_all_groups = validate_parameters()
     # load JSON job template data
     json_file_exists(json_filename)
     with open(json_filename) as f:

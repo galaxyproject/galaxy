@@ -1,5 +1,4 @@
 from galaxy import model
-from galaxy.model.base import transaction
 from galaxy.model.unittest_utils.utils import random_email
 from galaxy.workflow.run_request import (
     _normalize_inputs,
@@ -102,9 +101,8 @@ def __workflow_fixure(trans):
             setattr(workflow_step, key, value)
         workflow.steps.append(workflow_step)
 
-    trans.app.model.context.add(
-        workflow,
-    )
+    session = trans.app.model.context
+    session.add(workflow)
 
     add_step(type="data_input", order_index=0, tool_inputs={"name": "input1"})
     add_step(type="data_input", order_index=1, tool_inputs={"name": "input2"})
@@ -118,11 +116,9 @@ def __workflow_fixure(trans):
         tool_id="cat1",
         order_index=4,
     )
-    session = trans.app.model.context
-    with transaction(session):
-        session.commit()
+    session.commit()
     # Expunge and reload to ensure step state is as expected from database.
     workflow_id = workflow.id
-    trans.app.model.context.expunge_all()
+    session.expunge_all()
 
-    return trans.app.model.session.get(model.Workflow, workflow_id)
+    return session.get(model.Workflow, workflow_id)

@@ -13,16 +13,17 @@ import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
-import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
-import { JobStateSummary } from "./Collection/JobStateSummary";
-import { getContentItemState, type StateMap, STATES } from "./model/states";
+import { getContentItemState, type State, STATES } from "./model/states";
+import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
+import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -48,6 +49,8 @@ interface Props {
     filterable?: boolean;
     isPlaceholder?: boolean;
     isSubItem?: boolean;
+    getItemKey?: (item: any) => string;
+    selectClickHandler?: (item: any, event: Event) => boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -63,17 +66,18 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: false,
     isPlaceholder: false,
     isSubItem: false,
+    getItemKey: (item: any) => {
+        return `${item.history_content_type}-${item.id}`;
+    },
+    selectClickHandler: (item: any, event: Event) => {
+        return true;
+    },
 });
 
 const emit = defineEmits<{
     (e: "update:selected", selected: boolean): void;
     (e: "update:expand-dataset", expand: boolean): void;
-    (e: "shift-arrow-select", direction: string): void;
     (e: "init-key-selection"): void;
-    (e: "arrow-navigate", direction: string): void;
-    (e: "hide-selection"): void;
-    (e: "select-all"): void;
-    (e: "selected-to"): void;
     (e: "delete", item: any, recursive: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
@@ -82,21 +86,20 @@ const emit = defineEmits<{
     (e: "tag-change", item: any, newTags: Array<string>): void;
     (e: "tag-click", tag: string): void;
     (e: "toggleHighlights", item: any): void;
+    (e: "on-key-down", event: KeyboardEvent): void;
 }>();
 
 const entryPointStore = useEntryPointStore();
-const eventStore = useEventStore();
 
 const contentItem = ref<HTMLElement | null>(null);
 const subItemsVisible = ref(false);
 
-const jobState = computed(() => {
-    return new JobStateSummary(props.item);
+const itemIsRunningInteractiveTool = computed(() => {
+    // If our dataset id is in the entrypOintStore it's a running it
+    return !isCollection.value && entryPointStore.entryPointsForHda(props.item.id).length > 0;
 });
 
-const contentId = computed(() => {
-    return `dataset-${props.item.id}`;
-});
+const contentId = computed(() => props.getItemKey(props.item));
 
 const contentCls = computed(() => {
     const status = contentState.value && contentState.value.status;
@@ -131,7 +134,7 @@ const hasStateIcon = computed(() => {
     return contentState.value && contentState.value.icon;
 });
 
-const state = computed<keyof StateMap>(() => {
+const state = computed<State>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
     }
@@ -157,7 +160,7 @@ const tagsDisabled = computed(() => {
 });
 
 const isCollection = computed(() => {
-    return "collection_type" in props.item;
+    return "collection_type" in props.item || props.item.element_type === "dataset_collection";
 });
 
 const itemUrls = computed<ItemUrls>(() => {
@@ -171,8 +174,12 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
+    let display = `/datasets/${id}`;
+    if (props.item.extension == "tool_markdown") {
+        display = `/datasets/${id}/report`;
+    }
     return {
-        display: `/datasets/${id}/preview`,
+        display: display,
         edit: `/datasets/${id}/edit`,
         showDetails: `/datasets/${id}/details`,
         reportError: `/datasets/${id}/error`,
@@ -180,13 +187,6 @@ const itemUrls = computed<ItemUrls>(() => {
         visualize: `/visualizations?dataset_id=${id}`,
     };
 });
-
-/** Based on the user's keyboard platform, checks if it is the
- * typical key for selection (ctrl for windows/linux, cmd for mac)
- */
-function isSelectKey(event: KeyboardEvent) {
-    return eventStore.isMac ? event.metaKey : event.ctrlKey;
-}
 
 function onKeyDown(event: KeyboardEvent) {
     const classList = (event.target as HTMLElement)?.classList;
@@ -197,45 +197,15 @@ function onKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         onClick();
-    } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.shiftKey) {
-        event.preventDefault();
-        emit("arrow-navigate", event.key);
-    }
-
-    if (props.writable) {
-        if (event.key === "Tab") {
-            emit("init-key-selection");
-        } else {
-            event.preventDefault();
-            if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
-                emit("shift-arrow-select", event.key);
-            } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-                emit("init-key-selection");
-            } else if (event.key === "Delete" && !props.selected && !props.item.deleted) {
-                onDelete(event.shiftKey);
-                emit("arrow-navigate", "ArrowDown");
-            } else if (event.key === "Escape") {
-                emit("hide-selection");
-            } else if (event.key === "a" && isSelectKey(event)) {
-                emit("select-all");
-            }
-        }
+    } else {
+        emit("on-key-down", event);
     }
 }
 
 function onClick(e?: Event) {
     const event = e as KeyboardEvent;
-    if (event && props.writable) {
-        if (isSelectKey(event)) {
-            emit("init-key-selection");
-            emit("update:selected", !props.selected);
-            return;
-        } else if (event.shiftKey) {
-            emit("selected-to");
-            return;
-        } else {
-            emit("init-key-selection");
-        }
+    if (event && props.writable && !props.selectClickHandler(props.item, event)) {
+        return;
     }
     if (props.isPlaceholder) {
         return;
@@ -254,15 +224,33 @@ function onDisplay() {
         const url = entryPointsForHda[0]?.target;
         window.open(url, "_blank");
     } else {
+        const Galaxy = getGalaxyInstance();
+        const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
+
+        // Build the display URL with displayOnly query param if needed
+        let displayUrl = itemUrls.value.display;
+        if (isWindowManagerActive && displayUrl) {
+            displayUrl += displayUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true";
+        }
+
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
+            const options: RouterPushOptions = {
+                force: true,
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name, force: true });
-        } else if (itemUrls.value.display) {
+            router.push(displayUrl, options);
+        } else if (displayUrl) {
+            const options: RouterPushOptions = {
+                preventWindowManager: !isWindowManagerActive,
+                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+            };
             // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name });
+            router.push(displayUrl, options);
         }
     }
 }
@@ -289,6 +277,10 @@ function onDragEnd() {
 
 function onEdit() {
     router.push(itemUrls.value.edit!);
+}
+
+function onView() {
+    router.push(itemUrls.value.view!);
 }
 
 function onShowCollectionInfo() {
@@ -395,6 +387,7 @@ function unexpandedClick(event: Event) {
                 <span class="align-self-start btn-group">
                     <BButton
                         v-if="item.sub_items?.length && !isSubItem"
+                        v-b-tooltip.hover
                         title="Show converted items"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"
@@ -413,8 +406,13 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :is-running-interactive-tool="itemIsRunningInteractiveTool"
+                        :interactive-tool-id="
+                            itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''
+                        "
                         @delete="onDelete"
                         @display="onDisplay"
+                        @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
                         @undelete="onUndelete"
@@ -422,15 +420,10 @@ function unexpandedClick(event: Event) {
                 </span>
             </div>
         </div>
+        <ContentExpirationIndicator :item="item" class="ml-auto align-self-start btn-group p-1" />
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
-            <CollectionDescription
-                v-if="!isDataset"
-                class="px-2 pb-2 cursor-pointer"
-                :job-state-summary="jobState"
-                :collection-type="item.collection_type"
-                :element-count="item.element_count"
-                :elements-datatypes="item.elements_datatypes" />
+            <CollectionDescription v-if="!isDataset" class="px-2 pb-2 cursor-pointer" :hdca="item" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"

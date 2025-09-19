@@ -34,7 +34,7 @@ const props = withDefaults(
         placeholder: "type to search",
         id: () => useUid("headless-multiselect-").value,
         validator: () => () => true,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -112,7 +112,7 @@ watch(
     () => trimmedSearchValue.value,
     () => {
         highlightedOption.value = 0;
-    }
+    },
 );
 
 function onOptionHover(index: number) {
@@ -192,20 +192,28 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     }
 }
 
-/**
- * Closes popup when focus leaves this element
- * Because this component uses a Teleport, uses a custom `data-parent-id` attribute
- * to determine if the element is a child of this component
- */
-function onBlur(e: FocusEvent) {
-    const newTarget = e.relatedTarget;
+const mouseDownInside = ref(false);
 
-    // close without refocusing open button
-    if (!(newTarget instanceof HTMLElement)) {
-        close(false);
-    } else if (newTarget.getAttribute("data-parent-id") !== props.id) {
-        close(false);
-    }
+function onMouseDownInside() {
+    mouseDownInside.value = true;
+}
+/**
+ * Closes the popup when focus leaves this component.
+ * Since this component uses a Teleport, it relies on a custom `data-parent-id` attribute
+ * to determine if the element is a child of this component.
+ */
+function onFocusOut(e: FocusEvent) {
+    const newTarget = e.relatedTarget as HTMLElement | null;
+
+    // Delay until after click completes
+    requestAnimationFrame(() => {
+        if (!mouseDownInside.value) {
+            if (!newTarget || newTarget.getAttribute("data-parent-id") !== props.id) {
+                close(false);
+            }
+        }
+        mouseDownInside.value = false;
+    });
 }
 
 /** emulates tab behavior, because options list is teleported to the app layer */
@@ -255,8 +263,17 @@ watch(
     async () => {
         await nextTick();
         bounds.update();
-    }
+    },
 );
+
+function getPopupLayerId() {
+    if (root.value) {
+        const closestDialog = root.value.closest("dialog");
+        return closestDialog?.id ?? "app";
+    } else {
+        return "app";
+    }
+}
 
 whenever(isOpen, async () => {
     await nextTick();
@@ -265,8 +282,9 @@ whenever(isOpen, async () => {
 </script>
 
 <template>
-    <div ref="root" class="headless-multiselect">
-        <fieldset v-if="isOpen" @blur.capture="onBlur">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions  -->
+    <div ref="root" class="headless-multiselect" @mousedown="onMouseDownInside" @focusout="onFocusOut">
+        <fieldset v-if="isOpen" @focusout="onFocusOut">
             <input
                 :id="`${props.id}-input`"
                 ref="inputField"
@@ -299,7 +317,7 @@ whenever(isOpen, async () => {
             <FontAwesomeIcon icon="fa-tags" />
         </button>
 
-        <Vue2Teleport v-if="isOpen" to="#app">
+        <Vue2Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
             <div
                 :id="`${props.id}-options`"
                 aria-expanded="true"
@@ -313,7 +331,7 @@ whenever(isOpen, async () => {
                 }"
                 :data-parent-id="id"
                 @keydown.up.down.prevent
-                @blur.capture="onBlur">
+                @focusout="onFocusOut">
                 <button
                     v-for="(option, i) in trimmedOptions"
                     :id="`${props.id}-option-${i}`"
@@ -418,7 +436,9 @@ whenever(isOpen, async () => {
 
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
+    box-shadow:
+        0 0 6px 0 rgba(3, 0, 34, 0.048),
+        0 0 4px 0 rgba(3, 0, 34, 0.185);
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
 

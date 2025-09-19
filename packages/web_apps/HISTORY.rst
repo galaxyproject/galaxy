@@ -3,11 +3,268 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix planemo serve, need user list by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20575 <https://github.com/galaxyproject/galaxy/pull/20575>`_
+* Ignore webob http exceptions for logging purposes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20630 <https://github.com/galaxyproject/galaxy/pull/20630>`_
+
+=============
+Other changes
+=============
+
+* Require user for visualizations create endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20629 <https://github.com/galaxyproject/galaxy/pull/20629>`_
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Do not expose user info to non authenticated users by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20524 <https://github.com/galaxyproject/galaxy/pull/20524>`_
+
+=============
+Other changes
+=============
+
+* Fixes for static handling and the web_client package by `@natefoo <https://github.com/natefoo>`_ in `#20516 <https://github.com/galaxyproject/galaxy/pull/20516>`_
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+* Display email activation help only if user activation is enabled by `@jdavcs <https://github.com/jdavcs>`_ in `#19402 <https://github.com/galaxyproject/galaxy/pull/19402>`_
+* Fix wording of API doc string by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19776 <https://github.com/galaxyproject/galaxy/pull/19776>`_
+* Fix ownership check in history contents update route by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19969 <https://github.com/galaxyproject/galaxy/pull/19969>`_
+* Add hid to selection field in visualization creation form by `@guerler <https://github.com/guerler>`_ in `#20108 <https://github.com/galaxyproject/galaxy/pull/20108>`_
+* Sort visualization datasets by hid by `@guerler <https://github.com/guerler>`_ in `#20123 <https://github.com/galaxyproject/galaxy/pull/20123>`_
+* Move UnprivilegedToolResponse into api by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20207 <https://github.com/galaxyproject/galaxy/pull/20207>`_
+* Increase proxy API robustness by validating URL before use by `@davelopez <https://github.com/davelopez>`_ in `#20311 <https://github.com/galaxyproject/galaxy/pull/20311>`_
+* Rerun workflows for the correct version/instance by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20313 <https://github.com/galaxyproject/galaxy/pull/20313>`_
+* Fix toolshed-installed tool icons by `@dannon <https://github.com/dannon>`_ in `#20399 <https://github.com/galaxyproject/galaxy/pull/20399>`_
+* Fix job rerun with tool version change by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20417 <https://github.com/galaxyproject/galaxy/pull/20417>`_
+* Dataset Display and Preferred Viz fixes by `@dannon <https://github.com/dannon>`_ in `#20439 <https://github.com/galaxyproject/galaxy/pull/20439>`_
+
+============
+Enhancements
+============
+
+* Workflow Editor Activity Bar by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#18729 <https://github.com/galaxyproject/galaxy/pull/18729>`_
+* Implement tool markdown reports. by `@jmchilton <https://github.com/jmchilton>`_ in `#19054 <https://github.com/galaxyproject/galaxy/pull/19054>`_
+* Let file sources choose a path for uploaded files by `@kysrpex <https://github.com/kysrpex>`_ in `#19154 <https://github.com/galaxyproject/galaxy/pull/19154>`_
+* Calculate hash for new non-deferred datasets when finishing a job by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19181 <https://github.com/galaxyproject/galaxy/pull/19181>`_
+* Fix UP031 errors - Part 3 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19218 <https://github.com/galaxyproject/galaxy/pull/19218>`_
+* Migrate WF Collection Input Form Definition to Client Side by `@jmchilton <https://github.com/jmchilton>`_ in `#19313 <https://github.com/galaxyproject/galaxy/pull/19313>`_
+* Misc fixes 202412 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19341 <https://github.com/galaxyproject/galaxy/pull/19341>`_
+* Hide outdated visualizations from visualizations activity panel by `@guerler <https://github.com/guerler>`_ in `#19353 <https://github.com/galaxyproject/galaxy/pull/19353>`_
+* Empower Users to Build More Kinds of Collections, More Intelligently by `@jmchilton <https://github.com/jmchilton>`_ in `#19377 <https://github.com/galaxyproject/galaxy/pull/19377>`_
+* Remove transaction helper by `@jdavcs <https://github.com/jdavcs>`_ in `#19407 <https://github.com/galaxyproject/galaxy/pull/19407>`_
+* Add User-Defined Tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19434 <https://github.com/galaxyproject/galaxy/pull/19434>`_
+* Type annotations improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19442 <https://github.com/galaxyproject/galaxy/pull/19442>`_
+* Improve asynchronous tasks error handling and reporting by `@davelopez <https://github.com/davelopez>`_ in `#19448 <https://github.com/galaxyproject/galaxy/pull/19448>`_
+* Allow to send notifications when Admins cancel jobs by `@davelopez <https://github.com/davelopez>`_ in `#19547 <https://github.com/galaxyproject/galaxy/pull/19547>`_
+* Remove tags used by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#19576 <https://github.com/galaxyproject/galaxy/pull/19576>`_
+* Enhance OpenAI Chat Integration by `@uwwint <https://github.com/uwwint>`_ in `#19612 <https://github.com/galaxyproject/galaxy/pull/19612>`_
+* Format code with black 25.1.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19625 <https://github.com/galaxyproject/galaxy/pull/19625>`_
+* Type annotation improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19642 <https://github.com/galaxyproject/galaxy/pull/19642>`_
+* More Vue Typescript Fixes by `@jmchilton <https://github.com/jmchilton>`_ in `#19663 <https://github.com/galaxyproject/galaxy/pull/19663>`_
+* Define simple models for job messages. by `@jmchilton <https://github.com/jmchilton>`_ in `#19688 <https://github.com/galaxyproject/galaxy/pull/19688>`_
+* Use model classes from ``galaxy.model`` instead of ``app.model`` object - Part 1 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19706 <https://github.com/galaxyproject/galaxy/pull/19706>`_
+* Use model classes from ``galaxy.model`` instead of ``app.model`` object - Part 2 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19726 <https://github.com/galaxyproject/galaxy/pull/19726>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#19727 <https://github.com/galaxyproject/galaxy/pull/19727>`_
+* Rename tool "Citations" to "References" by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19770 <https://github.com/galaxyproject/galaxy/pull/19770>`_
+* Add history sharing and accessibility management view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#19786 <https://github.com/galaxyproject/galaxy/pull/19786>`_
+* Improve markdown editor modularity and structure by `@guerler <https://github.com/guerler>`_ in `#19835 <https://github.com/galaxyproject/galaxy/pull/19835>`_
+* Add basic support for icons in tools by `@davelopez <https://github.com/davelopez>`_ in `#19850 <https://github.com/galaxyproject/galaxy/pull/19850>`_
+* Drop old galaxy_session records by `@jdavcs <https://github.com/jdavcs>`_ in `#19872 <https://github.com/galaxyproject/galaxy/pull/19872>`_
+* Replace backend-based page creation controller endpoint by `@guerler <https://github.com/guerler>`_ in `#19914 <https://github.com/galaxyproject/galaxy/pull/19914>`_
+* Migrate Page editing controller endpoint to API by `@guerler <https://github.com/guerler>`_ in `#19923 <https://github.com/galaxyproject/galaxy/pull/19923>`_
+* Allow resizing Visualizations in Markdown editor by `@guerler <https://github.com/guerler>`_ in `#19958 <https://github.com/galaxyproject/galaxy/pull/19958>`_
+* Add type hints around collection copying and job things by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19961 <https://github.com/galaxyproject/galaxy/pull/19961>`_
+* Job cache allow different names when possible by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19962 <https://github.com/galaxyproject/galaxy/pull/19962>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#19964 <https://github.com/galaxyproject/galaxy/pull/19964>`_
+* Allow different AI providers (as long as they are openai compatible) by `@uwwint <https://github.com/uwwint>`_ in `#19989 <https://github.com/galaxyproject/galaxy/pull/19989>`_
+* Implement dataset collection support in workflow landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20004 <https://github.com/galaxyproject/galaxy/pull/20004>`_
+* Add rerun option for workflows by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20032 <https://github.com/galaxyproject/galaxy/pull/20032>`_
+* Add support for Markdown help text in visualizations by `@guerler <https://github.com/guerler>`_ in `#20043 <https://github.com/galaxyproject/galaxy/pull/20043>`_
+* Add ZIP explorer to import individual files from local or remote ZIP archives by `@davelopez <https://github.com/davelopez>`_ in `#20054 <https://github.com/galaxyproject/galaxy/pull/20054>`_
+* Drop now unused controller method by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20129 <https://github.com/galaxyproject/galaxy/pull/20129>`_
+* Additional type hints for ``toolbox.get_tool`` / ``toolbox.has_tool`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20150 <https://github.com/galaxyproject/galaxy/pull/20150>`_
+* Add client package by `@natefoo <https://github.com/natefoo>`_ in `#20171 <https://github.com/galaxyproject/galaxy/pull/20171>`_
+* Visualization-First Display functionality by `@dannon <https://github.com/dannon>`_ in `#20190 <https://github.com/galaxyproject/galaxy/pull/20190>`_
+* Improve type annotation of ``galaxy.model.dataset_collections`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20194 <https://github.com/galaxyproject/galaxy/pull/20194>`_
+* Enable visualizations for anonymous user by `@guerler <https://github.com/guerler>`_ in `#20210 <https://github.com/galaxyproject/galaxy/pull/20210>`_
+* Touch up Dataset View by `@guerler <https://github.com/guerler>`_ in `#20290 <https://github.com/galaxyproject/galaxy/pull/20290>`_
+* Enable retrieving contents from extra file paths when request contains leading `/` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20336 <https://github.com/galaxyproject/galaxy/pull/20336>`_
+* DatasetView and Card Polish by `@dannon <https://github.com/dannon>`_ in `#20342 <https://github.com/galaxyproject/galaxy/pull/20342>`_
+* Add ``/api/datasets/{dataset_id}/extra_files/raw/{filename:path}`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20468 <https://github.com/galaxyproject/galaxy/pull/20468>`_
+
+=============
+Other changes
+=============
+
+* Log controller exceptions by `@natefoo <https://github.com/natefoo>`_ in `#19974 <https://github.com/galaxyproject/galaxy/pull/19974>`_
+* Fix formatting in webapp and client/install.py by `@dannon <https://github.com/dannon>`_ in `#20185 <https://github.com/galaxyproject/galaxy/pull/20185>`_
+* Fix job rerun for dynamic tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20259 <https://github.com/galaxyproject/galaxy/pull/20259>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Try to recover from recurring activation link error by `@jdavcs <https://github.com/jdavcs>`_ in `#19844 <https://github.com/galaxyproject/galaxy/pull/19844>`_
+* Fix bug in psa-authnz redirect handling by `@dannon <https://github.com/dannon>`_ in `#19968 <https://github.com/galaxyproject/galaxy/pull/19968>`_
+* ChatGXY Error Handling by `@dannon <https://github.com/dannon>`_ in `#19987 <https://github.com/galaxyproject/galaxy/pull/19987>`_
+* Job cache backports by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20078 <https://github.com/galaxyproject/galaxy/pull/20078>`_
+* Fix searching roles in admin UI by `@jdavcs <https://github.com/jdavcs>`_ in `#20394 <https://github.com/galaxyproject/galaxy/pull/20394>`_
+* Fix legacy get_metadata_file controller route by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20477 <https://github.com/galaxyproject/galaxy/pull/20477>`_
+* Prevent running datatype autodetect on purged datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20479 <https://github.com/galaxyproject/galaxy/pull/20479>`_
+
+=============
+Other changes
+=============
+
+* Remove unused client route for standalone wizard interface by `@dannon <https://github.com/dannon>`_ in `#19836 <https://github.com/galaxyproject/galaxy/pull/19836>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix private role name performance issue by `@jdavcs <https://github.com/jdavcs>`_ in `#19679 <https://github.com/galaxyproject/galaxy/pull/19679>`_
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix user preferences secret (without vault) lost on save by `@davelopez <https://github.com/davelopez>`_ in `#19610 <https://github.com/galaxyproject/galaxy/pull/19610>`_
+* Disable chatgxy wizard for anon users by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19628 <https://github.com/galaxyproject/galaxy/pull/19628>`_
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Drop "Send to cloud" tool and associated cloudauthz code by `@jdavcs <https://github.com/jdavcs>`_ in `#18196 <https://github.com/galaxyproject/galaxy/pull/18196>`_
+* Fix some deprecations by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18433 <https://github.com/galaxyproject/galaxy/pull/18433>`_
+* Fix MessageException handling in get_edit by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18529 <https://github.com/galaxyproject/galaxy/pull/18529>`_
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Fix new flake8-bugbear B039 and mypy type-var errors by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18755 <https://github.com/galaxyproject/galaxy/pull/18755>`_
+* Fix response if dataset requested by display application is deleted by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18803 <https://github.com/galaxyproject/galaxy/pull/18803>`_
+* Ignore preflight options in API schema by `@jmchilton <https://github.com/jmchilton>`_ in `#18983 <https://github.com/galaxyproject/galaxy/pull/18983>`_
+* Fix issue with generating slug for sharing by `@arash77 <https://github.com/arash77>`_ in `#18986 <https://github.com/galaxyproject/galaxy/pull/18986>`_
+* Fix auto-detect metadata from Edit Dataset Attributes panel by `@davelopez <https://github.com/davelopez>`_ in `#19025 <https://github.com/galaxyproject/galaxy/pull/19025>`_
+* Prevent purged users from logging in by `@jdavcs <https://github.com/jdavcs>`_ in `#19094 <https://github.com/galaxyproject/galaxy/pull/19094>`_
+* Restore access to saved visualizations by `@guerler <https://github.com/guerler>`_ in `#19136 <https://github.com/galaxyproject/galaxy/pull/19136>`_
+* Fix PSA Redirect by `@dannon <https://github.com/dannon>`_ in `#19247 <https://github.com/galaxyproject/galaxy/pull/19247>`_
+* Login redirect followup by `@dannon <https://github.com/dannon>`_ in `#19251 <https://github.com/galaxyproject/galaxy/pull/19251>`_
+* Fix invocation metrics usability by providing job context. by `@jmchilton <https://github.com/jmchilton>`_ in `#19279 <https://github.com/galaxyproject/galaxy/pull/19279>`_
+* Fix importing shared workflows with deeply nested subworkflows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19335 <https://github.com/galaxyproject/galaxy/pull/19335>`_
+* Show Keycloak provider label in UI by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#19447 <https://github.com/galaxyproject/galaxy/pull/19447>`_
+* Serialize message exceptions on execution error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19483 <https://github.com/galaxyproject/galaxy/pull/19483>`_
+* Use visualizations api in trackster by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19495 <https://github.com/galaxyproject/galaxy/pull/19495>`_
+* Set a hard limit of 100 invocations per request in api/invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19497 <https://github.com/galaxyproject/galaxy/pull/19497>`_
+* Fix deleting lddas in batch by `@davelopez <https://github.com/davelopez>`_ in `#19506 <https://github.com/galaxyproject/galaxy/pull/19506>`_
+* Fix WSGI response status handling in controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19520 <https://github.com/galaxyproject/galaxy/pull/19520>`_
+* Fix saved visualization (non-trackster ones) not displaying by `@davelopez <https://github.com/davelopez>`_ in `#19561 <https://github.com/galaxyproject/galaxy/pull/19561>`_
+* Allow unused query params in ``workflows/export_to_file`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19574 <https://github.com/galaxyproject/galaxy/pull/19574>`_
+
+============
+Enhancements
+============
+
+* Experimental galactic wizard by `@dannon <https://github.com/dannon>`_ in `#15860 <https://github.com/galaxyproject/galaxy/pull/15860>`_
+* Feature - stdout live reporting by `@gecage952 <https://github.com/gecage952>`_ in `#16975 <https://github.com/galaxyproject/galaxy/pull/16975>`_
+* Add errors fast api by `@arash77 <https://github.com/arash77>`_ in `#18093 <https://github.com/galaxyproject/galaxy/pull/18093>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18226 <https://github.com/galaxyproject/galaxy/pull/18226>`_
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration) by `@jmchilton <https://github.com/jmchilton>`_ in `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`_
+* More data access tests, some refactoring and cleanup by `@jdavcs <https://github.com/jdavcs>`_ in `#18312 <https://github.com/galaxyproject/galaxy/pull/18312>`_
+* Replace History Dataset Picker in Library Folder by `@itisAliRH <https://github.com/itisAliRH>`_ in `#18518 <https://github.com/galaxyproject/galaxy/pull/18518>`_
+* Update openapi-typescript dependency to version 6.7.6 by `@davelopez <https://github.com/davelopez>`_ in `#18519 <https://github.com/galaxyproject/galaxy/pull/18519>`_
+* Improve datasets permissions API schema typing by `@davelopez <https://github.com/davelopez>`_ in `#18563 <https://github.com/galaxyproject/galaxy/pull/18563>`_
+* Drop unused datasets controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18568 <https://github.com/galaxyproject/galaxy/pull/18568>`_
+* Improve typing for archived histories API schema by `@davelopez <https://github.com/davelopez>`_ in `#18586 <https://github.com/galaxyproject/galaxy/pull/18586>`_
+* More tool test typing. by `@jmchilton <https://github.com/jmchilton>`_ in `#18590 <https://github.com/galaxyproject/galaxy/pull/18590>`_
+* Improve update user API payload schema by `@davelopez <https://github.com/davelopez>`_ in `#18602 <https://github.com/galaxyproject/galaxy/pull/18602>`_
+* Improve update history payload schema by `@davelopez <https://github.com/davelopez>`_ in `#18618 <https://github.com/galaxyproject/galaxy/pull/18618>`_
+* Parameter Model Improvements by `@jmchilton <https://github.com/jmchilton>`_ in `#18641 <https://github.com/galaxyproject/galaxy/pull/18641>`_
+* Improve accept header API schema by `@davelopez <https://github.com/davelopez>`_ in `#18668 <https://github.com/galaxyproject/galaxy/pull/18668>`_
+* Allow access to invocation via shared or published history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18707 <https://github.com/galaxyproject/galaxy/pull/18707>`_
+* Migrate Visualizations API to FastAPI by `@arash77 <https://github.com/arash77>`_ in `#18721 <https://github.com/galaxyproject/galaxy/pull/18721>`_
+* Improvements to help terms & tool help. by `@jmchilton <https://github.com/jmchilton>`_ in `#18722 <https://github.com/galaxyproject/galaxy/pull/18722>`_
+* More typing, docs, and decomposition around tool execution by `@jmchilton <https://github.com/jmchilton>`_ in `#18758 <https://github.com/galaxyproject/galaxy/pull/18758>`_
+* Refactor ``LibraryDatasetsManager`` and fix type annotation issue by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18773 <https://github.com/galaxyproject/galaxy/pull/18773>`_
+* Backend handling of setting user-role, user-group, and group-role associations by `@jdavcs <https://github.com/jdavcs>`_ in `#18777 <https://github.com/galaxyproject/galaxy/pull/18777>`_
+* Update Visualization FastAPI by `@arash77 <https://github.com/arash77>`_ in `#18792 <https://github.com/galaxyproject/galaxy/pull/18792>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Migrate Library Contents API to FastAPI by `@arash77 <https://github.com/arash77>`_ in `#18838 <https://github.com/galaxyproject/galaxy/pull/18838>`_
+* Enable extra user preferences for remotely authorized users by `@maartenschermer <https://github.com/maartenschermer>`_ in `#18887 <https://github.com/galaxyproject/galaxy/pull/18887>`_
+* Enable ``ignore-without-code`` mypy error code by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18898 <https://github.com/galaxyproject/galaxy/pull/18898>`_
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+* Allow CORS requests to /api/workflow_landings by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18963 <https://github.com/galaxyproject/galaxy/pull/18963>`_
+* Decouple user email from role name by `@jdavcs <https://github.com/jdavcs>`_ in `#18966 <https://github.com/galaxyproject/galaxy/pull/18966>`_
+* Optimize to_history_dataset_association in create_datasets_from_library_folder by `@arash77 <https://github.com/arash77>`_ in `#18970 <https://github.com/galaxyproject/galaxy/pull/18970>`_
+* Workflow landing improvements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18979 <https://github.com/galaxyproject/galaxy/pull/18979>`_
+* Allow recovering a normalized version of workflow request state from API by `@jmchilton <https://github.com/jmchilton>`_ in `#18985 <https://github.com/galaxyproject/galaxy/pull/18985>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#19031 <https://github.com/galaxyproject/galaxy/pull/19031>`_
+* Silence the quota manager for updates by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19046 <https://github.com/galaxyproject/galaxy/pull/19046>`_
+* Add job metrics per invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19048 <https://github.com/galaxyproject/galaxy/pull/19048>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+* Move TRS import into WorkflowContentManager by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19070 <https://github.com/galaxyproject/galaxy/pull/19070>`_
+* Better cleanup of sharing roles on user purge by `@jdavcs <https://github.com/jdavcs>`_ in `#19096 <https://github.com/galaxyproject/galaxy/pull/19096>`_
+* Always validate hashes when provided by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19110 <https://github.com/galaxyproject/galaxy/pull/19110>`_
+* Backport of Workflow Editor Activity Bar by `@dannon <https://github.com/dannon>`_ in `#19212 <https://github.com/galaxyproject/galaxy/pull/19212>`_
+* Workflow Inputs Activity by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#19252 <https://github.com/galaxyproject/galaxy/pull/19252>`_
+
+=============
+Other changes
+=============
+
+* Format dev to fix linting. by `@jmchilton <https://github.com/jmchilton>`_ in `#18860 <https://github.com/galaxyproject/galaxy/pull/18860>`_
 
 -------------------
 24.1.4 (2024-12-11)

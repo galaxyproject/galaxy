@@ -11,11 +11,9 @@ from argparse import (
     ArgumentParser,
     Namespace,
 )
+from collections.abc import Iterable
 from typing import (
     cast,
-    Dict,
-    Iterable,
-    List,
     Optional,
     Union,
 )
@@ -369,7 +367,7 @@ class DatabaseStateCache:
         self._load_db(engine)
 
     @property
-    def tables(self) -> Dict[str, Table]:
+    def tables(self) -> dict[str, Table]:
         return self.db_metadata.tables
 
     def is_database_empty(self) -> bool:
@@ -404,7 +402,7 @@ class DatabaseStateCache:
         return None
 
 
-def pop_arg_from_args(args: List[str], arg_name) -> Optional[str]:
+def pop_arg_from_args(args: list[str], arg_name) -> Optional[str]:
     """
     Pop and return argument name and value from args if arg_name is in args.
     """

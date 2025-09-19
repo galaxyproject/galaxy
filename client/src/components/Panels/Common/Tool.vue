@@ -12,7 +12,6 @@
             :target="tool.target"
             :title="tool.help"
             @click="onClick">
-            <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
@@ -62,6 +61,10 @@ export default {
             type: String,
             default: "",
         },
+        renderIcon: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         targetClass() {
@@ -88,8 +91,5 @@ export default {
 <style scoped>
 .toolTitle {
     overflow-wrap: anywhere;
-}
-.logo {
-    width: 2.5rem;
 }
 </style>

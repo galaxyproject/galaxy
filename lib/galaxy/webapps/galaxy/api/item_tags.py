@@ -3,12 +3,12 @@ API operations related to tagging items.
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import (
     Body,
     Path,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.item_tags import ItemTagsManager

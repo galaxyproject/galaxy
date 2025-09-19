@@ -10,7 +10,6 @@ from sqlalchemy import (
 
 from galaxy import model
 from galaxy.managers.forms import get_form
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -108,7 +107,7 @@ class Forms(BaseUIController):
     @web.require_admin
     def create_form(self, trans, payload=None, **kwd):
         if trans.request.method == "GET":
-            fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
+            fd_types = sorted(model.FormDefinition.types.__members__.items())
             return {
                 "title": "Create new form",
                 "inputs": [
@@ -140,8 +139,8 @@ class Forms(BaseUIController):
                     if len(row) >= 6:
                         for column in range(len(row)):
                             row[column] = str(row[column]).strip('"')
-                        prefix = "fields_%i|" % index
-                        payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
+                        prefix = f"fields_{index}|"
+                        payload[f"{prefix}name"] = f"{index + 1}_imported_field"
                         payload[f"{prefix}label"] = row[0]
                         payload[f"{prefix}helptext"] = row[1]
                         payload[f"{prefix}type"] = row[2]
@@ -152,7 +151,7 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
-            imported = (" with %i imported fields" % index) if index > 0 else ""
+            imported = (f" with {index} imported fields") if index > 0 else ""
             message = f"The form '{payload.get('name')}' has been created{imported}."
             return {"message": message}
 
@@ -165,8 +164,8 @@ class Forms(BaseUIController):
         form = get_form(trans, id)
         latest_form = form.latest_form
         if trans.request.method == "GET":
-            fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
-            ff_types = [(t.__name__, t.__name__) for t in trans.model.FormDefinition.supported_field_types]
+            fd_types = sorted(model.FormDefinition.types.__members__.items())
+            ff_types = [(t.__name__, t.__name__) for t in model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [
                 {
@@ -235,7 +234,7 @@ class Forms(BaseUIController):
         fields = []
         index = 0
         while True:
-            prefix = "fields_%i|" % index
+            prefix = f"fields_{index}|"
             if f"{prefix}label" in payload:
                 field_attributes = ["name", "label", "helptext", "required", "type", "selectlist", "default"]
                 field_dict = {attr: payload.get(f"{prefix}{attr}") for attr in field_attributes}
@@ -271,7 +270,7 @@ class Forms(BaseUIController):
             else:
                 field_names_dict[field["name"]] = 1
         # create a new form definition
-        form_definition = trans.app.model.FormDefinition(
+        form_definition = model.FormDefinition(
             name=current_form["name"],
             desc=current_form["desc"],
             fields=current_form["fields"],
@@ -281,17 +280,16 @@ class Forms(BaseUIController):
         )
         # save changes to the existing form
         if form_id:
-            form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(
+            form_definition_current = trans.sa_session.query(model.FormDefinitionCurrent).get(
                 trans.security.decode_id(form_id)
             )
             if form_definition_current is None:
                 return None, f"Invalid form id ({form_id}) provided. Cannot save form."
         else:
-            form_definition_current = trans.app.model.FormDefinitionCurrent()
+            form_definition_current = model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
         form_definition.form_definition_current = form_definition_current
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form_definition, None

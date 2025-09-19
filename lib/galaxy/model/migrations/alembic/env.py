@@ -3,13 +3,13 @@ import re
 from typing import (
     Callable,
     cast,
-    Dict,
 )
 
 from alembic import context
 from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base
 from galaxy.model.migrations import (
@@ -74,7 +74,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     run_migrations(url)
 
 
-def _process_cmd_current(urls: Dict[ModelId, str]) -> bool:
+def _process_cmd_current(urls: dict[ModelId, str]) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
         # Run command for each url only if urls are different; otherwise run once.
         are_urls_equal = len(set(urls.values())) == 1
@@ -111,17 +111,28 @@ def _configure_and_run_migrations_offline(url: str) -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-    with context.begin_transaction():
-        context.run_migrations()
+    _run_migrations()
 
 
 def _configure_and_run_migrations_online(url) -> None:
     engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
-        with context.begin_transaction():
-            context.run_migrations()
+        _run_migrations()
     engine.dispose()
+
+
+def _run_migrations():
+    with context.begin_transaction():
+        try:
+            context.run_migrations()
+        except OperationalError as error:
+            if getattr(error.orig, "pgcode", None) == "40P01":  # PostgreSQL DeadlockDetected error detected
+                msg = """A deadlock has been detected. This may be due to a database
+revision requiring exclusive access to a database object. To avoid this error, it is recommended to
+shut down all Galaxy procesess during database migration."""
+                log.error(msg)
+                raise
 
 
 def _get_url_from_config() -> str:
@@ -129,8 +140,8 @@ def _get_url_from_config() -> str:
     return cast(str, url)
 
 
-def _load_urls() -> Dict[ModelId, str]:
-    context_dict = cast(Dict, context.get_x_argument(as_dictionary=True))
+def _load_urls() -> dict[ModelId, str]:
+    context_dict = cast(dict, context.get_x_argument(as_dictionary=True))
     gxy_url = context_dict.get(f"{GXY}_url")
     tsi_url = context_dict.get(f"{TSI}_url")
     assert gxy_url and tsi_url

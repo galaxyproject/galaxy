@@ -1,9 +1,8 @@
 - id: ftp
   version: 0
-  name: An FTP Server
+  name: FTP Server
   description: |
-    This template allows connecting to FTP servers. This file source plugin should
-    support FTP and FTPS servers.
+    Setup connections to FTP and FTPS servers to download and upload files.
   configuration:
     type: ftp
     host: "{{ variables.host }}"

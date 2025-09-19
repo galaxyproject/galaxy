@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from "vue";
+
 import HelpPopover from "./HelpPopover.vue";
 
 interface Props {
@@ -10,28 +12,15 @@ interface Props {
 withDefaults(defineProps<Props>(), {
     forTitle: false,
 });
+
+const helpTarget = ref();
 </script>
 
 <template>
     <span>
-        <HelpPopover
-            :target="
-                () => {
-                    return $refs.helpTarget;
-                }
-            "
-            :term="uri" />
+        <HelpPopover :target="helpTarget" :term="uri" />
         <span ref="helpTarget" class="help-text" :class="{ 'title-help-text': forTitle }">{{ text }}</span>
     </span>
 </template>
 
-<style scoped>
-/* Give visual indication of mouseover info */
-.help-text {
-    text-decoration-line: underline;
-    text-decoration-style: dashed;
-}
-.title-help-text {
-    text-decoration-thickness: 1px;
-}
-</style>
+<style scoped src="@/components/Help/help-text.scss" />

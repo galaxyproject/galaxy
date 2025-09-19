@@ -31,8 +31,8 @@ function onDoNotShowAgain() {
 watch(
     () => props.querySelectionBreak,
     () => {
-        dismissCountDown.value = showSelectionQueryBreakWarning ? dismissSecs.value : 0;
-    }
+        dismissCountDown.value = showSelectionQueryBreakWarning.value ? dismissSecs.value : 0;
+    },
 );
 </script>
 

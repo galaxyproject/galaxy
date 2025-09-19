@@ -17,7 +17,6 @@ from queue import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -41,10 +40,7 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script,
 )
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -71,6 +67,7 @@ if TYPE_CHECKING:
         JobWrapper,
         MinimalJobWrapper,
     )
+    from galaxy.schema.schema import JobState as JobStateEnum
 
 log = get_logger(__name__)
 
@@ -104,7 +101,7 @@ class BaseJobRunner:
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
-    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner"""
         self.app = app
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
@@ -129,7 +126,7 @@ class BaseJobRunner:
         self.work_threads = []
         log.debug(f"Starting {self.nworkers} {self.runner_name} workers")
         for i in range(self.nworkers):
-            worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
+            worker = threading.Thread(name=f"{self.runner_name}.work_thread-{i}", target=self.run_next)
             worker.daemon = True
             worker.start()
             self.work_threads.append(worker)
@@ -270,7 +267,7 @@ class BaseJobRunner:
         """
         return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
-    def parse_destination_params(self, params: Dict[str, Any]):
+    def parse_destination_params(self, params: dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 
@@ -300,7 +297,9 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            if job_wrapper.prepare() is False:
+                # job cache
+                return False
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
@@ -415,12 +414,8 @@ class BaseJobRunner:
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
-                if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    stmt = (
-                        select(self.app.model.JobToOutputDatasetAssociation)
-                        .filter_by(job=job, dataset=dataset)
-                        .limit(1)
-                    )
+                if isinstance(dataset, model.HistoryDatasetAssociation):
+                    stmt = select(model.JobToOutputDatasetAssociation).filter_by(job=job, dataset=dataset).limit(1)
                     joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
@@ -493,7 +488,7 @@ class BaseJobRunner:
                     env=os.environ,
                     preexec_fn=os.setpgrp,
                 )
-            log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
+            log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
         job_metrics = job_wrapper.app.job_metrics
@@ -610,6 +605,7 @@ class BaseJobRunner:
     def mark_as_resubmitted(self, job_state: "JobState", info: Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
+            assert self.app.job_manager.job_handler.dispatcher
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
@@ -669,8 +665,7 @@ class BaseJobRunner:
 
             # Flush with streams...
             self.sa_session.add(job)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
             if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
@@ -766,7 +761,7 @@ class AsynchronousJobState(JobState):
         self,
         files_dir=None,
         job_wrapper=None,
-        job_id=None,
+        job_id: Union[str, None] = None,
         job_file=None,
         output_file=None,
         error_file=None,
@@ -775,7 +770,7 @@ class AsynchronousJobState(JobState):
         job_destination=None,
     ):
         super().__init__(job_wrapper, job_destination)
-        self.old_state = None
+        self.old_state: Union[JobStateEnum, None] = None
         self._running = False
         self.check_count = 0
         self.start_time = None
@@ -823,6 +818,13 @@ class AsynchronousJobState(JobState):
         if attribute not in self.cleanup_file_attributes:
             self.cleanup_file_attributes.append(attribute)
 
+    def init_job_stream_files(self):
+        """For runners that don't create explicit job scripts - create job stream files."""
+        with open(self.output_file, "w"):
+            pass
+        with open(self.error_file, "w"):
+            pass
+
 
 class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
@@ -831,15 +833,15 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
     to the correct methods (queue, finish, cleanup) at appropriate times..
     """
 
-    def __init__(self, app, nworkers, **kwargs):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         super().__init__(app, nworkers, **kwargs)
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
         # be modified by the monitor thread, which will move items from 'queue'
         # to 'watched' and then manage the watched jobs.
-        self.watched = []
-        self.monitor_queue = Queue()
+        self.watched: list[AsynchronousJobState] = []
+        self.monitor_queue: Queue[AsynchronousJobState] = Queue()
 
     def _init_monitor_thread(self):
         name = f"{self.runner_name}.monitor_thread"
@@ -882,7 +884,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 
-    def monitor_job(self, job_state):
+    def monitor_job(self, job_state: AsynchronousJobState) -> None:
         self.monitor_queue.put(job_state)
 
     def shutdown(self):
@@ -909,20 +911,10 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         raise NotImplementedError()
 
-    def finish_job(self, job_state: AsynchronousJobState):
-        """
-        Get the output/error for a finished job, pass to `job_wrapper.finish`
-        and cleanup all the job's temporary files.
-        """
-        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
-        external_job_id = job_state.job_id
-
-        # To ensure that files below are readable, ownership must be reclaimed first
-        job_state.job_wrapper.reclaim_ownership()
-
+    def _collect_job_output(self, job_id: int, external_job_id: Optional[str], job_state: JobState):
         # wait for the files to appear
         which_try = 0
         collect_output_success = True
@@ -936,11 +928,25 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ""
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error("(%s/%s) %s: %s", galaxy_id_tag, external_job_id, stderr, unicodify(e))
+                    log.error("(%s/%s) %s: %s", job_id, external_job_id, stderr, unicodify(e))
                     collect_output_success = False
                 else:
                     time.sleep(1)
                 which_try += 1
+        return collect_output_success, stdout, stderr
+
+    def finish_job(self, job_state: AsynchronousJobState):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the job's temporary files.
+        """
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        external_job_id = job_state.job_id
+
+        # To ensure that files below are readable, ownership must be reclaimed first
+        job_state.job_wrapper.reclaim_ownership()
+
+        collect_output_success, stdout, stderr = self._collect_job_output(galaxy_id_tag, external_job_id, job_state)
 
         if not collect_output_success:
             job_state.fail_message = stderr

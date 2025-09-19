@@ -11,8 +11,9 @@ interface WorkflowInvocationStepTitleProps {
     stepIndex: number;
     stepLabel?: string;
     stepType: string;
-    stepToolId?: string;
-    stepSubworkflowId?: string;
+    stepToolId?: string | null;
+    stepToolUuid?: string | null;
+    stepSubworkflowId?: string | null;
 }
 
 const props = defineProps<WorkflowInvocationStepTitleProps>();
@@ -27,8 +28,9 @@ const subWorkflow = computed(() => {
     return null;
 });
 const toolName = computed(() => {
-    if (props.stepToolId) {
-        return toolStore.getToolNameById(props.stepToolId);
+    const toolId = props.stepToolUuid || props.stepToolId;
+    if (toolId) {
+        return toolStore.getToolNameById(toolId);
     }
     return "";
 });
@@ -60,8 +62,9 @@ const title = computed(() => {
 const hoverError = ref("");
 
 async function initStores() {
-    if (props.stepToolId && !toolStore.getToolForId(props.stepToolId)) {
-        toolStore.fetchToolForId(props.stepToolId);
+    const toolId = props.stepToolUuid || props.stepToolId;
+    if (toolId && !toolStore.getToolForId(toolId)) {
+        toolStore.fetchToolForId(toolId);
     }
 
     if (props.stepSubworkflowId) {
@@ -78,7 +81,7 @@ watch(
     async () => {
         await initStores();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

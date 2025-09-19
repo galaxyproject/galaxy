@@ -1,4 +1,5 @@
 <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.16.2">
+    <icon src="cellxgene.png" />
     <requirements>
         <container type="docker">quay.io/biocontainers/cellxgene:0.16.2--py_0</container>
     </requirements>

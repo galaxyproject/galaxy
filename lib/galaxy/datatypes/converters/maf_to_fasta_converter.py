@@ -7,8 +7,6 @@ import bx.align.maf
 
 from galaxy.datatypes.util import maf_utilities
 
-assert sys.version_info[:2] >= (2, 6)
-
 
 def __main__():
     output_name = sys.argv.pop(1)
@@ -28,13 +26,13 @@ def __main__():
                         maf_utilities.get_fasta_header(
                             c,
                             {"block_index": count, "species": spec, "sequence_index": spec_counts[spec]},
-                            suffix="%s_%i_%i" % (spec, count, spec_counts[spec]),
+                            suffix=f"{spec}_{count}_{spec_counts[spec]}",
                         )
                     )
                 )
                 out.write(f"{c.text}\n")
             out.write("\n")
-    print("%i MAF blocks converted to FASTA." % (count))
+    print(f"{count} MAF blocks converted to FASTA.")
 
 
 if __name__ == "__main__":

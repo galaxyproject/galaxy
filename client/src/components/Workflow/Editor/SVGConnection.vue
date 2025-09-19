@@ -3,8 +3,9 @@ import { curveBasis, line } from "d3";
 import { computed, type PropType } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import { type Connection, getConnectionId } from "@/stores/workflowConnectionStore";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { Connection } from "@/stores/workflowStoreTypes";
 
 const props = defineProps({
     id: String,
@@ -71,7 +72,7 @@ const connectionPosition = computed(() => {
 
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
 const inputIsMappedOver = computed(
-    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection
+    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection,
 );
 
 const outputIsOptional = computed(() => {
@@ -79,7 +80,7 @@ const outputIsOptional = computed(() => {
         stepStore.getStep(props.connection.output.stepId)?.when ||
             stepStore
                 .getStep(props.connection.output.stepId)
-                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
     );
 });
 

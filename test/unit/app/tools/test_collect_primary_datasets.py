@@ -7,7 +7,6 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
-from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
@@ -29,11 +28,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
 
-        self.app.model.Dataset.object_store = object_store
+        model.Dataset.object_store = object_store
 
     def tearDown(self):
-        if self.app.model.Dataset.object_store is self.app.object_store:
-            self.app.model.Dataset.object_store = None
+        if model.Dataset.object_store is self.app.object_store:
+            model.Dataset.object_store = None
 
     def test_empty_collect(self):
         assert len(self._collect()) == 0
@@ -446,12 +445,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def _new_history(self, hdas=None, flush=True):
         hdas = hdas or []
         history = model.History()
-        self.app.model.context.add(history)
+        session = self.app.model.context
+        session.add(history)
         for hda in hdas:
             history.add_dataset(hda, set_hid=False)
-        session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         return history
 
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type FileSourceTemplateSummary, type UserFileSourceModel } from "@/api/fileSources";
+import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { useConfigurationTemplateUpgrade } from "@/components/ConfigTemplates/useConfigurationTesting";
 
 import { useInstanceRouting } from "./routing";
@@ -36,7 +36,7 @@ const {
     toRef(props, "latestTemplate"),
     editTestUrl,
     editUrl,
-    useInstanceRouting
+    useInstanceRouting,
 );
 </script>
 <template>

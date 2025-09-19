@@ -51,7 +51,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
         """Create and populate the emboss_5_0110 repository."""
-        global running_standalone
         if running_standalone:
             category = self.populator.get_category_with_name(category_name)
             repository = self.get_or_create_repository(
@@ -70,7 +69,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_generate_repository_dependency_with_invalid_url(self):
         """Generate a repository dependency for emboss 5 with an invalid URL."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
             column_maker_repository = self._get_repository_by_name_and_owner(
@@ -93,7 +91,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_generate_repository_dependency_with_invalid_name(self):
         """Generate a repository dependency for emboss 5 with an invalid name."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
             repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
@@ -114,7 +111,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0035_generate_repository_dependency_with_invalid_owner(self):
         """Generate a repository dependency for emboss 5 with an invalid owner."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
             repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
@@ -135,7 +131,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0040_generate_repository_dependency_with_invalid_changeset_revision(self):
         """Generate a repository dependency for emboss 5 with an invalid changeset revision."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple", "invalid"])
             repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)

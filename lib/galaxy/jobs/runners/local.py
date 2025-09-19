@@ -10,7 +10,6 @@ import tempfile
 import threading
 from time import sleep
 from typing import (
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -57,7 +56,7 @@ class LocalJobRunner(BaseJobRunner):
 
         super().__init__(app, nworkers)
 
-    def _command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
+    def _command_line(self, job_wrapper: "MinimalJobWrapper") -> tuple[str, str]:
         """ """
         command_line = job_wrapper.runner_command_line
 
@@ -171,7 +170,7 @@ class LocalJobRunner(BaseJobRunner):
             return
         pid = int(pid)
         if not check_pg(pid):
-            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
+            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled", job.id, pid)
             return
         log.debug("stop_job(): %s: Terminating process group %d", job.id, pid)
         kill_pg(pid)

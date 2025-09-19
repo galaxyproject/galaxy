@@ -8,12 +8,10 @@ import logging
 import os
 import random
 from enum import Enum
-from typing import Tuple
 
 from sqlalchemy.orm import object_session
 
 from galaxy.exceptions import HandlerAssignmentError
-from galaxy.model.base import transaction
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -40,7 +38,7 @@ class HandlerAssignmentSkip(Exception):
 
 class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = "_default_"
-    DEFAULT_BASE_HANDLER_POOLS: Tuple[str, ...] = ()
+    DEFAULT_BASE_HANDLER_POOLS: tuple[str, ...] = ()
 
     def add_handler(self, handler_id, tags):
         if handler_id not in self.handlers:
@@ -462,6 +460,5 @@ class ConfiguresHandlers:
 def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     log.info(f"Flushed transaction for {obj.log_str()} {obj_flush_timer}")

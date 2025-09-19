@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import { type GalaxyApiPaths } from "@/api/schema";
+import type { GalaxyApiPaths } from "@/api/schema";
 import { getAppRoot } from "@/onload/loadConfig";
 
 function getBaseUrl() {

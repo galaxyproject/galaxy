@@ -8,11 +8,11 @@ for isolating test functionality.
 
 ### Specific test scenarios & examples
 
--   [Mocking an imported
-    dependency](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
--   [Testing async
-    operations](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
--   [Testing a Vue component for expected rendering
-    output](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
--   [Firing an event against a shallow mounted vue
-    component](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
+- [Mocking an imported
+  dependency](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
+- [Testing async
+  operations](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
+- [Testing a Vue component for expected rendering
+  output](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
+- [Firing an event against a shallow mounted vue
+  component](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)

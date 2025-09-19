@@ -1,7 +1,7 @@
-import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
+import { usePersistentRef } from "@/composables/persistentRef";
 import { ensureDefined } from "@/utils/assertions";
 import { getShortToolId } from "@/utils/tool";
 import { match } from "@/utils/utils";
@@ -26,10 +26,10 @@ function getContentId(step: Step) {
 
 export const useWorkflowNodeInspectorStore = defineStore("workflowNodeInspectorStore", () => {
     /** width of the node inspector if no other width is stored */
-    const generalWidth = useLocalStorage("workflowNodeInspectorGeneralWidth", 300);
+    const generalWidth = usePersistentRef("workflowNodeInspectorGeneralWidth", 300);
     /** maximized state of the node inspector if no other value is stored */
     const generalMaximized = ref(false);
-    const storedSizes = useLocalStorage<Record<string, StoredSize>>("workflowNodeInspectorStoredSizes", {});
+    const storedSizes = usePersistentRef<Record<string, StoredSize>>("workflowNodeInspectorStoredSizes", {});
 
     const isStored = computed(() => (step: Step) => {
         const id = getContentId(step);

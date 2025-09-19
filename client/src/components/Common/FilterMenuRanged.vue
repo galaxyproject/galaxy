@@ -2,7 +2,7 @@
 import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ErrorType, type ValidFilter } from "@/utils/filtering";
+import type { ErrorType, ValidFilter } from "@/utils/filtering";
 
 type FilterType = string | boolean | undefined;
 
@@ -56,28 +56,28 @@ watch(
     () => localValueGt.value,
     (newFilter) => {
         emit("change", localNameGt.value, newFilter);
-    }
+    },
 );
 
 watch(
     () => localValueLt.value,
     (newFilter) => {
         emit("change", localNameLt.value, newFilter);
-    }
+    },
 );
 
 watch(
     () => valueGt.value,
     (newFilter) => {
         localValueGt.value = newFilter;
-    }
+    },
 );
 
 watch(
     () => valueLt.value,
     (newFilter) => {
         localValueLt.value = newFilter;
-    }
+    },
 );
 </script>
 

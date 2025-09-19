@@ -1217,21 +1217,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_tool_document_cache``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Whether to enable the tool document cache. This cache stores
-    expanded XML strings. Enabling the tool cache results in slightly
-    faster startup times. The tool cache is backed by a SQLite
-    database, which cannot be stored on certain network disks. The
-    cache location is configurable with the ``tool_cache_data_dir``
-    tag in tool config files.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_search_index_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1817,6 +1802,44 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``email_ban_file``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    E-mail ban file is used to specify email addresses that have been
+    banned. If a user attempts to register a new account using an
+    email address listed in this file, registration will be denied.
+    This file does not affect user sign-in. Email addresses are
+    matched against a canonical address representation based on rules
+    defined in <canonical_email_rules>. The file should include one
+    email address per line. Lines starting with the "#" character are
+    ignored.
+    Example value "banned_emails.conf"
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``canonical_email_rules``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Specifies how email addresses are reduced to their canonical form
+    by assigning rules to email service domains and domain aliases.
+    Available rules - ignore_case   Values are not case-sensitive
+    (RickDeckard@foo.cOM == rickdeckard@foo.com) - ignore_dots
+    Periods in the local-part of an email address are ignored
+    (rick.deckard@foo.com == rickdeckard@foo.com) - sub_addressing
+    Suffixes prefixed with <sub_addressing_delim> in the local-part of
+    an email address are ignored   (rickdeckard+anything@foo.com ==
+    rickdeckard@foo.com if delimiter is the character '+')
+:Default: ``{'all': {'ignore_case': False, 'ignore_dots': False, 'sub_addressing': False, 'sub_addressing_delim': '+'}, 'gmail.com': {'aliases': ['googlemail.com'], 'ignore_case': True, 'ignore_dots': True, 'sub_addressing': True}, 'proton.me': {'aliases': ['pm.me', 'protonmail.com'], 'ignore_case': True, 'sub_addressing': True}}``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``registration_warning_message``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1826,7 +1849,7 @@
     registering multiple accounts.  Applies mostly for the main Galaxy
     instance. If no message specified the warning box will not be
     shown.
-:Default: ``Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.``
+:Default: ``Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.``
 :Type: str
 
 
@@ -2425,6 +2448,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``citation_bibtex``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The BibTeX citation for Galaxy, to be displayed in the History
+    Tool Reference List
+:Default: ``@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``release_doc_base_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2463,9 +2497,9 @@
 
 :Description:
     Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    it via a proxy server. You can use these paths (or ones in the
+    proxy server) to point to your own styles. The static_* options
+    that refer to paths are relative to the current working directory.
 :Default: ``true``
 :Type: bool
 
@@ -2475,10 +2509,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Value of cache time for static content served by Galaxy. Ignored
+    if static_enabled is false.
 :Default: ``360``
 :Type: int
 
@@ -2488,11 +2520,21 @@
 ~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to the static content dir. Ignored if static_enabled is
+    false.
 :Default: ``static/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``static_dist_dir``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the built Galaxy client application, static/dist/ in the
+    Galaxy source code after the build is complete. Ignored if
+    static_enabled is false.
+:Default: ``static/dist/``
 :Type: str
 
 
@@ -2501,11 +2543,9 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
-:Default: ``static/images``
+    Path to the static images directory. Ignored if static_enabled is
+    false.
+:Default: ``static/images/``
 :Type: str
 
 
@@ -2514,10 +2554,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to favicon.ico, not the directory that contains it (the name
+    is a misnomer). Ignored if static_enabled is false.
 :Default: ``static/favicon.ico``
 :Type: str
 
@@ -2527,10 +2565,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to the static scripts directory. Ignored if static_enabled is
+    false.
 :Default: ``static/scripts/``
 :Type: str
 
@@ -2540,11 +2576,9 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
-:Default: ``static/style``
+    Path to the static style directory. Ignored if static_enabled is
+    false.
+:Default: ``static/style/``
 :Type: str
 
 
@@ -2553,10 +2587,7 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Serve static content, which must be enabled if you're not serving
-    it via a proxy server.  These options should be self explanatory
-    and so are not documented individually.  You can use these paths
-    (or ones in the proxy server) to point to your own styles.
+    Path to robots.txt. Ignored if static_enabled is false.
 :Default: ``static/robots.txt``
 :Type: str
 
@@ -4150,6 +4181,37 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``oidc_auth_pipeline``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the full sequence of steps that Python Social Auth goes
+    through when authenticating an OIDC login. Use when you want to
+    completely customize the pipeline (e.g. for testing).
+    By default, Galaxy uses galaxy.authnz.psa_authnz.AUTH_PIPELINE -
+    see there for example steps.
+    Each element should be an import path to a function, e.g.
+    galaxy.authnz.psa_authnz.contains_required_data
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_auth_pipeline_extra``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets additional authentication pipeline steps, added after the
+    default steps (from galaxy.authnz.psa_authnz.AUTH_PIPELINE).
+    Use when you want to keep the default pipeline, but add additional
+    custom processing.
+    Each element should be an import path to a function, e.g.
+    galaxy.authnz.psa_authnz.contains_required_data
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``oidc_scope_prefix``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -4717,6 +4779,33 @@
     increase CPU usage of handler processes. Float values are allowed.
 :Default: ``1.0``
 :Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``calculate_dataset_hash``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    In which cases Galaxy should calculate a hash for a new dataset.
+    Dataset hashes can be used by the Galaxy job cache/search to check
+    if job inputs match. Setting the 'enable_celery_tasks' option to
+    true is also required for dataset hash calculation. Possible
+    values are: 'always', 'upload' (the default), 'never'. If set to
+    'upload', the hash is calculated only for the outputs of upload
+    jobs.
+:Default: ``upload``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``hash_function``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Hash function to use if 'calculate_dataset_hash' is enabled.
+    Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+:Default: ``sha256``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -5366,23 +5455,33 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~
-``openai_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+``ai_api_key``
+~~~~~~~~~~~~~~
 
 :Description:
-    API key for OpenAI (https://openai.com/) to enable the wizard (or
-    more?)
+    API key for an AI provider. AI provider is Openai By default
+    (https://openai.com/) to enable the wizard (or more?)
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~
-``openai_model``
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+``ai_api_base_url``
+~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    OpenAI model to enable the wizard.
+    AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~
+``ai_model``
+~~~~~~~~~~~~
+
+:Description:
+    AI model to enable the wizard.
 :Default: ``gpt-4o``
 :Type: str
 
@@ -5679,6 +5778,93 @@
     requests to file sources but outdated contents might be displayed
     to the user. Currently only affects s3fs file sources.
 :Default: ``60``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_tool_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    tool dependencies when installing tools from the Tool Shed or not.
+    Tool dependencies are the software packages and libraries required
+    for a tool to function properly. Tool dependencies are typically
+    specified in the tool's XML configuration using <requirement>
+    tags. Galaxy can automatically install these dependencies if the
+    tool_dependency_dir is properly configured in the galaxy.yml file.
+    This option should be set to false if containerized versions of
+    tools are used.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_repository_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    repository dependencies when installing tools from the Tool Shed.
+    Repository dependencies are other Tool Shed repositories that the
+    tool being installed depends on and they are commonly used with
+    tool suites. Repository dependencies ensure that all necessary
+    components are installed for the tool (or suite) to work correctly
+    within the Galaxy environment.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``install_resolver_dependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set the default value in the Admin UI to automatically install
+    resolver dependencies when installing tools from the Tool Shed.
+    Resolver dependencies is a mechanism used by Galaxy to locate and
+    make available the required software packages for Galaxy tools.
+    Galaxy uses dependency resolvers (e.g., Conda) to determine how to
+    satisfy these dependencies. This option should be set to false if
+    containerized versions of tools are used.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_failed_jobs_working_directory_cleanup``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the cleanup of failed Galaxy job's working directories.
+    Runs in a Celery task.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The number of days to keep failed Galaxy job's working directories
+    before attempting to delete them if
+    enable_failed_jobs_working_directory_cleanup is ``true``. Runs in
+    a Celery task.
+:Default: ``5``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``failed_jobs_working_directory_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all failed
+    Galaxy job's working directories from the filesystem (every 24
+    hours by default) if enable_failed_jobs_working_directory_cleanup
+    is ``true``. Runs in a Celery task.
+:Default: ``86400``
 :Type: int
 
 

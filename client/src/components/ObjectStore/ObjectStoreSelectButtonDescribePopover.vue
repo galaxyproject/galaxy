@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel } from "@/api";
 
 import DescribeObjectStore from "./DescribeObjectStore.vue";
 import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
@@ -23,7 +23,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <ObjectStoreSelectButtonPopover :target="target" :title="title">
+    <ObjectStoreSelectButtonPopover :target="target" :title="title ?? ''">
         <DescribeObjectStore :what="what" :storage-info="objectStore"> </DescribeObjectStore>
     </ObjectStoreSelectButtonPopover>
 </template>

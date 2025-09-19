@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-import { type TaskMonitor } from "@/composables/genericTaskMonitor";
+import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
     type MonitoringData,
     type MonitoringRequest,
@@ -26,9 +26,11 @@ function useMonitorMock(): TaskMonitor {
         waitForTask: jest.fn().mockImplementation(() => {
             isRunning.value = true;
         }),
+        stopWaitingForTask: jest.fn(),
         isRunning,
         isCompleted: ref(false),
         hasFailed: ref(false),
+        failureReason: ref(),
         requestHasFailed: ref(false),
         taskStatus,
         expirationTime: 1000,
@@ -36,6 +38,7 @@ function useMonitorMock(): TaskMonitor {
         loadStatus(storedStatus) {
             taskStatus.value = storedStatus;
         },
+        fetchTaskStatus: jest.fn(),
     };
 }
 const mockUseMonitor = useMonitorMock();
@@ -46,7 +49,7 @@ const MOCK_REQUEST: MonitoringRequest = {
     taskType: "task",
     object: {
         id: "1",
-        type: "dataset",
+        type: "history",
     },
     description: "Test description",
 };
@@ -63,6 +66,7 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { start, isRunning } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor, monitoringData);
@@ -74,7 +78,7 @@ describe("usePersistentProgressTaskMonitor", () => {
     it("should throw an error if trying to start monitoring without monitoring data", async () => {
         const { start } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor);
         await expect(start()).rejects.toThrow(
-            "No monitoring data provided or stored. Cannot start monitoring progress."
+            "No monitoring data provided or stored. Cannot start monitoring progress.",
         );
     });
 
@@ -84,12 +88,13 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(
             MOCK_REQUEST,
             mockUseMonitor,
-            monitoringData
+            monitoringData,
         );
         expect(hasMonitoringData.value).toBeTruthy();
         reset();

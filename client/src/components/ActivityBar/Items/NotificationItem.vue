@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -11,12 +11,13 @@ const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
     icon: IconDefinition;
     isActive: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -25,14 +26,14 @@ const emit = defineEmits<{
 const tooltip = computed(() =>
     totalUnreadCount.value > 0
         ? `You have ${totalUnreadCount.value} unread notifications`
-        : "You have no unread notifications"
+        : "You have no unread notifications",
 );
 </script>
 
 <template>
     <ActivityItem
         :id="id"
-        :activity-bar-id="'notifications'"
+        :activity-bar-id="props.activityBarId"
         :icon="icon"
         :indicator="totalUnreadCount"
         :is-active="isActive"

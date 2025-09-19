@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { ConcreteObjectStoreModel, SelectableObjectStore } from "@/api";
 
 import ObjectStoreSelectButton from "@/components/ObjectStore/ObjectStoreSelectButton.vue";
 import ObjectStoreSelectButtonDescribePopover from "@/components/ObjectStore/ObjectStoreSelectButtonDescribePopover.vue";
 
 interface RelocateProps {
     fromObjectStore: ConcreteObjectStoreModel;
-    targetObjectStores: ConcreteObjectStoreModel[];
+    targetObjectStores: SelectableObjectStore[];
 }
 
 defineProps<RelocateProps>();
@@ -15,6 +15,10 @@ const emit = defineEmits<{
     (e: "relocate", value: string): void;
     (e: "closeModal"): void;
 }>();
+
+function relocate(objectStoreId: string) {
+    emit("relocate", objectStoreId);
+}
 
 const fromWhat = "This dataset location is";
 const toWhat = "This dataset will be relocated to";
@@ -32,7 +36,7 @@ const toWhat = "This dataset will be relocated to";
                 :object-store="fromObjectStore"
                 @click="emit('closeModal')" />
         </b-button-group>
-        <p class="relocate-to">Select new storage location for the dataset:</p>
+        <p class="relocate-to">Select new Galaxy storage for the dataset:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"
@@ -41,7 +45,7 @@ const toWhat = "This dataset will be relocated to";
                 class="swap-target-object-store-select-button"
                 variant="outline-primary"
                 :object-store="objectStore"
-                @click="emit('relocate', objectStore.object_store_id)" />
+                @click="relocate(objectStore.object_store_id)" />
         </b-button-group>
         <ObjectStoreSelectButtonDescribePopover
             id-prefix="swap-target"

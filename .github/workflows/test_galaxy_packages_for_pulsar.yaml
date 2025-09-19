@@ -16,15 +16,16 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-22.04  # Python 3.7 is not available via setup-python on ubuntu >=24.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7']  # don't upgrade, see https://github.com/galaxyproject/galaxy/pull/16649
+        python-version: ['3.8']  # don't upgrade, see https://github.com/galaxyproject/galaxy/pull/16649
     steps:
       - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

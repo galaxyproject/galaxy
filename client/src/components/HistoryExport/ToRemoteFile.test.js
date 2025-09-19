@@ -37,7 +37,7 @@ describe("ToRemoteFile.vue", () => {
         waitOnJob.mockReturnValue(
             new Promise((then) => {
                 then({ state: "ok" });
-            })
+            }),
         );
         wrapper.vm.doExport("gxfiles://", "export.tar.gz");
         await flushPromises();

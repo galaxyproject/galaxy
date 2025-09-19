@@ -154,7 +154,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             } else if (batchN !== n) {
                 return [
                     inputId,
-                    `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batchN}</b>.`,
+                    `Please make sure that you select the same number of inputs for all batch mode fields. This field contains ${n} selection(s) while a previous field contains ${batchN}.`,
                 ];
             }
         }

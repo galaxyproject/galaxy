@@ -11,6 +11,7 @@ import l from "@/utils/localization";
 
 import type { DetailsLayoutSummarized } from "./types";
 
+import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -20,6 +21,7 @@ interface Props {
     name?: string;
     tags?: string[];
     writeable?: boolean;
+    renameable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
     summarized?: DetailsLayoutSummarized;
@@ -29,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     name: undefined,
     tags: undefined,
     writeable: true,
+    renameable: true,
     annotation: undefined,
     showAnnotation: true,
     summarized: undefined,
@@ -45,14 +48,24 @@ const editing = ref(false);
 const textSelected = ref(false);
 const localProps = ref<{ name: string; annotation: string | null; tags: string[] }>({
     name: "",
-    annotation: "",
+    annotation: null,
     tags: [],
+});
+
+const clickToEditName = computed({
+    get: () => props.name ?? "",
+    set: (newName) => {
+        if (newName && newName !== props.name) {
+            emit("save", { name: newName.trim() });
+            localProps.value.name = newName;
+        }
+    },
 });
 
 const detailsClass = computed(() => {
     const classes: Record<string, boolean> = {
         details: true,
-        "summarized-details": props.summarized && !editing.value,
+        "summarized-details": !!props.summarized,
         "m-3": !props.summarized || editing.value,
     };
 
@@ -84,9 +97,9 @@ function onToggle() {
     editing.value = !editing.value;
 
     localProps.value = {
-        name: props.name,
-        annotation: props.annotation,
-        tags: props.tags,
+        name: props.name ?? "",
+        annotation: props.annotation ?? null,
+        tags: props.tags ?? [],
     };
 
     if (nameRef.value) {
@@ -107,19 +120,44 @@ function selectText() {
 
 <template>
     <section :class="detailsClass" data-description="edit details">
-        <BButton
-            :disabled="isAnonymous || !writeable"
-            class="edit-button ml-1 float-right"
-            data-description="editor toggle"
-            size="sm"
-            variant="link"
-            :title="editButtonTitle"
-            :pressed="editing"
-            @click="onToggle">
-            <FontAwesomeIcon :icon="faPen" fixed-width />
-        </BButton>
+        <div class="d-flex justify-content-between w-100">
+            <template v-if="!summarized && !editing">
+                <ClickToEdit
+                    v-if="renameable"
+                    v-model="clickToEditName"
+                    component="h3"
+                    title="..."
+                    data-description="name display"
+                    no-save-on-blur
+                    class="my-2 w-100" />
+                <h3 v-else class="my-2 w-100">
+                    {{ props.name || "..." }}
+                </h3>
+            </template>
+            <div v-else style="max-width: 80%">
+                <TextSummary
+                    :description="name"
+                    data-description="name display"
+                    class="my-2"
+                    component="h3"
+                    one-line-summary
+                    no-expand />
+            </div>
 
-        <slot name="name" />
+            <BButton
+                :disabled="isAnonymous || !writeable"
+                class="edit-button ml-1 float-right"
+                data-description="editor toggle"
+                size="sm"
+                variant="link"
+                :title="editButtonTitle"
+                :pressed="editing"
+                @click="onToggle">
+                <FontAwesomeIcon :icon="faPen" fixed-width />
+            </BButton>
+        </div>
+
+        <slot name="description" />
 
         <div v-if="!editing">
             <div
@@ -197,6 +235,8 @@ function selectText() {
                 <span v-localize>Cancel</span>
             </BButton>
         </div>
+
+        <slot></slot>
     </section>
 </template>
 

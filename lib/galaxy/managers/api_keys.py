@@ -5,7 +5,6 @@ from sqlalchemy import (
 )
 from typing_extensions import Protocol
 
-from galaxy.model.base import transaction
 from galaxy.structured_app import BasicSharedApp
 
 
@@ -29,8 +28,7 @@ class ApiKeyManager:
         new_key.user_id = user.id
         new_key.key = guid
         self.session.add(new_key)
-        with transaction(self.session):
-            self.session.commit()
+        self.session.commit()
         return new_key
 
     def get_or_create_api_key(self, user: IsUserModel) -> str:
@@ -46,8 +44,7 @@ class ApiKeyManager:
         # Before it was possible to create multiple API keys for the same user although they were not considered valid
         # So all non-deleted keys are marked as deleted for backward compatibility
         self._mark_all_api_keys_as_deleted(user.id)
-        with transaction(self.session):
-            self.session.commit()
+        self.session.commit()
 
     def _mark_all_api_keys_as_deleted(self, user_id: int):
         APIKeys = self.app.model.APIKeys

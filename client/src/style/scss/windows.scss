@@ -1,6 +1,15 @@
 .winbox {
     border-radius: $border-radius-base;
-    margin-top: 3rem;
+    margin-left: 1px;
+    margin-top: calc($masthead-height + 1px);
+}
+
+.winbox.max {
+    border-radius: 0;
+    margin: 0;
+    .wb-header {
+        border-radius: 0;
+    }
 }
 
 .winbox.min {
@@ -8,8 +17,9 @@
 }
 
 .wb-header {
-    border-radius: $border-radius-base;
     background: $brand-info;
+    border-top-left-radius: $border-radius-base;
+    border-top-right-radius: $border-radius-base;
 }
 
 .wb-icon * {

@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { ensureDefined } from "@/utils/assertions";
@@ -70,7 +70,7 @@ function checkPageInBounds() {
 }
 
 const displayedBroadcast = computed(
-    () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification
+    () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification,
 );
 
 type Variant = BroadcastNotification["variant"];
@@ -107,7 +107,7 @@ watch(
     () => sortedBroadcasts.value,
     () => {
         checkPageInBounds();
-    }
+    },
 );
 
 function actionLinkBind(link: string) {

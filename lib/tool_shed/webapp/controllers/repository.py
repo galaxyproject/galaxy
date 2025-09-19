@@ -24,7 +24,6 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.user import get_user_by_username
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
@@ -61,6 +60,11 @@ from tool_shed.webapp.model import (
     Repository,
     RepositoryCategoryAssociation,
     RepositoryMetadata,
+    User,
+)
+from tool_shed.webapp.model.db import (
+    get_repository_by_name,
+    get_repository_by_name_and_owner,
 )
 from tool_shed.webapp.util import ratings_util
 
@@ -137,7 +141,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     repository_name = kwd["id"]
-                    repository = repository_util.get_repository_by_name(trans.app, repository_name)
+                    repository = get_repository_by_name(trans.sa_session, repository_name)
                     kwd["id"] = trans.security.encode_id(repository.id)
                 except Exception:
                     pass
@@ -562,7 +566,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     name = kwd["id"]
-                    repository = repository_util.get_repository_by_name(trans.app, name)
+                    repository = get_repository_by_name(trans.sa_session, name)
                     kwd["id"] = trans.security.encode_id(repository.id)
                 except Exception:
                     pass
@@ -779,8 +783,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         mark_deprecated = util.string_as_bool(kwd.get("mark_deprecated", False))
         repository.deprecated = mark_deprecated
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry(repository)
@@ -898,8 +901,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         file_type_str = basic_util.get_file_type_str(changeset_revision, file_type)
         repository.times_downloaded += 1
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         tool_shed_url = web.url_for("/", qualified=True)
         pathspec = ["repos", str(repository.user.username), str(repository.name), "archive", file_type_str]
         download_url = util.build_url(tool_shed_url, pathspec=pathspec)
@@ -1037,7 +1039,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
             trans.app, trans.security.encode_id(repository.id), changeset_revision
         )
@@ -1135,7 +1137,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
         changeset_revision = kwd["changeset_revision"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         repo = repository.hg_repo
         if ctx := hg_util.get_changectx_for_changeset(repo, changeset_revision):
             return str(ctx.rev())
@@ -1157,7 +1159,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_name = kwd.get("name", None)
         repository_owner = kwd.get("owner", None)
         if repository_name is not None and repository_owner is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
             if repository:
                 return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository)
         return hg_util.INITIAL_CHANGELOG_HASH
@@ -1172,7 +1174,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
         if repository_name is not None and repository_owner is not None and changeset_revision is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
             return readmes(trans.app, repository, changeset_revision)
         return {}
 
@@ -1185,7 +1187,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # get_repository_dependencies( self, app, changeset, toolshed_url )
         dependencies = repository.get_repository_dependencies(
             trans.app, changeset_revision, web.url_for("/", qualified=True)
@@ -1199,7 +1201,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Given a repository name and owner, return the encoded repository id."""
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         if repository:
             return trans.security.encode_id(repository.id)
         return ""
@@ -1254,7 +1256,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Given a repository name and owner, return the type."""
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         return str(repository.type)
 
     @web.json
@@ -1283,7 +1285,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     prior_installation_required,
                     only_if_compiling_contained_td,
                 ) = common_util.parse_repository_dependency_tuple(required_repository_tup)
-                repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+                repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
                 encoded_repository_ids.append(trans.security.encode_id(repository.id))
                 changeset_revisions.append(changeset_revision)
             if encoded_repository_ids and changeset_revisions:
@@ -1301,7 +1303,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         dependencies = repository.get_tool_dependencies(trans.app, changeset_revision)
         if len(dependencies) > 0:
             return encoding_util.tool_shed_encode(dependencies)
@@ -1315,7 +1317,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need
         # to enhance this process to retrieve older versions of the tool-dependencies.xml file from the repository
         # manafest.
@@ -1338,7 +1340,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """
         repository_name = kwd["name"]
         repository_owner = kwd["owner"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, repository_name, repository_owner)
         encoded_id = trans.app.security.encode_id(repository.id)
         repository_tip = repository.tip()
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -1355,7 +1357,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd["name"]
         owner = kwd["owner"]
         changeset_revision = kwd["changeset_revision"]
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repo = repository.hg_repo
         tool_version_dicts = []
         for changeset in repo.changelog:
@@ -1377,7 +1379,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         Generate a dictionary that contains the information about a repository that is necessary for installing
         it into a local Galaxy instance.
         """
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         repository_id = trans.security.encode_id(repository.id)
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -1592,8 +1594,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if kwd.get("new_repo_alert_button", False):
             user.new_repo_alert = new_repo_alert_checked
             trans.sa_session.add(user)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if new_repo_alert_checked:
                 message = "You will receive email alerts for all new valid tool shed repositories."
             else:
@@ -1664,16 +1665,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             # Delete all currently existing categories.
             for rca in repository.categories:
                 trans.sa_session.delete(rca)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
                     category = trans.sa_session.get(Category, trans.security.decode_id(category_id))
                     rca = RepositoryCategoryAssociation(repository, category)
                     trans.sa_session.add(rca)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
             message = "The repository information has been updated."
         elif kwd.get("user_access_button", False):
             if allow_push not in ["none"]:
@@ -1684,7 +1683,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     user_ids = util.listify(allow_push)
                     usernames = []
                     for user_id in user_ids:
-                        user = trans.sa_session.get(trans.model.User, trans.security.decode_id(user_id))
+                        user = trans.sa_session.get(User, trans.security.decode_id(user_id))
                         usernames.append(user.username)
                     usernames = ",".join(usernames)
                 repository.set_allow_push(usernames, remove_auth=remove_auth)
@@ -1703,8 +1702,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             message = "The repository information has been updated."
         if error:
             status = "error"
@@ -1714,7 +1712,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             current_allow_push_list = []
         options = []
-        for user in trans.sa_session.scalars(select(trans.model.User)):
+        for user in trans.sa_session.scalars(select(User)):
             if user.username not in current_allow_push_list:
                 options.append(user)
         for obj in options:
@@ -1916,7 +1914,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+        repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         # Get the next installable changeset_revision beyond the received changeset_revision.
         next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(
             trans.app, repository, changeset_revision
@@ -2015,7 +2013,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         name = kwd.get("name", None)
         owner = kwd.get("owner", None)
         if name is not None and owner is not None:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
             from_tip = util.string_as_bool(from_tip)
             if from_tip:
                 changeset_revision = repository.tip()
@@ -2159,9 +2157,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
                     total_alerts_added += 1
             if flush_needed:
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-            message = "Total alerts added: %d, total alerts removed: %d" % (total_alerts_added, total_alerts_removed)
+                trans.sa_session.commit()
+            message = f"Total alerts added: {total_alerts_added}, total alerts removed: {total_alerts_removed}"
             kwd["message"] = message
             kwd["status"] = "done"
         del kwd["operation"]
@@ -2176,8 +2173,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             malicious_checked = CheckboxField.is_checked(malicious)
             repository_metadata.malicious = malicious_checked
             trans.sa_session.add(repository_metadata)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if malicious_checked:
                 message = "The repository tip has been defined as malicious."
             else:
@@ -2199,7 +2195,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_owner(self, trans, owner):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
-            user = get_user_by_username(trans.model.session, owner, trans.model.User)
+            user = get_user_by_username(trans.model.session, owner, User)
         except Exception:
             user = None
         if user:
@@ -2216,7 +2212,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_repository(self, trans, owner, name):
         """Support for sharable URL for a specified repository, e.g. http://example.org/view/owner/name."""
         try:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         except Exception:
             repository = None
         if repository:
@@ -2227,7 +2223,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             # If the owner is valid, then show all of their repositories.
             try:
-                user = get_user_by_username(trans.model.session, owner, trans.model.User)
+                user = get_user_by_username(trans.model.session, owner, User)
             except Exception:
                 user = None
             if user:
@@ -2251,7 +2247,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_repository_revision(self, trans, owner, name, changeset_revision):
         """Support for sharable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
         try:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
         except Exception:
             repository = None
         if repository:
@@ -2481,8 +2477,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         checked = alerts_checked or (user and user.email in email_alerts)
         alerts_check_box = CheckboxField("alerts", value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(

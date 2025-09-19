@@ -226,7 +226,8 @@ def add_composite_file(dataset, registry, output_path, files_path):
             # a little more explicitly so we didn't need to dispatch on the datatype and so we
             # could attach arbitrary extra composite data to an existing composite datatype if
             # if need be? Perhaps that would be a mistake though.
-            CompressedFile(dp).extract(files_path)
+            with CompressedFile(dp) as cf:
+                cf.extract(files_path)
         else:
             tmpdir = output_adjacent_tmpdir(output_path)
             tmp_prefix = "data_id_%s_convert_" % dataset.dataset_id

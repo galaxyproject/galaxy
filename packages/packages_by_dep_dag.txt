@@ -1,3 +1,4 @@
+tool_util_models
 util
 
 config
@@ -6,6 +7,7 @@ job_metrics
 navigation
 objectstore
 schema
+tool_shed_schema
 tool_util
 
 data
@@ -25,3 +27,6 @@ web_apps
 
 test_driver
 tool_shed
+
+web_client
+meta

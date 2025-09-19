@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -21,13 +20,13 @@ class DisplayApplication(BaseModel):
     name: str
     version: str
     filename_: str
-    links: List[Link]
+    links: list[Link]
 
 
 class ReloadFeedback(BaseModel):
     message: str
-    reloaded: List[Optional[str]]
-    failed: List[Optional[str]]
+    reloaded: list[Optional[str]]
+    failed: list[Optional[str]]
 
 
 class DisplayApplicationsManager:
@@ -40,7 +39,7 @@ class DisplayApplicationsManager:
     def datatypes_registry(self) -> Registry:
         return self._app.datatypes_registry
 
-    def index(self) -> List[DisplayApplication]:
+    def index(self) -> list[DisplayApplication]:
         """
         Returns the list of display applications.
 
@@ -60,7 +59,7 @@ class DisplayApplicationsManager:
             )
         return rval
 
-    def reload(self, ids: List[str]) -> ReloadFeedback:
+    def reload(self, ids: list[str]) -> ReloadFeedback:
         """
         Reloads the list of display applications.
 
@@ -72,17 +71,18 @@ class DisplayApplicationsManager:
         )
         reloaded, failed = self.datatypes_registry.reload_display_applications(ids)
         if not reloaded and failed:
-            message = 'Unable to reload any of the %i requested display applications ("%s").' % (
+            message = 'Unable to reload any of the {} requested display applications ("{}").'.format(
                 len(failed),
                 '", "'.join(failed),
             )
         elif failed:
             message = (
-                'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed))
+                'Reloaded {} display applications ("{}"), but failed to reload {} display applications ("{}").'.format(
+                    len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)
+                )
             )
         elif not reloaded:
             message = "You need to request at least one display application to reload."
         else:
-            message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
+            message = 'Reloaded {} requested display applications ("{}").'.format(len(reloaded), '", "'.join(reloaded))
         return ReloadFeedback(message=message, reloaded=reloaded, failed=failed)

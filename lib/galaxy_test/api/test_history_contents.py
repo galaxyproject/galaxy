@@ -1,9 +1,8 @@
 import urllib.parse
 from typing import (
     Any,
-    List,
     Optional,
-    Tuple,
+    Union,
 )
 
 from galaxy_test.api._framework import ApiTestCase
@@ -338,7 +337,7 @@ class TestHistoryContentsApi(ApiTestCase):
         content_id: str,
         item_type: str,
         expected_view: Optional[str] = None,
-        expected_keys: Optional[List[str]] = None,
+        expected_keys: Optional[list[str]] = None,
     ):
         view = f"&view={expected_view}" if expected_view else ""
         keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
@@ -374,6 +373,55 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_status_code_is_ok(inheritance_chain_response)
         inheritance_chain = inheritance_chain_response.json()
         assert len(inheritance_chain) == 1
+
+    @requires_new_library
+    def test_inheritance_chain_library_to_histories(self, history_id):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            different_user_id = self.dataset_populator.user_id()
+        combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
+
+        ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
+        self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
+
+        with self._different_user():
+            create_data_from_library = dict(
+                source="library",
+                content=ld["id"],
+            )
+            first_history_name = "different_user_history"
+            first_history_id = self.dataset_populator.new_history(name=first_history_name)
+            create_response_from_library = self._post(
+                f"histories/{first_history_id}/contents", create_data_from_library, json=True
+            )
+            self._assert_status_code_is_ok(create_response_from_library)
+            first_hda = create_response_from_library.json()
+
+            update_access_response = self._put(f"histories/{first_history_id}/enable_link_access")
+            self._assert_status_code_is_ok(update_access_response)
+
+        create_data_from_hda = dict(
+            source="hda",
+            content=first_hda["id"],
+        )
+        create_response_from_hda = self._post(f"histories/{history_id}/contents", create_data_from_hda, json=True)
+        self._assert_status_code_is_ok(create_response_from_hda)
+        second_hda_id = create_response_from_hda.json()["id"]
+
+        inheritance_chain_response = self._get(f"datasets/{second_hda_id}/inheritance_chain")
+        self._assert_status_code_is_ok(inheritance_chain_response)
+        inheritance_chain = inheritance_chain_response.json()
+        assert len(inheritance_chain) == 2
+
+        assert inheritance_chain[0]["id"] == first_hda["id"]
+        assert inheritance_chain[0]["name"] == first_hda["name"]
+        assert inheritance_chain[0]["dep"] == first_history_name
+        assert inheritance_chain[0]["user_id"] == different_user_id
+
+        assert inheritance_chain[1]["id"] == ld["id"]
+        assert inheritance_chain[1]["name"] == ld["name"]
+        assert inheritance_chain[1]["dep"] == "(Data Library)"
+        assert inheritance_chain[1]["user_id"] == user_id
 
     @requires_new_library
     def test_library_copy(self, history_id):
@@ -425,6 +473,37 @@ class TestHistoryContentsApi(ApiTestCase):
         # we don't distinguish between this is a valid ID you don't have access to
         # and this is an invalid ID.
         assert update_response.status_code == 400, update_response.content
+
+    def test_rename_dataset(self, history_id):
+        dataset = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.rename_dataset(dataset["id"])
+        hda = self.dataset_populator.get_history_dataset_details(history_id=history_id, content_id=dataset["id"])
+        assert hda["name"] != dataset["name"]
+        with self._different_user():
+            exception: Union[Exception, None] = None
+            try:
+                self.dataset_populator.rename_dataset(dataset["id"])
+            except AssertionError as e:
+                exception = e
+        assert "HistoryDatasetAssociation is not owned by user" in str(exception)
+
+    def test_rename_dataset_collection(self, history_id):
+        dataset_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], wait=True
+        ).json()["output_collections"][0]
+        dataset_collection_id = dataset_collection["id"]
+        self.dataset_populator.rename_collection(dataset_collection_id)
+        hdca = self.dataset_populator.get_history_collection_details(
+            history_id=history_id, content_id=dataset_collection_id
+        )
+        assert hdca["name"] != dataset_collection["name"]
+        with self._different_user():
+            exception: Union[Exception, None] = None
+            try:
+                self.dataset_populator.rename_collection(dataset_collection_id)
+            except AssertionError as e:
+                exception = e
+        assert "HistoryDatasetCollectionAssociation is not owned by user" in str(exception)
 
     def test_update_batch(self, history_id):
         hda1 = self._wait_for_new_hda(history_id)
@@ -948,7 +1027,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self._upload_collection_list_with_elements(history_id, collection_name, elements)
         self._assert_collection_has_expected_elements_datatypes(history_id, collection_name, expected_datatypes)
 
-    def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: List[Any]):
+    def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: list[Any]):
         create_homogeneous_response = self.dataset_collection_populator.upload_collection(
             history_id, "list", elements=elements, name=collection_name, wait=True
         )
@@ -1573,7 +1652,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         assert response["stats"]["total_matches"]
         assert response["stats"]["total_matches"] == expected_total_matches
 
-    def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
+    def _create_test_history_contents(self, history_id) -> tuple[list[str], list[str], list[Any]]:
         """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
 
         Returns a tuple with the list of ids for the datasets and the collections and the
@@ -1595,7 +1674,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             assert item["visible"]
         return datasets_ids, collection_ids, history_contents
 
-    def _create_collection_in_history(self, history_id, num_collections=1) -> List[str]:
+    def _create_collection_in_history(self, history_id, num_collections=1) -> list[str]:
         collection_ids = []
         for _ in range(num_collections):
             collection_id = self.dataset_collection_populator.create_pair_in_history(
@@ -1607,7 +1686,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
     def _get_history_contents(self, history_id: str, query: str = ""):
         return self._get(f"histories/{history_id}/contents{query}").json()
 
-    def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
+    def _get_hidden_items_from_history_contents(self, history_contents) -> list[Any]:
         return [content for content in history_contents if not content["visible"]]
 
     def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Optional[Any]:

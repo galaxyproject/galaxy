@@ -7,23 +7,16 @@ import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bo
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    type BatchOperation,
-    type FieldEntry,
-    type FieldHandler,
-    type GridConfig,
-    type Operation,
-    type RowData,
-} from "./configs/types";
+import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
-import GridDatasets from "./GridElements/GridDatasets.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
@@ -101,13 +94,13 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || [])
+    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
 );
 const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0
+    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
 // hide message helper
@@ -174,14 +167,14 @@ async function getGridData() {
             return;
         }
         try {
-            const offset = props.limit * (currentPage.value - 1);
+            const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
             const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,
                 validatedFilterText(),
                 sortBy.value,
                 sortDesc.value,
-                props.extraProps
+                props.extraProps,
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
@@ -336,21 +329,22 @@ watch(operationMessage, () => {
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                <Heading h1 separator inline size="lg" class="flex-grow-1 m-0" data-description="grid title">
                     <span v-localize>{{ gridConfig.title }}</span>
                 </Heading>
                 <div class="d-flex justify-content-between">
-                    <BButton
+                    <GButton
                         v-for="(action, actionIndex) in gridConfig.actions"
                         :key="actionIndex"
                         class="m-1"
-                        size="sm"
-                        variant="outline-primary"
+                        size="small"
+                        color="blue"
+                        outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
                         <Icon :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
             <FilterMenu
@@ -459,9 +453,6 @@ watch(operationMessage, () => {
                                 <GridBoolean
                                     v-else-if="fieldEntry.type == 'boolean'"
                                     :value="rowData[fieldEntry.key]" />
-                                <GridDatasets
-                                    v-else-if="fieldEntry.type == 'datasets'"
-                                    :history-id="rowData[fieldEntry.key]" />
                                 <GridText
                                     v-else-if="fieldEntry.type == 'text'"
                                     :text="fieldText(fieldEntry, rowData)" />
@@ -469,16 +460,15 @@ watch(operationMessage, () => {
                                     v-else-if="fieldEntry.type == 'link'"
                                     :text="fieldText(fieldEntry, rowData)"
                                     @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
-                                <BButton
+                                <GButton
                                     v-else-if="fieldEntry.type == 'button'"
-                                    class="d-flex flex-inline flex-gapx-1 align-items-center"
-                                    variant="primary"
+                                    color="blue"
                                     @click="fieldEntry.handler && fieldEntry.handler(rowData)">
                                     <FontAwesomeIcon v-if="fieldEntry.icon" :icon="fieldEntry.icon" />
                                     <span v-if="fieldText(fieldEntry, rowData)" v-localize>{{
                                         fieldText(fieldEntry, rowData)
                                     }}</span>
-                                </BButton>
+                                </GButton>
                                 <SwitchToHistoryLink
                                     v-else-if="fieldEntry.type == 'history'"
                                     :history-id="rowData[fieldEntry.key]" />
@@ -521,19 +511,19 @@ watch(operationMessage, () => {
             <div v-if="isAvailable" class="d-flex justify-content-between pt-3">
                 <div class="d-flex">
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
-                        <BButton
+                        <GButton
                             v-if="
                                 selected.size > 0 &&
                                 (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
                             "
                             class="mr-2"
-                            size="sm"
-                            variant="primary"
+                            size="small"
+                            color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
                             <Icon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
-                        </BButton>
+                        </GButton>
                     </div>
                 </div>
                 <BPagination

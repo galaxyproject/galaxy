@@ -18,10 +18,10 @@ const { instance } = useInstanceAndTemplate(ref(props.instanceId));
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 
 const latestTemplate = computed(
-    () => instance.value && objectStoreTemplatesStore.getLatestTemplate(instance.value?.template_id)
+    () => instance.value && objectStoreTemplatesStore.getLatestTemplate(instance.value?.template_id),
 );
 </script>
 <template>
-    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading storage location instance and templates" />
+    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading Galaxy storage instance and templates" />
     <UpgradeForm v-else :instance="instance" :latest-template="latestTemplate" />
 </template>

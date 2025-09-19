@@ -12,12 +12,11 @@ import shutil
 import struct
 import tempfile
 import zipfile
+from collections.abc import Iterable
 from functools import partial
 from typing import (
     Callable,
-    Dict,
     IO,
-    Iterable,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -52,7 +51,12 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2**20)
-BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+BINARY_MIMETYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
 
 
 def get_test_fname(fname):
@@ -119,9 +123,10 @@ def convert_newlines(
     converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -171,9 +176,10 @@ def convert_sep2tabs(
     i = 0
     converted_newlines = False
     converted_regex = False
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         block = fi.read(block_size)
         while block:
             if block:
@@ -955,7 +961,7 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

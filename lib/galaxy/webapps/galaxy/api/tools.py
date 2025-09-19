@@ -1,21 +1,28 @@
 import logging
 import os
+from datetime import (
+    datetime,
+    timezone,
+)
 from json import loads
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
 )
 
 from fastapi import (
     Body,
     Depends,
+    Query,
     Request,
+    Response,
     UploadFile,
 )
+from fastapi.responses import FileResponse
+from pydantic import UUID4
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
@@ -24,15 +31,40 @@ from galaxy import (
 )
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.landing import LandingRequestManager
+from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
     FetchDataFormPayload,
     FetchDataPayload,
 )
+from galaxy.schema.schema import (
+    ClaimLandingPayload,
+    CreateToolLandingRequestPayload,
+    ToolLandingRequest,
+)
 from galaxy.tool_util.verify import ToolTestDescriptionDict
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.fetch.workbooks import (
+    FetchWorkbookCollectionType,
+    FetchWorkbookType,
+    generate,
+    GenerateFetchWorkbookRequest,
+    parse,
+    ParsedFetchWorkbook,
+    ParseFetchWorkbook,
+)
+from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
+    memory_bound_hexdigest,
+)
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
@@ -42,6 +74,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api.common import serve_workbook
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
@@ -49,6 +82,7 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    LandingUuidPathParam,
     Router,
 )
 
@@ -60,6 +94,8 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
+ICON_CACHE_MAX_AGE = 2592000  # 30 days
+
 
 class FormDataApiRoute(APIContentTypeRoute):
     match_content_type = "multipart/form-data"
@@ -69,14 +105,34 @@ class JsonApiRoute(APIContentTypeRoute):
     match_content_type = "application/json"
 
 
+class PNGIconResponse(FileResponse):
+    media_type = "image/png"
+
+
+FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
+    default="datasets",
+    title="Workbook Type",
+    description="Generate a workbook for simple datasets or a collection.",
+)
+FetchWorkbookCollectionTypeQueryParam: FetchWorkbookCollectionType = Query(
+    default="list",
+    title="Collection Type",
+    description="Generate workbook for specified collection type (not all collection types are supported)",
+)
+FetchWorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
+
+
 router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
-async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
         data = await request.form()
         for value in data.values():
@@ -88,6 +144,7 @@ async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
@@ -102,9 +159,135 @@ class FetchTools:
         self,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         trans: ProvidesHistoryContext = DependsOnTrans,
-        files: List[StarletteUploadFile] = Depends(get_files),
+        files: list[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
+
+    @router.get(
+        "/api/tools/fetch/workbook",
+        summary="Generate a template workbook to use with the activity builder UI",
+        response_class=StreamingResponse,
+        operation_id="tools__fetch_workbook_download",
+    )
+    def fetch_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        type: FetchWorkbookType = FetchWorkbookTypeQueryParam,
+        collection_type: FetchWorkbookCollectionType = FetchWorkbookCollectionTypeQueryParam,
+        filename: Optional[str] = FetchWorkbookFilenameQueryParam,
+    ):
+        generate_request = GenerateFetchWorkbookRequest(
+            type=type,
+            collection_type=collection_type,
+        )
+        workbook = generate(generate_request)
+        contents = workbook_to_bytes(workbook)
+        return serve_workbook(contents, filename)
+
+    @router.post(
+        "/api/tools/fetch/workbook/parse",
+        summary="Generate a template workbook to use with the activity builder UI",
+        operation_id="tools__fetch_workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseFetchWorkbook = Body(...),
+    ) -> ParsedFetchWorkbook:
+        return parse(payload)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/icon",
+        summary="Get the icon image associated with a tool",
+        response_class=PNGIconResponse,
+        responses={
+            200: {
+                "content": {"image/png": {}},
+                "description": "Tool icon image in PNG format",
+            },
+            304: {
+                "description": "Tool icon image has not been modified since the last request",
+            },
+            404: {
+                "description": "Tool icon file not found or not provided by the tool",
+            },
+        },
+    )
+    def get_icon(self, request: Request, tool_id: str, trans: ProvidesHistoryContext = DependsOnTrans):
+        """Returns the icon image associated with a tool.
+
+        The icon image is served with caching headers to allow for efficient
+        client-side caching. The icon image is expected to be in PNG format.
+        """
+        tool_icon_path = self.service.get_tool_icon_path(trans=trans, tool_id=tool_id)
+        if tool_icon_path is None:
+            raise exceptions.ObjectNotFound(f"Tool icon file not found or not provided by the tool: {tool_id}")
+
+        # Get file modification time
+        file_stat = os.stat(tool_icon_path)
+        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).strftime(
+            "%a, %d %b %Y %H:%M:%S GMT"
+        )
+
+        # Check If-Modified-Since
+        if_modified_since = request.headers.get("If-Modified-Since")
+        if if_modified_since == last_modified:
+            return Response(status_code=304)
+
+        # Generate ETag based on file content
+        file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=tool_icon_path)
+        etag = f'"{file_hash}"'
+
+        # Check If-None-Match (ETag)
+        if_none_match = request.headers.get("If-None-Match", "").split(",")
+        if any(etag.strip() == e.strip(' W/"') for e in if_none_match):  # Handle weak ETags
+            return Response(status_code=304)
+
+        # Serve the file with caching headers
+        response = PNGIconResponse(tool_icon_path)
+        response.headers["Cache-Control"] = f"public, max-age={ICON_CACHE_MAX_AGE}, immutable"
+        response.headers["ETag"] = etag
+        response.headers["Last-Modified"] = last_modified
+        return response
+
+    @router.post("/api/data_landings", public=True)
+    def create_data_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        data_landing_request: CreateDataLandingPayload = Body(...),
+    ) -> ToolLandingRequest:
+        tool_landing_request = self.service.data_landing_to_tool_landing(trans, data_landing_request)
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings", public=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        tool_landing_request: CreateToolLandingRequestPayload = Body(...),
+    ) -> ToolLandingRequest:
+        tool_id = tool_landing_request.tool_id
+        if tool_id in PROTECTED_TOOLS:
+            raise exceptions.RequestParameterInvalidException(
+                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.claim_tool_landing_request(trans, uuid, payload)
+
+    @router.get("/api/tool_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> ToolLandingRequest:
+        return self.landing_manager.get_tool_landing_request(trans, uuid)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -178,7 +361,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         except exceptions.MessageException:
             raise
         except Exception:
-            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+            msg = "Error: Could not convert toolbox to dictionary"
+            log.exception(msg)
+            raise exceptions.InternalServerError(msg)
 
     @expose_api_anonymous_and_sessionless
     def panel_views(self, trans: GalaxyWebTransaction, **kwds):
@@ -230,7 +415,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         io_details = util.string_as_bool(kwd.get("io_details", False))
         link_details = util.string_as_bool(kwd.get("link_details", False))
         tool_version = kwd.get("tool_version")
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version)
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=id)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -241,12 +426,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version")
+        tool_uuid = kwd.get("tool_uuid")
         history = None
         if history_id := kwd.pop("history_id", None):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
         return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
 
     @web.require_admin
@@ -304,7 +490,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
-        test_counts_by_tool: Dict[str, Dict] = {}
+        test_counts_by_tool: dict[str, dict] = {}
         for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
@@ -319,7 +505,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> List[ToolTestDescriptionDict]:
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -521,12 +707,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         else:
             if input_src == "hdca":
-                target_history = self.hdca_manager.get_dataset_collection_instance(
-                    trans, instance_type="history", id=input_id
-                ).history
+                hdca = self.hdca_manager.get_dataset_collection_instance(trans, instance_type="history", id=input_id)
+                assert hdca.history
+                target_history = hdca.history
             elif input_src == "hda":
                 decoded_id = trans.app.security.decode_id(input_id)
-                target_history = self.hda_manager.get_accessible(decoded_id, trans.user).history
+                hda = self.hda_manager.get_accessible(decoded_id, trans.user)
+                assert hda.history
+                target_history = hda.history
                 self.history_manager.error_unless_owner(target_history, trans.user, current_history=trans.history)
             else:
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
@@ -559,8 +747,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InsufficientPermissionsException(
                 "Only administrators may display tool sources on this Galaxy server."
             )
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"))
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=id)
         trans.response.headers["language"] = tool.tool_source.language
+        if dynamic_tool := getattr(tool, "dynamic_tool", None):
+            if dynamic_tool.value.get("class") == "GalaxyUserTool":
+                return UserToolSource(**dynamic_tool.value).model_dump_json(
+                    by_alias=True,
+                    exclude_defaults=True,
+                    exclude_unset=True,
+                )
         return tool.tool_source.to_string()
 
     @web.require_admin
@@ -596,7 +791,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self.service._create(trans, payload, **kwd)
 
 
-def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
+def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(Dict[str, Any], kwd.get("payload"))
+        kwd = cast(dict[str, Any], kwd.get("payload"))
     return kwd

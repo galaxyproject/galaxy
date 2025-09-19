@@ -1,11 +1,6 @@
 import logging
 from typing import (
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
-    Type,
     Union,
 )
 
@@ -61,7 +56,7 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
-    share_with_status_cls: Type[ShareWithStatus] = ShareWithStatus
+    share_with_status_cls: type[ShareWithStatus] = ShareWithStatus
 
     def __init__(
         self,
@@ -125,8 +120,8 @@ class ShareableService:
         self,
         trans,
         item,
-        users: Set[User],
-        errors: Set[str],
+        users: set[User],
+        errors: set[str],
         share_option: Optional[SharingOptions] = None,
     ):
         new_users = None
@@ -148,14 +143,14 @@ class ShareableService:
         status["users_shared_with"] = [{"id": a.user.id, "email": a.user.email} for a in item.users_shared_with]
         return SharingStatus(**status)
 
-    def _get_users(self, trans, emails_or_ids: List[UserIdentifier]) -> Tuple[Set[User], Set[str]]:
-        send_to_users: Set[User] = set()
-        send_to_err: Set[str] = set()
+    def _get_users(self, trans, emails_or_ids: list[UserIdentifier]) -> tuple[set[User], set[str]]:
+        send_to_users: set[User] = set()
+        send_to_err: set[str] = set()
         for email_or_id in set(emails_or_ids):
             send_to_user = None
             if isinstance(email_or_id, int):
                 send_to_user = self.manager.user_manager.by_id(email_or_id)
-                if send_to_user.deleted:
+                if send_to_user and send_to_user.deleted:
                     send_to_user = None
             else:
                 email_address = email_or_id.strip()
@@ -175,7 +170,7 @@ class ShareableService:
         return send_to_users, send_to_err
 
     def _send_notification_to_users(
-        self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
+        self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
     ):
         if (
             self.notification_service.notification_manager.notifications_enabled
@@ -193,7 +188,7 @@ class ShareableService:
 class SharedItemNotificationFactory:
     source = "galaxy_sharing_system"
 
-    type_map: Dict[Type[SharableItem], SharableItemType] = {
+    type_map: dict[type[SharableItem], SharableItemType] = {
         History: "history",
         StoredWorkflow: "workflow",
         Visualization: "visualization",
@@ -202,7 +197,7 @@ class SharedItemNotificationFactory:
 
     @staticmethod
     def build_notification_request(
-        item: SharableItem, users_to_notify: Set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
+        item: SharableItem, users_to_notify: set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
     ) -> NotificationCreateRequest:
         user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(

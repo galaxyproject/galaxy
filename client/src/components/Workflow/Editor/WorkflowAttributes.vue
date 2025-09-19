@@ -32,13 +32,16 @@
             id="workflow-annotation-area"
             class="mt-2"
             :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
-            <b>Annotation</b>
+            <b>Short Description</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
-            <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
+            <div class="form-text text-muted">
+                This short description will be visible when this workflow is viewed and should be limited to a sentence
+                or two.
+            </div>
             <b-popover
                 custom-class="best-practice-popover"
                 target="workflow-annotation"
@@ -47,7 +50,7 @@
                 :show.sync="showAnnotationHightlight"
                 triggers="manual"
                 title="Best Practice"
-                :content="bestPracticeWarningAnnotation">
+                :content="annotationBestPracticeMessage">
             </b-popover>
         </div>
         <div
@@ -84,11 +87,67 @@
                 :content="bestPracticeWarningCreator">
             </b-popover>
         </div>
+
+        <div id="workflow-doi-area" class="mt-2">
+            <b>Digital Object Identifier (DOI)</b>
+            <ItemListEditor
+                :items="doi"
+                item-name="DOI"
+                :description="doiDescription"
+                :item-format="doiRegex"
+                @onItems="onDoi" />
+        </div>
+
         <div class="mt-2">
             <b>Tags</b>
             <StatelessTags :value="tags" @input="onTags" />
             <div class="form-text text-muted">
                 Apply tags to make it easy to search for and find items with the same tag.
+            </div>
+        </div>
+        <div class="mt-2">
+            <div>
+                <b>Readme</b>
+            </div>
+            <b-button
+                id="workflow-readme"
+                class="w-100"
+                size="sm"
+                :pressed="readmeActive"
+                @click="$emit('update:readme-active', !readmeActive)">
+                {{ readmeActive ? "Hide" : "Show" }} Readme
+            </b-button>
+            <div class="form-text text-muted">
+                A detailed description of what the workflow does. It is best to include descriptions of what kinds of
+                data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
+            </div>
+            <b-popover
+                custom-class="best-practice-popover"
+                target="workflow-readme"
+                boundary="window"
+                placement="right"
+                :show.sync="showReadmeHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningReadme">
+            </b-popover>
+        </div>
+        <div class="mt-2">
+            <b>Help</b>
+            <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
+            <div class="form-text text-muted">
+                A detailed description of how to use the workflow and debug problems with it. Researchers running this
+                workflow will see this text. Markdown is enabled.
+            </div>
+        </div>
+        <div class="mt-2">
+            <b>Logo URL</b>
+            <b-input
+                id="workflow-logo-url"
+                v-model="logoUrlCurrent"
+                @keyup="$emit('update:logoUrlCurrent', logoUrlCurrent)" />
+            <div class="form-text text-muted">
+                An logo image used when generating publication artifacts for your workflow. This is completely optional.
             </div>
         </div>
     </ActivityPanel>
@@ -101,11 +160,14 @@ import { Services } from "@/components/Workflow/services";
 
 import {
     bestPracticeWarningAnnotation,
+    bestPracticeWarningAnnotationLength,
     bestPracticeWarningCreator,
     bestPracticeWarningLicense,
+    bestPracticeWarningReadme,
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
+import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
@@ -119,6 +181,7 @@ export default {
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
+        ItemListEditor,
         ActivityPanel,
     },
     props: {
@@ -150,6 +213,22 @@ export default {
             type: Array,
             default: null,
         },
+        doi: {
+            type: Array,
+            default: null,
+        },
+        logoUrl: {
+            type: String,
+            default: null,
+        },
+        readmeActive: {
+            type: Boolean,
+            default: false,
+        },
+        help: {
+            type: String,
+            default: null,
+        },
         version: {
             type: Number,
             default: null,
@@ -165,17 +244,28 @@ export default {
     },
     data() {
         return {
-            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
             bestPracticeWarningCreator: bestPracticeWarningCreator,
             bestPracticeWarningLicense: bestPracticeWarningLicense,
+            bestPracticeWarningReadme: bestPracticeWarningReadme,
             message: null,
             messageVariant: null,
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
+            logoUrlCurrent: this.logoUrl,
+            helpCurrent: this.help,
             showAnnotationHightlight: false,
             showLicenseHightlight: false,
             showCreatorHightlight: false,
+            showReadmeHightlight: false,
+            doiDescription: `
+Acceptable format:
+<ul>
+    <li>https://doi.org/DOI-VALUE</li>
+    <li>doi.org/DOI-VALUE</li>
+    <li>doi:DOI-VALUE</li>
+</ul>`,
+            doiRegex: "^(https://doi.org/|doi.org/|doi:)10\\.\\d+/\\S+$",
         };
     },
     computed: {
@@ -199,7 +289,7 @@ export default {
                 if (current_wf.update_time) {
                     update_time = `${format(
                         parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
-                        "MMM do yyyy"
+                        "MMM do yyyy",
                     )}`;
                 } else {
                     update_time = "";
@@ -211,6 +301,13 @@ export default {
                 });
             }
             return versions;
+        },
+        annotationBestPracticeMessage() {
+            if (this.annotationCurrent) {
+                return bestPracticeWarningAnnotationLength;
+            } else {
+                return bestPracticeWarningAnnotation;
+            }
         },
     },
     watch: {
@@ -230,10 +327,17 @@ export default {
             this.creatorCurrent = creator;
         },
         annotation() {
+            this.showAnnotationHightlight = false;
             this.annotationCurrent = this.annotation;
         },
         name() {
             this.nameCurrent = this.name;
+        },
+        help() {
+            this.helpCurrent = this.help;
+        },
+        logoUrl() {
+            this.logoUrlCurrent = this.logoUrl;
         },
         highlight: {
             immediate: true,
@@ -245,6 +349,7 @@ export default {
                     this.showAnnotationHightlight = true;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showAnnotationHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -252,6 +357,7 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = true;
                     this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showCreatorHightlight = false;
                     }, bestPracticeHighlightTime);
@@ -259,8 +365,17 @@ export default {
                     this.showAnnotationHightlight = false;
                     this.showCreatorHightlight = false;
                     this.showLicenseHightlight = true;
+                    this.showReadmeHightlight = false;
                     setTimeout(() => {
                         this.showLicenseHightlight = false;
+                    }, bestPracticeHighlightTime);
+                } else if (newHighlight == "readme") {
+                    this.showAnnotationHighlight = false;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = false;
+                    this.showReadmeHightlight = true;
+                    setTimeout(() => {
+                        this.showReadmeHightlight = false;
                     }, bestPracticeHighlightTime);
                 }
             },
@@ -282,6 +397,9 @@ export default {
         },
         onCreator(creator) {
             this.$emit("creator", creator);
+        },
+        onDoi(doiItems) {
+            this.$emit("doi", doiItems);
         },
         onError(error) {
             this.message = error;

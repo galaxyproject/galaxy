@@ -1,4 +1,4 @@
-""" Module containing Galaxy workflow scheduling plugins. Galaxy's interface
+"""Module containing Galaxy workflow scheduling plugins. Galaxy's interface
 for workflow scheduling is highly experimental and the interface required for
 scheduling plugins will almost certainly change.
 """

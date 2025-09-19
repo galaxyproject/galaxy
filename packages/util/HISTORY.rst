@@ -3,11 +3,126 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Prevent importing workflows with invalid step UUID by `@davelopez <https://github.com/davelopez>`_ in `#20596 <https://github.com/galaxyproject/galaxy/pull/20596>`_
+* Remove base_dir from zip in make_fast_zipfile by `@davelopez <https://github.com/davelopez>`_ in `#20739 <https://github.com/galaxyproject/galaxy/pull/20739>`_
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+* Use fissix also when python3-lib2to3 is not installed by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19749 <https://github.com/galaxyproject/galaxy/pull/19749>`_
+* Fix ``test_in_directory`` on osx by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19943 <https://github.com/galaxyproject/galaxy/pull/19943>`_
+
+============
+Enhancements
+============
+
+* Calculate hash for new non-deferred datasets when finishing a job by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19181 <https://github.com/galaxyproject/galaxy/pull/19181>`_
+* Fix UP031 errors - Part 3 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19218 <https://github.com/galaxyproject/galaxy/pull/19218>`_
+* Fix UP031 errors - Part 4 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19235 <https://github.com/galaxyproject/galaxy/pull/19235>`_
+* Fix UP031 errors - Part 5 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19282 <https://github.com/galaxyproject/galaxy/pull/19282>`_
+* Type annotation fixes for mypy 1.14.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19372 <https://github.com/galaxyproject/galaxy/pull/19372>`_
+* Empower Users to Build More Kinds of Collections, More Intelligently by `@jmchilton <https://github.com/jmchilton>`_ in `#19377 <https://github.com/galaxyproject/galaxy/pull/19377>`_
+* Set safe default extraction filter for tar archives by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19406 <https://github.com/galaxyproject/galaxy/pull/19406>`_
+* Format code with black 25.1.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19625 <https://github.com/galaxyproject/galaxy/pull/19625>`_
+* Improve type annotations of ``ModelPersistenceContext`` and derived classes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19852 <https://github.com/galaxyproject/galaxy/pull/19852>`_
+* Allow PathLike parameters in ``make_fast_zipfile()`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19955 <https://github.com/galaxyproject/galaxy/pull/19955>`_
+* Implement dataset collection support in workflow landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20004 <https://github.com/galaxyproject/galaxy/pull/20004>`_
+* Add DOI to workflow metadata by `@jdavcs <https://github.com/jdavcs>`_ in `#20033 <https://github.com/galaxyproject/galaxy/pull/20033>`_
+* Improve type annotation of `galaxy.util` submodules by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20104 <https://github.com/galaxyproject/galaxy/pull/20104>`_
+* Additional type hints for ``toolbox.get_tool`` / ``toolbox.has_tool`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20150 <https://github.com/galaxyproject/galaxy/pull/20150>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``make_fast_zipfile`` directly by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19947 <https://github.com/galaxyproject/galaxy/pull/19947>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+* Fix numerous issues with tool input format "21.01" by `@jmchilton <https://github.com/jmchilton>`_ in `#19030 <https://github.com/galaxyproject/galaxy/pull/19030>`_
+* Partial backport of #19331 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19342 <https://github.com/galaxyproject/galaxy/pull/19342>`_
+* Fix config template validation for file sources and object store templates  by `@davelopez <https://github.com/davelopez>`_ in `#19414 <https://github.com/galaxyproject/galaxy/pull/19414>`_
+* Serialize message exceptions on execution error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19483 <https://github.com/galaxyproject/galaxy/pull/19483>`_
+
+============
+Enhancements
+============
+
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration) by `@jmchilton <https://github.com/jmchilton>`_ in `#18272 <https://github.com/galaxyproject/galaxy/pull/18272>`_
+* Add Python 3.13 support by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18449 <https://github.com/galaxyproject/galaxy/pull/18449>`_
+* Add Tool-Centric APIs to the Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18524 <https://github.com/galaxyproject/galaxy/pull/18524>`_
+* Rip repository_registry out of tool shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#18647 <https://github.com/galaxyproject/galaxy/pull/18647>`_
+* Workflow Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#18807 <https://github.com/galaxyproject/galaxy/pull/18807>`_
+* Update Mypy to 1.11.2 and fix new signature override errors by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18811 <https://github.com/galaxyproject/galaxy/pull/18811>`_
+* Raise exception if CompressedFile used on incompatible file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18888 <https://github.com/galaxyproject/galaxy/pull/18888>`_
+* Type annotations and fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18911 <https://github.com/galaxyproject/galaxy/pull/18911>`_
+* Workflow landing improvements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18979 <https://github.com/galaxyproject/galaxy/pull/18979>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
+* Enhance UTF-8 support for filename handling in downloads by `@arash77 <https://github.com/arash77>`_ in `#19161 <https://github.com/galaxyproject/galaxy/pull/19161>`_
 
 -------------------
 24.1.4 (2024-12-11)

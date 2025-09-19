@@ -9,10 +9,7 @@ import time
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from beaker.cache import CacheManager
@@ -42,10 +39,8 @@ from galaxy.files import (
     ConfiguredFileSourcesConf,
     UserDefinedFileSources,
 )
-from galaxy.files.plugins import (
-    FileSourcePluginLoader,
-    FileSourcePluginsConfig,
-)
+from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
@@ -188,7 +183,7 @@ app = None
 
 
 class HaltableContainer(Container):
-    haltables: List[Tuple[str, Callable]]
+    haltables: list[tuple[str, Callable]]
 
     def __init__(self) -> None:
         super().__init__()
@@ -349,7 +344,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
-        self.dynamic_tools_manager = DynamicToolManager(self)
+        self.dynamic_tool_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
@@ -551,7 +546,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 database_exists(url)
                 break
             except Exception:
-                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                log.info("Waiting for database: attempt %d of %d", i, attempts)
                 time.sleep(pause)
 
     @property
@@ -565,7 +560,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.model.engine.dispose()
 
 
-class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, InstallationTarget[tools.ToolBox]):
+class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping
@@ -593,7 +588,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self.job_config = self._register_singleton(jobs.JobConfiguration)
 
         # Setup infrastructure for short term storage manager.
-        short_term_storage_config_kwds: Dict[str, Any] = {}
+        short_term_storage_config_kwds: dict[str, Any] = {}
         short_term_storage_config_kwds["short_term_storage_directory"] = self.config.short_term_storage_dir
         short_term_storage_default_duration = self.config.short_term_storage_default_duration
         short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
@@ -608,7 +603,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[type-abstract]
 
         # Tag handler
-        self.tag_handler = self._register_singleton(GalaxyTagHandler)
+        tag_handler = GalaxyTagHandler(self.model.context)
+        self.tag_handler = self._register_singleton(GalaxyTagHandler, tag_handler)
         self.user_manager = self._register_singleton(UserManager)
         self._register_singleton(GalaxySessionManager)
         self.hda_manager = self._register_singleton(HDAManager)
@@ -623,6 +619,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
         self.notification_manager = self._register_singleton(NotificationManager)
+        self.interactivetool_manager = InteractiveToolManager(self)
 
         self.task_manager = self._register_abstract_singleton(
             AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
@@ -662,9 +659,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
         self._configure_tool_config_files()
-        self.installed_repository_manager = self._register_singleton(
-            InstalledRepositoryManager, InstalledRepositoryManager(self)
-        )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         self._configure_datatypes_registry(
@@ -713,7 +707,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         ) or not self.config.track_jobs_in_database
 
 
-class UniverseApplication(StructuredApp, GalaxyManagerApplication):
+class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
     """Encapsulates the state of a Universe application"""
 
     model: GalaxyModelMapping
@@ -775,6 +769,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self._configure_toolbox()
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)
+        self.installed_repository_manager = self._register_singleton(
+            InstalledRepositoryManager, InstalledRepositoryManager(self)
+        )
         # Load the update repository manager.
         self.update_repository_manager = self._register_singleton(
             UpdateRepositoryManager, UpdateRepositoryManager(self)
@@ -787,7 +784,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.datatypes_registry.load_external_metadata_tool(self.toolbox)
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
-        self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(
             VisualizationsRegistry,
@@ -844,8 +840,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        # We need InteractiveToolManager before the job handler starts
-        self.interactivetool_manager = InteractiveToolManager(self)
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if

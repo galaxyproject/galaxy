@@ -42,10 +42,8 @@ from typing import (
     Any,
     Callable,
     cast,
-    Dict,
-    List,
+    Literal,
     Optional,
-    Tuple,
 )
 
 from sqlalchemy import select
@@ -56,17 +54,15 @@ from galaxy.exceptions import (
 )
 from galaxy.model import (
     Dataset,
+    Event,
     GalaxySession,
     History,
     HistoryDatasetAssociation,
     Role,
     User,
+    UserAction,
 )
-from galaxy.model.base import (
-    ModelMapping,
-    transaction,
-)
-from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model.base import ModelMapping
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
@@ -111,7 +107,7 @@ class ProvidesAppContext:
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=str(dumps(params)))
+            action = UserAction(action=action, context=context, params=str(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -124,8 +120,7 @@ class ProvidesAppContext:
             except Exception:
                 action.session_id = None
             self.sa_session.add(action)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def log_event(self, message, tool_id=None, **kwargs):
         """
@@ -133,7 +128,7 @@ class ProvidesAppContext:
         Logging events is a config setting - if False, do not log.
         """
         if self.app.config.log_events:
-            event = self.app.model.Event()
+            event = Event()
             event.tool_id = tool_id
             try:
                 event.message = message % kwargs
@@ -156,14 +151,13 @@ class ProvidesAppContext:
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     @property
-    def sa_session(self) -> galaxy_scoped_session:
+    def sa_session(self):
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
+        :rtype: sqlalchemy.orm.scoped_session
         """
         return self.app.model.session
 
@@ -207,14 +201,15 @@ class ProvidesUserContext(ProvidesAppContext):
     properties.
     """
 
+    workflow_building_mode: Literal[1, True, False] = False
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
-    _short_term_cache: Dict[Tuple[str, ...], Any]
+    _short_term_cache: dict[tuple[str, ...], Any]
 
-    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+    def set_cache_value(self, args: tuple[str, ...], value: Any):
         self._short_term_cache[args] = value
 
-    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+    def get_cache_value(self, args: tuple[str, ...], default: Any = None) -> Any:
         return self._short_term_cache.get(args, default)
 
     @property
@@ -247,7 +242,7 @@ class ProvidesUserContext(ProvidesAppContext):
     def anonymous(self) -> bool:
         return self.user is None
 
-    def get_current_user_roles(self) -> List[Role]:
+    def get_current_user_roles(self) -> list[Role]:
         if user := self.user:
             roles = user.all_roles()
         else:

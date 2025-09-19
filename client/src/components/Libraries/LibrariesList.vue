@@ -279,7 +279,7 @@ export default {
                 () => {
                     Toast.success("Changes to library saved");
                 },
-                (error) => onError(error)
+                (error) => onError(error),
             );
             this.toggleEditMode(item);
         },
@@ -294,7 +294,7 @@ export default {
                         this.hideOn("deleted", false);
                     }
                 },
-                (error) => onError(error)
+                (error) => onError(error),
             );
         },
         gotoFirstPage() {
@@ -347,7 +347,7 @@ export default {
                     this.$refs.libraries_list.refresh();
                 },
                 (error) => onError(error),
-                true
+                true,
             );
         },
         newLibrary() {
@@ -363,7 +363,7 @@ export default {
                     this.isNewLibFormVisible = false;
                     Toast.success("Library created.");
                 },
-                (error) => onError(error)
+                (error) => onError(error),
             );
         },
     },

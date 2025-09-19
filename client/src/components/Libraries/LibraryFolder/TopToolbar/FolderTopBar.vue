@@ -14,19 +14,19 @@ import {
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
-import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
@@ -90,7 +90,7 @@ const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
 const canDelete = computed(() => {
-    return !!(containsFileOrFolder.value && props.metadata.can_modify_folder);
+    return !!props.metadata.can_modify_folder;
 });
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && userStore.currentUser);
@@ -100,7 +100,7 @@ const totalRows = computed(() => {
 });
 
 // Variables for Collection Creation
-const collectionModalType = ref<CollectionType | null>(null);
+const collectionModalType = ref<CollectionBuilderType | null>(null);
 const collectionModalShow = ref(false);
 const collectionSelection = ref<any[]>([]);
 const collectionHistoryId = ref<string | null>(null);
@@ -122,7 +122,7 @@ async function getSelected() {
                 props.folderId,
                 props.unselected,
                 props.searchText,
-                totalRows.value
+                totalRows.value,
             );
 
             emit("setBusy", false);
@@ -148,7 +148,7 @@ async function deleteSelected() {
             selected,
             (deletedItem: any) => emit("deleteFromTable", deletedItem),
             () => emit("refreshTable"),
-            () => emit("refreshTableContent")
+            () => emit("refreshTableContent"),
         );
     } catch (err) {
         console.error(err);
@@ -205,11 +205,11 @@ async function importToHistoryModal(isCollection: boolean) {
                 onCollectionImport: async (
                     collectionType: string,
                     selection: { models: CollectionElement[] },
-                    historyId: string
+                    historyId: string,
                 ) => {
                     try {
                         collectionHistoryId.value = historyId;
-                        collectionModalType.value = collectionType as CollectionType;
+                        collectionModalType.value = collectionType as CollectionBuilderType;
                         collectionSelection.value = selection.models;
                         collectionModalShow.value = true;
                     } catch (err) {
@@ -240,7 +240,7 @@ function resetProgress() {
 
 async function addDatasets(
     selectedDatasets: SelectionItem[] | Record<string, string | boolean>[],
-    datasetApiCall: Function
+    datasetApiCall: Function,
 ) {
     resetProgress();
 
@@ -440,12 +440,13 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             @onSelect="onAddDatasetsDirectory"
             @onClose="onAddDatasets" />
 
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="collectionModalType && collectionHistoryId"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
+            :extended-collection-type="{}"
             :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
+            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

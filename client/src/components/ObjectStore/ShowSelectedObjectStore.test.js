@@ -50,7 +50,7 @@ describe("ShowSelectedObjectStore", () => {
         server.use(
             http.get("/api/object_stores/{object_store_id}", ({ response }) => {
                 return response(200).json(OBJECT_STORE_DATA);
-            })
+            }),
         );
         wrapper = mount(ShowSelectedObjectStore, {
             propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
@@ -58,7 +58,7 @@ describe("ShowSelectedObjectStore", () => {
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
@@ -69,7 +69,7 @@ describe("ShowSelectedObjectStore", () => {
         server.use(
             http.get("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
                 return response(200).json(USER_OBJECT_STORE_DATA);
-            })
+            }),
         );
 
         wrapper = mount(ShowSelectedObjectStore, {
@@ -78,7 +78,7 @@ describe("ShowSelectedObjectStore", () => {
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();

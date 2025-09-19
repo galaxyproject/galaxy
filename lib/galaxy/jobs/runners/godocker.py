@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from datetime import datetime
+from typing import Union
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -167,7 +168,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             )
             self.monitor_queue.put(ajs)
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         """Get the job current status from GoDocker
                 using job_id and update the status in galaxy.
         If the job execution is successful, call

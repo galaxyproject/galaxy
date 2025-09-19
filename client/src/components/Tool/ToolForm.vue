@@ -14,7 +14,7 @@
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </b-alert>
-            <b-alert show variant="warning">
+            <b-alert v-if="submissionRequestFailed" show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
             </b-alert>
@@ -27,6 +27,7 @@
             v-if="showForm"
             :id="formConfig.id"
             :version="formConfig.version"
+            :tool-uuid="uuid"
             :title="formConfig.name"
             :description="formConfig.description"
             :options="formConfig"
@@ -39,68 +40,64 @@
             itemtype="https://schema.org/CreativeWork"
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
             @onChangeVersion="onChangeVersion">
-            <template v-slot:body>
-                <div class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
-                    <FormDisplay
-                        :id="toolId"
-                        :inputs="formConfig.inputs"
-                        :errors="formConfig.errors"
-                        :loading="loading"
-                        :validation-scroll-to="validationScrollTo"
-                        :warnings="formConfig.warnings"
-                        @onChange="onChange"
-                        @onValidation="onValidation" />
-                </div>
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                <FormDisplay
+                    :id="toolId"
+                    :inputs="formConfig.inputs"
+                    :errors="formConfig.errors"
+                    :loading="loading"
+                    :validation-scroll-to="validationScrollTo"
+                    :warnings="formConfig.warnings"
+                    @onChange="onChange"
+                    @onValidation="onValidation" />
+            </div>
 
-                <div
-                    v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
-                    class="mt-2 mb-4">
-                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
-                    <FormElement
-                        v-if="emailAllowed(config, currentUser)"
-                        id="send_email_notification"
-                        v-model="useEmail"
-                        title="Email notification"
-                        help="Send an email notification when the job completes."
-                        type="boolean" />
-                    <FormElement
-                        v-if="remapAllowed"
-                        id="rerun_remap_job_id"
-                        v-model="useJobRemapping"
-                        :title="remapTitle"
-                        :help="remapHelp"
-                        type="boolean" />
-                    <FormElement
-                        v-if="reuseAllowed(currentUser)"
-                        id="use_cached_job"
-                        v-model="useCachedJobs"
-                        title="Attempt to re-use jobs with identical parameters?"
-                        help="This may skip executing jobs that you have already run."
-                        type="boolean" />
-                    <FormSelect
-                        v-if="formConfig.model_class === 'DataManagerTool'"
-                        id="data_manager_mode"
-                        v-model="dataManagerMode"
-                        :options="bundleOptions"
-                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
-                </div>
-            </template>
-            <template v-slot:header-buttons>
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                <FormElement
+                    v-if="emailAllowed(config, currentUser)"
+                    id="send_email_notification"
+                    v-model="useEmail"
+                    title="Email notification"
+                    help="Send an email notification when the job completes."
+                    type="boolean" />
+                <FormElement
+                    v-if="remapAllowed"
+                    id="rerun_remap_job_id"
+                    v-model="useJobRemapping"
+                    :title="remapTitle"
+                    :help="remapHelp"
+                    type="boolean" />
+                <FormElement
+                    id="use_cached_job"
+                    v-model="useCachedJobs"
+                    title="Attempt to re-use jobs with identical parameters?"
+                    help="This may skip executing jobs that you have already run."
+                    type="boolean" />
+                <FormSelect
+                    v-if="formConfig.model_class === 'DataManagerTool'"
+                    id="data_manager_mode"
+                    v-model="dataManagerMode"
+                    :options="bundleOptions"
+                    title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+            </div>
+            <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
+                    class="text-nowrap"
                     title="Run Tool"
-                    :disabled="!canMutateHistory"
-                    class="btn-sm"
+                    :disabled="runButtonDisabled"
+                    size="small"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
-            <template v-slot:buttons>
+            <template v-slot:footer>
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -120,17 +117,16 @@ import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
-import { refreshContentsWrapper } from "utils/data";
 
 import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
-import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
@@ -148,6 +144,10 @@ export default {
     },
     props: {
         id: {
+            type: String,
+            default: null,
+        },
+        uuid: {
             type: String,
             default: null,
         },
@@ -194,6 +194,7 @@ export default {
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
+            submissionRequestFailed: false,
             validationInternal: null,
             validationScrollTo: null,
             currentVersion: this.version,
@@ -204,6 +205,7 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            formConfigInitialized: false,
         };
     },
     computed: {
@@ -219,9 +221,18 @@ export default {
             const { id, version } = this.formConfig;
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
+        toolUuid() {
+            return this.uuid || this.formConfig.uuid;
+        },
         tooltip() {
             if (!this.canMutateHistory) {
                 return this.immutableHistoryMessage;
+            }
+            if (this.hasConfigOrValErrors) {
+                return "Please resolve highlighted issues before running the tool.";
+            }
+            if (this.showExecuting) {
+                return "Tool is being executed...";
             }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
@@ -248,8 +259,15 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
-        runButtonTitle() {
-            return "Run Tool";
+        runButtonDisabled() {
+            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors;
+        },
+        /** If there are any backend returned `formConfig.errors` or internal/client checked validation errors. */
+        hasConfigOrValErrors() {
+            return (
+                (this.formConfig.errors && Object.values(this.formConfig.errors).length > 0) ||
+                this.validationInternal?.length
+            );
         },
     },
     watch: {
@@ -268,9 +286,6 @@ export default {
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
-        reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
-        },
         onHistoryChange() {
             const Galaxy = getGalaxyInstance();
             if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
@@ -285,12 +300,17 @@ export default {
             this.formData = newData;
             if (refreshRequest) {
                 this.onUpdate();
+            } else if (this.formConfigInitialized && this.hasConfigOrValErrors) {
+                // After the first manual change to a form input, for every change, if there isn't a request to refresh,
+                // we reset the errors since we haven't received a tool form update via the backend.
+                this.formConfig.errors = null;
             }
+            this.formConfigInitialized = true;
         },
         onUpdate() {
             this.disabled = true;
             console.debug("ToolForm - Updating input parameters.", this.formData);
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+            updateToolFormData(this.formConfig.id, this.toolUuid, this.currentVersion, this.history_id, this.formData)
                 .then((data) => {
                     this.formConfig = data;
                 })
@@ -305,9 +325,10 @@ export default {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
             this.loading = true;
-            console.debug("ToolForm - Requesting tool.", this.id);
-            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
+
+            return getToolFormData(this.id || this.toolUuid, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
+                    this.currentVersion = data.version;
                     this.formConfig = data;
                     this.remapAllowed = this.job_id && data.job_remap;
                     this.showForm = true;
@@ -341,6 +362,7 @@ export default {
                 history_id: historyId,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
+                tool_uuid: this.toolUuid,
                 inputs: {
                     ...this.formData,
                 },
@@ -364,15 +386,16 @@ export default {
             const prevRoute = this.$route.fullPath;
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    this.submissionRequestFailed = false;
                     this.showExecuting = false;
                     let changeRoute = false;
-                    refreshContentsWrapper();
+                    startWatchingHistory();
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
                     }
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
-                    if (nJobs > 0) {
+                    if (nJobs > 0 && !jobResponse.errors?.length) {
                         this.showForm = false;
                         const toolName = this.toolName;
                         this.saveLatestResponse({
@@ -382,10 +405,23 @@ export default {
                         });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
+                        const defaultErrorTitle = "Job submission rejected.";
                         this.showError = true;
                         this.showForm = true;
-                        this.errorTitle = "Job submission rejected.";
-                        this.errorContent = jobResponse;
+                        if (jobResponse?.errors) {
+                            const nErrors = jobResponse.errors.length;
+                            if (nJobs > 0) {
+                                this.errorTitle = `Job submission for ${nErrors} out of ${
+                                    nJobs + nErrors
+                                } jobs failed.`;
+                            } else {
+                                this.errorTitle = defaultErrorTitle;
+                            }
+                            this.errorContent = jobResponse.errors;
+                        } else {
+                            this.errorTitle = defaultErrorTitle;
+                            this.errorContent = jobResponse;
+                        }
                     }
                     if (changeRoute) {
                         this.$router.push(`/jobs/submission/success`);
@@ -398,6 +434,7 @@ export default {
                 },
                 (e) => {
                     this.errorMessage = e?.response?.data?.err_msg;
+                    this.submissionRequestFailed = true;
                     this.showExecuting = false;
                     let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
@@ -413,7 +450,7 @@ export default {
                         this.errorTitle = "Job submission failed.";
                         this.errorContent = jobDef;
                     }
-                }
+                },
             );
         },
     },

@@ -2,20 +2,19 @@ from typing import Optional
 from uuid import uuid4
 
 from galaxy.schema.schema import ModelStoreFormat
-from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class TestHistoryArchivingWithExportRecord(IntegrationTestCase, UsesCeleryTasks, PosixFileSourceSetup):
+class TestHistoryArchivingWithExportRecord(PosixFileSourceSetup, IntegrationTestCase):
     dataset_populator: DatasetPopulator
     task_based = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
-        UsesCeleryTasks.handle_galaxy_config_kwds(config)
+        super().handle_galaxy_config_kwds(config)
+        IntegrationTestCase.handle_galaxy_config_kwds(config)
 
     def setUp(self):
         super().setUp()

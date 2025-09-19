@@ -29,7 +29,7 @@ const toggle = ref(false);
 
 watchImmediate(
     () => currentValue.value,
-    (val) => (toggle.value = val)
+    (val) => (toggle.value = val),
 );
 
 const emit = defineEmits<{
@@ -57,7 +57,7 @@ watch(
     () => props.query,
     () => {
         toggle.value = FAVORITES.includes(props.query ?? "");
-    }
+    },
 );
 
 function toggleFavorites() {

@@ -8,6 +8,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Any,
     Callable,
     Container as TypingContainer,
     Dict,
@@ -42,13 +43,13 @@ from ..container_classes import (
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
     mull_targets,
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    DEFAULT_CHANNELS,
     default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
@@ -734,7 +735,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
-        self._mulled_kwds = {
+        self._mulled_kwds: Dict[str, Any] = {
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",

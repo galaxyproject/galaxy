@@ -1,17 +1,18 @@
 import EventEmitter from "events";
 
-import { type DatatypesMapperModel } from "@/components/Datatypes/model";
-import { type useWorkflowStores } from "@/composables/workflowStores";
-import { type Connection, type ConnectionId, getConnectionId } from "@/stores/workflowConnectionStore";
-import {
-    type CollectionOutput,
-    type DataCollectionStepInput,
-    type DataOutput,
-    type DataStepInput,
-    type ParameterOutput,
-    type ParameterStepInput,
-    type TerminalSource,
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { useWorkflowStores } from "@/composables/workflowStores";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
+import type {
+    CollectionOutput,
+    DataCollectionStepInput,
+    DataOutput,
+    DataStepInput,
+    ParameterOutput,
+    ParameterStepInput,
+    TerminalSource,
 } from "@/stores/workflowStepStore";
+import type { Connection, ConnectionId } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
 
 import {
@@ -20,6 +21,9 @@ import {
     type CollectionTypeDescriptor,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
+
+export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
+    "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
 
 export class ConnectionAcceptable {
     reason: string | null;
@@ -137,7 +141,7 @@ class Terminal extends EventEmitter {
             !this.mapOver.equal(effectiveMapOver) &&
             (effectiveMapOver.isCollection ||
                 !Object.values(this.stores.stepStore.stepInputMapOver[this.stepId] ?? []).find(
-                    (mapOver) => mapOver.isCollection
+                    (mapOver) => mapOver.isCollection,
                 ))
         ) {
             this.stores.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
@@ -159,7 +163,7 @@ class Terminal extends EventEmitter {
         return connections.some(
             (connection) =>
                 connection.input.stepId === this.stepId &&
-                this.stores.stepStore.stepMapOver[this.stepId]?.collectionType
+                this.stores.stepStore.stepMapOver[this.stepId]?.collectionType,
         );
     }
     _getOutputConnections() {
@@ -231,7 +235,7 @@ class BaseInputTerminal extends Terminal {
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
                 false,
-                "Input already filled with another connection, delete it before connecting another output."
+                "Input already filled with another connection, delete it before connecting another output.",
             );
         } else {
             return this.attachable(outputTerminal);
@@ -245,7 +249,7 @@ class BaseInputTerminal extends Terminal {
         const connections = this._getOutputConnections();
         const connectedStepIds = Array.from(new Set(connections.map((connection) => connection.output.stepId)));
         return connectedStepIds.map(
-            (stepId) => this.stores.stepStore.stepMapOver[stepId] || NULL_COLLECTION_TYPE_DESCRIPTION
+            (stepId) => this.stores.stepStore.stepMapOver[stepId] || NULL_COLLECTION_TYPE_DESCRIPTION,
         );
     }
     resetMapping(connection?: Connection) {
@@ -462,13 +466,13 @@ export class InputTerminal extends BaseInputTerminal {
                 if (this.connected() && !this._collectionAttached()) {
                     return new ConnectionAcceptable(
                         false,
-                        "Cannot attach collections to data parameters with individual data inputs already attached."
+                        "Cannot attach collections to data parameters with individual data inputs already attached.",
                     );
                 }
                 if (otherCollectionType.collectionType && otherCollectionType.collectionType.endsWith("paired")) {
                     return new ConnectionAcceptable(
                         false,
-                        "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+                        "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
                     );
                 }
             }
@@ -492,18 +496,18 @@ export class InputTerminal extends BaseInputTerminal {
                         if (this.hasConnectedMappedInputTerminals()) {
                             return new ConnectionAcceptable(
                                 false,
-                                "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+                                "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
                             );
                         } else {
                             return new ConnectionAcceptable(
                                 false,
-                                "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                                "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
                             );
                         }
                     } else {
                         return new ConnectionAcceptable(
                             false,
-                            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
+                            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry.",
                         );
                     }
                 }
@@ -512,7 +516,7 @@ export class InputTerminal extends BaseInputTerminal {
             if (this.localMapOver.isCollection) {
                 return new ConnectionAcceptable(
                     false,
-                    "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+                    "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping.",
                 );
             }
         }
@@ -558,12 +562,12 @@ export class InputParameterTerminal extends BaseInputTerminal {
         if (!this.multiple && other.multiple) {
             return new ConnectionAcceptable(
                 false,
-                `This output parameter represents multiple values but input only accepts a single value`
+                `This output parameter represents multiple values but input only accepts a single value`,
             );
         }
         return new ConnectionAcceptable(
             canAccept,
-            canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
+            canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`,
         );
     }
 }
@@ -615,7 +619,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
             const effectiveCollectionTypes = this._effectiveCollectionTypes();
             const mapOver = this.mapOver;
             const canMatch = effectiveCollectionTypes.some((effectiveCollectionType) =>
-                effectiveCollectionType.canMatch(otherCollectionType)
+                effectiveCollectionType.canMatch(otherCollectionType),
             );
             if (canMatch) {
                 // Only way a direct match...
@@ -626,12 +630,12 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 if (this.hasConnectedMappedInputTerminals()) {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+                        "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
                     );
                 } else {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
                     );
                 }
             } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
@@ -644,11 +648,21 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 } else {
                     return new ConnectionAcceptable(
                         false,
-                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+                        "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
                     );
                 }
             } else {
-                return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
+                let reason = "Incompatible collection type(s) for attachment.";
+                if (this.collectionTypes.length == 1) {
+                    if (
+                        otherCollectionType.collectionType?.endsWith("paired_or_unpaired") &&
+                        this.collectionTypes[0]?.collectionType?.endsWith("paired")
+                    ) {
+                        reason =
+                            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";
+                    }
+                }
+                return new ConnectionAcceptable(false, reason);
             }
         } else {
             return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");
@@ -683,7 +697,7 @@ class BaseOutputTerminal extends Terminal {
 
             const extraStepInput = this.stores.stepStore.getStepExtraInputs(inputStep.id);
             const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
-                (input) => input.name === connection.input.name
+                (input) => input.name === connection.input.name,
             );
             if (!terminalSource) {
                 return new InvalidInputTerminal({
@@ -757,7 +771,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         } else {
             this.collectionTypeSource = attr.collection_type_source;
             if (!this.collectionTypeSource) {
-                console.log("Warning: No collection type or collection type source defined.");
+                console.debug(NO_COLLECTION_TYPE_INFORMATION_MESSAGE);
             }
             this.collectionType = this.getCollectionTypeFromInput() || ANY_COLLECTION_TYPE_DESCRIPTION;
         }
@@ -767,7 +781,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
     getCollectionTypeFromInput() {
         const connection = this.stores.connectionStore.connections.find(
             (connection) =>
-                connection.input.name === this.collectionTypeSource && connection.input.stepId === this.stepId
+                connection.input.name === this.collectionTypeSource && connection.input.stepId === this.stepId,
         );
         if (connection) {
             const outputStep = this.stores.stepStore.getStep(connection.output.stepId);
@@ -782,13 +796,13 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                         connection.output.stepId,
                         stepOutput,
                         this.datatypesMapper,
-                        this.stores
+                        this.stores,
                     );
                     const inputTerminal = terminalFactory(
                         connection.output.stepId,
                         stepInput,
                         this.datatypesMapper,
-                        this.stores
+                        this.stores,
                     );
                     // otherCollectionType is the mapped over output collection as it would appear at the input terminal
                     const otherCollectionType = inputTerminal._otherCollectionType(outputTerminal);
@@ -798,7 +812,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                         const connectedCollectionType = inputTerminal.collectionTypes.find(
                             (collectionType) =>
                                 otherCollectionType.canMatch(collectionType) ||
-                                otherCollectionType.canMapOver(collectionType)
+                                otherCollectionType.canMapOver(collectionType),
                         );
                         if (connectedCollectionType) {
                             if (connectedCollectionType.collectionType === "any") {
@@ -859,7 +873,7 @@ export type InputTerminals = InputTerminal | InputCollectionTerminal | InputPara
 export function producesAcceptableDatatype(
     datatypesMapper: DatatypesMapperModel,
     inputDatatypes: string[],
-    otherDatatypes: string[]
+    otherDatatypes: string[],
 ) {
     for (const t in inputDatatypes) {
         const thisDatatype = inputDatatypes[t]!;
@@ -873,7 +887,7 @@ export function producesAcceptableDatatype(
             (otherDatatype) =>
                 otherDatatype === "input" ||
                 otherDatatype === "_sniff_" ||
-                datatypesMapper.isSubType(otherDatatype, thisDatatype)
+                datatypesMapper.isSubType(otherDatatype, thisDatatype),
         );
 
         if (validMatch) {
@@ -886,15 +900,15 @@ export function producesAcceptableDatatype(
         return new ConnectionAcceptable(
             false,
             `Effective output data type(s) [${invalidDatatypes.join(
-                ", "
-            )}] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.`
+                ", ",
+            )}] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.`,
         );
     }
     return new ConnectionAcceptable(
         false,
         `Effective output data type(s) [${otherDatatypes.join(
-            ", "
-        )}] do not appear to match input type(s) [${inputDatatypes.join(", ")}].`
+            ", ",
+        )}] do not appear to match input type(s) [${inputDatatypes.join(", ")}].`,
     );
 }
 
@@ -919,26 +933,26 @@ function isOutputArg(arg: TerminalSourceAndInvalid): arg is DataOutput {
 type TerminalOf<T extends TerminalSourceAndInvalid> = T extends InvalidInputTerminalArgs
     ? InvalidInputTerminal
     : T extends DataStepInput
-    ? InputTerminal
-    : T extends DataCollectionStepInput
-    ? InputCollectionTerminal
-    : T extends ParameterStepInput
-    ? InputParameterTerminal
-    : T extends DataOutput
-    ? OutputTerminal
-    : T extends CollectionOutput
-    ? OutputCollectionTerminal
-    : T extends ParameterOutput
-    ? OutputParameterTerminal
-    : T extends BaseOutputTerminalArgs
-    ? InvalidOutputTerminal
-    : never;
+      ? InputTerminal
+      : T extends DataCollectionStepInput
+        ? InputCollectionTerminal
+        : T extends ParameterStepInput
+          ? InputParameterTerminal
+          : T extends DataOutput
+            ? OutputTerminal
+            : T extends CollectionOutput
+              ? OutputCollectionTerminal
+              : T extends ParameterOutput
+                ? OutputParameterTerminal
+                : T extends BaseOutputTerminalArgs
+                  ? InvalidOutputTerminal
+                  : never;
 
 export function terminalFactory<T extends TerminalSourceAndInvalid>(
     stepId: number,
     terminalSource: T,
     datatypesMapper: DatatypesMapperModel,
-    stores: ReturnType<typeof useWorkflowStores>
+    stores: ReturnType<typeof useWorkflowStores>,
 ): TerminalOf<T> {
     if ("input_type" in terminalSource) {
         const terminalArgs = {

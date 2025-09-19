@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -15,7 +13,11 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
-from galaxy.model import Role
+from galaxy.model import (
+    Library,
+    Role,
+)
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
@@ -90,7 +92,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
         return self._to_summary(trans, library)
 
-    def create_from_store(self, trans, payload: CreateLibrariesFromStore) -> List[LibrarySummary]:
+    def create_from_store(self, trans, payload: CreateLibrariesFromStore) -> list[LibrarySummary]:
         object_tracker = self.create_objects_from_store(
             trans,
             payload,
@@ -170,9 +172,11 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
                 trans, library, query, page, page_limit, is_library_access
             )
 
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
             return_roles = []
             for role in roles:
-                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(BasicRoleModel(id=role.id, name=displayed_name, type=role.type))
             return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
@@ -182,7 +186,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             )
 
     def set_permissions(
-        self, trans, id: DecodedDatabaseIdField, payload: Dict[str, Any]
+        self, trans, id: DecodedDatabaseIdField, payload: dict[str, Any]
     ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
         """Set permissions of the given library to the given role ids.
 
@@ -312,14 +316,14 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         roles = self.library_manager.get_current_roles(trans, library)
         return LibraryCurrentPermissions.model_construct(**roles)
 
-    def set_permissions_old(self, trans, library, payload: Dict[str, Any]) -> LibraryLegacySummary:
+    def set_permissions_old(self, trans, library, payload: dict[str, Any]) -> LibraryLegacySummary:
         """
         *** old implementation for backward compatibility ***
 
         Updates the library permissions.
         """
         permissions = {}
-        for k, v in trans.app.model.Library.permitted_actions.items():
+        for k, v in Library.permitted_actions.items():
             role_params = payload.get(f"{k}_in", [])
             in_roles = [trans.sa_session.get(Role, x) for x in util.listify(role_params)]
             permissions[trans.app.security_agent.get_action(v.action)] = in_roles

@@ -85,7 +85,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self.user_manager = self._register_singleton(UserManager, UserManager(self, app_type="tool_shed"))
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
-        self.tag_handler = CommunityTagHandler(self)
+        self.tag_handler = CommunityTagHandler(self.model.context)
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here
         # because the Tool Shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager(self.config.tool_data_path)

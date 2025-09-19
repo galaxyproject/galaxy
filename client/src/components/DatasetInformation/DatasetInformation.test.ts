@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
@@ -53,11 +54,14 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
+        const pinia = createTestingPinia();
+
         wrapper = mount(DatasetInformation as object, {
             propsData: {
                 dataset: datasetResponse,
             },
             localVue,
+            pinia,
         });
 
         datasetInfoTable = wrapper.find("#dataset-details");
@@ -73,6 +77,8 @@ describe("DatasetInformation/DatasetInformation", () => {
 
         // should contain 11 rows
         expect(rows.length).toBe(11);
+
+        await flushPromises();
     });
 
     it("file size should be formatted", async () => {
@@ -88,6 +94,8 @@ describe("DatasetInformation/DatasetInformation", () => {
         const formattedDate = format(parsedDate, "eeee MMM do H:mm:ss yyyy zz");
 
         expect(date).toBe(formattedDate);
+
+        await flushPromises();
     });
 
     it("Table should render data accordingly", async () => {
@@ -108,5 +116,7 @@ describe("DatasetInformation/DatasetInformation", () => {
                 expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
             }
         });
+
+        await flushPromises();
     });
 });

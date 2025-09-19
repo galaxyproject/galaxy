@@ -362,7 +362,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         # unicode decoding error message.
         content = self._escape_page_content_if_needed("These characters should not")
         strings_displayed = [
-            "%d:%s" % (revision_number, revision_hash),
+            f"{revision_number}:{revision_hash}",
             "filtering_0000",
             "user1",
             "repos",

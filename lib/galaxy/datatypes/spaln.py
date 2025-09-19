@@ -6,8 +6,6 @@ import logging
 import os.path
 from typing import (
     Callable,
-    Dict,
-    List,
     Optional,
 )
 
@@ -166,12 +164,12 @@ class _SpalnDb(Data):
         )
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """Merge spaln databases (not implemented)."""
         raise NotImplementedError("Merging spaln databases is not possible")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a spaln database (not implemented)."""
         if split_params is None:
             return None

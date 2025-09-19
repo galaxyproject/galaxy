@@ -26,6 +26,7 @@ attribute change to a model object.
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
+import builtins
 import datetime
 import logging
 import re
@@ -33,14 +34,9 @@ from functools import partial
 from typing import (
     Any,
     Callable,
-    Dict,
     Generic,
-    List,
     NamedTuple,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -55,10 +51,7 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -82,10 +75,10 @@ class ParsedFilter(NamedTuple):
 
 
 parsed_filter = ParsedFilter
-OrmFilterParserType = Union[None, Dict[str, Any], Callable]
-OrmFilterParsersType = Dict[str, OrmFilterParserType]
-FunctionFilterParserType = Dict[str, Any]
-FunctionFilterParsersType = Dict[str, Any]
+OrmFilterParserType = Union[None, dict[str, Any], Callable]
+OrmFilterParsersType = dict[str, OrmFilterParserType]
+FunctionFilterParserType = dict[str, Any]
+FunctionFilterParsersType = dict[str, Any]
 
 
 # ==== accessors from base/controller.py
@@ -118,9 +111,9 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
     if check_accessible:
         if type(item) in (
-            trans.app.model.LibraryFolder,
-            trans.app.model.LibraryDatasetDatasetAssociation,
-            trans.app.model.LibraryDataset,
+            model.LibraryFolder,
+            model.LibraryDatasetDatasetAssociation,
+            model.LibraryDataset,
         ):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
                 raise exceptions.ItemAccessibilityException(
@@ -207,7 +200,7 @@ class ModelManager(Generic[U]):
     over the ORM.
     """
 
-    model_class: Type[U]
+    model_class: type[U]
     foreign_key_name: str
     app: BasicSharedApp
 
@@ -223,8 +216,7 @@ class ModelManager(Generic[U]):
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     # .... query foundation wrapper
@@ -406,7 +398,7 @@ class ModelManager(Generic[U]):
                 orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
 
-    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> List[U]:
+    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> builtins.list[U]:
         """
         Sends kwargs to build the query return all models found.
         """
@@ -493,8 +485,7 @@ class ModelManager(Generic[U]):
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def copy(self, item, **kwargs) -> U:
@@ -503,7 +494,7 @@ class ModelManager(Generic[U]):
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
+    def update(self, item: U, new_values: dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
@@ -515,8 +506,7 @@ class ModelManager(Generic[U]):
         session = self.session()
         session.add(item)
         if flush:
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def associate(self, associate_with, item, foreign_key_name=None):
@@ -556,7 +546,7 @@ class HasAModelManager(Generic[T]):
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[
+    model_manager_class: type[
         T
     ]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
@@ -626,7 +616,7 @@ class ModelSerializer(HasAModelManager[T]):
     """
 
     default_view: Optional[str]
-    views: Dict[str, List[str]]
+    views: dict[str, list[str]]
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
         """
@@ -638,9 +628,9 @@ class ModelSerializer(HasAModelManager[T]):
         #   this allows us to: 'mention' the key without adding the default serializer
         # TODO: we may want to eventually error if a key is requested
         #   that is in neither serializable_keyset or serializers
-        self.serializable_keyset: Set[str] = set()
+        self.serializable_keyset: set[str] = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers: Dict[str, Serializer] = {}
+        self.serializers: dict[str, Serializer] = {}
         # add subclass serializers defined there
         self.add_serializers()
         # update the keyset by the serializers (removing the responsibility from subclasses)
@@ -809,7 +799,7 @@ class ModelValidator:
     """
 
     @staticmethod
-    def matches_type(key: str, val: Any, types: Union[type, Tuple[Union[type, Tuple[Any, ...]], ...]]):
+    def matches_type(key: str, val: Any, types: Union[type, tuple[Union[type, tuple[Any, ...]], ...]]):
         """
         Check `val` against the type (or tuple of types) in `types`.
 
@@ -849,7 +839,7 @@ class ModelValidator:
         return val_
 
     @staticmethod
-    def basestring_list(key: str, val: Any) -> List[str]:
+    def basestring_list(key: str, val: Any) -> list[str]:
         """
         Must be a list of basestrings.
         """
@@ -905,8 +895,8 @@ class ModelDeserializer(HasAModelManager[T]):
         """
         super().__init__(app, **kwargs)
 
-        self.deserializers: Dict[str, Deserializer] = {}
-        self.deserializable_keyset: Set[str] = set()
+        self.deserializers: dict[str, Deserializer] = {}
+        self.deserializable_keyset: set[str] = set()
         self.add_deserializers()
 
     def add_deserializers(self):
@@ -932,8 +922,7 @@ class ModelDeserializer(HasAModelManager[T]):
         # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
             sa_session.add(item)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
 
         return new_dict
 
@@ -1001,7 +990,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    model_class: Type[model._HasTable]
+    model_class: type[model._HasTable]
     parsed_filter = parsed_filter
     orm_filter_parsers: OrmFilterParsersType
     fn_filter_parsers: FunctionFilterParsersType
@@ -1051,7 +1040,7 @@ class ModelFilterParser(HasAModelManager):
         filter_attr_key: str = "q",
         filter_value_key: str = "qv",
         attr_op_split_char: str = "-",
-    ) -> List[Tuple[str, str, str]]:
+    ) -> list[tuple[str, str, str]]:
         """
         Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
         """
@@ -1273,7 +1262,7 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
-    def contains_non_orm_filter(self, filters: List[ParsedFilter]) -> bool:
+    def contains_non_orm_filter(self, filters: list[ParsedFilter]) -> bool:
         """Whether the list of filters contains any non-orm filter."""
         return any(filter.filter_type == "function" for filter in filters)
 
@@ -1310,7 +1299,7 @@ class StorageCleanerManager(Protocol):
 
     # TODO: refactor this interface to be more generic and allow for more types of cleanable items
 
-    sort_map: Dict[StoredItemOrderBy, Any]
+    sort_map: dict[StoredItemOrderBy, Any]
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         """Returns information with the total storage space taken by discarded items for the given user.
@@ -1325,7 +1314,7 @@ class StorageCleanerManager(Protocol):
         offset: Optional[int],
         limit: Optional[int],
         order: Optional[StoredItemOrderBy],
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         """Returns a paginated list of items deleted by the given user that are not yet purged."""
         raise NotImplementedError
 
@@ -1343,16 +1332,16 @@ class StorageCleanerManager(Protocol):
         offset: Optional[int],
         limit: Optional[int],
         order: Optional[StoredItemOrderBy],
-    ) -> List[StoredItem]:
+    ) -> list[StoredItem]:
         """Returns a paginated list of items archived by the given user that are not yet purged."""
         raise NotImplementedError
 
-    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+    def cleanup_items(self, user: model.User, item_ids: set[int]) -> StorageItemsCleanupResult:
         """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError
 
 
-def combine_lists(listA: Any, listB: Any) -> List:
+def combine_lists(listA: Any, listB: Any) -> list:
     """
     Combine two lists into a single list.
 

@@ -1,11 +1,13 @@
 import { computed, del, ref, set } from "vue";
 
-import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
-import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
+import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
+import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { defineScopedStore } from "./scopedStore";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
+import type { Connection } from "./workflowStoreTypes";
 
 interface StepPosition {
     top: number;
@@ -35,9 +37,11 @@ export interface PostJobActions {
 }
 
 export interface DataOutput {
+    valid?: boolean;
     extensions: string[];
     name: string;
     optional: boolean;
+    type?: "data";
 }
 
 export interface CollectionOutput extends Omit<DataOutput, "type"> {
@@ -71,6 +75,8 @@ export interface DataStepInput extends BaseStepInput {
 export interface DataCollectionStepInput extends BaseStepInput {
     input_type: "dataset_collection";
     collection_types: string[];
+    fields: FieldDict[];
+    column_definitions: SampleSheetColumnDefinitions;
 }
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
@@ -102,6 +108,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_id?: string;
+    tool_uuid?: string;
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;
@@ -163,11 +170,11 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
     const getStepExtraInputs = computed(() => (stepId: number) => stepExtraInputs.value[stepId] || []);
 
     const getStepIndex = computed(() =>
-        Math.max(...Object.values(steps.value).map((step) => step.id), stepIndex.value)
+        Math.max(...Object.values(steps.value).map((step) => step.id), stepIndex.value),
     );
 
     const hasActiveOutputs = computed(() =>
-        Boolean(Object.values(steps.value).find((step) => step.workflow_outputs?.length))
+        Boolean(Object.values(steps.value).find((step) => step.workflow_outputs?.length)),
     );
 
     const workflowOutputs = computed(() => {
@@ -236,7 +243,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         contentId: NewStep["content_id"],
         name: NewStep["name"],
         type: NewStep["type"],
-        position: NewStep["position"]
+        position: NewStep["position"],
     ) {
         const stepData: NewStep = {
             name: name,
@@ -255,7 +262,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     function updateStep(step: Step) {
         const workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
-            step.outputs.find((output) => workflowOutput.output_name == output.name)
+            step.outputs.find((output) => workflowOutput.output_name == output.name),
         );
 
         steps.value[step.id.toString()] = Object.freeze({ ...step, workflow_outputs });
@@ -293,7 +300,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
         assertDefined(
             inputStep,
-            `Failed to add connection, because step with id ${connection.input.stepId} is undefined`
+            `Failed to add connection, because step with id ${connection.input.stepId} is undefined`,
         );
 
         const input = inputStep.inputs.find((input) => input.name === connection.input.name);
@@ -315,7 +322,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             }
             inputConnection = inputConnection.filter(
                 (connection) =>
-                    !(connection.id === connectionLink.id && connection.output_name === connectionLink.output_name)
+                    !(connection.id === connectionLink.id && connection.output_name === connectionLink.output_name),
             );
             connectionLinks = [...connectionLinks, ...inputConnection];
         }
@@ -325,7 +332,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             input_connections: {
                 ...inputStep.input_connections,
                 [connection.input.name]: connectionLinks.sort((a, b) =>
-                    a.id === b.id ? a.output_name.localeCompare(b.output_name) : a.id - b.id
+                    a.id === b.id ? a.output_name.localeCompare(b.output_name) : a.id - b.id,
                 ),
             },
         };
@@ -338,7 +345,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
         assertDefined(
             inputStep,
-            `Failed to remove connection, because step with id ${connection.input.stepId} is undefined`
+            `Failed to remove connection, because step with id ${connection.input.stepId} is undefined`,
         );
 
         const inputConnections = inputStep.input_connections[connection.input.name];
@@ -349,7 +356,8 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             if (Array.isArray(inputConnections)) {
                 inputStep.input_connections[connection.input.name] = inputConnections.filter(
                     (outputLink) =>
-                        !(outputLink.id === connection.output.stepId, outputLink.output_name === connection.output.name)
+                        !(outputLink.id === connection.output.stepId,
+                        outputLink.output_name === connection.output.name),
                 );
             } else {
                 del(inputStep.input_connections, connection.input.name);

@@ -4,44 +4,15 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { pushOrSet } from "@/utils/pushOrSet";
 
 import { defineScopedStore } from "./scopedStore";
-
-interface InvalidConnections {
-    [index: ConnectionId]: string | undefined;
-}
-
-export interface State {
-    connections: Connection[];
-    invalidConnections: InvalidConnections;
-    inputTerminalToOutputTerminals: TerminalToOutputTerminals;
-    terminalToConnection: { [index: string]: Connection[] };
-    stepToConnections: { [index: number]: Connection[] };
-}
-
-export interface Connection {
-    input: InputTerminal;
-    output: OutputTerminal;
-}
-
-export type ConnectionId = `${string}-${string}-${string}-${string}`;
-
-export interface BaseTerminal {
-    stepId: number;
-    name: string;
-    connectorType?: "input" | "output";
-}
-
-export interface InputTerminal extends BaseTerminal {
-    connectorType: "input";
-    input_subworkflow_step_id?: number;
-}
-
-export interface OutputTerminal extends BaseTerminal {
-    connectorType: "output";
-}
-
-interface TerminalToOutputTerminals {
-    [index: string]: OutputTerminal[];
-}
+import type {
+    BaseTerminal,
+    Connection,
+    ConnectionId,
+    InputTerminal,
+    InvalidConnections,
+    OutputTerminal,
+    TerminalToOutputTerminals,
+} from "./workflowStoreTypes";
 
 function updateTerminalToTerminal(connections: Connection[]) {
     const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
@@ -107,15 +78,15 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
     }
 
     const getOutputTerminalsForInputTerminal = computed(
-        () => (terminalId: string) => inputTerminalToOutputTerminals.value[terminalId] || ([] as OutputTerminal[])
+        () => (terminalId: string) => inputTerminalToOutputTerminals.value[terminalId] || ([] as OutputTerminal[]),
     );
 
     const getConnectionsForTerminal = computed(
-        () => (terminalId: string) => terminalToConnection.value[terminalId] || ([] as Connection[])
+        () => (terminalId: string) => terminalToConnection.value[terminalId] || ([] as Connection[]),
     );
 
     const getConnectionsForStep = computed(
-        () => (stepId: number) => stepToConnections.value[stepId] || ([] as Connection[])
+        () => (stepId: number) => stepToConnections.value[stepId] || ([] as Connection[]),
     );
 
     const stepStore = useWorkflowStepStore(workflowId);

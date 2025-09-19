@@ -12,13 +12,7 @@ import "@quasar/extras/material-symbols-rounded/material-symbols-rounded.css"
 import "quasar/src/css/index.sass"
 import router from "@/router"
 import { createPinia } from "pinia"
-import { apolloClientProvider, apolloClient } from "@/apollo"
-import { DefaultApolloClient } from "@vue/apollo-composable"
 
-createApp(App)
-    .provide(DefaultApolloClient, apolloClient)
-    .use(apolloClientProvider)
-    .use(createPinia())
-    .use(router)
-    .use(Quasar, { plugins: { Notify, Cookies } })
-    .mount("#app")
+const quasarPlugins = { Notify, Cookies }
+const quasarConfig = { plugins: quasarPlugins }
+createApp(App).use(createPinia()).use(router).use(Quasar, quasarConfig).mount("#app")

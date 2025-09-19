@@ -1,8 +1,8 @@
 import { computed, type Ref, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type Instance, type PluginStatus, type TemplateSummary } from "@/api/configTemplates";
-import { type buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
+import type { Instance, PluginStatus, TemplateSummary } from "@/api/configTemplates";
+import type { buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import {
@@ -41,7 +41,7 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     uuid: Ref<string | undefined>,
     testUrl: CreateTestUrl,
     createUrl: CreateUrl,
-    onCreate: (result: R) => unknown
+    onCreate: (result: R) => unknown,
 ) {
     const error = ref<string | null>(null);
     const { testRunning, testResults } = useConfigurationTesting();
@@ -157,7 +157,12 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
     template: Ref<T | null>,
     testUpdateUrl: TestUpdateUrl,
     updateUrl: UpdateUrl,
-    useRouting: InstanceRoutingComposableType
+    useRouting: InstanceRoutingComposableType,
+    /**
+     * Callback to be called when the object store is updated.
+     * By default, no action is taken.
+     */
+    onUpdated: (result: R) => void = (__: R) => {},
 ) {
     const { testRunning, testResults } = useConfigurationTesting();
     const showForceActionButton = ref<boolean>(false);
@@ -165,6 +170,7 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
     const { goToIndex } = useRouting();
 
     async function onUpdate(objectStore: R) {
+        onUpdated(objectStore);
         const message = `Updated ${what} ${objectStore.name}`;
         goToIndex({ message });
     }
@@ -275,7 +281,7 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     template: Ref<T>,
     testUpdateUrl: TestUpdateUrl,
     updateUrl: UpdateUrl,
-    useRouting: InstanceRoutingComposableType
+    useRouting: InstanceRoutingComposableType,
 ) {
     const { goToIndex } = useRouting();
 

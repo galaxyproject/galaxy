@@ -6,7 +6,6 @@ Unit tests for base DataProviders.
 import os
 import tempfile
 from io import StringIO
-from typing import Type
 
 from galaxy.datatypes.dataproviders import (
     base,
@@ -70,7 +69,7 @@ class BaseTestCase(TestCase):
 
 
 class Test_BaseDataProvider(BaseTestCase):
-    provider_class: Type[base.DataProvider] = base.DataProvider
+    provider_class: type[base.DataProvider] = base.DataProvider
 
     def contents_provider_and_data(self, filename=None, contents=None, source=None, *provider_args, **provider_kwargs):
         # to remove boiler plate
@@ -163,7 +162,7 @@ class Test_BaseDataProvider(BaseTestCase):
 
 
 class Test_FilteredDataProvider(Test_BaseDataProvider):
-    provider_class: Type[base.DataProvider] = base.FilteredDataProvider
+    provider_class: type[base.DataProvider] = base.FilteredDataProvider
 
     def assertCounters(self, provider, read, valid, returned):
         assert provider.num_data_read == read
@@ -190,7 +189,7 @@ class Test_FilteredDataProvider(Test_BaseDataProvider):
 
 
 class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
-    provider_class: Type[base.DataProvider] = base.LimitedOffsetDataProvider
+    provider_class: type[base.DataProvider] = base.LimitedOffsetDataProvider
 
     def test_offset_1(self):
         """when offset is 1, should skip first"""
@@ -289,7 +288,7 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
 
 
 class Test_MultiSourceDataProvider(BaseTestCase):
-    provider_class: Type[base.DataProvider] = base.MultiSourceDataProvider
+    provider_class: type[base.DataProvider] = base.MultiSourceDataProvider
 
     def contents_and_tmpfile(self, contents=None):
         # TODO: hmmmm...

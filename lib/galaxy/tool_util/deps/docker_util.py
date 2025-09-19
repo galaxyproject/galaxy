@@ -160,7 +160,7 @@ def build_docker_run_command(
             euid = os.geteuid()
             egid = os.getgid()
 
-            user = "%d:%d" % (euid, egid)
+            user = f"{euid}:{egid}"
         command_parts.extend(["--user", user])
     full_image = image
     if tag:

@@ -6,11 +6,8 @@ import threading
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -22,6 +19,7 @@ from galaxy.files import (
 from galaxy.job_execution.datasets import (
     DatasetPath,
     DatasetPathRewriter,
+    DeferrableObjectsT,
     get_path_rewriter,
 )
 from galaxy.model import (
@@ -37,8 +35,8 @@ TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
 
 
-OutputHdasAndType = Dict[str, Tuple[DatasetInstance, DatasetPath]]
-OutputPaths = List[DatasetPath]
+OutputHdasAndType = dict[str, tuple[DatasetInstance, DatasetPath]]
+OutputPaths = list[DatasetPath]
 
 
 class JobOutput(NamedTuple):
@@ -57,7 +55,7 @@ class JobOutputs(threading.local):
     def populated(self) -> bool:
         return self.output_hdas_and_paths is not None
 
-    def set_job_outputs(self, job_outputs: List[JobOutput]) -> None:
+    def set_job_outputs(self, job_outputs: list[JobOutput]) -> None:
         self.output_paths = [t[2] for t in job_outputs]
         self.output_hdas_and_paths = {t.output_name: (t.dataset, t.dataset_path) for t in job_outputs}
 
@@ -108,8 +106,8 @@ class JobIO(UsesDictVisibleKeys):
         check_job_script_integrity: bool,
         check_job_script_integrity_count: int,
         check_job_script_integrity_sleep: float,
-        file_sources_dict: Dict[str, Any],
-        user_context: Union[FileSourcesUserContext, Dict[str, Any]],
+        file_sources_dict: dict[str, Any],
+        user_context: Union[FileSourcesUserContext, dict[str, Any]],
         tool_source: Optional[str] = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
         tool_dir: Optional[str] = None,
@@ -148,7 +146,7 @@ class JobIO(UsesDictVisibleKeys):
         self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
 
     @property
-    def job(self):
+    def job(self) -> Job:
         return self.sa_session.get(Job, self.job_id)
 
     @classmethod
@@ -206,7 +204,7 @@ class JobIO(UsesDictVisibleKeys):
             self.compute_outputs()
         return cast(OutputHdasAndType, self.job_outputs.output_hdas_and_paths)
 
-    def get_input_dataset_fnames(self, ds: DatasetInstance) -> List[str]:
+    def get_input_dataset_fnames(self, ds: DatasetInstance) -> list[str]:
         filenames = [ds.get_file_name()]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
@@ -217,21 +215,29 @@ class JobIO(UsesDictVisibleKeys):
             filenames.append(ds.dataset.extra_files_path)
         return filenames
 
-    def get_input_datasets(self) -> List[DatasetInstance]:
+    def get_input_datasets(
+        self, materialized_objects: Optional[dict[str, DeferrableObjectsT]] = None
+    ) -> list[DatasetInstance]:
         job = self.job
-        return [
-            da.dataset for da in job.input_datasets + job.input_library_datasets if da.dataset
-        ]  # da is JobToInputDatasetAssociation object
+        datasets: list[DatasetInstance] = []
+        for da in job.input_datasets + job.input_library_datasets:
+            if materialized_objects and da.name in materialized_objects:
+                materialized_object = materialized_objects[da.name]
+                if isinstance(materialized_object, DatasetInstance):
+                    datasets.append(materialized_object)
+            elif da.dataset:
+                datasets.append(da.dataset)
+        return datasets
 
-    def get_input_fnames(self) -> List[str]:
+    def get_input_fnames(self) -> list[str]:
         filenames = []
         for ds in self.get_input_datasets():
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self) -> List[DatasetPath]:
+    def get_input_paths(self, materialized_objects: Optional[dict[str, DeferrableObjectsT]]) -> list[DatasetPath]:
         paths = []
-        for ds in self.get_input_datasets():
+        for ds in self.get_input_datasets(materialized_objects):
             paths.append(self.get_input_path(ds))
         return paths
 
@@ -247,7 +253,7 @@ class JobIO(UsesDictVisibleKeys):
             object_store_id=dataset.dataset.object_store_id,
         )
 
-    def get_output_basenames(self) -> List[str]:
+    def get_output_basenames(self) -> list[str]:
         return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
     def get_output_fnames(self) -> OutputPaths:
@@ -279,6 +285,9 @@ class JobIO(UsesDictVisibleKeys):
         job_outputs = []
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
+            if da_false_path and not os.path.exists(da_false_path):
+                with open(da_false_path, "ab"):
+                    pass
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(
                 da.dataset.dataset.id,

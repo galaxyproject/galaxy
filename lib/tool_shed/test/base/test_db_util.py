@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from sqlalchemy import (
     false,
@@ -38,7 +37,7 @@ def get_all_repositories():
     return sa_session().scalars(select(model.Repository)).all()
 
 
-def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
+def get_all_installed_repositories(session=None) -> list[galaxy.model.tool_shed_install.ToolShedRepository]:
     if session is None:
         session = install_session()
     ToolShedRepository = galaxy.model.tool_shed_install.ToolShedRepository

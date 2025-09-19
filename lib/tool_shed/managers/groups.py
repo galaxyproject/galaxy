@@ -22,12 +22,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.model.base import transaction
+from tool_shed.webapp.model import Group
 
 log = logging.getLogger(__name__)
 
 
-# =============================================================================
 class GroupManager:
     """
     Interface/service object for interacting with TS groups.
@@ -51,9 +50,9 @@ class GroupManager:
 
         try:
             if decoded_group_id:
-                group = trans.sa_session.get(trans.app.model.Group, decoded_group_id)
+                group = trans.sa_session.get(Group, decoded_group_id)
             else:
-                group = get_group_by_name(trans.sa_session, name, trans.app.model.Group)
+                group = get_group_by_name(trans.sa_session, name, Group)
         except MultipleResultsFound:
             raise InconsistentDatabase("Multiple groups found with the same identifier.")
         except NoResultFound:
@@ -72,10 +71,9 @@ class GroupManager:
             if self.get(trans, name=name):
                 raise Conflict(f"Group with the given name already exists. Name: {str(name)}")
             # TODO add description field to the model
-            group = trans.app.model.Group(name=name)
+            group = Group(name=name)
             trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return group
 
     def update(self, trans, group, name=None, description=None):
@@ -95,8 +93,7 @@ class GroupManager:
             changed = True
         if changed:
             trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return group
 
     def delete(self, trans, group, undelete=False):
@@ -110,8 +107,7 @@ class GroupManager:
         else:
             group.deleted = True
         trans.sa_session.add(group)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return group
 
     def list(self, trans, deleted=False):
@@ -121,7 +117,6 @@ class GroupManager:
         :returns: query that will emit all groups
         :rtype:   sqlalchemy query
         """
-        Group = trans.app.model.Group
         stmt = select(Group)
         if trans.user_is_admin:
             if deleted is None:

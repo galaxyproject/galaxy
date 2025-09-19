@@ -99,7 +99,7 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoR
         comment: WorkflowComment,
         key: K,
         data: WorkflowComment[K],
-        applyDataCallback: (commentId: number, data: WorkflowComment[K]) => void
+        applyDataCallback: (commentId: number, data: WorkflowComment[K]) => void,
     ) {
         super();
         this.commentId = comment.id;

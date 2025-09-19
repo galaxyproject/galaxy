@@ -21,10 +21,7 @@ from typing import (
     Any,
     Callable,
     cast,
-    Dict,
-    List,
     Optional,
-    Set,
     SupportsInt,
     TYPE_CHECKING,
     TypeVar,
@@ -46,6 +43,7 @@ from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
@@ -69,11 +67,11 @@ DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 GALAXY_APP_NAME = "galaxy"
-GALAXY_SCHEMAS_PATH = resource_path(__package__, "schemas")
+GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
 REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
-LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
+LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
     "disable_existing_loggers": False,
     "version": 1,
     "root": {
@@ -123,6 +121,10 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "celery.utils.functional",
         },
+        "sentry_sdk.errors": {
+            "level": "INFO",
+            "qualname": "sentry_sdk.errors",
+        },
     },
     "filters": {
         "stack": {
@@ -146,7 +148,7 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
-DEPENDENT_CONFIG_DEFAULTS: Dict[str, str] = {
+DEPENDENT_CONFIG_DEFAULTS: dict[str, str] = {
     "mulled_resolution_cache_url": "database_connection",
     "citation_cache_url": "database_connection",
     "biotools_service_cache_url": "database_connection",
@@ -236,13 +238,13 @@ OptStr = TypeVar("OptStr", None, str)
 class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
-    renamed_options: Optional[Dict[str, str]] = None
-    deprecated_dirs: Dict[str, str] = {}
-    paths_to_check_against_root: Set[str] = (
+    renamed_options: Optional[dict[str, str]] = None
+    deprecated_dirs: dict[str, str] = {}
+    paths_to_check_against_root: set[str] = (
         set()
     )  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
-    add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
-    listify_options: Set[str] = set()  # values for these options are processed as lists of values
+    add_sample_file_to_defaults: set[str] = set()  # for these options, add sample config files to their defaults
+    listify_options: set[str] = set()  # values for these options are processed as lists of values
     object_store_store_by: str
     shed_tools_dir: str
 
@@ -309,7 +311,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = config_kwargs.get("__file__", None)
+            self.config_file = config_kwargs.get("__file__") or config_kwargs.get("config_file")
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
@@ -436,7 +438,7 @@ class BaseAppConfiguration(HasDynamicProperties):
                     return path
 
     def _update_raw_config_from_kwargs(self, kwargs):
-        type_converters: Dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
+        type_converters: dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
             "bool": string_as_bool,
             "int": int,
             "float": float,
@@ -511,10 +513,10 @@ class BaseAppConfiguration(HasDynamicProperties):
             if not parent:  # base case: nothing else needs resolving
                 return path
             parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
+            if path:
                 path = os.path.join(parent_path, path)  # resolve path
             else:
-                path = parent_path  # or use parent path
+                log.warning("Trying to resolve path for the '%s' option but it's empty/None", key)
 
             setattr(self, key, path)  # update property
             _cache[key] = path  # cache it!
@@ -538,7 +540,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             if self.is_set(key) and self.paths_to_check_against_root and key in self.paths_to_check_against_root:
                 self._check_against_root(key)
 
-    def _check_against_root(self, key):
+    def _check_against_root(self, key: str):
         def get_path(current_path, initial_path):
             # if path does not exist and was set as relative:
             if not self._path_exists(current_path) and not os.path.isabs(initial_path):
@@ -557,6 +559,8 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
+        if not current_value:
+            return
         if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
@@ -596,7 +600,7 @@ class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
     sentry_dsn: str
-    config_dict: Dict[str, str]
+    config_dict: dict[str, str]
 
     @property
     def admin_users(self):
@@ -705,7 +709,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "tool_config_file",
     }
 
-    allowed_origin_hostnames: List[str]
+    allowed_origin_hostnames: list[str]
     builds_file_path: str
     container_resolvers_config_file: str
     database_connection: str
@@ -716,12 +720,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
     hours_between_check: int
+    hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
     len_file_path: str
     manage_dependency_relationships: bool
     monitor_thread_join_timeout: int
-    mulled_channels: List[str]
+    mulled_channels: list[str]
     new_file_path: str
     nginx_upload_store: str
     password_expiration_period: timedelta
@@ -729,24 +734,24 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     pretty_datetime_format: str
     sanitize_allowlist_file: str
     shed_tool_data_path: str
-    themes: Dict[str, Dict[str, str]]
-    themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
+    themes: dict[str, dict[str, str]]
+    themes_by_host: dict[str, dict[str, dict[str, str]]]
     tool_data_path: str
     tool_dependency_dir: Optional[str]
-    tool_filters: List[str]
-    tool_label_filters: List[str]
+    tool_filters: list[str]
+    tool_label_filters: list[str]
     tool_path: str
-    tool_section_filters: List[str]
-    toolbox_filter_base_modules: List[str]
+    tool_section_filters: list[str]
+    toolbox_filter_base_modules: list[str]
     track_jobs_in_database: bool
     trust_jupyter_notebook_conversion: bool
     tus_upload_store: str
     use_remote_user: bool
     user_library_import_dir_auto_creation: bool
-    user_library_import_symlink_allowlist: List[str]
-    user_tool_filters: List[str]
-    user_tool_label_filters: List[str]
-    user_tool_section_filters: List[str]
+    user_library_import_symlink_allowlist: list[str]
+    user_tool_filters: list[str]
+    user_tool_label_filters: list[str]
+    user_tool_section_filters: list[str]
     visualization_plugins_directory: str
     workflow_resource_params_mapper: str
 
@@ -780,7 +785,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         val = getattr(self, config_option)
         if config_option in self.schema.per_host_options:
             per_host_option = f"{config_option}_by_host"
-            per_host: Dict[str, Any] = {}
+            per_host: dict[str, Any] = {}
             if per_host_option in self.config_dict:
                 per_host = self.config_dict[per_host_option] or {}
             else:
@@ -792,7 +797,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         return val
 
-    def _process_config(self, kwargs: Dict[str, Any]) -> None:
+    def _process_config(self, kwargs: dict[str, Any]) -> None:
         self._check_database_connection_strings()
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
@@ -848,7 +853,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
-        self.oidc: Dict[str, Dict] = {}
+        self.oidc: dict[str, dict] = {}
         self.fixed_delegated_auth: bool = False
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get("integrated_tool_panel_tracking_directory")
@@ -897,6 +902,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.galaxy_data_manager_data_path = self.galaxy_data_manager_data_path or self.tool_data_path
         self.tool_secret = kwargs.get("tool_secret", "")
+        if self.calculate_dataset_hash not in ("always", "upload", "never"):
+            raise ConfigurationError(
+                f"Unrecognized value for calculate_dataset_hash option: {self.calculate_dataset_hash}"
+            )
+        if self.hash_function not in HashFunctionNameEnum.__members__:
+            raise ConfigurationError(f"Unrecognized value for hash_function option: {self.hash_function}")
+        self.hash_function = HashFunctionNameEnum[self.hash_function]
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
         self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
@@ -1091,8 +1103,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self._process_celery_config()
 
-        # load in the chat_prompts if openai is enabled
-        self._load_chat_prompts()
+        # load in the chat_prompts if openai api key is configured
+        if self.ai_api_key:
+            self._load_chat_prompts()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
@@ -1255,21 +1268,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
 
     def _load_chat_prompts(self):
-        if self.openai_api_key:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
 
-            if os.path.exists(chat_prompts_path):
-                try:
-                    with open(chat_prompts_path, encoding="utf-8") as file:
-                        data = json.load(file)
-                        self.chat_prompts = data.get("prompts", {})
-                except json.JSONDecodeError as e:
-                    log.error(f"JSON decoding error in chat prompts file: {e}")
-                except Exception as e:
-                    log.error(f"An error occurred while reading chat prompts file: {e}")
-            else:
-                log.warning(f"Chat prompts file not found at {chat_prompts_path}")
+        if os.path.exists(chat_prompts_path):
+            try:
+                with open(chat_prompts_path, encoding="utf-8") as file:
+                    data = json.load(file)
+                    self.chat_prompts = data.get("prompts", {})
+            except json.JSONDecodeError as e:
+                log.error(f"JSON decoding error in chat prompts file: {e}")
+            except Exception as e:
+                log.error(f"An error occurred while reading chat prompts file: {e}")
+        else:
+            log.warning(f"Chat prompts file not found at {chat_prompts_path}")
 
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
@@ -1454,7 +1466,7 @@ def get_database_engine_options(kwargs, model_prefix=""):
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions: Dict[str, Callable[[Any], Union[bool, int]]] = {
+    conversions: dict[str, Callable[[Any], Union[bool, int]]] = {
         "convert_unicode": string_as_bool,
         "pool_timeout": int,
         "echo": string_as_bool,

@@ -2,7 +2,6 @@ import asyncio
 import logging
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -17,20 +16,20 @@ REQUEST_METHOD = Literal["GET", "POST", "HEAD"]
 async def fetch_url(
     session: aiohttp.ClientSession,
     url: str,
-    params: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    headers: Optional[Dict[str, Any]] = None,
+    params: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
     method: REQUEST_METHOD = "GET",
 ):
     async with session.request(method=method, url=url, params=params, data=data, headers=headers) as response:
-        return await response.json()
+        return await response.json(content_type=None)
 
 
 async def async_request_with_timeout(
     url: str,
-    params: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    headers: Optional[Dict[str, Any]] = None,
+    params: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
     method: REQUEST_METHOD = "GET",
     timeout: float = 1.0,
 ):
@@ -49,9 +48,9 @@ async def async_request_with_timeout(
 
 def request(
     url: str,
-    params: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    headers: Optional[Dict[str, Any]] = None,
+    params: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
     method: REQUEST_METHOD = "GET",
     timeout: float = 1.0,
 ):

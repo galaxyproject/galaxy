@@ -4,9 +4,9 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
-import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import { type UserConcreteObjectStore } from "./types";
+import type { UserConcreteObjectStore } from "./types";
 
 import CreateForm from "./CreateForm.vue";
 
@@ -84,7 +84,7 @@ const { server, http } = useServerMock();
 
 describe("CreateForm", () => {
     it("should render a form with admin markdown converted to HTML in help", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: STANDARD_TEMPLATE,
             },
@@ -102,7 +102,7 @@ describe("CreateForm", () => {
     });
 
     it("should post to create a new object store on submit", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: SIMPLE_TEMPLATE,
             },
@@ -115,7 +115,7 @@ describe("CreateForm", () => {
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
-            })
+            }),
         );
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
@@ -129,7 +129,7 @@ describe("CreateForm", () => {
     });
 
     it("should indicate an error on failure", async () => {
-        const wrapper = mount(CreateForm, {
+        const wrapper = mount(CreateForm as object, {
             propsData: {
                 template: SIMPLE_TEMPLATE,
             },
@@ -141,7 +141,7 @@ describe("CreateForm", () => {
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
-            })
+            }),
         );
 
         await flushPromises();
@@ -154,7 +154,6 @@ describe("CreateForm", () => {
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
         const errorEl = wrapper.find("[data-description='object-store-creation-error']");
-        console.log(wrapper.html());
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("Error creating this");
     });

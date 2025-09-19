@@ -7,7 +7,6 @@ import logging
 from fastapi import Body
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     RoleDefinitionModel,
     RoleListResponse,
@@ -18,6 +17,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import RoleIDPathParam
 from galaxy.webapps.galaxy.services.roles import RolesService
 
 log = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class FastAPIRoles:
         return self.service.get_index(trans=trans)
 
     @router.get("/api/roles/{id}")
-    def show(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+    def show(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         return self.service.show(trans, id)
 
     @router.post("/api/roles", require_admin=True)
@@ -47,13 +47,13 @@ class FastAPIRoles:
         return self.service.create(trans, role_definition_model)
 
     @router.delete("/api/roles/{id}", require_admin=True)
-    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+    def delete(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         return self.service.delete(trans, id)
 
     @router.post("/api/roles/{id}/purge", require_admin=True)
-    def purge(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+    def purge(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         return self.service.purge(trans, id)
 
     @router.post("/api/roles/{id}/undelete", require_admin=True)
-    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+    def undelete(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         return self.service.undelete(trans, id)

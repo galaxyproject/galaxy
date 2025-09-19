@@ -9,8 +9,7 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -21,6 +20,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
     materialize_collection_input,
@@ -30,9 +30,20 @@ from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.structured_app import (
     BasicSharedApp,
+    MinimalManagerApp,
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util_models.tool_source import (
+    FileSourceConfigFile,
+    InputConfigFile,
+    TemplateConfigFile,
+    XmlTemplateConfigFile,
+    YamlTemplateConfigFile,
+)
+from galaxy.tools.actions import determine_output_format
+from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -64,6 +75,7 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.template import (
     fill_template,
     InputNotFoundSyntaxError,
@@ -102,7 +114,7 @@ class ToolTemplatingException(Exception):
         self.is_latest = is_latest
 
 
-def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
+def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
@@ -116,11 +128,6 @@ def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
         ) from e
 
 
-DeferrableObjectsT = Union[
-    model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
-]
-
-
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -129,19 +136,22 @@ class ToolEvaluator:
     app: MinimalToolApp
     job: model.Job
     materialize_datasets: bool = True
+    param_dict_style = "regular"
 
-    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
+    def __init__(self, app: MinimalToolApp, tool: "Tool", job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
-        self.file_sources_dict: Dict[str, Any] = {}
-        self.param_dict: Dict[str, Any] = {}
-        self.extra_filenames: List[str] = []
-        self.environment_variables: List[Dict[str, str]] = []
+        self.file_sources_dict: dict[str, Any] = {}
+        self.param_dict: dict[str, Any] = {}
+        self.extra_filenames: list[str] = []
+        self.environment_variables: list[dict[str, str]] = []
         self.version_command_line: Optional[str] = None
         self.command_line: Optional[str] = None
-        self.interactivetools: List[Dict[str, Any]] = []
+        self.interactivetools: list[dict[str, Any]] = []
+        self.consumes_names = False
+        self.use_cached_job = False
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -152,7 +162,9 @@ class ToolEvaluator:
 
         job = self.job
         incoming = {p.name: p.value for p in job.parameters}
-        incoming = self.tool.params_from_strings(incoming, self.app)
+        incoming = self.tool.params_from_strings(incoming)
+        if "__use_cached_job__" in incoming:
+            self.use_cached_job = bool(incoming["__use_cached_job__"])
 
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
@@ -167,26 +179,40 @@ class ToolEvaluator:
 
         # materialize deferred datasets
         materialized_objects = self._materialize_objects(deferred_objects, self.local_working_directory)
+        self.compute_environment.materialized_objects = materialized_objects
 
         # replace materialized objects back into tool input parameters
         self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
 
-        if get_special:
-            special = get_special()
-            if special:
-                out_data["output_file"] = special
+        # late update of format_source outputs
+        self._eval_format_source(job, inp_data, out_data)
 
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update(model.User.user_template_environment(self._user))
+        if self.param_dict_style == "regular":
+            if get_special:
+                special = get_special()
+                if special:
+                    out_data["output_file"] = special
 
-        # Build params, done before hook so hook can use
-        self.param_dict = self.build_param_dict(
-            incoming,
-            inp_data,
-            out_data,
-            output_collections=out_collections,
-        )
-        self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+            # These can be passed on the command line if wanted as $__user_*__
+
+            incoming.update(model.User.user_template_environment(self._user))
+
+            # Build params, done before hook so hook can use
+            self.param_dict = self.build_param_dict(
+                incoming,
+                inp_data,
+                out_data,
+                output_collections=out_collections,
+            )
+            self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+
+        else:
+            self.param_dict = self.build_param_dict(
+                incoming,
+                inp_data,
+                out_data,
+                output_collections=out_collections,
+            )
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
@@ -248,12 +274,12 @@ class ToolEvaluator:
         return param_dict.clean_copy()
 
     def _materialize_objects(
-        self, deferred_objects: Dict[str, DeferrableObjectsT], job_working_directory: str
-    ) -> Dict[str, DeferrableObjectsT]:
+        self, deferred_objects: dict[str, DeferrableObjectsT], job_working_directory: str
+    ) -> dict[str, DeferrableObjectsT]:
         if not self.materialize_datasets:
             return {}
 
-        undeferred_objects: Dict[str, DeferrableObjectsT] = {}
+        undeferred_objects: dict[str, DeferrableObjectsT] = {}
         transient_directory = os.path.join(job_working_directory, "inputs")
         safe_makedirs(transient_directory)
         dataset_materializer = materializer_factory(
@@ -269,17 +295,59 @@ class ToolEvaluator:
                 assert isinstance(value, (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation))
                 undeferred = dataset_materializer.ensure_materialized(value)
                 undeferred_objects[key] = undeferred
+            elif isinstance(value, list):
+                undeferred_list: list[
+                    Union[
+                        model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
+                    ]
+                ] = []
+                for potentially_deferred in value:
+                    if isinstance(potentially_deferred, model.DatasetInstance):
+                        if potentially_deferred.state != model.Dataset.states.DEFERRED:
+                            undeferred_list.append(potentially_deferred)
+                        else:
+                            assert isinstance(
+                                potentially_deferred,
+                                (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation),
+                            )
+                            undeferred = dataset_materializer.ensure_materialized(potentially_deferred)
+                            undeferred_list.append(undeferred)
+                    elif isinstance(
+                        potentially_deferred,
+                        (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement),
+                    ):
+                        undeferred_collection = materialize_collection_input(potentially_deferred, dataset_materializer)
+                        undeferred_list.append(undeferred_collection)
+                undeferred_objects[key] = undeferred_list
             else:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
                 undeferred_objects[key] = undeferred_collection
 
         return undeferred_objects
 
+    def _eval_format_source(
+        self,
+        job: model.Job,
+        inp_data: dict[str, Optional[model.DatasetInstance]],
+        out_data: dict[str, model.DatasetInstance],
+    ):
+        for output_name, output in out_data.items():
+            if (
+                (tool_output := self.tool.outputs.get(output_name))
+                and isinstance(tool_output, ToolOutput)
+                and (tool_output.format_source or tool_output.change_format)
+                and output.extension == "expression.json"
+            ):
+                input_collections = {jtidca.name: jtidca.dataset_collection for jtidca in job.input_dataset_collections}
+                ext = determine_output_format(tool_output, self.param_dict, inp_data, input_collections, None)
+                if ext:
+                    output.extension = ext
+
     def _replaced_deferred_objects(
         self,
-        inp_data: Dict[str, Optional[model.DatasetInstance]],
+        inp_data: dict[str, Optional[model.DatasetInstance]],
         incoming: dict,
-        materalized_objects: Dict[str, DeferrableObjectsT],
+        materalized_objects: dict[str, DeferrableObjectsT],
     ):
         for key, value in materalized_objects.items():
             if isinstance(value, model.DatasetInstance):
@@ -304,18 +372,14 @@ class ToolEvaluator:
 
     def _deferred_objects(
         self,
-        input_datasets: Dict[str, Optional[model.DatasetInstance]],
+        input_datasets: dict[str, Optional[model.DatasetInstance]],
         incoming: dict,
-    ) -> Dict[str, DeferrableObjectsT]:
+    ) -> dict[str, DeferrableObjectsT]:
         """Collect deferred objects required for execution.
 
         Walk input datasets and collections and find inputs that need to be materialized.
         """
-        deferred_objects: Dict[str, DeferrableObjectsT] = {}
-        for key, value in input_datasets.items():
-            if value is not None and value.state == model.Dataset.states.DEFERRED:
-                if self._should_materialize_deferred_input(key, value):
-                    deferred_objects[key] = value
+        deferred_objects: dict[str, DeferrableObjectsT] = {}
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -324,7 +388,37 @@ class ToolEvaluator:
             ):
                 deferred_objects[prefixed_name] = value
 
+        def find_deferred_datasets(input, value, context, prefixed_name=None, **kwargs):
+            if isinstance(input, DataToolParameter):
+                if isinstance(value, model.DatasetInstance) and value.state == model.Dataset.states.DEFERRED:
+                    deferred_objects[prefixed_name] = value
+                elif isinstance(value, list):
+                    # handle single list reduction as a collection input
+                    if (
+                        value
+                        and len(value) == 1
+                        and isinstance(
+                            value[0], (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement)
+                        )
+                    ):
+                        deferred_objects[prefixed_name] = value
+                        return
+
+                    for v in value:
+                        if self._should_materialize_deferred_input(prefixed_name, v):
+                            deferred_objects[prefixed_name] = value
+                            break
+
+        visit_input_values(self.tool.inputs, incoming, find_deferred_datasets)
         visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
+
+        # now place the the inputX datasets hacked in for multiple inputs into the deferred
+        # object array also. This is so messy. I think in this case - we only need these for
+        # Pulsar staging up which uses the hackier input_datasets flat dict.
+        for key, value in input_datasets.items():
+            if key not in deferred_objects and value is not None and value.state == model.Dataset.states.DEFERRED:
+                if self._should_materialize_deferred_input(key, value):
+                    deferred_objects[key] = value
 
         return deferred_objects
 
@@ -364,6 +458,9 @@ class ToolEvaluator:
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, job_working_directory):
+
+        element_identifier_mapper = ElementIdentifierMapper(input_datasets)
+
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
@@ -376,30 +473,33 @@ class ToolEvaluator:
                     tool=self.tool,
                     name=input.name,
                     formats=input.formats,
+                    tool_evaluator=self,
                 )
 
             elif isinstance(input, DataToolParameter):
                 dataset = input_values[input.name]
-                wrapper_kwds = dict(
+                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                input_values[input.name] = DatasetFilenameWrapper(
+                    dataset=dataset,
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
                     name=input.name,
                     compute_environment=self.compute_environment,
+                    identifier=element_identifier,
+                    formats=input.formats,
+                    tool_evaluator=self,
                 )
-                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
-                if element_identifier:
-                    wrapper_kwds["identifier"] = element_identifier
-                wrapper_kwds["formats"] = input.formats
-                input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
-                wrapper_kwds = dict(
+                wrapper = DatasetCollectionWrapper(
+                    job_working_directory=job_working_directory,
+                    has_collection=dataset_collection,
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
                     tool=self.tool,
                     name=input.name,
+                    tool_evaluator=self,
                 )
-                wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
                 if input.multiple:
@@ -409,14 +509,13 @@ class ToolEvaluator:
                 )
             else:
                 input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict, profile=self.tool and self.tool.profile
+                    input, value, param_dict, profile=self.tool and self.tool.profile or None
                 )
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets):
@@ -443,13 +542,13 @@ class ToolEvaluator:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, ToolParameterValueWrapper):
-                wrapper_kwds = dict(
+                param_dict[name] = DatasetFilenameWrapper(
+                    dataset=data,
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
                 )
-                param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, job_working_directory):
         tool = self.tool
@@ -460,14 +559,15 @@ class ToolEvaluator:
                 # message = message_template % ( name, tool.output_collections )
                 # raise AssertionError( message )
 
-            wrapper_kwds = dict(
+            wrapper = DatasetCollectionWrapper(
+                job_working_directory=job_working_directory,
+                has_collection=out_collection,
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
                 io_type="output",
                 tool=tool,
                 name=name,
             )
-            wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
             for element_identifier, output_def in tool.output_collections[name].outputs.items():
@@ -487,13 +587,6 @@ class ToolEvaluator:
                 unqualified_name = name.split("|__part__|")[-1]
                 if unqualified_name not in param_dict:
                     param_dict[unqualified_name] = param_dict[name]
-            output_path = str(param_dict[name])
-            # Conditionally create empty output:
-            # - may already exist (e.g. symlink output)
-            # - parent directory might not exist (e.g. Pulsar)
-            # TODO: put into JobIO, needed for fetch_data tasks
-            if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
-                open(output_path, "w").close()
 
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
@@ -551,7 +644,7 @@ class ToolEvaluator:
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
     def _create_interactivetools_entry_points(self):
-        if hasattr(self.app, "interactivetool_manager"):
+        if isinstance(self.app, MinimalManagerApp):
             self.interactivetools = self._populate_interactivetools_template()
             self.app.interactivetool_manager.create_interactivetool(self.job, self.tool, self.interactivetools)
 
@@ -662,6 +755,7 @@ class ToolEvaluator:
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
             executable = command_line.split()[0]
+            assert self.tool.tool_dir
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
@@ -681,19 +775,19 @@ class ToolEvaluator:
         """
         param_dict = self.param_dict
         config_filenames = []
-        for name, filename, content in self.tool.config_files:
-            config_text, is_template = self.__build_config_file_text(content)
+        for config_file in self.tool.config_files:
+            config_text, template_type = self._build_config_file_text(config_file)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
             with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                 config_filename = temp.name
-            if filename is not None:
+            if config_file.filename is not None:
                 # Explicit filename was requested, this is implemented as symbolic link
                 # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                os.link(config_filename, os.path.join(directory, filename))
-            self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
-            self.__register_extra_file(name, config_filename)
+                os.link(config_filename, os.path.join(directory, config_file.filename))
+            self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
+            self._register_extra_file(config_file.name, config_filename)
             config_filenames.append(config_filename)
         return config_filenames
 
@@ -705,6 +799,7 @@ class ToolEvaluator:
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
+            template_type: Optional[Literal["cheetah"]] = None
             if inject == "api_key":
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
@@ -712,10 +807,8 @@ class ToolEvaluator:
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
                 else:
                     environment_variable_template = ""
-                is_template = False
             elif inject and inject.startswith("oidc_"):
                 environment_variable_template = self.get_oidc_token(inject)
-                is_template = False
             elif inject and inject == "entry_point_path_for_label" and environment_variable_template:
                 from galaxy.managers.interactivetool import InteractiveToolManager
 
@@ -723,20 +816,20 @@ class ToolEvaluator:
                 matching_eps = [ep for ep in self.job.interactivetool_entry_points if ep.label == entry_point_label]
                 if matching_eps:
                     entry_point = matching_eps[0]
-                    entry_point_path = InteractiveToolManager(self.app).get_entry_point_path(self.app, entry_point)
+                    assert isinstance(self.app, MinimalManagerApp)
+                    entry_point_path = InteractiveToolManager(self.app).get_entry_point_path(entry_point)
                     environment_variable_template = entry_point_path.rstrip("/")
                 else:
                     environment_variable_template = ""
-                is_template = False
             else:
-                is_template = True
+                template_type = "cheetah"
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
-            self.__write_workdir_file(
+            self._write_workdir_file(
                 config_filename,
                 environment_variable_template,
                 param_dict,
-                is_template=is_template,
+                template_type=template_type,
                 strip=environment_variable_def.get("strip", False),
             )
             config_file_basename = os.path.basename(config_filename)
@@ -789,27 +882,23 @@ class ToolEvaluator:
                         value = [value]
                     for elem in value:
                         param.write(f"{key}={elem}\n")
-            self.__register_extra_file("param_file", param.name)
+            self._register_extra_file("param_file", param.name)
             return param.name
         else:
             return None
 
-    def __build_config_file_text(self, content):
-        if isinstance(content, str):
-            return content, True
+    def _build_config_file_text(self, config_file: Union[TemplateConfigFile, InputConfigFile, FileSourceConfigFile]):
+        if isinstance(config_file, (XmlTemplateConfigFile, YamlTemplateConfigFile)):
+            return config_file.content, config_file.eval_engine
 
-        config_type = content.get("type", "inputs")
-        if config_type == "inputs":
-            content_format = content["format"]
-            handle_files = content["handle_files"]
-            if content_format != "json":
-                template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
-                message = template % content_format
-                raise Exception(message)
+        assert not isinstance(config_file, TemplateConfigFile)
+        config_type = config_file.content.type
+        if isinstance(config_file, InputConfigFile):
+            handle_files = config_file.content.handle_files
         elif config_type == "files":
             file_sources_dict = self.file_sources_dict
             rval = json.dumps(file_sources_dict)
-            return rval, False
+            return rval, None
         else:
             raise Exception(f"Unknown config file type {config_type}")
 
@@ -817,15 +906,29 @@ class ToolEvaluator:
             json.dumps(
                 wrapped_json.json_wrap(self.tool.inputs, self.param_dict, self.tool.profile, handle_files=handle_files)
             ),
-            False,
+            None,
         )
 
-    def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
+    def _write_workdir_file(
+        self,
+        config_filename,
+        content,
+        context,
+        template_type: Optional[Literal["cheetah", "ecmascript"]] = None,
+        strip=False,
+    ):
         parent_dir = os.path.dirname(config_filename)
         if not os.path.exists(parent_dir):
             safe_makedirs(parent_dir)
-        if is_template:
+        if template_type == "cheetah":
             value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
+        elif template_type == "ecmascript":
+            value = do_eval(
+                content,
+                self.param_dict["inputs"],
+                javascript_requirements=self.tool.javascript_requirements,
+                outdir=self.param_dict["outdir"],
+            )
         else:
             value = unicodify(content)
         if strip:
@@ -835,17 +938,17 @@ class ToolEvaluator:
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)
 
-    def __register_extra_file(self, name, local_config_path):
+    def _register_extra_file(self, name, local_config_path):
         """
         Takes in the local path to a config file and registers the (potentially
         remote) ultimate path of the config file with the parameter dict.
         """
         self.extra_filenames.append(local_config_path)
         config_basename = os.path.basename(local_config_path)
-        compute_config_path = self.__join_for_compute(self.compute_environment.config_directory(), config_basename)
+        compute_config_path = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
         self.param_dict[name] = compute_config_path
 
-    def __join_for_compute(self, *args):
+    def _join_for_compute(self, *args):
         """
         os.path.join but with compute_environment.sep for cross-platform
         compat.
@@ -881,6 +984,84 @@ class PartialToolEvaluator(ToolEvaluator):
             self.environment_variables,
             self.interactivetools,
         )
+
+
+class UserToolEvaluator(ToolEvaluator):
+
+    param_dict_style = "json"
+
+    def _build_config_files(self):
+        """
+        Build temporary file for file based parameter transfer if needed
+        """
+        param_dict = self.param_dict
+        config_filenames = []
+        for config_file in self.tool.config_files:
+            if isinstance(config_file, (YamlTemplateConfigFile)):
+                config_text, template_type = self._build_config_file_text(config_file)
+                # If a particular filename was forced by the config use it
+                directory = ensure_configs_directory(self.local_working_directory)
+                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                    config_filename = temp.name
+                if config_file.filename is not None:
+                    # Explicit filename was requested, this is implemented as symbolic link
+                    # to the actual config file that is placed in tool working directory
+                    directory = os.path.join(self.local_working_directory, "working")
+                    os.link(config_filename, os.path.join(directory, config_file.filename))
+                self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
+                self._register_extra_file(config_file.name, config_filename)
+                config_filenames.append(config_filename)
+        return config_filenames
+
+    def _build_param_file(self):
+        pass
+
+    def _build_version_command(self):
+        pass
+
+    def __sanitize_param_dict(self, param_dict):
+        pass
+
+    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+        """
+        Build the dictionary of parameters for substituting into the command
+        line. We're effecively building the CWL job object here.
+        """
+        compute_environment = self.compute_environment
+        job_working_directory = compute_environment.working_directory()
+        from galaxy.workflow.modules import to_cwl
+
+        hda_references: list[model.HistoryDatasetAssociation] = []
+        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+        return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
+
+    def _build_command_line(self):
+        if self.tool.base_command:
+            base_command = self.tool.base_command
+            arguments = self.tool.arguments or []
+            bound_arguments = [*base_command]
+            for argument in arguments:
+                if (
+                    bound_argument := do_eval(argument, self.param_dict["inputs"], outdir=self.param_dict["outdir"])
+                ) != argument:
+                    # variables will be shell-escaped, but you can of course still
+                    # write invalid things into the literal portion of the arguments.
+                    # The upside is that we can use `>`, `|`.
+                    # Maybe we should wrap this in `sh -c` or something like that though.
+                    bound_argument = shlex.quote(str(bound_argument))
+                if bound_argument is not None:
+                    bound_arguments.append(bound_argument)
+            command_line = " ".join(bound_arguments)
+        elif self.tool.shell_command:
+            command_line = do_eval(
+                self.tool.shell_command,
+                self.param_dict["inputs"],
+                javascript_requirements=self.tool.javascript_requirements,
+                outdir=self.param_dict["outdir"],
+            )
+        else:
+            raise Exception("Tool must define shell_command or base_command")
+        self.command_line = command_line
 
 
 class RemoteToolEvaluator(ToolEvaluator):

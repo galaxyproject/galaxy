@@ -8,22 +8,44 @@ import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
 library.add(faChevronLeft, faChevronRight);
 
+const DEFAULT_WIDTH = 300;
+
 interface Props {
     collapsible?: boolean;
     side?: "left" | "right";
     minWidth?: number;
     maxWidth?: number;
-    defaultWidth?: number;
+    reactiveWidth?: number;
 }
 const props = withDefaults(defineProps<Props>(), {
     collapsible: true,
     side: "right",
     minWidth: 200,
     maxWidth: 800,
-    defaultWidth: 300,
+    reactiveWidth: undefined,
 });
 
-const panelWidth = ref(props.defaultWidth);
+const emit = defineEmits<{
+    (e: "update:reactive-width", width: number): void;
+}>();
+
+const localPanelWidth = ref(DEFAULT_WIDTH);
+
+const panelWidth = computed({
+    get: () => {
+        if (props.reactiveWidth !== undefined) {
+            return props.reactiveWidth;
+        }
+        return localPanelWidth.value;
+    },
+    set: (width) => {
+        if (props.reactiveWidth !== undefined) {
+            emit("update:reactive-width", width);
+        } else {
+            localPanelWidth.value = width;
+        }
+    },
+});
 
 const root = ref<HTMLElement | null>(null);
 const show = ref(true);
@@ -54,7 +76,7 @@ watch(
                 showToggle.value = false;
             }, toggleLinger);
         }
-    }
+    },
 );
 
 const sideClasses = computed(() => ({
@@ -126,7 +148,9 @@ $border-width: 6px;
     border-color: transparent;
     border-width: $border-width;
     box-shadow: 1px 0 transparent;
-    transition: border-color 0.1s, box-shadow 0.1s;
+    transition:
+        border-color 0.1s,
+        box-shadow 0.1s;
     align-items: stretch;
     flex-direction: column;
 
@@ -164,7 +188,10 @@ $border-width: 6px;
     width: var(--width);
     overflow: hidden;
 
-    transition: width 0.1s, left 0.1s, right 0.1s;
+    transition:
+        width 0.1s,
+        left 0.1s,
+        right 0.1s;
     border-style: none;
 
     &:hover,

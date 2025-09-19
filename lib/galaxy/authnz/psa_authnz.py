@@ -3,12 +3,14 @@ import logging
 import time
 
 import jwt
+from jwt import InvalidTokenError
 from msal import ConfidentialClientApplication
 from social_core.actions import (
     do_auth,
     do_complete,
     do_disconnect,
 )
+from social_core.backends.open_id_connect import OpenIdConnectAuth
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
 from social_core.utils import (
@@ -25,12 +27,12 @@ from galaxy.model import (
     PSAPartial,
     UserAuthnzToken,
 )
-from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
 from . import IdentityProvider
+from ..config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -42,20 +44,28 @@ BACKENDS = {
     "google": "social_core.backends.google_openidconnect.GoogleOpenIdConnect",
     "globus": "social_core.backends.globus.GlobusOpenIdConnect",
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
+    "lifescience": "social_core.backends.lifescience.LifeScienceOpenIdConnect",
+    "einfracz": "social_core.backends.einfracz.EInfraCZOpenIdConnect",
+    "nfdi": "social_core.backends.nfdi.InfraproxyOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
     "oidc": "social_core.backends.open_id_connect.OpenIdConnectAuth",
+    "tapis": "galaxy.authnz.tapis.TapisOAuth2",
 }
 
 BACKENDS_NAME = {
     "google": "google-openidconnect",
     "globus": "globus",
     "elixir": "elixir",
+    "lifescience": "life_science",
+    "einfracz": "e-infra_cz",
+    "nfdi": "infraproxy",
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
     "oidc": "oidc",
+    "tapis": "tapis",
 }
 
 AUTH_PIPELINE = (
@@ -94,19 +104,25 @@ AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
+    "galaxy.authnz.psa_authnz.decode_access_token",
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
 
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, oidc_config, oidc_backend_config):
+    def __init__(self, provider, oidc_config, oidc_backend_config, app_config: GalaxyAppConfiguration):
         self.config = {"provider": provider.lower()}
         for key, value in oidc_config.items():
             self.config[setting_name(key)] = value
 
         self.config[setting_name("USER_MODEL")] = "models.User"
-        self.config["SOCIAL_AUTH_PIPELINE"] = AUTH_PIPELINE
+        # Use a custom auth pipeline if configured.
+        auth_pipeline = app_config.oidc_auth_pipeline or AUTH_PIPELINE
+        # Add extra steps to the auth pipeline if configured.
+        if app_config.oidc_auth_pipeline_extra:
+            auth_pipeline = auth_pipeline + tuple(app_config.oidc_auth_pipeline_extra)
+        self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
 
@@ -136,6 +152,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
+        self.config["accepted_audiences"] = oidc_backend_config.get("accepted_audiences")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
         if oidc_backend_config.get("oidc_endpoint"):
             self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
@@ -145,6 +162,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("API_URL")] = oidc_backend_config.get("api_url")
         if oidc_backend_config.get("url") is not None:
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
+        if oidc_backend_config.get("username_key") is not None:
+            self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
 
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
@@ -177,7 +196,11 @@ class PSAAuthnz(IdentityProvider):
         user_authnz_token.set_extra_data(extra_data)
 
     def refresh(self, trans, user_authnz_token):
-        if not user_authnz_token or not user_authnz_token.extra_data:
+        if (
+            not user_authnz_token
+            or not user_authnz_token.extra_data
+            or "refresh_token" not in user_authnz_token.extra_data
+        ):
             return False
         # refresh tokens if they reached their half lifetime
         if "expires" in user_authnz_token.extra_data:
@@ -187,7 +210,11 @@ class PSAAuthnz(IdentityProvider):
         else:
             log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
             return False
-        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
+        if (
+            int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2
+            <= int(time.time())
+            < int(user_authnz_token.extra_data["auth_time"]) + int(expires)
+        ):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)
@@ -300,19 +327,6 @@ class Strategy(BaseStrategy):
 
     def render_html(self, tpl=None, html=None, context=None):
         raise NotImplementedError("Not implemented.")
-
-    def start(self):
-        self.clean_partial_pipeline()
-        if self.backend.uses_redirect():
-            return self.redirect(self.backend.auth_url())
-        else:
-            return self.html(self.backend.auth_html())
-
-    def complete(self, *args, **kwargs):
-        return self.backend.auth_complete(*args, **kwargs)
-
-    def continue_pipeline(self, *args, **kwargs):
-        return self.backend.continue_pipeline(*args, **kwargs)
 
 
 class Storage:
@@ -494,5 +508,65 @@ def disconnect(
     sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
+
+
+def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **kwargs):
+    """
+    Auth pipeline step to decode the OIDC access token, if possible.
+    Note that some OIDC providers return an opaque access token, which
+    cannot be decoded.
+
+    Returns the access token, making it available as a new argument
+    "access_token" that can be used in future pipeline steps. If
+    decoding the access token is not possible, access_token will be None.
+
+    Depends on "access_token" being present in social.extra_data,
+    which should be handled by social_core.pipeline.social_auth.load_extra_data, so
+    this step should be placed after load_extra_data in the pipeline.
+    """
+    if social.extra_data is None:
+        return {"access_token": None}
+    access_token_encoded = social.extra_data.get("access_token")
+    if access_token_encoded is None:
+        return {"access_token": None}
+    if not _is_decodable_jwt(access_token_encoded):
+        log.warning(
+            "Access token is not in header.payload.signature format and can't be decoded (may be an opaque token)"
+        )
+        return {"access_token": None}
+    try:
+        access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
+    except InvalidTokenError as e:
+        log.warning(f"Access token couldn't be decoded: {e}")
+        return {"access_token": None}
+    return {"access_token": access_token_data}
+
+
+def _is_decodable_jwt(token_str: str) -> bool:
+    """
+    Check if a token string looks like a decodable JWT.
+    We assume decodable JWTs are in the format header.payload.signature
+    """
+    components = token_str.split(".")
+    return len(components) == 3
+
+
+def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> dict:
+    """
+    Decode the access token (verifying that signature, expiry and
+    audience are valid).
+
+    Requires accepted_audiences to be configured in the OIDC backend config
+    """
+    signing_key = backend.find_valid_key(token_str)
+    jwk = jwt.PyJWK(signing_key)
+    decoded = jwt.decode(
+        token_str,
+        key=jwk,
+        algorithms=[jwk.algorithm_name],
+        audience=backend.strategy.config["accepted_audiences"],
+        issuer=backend.id_token_issuer(),
+        options={"verify_signature": True, "verify_exp": True, "verify_aud": True},
+    )
+    return decoded

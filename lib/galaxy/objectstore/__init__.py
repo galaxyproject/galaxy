@@ -75,7 +75,13 @@ DEFAULT_PRIVATE = False
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
+USER_OBJECTS_SCHEME = "user_objects://"
+
 log = logging.getLogger(__name__)
+
+
+def is_user_object_store(object_store_id: Optional[str]) -> bool:
+    return object_store_id is not None and object_store_id.startswith(USER_OBJECTS_SCHEME)
 
 
 class UserObjectStoreResolver(Protocol):
@@ -397,7 +403,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_quota_source_map(self):
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
 
     @abc.abstractmethod
@@ -709,7 +715,7 @@ class BaseObjectStore(ObjectStore):
             badges.append({"type": type, "message": message})
         return badges
 
-    def get_quota_source_map(self):
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         # I'd rather keep this abstract... but register_singleton wants it to be instantiable...
         raise NotImplementedError()
 
@@ -750,6 +756,7 @@ class ConcreteObjectStore(BaseObjectStore):
         self.description = config_dict.get("description", None)
         # Annotate this as true to prevent sharing of data.
         self.private = config_dict.get("private", DEFAULT_PRIVATE)
+        self.object_expires_after_days = config_dict.get("object_expires_after_days", None)
         # short label describing the quota source or null to use default
         # quota source right on user object.
         quota_config = config_dict.get("quota", {})
@@ -770,6 +777,7 @@ class ConcreteObjectStore(BaseObjectStore):
         }
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
+        rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
     def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
@@ -781,6 +789,7 @@ class ConcreteObjectStore(BaseObjectStore):
             quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
             badges=self._get_concrete_store_badges(None),
             device=self.device_id,
+            object_expires_after_days=self.object_expires_after_days,
         )
 
     def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
@@ -937,8 +946,6 @@ class DiskObjectStore(ConcreteObjectStore):
             obj_dir=obj_dir,
         )
 
-    # TODO: rename to _disk_path or something like that to avoid conflicts with
-    # children that'll use the local_extra_dirs decorator, e.g. S3
     def _construct_path(
         self,
         obj,
@@ -1068,10 +1075,10 @@ class DiskObjectStore(ConcreteObjectStore):
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         """Override `ObjectStore`'s stub; delete the file or folder on disk."""
+        path = self._get_filename(obj, **kwargs)
+        extra_dir = kwargs.get("extra_dir", None)
+        obj_dir = kwargs.get("obj_dir", False)
         try:
-            path = self._get_filename(obj, **kwargs)
-            extra_dir = kwargs.get("extra_dir", None)
-            obj_dir = kwargs.get("obj_dir", False)
             if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
@@ -1114,7 +1121,7 @@ class DiskObjectStore(ConcreteObjectStore):
                 return path
         path = self._construct_path(obj, **kwargs)
         if not os.path.exists(path):
-            raise FileNotFoundError
+            raise ObjectNotFound
         return path
 
     def _update_from_file(
@@ -1536,7 +1543,7 @@ class DistributedObjectStore(NestedObjectStore):
         try:
             return self.backends[object_store_id]
         except KeyError:
-            if object_store_id.startswith("user_objects://") and self.user_object_store_resolver:
+            if is_user_object_store(object_store_id) and self.user_object_store_resolver:
                 return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
             raise
 
@@ -1574,7 +1581,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
-            if obj.object_store_id in self.backends or obj.object_store_id.startswith("user_objects://"):
+            if obj.object_store_id in self.backends or is_user_object_store(obj.object_store_id):
                 return obj.object_store_id
             else:
                 log.warning(
@@ -1606,7 +1613,11 @@ class DistributedObjectStore(NestedObjectStore):
                     log.warning(
                         f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}"
                     )
-                    obj.object_store_id = id
+                    try:
+                        obj.object_store_id = id
+                    except AttributeError:
+                        # obj is likely a namedtuple (/scripts/cleanup_datasets/pgcleanup.py::RemovesDatasets)
+                        log.info("Unable to set object_store_id on a readonly dataset object: %s", obj)
                     return id
         return None
 
@@ -1627,7 +1638,7 @@ class DistributedObjectStore(NestedObjectStore):
         if parent_check or object_store_id is None:
             return parent_check
         # user selection allowed and object_store_id is not None
-        if object_store_id.startswith("user_objects://"):
+        if is_user_object_store(object_store_id):
             if not user:
                 return "Supplied object store id is not accessible"
             rest_of_uri = object_store_id.split("://", 1)[1]
@@ -1770,6 +1781,7 @@ class ConcreteObjectStoreModel(BaseModel):
     quota: QuotaModel
     badges: List[BadgeDict]
     device: Optional[str] = None
+    object_expires_after_days: Optional[int] = None
 
 
 def type_to_object_store_class(
@@ -1959,24 +1971,6 @@ def concrete_object_store(
     )
 
 
-def local_extra_dirs(func):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
-
-    def wraps(self, *args, **kwargs):
-        if kwargs.get("base_dir", None) is None:
-            return func(self, *args, **kwargs)
-        else:
-            for c in self.__class__.__mro__:
-                if c.__name__ == "DiskObjectStore":
-                    return getattr(c, func.__name__)(self, *args, **kwargs)
-            raise Exception(
-                f"Could not call DiskObjectStore's {func.__name__} method, does your "
-                "Object Store plugin inherit from DiskObjectStore?"
-            )
-
-    return wraps
-
-
 def config_to_dict(config):
     """Dict-ify the portion of a config object consumed by the ObjectStore class and its subclasses."""
     return {
@@ -2017,12 +2011,16 @@ class QuotaSourceMap:
         self.default_quota_source = source
         self.default_quota_enabled = enabled
         self.info = QuotaSourceInfo(self.default_quota_source, self.default_quota_enabled)
+        # User defined sources are provided by the user and the quota is not tracked
+        self.user_defined_source_info = QuotaSourceInfo(label=None, use=False)
         self.backends = {}
         self._labels = None
 
-    def get_quota_source_info(self, object_store_id):
+    def get_quota_source_info(self, object_store_id: Optional[str]) -> QuotaSourceInfo:
         if object_store_id in self.backends:
             return self.backends[object_store_id].get_quota_source_info(object_store_id)
+        elif is_user_object_store(object_store_id):
+            return self.user_defined_source_info
         else:
             return self.info
 

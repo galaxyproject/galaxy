@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import {
-    type NotificationCategory,
-    type NotificationChannel,
-    type UserNotificationPreferences,
-} from "@/api/notifications";
+import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
 import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
@@ -40,7 +36,7 @@ watch(
     () => isCategoryEnabled.value,
     (newValue) => {
         emit("onCategoryEnabledChange", props.category, newValue);
-    }
+    },
 );
 
 function onChannelChange(category: NotificationCategory, channel: NotificationChannel, value: boolean) {

@@ -1,3 +1,7 @@
+from typing import (
+    cast,
+    List,
+)
 from uuid import uuid4
 
 from galaxy.config import GalaxyAppConfiguration
@@ -13,7 +17,6 @@ from galaxy.model import (
     StoredWorkflow,
     Workflow,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
@@ -21,6 +24,11 @@ from galaxy.schema.schema import (
     LandingRequestState,
     ToolLandingRequest,
     WorkflowLandingRequest,
+)
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.parameters import (
+    DataParameterModel,
+    ToolParameterT,
 )
 from galaxy.workflow.trs_proxy import TrsProxy
 from .base import BaseTestCase
@@ -37,13 +45,36 @@ TEST_STATE = {
 CLIENT_SECRET = "mycoolsecret"
 
 
+class MockApp:
+
+    @property
+    def toolbox(self):
+        return MockToolbox()
+
+
+class MockToolbox:
+
+    def get_tool(self, tool_id, tool_uuid, tool_version, user):
+        return MockTool()
+
+
+class MockTool:
+
+    @property
+    def parameters(self) -> List[ToolParameterT]:
+        return [DataParameterModel(type="data", name="input1")]
+
+
 class TestLanding(BaseTestCase):
 
     def setUp(self):
         super().setUp()
         self.workflow_contents_manager = WorkflowContentsManager(self.app, self.app.trs_proxy)
         self.landing_manager = LandingRequestManager(
-            self.trans.sa_session, self.app.security, self.workflow_contents_manager
+            self.trans.sa_session,
+            self.app.security,
+            self.workflow_contents_manager,
+            cast(MinimalManagerApp, MockApp()),
         )
         self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 
@@ -154,8 +185,7 @@ class TestLanding(BaseTestCase):
         stored_workflow = StoredWorkflow()
         stored_workflow.user = self.trans.user
         sa_session.add(stored_workflow)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         return CreateWorkflowLandingRequestPayload(
             workflow_id=self.app.security.encode_id(stored_workflow.id),
@@ -173,8 +203,7 @@ class TestLanding(BaseTestCase):
         workflow.stored_workflow = stored_workflow
         sa_session.add(stored_workflow)
         sa_session.add(workflow)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         return CreateWorkflowLandingRequestPayload(
             workflow_id=self.app.security.encode_id(workflow.id),

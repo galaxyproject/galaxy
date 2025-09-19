@@ -1,4 +1,4 @@
-import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
+import type { InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "bco",

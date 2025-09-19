@@ -25,9 +25,10 @@ from .mulled_build import (
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.conda_util import CondaTarget
+    from galaxy.util.path import StrPath
 
 
-def _mulled_build_tool(tool, args):
+def _mulled_build_tool(tool: "StrPath", args):
     tool_source = get_tool_source(tool)
     requirements, *_ = tool_source.parse_requirements_and_containers()
     targets = requirements_to_mulled_targets(requirements)
@@ -52,7 +53,7 @@ def requirements_to_mulled_targets(requirements) -> List["CondaTarget"]:
     Only package requirements are retained.
     """
     package_requirements = [r for r in requirements if r.type == "package"]
-    target_str = ",".join([f"{r.name}={r.version}" for r in package_requirements])
+    target_str = ",".join(f"{r.name}={r.version}" if r.version else r.name for r in package_requirements)
     targets = target_str_to_targets(target_str)
     return targets
 

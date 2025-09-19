@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -10,7 +9,6 @@ from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import GroupRoleAssociation
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
 
@@ -23,7 +21,7 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: int) -> List[model.GroupRoleAssociation]:
+    def index(self, trans: ProvidesAppContext, group_id: int) -> list[model.GroupRoleAssociation]:
         """
         Returns a collection roles associated with the given group.
         """
@@ -84,13 +82,11 @@ class GroupRolesManager:
     def _add_role_to_group(self, trans: ProvidesAppContext, group: model.Group, role: model.Role):
         gra = model.GroupRoleAssociation(group, role)
         trans.sa_session.add(gra)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def _remove_role_from_group(self, trans: ProvidesAppContext, group_role: model.GroupRoleAssociation):
         trans.sa_session.delete(group_role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
 
 def get_group_role(session: galaxy_scoped_session, group, role) -> Optional[GroupRoleAssociation]:

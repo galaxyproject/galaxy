@@ -4,6 +4,7 @@ SLURM job control via the DRMAA API.
 
 import os
 import time
+from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
@@ -12,6 +13,9 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.custom_logging import get_logger
+
+if TYPE_CHECKING:
+    from galaxy.jobs.runners import AsynchronousJobState
 
 log = get_logger(__name__)
 
@@ -40,7 +44,7 @@ class SlurmJobRunner(DRMAAJobRunner):
     runner_name = "SlurmRunner"
     restrict_job_name_length = False
 
-    def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
+    def _complete_terminal_job(self, ajs: "AsynchronousJobState", drmaa_state: str, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
             cmd = ["sacct", "-n", "-o", "state%-32"]
             if cluster:
@@ -60,7 +64,8 @@ class SlurmJobRunner(DRMAAJobRunner):
             # Strip whitespaces and the final '+' (if present), only return the first word
             return first_line.strip().rstrip("+").split()[0]
 
-        def _get_slurm_state():
+        def _get_slurm_state() -> str:
+            assert ajs.job_id is not None
             cmd = ["scontrol", "-o"]
             if "." in ajs.job_id:
                 # custom slurm-drmaa-with-cluster-support job id syntax
@@ -138,16 +143,8 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.job_wrapper.get_id_tag(),
                         ajs.job_id,
                     )
-                    ajs.job_wrapper.change_state(
-                        model.Job.states.QUEUED, info="Job was resubmitted due to node failure"
-                    )
-                    try:
-                        self.queue_job(ajs.job_wrapper)
-                        return
-                    except Exception:
-                        ajs.fail_message = (
-                            "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
-                        )
+                    self.mark_as_resubmitted(ajs, info="Job was resubmitted due to node failure")
+                    return
                 elif slurm_state == "OUT_OF_MEMORY":
                     log.info(
                         "(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)",

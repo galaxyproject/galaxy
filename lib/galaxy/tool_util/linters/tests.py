@@ -8,9 +8,15 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
-from galaxy.tool_util.verify.assertion_models import assertion_list
+from galaxy.tool_util.verify.parse import tag_structure_to_that_structure
+from galaxy.tool_util_models.assertions import (
+    assertion_list,
+    relaxed_assertion_list,
+)
 from galaxy.util import asbool
 from ._util import is_datasource
 
@@ -146,29 +152,35 @@ class TestsAssertionValidation(Linter):
             lint_ctx.warn("Failed to parse test dictionaries from tool - cannot lint assertions")
             return
         assert "tests" in raw_tests_dict
+        # This really only allows coercion from strings, the values themselves will still be validated
+        assert_list_model = relaxed_assertion_list if tool_source.language == "xml" else assertion_list
         for test_idx, test in enumerate(raw_tests_dict["tests"], start=1):
             # TODO: validate command, command_version, element tests. What about children?
             for output in test["outputs"]:
                 asserts_raw = output.get("attributes", {}).get("assert_list") or []
-                to_yaml_assertions = []
+                processed_assertions = []
                 for raw_assert in asserts_raw:
-                    to_yaml_assertions.append({"that": raw_assert["tag"], **raw_assert.get("attributes", {})})
+                    processed_assertions.append(tag_structure_to_that_structure(raw_assert))
                 try:
-                    assertion_list.model_validate(to_yaml_assertions)
+                    assert_list_model.model_validate(processed_assertions)
                 except Exception as e:
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
-                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]"
+                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]",
+                        linter=cls.name(),
                     )
 
 
 class TestsCaseValidation(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        profile = tool_source.parse_profile()
+        lint_log = lint_ctx.warn if Version(profile) < Version("24.2") else lint_ctx.error
+
         try:
             validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
         except Exception as e:
-            lint_ctx.warn(
+            lint_log(
                 f"Serious problem parsing tool source or tests - cannot validate test cases. The exception is [{e}]",
                 linter=cls.name(),
             )
@@ -177,7 +189,7 @@ class TestsCaseValidation(Linter):
             error = validation_result.validation_error
             if error:
                 error_str = _cleanup_pydantic_error(error)
-                lint_ctx.warn(
+                lint_log(
                     f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
                     linter=cls.name(),
                 )

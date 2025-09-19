@@ -10,7 +10,8 @@ from datetime import (
     datetime,
 )
 from typing import (
-    List,
+    Annotated,
+    Any,
     Optional,
     Union,
 )
@@ -21,7 +22,7 @@ from fastapi import (
     Path,
     Query,
 )
-from typing_extensions import Annotated
+from pydantic import Field
 
 from galaxy import exceptions
 from galaxy.managers.context import (
@@ -47,15 +48,16 @@ from galaxy.schema.jobs import (
     JobOutputAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
-    ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
     JobMetric,
+    JobMetricCollection,
     JobSummary,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
+from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
@@ -204,6 +206,57 @@ SearchJobBody = Body(default=..., title="Search job", description="The values to
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
+class ShowFullJobResponse(EncodedJobDetails):
+    tool_stdout: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Output",
+        description="The captured standard output of the tool executed by the job.",
+    )
+    tool_stderr: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Error",
+        description="The captured standard error of the tool executed by the job.",
+    )
+    job_stdout: Optional[str] = Field(
+        default=None,
+        title="Job Standard Output",
+        description="The captured standard output of the job execution.",
+    )
+    job_stderr: Optional[str] = Field(
+        default=None,
+        title="Job Standard Error",
+        description="The captured standard error of the job execution.",
+    )
+    stdout: Optional[str] = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
+        default=None,
+        title="Standard Output",
+        description="Combined tool and job standard output streams.",
+    )
+    stderr: Optional[str] = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
+        default=None,
+        title="Standard Error",
+        description="Combined tool and job standard error streams.",
+    )
+    job_messages: Optional[list[AnyJobMessage]] = Field(
+        default=None,
+        title="Job Messages",
+        description="List with additional information and possible reasons for a failed job.",
+    )
+    dependencies: Optional[list[Any]] = Field(
+        default=None,
+        title="Job dependencies",
+        description="The dependencies of the job.",
+    )
+    job_metrics: Optional[JobMetricCollection] = Field(
+        default=None,
+        title="Job Metrics",
+        description=(
+            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
+            "Only administrators can see these metrics."
+        ),
+    )
+
+
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
@@ -212,12 +265,12 @@ class FastAPIJobs:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
+        states: Optional[list[str]] = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
-        tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
-        tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+        tool_ids: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
+        tool_ids_like: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
         date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
         date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
@@ -228,7 +281,7 @@ class FastAPIJobs:
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
+    ) -> list[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
         payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
@@ -288,7 +341,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobOutputAssociation]:
+    ) -> list[JobOutputAssociation]:
         job = self.service.get_job(trans, job_id=job_id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
@@ -345,7 +398,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobInputAssociation]:
+    ) -> list[JobInputAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
         input_associations = []
@@ -362,7 +415,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobOutputAssociation]:
+    ) -> list[JobOutputAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
         output_associations = []
@@ -377,7 +430,7 @@ class FastAPIJobs:
     )
     def console_output(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         stdout_position: int,
         stdout_length: int,
         stderr_position: int,
@@ -418,7 +471,7 @@ class FastAPIJobs:
         """
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/datasets/{dataset_id}/parameters_display",
@@ -438,7 +491,7 @@ class FastAPIJobs:
         this endpoint will change frequently.
         """
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/jobs/{job_id}/metrics",
@@ -450,7 +503,7 @@ class FastAPIJobs:
         job_id: JobIdPathParam,
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[Optional[JobMetric]]:
+    ) -> list[Optional[JobMetric]]:
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
@@ -466,7 +519,7 @@ class FastAPIJobs:
         dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[Optional[JobMetric]]:
+    ) -> list[Optional[JobMetric]]:
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
@@ -493,7 +546,7 @@ class FastAPIJobs:
         self,
         payload: Annotated[SearchJobsPayload, SearchJobBody],
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[EncodedJobDetails]:
+    ) -> list[EncodedJobDetails]:
         """
         This method is designed to scan the list of previously run jobs and find records of jobs that had
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
@@ -515,9 +568,10 @@ class FastAPIJobs:
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
         jobs = []
+        assert trans.user
         for param_dump, param in zip(params_dump, all_params):
             job = self.service.job_search.by_tool_input(
-                trans=trans,
+                user=trans.user,
                 tool_id=tool_id,
                 tool_version=tool.version,
                 param=param,
@@ -584,7 +638,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
+        tool = self.app.toolbox.tool_for_job(
+            job, exact=False, check_access=True, user=trans.user, tool_version=kwd.get("tool_version")
+        )
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:

@@ -4,24 +4,28 @@ import io
 import logging
 import lzma
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
+from types import TracebackType
 from typing import (
     Any,
     cast,
-    Generator,
     IO,
     Iterable,
+    Iterator,
     List,
     Optional,
     overload,
     Tuple,
+    Type,
     Union,
 )
 
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Self,
+)
 
 from galaxy.util.path import (
     safe_relpath,
@@ -143,7 +147,7 @@ def get_fileobj_raw(
         return compressed_format, fh
 
 
-def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
+def file_iter(fname: str, sep: Optional[Any] = None) -> Iterator[List[str]]:
     """
     This generator iterates over a file and yields its lines
     splitted via the C{sep} parameter. Skips empty lines and lines starting with
@@ -167,12 +171,16 @@ def decompress_bytes_to_directory(content: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(content)
         fp.close()
-        return CompressedFile(fp.name).extract(temp_directory)
+        with CompressedFile(fp.name) as cf:
+            outdir = cf.extract(temp_directory)
+        return outdir
 
 
 def decompress_path_to_directory(path: str) -> str:
     temp_directory = tempfile.mkdtemp()
-    return CompressedFile(path).extract(temp_directory)
+    with CompressedFile(path) as cf:
+        outdir = cf.extract(temp_directory)
+    return outdir
 
 
 class CompressedFile:
@@ -182,12 +190,12 @@ class CompressedFile:
     def can_decompress(file_path: StrPath) -> bool:
         return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
 
-    def __init__(self, file_path: StrPath, mode: str = "r") -> None:
+    def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
-        if tarfile.is_tarfile(file_path):
-            self.file_type = "tar"
-        elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
+        if zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
+        elif tarfile.is_tarfile(file_path):
+            self.file_type = "tar"
         else:
             raise Exception("File must be valid zip or tar file.")
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -336,14 +344,24 @@ class CompressedFile:
             return True
         return False
 
-    def open_tar(self, filepath: StrPath, mode: str) -> tarfile.TarFile:
-        return tarfile.open(filepath, mode, errorlevel=0)
+    @staticmethod
+    def open_tar(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> tarfile.TarFile:
+        if isinstance(file, (str, os.PathLike)):
+            tf = tarfile.open(file, mode=mode, errorlevel=0)
+        else:
+            tf = tarfile.open(mode=mode, fileobj=file, errorlevel=0)
+        # Set a safe default ("data_filter") for the extraction filter if
+        # available, reverting to Python 3.11 behavior otherwise, see
+        # https://docs.python.org/3/library/tarfile.html#supporting-older-python-versions
+        tf.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
+        return tf
 
-    def open_zip(self, filepath: StrPath, mode: str) -> zipfile.ZipFile:
-        mode = cast(Literal["a", "r", "w", "x"], mode)
-        return zipfile.ZipFile(filepath, mode)
+    @staticmethod
+    def open_zip(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> zipfile.ZipFile:
+        return zipfile.ZipFile(file, mode)
 
-    def zipfile_ok(self, path_to_archive: StrPath) -> bool:
+    @staticmethod
+    def zipfile_ok(path_to_archive: StrPath) -> bool:
         """
         This function is a bit pedantic and not functionally necessary.  It checks whether there is
         no file pointing outside of the extraction, because ZipFile.extractall() has some potential
@@ -356,6 +374,21 @@ class CompressedFile:
             if not member_path.startswith(basename):
                 return False
         return True
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> bool:
+        try:
+            self.archive.close()
+            return exc_type is None
+        except Exception:
+            return False
 
 
 class FastZipFile(zipfile.ZipFile):
@@ -375,13 +408,13 @@ class FastZipFile(zipfile.ZipFile):
 # modified from shutil._make_zipfile
 def make_fast_zipfile(
     base_name: str,
-    base_dir: str,
+    base_dir: StrPath,
     verbose: int = 0,
     dry_run: int = 0,
     logger: Optional[logging.Logger] = None,
     owner: Optional[str] = None,
     group: Optional[str] = None,
-    root_dir: Optional[str] = None,
+    root_dir: Optional[StrPath] = None,
 ) -> str:
     """Create a zip file from all the files under 'base_dir'.
 
@@ -407,10 +440,6 @@ def make_fast_zipfile(
             if root_dir is not None:
                 base_dir = os.path.join(root_dir, base_dir)
             base_dir = os.path.normpath(base_dir)
-            if arcname != os.curdir:
-                zf.write(base_dir, arcname)
-                if logger is not None:
-                    logger.info("adding '%s'", base_dir)
             for dirpath, dirnames, filenames in os.walk(base_dir):
                 arcdirpath = dirpath
                 if root_dir is not None:
@@ -434,6 +463,3 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
-
-
-shutil.register_archive_format("fastzip", make_fast_zipfile)

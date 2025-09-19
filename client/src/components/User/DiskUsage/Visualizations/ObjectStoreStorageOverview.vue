@@ -40,7 +40,7 @@ const { isLoading, loadDataOnMount } = useDataLoading();
 loadDataOnMount(async () => {
     const allDatasetsInObjectStoreSizeSummary = await fetchObjectStoreContentsSizeSummary(
         props.objectStoreId,
-        numberOfDatasetsLimit
+        numberOfDatasetsLimit,
     );
     allDatasetsInObjectStoreSizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
@@ -51,7 +51,7 @@ function buildGraphsData() {
     const allDatasetsInObjectStoreSizeSummary = Array.from(datasetsSizeSummaryMap.values());
     topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(
         allDatasetsInObjectStoreSizeSummary,
-        numberOfDatasetsToDisplay.value
+        numberOfDatasetsToDisplay.value,
     );
 }
 
@@ -89,7 +89,7 @@ function onUndelete(datasetId: string) {
                 v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
+                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
                     )
                 "
                 v-bind="byteFormattingForChart"
@@ -118,6 +118,7 @@ function onUndelete(datasetId: string) {
                         :data="data"
                         item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :can-edit="!isRecoverableDataPoint(data)"
                         @view-item="onViewDataset"
                         @permanently-delete-item="onPermDelete"
                         @undelete-item="onUndelete" />

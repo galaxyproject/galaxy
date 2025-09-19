@@ -16,8 +16,11 @@ from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
 )
-from galaxy.model import LibraryFolder
-from galaxy.model.base import transaction
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    Library,
+    LibraryFolder,
+)
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -294,8 +297,7 @@ class LibraryActions:
         if link_data_only == "link_to_files":
             uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return uploaded_dataset
 
     def _upload_library_dataset(self, trans, payload):
@@ -335,8 +337,7 @@ class LibraryActions:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         new_folder_dict = dict(created=new_folder)
@@ -356,7 +357,7 @@ class LibraryActions:
         return [dataset_collection]
 
     def _check_access(self, trans, is_admin, item, current_user_roles):
-        if isinstance(item, trans.model.HistoryDatasetAssociation):
+        if isinstance(item, HistoryDatasetAssociation):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
                 message = f"Invalid history dataset ({escape(str(item))}) specified."
@@ -375,7 +376,7 @@ class LibraryActions:
             elif not (
                 is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, item, trans.user)
             ):
-                if isinstance(item, trans.model.Library):
+                if isinstance(item, Library):
                     item_type = "data library"
                 elif isinstance(item, LibraryFolder):
                     item_type = "folder"

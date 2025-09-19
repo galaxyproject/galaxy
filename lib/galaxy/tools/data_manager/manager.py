@@ -2,8 +2,6 @@ import errno
 import logging
 import os
 from typing import (
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -27,8 +25,8 @@ log = logging.getLogger(__name__)
 
 
 class DataManagers(DataManagersInterface):
-    data_managers: Dict[str, "DataManager"]
-    managed_data_tables: Dict[str, "DataManager"]
+    data_managers: dict[str, "DataManager"]
+    managed_data_tables: dict[str, "DataManager"]
     __reload_count: int
 
     def __init__(self, app: StructuredApp, xml_filename=None, reload_count: Optional[int] = None):
@@ -110,7 +108,7 @@ class DataManagers(DataManagersInterface):
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
+    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -172,6 +170,7 @@ class DataManager:
                 tool_elem is not None
             ), f"Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n{util.xml_to_string(elem)}"
             path = tool_elem.get("file")
+            assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
             tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
             tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
@@ -187,7 +186,6 @@ class DataManager:
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
-        assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
         assert tool_path, "A tool root path is required"
         self._load_tool(
             os.path.join(tool_path, path),
@@ -221,11 +219,12 @@ class DataManager:
             tool_shed_repository=tool_shed_repository,
             use_cached=True,
         )
+        assert tool.id
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
         self.tool = tool
         return tool
 
-    def process_result(self, out_data: Dict[str, OutputDataset]) -> None:
+    def process_result(self, out_data: dict[str, OutputDataset]) -> None:
         tool_data_tables = self.data_managers.app.tool_data_tables
         options = BundleProcessingOptions(
             what=f"data manager '{self.id}'",
@@ -243,8 +242,8 @@ class DataManager:
 
     def write_bundle(
         self,
-        out_data: Dict[str, OutputDataset],
-    ) -> Dict[str, OutputDataset]:
+        out_data: dict[str, OutputDataset],
+    ) -> dict[str, OutputDataset]:
         tool_data_tables = self.data_managers.app.tool_data_tables
         return tool_data_tables.write_bundle(
             out_data,

@@ -2,8 +2,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type AxiosError } from "axios";
-import { BAlert, BButton, BTab, BTabs } from "bootstrap-vue";
+import type { AxiosError } from "axios";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
 import { fetchDatasetAttributes } from "@/api/datasets";
@@ -12,6 +12,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import Heading from "../Common/Heading.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -91,7 +92,7 @@ onMounted(async () => {
 
 <template>
     <div aria-labelledby="dataset-attributes-heading">
-        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="md">
             {{ localize("Edit Dataset Attributes") }}
         </Heading>
 
@@ -116,21 +117,21 @@ onMounted(async () => {
                         @onChange="onAttribute" />
 
                     <div class="mt-2">
-                        <BButton
+                        <GButton
                             id="dataset-attributes-default-save"
-                            variant="primary"
+                            color="blue"
                             class="mr-1"
                             @click="submit('attribute', 'attributes')">
                             <FontAwesomeIcon :icon="faSave" class="mr-1" />
                             {{ localize("Save") }}
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             v-if="!datasetAttributes['metadata_disable']"
                             @click="submit('attribute', 'autodetect')">
                             <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                             {{ localize("Auto-detect") }}
-                        </BButton>
+                        </GButton>
                     </div>
                 </BTab>
 
@@ -164,17 +165,17 @@ onMounted(async () => {
                                 @onChange="onDatatype" />
 
                             <div class="mt-2">
-                                <BButton variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
+                                <GButton color="blue" class="mr-1" @click="submit('datatype', 'datatype')">
                                     <FontAwesomeIcon :icon="faSave" class="mr-1" />
                                     {{ localize("Save") }}
-                                </BButton>
+                                </GButton>
 
-                                <BButton
+                                <GButton
                                     id="dataset-attributes-autodetect-datatype"
                                     @click="submit('datatype', 'datatype_detect')">
                                     <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                                     {{ localize("Auto-detect") }}
-                                </BButton>
+                                </GButton>
                             </div>
                         </div>
                     </div>
@@ -198,10 +199,10 @@ onMounted(async () => {
                                 @onChange="onConversion" />
 
                             <div class="mt-2">
-                                <BButton variant="primary" @click="submit('conversion', 'conversion')">
+                                <GButton color="blue" @click="submit('conversion', 'conversion')">
                                     <FontAwesomeIcon :icon="faExchangeAlt" class="mr-1" />
                                     {{ localize("Create Dataset") }}
-                                </BButton>
+                                </GButton>
                             </div>
                         </div>
                     </div>
@@ -219,10 +220,10 @@ onMounted(async () => {
                         @onChange="onPermission" />
 
                     <div class="mt-2">
-                        <BButton variant="primary" @click="submit('permission', 'permission')">
+                        <GButton color="blue" @click="submit('permission', 'permission')">
                             <FontAwesomeIcon :icon="faSave" class="mr-1" />
                             {{ localize("Save") }}
-                        </BButton>
+                        </GButton>
                     </div>
                 </BTab>
             </BTabs>

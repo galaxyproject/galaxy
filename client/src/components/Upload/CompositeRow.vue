@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
-import { filesDialog } from "utils/data";
+import { filesDialog } from "utils/dataModals";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 
@@ -115,7 +115,7 @@ function inputRemoteFiles() {
                 fileSize: item.size,
             });
         },
-        { multiple: false }
+        { multiple: false },
     );
 }
 
@@ -163,7 +163,7 @@ function onDrop(evt) {
                     </BDropdownItem>
                     <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
                         <FontAwesomeIcon icon="fa-folder-open" />
-                        <span v-localize>Choose remote file</span>
+                        <span v-localize>Choose from repository</span>
                     </BDropdownItem>
                     <BDropdownItem @click="inputPaste">
                         <FontAwesomeIcon icon="fa-edit" />

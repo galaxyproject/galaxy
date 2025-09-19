@@ -1,9 +1,9 @@
 <script setup>
+import { NON_TERMINAL_STATES } from "api/jobs";
 import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
-import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -39,11 +39,15 @@ const stderr_position = computed(() => stderr_text.value.length);
 const runTime = computed(() => getJobDuration(job.value));
 
 function jobStateIsTerminal(jobState) {
-    return jobState && !NON_TERMINAL_STATES.includes(job.value.state);
+    return jobState && !NON_TERMINAL_STATES.includes(jobState);
+}
+
+function jobStateIsRunning(jobState) {
+    return jobState == "running";
 }
 
 const jobIsTerminal = computed(() => jobStateIsTerminal(job?.value?.state));
-
+const jobIsRunning = computed(() => jobStateIsRunning(job?.value?.state));
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
 const metadataDetail = ref({
@@ -111,7 +115,7 @@ watch(
     () => props.job_id,
     async (newId, oldId) => {
         if (newId && (invocationId.value === undefined || newId !== oldId)) {
-            const invocation = await fetchInvocationForJob({ jobId: newId });
+            const invocation = await fetchInvocationForJob(newId);
             if (invocation) {
                 invocationId.value = invocation.id;
             } else {
@@ -119,7 +123,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -127,6 +131,7 @@ watch(
     <div>
         <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob" />
         <JobConsoleOutputProvider
+            v-if="jobIsRunning"
             auto-refresh
             :job-id="props.job_id"
             :stdout_position="stdout_position"

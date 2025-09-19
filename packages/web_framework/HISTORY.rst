@@ -3,11 +3,90 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
+
+============
+Enhancements
+============
+
+* Fix UP031 errors - Part 3 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19218 <https://github.com/galaxyproject/galaxy/pull/19218>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#19929 <https://github.com/galaxyproject/galaxy/pull/19929>`_
+* Implement dataset collection support in workflow landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20004 <https://github.com/galaxyproject/galaxy/pull/20004>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix default ordering of items sorted by name by `@jdavcs <https://github.com/jdavcs>`_ in `#19853 <https://github.com/galaxyproject/galaxy/pull/19853>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix WSGI response status handling in controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19520 <https://github.com/galaxyproject/galaxy/pull/19520>`_
+
+============
+Enhancements
+============
+
+* Parse stored config details to script-based visualizations by `@guerler <https://github.com/guerler>`_ in `#18651 <https://github.com/galaxyproject/galaxy/pull/18651>`_
+* Enable extra user preferences for remotely authorized users by `@maartenschermer <https://github.com/maartenschermer>`_ in `#18887 <https://github.com/galaxyproject/galaxy/pull/18887>`_
+* Run installed Galaxy with no config and a simplified entry point by `@natefoo <https://github.com/natefoo>`_ in `#19050 <https://github.com/galaxyproject/galaxy/pull/19050>`_
 
 -------------------
 24.1.4 (2024-12-11)

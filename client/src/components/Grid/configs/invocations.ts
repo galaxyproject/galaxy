@@ -1,15 +1,15 @@
-import { faPlay, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
-import { type WorkflowInvocation } from "@/api/invocations";
-import { type StoredWorkflowDetailed } from "@/api/workflows";
+import type { WorkflowInvocation } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -27,7 +27,7 @@ export async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     const params = {
         limit,
@@ -51,7 +51,7 @@ export async function getData(
     fetchHistoriesAndWorkflows(data);
     const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches];
+    return [data, totalMatches] as const;
 }
 
 /**
@@ -69,7 +69,7 @@ function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
         workflowIds.add(invocation.workflow_id);
     });
     historyIds.forEach(
-        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id)
+        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id),
     );
     workflowIds.forEach((workflow_id) => workflowStore.fetchWorkflowForInstanceIdCached(workflow_id));
 }
@@ -131,21 +131,20 @@ const fields: FieldArray = [
     },
     {
         key: "execute",
-        title: "Run",
+        title: "Rerun",
         type: "button",
-        icon: faPlay,
+        icon: faRedo,
         condition: (data) => {
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
             const workflow = workflowStore.getStoredWorkflowByInstanceId(
-                invocation.workflow_id
+                invocation.workflow_id,
             ) as unknown as StoredWorkflowDetailed;
             return !workflow?.deleted;
         },
         handler: (data) => {
             const invocation = data as WorkflowInvocation;
-            const workflowStore = useWorkflowStore();
-            emit(`/workflows/run?id=${workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id)}`);
+            emit(`/workflows/rerun?invocation_id=${invocation.id}`);
         },
         converter: () => "",
     },

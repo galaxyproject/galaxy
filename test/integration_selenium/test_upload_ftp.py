@@ -27,7 +27,7 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase):
         self.components.upload.file_dialog.wait_for_and_click()
         self.components.upload.file_source_selector(path="gxftp://").wait_for_and_click()
         for i in range(n):
-            self.components.upload.file_source_selector(path="gxftp://%i.txt" % i).wait_for_and_click()
+            self.components.upload.file_source_selector(path=f"gxftp://{i}.txt").wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()
         for i in range(n):
             self.components.upload.row(n=i).wait_for_visible()

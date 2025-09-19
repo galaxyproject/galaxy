@@ -33,7 +33,7 @@ def _get_template_body(template: str) -> str:
 
 def _get_template_path(relpath: str, custom_templates_dir: str) -> Traversable:
     """Return template file path."""
-    default_path = resource_path("galaxy.config", "templates") / relpath
+    default_path = resource_path(__name__, "templates") / relpath
     custom_path = Path(custom_templates_dir) / relpath
     if custom_path.exists():
         return custom_path

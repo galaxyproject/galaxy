@@ -24,7 +24,7 @@ export default {
             }
         },
         title() {
-            return this.l(`${this.preferredOrEmptyString} Target Storage Location ${this.titleSuffix || ""}`);
+            return this.l(`${this.preferredOrEmptyString} Target Galaxy Storage ${this.titleSuffix || ""}`);
         },
     },
 };

@@ -6,7 +6,10 @@ may change often.
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Annotated,
+    Optional,
+)
 
 from fastapi import (
     Body,
@@ -15,9 +18,9 @@ from fastapi import (
     Response,
     status,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
@@ -38,6 +41,7 @@ from galaxy.schema.visualization import (
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     IndexQueryTag,
     Router,
     search_query_param,
@@ -254,6 +258,7 @@ class FastAPIVisualizations:
             None, title="Import ID", description="The encoded database identifier of the Visualization to import."
         ),
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> VisualizationCreateResponse:
         """
         Creates a new visualization using the given payload and does not require the import_id field.

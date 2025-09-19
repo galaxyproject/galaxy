@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
@@ -9,22 +9,26 @@ import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
-import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -52,7 +56,7 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
-    }
+    },
 );
 
 // require user to long click before dragging
@@ -66,6 +70,9 @@ const userStore = useUserStore();
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
 
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
 if (props.initialActivity) {
     activityStore.toggledSideBar = props.initialActivity;
 }
@@ -78,7 +85,7 @@ watchImmediate(
         } else {
             activityStore.resetDefaultActivities();
         }
-    }
+    },
 );
 
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
@@ -89,7 +96,22 @@ const emit = defineEmits<{
 }>();
 
 // activities from store
-const { activities } = storeToRefs(activityStore);
+const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
+
+const activities = computed({
+    get() {
+        return storeActivities.value.filter(
+            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value,
+        );
+    },
+    set(newActivities: Activity[]) {
+        // Find any filtered-out activities and add them back
+        const filteredOut = storeActivities.value.filter(
+            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value,
+        );
+        storeActivities.value = [...newActivities, ...filteredOut];
+    },
+});
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -97,6 +119,9 @@ const dragItem: Ref<Activity | null> = ref(null);
 
 // drag state
 const isDragging = ref(false);
+
+// computed values
+const canDrag = computed(() => isActiveSideBar("settings"));
 
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
@@ -111,8 +136,6 @@ function isActiveRoute(activityTo?: string | null) {
 function isActiveSideBar(menuKey: string) {
     return activityStore.toggledSideBar === menuKey;
 }
-
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
@@ -141,7 +164,7 @@ function onDragEnter(evt: MouseEvent) {
 function onDragLeave(evt: MouseEvent) {
     if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
-        activities.value = activities.value.filter((a) => a.id !== dragId);
+        storeActivities.value = storeActivities.value.filter((a) => a.id !== dragId);
     }
 }
 
@@ -159,7 +182,7 @@ function onDragOver(evt: MouseEvent) {
             if (targetActivity && targetActivity.id !== dragId) {
                 const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
                 activitiesTemp.splice(targetIndex, 0, dragItem.value);
-                activities.value = activitiesTemp;
+                storeActivities.value = activitiesTemp;
             }
         }
     }
@@ -189,10 +212,6 @@ function setActiveSideBar(key: string) {
     activityStore.toggledSideBar = key;
 }
 
-const canDrag = computed(() => {
-    return isActiveSideBar("settings");
-});
-
 defineExpose({
     isActiveSideBar,
     setActiveSideBar,
@@ -211,7 +230,7 @@ defineExpose({
             @dragleave.prevent="onDragLeave">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
-                    :list="activities"
+                    v-model="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :disabled="!canDrag"
                     :force-fallback="true"
@@ -224,12 +243,13 @@ defineExpose({
                     <div
                         v-for="(activity, activityIndex) in activities"
                         :key="activityIndex"
-                        :class="{ 'can-drag': canDrag }">
+                        :class="{ 'activity-can-drag': canDrag }">
                         <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
@@ -237,14 +257,15 @@ defineExpose({
                                 v-else-if="activity.to && activity.id === 'interactivetools'"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
-                                :is-active="isActiveRoute(activity.to)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="toggleSidebar()" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
-                                v-else-if="activity.id === 'admin' || activity.panel"
+                                v-else-if="activity.panel"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
@@ -274,6 +295,7 @@ defineExpose({
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="notifications"
+                    :activity-bar-id="props.activityBarId"
                     :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
@@ -324,12 +346,18 @@ defineExpose({
                 </template>
             </b-nav>
         </div>
-        <FlexPanel v-if="isSideBarOpen && !hidePanel" side="left" :collapsible="false">
+        <FlexPanel
+            v-if="isSideBarOpen && !hidePanel"
+            side="left"
+            :collapsible="false"
+            :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
+            <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"
                 :activity-bar-id="props.activityBarId"
@@ -352,6 +380,12 @@ defineExpose({
 
 .activity-bar::-webkit-scrollbar {
     display: none;
+}
+
+.activity-can-drag .activity-item {
+    border-radius: $border-radius-extralarge;
+    outline: 2px dashed $border-color;
+    outline-offset: -3px;
 }
 
 .activity-chosen-class {
@@ -387,12 +421,5 @@ defineExpose({
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-.can-drag {
-    border-radius: 12px;
-    border: 1px;
-    outline: dashed darkgray;
-    outline-offset: -3px;
 }
 </style>

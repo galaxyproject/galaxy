@@ -41,7 +41,7 @@ def build_changeset_revision_select_field(
         # Display the latest revision first.
         options.insert(0, (changeset_tup[1], changeset_tup[2]))
     if add_id_to_name:
-        name = "changeset_revision_%d" % repository.id
+        name = f"changeset_revision_{repository.id}"
     else:
         name = "changeset_revision"
     select_field = SelectField(name=name, refresh_on_change=True)

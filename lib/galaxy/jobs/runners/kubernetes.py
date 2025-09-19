@@ -7,9 +7,9 @@ import logging
 import math
 import os
 import re
-import time
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Union
 
 import yaml
 
@@ -49,7 +49,6 @@ from galaxy.jobs.runners.util.pykube_util import (
     Service,
     service_object_dict,
 )
-from galaxy.util import unicodify
 from galaxy.util.bytesize import ByteSize
 
 log = logging.getLogger(__name__)
@@ -139,10 +138,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._pykube_api = pykube_client_from_dict(self.runner_params)
         self._galaxy_instance_id = self.__get_galaxy_instance_id()
 
-        self._run_as_user_id = self.__get_run_as_user_id()
-        self._run_as_group_id = self.__get_run_as_group_id()
-        self._supplemental_group = self.__get_supplemental_group()
-        self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
 
         self.setup_base_volumes()
@@ -178,12 +173,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
         )
-        # Kubernetes doesn't really produce meaningful "job stdout", but file needs to be present
-        with open(ajs.output_file, "w"):
-            pass
-        with open(ajs.error_file, "w"):
-            pass
-
+        # Kubernetes doesn't really produce a "job script", but job stream files needs to be present
+        ajs.init_job_stream_files()
         if not self.prepare_job(
             job_wrapper,
             include_metadata=False,
@@ -246,7 +237,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
-    def __configure_port_routing(self, ajs):
+    def __configure_port_routing(self, ajs: AsynchronousJobState) -> None:
         # Configure interactive tool entry points first
         guest_ports = ajs.job_wrapper.guest_ports
         ports_dict = {}
@@ -271,68 +262,31 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ingress.create()
 
     def __get_overridable_params(self, job_wrapper, param_key):
-        dest_params = self.__get_destination_params(job_wrapper)
-        return dest_params.get(param_key, self.runner_params[param_key])
+        try:
+            return job_wrapper.job_destination.params[param_key]
+        except KeyError:
+            return self.runner_params[param_key]
 
     def __get_pull_policy(self):
         return pull_policy(self.runner_params)
 
-    def __get_run_as_user_id(self):
-        if self.runner_params.get("k8s_run_as_user_id") or self.runner_params.get("k8s_run_as_user_id") == 0:
-            run_as_user = self.runner_params["k8s_run_as_user_id"]
-            if run_as_user == "$uid":
+    def __get_user_group_param_or_default(self, job_wrapper, param_name):
+        substitutable_user_group_id = self.__get_overridable_params(job_wrapper, param_name)
+        if substitutable_user_group_id or substitutable_user_group_id == 0:
+            if substitutable_user_group_id == "$uid":
                 return os.getuid()
-            else:
-                try:
-                    return int(self.runner_params["k8s_run_as_user_id"])
-                except Exception:
-                    log.warning(
-                        'User ID passed for Kubernetes runner needs to be an integer or "$uid", value %s passed is invalid',
-                        self.runner_params["k8s_run_as_user_id"],
-                    )
-                    return None
-        return None
-
-    def __get_run_as_group_id(self):
-        if self.runner_params.get("k8s_run_as_group_id") or self.runner_params.get("k8s_run_as_group_id") == 0:
-            run_as_group = self.runner_params["k8s_run_as_group_id"]
-            if run_as_group == "$gid":
+            elif substitutable_user_group_id == "$gid":
                 return self.app.config.gid
             else:
                 try:
-                    return int(self.runner_params["k8s_run_as_group_id"])
+                    return int(substitutable_user_group_id)
                 except Exception:
                     log.warning(
-                        'Group ID passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
-                        self.runner_params["k8s_run_as_group_id"],
+                        'param %s passed to Kubernetes runner needs to be an integer or the strings "$uid" or "$gid". Value %s is invalid',
+                        param_name,
+                        substitutable_user_group_id,
                     )
-        return None
-
-    def __get_supplemental_group(self):
-        if (
-            self.runner_params.get("k8s_supplemental_group_id")
-            or self.runner_params.get("k8s_supplemental_group_id") == 0
-        ):
-            try:
-                return int(self.runner_params["k8s_supplemental_group_id"])
-            except Exception:
-                log.warning(
-                    'Supplemental group passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
-                    self.runner_params["k8s_supplemental_group_id"],
-                )
-                return None
-        return None
-
-    def __get_fs_group(self):
-        if self.runner_params.get("k8s_fs_group_id") or self.runner_params.get("k8s_fs_group_id") == 0:
-            try:
-                return int(self.runner_params["k8s_fs_group_id"])
-            except Exception:
-                log.warning(
-                    'FS group passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
-                    self.runner_params["k8s_fs_group_id"],
-                )
-                return None
+                    return None
         return None
 
     def __get_galaxy_instance_id(self):
@@ -406,7 +360,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
-        k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
+        k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context(ajs.job_wrapper)
         extra_metadata = self.runner_params["k8s_job_metadata"] or "{}"
         if isinstance(extra_metadata, str):
             extra_metadata = yaml.safe_load(extra_metadata)
@@ -554,16 +508,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_spec_template["metadata"]["annotations"].update(new_ann)
         return k8s_spec_template
 
-    def __get_k8s_security_context(self):
+    def __get_k8s_security_context(self, job_wrapper):
         security_context = {}
-        if self._run_as_user_id or self._run_as_user_id == 0:
-            security_context["runAsUser"] = self._run_as_user_id
-        if self._run_as_group_id or self._run_as_group_id == 0:
-            security_context["runAsGroup"] = self._run_as_group_id
-        if self._supplemental_group and self._supplemental_group > 0:
-            security_context["supplementalGroups"] = [self._supplemental_group]
-        if self._fs_group and self._fs_group > 0:
-            security_context["fsGroup"] = self._fs_group
+        run_as_user_id = self.__get_user_group_param_or_default(job_wrapper, "k8s_run_as_user_id")
+        run_as_group_id = self.__get_user_group_param_or_default(job_wrapper, "k8s_run_as_group_id")
+        supplemental_group = self.__get_user_group_param_or_default(job_wrapper, "k8s_supplemental_group_id")
+        fs_group = self.__get_user_group_param_or_default(job_wrapper, "k8s_fs_group_id")
+        if run_as_user_id or run_as_user_id == 0:
+            security_context["runAsUser"] = run_as_user_id
+        if run_as_group_id or run_as_group_id == 0:
+            security_context["runAsGroup"] = run_as_group_id
+        if supplemental_group and supplemental_group > 0:
+            security_context["supplementalGroups"] = [supplemental_group]
+        if fs_group and fs_group > 0:
+            security_context["fsGroup"] = fs_group
         return security_context
 
     def __get_k8s_restart_policy(self, job_wrapper):
@@ -716,26 +674,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         return ByteSize(mem_value).value
 
-    def __assemble_k8s_container_image_name(self, job_wrapper):
-        """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
-        job_destination = job_wrapper.job_destination
-
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination
-        # definition
-        repo = ""
-        owner = ""
-        if "repo" in job_destination.params:
-            repo = f"{job_destination.params['repo']}/"
-        if "owner" in job_destination.params:
-            owner = f"{job_destination.params['owner']}/"
-
-        k8s_cont_image = repo + owner + job_destination.params["image"]
-
-        if "tag" in job_destination.params:
-            k8s_cont_image += f":{job_destination.params['tag']}"
-
-        return k8s_cont_image
-
     def __get_k8s_container_name(self, job_wrapper):
         # These must follow a specific regex for Kubernetes.
         raw_id = job_wrapper.job_destination.id
@@ -749,17 +687,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_job_name(self, prefix, job_wrapper):
         return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
-    def __get_destination_params(self, job_wrapper):
-        """Obtains allowable runner param overrides from the destination"""
-        job_destination = job_wrapper.job_destination
-        OVERRIDABLE_PARAMS = ["k8s_node_selector", "k8s_affinity", "k8s_extra_job_envs"]
-        new_params = {}
-        for each_param in OVERRIDABLE_PARAMS:
-            if each_param in job_destination.params:
-                new_params[each_param] = job_destination.params[each_param]
-        return new_params
-
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
 
@@ -801,7 +729,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_persisted_state = job_state.job_wrapper.get_state()
 
             # This assumes jobs dependent on a single pod, single container
-            if succeeded > 0 or job_state == model.Job.states.STOPPED:
+            if succeeded > 0 or job_persisted_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 log.debug(f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} succeeded")
@@ -1161,22 +1089,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # To ensure that files below are readable, ownership must be reclaimed first
         job_state.job_wrapper.reclaim_ownership()
 
-        # wait for the files to appear
-        which_try = 0
-        while which_try < self.app.config.retry_job_output_collection + 1:
-            try:
-                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, "rb") as stderr_file:
-                    job_stdout = self._job_io_for_db(stdout_file)
-                    job_stderr = self._job_io_for_db(stderr_file)
-                break
-            except Exception as e:
-                if which_try == self.app.config.retry_job_output_collection:
-                    job_stdout = ""
-                    job_stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error(f"{gxy_job.id}/{gxy_job.job_runner_external_id} {job_stderr}: {unicodify(e)}")
-                else:
-                    time.sleep(1)
-                which_try += 1
+        _, job_stdout, job_stderr = self._collect_job_output(gxy_job.id, gxy_job.job_runner_external_id, job_state)
 
         # get stderr and stdout to database
         outputs_directory = os.path.join(job_state.job_wrapper.working_directory, "outputs")

@@ -87,10 +87,7 @@ class System(BaseUIController):
                     if not dataset.deleted:
                         dataset_count += 1
                 history_count += 1
-            message = (
-                "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days."
-                % (history_count, dataset_count, userless_histories_days)
-            )
+            message = f"{history_count} userless histories ( including a total of {dataset_count} datasets ) have not been updated for at least {userless_histories_days} days."
         else:
             message = "Enter the number of days."
         return str(userless_histories_days), message
@@ -133,8 +130,8 @@ class System(BaseUIController):
                             pass
                 history_count += 1
             message = (
-                "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, "
-                "disk space: %s." % (history_count, dataset_count, deleted_histories_days, nice_size(disk_space, True))
+                f"{history_count} histories ( including a total of {dataset_count} datasets ) were deleted more than {deleted_histories_days} days ago, but have not yet been purged, "
+                f"disk space: {nice_size(disk_space, True)}."
             )
         else:
             message = "Enter the number of days."
@@ -163,8 +160,8 @@ class System(BaseUIController):
                 except Exception:
                     pass
             message = (
-                "%d datasets were deleted more than %d days ago, but have not yet been purged,"
-                " disk space: %s." % (dataset_count, deleted_datasets_days, nice_size(disk_space, True))
+                f"{dataset_count} datasets were deleted more than {deleted_datasets_days} days ago, but have not yet been purged,"
+                f" disk space: {nice_size(disk_space, True)}."
             )
         else:
             message = "Enter the number of days."
@@ -175,17 +172,17 @@ class System(BaseUIController):
         message = ""
         dataset = trans.sa_session.get(model.Dataset, trans.security.decode_id(kwd.get("id", "")))
         # Get all associated hdas and lddas that use the same disk file.
-        stmt = select(trans.model.HistoryDatasetAssociation).filter(
+        stmt = select(model.HistoryDatasetAssociation).filter(
             and_(
-                trans.model.HistoryDatasetAssociation.deleted == false(),
-                trans.model.HistoryDatasetAssociation.dataset_id == dataset.id,
+                model.HistoryDatasetAssociation.deleted == false(),
+                model.HistoryDatasetAssociation.dataset_id == dataset.id,
             )
         )
         associated_hdas = trans.sa_session.scalars(stmt).all()
-        stmt = select(trans.model.LibraryDatasetDatasetAssociation).filter(
+        stmt = select(model.LibraryDatasetDatasetAssociation).filter(
             and_(
-                trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
-                trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
+                model.LibraryDatasetDatasetAssociation.deleted == false(),
+                model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
             )
         )
         associated_lddas = trans.sa_session.scalars(stmt).all()

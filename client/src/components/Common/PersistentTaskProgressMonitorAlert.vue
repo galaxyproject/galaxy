@@ -4,8 +4,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
-import { type TaskMonitor } from "@/composables/genericTaskMonitor";
-import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
+import { useDownloadTracker } from "@/composables/downloadTracker";
+import type { TaskMonitor } from "@/composables/genericTaskMonitor";
+import type { MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
@@ -55,15 +57,17 @@ const {
     isRunning,
     isCompleted,
     hasFailed,
+    failureReason,
     requestHasFailed,
     storedTaskId,
-    status,
     hasExpired,
     expirationDate,
     monitoringData,
     start,
     reset,
 } = usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
+
+const downloadTracker = useDownloadTracker();
 
 const downloadUrl = computed(() => {
     // We can only download the result if the task is completed and the task type is short_term_storage.
@@ -91,9 +95,11 @@ watch(
                 taskType: props.monitorRequest.taskType,
                 request: props.monitorRequest,
                 startedAt: new Date(),
+                isFinal: false,
             });
+            downloadTracker.trackDownloadRequest(props.monitorRequest);
         }
-    }
+    },
 );
 
 watch(
@@ -104,7 +110,7 @@ watch(
         if (completed && props.enableAutoDownload && downloadUrl.value && props.taskId) {
             window.open(downloadUrl.value, "_blank");
         }
-    }
+    },
 );
 
 function dismissAlert() {
@@ -142,8 +148,8 @@ function dismissAlert() {
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>
-            <span v-if="status">
-                Reason: <b>{{ status }}</b>
+            <span v-if="failureReason">
+                Reason: <b>{{ failureReason }}</b>
             </span>
         </BAlert>
         <BAlert v-else-if="requestHasFailed" variant="danger" show dismissible @dismissed="dismissAlert">

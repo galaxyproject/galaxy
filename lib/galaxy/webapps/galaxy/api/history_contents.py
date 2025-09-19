@@ -4,10 +4,9 @@ API operations on the contents of a history.
 
 import logging
 from typing import (
-    List,
+    Annotated,
     Literal,
     Optional,
-    Set,
     Union,
 )
 
@@ -24,9 +23,9 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
-from typing_extensions import Annotated
 
 from galaxy import util
+from galaxy.exceptions.utils import validation_error_to_message_exception
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
@@ -59,7 +58,6 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
-from galaxy.web.framework.decorators import validation_error_to_message_exception
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -270,7 +268,7 @@ DryRunQueryParam = Query(
 
 def get_legacy_index_query_params(
     ids: Optional[str] = LegacyIdsQueryParam,
-    types: Optional[List[str]] = LegacyTypesQueryParam,
+    types: Optional[list[str]] = LegacyTypesQueryParam,
     details: Optional[str] = LegacyDetailsQueryParam,
     deleted: Optional[bool] = LegacyDeletedQueryParam,
     visible: Optional[bool] = LegacyVisibleQueryParam,
@@ -290,7 +288,7 @@ def get_legacy_index_query_params(
 
 def parse_legacy_index_query_params(
     ids: Optional[str] = None,
-    types: Optional[Union[List[str], str]] = None,
+    types: Optional[Union[list[str], str]] = None,
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
@@ -325,7 +323,7 @@ def parse_legacy_index_query_params(
         raise validation_error_to_message_exception(e)
 
 
-def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType]:
+def parse_content_types(types: Union[list[str], str]) -> list[HistoryContentType]:
     if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
         content_types = util.listify(types[0])
     else:  # Support ?types=dataset&types=dataset_collection
@@ -337,7 +335,7 @@ def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     if details is not None and details != "all":
-        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
+        dataset_details: Union[None, set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
         dataset_details = details
     return dataset_details
@@ -613,7 +611,7 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
-    ) -> List[AnyJobStateSummary]:
+    ) -> list[AnyJobStateSummary]:
         """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
 
         **Warning**: We allow anyone to fetch job state information about any object they
@@ -624,14 +622,14 @@ class FastAPIHistoryContents:
         return self.service.index_jobs_summary(trans, params)
 
     @router.get(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+        "/api/histories/{history_id}/contents/dataset_collections/{hdca_id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         operation_id="history_contents__download_collection",
     )
     def download_dataset_collection_history_content(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Path(
             description="The encoded database identifier of the History.",
@@ -640,10 +638,10 @@ class FastAPIHistoryContents:
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        return self._download_collection(trans, id)
+        return self._download_collection(trans, hdca_id)
 
     @router.get(
-        "/api/dataset_collections/{id}/download",
+        "/api/dataset_collections/{hdca_id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         tags=["dataset collections"],
@@ -651,21 +649,21 @@ class FastAPIHistoryContents:
     )
     def download_dataset_collection(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        return self._download_collection(trans, id)
+        return self._download_collection(trans, hdca_id)
 
     @router.post(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+        "/api/histories/{history_id}/contents/dataset_collections/{hdca_id}/prepare_download",
         summary="Prepare an short term storage object that the collection will be downloaded to.",
         include_in_schema=False,
     )
     @router.post(
-        "/api/dataset_collections/{id}/prepare_download",
+        "/api/dataset_collections/{hdca_id}/prepare_download",
         summary="Prepare an short term storage object that the collection will be downloaded to.",
         responses={
             200: {
@@ -677,14 +675,14 @@ class FastAPIHistoryContents:
     )
     def prepare_collection_download(
         self,
-        id: HistoryHDCAIDPathParam,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AsyncFile:
         """The history dataset collection will be written as a `zip` archive to the
         returned short term storage object. Progress tracking this file's creation
         can be tracked with the short_term_storage API.
         """
-        return self.service.prepare_collection_download(trans, id)
+        return self.service.prepare_collection_download(trans, hdca_id)
 
     @router.post(
         "/api/histories/{history_id}/contents/{type}s",
@@ -699,7 +697,7 @@ class FastAPIHistoryContents:
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -717,7 +715,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -728,7 +726,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType],
         serialization_params: SerializationParams,
         payload: CreateHistoryContentPayload,
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -838,6 +836,28 @@ class FastAPIHistoryContents:
             payload.model_dump(exclude_unset=True),
             serialization_params,
             contents_type=HistoryContentType.dataset,
+        )
+
+    @router.put(
+        "/api/dataset_collections/{hdca_id}",
+        summary="Updates the values for the history dataset (HDA) item with the given ``ID``.",
+        operation_id="dataset_collections__update_collection",
+    )
+    def update_collection(
+        self,
+        hdca_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(
+            trans,
+            None,
+            hdca_id,
+            payload.model_dump(exclude_unset=True),
+            serialization_params,
+            contents_type=HistoryContentType.dataset_collection,
         )
 
     @router.put(
@@ -1054,7 +1074,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         create_payload: CreateHistoryContentFromStore = Body(...),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> list[AnyHistoryContentItem]:
         """
         Create history contents from model store.
         Input can be a tarfile created with build_objects script distributed

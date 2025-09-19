@@ -137,7 +137,7 @@ class History(BaseUIController):
         for user in users:
             dataset = datasets.get(user, [0, 0])
             history = histories.get(user, 0)
-            data[user] = ("%d (%s)" % (history, int_to_octet(dataset[1])), dataset[0])
+            data[user] = (f"{history} ({int_to_octet(dataset[1])})", dataset[0])
 
         return trans.fill_template(
             "/webapps/reports/history_and_dataset_per_user.mako",

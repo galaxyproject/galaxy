@@ -3,11 +3,86 @@ History
 
 .. to_doc
 
--------
-24.2rc1
--------
+---------
+25.1.dev0
+---------
 
 
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Remove transaction helper by `@jdavcs <https://github.com/jdavcs>`_ in `#19407 <https://github.com/galaxyproject/galaxy/pull/19407>`_
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Reduce default framework tool test timeout to 60 seconds by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19819 <https://github.com/galaxyproject/galaxy/pull/19819>`_
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Add bwa_mem2_index directory datatype, framework enhancements for testing directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19694 <https://github.com/galaxyproject/galaxy/pull/19694>`_
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes for errors reported by mypy 1.11.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18608 <https://github.com/galaxyproject/galaxy/pull/18608>`_
+
+============
+Enhancements
+============
+
+* Implement Declarative Testing for Workflow Behaviors by `@jmchilton <https://github.com/jmchilton>`_ in `#18542 <https://github.com/galaxyproject/galaxy/pull/18542>`_
+* Allow a posix file source to prefer linking. by `@jmchilton <https://github.com/jmchilton>`_ in `#19132 <https://github.com/galaxyproject/galaxy/pull/19132>`_
 
 -------------------
 24.1.4 (2024-12-11)

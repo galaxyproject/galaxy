@@ -15,12 +15,6 @@ Usage:
 """
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
-
-
-def stop_err(msg):
-    sys.exit(f"{msg}")
-
 
 def __main__():
     infile_name = sys.argv[1]
@@ -42,7 +36,7 @@ def __main__():
                 if not seq_title_startswith:
                     seq_title_startswith = line_startswith
                 if line_startswith != seq_title_startswith:
-                    stop_err("Invalid fastqsolexa format at line %d: %s." % (i + 1, line))
+                    sys.exit(f"Invalid fastqsolexa format at line {i + 1}: {line}.")
                 read_title = line[1:]
             elif fastq_block_lines == 2:
                 # second line is nucleotides
@@ -52,12 +46,11 @@ def __main__():
                 if not qual_title_startswith:
                     qual_title_startswith = line_startswith
                 if line_startswith != qual_title_startswith:
-                    stop_err("Invalid fastqsolexa format at line %d: %s." % (i + 1, line))
+                    sys.exit(f"Invalid fastqsolexa format at line {i + 1}: {line}.")
                 quality_title = line[1:]
                 if quality_title and read_title != quality_title:
-                    stop_err(
-                        'Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".'
-                        % (i + 1, read_title, quality_title)
+                    sys.exit(
+                        f'Invalid fastqsolexa format at line {i + 1}: sequence title "{read_title}" differes from score title "{quality_title}".'
                     )
                 if not quality_title:
                     outfile_score.write(f">{read_title}\n")
@@ -87,9 +80,8 @@ def __main__():
                     elif quality_score_length == read_length:
                         quality_score_startswith = default_coding_value
                     else:
-                        stop_err(
-                            "Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d )."
-                            % (i + 1, quality_score_length, read_length)
+                        sys.exit(
+                            f"Invalid fastqsolexa format at line {i + 1}: the number of quality scores ( {quality_score_length} ) is not the same as bases ( {read_length} )."
                         )
                     for char in line:
                         score = ord(char) - quality_score_startswith  # 64

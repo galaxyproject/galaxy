@@ -25,6 +25,7 @@ from typing import (
 import yaml
 from typing_extensions import (
     Literal,
+    Protocol,
     TypedDict,
 )
 
@@ -100,11 +101,15 @@ def _handle_pseudo_location(properties, pseudo_location):
         properties["location"] = properties["basename"]
 
 
-def abs_path_or_uri(path_or_uri: str, relative_to: str) -> str:
+def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Optional[Callable[[str], Optional[str]]]) -> str:
     """Return the absolute path if this isn't a URI, otherwise keep the URI the same."""
     if "://" in path_or_uri:
         return path_or_uri
     abs_path_ = os.path.abspath(os.path.join(relative_to, path_or_uri))
+    if resolve_data and not os.path.exists(abs_path_):
+        resolved_data = resolve_data(path_or_uri)
+        if resolved_data:
+            abs_path_ = resolved_data
     _ensure_file_exists(abs_path_)
     return abs_path_
 
@@ -130,12 +135,21 @@ def path_or_uri_to_uri(path_or_uri: str) -> str:
         return path_or_uri
 
 
+class CollectionCreateFunc(Protocol):
+
+    def __call__(
+        self, element_identifiers: List[Dict[str, Any]], collection_type: str, rows: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Create a collection from these identifiers."""
+
+
 def galactic_job_json(
     job: Dict[str, Any],
     test_data_directory: str,
     upload_func: Callable[["UploadTarget"], Dict[str, Any]],
-    collection_create_func: Callable[[List[Dict[str, Any]], str], Dict[str, Any]],
+    collection_create_func: CollectionCreateFunc,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
+    resolve_data: Optional[Callable[[str], Optional[str]]] = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Adapt a CWL job object to the Galaxy API.
 
@@ -159,7 +173,7 @@ def galactic_job_json(
         return {"src": "hda", "id": dataset_id}
 
     def upload_file(file_path: str, secondary_files: Optional[str], **kwargs) -> Dict[str, str]:
-        file_path = abs_path_or_uri(file_path, test_data_directory)
+        file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         target = FileUploadTarget(file_path, secondary_files, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
@@ -169,18 +183,18 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_tar(file_path: str) -> Dict[str, str]:
-        file_path = abs_path_or_uri(file_path, test_data_directory)
-        target = DirectoryUploadTarget(file_path)
+    def upload_tar(file_path: str, file_type: str = "directory", name: str = "uploaded tar file") -> Dict[str, str]:
+        file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
+        target = DirectoryUploadTarget(file_path, file_type=file_type, name=name)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
     def upload_file_with_composite_data(file_path: Optional[str], composite_data, **kwargs) -> Dict[str, str]:
         if file_path is not None:
-            file_path = abs_path_or_uri(file_path, test_data_directory)
+            file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         composite_data_resolved = []
         for cd in composite_data:
-            composite_data_resolved.append(abs_path_or_uri(cd, test_data_directory))
+            composite_data_resolved.append(abs_path_or_uri(cd, test_data_directory, resolve_data=resolve_data))
         target = FileUploadTarget(file_path, composite_data=composite_data_resolved, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
@@ -237,6 +251,8 @@ def galactic_job_json(
             kwd["decompress"] = value["decompress"]
         if value.get("hashes"):
             kwd["hashes"] = value["hashes"]
+        if value.get("metadata"):
+            kwd["metadata"] = value["metadata"]
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -283,16 +299,17 @@ def galactic_job_json(
         file_path = value.get("location", None) or value.get("path", None)
         if file_path is None:
             return value
-
         if not os.path.isabs(file_path):
             file_path = os.path.join(test_data_directory, file_path)
+
+        file_type = value.get("filetype", None) or value.get("format", None) or "directory"
 
         tmp = tempfile.NamedTemporaryFile(delete=False)
         tf = tarfile.open(fileobj=tmp, mode="w:")
         tf.add(file_path, ".")
         tf.close()
 
-        return upload_tar(tmp.name)
+        return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
 
     def replacement_list(value) -> Dict[str, str]:
         collection_element_identifiers = []
@@ -340,8 +357,10 @@ def galactic_job_json(
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
-
-        collection = collection_create_func(elements, collection_type)
+        kwds = {}
+        if collection_type.startswith("sample_sheet"):
+            kwds["rows"] = value["rows"]
+        collection = collection_create_func(elements, collection_type, **kwds)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
@@ -427,8 +446,10 @@ class ObjectUploadTarget(UploadTarget):
 
 
 class DirectoryUploadTarget(UploadTarget):
-    def __init__(self, tar_path: str) -> None:
+    def __init__(self, tar_path: str, file_type: str = "directory", name: str = "uploaded directory") -> None:
         self.tar_path = tar_path
+        self.file_type = file_type
+        self.name = name
 
     def __str__(self) -> str:
         return f"DirectoryUploadTarget[tar_path={self.tar_path}]"

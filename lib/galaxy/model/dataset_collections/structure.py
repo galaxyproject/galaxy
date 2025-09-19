@@ -1,9 +1,9 @@
-""" Module for reasoning about structure of and matching hierarchical collections of data.
-"""
+"""Module for reasoning about structure of and matching hierarchical collections of data."""
 
-import logging
+from typing import TYPE_CHECKING
 
-log = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from .type_description import CollectionTypeDescription
 
 
 class Leaf:
@@ -149,7 +149,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return f"Tree[collection_type={self.collection_type_description},children={','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)}]"
+        return f"Tree[collection_type={self.collection_type_description},children=({','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)})]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
@@ -190,7 +190,9 @@ def dict_map(func, input_dict):
     return {k: func(v) for k, v in input_dict.items()}
 
 
-def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):
+def get_structure(
+    dataset_collection_instance, collection_type_description: "CollectionTypeDescription", leaf_subcollection_type=None
+):
     if leaf_subcollection_type:
         collection_type_description = collection_type_description.effective_collection_type_description(
             leaf_subcollection_type

@@ -64,7 +64,7 @@ export default {
                         const compatibleTools = getCompatibleRecommendations(
                             children,
                             outputDatatypes,
-                            datatypesMapper
+                            datatypesMapper,
                         );
                         if (compatibleTools.length > 0 && this.deprecated === false) {
                             this.showMessage = true;

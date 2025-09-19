@@ -70,7 +70,7 @@ watch(referencedJobIds, async () => {
 
         const handleError = catchErrorToToast(
             "Failed to job information",
-            "Some referenced objects may not be listed."
+            "Some referenced objects may not be listed.",
         );
         const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: jobId } },
@@ -96,7 +96,7 @@ watch(referencedInvocationIds, async () => {
 
         const handleError = catchErrorToToast(
             "Failed to fetch workflow information",
-            "Some referenced objects may not be listed."
+            "Some referenced objects may not be listed.",
         );
 
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
@@ -122,9 +122,9 @@ watch(referencedHistoryDatasetCollectionIds, async () => {
         }
         const handleError = catchErrorToToast(
             "Failed to fetch collection information",
-            "Some referenced objects may not be listed."
+            "Some referenced objects may not be listed.",
         );
-        fetchCollectionSummary({ id: historyDatasetCollectionId })
+        fetchCollectionSummary({ hdca_id: historyDatasetCollectionId })
             .then((data) => {
                 const historyId = data.history_id;
                 Vue.set(historyDatasetCollectionsToHistories.value, historyDatasetCollectionId, historyId);
@@ -188,7 +188,7 @@ watch(
         initWorkflowData();
         initHistoryDatasetData();
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(historyIds, async () => {

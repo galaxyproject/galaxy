@@ -338,6 +338,27 @@ runners:
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
 
+  # Using Pulsar and co-execution to run jobs against a TES service.
+  # - https://www.ga4gh.org/product/task-execution-service-tes/
+  # - https://pulsar.readthedocs.io/en/latest/containers.html#ga4gh-tes
+  pulsar_tes:
+    load: galaxy.jobs.runners.pulsar:PulsarTesJobRunner
+    # RabbitMQ URL from Galaxy server (include credentials).
+    amqp_url: <amqp_url>
+    # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
+    #galaxy_url: <galaxy_url>  
+
+  # Using Pulsar and co-execution to run jobs against Google Cloud Platform's Batch service.
+  # - https://cloud.google.com/batch/docs/get-started
+  # - https://pulsar.readthedocs.io/en/latest/containers.html#google-cloud-platform-batch
+  pulsar_gcp:
+    load: galaxy.jobs.runners.pulsar:PulsarGcpBatchJobRunner
+    # RabbitMQ URL from Galaxy server (include credentials).
+    amqp_url: <amqp_url>
+    # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
+    #galaxy_url: <galaxy_url>
+
+
 # Job handler configuration - for a full discussion of job handlers, see the documentation at:
 #     https://docs.galaxyproject.org/en/latest/admin/scaling.html
 handling:
@@ -586,6 +607,24 @@ execution:
       # argument by default. You can turn this off by setting singularity_cleanenv to `false`.
       #singularity_cleanenv: true
 
+      # Singularity by default inherits the PID namespace, this can give
+      # issues with multiprocessing, hence galaxy passes the `--pid` argument
+      # by default to isolate the PID namespace. You can turn this off by setting
+      # singularity_pid to `false`.
+      #singularity_pid: true
+
+      # Singularity by default inherits the IPC namespace, this can give
+      # issues with multiprocessing, hence Galaxy passes the `--ipc` argument
+      # by default to isolate the IPC namespace. You can turn this off by setting
+      # singularity_ipc to `false`.
+      #singularity_ipc: true
+
+      # Singularity mounts some directories, such as $HOME and $PWD by default.
+      # Setting singularity_contain to `true` disables this behaviour and only allows explicitly
+      # requested volumes to be mounted. This gives full control over
+      # the mounting behavior.
+      #singularity_contain: true
+
       # Pass extra arguments to the singularity exec command not covered by the
       # above options.
       #singularity_run_extra_arguments: ''
@@ -799,7 +838,7 @@ execution:
       function: map_tool_to_destination
       rules_module: tpv.rules
       tpv_config_files:
-        - https://gxy.io/tpv/db.yml
+        - https://gxy.io/tpv/db-latest.yml
         # - config/tpv_rules_local.yml
 
     docker_dispatch:
@@ -897,6 +936,55 @@ execution:
       #k8s_galaxy_instance_id: mycoolgalaxy
       # Path to Kubernetes configuration fil (see Kubernetes runner description.)
       #k8s_config_path: /path/to/kubeconfig
+
+    pulsar_tes_environment:
+      runner: pulsar_tes
+      # A tes_url is required
+      tes_url: "<tes_url>"
+      #basic_auth:
+      #  username: <username>
+      #  password: <password>
+      #cpu_cores: 1
+      # Define if the task is allowed to run on preemptible compute instances,\nfor example, AWS Spot. This option may have no effect when utilized\non some backends that don't have the concept of preemptible jobs.
+      #preemptible: false
+      #ram_gb: 8
+      #disk_gb: 40
+      # Request that the task be run in these compute zones. How this string is utilized will be dependent on the backend system. For example, a\nsystem based on a cluster queueing system may use this string to define\npriorty queue to which the job is assigned.
+      #zones: us-west-1
+      #backend_parameters: {}
+      #backend_parameters_strict: false
+      # Configure the embedded Pulsar app, only message_queue_url is required but
+      # other options may be useful (unsure).
+      pulsar_app_config:
+          # This needs to be the RabbitMQ server, but this should be the host
+          # and port that your TES nodes would connect to the server via.
+          message_queue_url: "<amqp_url>"
+
+    pulsar_gcp_environment:
+      runner: pulsar_gcp
+      # required
+      project_id: <gcp_project_id>
+      # Path to GCP service account credentials file. (not sure if ~ would be implicitly respected in this example)
+      #credentials_file: ~/.config/gcloud/application_default_credentials.json
+      # GCP region or zone to use (optional)
+      #region: us-central1
+      # Max walltime to use in seconds (defaults to 60 * 60 * 24)
+      #walltime_limit: 216000
+      # Maximum number of retries for the job. Maps to TaskSpec.max_retry_count.
+      #retry_count: 2
+      # Name of the SSD volume to be mounted in the task. Shared among all containers in job.
+      #ssd_name: pulsar_staging
+      # Size of the shared local SSD disk in GB (must be a multiple of 375).
+      #disk_size: 375
+      # Machine type for the job's VM.
+      #machine_type: n1-standard-1
+      #labels: {}
+      # Configure the embedded Pulsar app, only message_queue_url is required but
+      # other options may be useful (unsure).
+      pulsar_app_config:
+          # This needs to be the RabbitMQ server, but this should be the host
+          # and port that your GCP compute would connect to the server via.
+          message_queue_url: "<amqp_url>"
 
     # Example CLI runners.
     ssh_torque:
@@ -1051,7 +1139,7 @@ tools:
 - id: bowtie
   handler: handler1
 - id: bar
-  enviroment: dynamic
+  environment: dynamic
 -
   # Next example defines resource group to insert into tool interface
   # and pass to dynamic destination (as resource_params argument).

@@ -2,8 +2,6 @@ import contextlib
 import json
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from sqlalchemy import select
@@ -20,7 +18,6 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
-from galaxy.model.base import transaction
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
@@ -46,8 +43,8 @@ steps:
       input1: test_input
 """
 
-ActionJson = Dict[str, Any]
-ActionsJson = List[ActionJson]
+ActionJson = dict[str, Any]
+ActionsJson = list[ActionJson]
 
 
 class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
@@ -797,7 +794,7 @@ steps:
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
 
-    def _refactor(self, actions: List[Dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
+    def _refactor(self, actions: list[dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
         stmt = select(User).order_by(User.id.desc()).limit(1)
         user = self._app.model.session.execute(stmt).scalar_one()
         mock_trans = MockTrans(self._app, user)
@@ -822,8 +819,7 @@ steps:
         # Do a bunch of checks to ensure nothing workflow related was written to the database
         # or even added to the sa_session.
         sa_session = self._app.model.session
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         sw_update_time = self._model_last_time(StoredWorkflow)
         assert sw_update_time
@@ -837,8 +833,7 @@ steps:
         wo_last_id = self._model_last_id(WorkflowOutput)
 
         response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         assert sw_update_time == self._model_last_time(StoredWorkflow)
         assert w_update_time == self._model_last_time(Workflow)
         assert ws_last_id == self._model_last_id(WorkflowStep)

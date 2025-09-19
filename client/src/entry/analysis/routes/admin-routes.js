@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import AdminHome from "components/admin/AdminHome";
 import DataManager from "components/admin/DataManager/DataManager";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
 import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
@@ -9,12 +10,12 @@ import DataTypes from "components/admin/DataTypes";
 import ToolboxDependencies from "components/admin/Dependencies/Landing";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
-import Home from "components/admin/Home";
 import JobsList from "components/admin/JobsList";
 import BroadcastForm from "components/admin/Notifications/BroadcastForm";
 import NotificationForm from "components/admin/Notifications/NotificationForm";
 import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
 import ResetMetadata from "components/admin/ResetMetadata";
+import RoleForm from "components/admin/RoleForm";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
 import adminFormsGridConfig from "components/Grid/configs/adminForms";
@@ -36,13 +37,7 @@ export default [
         children: [
             {
                 path: "",
-                component: Home,
-                props: () => {
-                    const config = getGalaxyInstance().config;
-                    return {
-                        isToolShedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
-                    };
-                },
+                component: AdminHome,
             },
             { path: "data_tables", component: DataTables },
             { path: "data_types", component: DataTypes },
@@ -226,11 +221,7 @@ export default [
             },
             {
                 path: "form/create_role",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_role",
-                    redirect: "/admin/roles",
-                },
+                component: RoleForm,
             },
             {
                 path: "form/create_group",

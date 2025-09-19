@@ -9,9 +9,7 @@ from tempfile import (
 )
 from typing import (
     cast,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -42,7 +40,6 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
@@ -61,6 +58,7 @@ from galaxy.schema.schema import (
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    ExportRecordData,
     HistoryArchiveExportResult,
     HistoryImportArchiveSourceType,
     JobExportHistoryArchiveModel,
@@ -188,7 +186,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         ]
         return rval
 
-    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: List[Tuple[str, str, str]]):
+    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: list[tuple[str, str, str]]):
         # TODO: this should all be removed (along with the default) in v2
         # support the old default of not-returning/filtering-out deleted histories
         try:
@@ -218,7 +216,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         payload: HistoryIndexQueryPayload,
         serialization_params: SerializationParams,
         include_total_count: bool = False,
-    ) -> Tuple[List[AnyHistoryView], int]:
+    ) -> tuple[list[AnyHistoryView], Union[int, None]]:
         """Return a list of History accessible by the user
 
         :rtype:     list
@@ -263,7 +261,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             if archive_type == HistoryImportArchiveSourceType.url:
                 assert archive_source
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
-            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            target_history = None
+            if payload.name:
+                # A name for a new history was supplied, so we will create a new history and do the import
+                # into that - only useful for non-history imports - e.g. workflow invocations.
+                target_history = self.manager.create(user=trans.user, name=hist_name)
+            log.info(f"target history for import: {target_history}")
+            job = self.manager.queue_history_import(
+                trans, archive_type=archive_type, archive_source=archive_source, target_history=target_history
+            )
             job_dict = job.to_dict()
             job_dict["message"] = (
                 f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
@@ -287,8 +293,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         # an anonymous user can only have one history
         if self.user_manager.is_anonymous(trans.user):
@@ -371,7 +376,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         short_term_storage_target = model_store_storage_target(
             self.short_term_storage_allocator,
-            history.name,
+            history.name or "Unnamed history",
             payload.model_store_format,
         )
         export_association = self.history_export_manager.create_export_association(history.id)
@@ -386,8 +391,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
@@ -404,8 +408,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return task_summary
 
     def update(
@@ -535,7 +538,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """
-        Return all the citations for the tools used to produce the datasets in
+        Return all the references for the tools used to produce the datasets in
         the history.
         """
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
@@ -567,7 +570,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans,
         history_id: DecodedDatabaseIdField,
         payload: Optional[ExportHistoryArchivePayload] = None,
-    ) -> Tuple[HistoryArchiveExportResult, bool]:
+    ) -> tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -778,7 +781,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         include_total_matches: bool = False,
-    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
+    ) -> tuple[list[AnyArchivedHistoryView], Optional[int]]:
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
 
@@ -810,15 +813,24 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             serialization_params = SerializationParams()
         archived_history = self._serialize_history(trans, history, serialization_params, default_view)
         export_record_data = self._get_export_record_data(history)
-        archived_history["export_record_data"] = export_record_data.model_dump() if export_record_data else None
+        archived_history["export_record_data"] = export_record_data
         return archived_history
 
-    def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
+    def _get_export_record_data(self, history: model.History) -> Optional[ExportRecordData]:
         if history.archive_export_id:
             export_record = self.history_export_manager.get_task_export_by_id(history.archive_export_id)
             export_metadata = self.history_export_manager.get_record_metadata(export_record)
-            if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
-                return export_metadata.request_data.payload
+            if export_metadata and isinstance(
+                request_data_payload := export_metadata.request_data.payload, WriteStoreToPayload
+            ):
+                request_uri = request_data_payload.target_uri
+                result_uri = export_metadata.result_data.uri if export_metadata.result_data else None
+
+                export_record_data_dict = request_data_payload.model_dump()
+                export_record_data_dict.update({"target_uri": result_uri or request_uri})
+                export_record_data = ExportRecordData(**export_record_data_dict)
+
+                return export_record_data
         return None
 
 

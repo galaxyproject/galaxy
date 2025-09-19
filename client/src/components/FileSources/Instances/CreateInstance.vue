@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import CreateForm from "@/components/FileSources/Instances/CreateForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -26,13 +27,20 @@ const { goToIndex } = useInstanceRouting();
 
 const props = defineProps<Props>();
 
+const breadcrumbItems = computed(() => [
+    { title: "User Preferences", to: "/user" },
+    { title: "My Repositories", to: "/file_source_instances/index" },
+    { title: "Create New", to: "/file_source_instances/create" },
+    { title: template.value?.name || "Option" },
+]);
+
 const loading = ref(false);
 const errorMessage = ref("");
 
 const template = computed(() => fileSourceTemplatesStore.getLatestTemplate(props.templateId));
 const redirectMessage = computed(
     () =>
-        `You will redirected to ${template.value?.name} to authorize Galaxy to access this resource remotely. Please wait`
+        `You will redirected to ${template.value?.name} to authorize Galaxy to access this resource remotely. Please wait`,
 );
 const requiresOAuth2AuthorizeRedirect = computed(() => {
     const templateValue = template.value;
@@ -62,7 +70,7 @@ watch(
                             template_version: templateValue.version || 0,
                         },
                     },
-                }
+                },
             );
 
             if (testRequestError) {
@@ -74,12 +82,16 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
 <template>
     <div>
+        <div class="d-flex">
+            <BreadcrumbHeading :items="breadcrumbItems" />
+        </div>
+
         <BAlert v-if="loading" show variant="info">
             <LoadingSpan v-if="!template" message="Loading file source templates" />
             <LoadingSpan v-else-if="requiresOAuth2AuthorizeRedirect && !errorMessage" :message="redirectMessage" />

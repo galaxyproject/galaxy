@@ -2,16 +2,14 @@ import logging
 import shutil
 import tempfile
 from typing import (
+    Annotated,
     cast,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
 from fastapi import Path
 from starlette.datastructures import UploadFile as StarletteUploadFile
-from typing_extensions import Annotated
 
 from galaxy import exceptions
 from galaxy.actions.library import LibraryActions
@@ -22,10 +20,11 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
+    ImplicitlyConvertedDatasetAssociation,
     Library,
+    LibraryDatasetDatasetAssociation,
     tags,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
@@ -58,7 +57,7 @@ MaybeLibraryFolderOrDatasetID = Annotated[
     str,
     Path(
         title="The encoded ID of a library folder or dataset.",
-        example="F0123456789ABCDEF",
+        examples=["F0123456789ABCDEF"],
         min_length=16,
         pattern="F?[0-9a-fA-F]+",
     ),
@@ -86,7 +85,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         library_id: DecodedDatabaseIdField,
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
-        rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
+        rval: list[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
         current_user_roles = trans.get_current_user_roles()
         library = trans.sa_session.get(Library, library_id)
         if not library:
@@ -131,7 +130,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
-        files: Optional[List[StarletteUploadFile]] = None,
+        files: Optional[list[StarletteUploadFile]] = None,
     ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -190,15 +189,14 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
             content_conv = self.get_library_dataset(
                 trans, payload.converted_dataset_id, check_ownership=False, check_accessible=False
             )
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+            assoc = ImplicitlyConvertedDatasetAssociation(
                 parent=content.library_dataset_dataset_association,
                 dataset=content_conv.library_dataset_dataset_association,
                 file_type=content_conv.library_dataset_dataset_association.extension,
                 metadata_safe=True,
             )
             trans.sa_session.add(assoc)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
     def delete(
         self,
@@ -218,8 +216,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         if payload.purge:
             ld.purged = True
             trans.sa_session.add(ld)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
 
             # TODO: had to change this up a bit from Dataset.user_can_purge
             dataset = ld.library_dataset_dataset_association.dataset
@@ -234,18 +231,16 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 except Exception:
                     pass
                 # flush now to preserve deleted state in case of later interruption
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             rval["purged"] = True
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         rval["deleted"] = True
         return LibraryContentsDeleteResponse(**rval)
 
     def _decode_library_content_id(
         self,
         content_id: MaybeLibraryFolderOrDatasetID,
-    ) -> Tuple:
+    ) -> tuple:
         if len(content_id) % 16 == 0:
             return "LibraryDataset", content_id
         elif content_id.startswith("F"):
@@ -290,13 +285,13 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 rval.append(ld)
         return rval
 
-    def _create_response(self, trans, payload, output, library_id):
+    def _create_response(self, trans: ProvidesHistoryContext, payload, output, library_id: DecodedDatabaseIdField):
         rval = []
         for v in output.values():
             if payload.extended_metadata is not None:
                 # If there is extended metadata, store it, attach it to the dataset, and index it
                 self.create_extended_metadata(trans, payload.extended_metadata)
-            if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+            if isinstance(v, LibraryDatasetDatasetAssociation):
                 v = v.library_dataset
             url = self._url_for(trans, library_id, v.id, payload.create_type)
             rval.append(dict(id=v.id, name=v.name, url=url))

@@ -60,7 +60,7 @@ describe("drilldown component utilities", () => {
             },
         ];
         expect(String(getAllValues(options))).toBe(
-            String(["a", "b", "ba", "bb", "bba", "bbaa", "aa", "ab", "aba", "abb", "abba", "abaa"])
+            String(["a", "b", "ba", "bb", "bba", "bbaa", "aa", "ab", "aba", "abb", "abba", "abaa"]),
         );
     });
 });

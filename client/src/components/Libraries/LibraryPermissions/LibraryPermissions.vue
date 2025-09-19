@@ -125,7 +125,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
         onGoBack() {

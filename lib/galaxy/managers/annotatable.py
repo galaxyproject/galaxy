@@ -5,13 +5,11 @@ Mixins for Annotatable model managers and serializers.
 import abc
 import logging
 from typing import (
-    Dict,
     Optional,
 )
 
 from sqlalchemy.orm import scoped_session
 
-from galaxy.model.base import transaction
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -64,8 +62,7 @@ class AnnotatableManagerMixin:
         annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return annotation_obj
 
     def _user_annotation(self, item, user):
@@ -75,13 +72,12 @@ class AnnotatableManagerMixin:
         returned = item.delete_item_annotation(self.session(), user, item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return returned
 
 
 class AnnotatableSerializerMixin:
-    serializers: Dict[str, Serializer]
+    serializers: dict[str, Serializer]
 
     def add_serializers(self):
         self.serializers["annotation"] = self.serialize_annotation
@@ -95,7 +91,7 @@ class AnnotatableSerializerMixin:
 
 
 class AnnotatableDeserializerMixin:
-    deserializers: Dict[str, Deserializer]
+    deserializers: dict[str, Deserializer]
 
     def add_deserializers(self):
         self.deserializers["annotation"] = self.deserialize_annotation

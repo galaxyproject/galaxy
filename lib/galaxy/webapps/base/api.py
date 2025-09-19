@@ -1,13 +1,11 @@
 import os
 import stat
 import uuid
+from collections.abc import Mapping
 from logging import getLogger
 from typing import (
     Any,
-    Dict,
-    Mapping,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -33,10 +31,12 @@ from starlette_context.plugins import (
 )
 
 from galaxy.exceptions import MessageException
-from galaxy.exceptions.utils import api_error_to_dict
+from galaxy.exceptions.utils import (
+    api_error_to_dict,
+    validation_error_to_message_exception,
+)
 from galaxy.util.path import StrPath
 from galaxy.web.framework.base import walk_controller_modules
-from galaxy.web.framework.decorators import validation_error_to_message_exception
 
 if TYPE_CHECKING:
     from starlette.background import BackgroundTask
@@ -52,7 +52,7 @@ log = getLogger(__name__)
 
 
 # Copied from https://github.com/tiangolo/fastapi/issues/1240#issuecomment-1055396884
-def _get_range_header(range_header: str, file_size: int) -> Tuple[int, int]:
+def _get_range_header(range_header: str, file_size: int) -> tuple[int, int]:
     def _invalid_range():
         return HTTPException(
             status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
@@ -194,7 +194,7 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
         content = error_dict
 
     retry_after: Optional[int] = getattr(exc, "retry_after", None)
-    headers: Dict[str, str] = {}
+    headers: dict[str, str] = {}
     if retry_after:
         headers["Retry-After"] = str(retry_after)
     return JSONResponse(status_code=status_code, content=content, headers=headers)
@@ -246,7 +246,7 @@ def add_request_id_middleware(app: FastAPI):
 
 
 def include_all_package_routers(app: FastAPI, package_name: str):
-    responses: Dict[Union[int, str], Dict[str, Any]] = {
+    responses: dict[Union[int, str], dict[str, Any]] = {
         "4XX": {
             "description": "Request Error",
             "model": MessageExceptionModel,

@@ -58,7 +58,7 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
         broadcastsStore.broadcasts = broadcastsStore.broadcasts.filter((b) => b.id !== broadcast.id);
     });
 
-    const wrapper = mount(BroadcastsOverlay, {
+    const wrapper = mount(BroadcastsOverlay as object, {
         localVue,
         pinia,
         stubs: {

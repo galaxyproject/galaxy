@@ -49,7 +49,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("history_panel_edit_dbkey_post_click")
-        self.components.edit_dataset_attributes.database_build_dropdown.wait_for_and_click()
+        self.components.edit_dataset_attributes.dbkey_dropdown.wait_for_and_click()
         # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
         self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
             dbkey_text=TEST_DBKEY_TEXT
@@ -73,8 +73,6 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_state(FIRST_HID, state="discarded", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_discarded")
-        # Next if is a hack for recent changes to beta history...
-        # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -127,7 +125,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     def _assert_downloadable(self, hid, is_downloadable=True):
         item = self.history_panel_item_component(hid=hid)
         item.dataset_operations.wait_for_visible()
-        item.info_button.wait_for_visible()
+        item.highlight_button.wait_for_visible()
         if is_downloadable:
             assert item.download_button.is_displayed
         else:

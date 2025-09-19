@@ -10,7 +10,6 @@ from datetime import (
     timedelta,
 )
 from typing import (
-    List,
     Optional,
 )
 from urllib.parse import quote
@@ -18,6 +17,7 @@ from urllib.parse import quote
 import jwt
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
+from sqlalchemy import func
 
 from galaxy import (
     exceptions,
@@ -27,7 +27,6 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
-from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util import requests
 from . import IdentityProvider
@@ -60,9 +59,9 @@ class CustosAuthnzConfiguration:
     redirect_uri: str
     ca_bundle: Optional[str]
     pkce_support: bool
-    accepted_audiences: List[str]
+    accepted_audiences: list[str]
     extra_params: Optional[dict]
-    extra_scopes: List[str]
+    extra_scopes: list[str]
     authorization_endpoint: Optional[str]
     token_endpoint: Optional[str]
     end_session_endpoint: Optional[str]
@@ -118,10 +117,24 @@ class OIDCAuthnzBase(IdentityProvider):
         if custos_authnz_token is None:
             raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
         id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
-        # do not refresh tokens if they didn't reach their half lifetime
+        # do not refresh tokens if the id_token didn't reach its half-life
         if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
             return False
-        log.info(custos_authnz_token.access_token)
+        if not custos_authnz_token.refresh_token:
+            return False
+
+        # Try to extract expiration date from the refresh token. If expired, do not refresh token.
+        try:
+            refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
+            # do not attempt to use refresh token that is already expired
+            if int(refresh_token_decoded["exp"]) <= int(time.time()):
+                # in the future we might want to log out the user here
+                return False
+        except jwt.exceptions.DecodeError:
+            log.warning("Refresh token cannot be decoded. Galaxy does not support non-decodable refresh tokens.")
+            # If the refresh token is non-decodable, we do not use it because we cannot reliably determine its expiration date. See discussion in https://github.com/galaxyproject/galaxy/pull/20821
+            return False
+
         oauth2_session = self._create_oauth2_session()
         token_endpoint = self.config.token_endpoint
         if self.config.iam_client_secret:
@@ -233,7 +246,7 @@ class OIDCAuthnzBase(IdentityProvider):
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config.provider)
         if custos_authnz_token is None:
             user = trans.user
-            existing_user = trans.sa_session.query(User).filter_by(email=email).first()
+            existing_user = trans.sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
             if not user:
                 if existing_user:
                     if trans.app.config.fixed_delegated_auth:
@@ -293,8 +306,7 @@ class OIDCAuthnzBase(IdentityProvider):
             redirect_url = "/"
 
         trans.sa_session.add(custos_authnz_token)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return redirect_url, custos_authnz_token.user
 
@@ -342,8 +354,7 @@ class OIDCAuthnzBase(IdentityProvider):
 
         trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return login_redirect_url, user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
@@ -360,8 +371,7 @@ class OIDCAuthnzBase(IdentityProvider):
                     if id_token_decoded["email"] == email:
                         index = idx
             trans.sa_session.delete(provider_tokens[index])
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return True, "", disconnect_redirect_url
         except Exception as e:
             return False, f"Failed to disconnect provider {provider}: {util.unicodify(e)}", None
@@ -488,10 +498,10 @@ class OIDCAuthnzBase(IdentityProvider):
         if "@" in username:
             username = username.split("@")[0]  # username created from username portion of email
         username = util.ready_name_for_url(username).lower()
-        if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
+        if trans.sa_session.query(User).filter_by(username=username).first():
             # if username already exists in database, append integer and iterate until unique username found
             count = 0
-            while trans.sa_session.query(trans.app.model.User).filter_by(username=(f"{username}{count}")).first():
+            while trans.sa_session.query(User).filter_by(username=(f"{username}{count}")).first():
                 count += 1
             return f"{username}{count}"
         else:
@@ -579,7 +589,7 @@ class CustosAuthFactory:
         oidc_backend_config: dict
         idphint: str
 
-    _CustosAuthBasedProvidersCache: List[_CustosAuthBasedProviderCacheItem] = []
+    _CustosAuthBasedProvidersCache: list[_CustosAuthBasedProviderCacheItem] = []
 
     @staticmethod
     def GetCustosBasedAuthProvider(provider, oidc_config, oidc_backend_config, idphint=None):

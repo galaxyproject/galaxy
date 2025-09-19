@@ -1,172 +1,294 @@
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { isAdminUser, isAnonymousUser } from "@/api";
+import type { TourRequirements, TourStep as TourStepType } from "@/api/tours";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useTourStore } from "@/stores/tourStore";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GModal from "../BaseComponents/GModal.vue";
+import LoadingSpan from "../LoadingSpan.vue";
+import TourStep from "./TourStep.vue";
+
+/** Popup display duration when auto-playing the tour */
+const PLAY_DELAY = 3000;
+
+const props = defineProps<{
+    steps: TourStepType[];
+    requirements: TourRequirements;
+    tourId: string;
+    waitingOnElement?: string | null;
+    onBefore: (step: TourStepType) => Promise<void>;
+    onNext: (step: TourStepType) => Promise<void>;
+}>();
+
+const emit = defineEmits(["end-tour"]);
+
+const router = useRouter();
+
+const errorMessage = ref("");
+const isPlaying = ref(false);
+
+// Store variables
+const historyStore = useHistoryStore();
+const { currentHistory, historiesLoading } = storeToRefs(historyStore);
+const { currentUser } = storeToRefs(useUserStore());
+const tourStore = useTourStore();
+const { currentTour } = storeToRefs(tourStore);
+
+/** The current step index
+ *
+ * This is set and updated based on the currently active tour in the `tourStore`.
+ * Is `-1` if no tour is currently active (or has ended).
+ */
+const currentIndex = computed({
+    get: () => (currentTour.value?.step !== undefined ? currentTour.value?.step : -1),
+    set: (val: number) => {
+        tourStore.setTour(props.tourId, val);
+    },
+});
+
+// Local step variables
+const currentStep = computed(() => props.steps[currentIndex.value]);
+const numberOfSteps = computed(() => props.steps.length);
+const isFirst = computed(() => currentIndex.value === 0);
+const isLast = computed(() => currentIndex.value === props.steps.length - 1);
+
+/** On some conditions here, a message modal is shown and the tour doesn't start
+ * when these conditions are met. This returns the contents of the modal if it should be shown.
+ */
+const modalContents = computed<{
+    title: string;
+    message: string;
+    variant: "danger" | "info";
+    loading?: boolean;
+    okText?: string;
+    cancelText?: "End Tour";
+    ok?: () => Promise<void>;
+} | null>(() => {
+    if (errorMessage.value) {
+        return {
+            title: "Tour Failed",
+            message: errorMessage.value,
+            variant: "danger",
+            ok: async () => {
+                errorMessage.value = "";
+                isPlaying.value = false;
+            },
+        };
+    }
+
+    if (historiesLoading.value) {
+        return {
+            title: "Preparing Tour",
+            message: "Evaluating Requirements",
+            variant: "info",
+            loading: true,
+        };
+    }
+
+    if (isFirst.value) {
+        if (props.requirements.indexOf("logged_in") >= 0 && isAnonymousUser(currentUser.value)) {
+            return {
+                title: "Requires Login",
+                message: "You must log in to Galaxy to use this tour.",
+                variant: "info",
+                okText: router ? "Login or Register" : undefined,
+                cancelText: "End Tour",
+                ok: async () => {
+                    endTour();
+                    if (router) {
+                        router.push(`/login/start?redirect=/tours/${props.tourId}`);
+                    }
+                },
+            };
+        }
+        if (props.requirements.indexOf("admin") >= 0 && !isAdminUser(currentUser.value)) {
+            return {
+                title: "Requires Admin",
+                message: "You must be an admin to use this tour.",
+                variant: "info",
+                okText: router ? "Exit Tour" : undefined,
+                cancelText: "End Tour",
+                ok: async () => {
+                    endTour();
+                    if (router) {
+                        if (isAnonymousUser(currentUser.value)) {
+                            router.push(`/login/start?redirect=/tours/${props.tourId}`);
+                        } else {
+                            router.push("/");
+                        }
+                    }
+                },
+            };
+        }
+        // TODO: better estimate for whether the history is new.
+        if (props.requirements.indexOf("new_history") >= 0 && currentHistory.value && currentHistory.value.size !== 0) {
+            return {
+                title: "Requires New History",
+                message:
+                    "This tour is designed to run on a new history, please create a new history before running it.",
+                variant: "info",
+                okText: "Create New History",
+                cancelText: "End Tour",
+                ok: async () => {
+                    await historyStore.createNewHistory();
+                },
+            };
+        }
+    }
+    return null;
+});
+
+// We use this ref to control the modal visibility
+const showModal = ref(false);
+const modalRef = ref<InstanceType<typeof GModal> | null>(null);
+
+// Wait for GModal to render and then force show
+// (We needed this, without this the GModal wouldn't show via the .sync prop)
+watch(
+    () => modalContents.value,
+    async (newValue) => {
+        if (Boolean(newValue) !== showModal.value) {
+            showModal.value = Boolean(newValue);
+
+            if (showModal.value) {
+                await nextTick();
+                modalRef.value?.showModal?.();
+            }
+        }
+    },
+    { immediate: true },
+);
+
+start();
+
+onUnmounted(() => {
+    window.removeEventListener("keyup", handleKeyup);
+});
+
+function start() {
+    window.addEventListener("keyup", handleKeyup);
+}
+
+function play(isCurrentlyPlaying: boolean) {
+    isPlaying.value = isCurrentlyPlaying;
+    if (isPlaying.value) {
+        next();
+    }
+}
+
+async function next() {
+    try {
+        // do post-actions
+        if (currentStep.value) {
+            await props.onNext(currentStep.value);
+        }
+        // do pre-actions
+        const nextIndex = currentIndex.value + 1;
+        if (nextIndex < numberOfSteps.value && currentIndex.value !== -1) {
+            const nextStep = props.steps[nextIndex];
+            if (nextStep) {
+                await props.onBefore(nextStep);
+
+                // automatically continues to next step if enabled, unless its the last one
+                if (isPlaying.value && nextIndex !== numberOfSteps.value - 1) {
+                    setTimeout(() => {
+                        if (isPlaying.value) {
+                            next();
+                        }
+                    }, PLAY_DELAY);
+                }
+            }
+        } else {
+            // End Tour
+            endTour();
+        }
+        // go to next step
+        currentIndex.value = nextIndex;
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    }
+}
+
+/** Ends the tour
+ *
+ * _In the case that_ `TourRunner` _is the parent, this will unmount the component._
+ */
+function endTour() {
+    tourStore.setTour(undefined);
+    isPlaying.value = false;
+    errorMessage.value = "";
+
+    emit("end-tour");
+}
+
+async function handleKeyup(e: KeyboardEvent) {
+    switch (e.keyCode) {
+        case 39:
+            await next();
+            break;
+        case 27:
+            endTour();
+            break;
+    }
+}
+
+function modalDismiss(ok = true) {
+    if (modalContents.value?.ok && (ok || errorMessage.value)) {
+        modalContents.value.ok();
+    } else if (modalContents.value?.cancelText === "End Tour") {
+        endTour();
+    }
+}
+</script>
+
 <template>
     <div class="d-flex flex-column">
-        <div v-if="historiesLoading">computing tour requirements...</div>
-        <b-modal
-            v-else-if="loginRequired(currentUser)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
-        </b-modal>
-        <b-modal
-            v-else-if="adminRequired(currentUser)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
-        </b-modal>
-        <b-modal
-            v-else-if="newHistoryRequired(currentHistory)"
-            id="tour-requirement-unment"
-            v-model="showRequirementDialog"
-            static
-            ok-only
-            hide-header>
-            <b-alert show variant="danger">
-                This tour is designed to run on a new history, please create a new history before running it.
-                <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
-            </b-alert>
-        </b-modal>
+        <GModal
+            v-if="modalContents !== null"
+            id="tour-requirement"
+            ref="modalRef"
+            show
+            :confirm="!errorMessage && modalContents.ok !== undefined"
+            :ok-text="modalContents.okText"
+            :cancel-text="modalContents.cancelText"
+            :title="modalContents.title"
+            size="small"
+            :footer="Boolean(errorMessage)"
+            @ok="modalDismiss"
+            @cancel="modalDismiss(false)">
+            <BAlert :variant="modalContents.variant" show>
+                <span v-if="!modalContents.loading">{{ modalContents.message }}</span>
+                <LoadingSpan v-else :message="modalContents.message" />
+            </BAlert>
+            <div v-if="errorMessage">
+                The tour encountered an issue and cannot continue to the next step. This may be due to:
+                <ul class="mb-2">
+                    <li>Required interface elements not being visible or accessible</li>
+                    <li>Page content still loading</li>
+                    <li>Browser or network connectivity issues</li>
+                </ul>
+            </div>
+            <template v-slot:footer>
+                <span v-if="errorMessage">Exit to retry the current step.</span>
+                <span v-else-if="modalContents.cancelText === 'End Tour'">Closing this modal ends the tour.</span>
+            </template>
+        </GModal>
         <TourStep
-            v-else-if="currentStep"
+            v-if="modalContents === null && currentHistory && currentStep && currentUser"
             :key="currentIndex"
             :step="currentStep"
             :is-playing="isPlaying"
             :is-last="isLast"
+            :waiting-on-element="waitingOnElement"
             @next="next"
-            @end="end"
+            @end="endTour"
             @play="play" />
     </div>
 </template>
-
-<script>
-import { mapActions, mapState } from "pinia";
-
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-
-import TourStep from "./TourStep";
-
-// popup display duration when auto-playing the tour
-const playDelay = 3000;
-
-export default {
-    components: {
-        TourStep,
-    },
-    props: {
-        steps: {
-            type: Array,
-            required: true,
-        },
-        requirements: {
-            type: Array,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            currentIndex: -1,
-            isPlaying: false,
-            showRequirementDialog: true,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryStore, ["currentHistory", "historiesLoading"]),
-        currentStep() {
-            return this.steps[this.currentIndex];
-        },
-        numberOfSteps() {
-            return this.steps.length;
-        },
-        isLast() {
-            return this.currentIndex === this.steps.length - 1;
-        },
-        hasBegun() {
-            return this.currentIndex >= 1;
-        },
-    },
-    beforeDestroy() {
-        window.removeEventListener("keyup", this.handleKeyup);
-    },
-    mounted() {
-        this.start();
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["createNewHistory"]),
-        start() {
-            window.addEventListener("keyup", this.handleKeyup);
-            this.currentIndex = 0;
-        },
-        play(isPlaying) {
-            this.isPlaying = isPlaying;
-            if (this.isPlaying) {
-                this.next();
-            }
-        },
-        loginRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
-        },
-        adminRequired(user) {
-            return !this.hasBegun && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
-        },
-        newHistoryRequired(history) {
-            if (this.hasBegun) {
-                return false;
-            }
-            const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
-            if (!hasNewHistoryRequirement) {
-                return false;
-            } else if (history && history.size != 0) {
-                // TODO: better estimate for whether the history is new.
-                return true;
-            } else {
-                return false;
-            }
-        },
-        async next() {
-            // do post-actions
-            if (this.currentStep && this.currentStep.onNext) {
-                await this.currentStep.onNext();
-            }
-            // do pre-actions
-            const nextIndex = this.currentIndex + 1;
-            if (nextIndex < this.numberOfSteps && this.currentIndex !== -1) {
-                const nextStep = this.steps[nextIndex];
-                if (nextStep.onBefore) {
-                    await nextStep.onBefore();
-                    // automatically continues to next step if enabled
-                    if (this.isPlaying) {
-                        setTimeout(() => {
-                            if (this.isPlaying) {
-                                this.next();
-                            }
-                        }, playDelay);
-                    }
-                }
-            }
-            // go to next step
-            this.currentIndex = nextIndex;
-        },
-        end() {
-            this.currentIndex = -1;
-            this.isPlaying = false;
-        },
-        handleKeyup(e) {
-            switch (e.keyCode) {
-                case 39:
-                    this.next();
-                    break;
-                case 27:
-                    this.end();
-                    break;
-            }
-        },
-    },
-};
-</script>

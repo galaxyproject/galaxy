@@ -1,7 +1,7 @@
 import { computed, type Ref } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import { type Step } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
 import { ClearSelectionAction } from "../Actions/workflowActions";
@@ -14,7 +14,7 @@ export function useMultiSelect(workflowId?: Ref<string> | string) {
     const anySelected = computed(() => selectedCommentsCount.value > 0 || selectedStepsCount.value > 0);
 
     const multiSelectedComments = computed(() =>
-        commentStore.multiSelectedCommentIds.map((id) => ensureDefined(commentStore.commentsRecord[id]))
+        commentStore.multiSelectedCommentIds.map((id) => ensureDefined(commentStore.commentsRecord[id])),
     );
 
     function deselectAll() {
@@ -34,7 +34,7 @@ export function useMultiSelect(workflowId?: Ref<string> | string) {
             } else {
                 return [];
             }
-        })
+        }),
     );
 
     return {

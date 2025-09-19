@@ -2,7 +2,7 @@
 import axios from "axios";
 import { onMounted, ref } from "vue";
 
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -12,6 +12,7 @@ interface HistoryItem {
     id: string;
     name: string;
     created_time: string;
+    hid: number;
 }
 
 interface Props {
@@ -55,7 +56,8 @@ function load() {
     axios
         .get(url)
         .then((response) => {
-            items.value = response.data.map((item: HistoryItem) => {
+            const collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            items.value = collection_instances.map((item: HistoryItem) => {
                 return {
                     id: item.id,
                     label: item.name,

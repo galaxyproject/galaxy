@@ -34,9 +34,9 @@ class DumpTourCallback:
         self.driver_wrapper = driver_wrapper
         self.output = output
 
-    def handle_step(self, step, step_index):
+    def handle_step(self, step, step_index: int):
         time.sleep(0.5)
-        self.driver_wrapper.driver.save_screenshot("%s/%i.png" % (self.output, step_index))
+        self.driver_wrapper.driver.save_screenshot(f"{self.output}/{step_index}.png")
         time.sleep(0.5)
 
 

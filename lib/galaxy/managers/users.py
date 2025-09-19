@@ -5,14 +5,11 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
-import re
 import string
 import time
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -44,7 +41,6 @@ from galaxy.model import (
     UserAddress,
     UserQuotaUsage,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
     get_user_by_email,
@@ -171,10 +167,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session = self.session()
         for job in active_jobs:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
-    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
+    def _get_all_active_jobs_from_user(self, user: User) -> list[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
         stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
         jobs = self.session().scalars(stmt)
@@ -241,11 +236,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
                 role.name = role.name.replace(user.username, uname_hash)
-                role.description = role.description.replace(user.username, uname_hash)
+                if role.description:
+                    role.description = role.description.replace(user.username, uname_hash)
 
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
-                role.description = role.description.replace(user.email, email_hash)
+                if role.description:
+                    role.description = role.description.replace(user.email, email_hash)
             self.session().add(role)
         private_role.name = email_hash
         private_role.description = f"Private Role for {email_hash}"
@@ -280,7 +277,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id: int) -> model.User:
+    def by_id(self, user_id: int) -> Optional[model.User]:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
@@ -430,35 +427,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def quota_bytes(self, user, quota_source_label: Optional[str] = None):
         return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
 
-    def tags_used(self, user, tag_models=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-        """
-        # TODO: simplify and unify with tag manager
-        if self.is_anonymous(user):
-            return []
-
-        # get all the taggable model TagAssociations
-        if not tag_models:
-            tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
-
-        if not tag_models:
-            return []
-
-        # create a union of select statements for each tag model for this user - getting only the tname and user_value
-        all_stmts = []
-        for tag_model in tag_models:
-            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
-            all_stmts.append(stmt)
-        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
-        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
-        # consider named tags while sorting
-        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
-
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
         Allows to change a user password with a token.
@@ -515,8 +483,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 trans.log_event("User change password")
         else:
             return "Failed to determine user, access denied."
@@ -575,8 +542,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
             trans.sa_session.add(user)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return activation_token
 
     def send_reset_email(self, trans, payload, **kwd):
@@ -603,8 +569,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 try:
                     util.send_mail(trans.app.config.email_from, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     trans.log_event(f"User reset password: {email}")
                 except Exception as e:
                     log.debug(body)
@@ -615,13 +580,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
-        if not reset_user and email != email.lower():
+        if not reset_user:
             reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
         if reset_user and not reset_user.deleted:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return reset_user, prt
         return None, None
 
@@ -643,8 +607,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user.active = True
         self.session().add(user)
         session = self.session()
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def get_or_create_remote_user(self, remote_user_email):
         """
@@ -669,8 +632,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.external = True
             user.username = username_from_email(self.session(), remote_user_email, self.app.model.User)
             self.session().add(user)
-            with transaction(self.session()):
-                self.session().commit()
+            self.session().commit()
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if self.app_type == "galaxy":
@@ -710,8 +672,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "purged",
                 # 'active',
                 "preferences",
-                #  all tags
-                "tags_used",
                 # all annotations
                 # 'annotations'
                 "preferred_object_store_id",
@@ -734,13 +694,12 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
                 "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
-                "tags_used": lambda i, k, **c: self.user_manager.tags_used(i),
             }
         )
 
-    def serialize_disk_usage(self, user: model.User) -> List[UserQuotaUsage]:
+    def serialize_disk_usage(self, user: model.User) -> list[UserQuotaUsage]:
         usages = user.dictify_usage(self.app.object_store)
-        rval: List[UserQuotaUsage] = []
+        rval: list[UserQuotaUsage] = []
         for usage in usages:
             quota_source_label = usage.quota_source_label
             quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
@@ -782,7 +741,7 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        user_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: dict[str, base.Deserializer] = {
             "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,

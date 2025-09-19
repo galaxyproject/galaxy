@@ -1,6 +1,5 @@
 import logging
 
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 
 log = logging.getLogger(__name__)
@@ -21,13 +20,11 @@ class ItemRatings(UsesItemRatings):
             item_rating.rating = rating
             item_rating.comment = comment
             trans.sa_session.add(item_rating)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         elif item_rating.rating != rating or item_rating.comment != comment:
             # User has previously rated item; update rating.
             item_rating.rating = rating
             item_rating.comment = comment
             trans.sa_session.add(item_rating)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return item_rating

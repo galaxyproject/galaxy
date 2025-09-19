@@ -1,0 +1,16 @@
+- doc: |
+    Test optional unspecified input into conditional step works
+  job:
+    required_dataset:
+      type: File
+      value: 2.tabular
+      file_type: tabular
+  outputs:
+    out:
+      class: Collection
+      collection_type: list
+      elements:
+        "0":
+          asserts:
+            - has_text:
+                text: "null"

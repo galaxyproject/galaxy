@@ -1,9 +1,9 @@
-import { type TemplateSummary } from "@/api/configTemplates";
+import type { TemplateSummary } from "@/api/configTemplates";
 
 export function findTemplate<T extends TemplateSummary>(
     templates: T[],
     templateId: string,
-    templateVersion: number
+    templateVersion: number,
 ): T | null {
     for (const template of templates) {
         if (template.id == templateId && template.version == templateVersion) {
@@ -28,7 +28,7 @@ export function getLatestVersionMap<T extends TemplateSummary>(templates: T[]): 
 export function canUpgrade<T extends TemplateSummary>(
     templates: T[],
     templateId: string,
-    templateVersion: number
+    templateVersion: number,
 ): boolean {
     let can = false;
     templates.forEach((i: T) => {

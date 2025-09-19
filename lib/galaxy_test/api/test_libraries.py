@@ -422,15 +422,18 @@ class TestLibrariesApi(ApiTestCase):
         print(subfolder_response.json())
         subfolder_id = subfolder_response.json()["id"]
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")["id"]
+        expected_dataset_name = "test_dataset_in_subfolder"
+        hda_id = self.dataset_populator.new_dataset(history_id, name=expected_dataset_name, content="1 2 3 sub")["id"]
         payload = {"from_hda_id": hda_id}
         create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
-        dataset_update_time = create_response.json()["update_time"]
-        container_fetch_response = self.galaxy_interactor.get(f"folders/{folder_id}/contents")
-        container_update_time = container_fetch_response.json()["folder_contents"][0]["update_time"]
-        assert dataset_update_time == container_update_time, container_fetch_response
+
+        folder_response = self.galaxy_interactor.get(f"folders/{subfolder_id}/contents")
+        self._assert_status_code_is(folder_response, 200)
+        folder_contents = folder_response.json()["folder_contents"]
+        assert len(folder_contents) == 1
+        assert folder_contents[0]["name"] == expected_dataset_name
 
     def _patch_library_dataset(self, library_dataset_id, data):
         create_response = self._patch(f"libraries/datasets/{library_dataset_id}", data=data, json=True)

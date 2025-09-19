@@ -1,0 +1,42 @@
+<tool id="filter_data_table" name="filter data table" version="0.1.0">
+    <description>Filter on datatable entries</description>
+    <command><![CDATA[
+       echo '$dynamic_select' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="dynamic_select" type="select">
+            <!-- initialize options from file (contains all entries that could be added to the data table) -->
+            <options from_url="https://usegalaxy.org/api/genomes">
+                <column name="name" index="0"/>
+                <column name="value" index="0"/>
+                <!-- filter options that are already in the data table -->
+                <filter type="data_table"  column="value" table_name="test_fasta_indexes" data_table_column="dbkey" keep="true"/>
+                <validator type="no_options" message="No options available" />
+            </options>
+            <!-- <options from_file="test_file.tsv">
+            </options> -->
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <!-- select the value that is absent from the data table -->
+        <test expect_failure="false">
+            <param name="dynamic_select" value="hg19" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="hg19"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- selecting the value that is already in the data table (and therefor filtered) fails -->
+        <test expect_failure="true">
+            <param name="dynamic_select" value="ancCey1" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

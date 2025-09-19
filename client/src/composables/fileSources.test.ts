@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { defineComponent } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 import { useFileSources } from "./fileSources";
 
@@ -57,7 +57,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
     });
 
@@ -71,7 +71,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();
@@ -89,7 +89,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();
@@ -104,7 +104,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();

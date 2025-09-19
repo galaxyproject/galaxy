@@ -1,9 +1,10 @@
-import { type UseScrollReturn } from "@vueuse/core";
+import type { UseScrollReturn } from "@vueuse/core";
 import { select } from "d3-selection";
 import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
 import { type Ref, ref, watch } from "vue";
 
-import { type XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Vector } from "@/components/Workflow/Editor/modules/geometry";
+import type { XYPosition } from "@/stores/workflowEditorStateStore";
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
@@ -31,7 +32,7 @@ export function useD3Zoom(
     maxZoom: number,
     targetRef: Ref<HTMLElement | null>,
     scroll: UseScrollReturn,
-    initialPan: XYPosition = { x: 0, y: 0 }
+    initialPan: XYPosition = { x: 0, y: 0 },
 ) {
     const transform = ref({ x: initialPan.x, y: initialPan.y, k: k });
     const d3Zoom = zoom<HTMLElement, unknown>().filter(filter).scaleExtent([minZoom, maxZoom]);
@@ -58,10 +59,10 @@ export function useD3Zoom(
         });
     });
 
-    function setZoom(k: number) {
+    function setZoom(k: number, p?: Vector) {
         if (targetRef.value) {
             const d3Selection = select(targetRef.value).call(d3Zoom);
-            d3Zoom.scaleTo(d3Selection, k);
+            d3Zoom.scaleTo(d3Selection, k, p);
         }
     }
 
@@ -72,10 +73,10 @@ export function useD3Zoom(
         }
     }
 
-    function moveTo(coordinate: XYPosition) {
+    function moveTo(coordinate: XYPosition, p?: Vector) {
         if (targetRef.value) {
             const d3Selection = select(targetRef.value).call(d3Zoom);
-            d3Zoom.translateTo(d3Selection, coordinate.x, coordinate.y);
+            d3Zoom.translateTo(d3Selection, coordinate.x, coordinate.y, p);
         }
     }
 

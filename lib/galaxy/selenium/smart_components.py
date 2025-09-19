@@ -1,6 +1,6 @@
 from typing import (
-    List,
     Optional,
+    TYPE_CHECKING,
 )
 
 from selenium.webdriver.support.select import Select
@@ -14,6 +14,10 @@ from .axe_results import (
     Impact,
 )
 
+if TYPE_CHECKING:
+    # TODO: ideally this after refactoring things this should be galaxy.selenium.has_driver.HasDriver -John
+    from galaxy.selenium.navigates_galaxy import NavigatesGalaxy
+
 
 class SmartComponent:
     """Wrap a Component with driver aware methods.
@@ -23,7 +27,7 @@ class SmartComponent:
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
-    def __init__(self, component, has_driver):
+    def __init__(self, component, has_driver: "NavigatesGalaxy"):
         self._component = component
         self._has_driver = has_driver
 
@@ -45,7 +49,7 @@ class SmartComponent:
 class SmartTarget:
     """Wrap a Target with driver aware methods."""
 
-    def __init__(self, target, has_driver):
+    def __init__(self, target, has_driver: "NavigatesGalaxy"):
         self._target = target
         self._has_driver = has_driver
 
@@ -72,6 +76,9 @@ class SmartTarget:
 
     def wait_for_and_click(self, **kwds):
         return self._has_driver.wait_for_and_click(self._target, **kwds)
+
+    def wait_for_and_double_click(self, **kwds):
+        return self._has_driver.wait_for_and_double_click(self._target, **kwds)
 
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
@@ -145,7 +152,7 @@ class SmartTarget:
         return self._has_driver.axe_eval(context=self._target.element_locator[1])
 
     def assert_no_axe_violations_with_impact_of_at_least(
-        self, impact: Impact, excludes: Optional[List[str]] = None
+        self, impact: Impact, excludes: Optional[list[str]] = None
     ) -> None:
         self.wait_for_visible()
         self.axe_eval().assert_no_violations_with_impact_of_at_least(impact, excludes=excludes)

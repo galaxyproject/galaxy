@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     getInvocationExportPluginByType,
@@ -50,7 +52,9 @@ interface InvocationExportData {
     destination: InvocationExportDestination;
     remoteUri: string;
     outputFileName: string;
-    includeData: boolean;
+    includeFiles: boolean;
+    includeDeleted: boolean;
+    includeHidden: boolean;
     bcoDatabase: BcoDatabaseExportData;
 }
 
@@ -66,19 +70,7 @@ const errorMessage = ref<string>();
 
 const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
 
-const exportData: InvocationExportData = reactive({
-    exportPluginFormat: "ro-crate",
-    destination: "download",
-    remoteUri: "",
-    outputFileName: "",
-    includeData: true,
-    bcoDatabase: {
-        serverBaseUrl: "https://biocomputeobject.org",
-        table: "GALXY",
-        ownerGroup: "",
-        authorization: "",
-    },
-});
+const exportData: InvocationExportData = reactive(initializeExportData());
 
 const exportButtonLabel = computed(() => {
     switch (exportData.destination) {
@@ -96,14 +88,14 @@ const exportButtonLabel = computed(() => {
 });
 
 const needsFileName = computed(
-    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository"
+    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository",
 );
 
 const canIncludeData = computed(() => exportData.exportPluginFormat !== "bco");
 
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
-        (target) => target.destination === exportData.destination
+        (target) => target.destination === exportData.destination,
     );
     return exportDestination?.label ?? "Unknown Destination";
 });
@@ -165,7 +157,7 @@ const wizard = useWizard({
                 exportData.bcoDatabase.serverBaseUrl &&
                     exportData.bcoDatabase.authorization &&
                     exportData.bcoDatabase.table &&
-                    exportData.bcoDatabase.ownerGroup
+                    exportData.bcoDatabase.ownerGroup,
             ),
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
@@ -187,7 +179,16 @@ watch(
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
         }
-    }
+    },
+);
+
+watch(
+    () => isWizardBusy.value,
+    (newValue, oldValue) => {
+        if (oldValue && !newValue) {
+            resetWizard();
+        }
+    },
 );
 
 function onRecordSelected(recordUri: string) {
@@ -214,13 +215,14 @@ async function exportInvocation() {
 }
 
 async function exportToSts() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
         params: { path: { invocation_id: props.invocationId } },
         body: {
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -234,16 +236,17 @@ async function exportToSts() {
 }
 
 async function exportToFileSource() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/write_store", {
         params: {
             path: { invocation_id: props.invocationId },
         },
         body: {
             target_uri: exportDestinationUri.value,
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -281,8 +284,8 @@ More information about how to set up an account and submit data to a BCODB serve
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
-            label: "Remote File Source",
-            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available remote file sources here. You will be able to re-import it later as long as it remains available on the remote server.
+            label: "Repository",
+            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available repositories. You will be able to re-import it later as long as it remains available on the remote server.
 
 Examples of remote sources include Amazon S3, Azure Storage, Google Drive... and other public or personal file sources that you have setup access to.`,
         });
@@ -301,6 +304,54 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
 
     return destinations;
 }
+
+function initializeExportData(): InvocationExportData {
+    return {
+        exportPluginFormat: "ro-crate",
+        destination: "download",
+        remoteUri: "",
+        outputFileName: "",
+        includeFiles: true,
+        includeDeleted: false,
+        includeHidden: false,
+        bcoDatabase: {
+            serverBaseUrl: "https://biocomputeobject.org",
+            table: "GALXY",
+            ownerGroup: "",
+            authorization: "",
+        },
+    };
+}
+
+function resetWizard() {
+    const initialExportData = initializeExportData();
+    Object.assign(exportData, initialExportData);
+    wizard.goTo("select-format");
+}
+
+function getExportParams(): ExportParams {
+    const modelStoreFormat = selectedExportPlugin.value.exportParams.modelStoreFormat;
+    if (modelStoreFormat === "bco.json") {
+        // BCO export never includes files
+        return {
+            modelStoreFormat,
+            includeDeleted: false,
+            includeHidden: false,
+            includeFiles: false,
+        };
+    }
+    return {
+        modelStoreFormat,
+        includeDeleted: exportData.includeDeleted,
+        includeHidden: exportData.includeHidden,
+        includeFiles: exportData.includeFiles,
+    };
+}
+
+onUnmounted(() => {
+    taskMonitor.stopWaitingForTask();
+    stsMonitor.stopWaitingForTask();
+});
 </script>
 
 <template>
@@ -329,7 +380,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                         :key="plugin.id"
                         :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
-                        :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.exportPluginFormat == plugin.id)"
                         @click="exportData.exportPluginFormat = plugin.id">
                         <BCardTitle>
                             <b>{{ plugin.title }}</b>
@@ -352,7 +403,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
                         :data-invocation-export-destination="target.destination"
-                        :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.destination === target.destination)"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"
                         :header="target.label"
@@ -367,7 +418,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                 <BFormGroup
                     id="fieldset-directory"
                     label-for="directory"
-                    :description="`Select a 'remote files' directory to export ${resource} to.`"
+                    :description="`Select a 'repository' to export ${resource} to.`"
                     class="mt-3">
                     <FilesInput
                         id="directory"
@@ -444,9 +495,15 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                         required />
                 </BFormGroup>
 
-                <BFormCheckbox v-if="canIncludeData" id="include-data" v-model="exportData.includeData" switch>
-                    Include data files in the export package.
-                </BFormCheckbox>
+                <BFormGroup v-if="canIncludeData" label="Dataset files included in the package:">
+                    <BFormCheckbox v-model="exportData.includeFiles" switch> Include Active Files </BFormCheckbox>
+
+                    <BFormCheckbox v-model="exportData.includeDeleted" switch>
+                        Include Deleted (not purged)
+                    </BFormCheckbox>
+
+                    <BFormCheckbox v-model="exportData.includeHidden" switch> Include Hidden </BFormCheckbox>
+                </BFormGroup>
 
                 <br />
 
@@ -480,6 +537,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
     height: auto;
     width: auto;
     max-height: 100px;
+    max-width: 100%;
     max-inline-size: -webkit-fill-available;
 }
 </style>

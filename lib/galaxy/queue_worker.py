@@ -11,6 +11,10 @@ import sys
 import threading
 import time
 from inspect import ismodule
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from kombu import (
     Consumer,
@@ -31,8 +35,15 @@ from galaxy.tools.special_tools import load_lib_tools
 logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from galaxy.app import UniverseApplication
+    from galaxy.structured_app import (
+        MinimalManagerApp,
+        StructuredApp,
+    )
 
-def send_local_control_task(app, task, get_response=False, kwargs=None):
+
+def send_local_control_task(app: "StructuredApp", task: str, get_response: bool = False, kwargs: Optional[dict] = None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -158,7 +169,7 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
-def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
+def reload_toolbox(app: "UniverseApplication", save_integrated_tool_panel: bool = True, **kwargs) -> None:
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
@@ -170,7 +181,7 @@ def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
     log.debug("Toolbox reload %s", reload_timer)
 
 
-def _get_new_toolbox(app, save_integrated_tool_panel=True):
+def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: bool = True) -> None:
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
@@ -184,9 +195,9 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
-    [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    for tool in new_toolbox.data_manager_tools.values():
+        new_toolbox.register_tool(tool)
     app._toolbox = new_toolbox
-    app.toolbox.persist_cache()
 
 
 def reload_data_managers(app, **kwargs):
@@ -244,7 +255,7 @@ def rebuild_toolbox_search_index(app, **kwargs):
         log.debug("App is not a webapp, not building a search index")
 
 
-def reload_job_rules(app, **kwargs):
+def reload_job_rules(app: "MinimalManagerApp", **kwargs):
     reload_timer = util.ExecutionTimer()
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
@@ -265,7 +276,7 @@ def reload_tour(app, **kwargs):
     log.debug("Tour reloaded")
 
 
-def __job_rule_module_names(app):
+def __job_rule_module_names(app: "MinimalManagerApp"):
     rules_module_names = {"galaxy.jobs.rules"}
     if app.job_config.dynamic_params is not None:
         module_name = app.job_config.dynamic_params.get("rules_module")
@@ -279,7 +290,7 @@ def __job_rule_module_names(app):
     return rules_module_names
 
 
-def job_rule_modules(app):
+def job_rule_modules(app: "MinimalManagerApp"):
     rules_module_list = []
     for rules_module_name in __job_rule_module_names(app):
         rules_module = sys.modules.get(rules_module_name, None)

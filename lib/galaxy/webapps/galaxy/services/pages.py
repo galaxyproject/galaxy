@@ -1,5 +1,7 @@
 import logging
-from typing import Tuple
+from typing import (
+    Union,
+)
 
 from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
@@ -12,7 +14,9 @@ from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
 )
-from galaxy.model.base import transaction
+from galaxy.model.item_attrs import (
+    get_item_annotation_str,
+)
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -23,10 +27,12 @@ from galaxy.schema.schema import (
     PageIndexQueryPayload,
     PageSummary,
     PageSummaryList,
+    UpdatePagePayload,
 )
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
+from galaxy.webapps.galaxy.api.common import PageIdPathParam
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,
@@ -61,7 +67,7 @@ class PagesService(ServiceBase):
 
     def index(
         self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[PageSummaryList, int]:
+    ) -> tuple[PageSummaryList, Union[int, None]]:
         """Return a list of Pages viewable by the user
 
         :rtype:     list
@@ -97,8 +103,7 @@ class PagesService(ServiceBase):
         page = base.get_object(trans, id, "Page", check_ownership=True)
 
         page.deleted = True
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def undelete(self, trans, id: DecodedDatabaseIdField):
         """
@@ -109,8 +114,7 @@ class PagesService(ServiceBase):
         page = base.get_object(trans, id, "Page", check_ownership=True)
 
         page.deleted = False
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def show(self, trans, id: DecodedDatabaseIdField) -> PageDetails:
         """View a page summary and the content of the latest revision
@@ -122,6 +126,7 @@ class PagesService(ServiceBase):
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         rval = page.to_dict()
+        rval["annotation"] = get_item_annotation_str(trans.sa_session, trans.user, page)
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
@@ -159,3 +164,11 @@ class PagesService(ServiceBase):
         )
         result = prepare_pdf_download.delay(request=pdf_download_request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=request_id, task=async_task_summary(result))
+
+    def update(self, trans, id: PageIdPathParam, payload: UpdatePagePayload) -> PageSummary:
+        """
+        Update a page and return summary
+        """
+        page = self.manager.update_page(trans, id, payload)
+        rval = page.to_dict()
+        return PageSummary(**rval)

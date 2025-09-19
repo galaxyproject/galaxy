@@ -14,15 +14,17 @@ concurrency:
 jobs:
   client-unit-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [18]
     steps:
       - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node}}
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
           cache-dependency-path: 'client/yarn.lock'
       - run: yarn install --frozen-lockfile

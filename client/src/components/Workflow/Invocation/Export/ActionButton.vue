@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { type InvocationExportPluginAction } from "@/components/Workflow/Invocation/Export/Plugins";
+import type { InvocationExportPluginAction } from "@/components/Workflow/Invocation/Export/Plugins";
 
 const modal = ref();
 

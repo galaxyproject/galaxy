@@ -12,21 +12,52 @@
 import jQuery from "jquery";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { CollectionType } from "@/api/datasetCollections";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
-export type CollectionType = "list" | "paired" | "list:paired" | "rules";
-export type DatasetPair = {
-    forward: HDASummary;
-    reverse: HDASummary;
+// This is type describes builders we know about - not valid "collection type"s
+// as the backend/model layer of Galaxy would understand them. Rules is a collection
+// builder but not a collection type, paired:paired:list is a valid collection type but
+// not something we would ever make a builder for.
+export type CollectionBuilderType =
+    | "list"
+    | "paired"
+    | "list:paired"
+    | "rules"
+    | "list:paired_or_unpaired"
+    | "list:list"
+    | "list:list:paired"
+    | "sample_sheet"
+    | "sample_sheet:paired"
+    | "sample_sheet:paired_or_unpaired"
+    | "sample_sheet:record";
+
+interface HasName {
+    name: string | null;
+}
+
+export type GenericPair<T extends HasName> = {
+    forward: T;
+    reverse: T;
     name: string;
 };
+
+export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
+    list: "list",
+    "list:paired": "list of pairs",
+    "list:paired_or_unpaired": "mixed list of paired and unpaired",
+    paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
+};
+
+export type DatasetPair = GenericPair<HDASummary>;
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(
     selectedContent: HistoryItemSummary[],
     historyId: string,
     fromRulesInput = false,
-    defaultHideSourceItems = true
+    defaultHideSourceItems = true,
 ) {
     // select legacy function
     const createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
@@ -51,7 +82,7 @@ const createBackboneContent = (historyId: string, selection: HistoryItemSummary[
             collection_type: CollectionType,
             name: string,
             hide_source_items: boolean,
-            options = {}
+            options = {},
         ) {
             const def = jQuery.Deferred();
             return def.resolve(null, {

@@ -1,10 +1,8 @@
 import json
 import logging
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
-    Sequence,
     TYPE_CHECKING,
 )
 
@@ -48,7 +46,7 @@ def data_collection_input_to_path(v):
 
 def data_collection_input_to_staging_path_and_source_path(
     v: "DatasetCollectionWrapper", invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     staging_paths = v.get_all_staging_paths(
         invalid_chars=invalid_chars, include_collection_name=include_collection_name
     )
@@ -76,11 +74,10 @@ def data_collection_input_to_staging_path_and_source_path(
 
 def data_input_to_staging_path_and_source_path(
     v: "DatasetFilenameWrapper", invalid_chars: Sequence[str] = ("/",)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     staging_path = v.get_staging_path(invalid_chars=invalid_chars)
-    # note that the element identifier should be always a list
     return {
-        "element_identifier": [v.element_identifier],
+        "element_identifier": v.element_identifier,
         "ext": v.file_ext,
         "staging_path": staging_path,
         "source_path": data_input_to_path(v),
@@ -90,7 +87,7 @@ def data_input_to_staging_path_and_source_path(
     }
 
 
-def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
+def _json_wrap_input(input, value_wrapper, profile, handle_files=None):
     input_type = input.type
 
     if input_type == "repeat":
@@ -120,7 +117,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             json_value = [data_input_to_path(v) for v in value_wrapper]
         elif handle_files == "staging_path_and_source_path":
             json_value = [data_input_to_staging_path_and_source_path(v) for v in value_wrapper]
-        elif handle_files == "skip":
+        elif handle_files is None:
             return SKIP_INPUT
         else:
             raise NotImplementedError()
@@ -129,7 +126,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             json_value = data_input_to_path(value_wrapper)
         elif handle_files == "staging_path_and_source_path":
             json_value = data_input_to_staging_path_and_source_path(value_wrapper)
-        elif handle_files == "skip":
+        elif handle_files is None:
             return SKIP_INPUT
         elif handle_files == "OBJECT":
             if value_wrapper:
@@ -145,7 +142,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             raise NotImplementedError()
     elif input_type == "data_collection":
-        if handle_files == "skip":
+        if handle_files is None:
             return SKIP_INPUT
         elif handle_files == "paths":
             return data_collection_input_to_path(value_wrapper)

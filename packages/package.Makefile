@@ -43,14 +43,11 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then virtualenv $(VENV); exit; fi;
+	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
 	$(IN_VENV) pip install -r dev-requirements.txt
 
 test:
 	$(IN_VENV) pytest $(TESTS)
-
-develop:
-	python setup.py develop
 
 dist: clean
 	$(IN_VENV) python -m build

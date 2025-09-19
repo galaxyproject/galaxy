@@ -12,9 +12,7 @@ from functools import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -31,6 +29,7 @@ from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
 from galaxy.selenium.navigates_galaxy import (
+    exception_seems_to_indicate_transition,
     NavigatesGalaxy,
     retry_during_transitions,
 )
@@ -225,15 +224,24 @@ def selenium_test(f):
     return func_wrapper
 
 
+def exception_is_assertion_or_transition(e: Exception) -> bool:
+    """Drive the retry_assertion_during_transitions decorator.
+
+    Reuse logic for checking for transition exceptions but also retry
+    if there is an assertion error.
+    """
+    return exception_seems_to_indicate_transition(e) or isinstance(e, AssertionError)
+
+
 retry_assertion_during_transitions = partial(
-    retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError)
+    retry_during_transitions, exception_check=exception_is_assertion_or_transition
 )
 
 
 class TestSnapshot:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, driver, index, description):
+    def __init__(self, driver, index: int, description: str):
         self.screenshot_binary = driver.get_screenshot_as_png()
         self.description = description
         self.index = index
@@ -241,7 +249,7 @@ class TestSnapshot:
         self.stack = traceback.format_stack()
 
     def write_to_error_directory(self, write_file_func):
-        prefix = "%d-%s" % (self.index, self.description)
+        prefix = f"{self.index}-{self.description}"
         write_file_func(f"{prefix}-screenshot.png", self.screenshot_binary, raw=True)
         write_file_func(f"{prefix}-traceback.txt", self.exc)
         write_file_func(f"{prefix}-stack.txt", str(self.stack))
@@ -290,6 +298,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
 
+    timeout_multiplier = TIMEOUT_MULTIPLIER
+
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
         assert_baseline_accessible(axe_results)
@@ -331,7 +341,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def tear_down_selenium(self):
         self.tear_down_driver()
 
-    def snapshot(self, description):
+    def snapshot(self, description: str):
         """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
 
         This information will be automatically written to a per-test directory created for all
@@ -371,7 +381,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, f"{label}-{copy}{extension}")
             copy += 1
 
         return target
@@ -427,10 +437,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def default_web_host(cls):
         return default_web_host_for_selenium_tests()
 
-    @property
-    def timeout_multiplier(self):
-        return TIMEOUT_MULTIPLIER
-
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
         unnamed_name = self.components.history_panel.new_name.text
@@ -455,7 +461,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         save_button.wait_for_visible()
         assert not save_button.has_class("disabled")
         save_button.wait_for_and_click()
-        save_button.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     @retry_assertion_during_transitions
@@ -625,7 +630,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
         return name
 
-    def workflow_run_setup_inputs(self, content: Optional[str]) -> Tuple[str, Dict[str, Any]]:
+    def workflow_run_setup_inputs(self, content: Optional[str]) -> tuple[str, dict[str, Any]]:
         history_id = self.current_history_id()
         if content:
             yaml_content = yaml.safe_load(content)
@@ -636,6 +641,22 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
             inputs, _, _ = load_data_dict(
                 history_id, test_data, self.dataset_populator, self.dataset_collection_populator
             )
+            for input_value in inputs.values():
+                if (
+                    isinstance(input_value, dict)
+                    and (src := input_value.get("src"))
+                    and (content_id := input_value.get("id"))
+                ):
+                    if src == "hda":
+                        content_item = self.dataset_populator.get_history_dataset_details(
+                            history_id, content_id=content_id
+                        )
+                        input_value["hid"] = content_item["hid"]
+                    elif src == "hdca":
+                        content_item = self.dataset_populator.get_history_collection_details(
+                            history_id=history_id, content_id=content_id
+                        )
+                        input_value["hid"] = content_item["hid"]
             self.dataset_populator.wait_for_history(history_id)
         else:
             inputs = {}

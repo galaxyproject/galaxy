@@ -135,7 +135,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
         #  Parse all the tools within repo for a separate index.
         tools_list = []
         path = os.path.join(file_path, *directory_hash_id(repo.id))
-        path = os.path.join(path, "repo_%d" % repo.id)
+        path = os.path.join(path, f"repo_{repo.id}")
         if os.path.exists(path):
             tools_list.extend(load_one_dir(path))
             for root, dirs, _files in os.walk(path):

@@ -4,7 +4,6 @@ from sqlalchemy import select
 from galaxy import model
 from galaxy.managers import context
 from galaxy.model import mapping
-from galaxy.model.base import transaction as db_transaction
 from galaxy.util import bunch
 
 
@@ -67,8 +66,7 @@ def test_expunge_all(transaction):
 
     user.password = "bar2"
     session = transaction.sa_session
-    with db_transaction(session):
-        session.commit()
+    session.commit()
 
     assert transaction.sa_session.scalars(select(model.User).limit(1)).first().password == "bar2"
 
@@ -76,8 +74,7 @@ def test_expunge_all(transaction):
 
     user.password = "bar3"
     session = transaction.sa_session
-    with db_transaction(session):
-        session.commit()
+    session.commit()
 
     # Password unchange because not attached to session/context.
     assert transaction.sa_session.scalars(select(model.User).limit(1)).first().password == "bar2"

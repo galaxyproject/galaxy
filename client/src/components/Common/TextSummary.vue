@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
-
-library.add(faChevronUp, faChevronDown);
 
 interface Props {
     /** The maximum length of the unexpanded text / summary */
@@ -18,11 +15,14 @@ interface Props {
     noExpand?: boolean;
     /** The component to use for the summary, default = `<p>` */
     component?: string;
+    /** If `true`, shows the full text */
+    showExpandText?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     maxLength: 150,
-    component: "p",
+    component: "span",
+    showExpandText: true,
 });
 
 const showDetails = ref(false);
@@ -37,42 +37,74 @@ const textTooLong = computed(() => {
         return false;
     }
 });
-const text = computed(() =>
-    textTooLong.value && !showDetails.value
-        ? props.description.slice(0, Math.round(props.maxLength - props.maxLength / 2)) + "..."
-        : props.description
-);
 </script>
 
 <template>
-    <div :class="{ 'd-flex': props.oneLineSummary && !noExpand }">
-        <component
-            :is="props.component"
-            v-if="props.oneLineSummary"
-            ref="refOneLineSummary"
-            :class="{ 'one-line-summary': !showDetails }">
-            {{ props.description }}
+    <div class="text-summary" :class="{ 'text-summary-short': !showDetails || props.oneLineSummary }">
+        <component :is="props.component" ref="refOneLineSummary">
+            <div class="html-paragraph d-inline-block overflow-hidden w-100" v-html="props.description" />
         </component>
-        <span v-else>{{ text }}</span>
+
         <span
             v-if="!noExpand && textTooLong"
             v-b-tooltip.hover
-            class="info-icon cursor-pointer"
+            class="text-summary-expand-button"
+            :class="{ 'text-summary-expand-float': !props.showExpandText }"
             :title="showDetails ? 'Show less' : 'Show more'"
             role="button"
             tabindex="0"
             @keyup.enter="showDetails = !showDetails"
-            @click="showDetails = !showDetails">
-            <FontAwesomeIcon :icon="showDetails ? 'chevron-up' : 'chevron-down'" />
+            @click.prevent.stop="showDetails = !showDetails">
+            <template v-if="showExpandText">
+                <template v-if="showDetails">Show less</template>
+                <template v-else>Show more</template>
+            </template>
+
+            <FontAwesomeIcon :icon="showDetails ? faChevronUp : faChevronDown" />
         </span>
     </div>
 </template>
 
-<style scoped>
-.one-line-summary {
-    max-height: 2em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.text-summary {
+    &.text-summary-short {
+        .html-paragraph {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            :deep(p) {
+                white-space: nowrap;
+                margin: 0;
+            }
+        }
+    }
+
+    &:deep(p) {
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        margin: 0;
+
+        &:not(:first-child) {
+            display: none;
+        }
+    }
+}
+
+.text-summary-expand-button {
+    cursor: pointer;
+    width: fit-content;
+    float: right;
+    color: $text-light;
+    margin-left: auto;
+
+    .text-summary-expand-float {
+        position: absolute;
+        right: 5px;
+        bottom: 0;
+    }
 }
 </style>

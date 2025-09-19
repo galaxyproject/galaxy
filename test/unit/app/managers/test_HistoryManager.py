@@ -24,7 +24,6 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.model.base import transaction
 from .base import BaseTestCase
 
 default_password = "123456"
@@ -504,10 +503,9 @@ class TestHistorySerializer(BaseTestCase):
             job = model.Job()
             job.state = model.Job.states.PAUSED
             jobs = [job]
-            self.trans.sa_session.add(jobs[0])
             session = self.trans.sa_session
-            with transaction(session):
-                session.commit()
+            session.add(jobs[0])
+            session.commit()
             assert job.state == model.Job.states.PAUSED
             mock_paused_jobs.return_value = jobs
             history.resume_paused_jobs()
@@ -853,8 +851,7 @@ class TestHistoryFilters(BaseTestCase):
 
         history3.add_item_annotation(self.trans.sa_session, user2, history3, "All work and no play")
         session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         assert anno_filter(history3)
         assert not anno_filter(history2)
@@ -865,9 +862,7 @@ class TestHistoryFilters(BaseTestCase):
         self.history_manager.update(history3, dict(importable=True))
         self.history_manager.update(history2, dict(importable=True))
         history1.add_item_annotation(self.trans.sa_session, user2, history1, "All work and no play")
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         shining_examples = self.history_manager.list(
             filters=self.filter_parser.parse_filters(
@@ -920,18 +915,13 @@ class TestHistoryFilters(BaseTestCase):
         self.history_manager.delete(history3)
 
         test_annotation = "testing"
-        history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
         session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
-        history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
-        history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        history2.add_item_annotation(session, user2, history2, test_annotation)
+        session.commit()
+        history3.add_item_annotation(session, user2, history3, test_annotation)
+        session.commit()
+        history3.add_item_annotation(session, user2, history4, test_annotation)
+        session.commit()
 
         all_histories = [history1, history2, history3, history4]
         deleted_and_annotated = [history2, history3]

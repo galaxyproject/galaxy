@@ -11,8 +11,11 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     TYPE_CHECKING,
 )
+
+from typing_extensions import Protocol
 
 from galaxy.util import (
     hash_util,
@@ -34,7 +37,7 @@ from .resolvers import (
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
 if TYPE_CHECKING:
-    from galaxy.jobs import JobDestination
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -85,25 +88,25 @@ def build_dependency_manager(
             if value is not None:
                 app_config_dict[key] = value
 
-    use_tool_dependencies = app_config_dict.get("use_tool_dependencies", None)
-    # if we haven't set an explicit True or False, try to infer from config...
-    if use_tool_dependencies is None:
-        use_tool_dependencies = (
-            app_config_dict.get("tool_dependency_dir", default_tool_dependency_dir) is not None
-            or app_config_dict.get("dependency_resolvers")
-            or (conf_file and os.path.exists(conf_file))
-        )
-
-    if use_tool_dependencies:
-        dependency_manager_kwds = {
-            "default_base_path": app_config_dict.get("tool_dependency_dir", default_tool_dependency_dir),
-            "conf_file": conf_file,
-            "app_config": app_config_dict,
-        }
+    # Re-evaluate tool_dependency_dir as app_config_dict may have been modified
+    tool_dependency_dir = app_config_dict.get("tool_dependency_dir", default_tool_dependency_dir)
+    # Default use_tool_dependencies to True but check that tool_dependency_dir is set in the following if
+    use_tool_dependencies = app_config_dict.get("use_tool_dependencies", True)
+    if use_tool_dependencies and tool_dependency_dir:
         if string_as_bool(app_config_dict.get("use_cached_dependency_manager")):
-            return CachedDependencyManager(**dependency_manager_kwds)
-        return DependencyManager(**dependency_manager_kwds)
+            return CachedDependencyManager(tool_dependency_dir, conf_file=conf_file, app_config=app_config_dict)
+        return DependencyManager(tool_dependency_dir, conf_file=conf_file, app_config=app_config_dict)
     return NullDependencyManager()
+
+
+ContainerType = str
+DestinationId = str
+DestinationParametersType = Dict[str, Any]
+
+
+class DestinationProtocol(Protocol):
+    id: Optional[DestinationId]
+    params: DestinationParametersType
 
 
 class DependencyManager:
@@ -118,6 +121,7 @@ class DependencyManager:
     dependency available in the current shell environment.
     """
 
+    _destination_for_container_type: Dict[ContainerType, List[DestinationProtocol]]
     cached = False
 
     def __init__(
@@ -145,21 +149,26 @@ class DependencyManager:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
         self._enabled_container_types: List[str] = []
-        self._destination_for_container_type: Dict[str, Dict[str, JobDestination]] = {}
+        self._destination_for_container_type = {}
 
-    def set_enabled_container_types(self, container_types_to_destinations):
+    def set_enabled_container_types(
+        self, container_types_to_destinations: Dict[ContainerType, List[DestinationProtocol]]
+    ):
         """Set the union of all enabled container types."""
         self._enabled_container_types = list(container_types_to_destinations.keys())
         # Just pick first enabled destination for a container type, probably covers the most common deployment scenarios
         self._destination_for_container_type = container_types_to_destinations
 
-    def get_destination_info_for_container_type(self, container_type, destination_id=None):
+    def get_destination_info_for_container_type(
+        self, container_type: ContainerType, destination_id: Optional[DestinationId] = None
+    ) -> Optional[DestinationParametersType]:
         if destination_id is None:
             return next(iter(self._destination_for_container_type[container_type])).params
         else:
             for destination in self._destination_for_container_type[container_type]:
                 if destination.id == destination_id:
                     return destination.params
+        return None
 
     @property
     def enabled_container_types(self):
@@ -334,7 +343,9 @@ class DependencyManager:
         else:
             return NullDependency(name=name, version=version)
 
-    def __build_dependency_resolvers_plugin_source(self, conf_file):
+    def __build_dependency_resolvers_plugin_source(
+        self, conf_file: Optional["StrPath"]
+    ) -> plugin_config.PluginConfigSource:
         if not conf_file:
             return self.__default_dependency_resolvers_source()
         if not os.path.exists(conf_file):
@@ -355,7 +366,7 @@ class DependencyManager:
             ],
         )
 
-    def __parse_resolver_conf_plugins(self, plugin_source):
+    def __parse_resolver_conf_plugins(self, plugin_source: plugin_config.PluginConfigSource) -> List:
         """ """
         extra_kwds = dict(dependency_manager=self)
         # Use either 'type' from YAML definition or 'resolver_type' from to_dict definition.
@@ -363,7 +374,7 @@ class DependencyManager:
             self.resolver_classes, plugin_source, extra_kwds, plugin_type_keys=["type", "resolver_type"]
         )
 
-    def __resolvers_dict(self):
+    def __resolvers_dict(self) -> Dict[str, Type]:
         import galaxy.tool_util.deps.resolvers
 
         return plugin_config.plugins_dict(galaxy.tool_util.deps.resolvers, "resolver_type")
@@ -382,8 +393,10 @@ class DependencyManager:
 class CachedDependencyManager(DependencyManager):
     cached = True
 
-    def __init__(self, default_base_path, **kwd):
-        super().__init__(default_base_path=default_base_path, **kwd)
+    def __init__(
+        self, default_base_path: str, conf_file: Optional[str] = None, app_config: Optional[Dict[str, Any]] = None
+    ) -> None:
+        super().__init__(default_base_path, conf_file, app_config)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(
             default_base_path, "_cache"
         )

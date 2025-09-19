@@ -5,7 +5,10 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { useTimeoutStoreDispose } from "./timeoutStoreDispose";
 
 /**
  * Creates stores scoped to a specific workflowId, and manages their lifetime.
@@ -29,14 +32,24 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const commentStore = useWorkflowCommentStore(workflowId.value);
     const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
     const undoRedoStore = useUndoRedoStore(workflowId.value);
+    const searchStore = useWorkflowSearchStore(workflowId.value);
+
+    const disposeConnectionStore = useTimeoutStoreDispose(connectionStore);
+    const disposeStateStore = useTimeoutStoreDispose(stateStore);
+    const disposeStepStore = useTimeoutStoreDispose(stepStore);
+    const disposeCommentStore = useTimeoutStoreDispose(commentStore);
+    const disposeToolbarStore = useTimeoutStoreDispose(toolbarStore);
+    const disposeUndoRedoStore = useTimeoutStoreDispose(undoRedoStore);
+    const disposeSearchStore = useTimeoutStoreDispose(searchStore);
 
     onScopeDispose(() => {
-        connectionStore.$dispose();
-        stateStore.$dispose();
-        stepStore.$dispose();
-        commentStore.$dispose();
-        toolbarStore.$dispose();
-        undoRedoStore.$dispose();
+        disposeConnectionStore();
+        disposeStateStore();
+        disposeStepStore();
+        disposeCommentStore();
+        disposeToolbarStore();
+        disposeUndoRedoStore();
+        disposeSearchStore();
     });
 
     return {
@@ -46,6 +59,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }
 
@@ -64,7 +78,7 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
 
     if (typeof id !== "string") {
         throw new Error(
-            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component."
+            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component.",
         );
     }
 
@@ -74,6 +88,7 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
     const undoRedoStore = useUndoRedoStore(id);
+    const searchStore = useWorkflowSearchStore(id);
 
     return {
         workflowId: id,
@@ -83,5 +98,6 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }

@@ -132,21 +132,21 @@ def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
 
 def test_kwargs_relative_path_old_prefix_empty_after_strip(mock_init):
     # Expect: use value from kwargs, strip old prefix, then resolve
-    new_path1 = "old-config"
+    new_path1 = "old-config/foo"
     config = BaseAppConfiguration(path1=new_path1)
 
-    assert config.path1 == "my-config/"  # stripped of old prefix, then resolved
+    assert config.path1 == "my-config/foo"  # stripped of old prefix, then resolved
     assert config.path2 == "my-data/my-data-files"  # stripped of old prefix, then resolved
     assert config.path3 == "my-other-files"  # no change
 
 
 def test_kwargs_set_to_null(mock_init):
-    # Expected: allow overriding with null, then resolve
+    # Expected: allow overriding with null
     # This is not a common scenario, but it does happen: one example is
     # `job_config` set to `None` when testing
     config = BaseAppConfiguration(path1=None)
 
-    assert config.path1 == "my-config"  # resolved
+    assert config.path1 is None
     assert config.path2 == "my-data/my-data-files"  # resolved
     assert config.path3 == "my-other-files"  # no change
 

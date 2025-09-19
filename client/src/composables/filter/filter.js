@@ -18,7 +18,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     watch(
@@ -28,7 +28,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     watch(
@@ -38,7 +38,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     worker.onmessage = (e) => {

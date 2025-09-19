@@ -21,7 +21,7 @@ const currentOffset = ref(0);
 
 watch(
     () => currentOffset.value,
-    (offset) => emit("scroll", offset)
+    (offset) => emit("scroll", offset),
 );
 
 watch(
@@ -30,7 +30,7 @@ watch(
         root.value?.scrollTo({
             top: 0,
         });
-    }
+    },
 );
 
 watch(
@@ -41,7 +41,7 @@ watch(
             scrollToOffset(offset);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function scrollToOffset(offset: number) {
@@ -55,7 +55,7 @@ const observer = new IntersectionObserver(
         const indices = intersecting.map((item) => parseInt(item.target.getAttribute("data-index") ?? "0"));
         currentOffset.value = indices.length > 0 ? Math.min(...indices) : 0;
     },
-    { root: root.value }
+    { root: root.value },
 );
 
 function getKey(item: unknown, index: number) {
@@ -65,12 +65,32 @@ function getKey(item: unknown, index: number) {
         return index;
     }
 }
+
+const internalItems = ref<any>([]);
+
+async function forceItemsRefresh() {
+    internalItems.value = [];
+    await nextTick();
+    internalItems.value = props.items;
+}
+
+watch(
+    () => props.items,
+    async () => {
+        // This is needed to ensure that the IntersectionObserver is updated with the new items
+        // when we change the items faster than the IntersectionObserver can observe them, like when
+        // drilling down a collection fast. Otherwise, the offset might not be updated correctly,
+        // leading to incorrect fetching ranges of items.
+        await forceItemsRefresh();
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
     <div ref="root" class="listing-layout">
         <IntersectionObservable
-            v-for="(item, i) in props.items"
+            v-for="(item, i) in internalItems"
             :key="getKey(item, i)"
             class="listing-layout-item"
             :data-index="i"

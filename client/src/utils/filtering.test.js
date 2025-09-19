@@ -151,26 +151,26 @@ describe("filtering", () => {
     test("apply valid filters to existing filterText", () => {
         expect(HistoryFilters.applyFiltersToText(sampleFilters[0].filters, "")).toEqual("deleted:true visible:true");
         expect(HistoryFilters.applyFiltersToText(sampleFilters[1].filters, "")).toEqual(
-            "deleted:any visible:true related:10 hid>5"
+            "deleted:any visible:true related:10 hid>5",
         );
         expect(
             HistoryFilters.applyFiltersToText(
                 { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
-                ""
-            )
+                "",
+            ),
         ).toEqual("hid<100 create_time>2021-01-01 state:success tag:first");
         expect(
             HistoryFilters.applyFiltersToText(
                 { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
                 filterTexts[0],
-                true
-            )
+                true,
+            ),
         ).toEqual("name:'name of item' hid>10 update_time<2022-01-01 extension:ext");
         expect(HistoryFilters.applyFiltersToText({ deleted: "any", visible: true }, "")).toEqual(
-            "deleted:any visible:true"
+            "deleted:any visible:true",
         );
         expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
-            "visible:true deleted:any"
+            "visible:true deleted:any",
         );
     });
     test("set a single valid filter to existing filterText", () => {
@@ -178,10 +178,10 @@ describe("filtering", () => {
         expect(HistoryFilters.setFilterValue("deleted:any visible:true", "deleted", "false")).toEqual("");
         expect(HistoryFilters.setFilterValue("", "deleted", "true")).toEqual("deleted:true visible:true");
         expect(HistoryFilters.setFilterValue("hid<299", "create_time_gt", "11-09-1981")).toEqual(
-            "hid<299 create_time>11-09-1981"
+            "hid<299 create_time>11-09-1981",
         );
         expect(HistoryFilters.setFilterValue("hid<299", "create_time_lt", "11-09-1981")).toEqual(
-            "hid<299 create_time<11-09-1981"
+            "hid<299 create_time<11-09-1981",
         );
         expect(HistoryFilters.setFilterValue("hid<299", "a_created_time_gt", "11-09-1981")).toEqual("hid<299");
     });

@@ -32,14 +32,14 @@ describe("test utils", () => {
 
     it("test linkify", async () => {
         expect(Utils.linkify("https://galaxyproject.org")).toBe(
-            '<a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a>'
+            '<a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a>',
         );
         expect(Utils.linkify("Welcome to https://galaxyproject.org today")).toBe(
-            'Welcome to <a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a> today'
+            'Welcome to <a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a> today',
         );
         expect(Utils.linkify("Check out galaxyproject.org")).toBe("Check out galaxyproject.org");
         expect(Utils.linkify("Email info@galaxyproject.org")).toBe(
-            'Email <a href="mailto:info@galaxyproject.org">info@galaxyproject.org</a>'
+            'Email <a href="mailto:info@galaxyproject.org">info@galaxyproject.org</a>',
         );
     });
 
@@ -99,18 +99,6 @@ describe("test utils", () => {
                 { id: "id3", name: "Bob", update_time: "2023-04-04T13:40:31.000000" },
                 { id: "id2", name: "Janet", update_time: "2023-04-05T13:20:59.541914" },
             ]);
-        });
-    });
-
-    describe("test getFullAppUrl", () => {
-        it("should return the full app url", () => {
-            const appUrl = Utils.getFullAppUrl();
-            expect(appUrl).toBe("http://localhost/");
-        });
-
-        it("should return the full app url", () => {
-            const appUrl = Utils.getFullAppUrl("home");
-            expect(appUrl).toBe("http://localhost/home");
         });
     });
 });

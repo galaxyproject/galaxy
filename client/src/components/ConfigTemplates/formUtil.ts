@@ -1,13 +1,13 @@
-import {
-    type CreateInstancePayload,
-    type Instance,
-    type PluginStatus,
-    type SecretData,
-    type TemplateSecret,
-    type TemplateSummary,
-    type TemplateVariable,
-    type VariableData,
-    type VariableValueType,
+import type {
+    CreateInstancePayload,
+    Instance,
+    PluginStatus,
+    SecretData,
+    TemplateSecret,
+    TemplateSummary,
+    TemplateVariable,
+    VariableData,
+    VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
@@ -218,9 +218,7 @@ export function upgradeForm(template: TemplateSummary, instance: Instance): Form
     }
     for (const secret of secrets) {
         const secretName = secret.name;
-        if (secretsSet.indexOf(secretName) >= 0) {
-            console.log("skipping...");
-        } else {
+        if (secretsSet.indexOf(secretName) < 0) {
             form.push(templateSecretFormEntry(secret));
         }
     }

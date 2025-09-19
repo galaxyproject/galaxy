@@ -21,6 +21,8 @@ number of tutorials on building Galaxy tools that would better serve that purpos
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
 $tag:tool|macros://complexType[@name='Macros']
+$tag:tool|entry_points://complexType[@name='EntryPoints']
+$tag:tool|entry_points|entry_point://complexType[@name='EntryPoint']
 $tag:tool|edam_topics://complexType[@name='EdamTopics']
 $tag:tool|edam_operations://complexType[@name='EdamOperations']
 $tag:tool|xrefs://complexType[@name='xrefs']

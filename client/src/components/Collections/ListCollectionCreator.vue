@@ -4,18 +4,22 @@ import "ui/hoverhighlight";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
-import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
-import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
+import { stripExtension, useUpdateIdentifiersForRemoveExtensions } from "./common/stripExtension";
+import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
+
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
+import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
@@ -25,15 +29,19 @@ interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
+    mode: Mode;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-create", options: CreateNewCollectionPayload): void;
     (e: "on-cancel"): void;
+    (e: "name", value: string): void;
+    (e: "input-valid", value: boolean): void;
 }>();
 
 const state = ref("build");
@@ -41,8 +49,9 @@ const duplicateNames = ref<string[]>([]);
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
-const hideSourceItems = ref(props.defaultHideSourceItems || false);
 const atLeastOneElement = ref(true);
+
+const { updateIdentifierIfUnchanged } = useUpdateIdentifiersForRemoveExtensions(props);
 
 const atLeastOneDatasetIsSelected = computed(() => {
     return selectedDatasetElements.value.length > 0;
@@ -72,12 +81,23 @@ const allElementsAreInvalid = computed(() => {
 /** If not `fromSelection`, the list of elements that will become the collection */
 const inListElements = ref<HDASummary[]>([]);
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+/** Does `inListElements` have elements with different extensions? */
+const listHasMixedExtensions = computed(() => {
+    const extensions = new Set(inListElements.value.map((e) => e.extension));
+    return extensions.size > 1;
+});
+const {
+    removeExtensions,
+    hideSourceItems,
+    onUpdateHideSourceItems,
+    isElementInvalid,
+    collectionName,
+    onUpdateCollectionName,
+    onCollectionCreate,
+    showElementExtension,
+    showButtonsForModal,
+    showHid,
+} = useCollectionCreator(props, emit);
 
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
@@ -95,22 +115,32 @@ function _elementsSetUp() {
     // reverse the order of the elements to emulate what we have in the history panel
     workingElements.value.reverse();
 
+    if (removeExtensions.value) {
+        workingElements.value.forEach((el) => {
+            if (el.name) {
+                el.name = stripExtension(el.name);
+            }
+        });
+    } else {
+        //
+    }
+
     // for inListElements, reset their values (in order) to datasets from workingElements
     const inListElementsPrev = inListElements.value;
     inListElements.value = [];
     inListElementsPrev.forEach((prevElem) => {
-        const element = workingElements.value.find((e) => e.id === prevElem.id);
-        const problem = _isElementInvalid(prevElem);
+        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
 
-        if (element) {
-            inListElements.value.push(element);
-        } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+        if (matchingElem) {
+            const problem = isElementInvalid(matchingElem);
+            if (problem) {
+                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                Toast.error(invalidMsg, localize("Invalid element"));
+            } else {
+                inListElements.value.push(matchingElem);
+            }
         } else {
             const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            invalidElements.value.push(invalidMsg);
             Toast.error(invalidMsg, localize("Invalid element"));
         }
     });
@@ -134,7 +164,7 @@ function _elementsSetUp() {
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
-        var problem = _isElementInvalid(element);
+        var problem = isElementInvalid(element);
 
         if (problem) {
             invalidElements.value.push(element.name + "  " + problem);
@@ -146,31 +176,13 @@ function _validateElements() {
     return workingElements.value;
 }
 
-/** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary): string | null {
-    if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
-    }
-
-    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
-
-    if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
-    }
-
-    if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
-    }
-
-    // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
-        return localize(`has an invalid extension: ${element.extension}`);
-    }
-    return null;
+function removeExtensionsToggle() {
+    removeExtensions.value = !removeExtensions.value;
+    const removeExtensionsValue = removeExtensions.value;
+    workingElements.value.forEach((el) => {
+        updateIdentifierIfUnchanged(el, removeExtensionsValue);
+    });
+    _mangleDuplicateNames();
 }
 
 // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
@@ -231,7 +243,7 @@ function clickSelectAll() {
 }
 const { confirm } = useConfirmDialog();
 
-async function clickedCreate(collectionName: string) {
+async function attemptCreate() {
     checkForDuplicates();
 
     const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
@@ -247,9 +259,17 @@ async function clickedCreate(collectionName: string) {
     }
 
     if (state.value !== "error" && (atLeastOneElement.value || confirmed)) {
-        emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
+        const identifiers = returnedElements.map((element) => ({
+            id: element.id,
+            name: element.name,
+            //TODO: this allows for list:list even if the implementation does not - reconcile
+            src: "src" in element ? element.src : element.history_content_type == "dataset" ? "hda" : "hdca",
+        })) as CollectionElementIdentifiers;
+        onCollectionCreate("list", identifiers);
     }
 }
+
+defineExpose({ attemptCreate });
 
 function checkForDuplicates() {
     var valid = true;
@@ -291,47 +311,33 @@ function compareNames(a: HDASummary, b: HDASummary) {
     return 0;
 }
 
-function onUpdateHideSourceItems(newHideSourceItems: boolean) {
-    hideSourceItems.value = newHideSourceItems;
-}
-
 watch(
     () => props.initialElements,
     () => {
         // for any new/removed elements, add them to working elements
         _elementsSetUp();
     },
-    { immediate: true }
-);
-
-watch(
-    () => datatypesMapper.value,
-    async (mapper) => {
-        if (props.extensions?.length && !mapper) {
-            await datatypesMapperStore.createMapper();
-        }
-    },
-    { immediate: true }
+    { immediate: true },
 );
 
 function addUploadedFiles(files: HDASummary[]) {
     const returnedElements = props.fromSelection ? workingElements : inListElements;
     files.forEach((f) => {
         const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
-        const problem = _isElementInvalid(f);
+        const problem = isElementInvalid(f);
         if (file && !returnedElements.value.find((e) => e.id === file.id)) {
             returnedElements.value.push(file);
         } else if (problem) {
             invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
-                localize("Uploaded item is invalid")
+                localize("Uploaded item is invalid"),
             );
-        } else {
+        } else if (!file) {
             invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
-                localize("Uploaded item is invalid")
+                localize("Uploaded item is invalid"),
             );
         }
     });
@@ -339,29 +345,32 @@ function addUploadedFiles(files: HDASummary[]) {
 
 /** find the element in the workingElements array and update its name */
 function renameElement(element: any, name: string) {
+    // We do this whole process of removing and readding because, in the case that the element
+    // is in the list, inListElements might be reacting to changes in workingElements, and we
+    // want to prevent that from causing issues with producing duplicate elements in either array:
+
+    // first check at what index of inlistElements the element is
+    const index = inListElements.value.findIndex((e) => e.id === element.id);
+    if (index >= 0) {
+        // remove from inListElements
+        inListElements.value = inListElements.value.filter((e) => e.id !== element.id);
+    }
+
+    // then find the element in workingElements, and rename it
     element = workingElements.value.find((e) => e.id === element.id);
     if (element) {
         element.name = name;
     }
+
+    // now add again to inListElements at same index
+    if (index >= 0) {
+        inListElements.value.splice(index, 0, element);
+    }
 }
 
-//TODO: issue #9497
-// const removeExtensions = ref(true);
-// removeExtensionsToggle: function () {
-//     this.removeExtensions = !this.removeExtensions;
-//     if (this.removeExtensions == true) {
-//         this.removeExtensionsFn();
-//     }
-// },
-// removeExtensionsFn: function () {
-//     workingElements.value.forEach((e) => {
-//         var lastDotIndex = e.lastIndexOf(".");
-//         if (lastDotIndex > 0) {
-//             var extension = e.slice(lastDotIndex, e.length);
-//             e = e.replace(extension, "");
-//         }
-//     });
-// },
+function selectionAsHdaSummary(value: any): HDASummary {
+    return value as HDASummary;
+}
 </script>
 
 <template>
@@ -411,13 +420,22 @@ function renameElement(element: any, name: string) {
                 :oncancel="() => emit('on-cancel')"
                 :history-id="props.historyId"
                 :hide-source-items="hideSourceItems"
+                render-extensions-toggle
+                :extensions-toggle="removeExtensions"
                 :extensions="extensions"
                 collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                :show-upload="!fromSelection"
+                :suggested-name="props.suggestedName"
+                :show-buttons="showButtonsForModal"
+                :collection-name="collectionName"
+                :mode="mode"
+                @on-update-collection-name="onUpdateCollectionName"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                @clicked-create="clickedCreate">
+                @remove-extensions-toggle="removeExtensionsToggle"
+                @clicked-create="attemptCreate">
                 <template v-slot:help-content>
                     <p>
                         {{
@@ -429,15 +447,15 @@ function renameElement(element: any, name: string) {
                                     "you to create and re-order a list of datasets. The datasets in a Galaxy collection have an identifier that is preserved accross ",
                                     "tool executions and serves as a form of sample tracking - setting the name in this form will pick the identifier for that element ",
                                     "of the list but will not change the dataset's actual name in Galaxy.",
-                                ].join("")
+                                ].join(""),
                             )
                         }}
                     </p>
 
                     <ul>
                         <li v-if="!fromSelection">
-                            Move datsets from the "Unselected" column to the "Selected" column below to compose the list
-                            in the intended order and with the intended datasets.
+                            Move datasets from the "Unselected" column to the "Selected" column below to compose the
+                            list in the intended order and with the intended datasets.
                         </li>
                         <li v-if="!fromSelection">
                             The filter textbox can be used to rapidly find the datasets of interest by name.
@@ -447,7 +465,7 @@ function renameElement(element: any, name: string) {
                             <i data-target=".collection-element .name">
                                 {{ localize("the existing name") }}
                             </i>
-                            {{ localize(".") }}
+                            {{ localize("in either column.") }}
                         </li>
 
                         <li>
@@ -464,7 +482,7 @@ function renameElement(element: any, name: string) {
                         <li v-if="fromSelection">
                             {{
                                 localize(
-                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on",
                                 )
                             }}
                             <i data-target=".collection-element">
@@ -472,7 +490,7 @@ function renameElement(element: any, name: string) {
                             </i>
                             {{
                                 localize(
-                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the",
                                 )
                             }}
                             <i data-target=".clear-selected">
@@ -522,6 +540,14 @@ function renameElement(element: any, name: string) {
                 </template>
 
                 <template v-slot:middle-content>
+                    <BAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
+                        {{ localize("The selected datasets have mixed formats.") }}
+                        {{ localize("You can still create the list but generally") }}
+                        {{ localize("dataset lists should contain datasets of the same type.") }}
+                        <HelpText
+                            uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
+                            :text="localize('Why?')" />
+                    </BAlert>
                     <div v-if="noInitialElements">
                         <BAlert show variant="warning" dismissible>
                             {{ localize("No datasets were selected") }}
@@ -537,11 +563,11 @@ function renameElement(element: any, name: string) {
                             {{
                                 localize(
                                     "No elements in your history are valid for this list. \
-                                    You may need to switch to a different history or upload valid datasets."
+                                    You may need to switch to a different history or upload valid datasets.",
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following extensions are required for this list: ") }}
+                                {{ localize("The following format(s) are required for this list: ") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
@@ -566,21 +592,21 @@ function renameElement(element: any, name: string) {
                     <div v-else-if="fromSelection">
                         <div class="collection-elements-controls">
                             <div>
-                                <BButton
+                                <GButton
                                     class="reset"
                                     :title="localize('Reset to original state')"
-                                    size="sm"
+                                    size="small"
                                     @click="reset">
                                     <FontAwesomeIcon :icon="faUndo" fixed-width />
                                     {{ localize("Reset") }}
-                                </BButton>
-                                <BButton
+                                </GButton>
+                                <GButton
                                     class="sort-items"
                                     :title="localize('Sort datasets by name')"
-                                    size="sm"
+                                    size="small"
                                     @click="sortByName">
                                     <FontAwesomeIcon :icon="faSortAlphaDown" />
-                                </BButton>
+                                </GButton>
                             </div>
 
                             <div class="center-text">
@@ -588,37 +614,39 @@ function renameElement(element: any, name: string) {
                             </div>
 
                             <div>
-                                <span v-if="atLeastOneDatasetIsSelected"
-                                    >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
-                                >
-                                <BButtonGroup class="" size="sm">
-                                    <BButton
+                                <span v-if="atLeastOneDatasetIsSelected">
+                                    {{ localize("For selection") }} ({{ selectedDatasetElements.length }}):
+                                </span>
+                                <GButtonGroup>
+                                    <GButton
                                         v-if="atLeastOneDatasetIsSelected"
                                         :title="localize('Remove selected datasets from the list')"
+                                        size="small"
                                         @click="clickRemoveSelected">
                                         <FontAwesomeIcon :icon="faMinus" fixed-width />
                                         {{ localize("Remove") }}
-                                    </BButton>
-                                    <BButton
+                                    </GButton>
+                                    <GButton
                                         v-if="
                                             !atLeastOneDatasetIsSelected ||
                                             selectedDatasetElements.length < workingElements.length
                                         "
                                         :title="localize('Select all datasets')"
-                                        size="sm"
+                                        size="small"
                                         @click="clickSelectAll">
                                         <FontAwesomeIcon :icon="faSquare" fixed-width />
                                         {{ localize("Select all") }}
-                                    </BButton>
-                                    <BButton
+                                    </GButton>
+                                    <GButton
                                         v-if="atLeastOneDatasetIsSelected"
                                         class="clear-selected"
                                         :title="localize('De-select all selected datasets')"
+                                        size="small"
                                         @click="clickClearAll">
                                         <FontAwesomeIcon :icon="faTimes" fixed-width />
                                         {{ localize("Clear") }}
-                                    </BButton>
-                                </BButtonGroup>
+                                    </GButton>
+                                </GButtonGroup>
                             </div>
                         </div>
 
@@ -643,6 +671,7 @@ function renameElement(element: any, name: string) {
                                 :element="element"
                                 has-actions
                                 :selected="getSelectedDatasetElements.includes(element.id)"
+                                :show-hid="showHid"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
                                 @onRename="(name) => (element.name = name)" />
@@ -655,11 +684,17 @@ function renameElement(element: any, name: string) {
                         maintain-selection-order
                         :placeholder="localize('Filter datasets by name')"
                         :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
-                        <template v-slot:label-area="{ value }">
+                        <template v-slot:column-heading-end>
+                            <i style="font-weight: normal">
+                                {{ localize("(Click name to edit)") }}
+                            </i>
+                        </template>
+                        <template v-slot:label-area="selectValue">
                             <DatasetCollectionElementView
-                                class="w-100"
-                                :element="value"
-                                @onRename="(name) => renameElement(value, name)" />
+                                text-only
+                                :element="selectionAsHdaSummary(selectValue.option.value)"
+                                :hide-extension="!showElementExtension"
+                                @onRename="(name) => renameElement(selectValue.option.value, name)" />
                         </template>
                     </FormSelectMany>
                 </template>
@@ -717,11 +752,6 @@ function renameElement(element: any, name: string) {
             margin: 2px 4px 0px 4px;
             &:hover {
                 border-color: black;
-            }
-        }
-        &:not(.with-actions) {
-            &:hover {
-                border: none;
             }
         }
 

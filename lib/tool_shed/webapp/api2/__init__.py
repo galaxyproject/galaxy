@@ -1,11 +1,9 @@
 import logging
+from collections.abc import AsyncGenerator
 from json import JSONDecodeError
 from typing import (
-    AsyncGenerator,
     cast,
-    List,
     Optional,
-    Type,
     TypeVar,
 )
 
@@ -29,7 +27,6 @@ from starlette_context import context as request_context
 from galaxy.exceptions import AdminRequiredException
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
 from galaxy.web.framework.decorators import require_admin_message
@@ -52,6 +49,7 @@ from tool_shed.webapp.model import (
     GalaxySession,
     User,
 )
+from tool_shed_client.schema import IndexSortByType
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +57,7 @@ log = logging.getLogger(__name__)
 def get_app() -> ToolShedApp:
     if tool_shed_app_mod.app is None:
         raise Exception("Failed to initialize the tool shed app correctly for FastAPI")
-    return cast(ToolShedApp, tool_shed_app_mod.app)
+    return tool_shed_app_mod.app
 
 
 async def get_app_with_request_session() -> AsyncGenerator[ToolShedApp, None]:
@@ -80,7 +78,7 @@ api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name=AUTH_COOKIE_NAME, auto_error=False)
 
 
-def depends(dep_type: Type[T]) -> T:
+def depends(dep_type: type[T]) -> T:
     return framework_depends(dep_type, app=get_app_with_request_session)
 
 
@@ -166,7 +164,7 @@ B = TypeVar("B", bound=BaseModel)
 #    return Depends(get_body)
 
 
-def depend_on_either_json_or_form_data(model: Type[B]) -> B:
+def depend_on_either_json_or_form_data(model: type[B]) -> B:
     async def get_body(request: Request):
         content_type = request.headers.get("Content-Type")
         if content_type is None:
@@ -237,16 +235,43 @@ CommitMessage: str = Query(
 RepositoryIndexQueryParam: Optional[str] = Query(
     default=None,
     title="Search Query",
+    description="This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter.",
 )
+
+RepositoryIndexFilterParam: Optional[str] = Query(
+    default=None,
+    title="Filter Text",
+    description="This will perform a quick search using database operators. This should not be used with the 'q' parameter.",
+)
+
+RepositoryIndexSortByParam: IndexSortByType = Query(
+    default="name",
+    title="Sort by",
+    description="Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
+RepositoryIndexSortDescParam: bool = Query(
+    default=False,
+    title="Sort Descending",
+    description="Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used.",
+)
+
 
 ToolsIndexQueryParam: str = Query(
     default=...,
     title="Search Query",
 )
 
-RepositorySearchPageQueryParam: int = Query(
+ToolSearchPageQueryParam: int = Query(
     default=1,
     title="Page",
+    description="",
+)
+
+RepositorySearchPageQueryParam: Optional[int] = Query(
+    default=None,
+    title="Page",
+    description="",
 )
 
 RepositorySearchPageSizeQueryParam: int = Query(
@@ -260,7 +285,9 @@ RepositoryIndexOwnerQueryParam: Optional[str] = Query(None, title="Owner")
 
 RepositoryIndexNameQueryParam: Optional[str] = Query(None, title="Name")
 
-RepositoryIndexToolIdsQueryParam: Optional[List[str]] = Query(
+RepositoryIndexCategoryQueryParam: Optional[str] = Query(None, title="Category ID")
+
+RepositoryIndexToolIdsQueryParam: Optional[list[str]] = Query(
     None, title="Tool IDs", description="List of tool GUIDs to find the repository for"
 )
 
@@ -331,8 +358,7 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
         #        be needed.
         if prev_galaxy_session:
             sa_session.add(prev_galaxy_session)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
 
 def set_auth_cookie(trans: SessionRequestContext, session):

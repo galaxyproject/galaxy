@@ -1,7 +1,6 @@
 from typing import cast
 
 from galaxy import model
-from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import (
     ModuleInjector,
@@ -100,7 +99,7 @@ class TestWorkflowProgress(TestCase):
 
             workflow_invocation_step_state = model.WorkflowRequestStepState()
             workflow_invocation_step_state.workflow_step_id = step_id
-            workflow_invocation_step_state.value = cast(bytes, True)
+            workflow_invocation_step_state.value = {"my_param": True}
             self.invocation.step_states.append(workflow_invocation_step_state)
 
     def _step(self, index):
@@ -196,10 +195,9 @@ class TestWorkflowProgress(TestCase):
         subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
-        self.app.model.session.add(subworkflow_invocation)
         session = self.app.model.session
-        with transaction(session):
-            session.commit()
+        session.add(subworkflow_invocation)
+        session.commit()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]

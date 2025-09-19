@@ -34,7 +34,7 @@ const usage = computed(() => {
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
 const quotaTitle = computed(() =>
-    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
+    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details",
 );
 
 const variant = computed(() => {
@@ -48,7 +48,7 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
+    <div v-b-tooltip.noninteractive.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
         <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />

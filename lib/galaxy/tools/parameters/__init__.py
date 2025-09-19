@@ -4,14 +4,16 @@ Classes encapsulating Galaxy tool parameters.
 
 from json import dumps
 from typing import (
+    Any,
     cast,
-    Dict,
     Optional,
+    Tuple,
     Union,
 )
 
 from boltons.iterutils import remap
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
@@ -31,6 +33,7 @@ from .grouping import (
 )
 from .workflow_utils import (
     is_runtime_value,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .wrapped import flat_to_nested_state
@@ -49,7 +52,7 @@ REPLACE_ON_TRUTHY = object()
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
 __all__ = ("DataCollectionToolParameter", "DataToolParameter", "SelectToolParameter")
 
-ToolInputsT = Dict[str, Union[Group, ToolParameter]]
+ToolInputsT = dict[str, Union[Group, ToolParameter]]
 
 
 def visit_input_values(
@@ -174,14 +177,36 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+
+        # is this good enough ? feels very ugh
+        if new_value == [no_replacement_value]:
+            # Single unspecified value in multiple="true" input with a single null input, pretend it's a singular value
+            new_value = no_replacement_value
+        if isinstance(new_value, list):
+            # Maybe mixed input, I guess tool defaults don't really make sense here ?
+            # Would e.g. be default dataset in multiple="true" input, you wouldn't expect the default to be inserted
+            # if other inputs are connected and provided.
+            new_value = [item if not item == no_replacement_value else None for item in new_value]
+
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
         else:
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, "value"):
-            input_values[input.name] = input.value
+        elif replace_optional_connections:
+            # Only used in workflow context
+            has_default = hasattr(input, "value")
+            if new_value is value is NO_REPLACEMENT or is_runtime_value(value):
+                # NO_REPLACEMENT means value was connected but left unspecified
+                if has_default:
+                    # Use default if we have one
+                    input_values[input.name] = input.value
+                else:
+                    # Should fail if input is not optional and does not have default value
+                    # Effectively however depends on parameter implementation.
+                    # We might want to raise an exception here, instead of depending on a tool parameter value error.
+                    input_values[input.name] = None
 
     def get_current_case(input, input_values):
         test_parameter = input.test_param
@@ -206,8 +231,8 @@ def visit_input_values(
             values = input_values[input.name] = input_values.get(input.name, [])
             for i, d in enumerate(values):
                 d["__index__"] = i
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, i)
-                new_label_prefix = label_prefix + "%s %d > " % (input.title, i + 1)
+                new_name_prefix = name_prefix + f"{input.name}_{i}|"
+                new_label_prefix = label_prefix + f"{input.title} {i + 1} > "
                 visit_input_values(
                     input.inputs,
                     d,
@@ -220,6 +245,10 @@ def visit_input_values(
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = f"{name_prefix + input.name}|"
+            if not isinstance(values, dict):
+                raise RequestParameterInvalidException(
+                    f"Invalid value '{values}' submitted for conditional parameter '{name_prefix + input.name}'."
+                )
             case_error = None if get_current_case(input, values) >= 0 else "The selected case is unavailable/invalid."
             callback_helper(
                 input.test_param,
@@ -253,7 +282,9 @@ def visit_input_values(
             )
 
 
-def check_param(trans, param, incoming_value, param_values, simple_errors=True):
+def check_param(
+    trans, param: ToolParameter, incoming_value, param_values, simple_errors: bool = True
+) -> Tuple[Any, Union[str, ValueError, None]]:
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -262,11 +293,11 @@ def check_param(trans, param, incoming_value, param_values, simple_errors=True):
     when dealing with grouping scenarios).
     """
     value = incoming_value
-    error = None
+    error: Union[str, ValueError, None] = None
     try:
         if trans.workflow_building_mode:
             if is_runtime_value(value):
-                return [runtime_to_json(value), None]
+                return runtime_to_json(value), None
         value = param.from_json(value, trans, param_values)
         param.validate(value, trans)
     except ValueError as e:
@@ -317,7 +348,7 @@ def params_to_strings(
     return rval
 
 
-def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> Dict:
+def params_from_strings(params: dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> dict:
     """
     Convert a dictionary of strings as produced by `params_to_strings`
     back into parameter values (decode the json representation and then
@@ -356,7 +387,7 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
             for d in input_values[input.name]:
                 index = d["__index__"]
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, index)
+                new_name_prefix = name_prefix + f"{input.name}_{index}|"
                 params_to_incoming(incoming, input.inputs, d, app, new_name_prefix)
         elif isinstance(input, Conditional):
             values = input_values[input.name]
@@ -421,13 +452,10 @@ def populate_state(
         for input in inputs.values():
             state[input.name] = input.get_initial_value(request_context, context)
             group_state = state[input.name]
-            if input.type == "repeat":
-                repeat_input = cast(Repeat, input)
-                repeat_name = repeat_input.name
+            if isinstance(input, Repeat):
+                repeat_name = input.name
                 repeat_incoming = incoming.get(repeat_name) or []
-                if repeat_incoming and (
-                    len(repeat_incoming) > repeat_input.max or len(repeat_incoming) < repeat_input.min
-                ):
+                if repeat_incoming and (len(repeat_incoming) > input.max or len(repeat_incoming) < input.min):
                     errors[repeat_name] = "The number of repeat elements is outside the range specified by the tool."
                 else:
                     del group_state[:]
@@ -437,7 +465,7 @@ def populate_state(
                         repeat_errors: ParameterValidationErrorsT = {}
                         populate_state(
                             request_context,
-                            repeat_input.inputs,
+                            input.inputs,
                             rep,
                             new_state,
                             repeat_errors,
@@ -447,12 +475,12 @@ def populate_state(
                             input_format=input_format,
                         )
                         if repeat_errors:
-                            errors[repeat_input.name] = repeat_errors
+                            errors[input.name] = repeat_errors
 
-            elif input.type == "conditional":
-                conditional_input = cast(Conditional, input)
-                test_param = cast(ToolParameter, conditional_input.test_param)
-                test_param_value = incoming.get(conditional_input.name, {}).get(test_param.name)
+            elif isinstance(input, Conditional):
+                test_param = input.test_param
+                assert test_param is not None
+                test_param_value = incoming.get(input.name, {}).get(test_param.name)
                 value, error = (
                     check_param(request_context, test_param, test_param_value, context, simple_errors=simple_errors)
                     if check
@@ -462,15 +490,13 @@ def populate_state(
                     errors[test_param.name] = error
                 else:
                     try:
-                        current_case = conditional_input.get_current_case(value)
-                        group_state = state[conditional_input.name] = {}
+                        current_case = input.get_current_case(value)
+                        group_state = state[input.name] = {}
                         cast_errors: ParameterValidationErrorsT = {}
-                        incoming_for_conditional = cast(
-                            ToolStateJobInstanceT, incoming.get(conditional_input.name) or {}
-                        )
+                        incoming_for_conditional = cast(ToolStateJobInstanceT, incoming.get(input.name) or {})
                         populate_state(
                             request_context,
-                            conditional_input.cases[current_case].inputs,
+                            input.cases[current_case].inputs,
                             incoming_for_conditional,
                             group_state,
                             cast_errors,
@@ -480,19 +506,18 @@ def populate_state(
                             input_format=input_format,
                         )
                         if cast_errors:
-                            errors[conditional_input.name] = cast_errors
+                            errors[input.name] = cast_errors
                         group_state["__current_case__"] = current_case
                     except Exception:
                         errors[test_param.name] = "The selected case is unavailable/invalid."
                 group_state[test_param.name] = value
 
-            elif input.type == "section":
-                section_input = cast(Section, input)
+            elif isinstance(input, Section):
                 section_errors: ParameterValidationErrorsT = {}
-                incoming_for_state = cast(ToolStateJobInstanceT, incoming.get(section_input.name) or {})
+                incoming_for_state = cast(ToolStateJobInstanceT, incoming.get(input.name) or {})
                 populate_state(
                     request_context,
-                    section_input.inputs,
+                    input.inputs,
                     incoming_for_state,
                     group_state,
                     section_errors,
@@ -502,12 +527,13 @@ def populate_state(
                     input_format=input_format,
                 )
                 if section_errors:
-                    errors[section_input.name] = section_errors
+                    errors[input.name] = section_errors
 
             elif input.type == "upload_dataset":
                 raise NotImplementedError
 
             else:
+                assert isinstance(input, ToolParameter)
                 param_value = _get_incoming_value(incoming, input.name, state.get(input.name))
                 value, error = (
                     check_param(request_context, input, param_value, context, simple_errors=simple_errors)
@@ -518,7 +544,9 @@ def populate_state(
                     errors[input.name] = error
                 state[input.name] = value
     else:
-        raise Exception(f"Input format {input_format} not recognized; input_format must be either legacy or 21.01.")
+        raise RequestParameterInvalidException(
+            f"Input format {input_format} not recognized; input_format must be either legacy or 21.01."
+        )
 
 
 def _populate_state_legacy(
@@ -526,7 +554,7 @@ def _populate_state_legacy(
     inputs: ToolInputsT,
     incoming: ToolStateJobInstanceT,
     state: ToolStateJobInstancePopulatedT,
-    errors,
+    errors: ParameterValidationErrorsT,
     prefix="",
     context=None,
     check=True,
@@ -540,24 +568,23 @@ def _populate_state_legacy(
         key = prefix + input.name
         group_state = state[input.name]
         group_prefix = f"{key}|"
-        if input.type == "repeat":
-            repeat_input = cast(Repeat, input)
+        if isinstance(input, Repeat):
             rep_index = 0
             del group_state[:]
             while True:
-                rep_prefix = "%s_%d" % (key, rep_index)
-                rep_min_default = repeat_input.default if repeat_input.default > repeat_input.min else repeat_input.min
+                rep_prefix = f"{key}_{rep_index}"
+                rep_min_default = input.default if input.default > input.min else input.min
                 if (
                     not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys())
                     and rep_index >= rep_min_default
                 ):
                     break
-                if rep_index < repeat_input.max:
+                if rep_index < input.max:
                     new_state: ToolStateJobInstancePopulatedT = {"__index__": rep_index}
                     group_state.append(new_state)
                     _populate_state_legacy(
                         request_context,
-                        repeat_input.inputs,
+                        input.inputs,
                         incoming,
                         new_state,
                         errors,
@@ -567,10 +594,10 @@ def _populate_state_legacy(
                         simple_errors=simple_errors,
                     )
                 rep_index += 1
-        elif input.type == "conditional":
-            conditional_input = cast(Conditional, input)
-            test_param = cast(ToolParameter, conditional_input.test_param)
-            if conditional_input.value_ref and not conditional_input.value_ref_in_group:
+        elif isinstance(input, Conditional):
+            test_param = input.test_param
+            assert test_param is not None
+            if input.value_ref and not input.value_ref_in_group:
                 test_param_key = prefix + test_param.name
             else:
                 test_param_key = group_prefix + test_param.name
@@ -590,11 +617,11 @@ def _populate_state_legacy(
                 errors[test_param_key] = error
             else:
                 try:
-                    current_case = conditional_input.get_current_case(value)
-                    group_state = state[conditional_input.name] = cast(ToolStateJobInstancePopulatedT, {})
+                    current_case = input.get_current_case(value)
+                    group_state = state[input.name] = cast(ToolStateJobInstancePopulatedT, {})
                     _populate_state_legacy(
                         request_context,
-                        conditional_input.cases[current_case].inputs,
+                        input.cases[current_case].inputs,
                         incoming,
                         group_state,
                         errors,
@@ -607,11 +634,10 @@ def _populate_state_legacy(
                 except Exception:
                     errors[test_param_key] = "The selected case is unavailable/invalid."
             group_state[test_param.name] = value
-        elif input.type == "section":
-            section_input = cast(Section, input)
+        elif isinstance(input, Section):
             _populate_state_legacy(
                 request_context,
-                section_input.inputs,
+                input.inputs,
                 incoming,
                 group_state,
                 errors,
@@ -620,22 +646,21 @@ def _populate_state_legacy(
                 check=check,
                 simple_errors=simple_errors,
             )
-        elif input.type == "upload_dataset":
-            dataset_input = cast(UploadDataset, input)
-            file_count = dataset_input.get_file_count(request_context, context)
+        elif isinstance(input, UploadDataset):
+            file_count = input.get_file_count(request_context, context)
             while len(group_state) > file_count:
                 del group_state[-1]
             while file_count > len(group_state):
                 new_state_upload: ToolStateJobInstancePopulatedT = {"__index__": len(group_state)}
-                for upload_item in dataset_input.inputs.values():
+                for upload_item in input.inputs.values():
                     new_state_upload[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state_upload)
             for rep_index, rep_state in enumerate(group_state):
                 rep_index = rep_state.get("__index__", rep_index)
-                rep_prefix = "%s_%d|" % (key, rep_index)
+                rep_prefix = f"{key}_{rep_index}|"
                 _populate_state_legacy(
                     request_context,
-                    dataset_input.inputs,
+                    input.inputs,
                     incoming,
                     rep_state,
                     errors,
@@ -645,6 +670,7 @@ def _populate_state_legacy(
                     simple_errors=simple_errors,
                 )
         else:
+            assert isinstance(input, ToolParameter)
             param_value = _get_incoming_value(incoming, key, state.get(input.name))
             value, error = (
                 check_param(request_context, input, param_value, context, simple_errors=simple_errors)

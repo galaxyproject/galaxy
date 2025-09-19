@@ -9,10 +9,7 @@ To Test:
 
 import logging
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -32,6 +29,7 @@ from galaxy.objectstore import (
     build_test_object_store_from_user_config,
     ConcreteObjectStoreModel,
     QuotaModel,
+    USER_OBJECTS_SCHEME,
     UserObjectStoresAppConfig,
 )
 from galaxy.objectstore.badges import serialize_badges
@@ -90,8 +88,8 @@ class UserConcreteObjectStoreModel(ConcreteObjectStoreModel):
     type: ObjectStoreTemplateType
     template_id: str
     template_version: int
-    variables: Optional[Dict[str, TemplateVariableValueType]]
-    secrets: List[str]
+    variables: Optional[dict[str, TemplateVariableValueType]]
+    secrets: list[str]
     hidden: bool
     active: bool
     purged: bool
@@ -217,7 +215,7 @@ class ObjectStoreInstancesManager:
         self._save(persisted_object_store)
         return self._to_model(trans, persisted_object_store)
 
-    def index(self, trans: ProvidesUserContext) -> List[UserConcreteObjectStoreModel]:
+    def index(self, trans: ProvidesUserContext) -> list[UserConcreteObjectStoreModel]:
         stores = self._sa_session.query(UserObjectStore).filter(UserObjectStore.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
@@ -303,7 +301,7 @@ class ObjectStoreInstancesManager:
         trans: ProvidesUserContext,
         payload: CanTestPluginStatus,
         template: ObjectStoreTemplate,
-    ) -> Tuple[Optional[ObjectStoreConfiguration], PluginAspectStatus]:
+    ) -> tuple[Optional[ObjectStoreConfiguration], PluginAspectStatus]:
         template_parameters = prepare_template_parameters_for_testing(
             trans, template, TemplateServerConfiguration(), payload, self._app_vault, self._app_config
         )
@@ -318,7 +316,7 @@ class ObjectStoreInstancesManager:
 
     def _connection_status(
         self, trans: ProvidesUserContext, payload: CanTestPluginStatus, configuration: ObjectStoreConfiguration
-    ) -> Tuple[Optional[BaseObjectStore], PluginAspectStatus]:
+    ) -> tuple[Optional[BaseObjectStore], PluginAspectStatus]:
         object_store = None
         exception = None
         try:
@@ -351,7 +349,7 @@ class ObjectStoreInstancesManager:
         )
         secrets = persisted_object_store.template_secrets or []
         uuid = str(persisted_object_store.uuid)
-        object_store_id = f"user_objects://{uuid}"
+        object_store_id = f"{USER_OBJECTS_SCHEME}{uuid}"
 
         return UserConcreteObjectStoreModel(
             uuid=uuid,

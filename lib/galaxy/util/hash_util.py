@@ -12,6 +12,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
@@ -34,12 +35,17 @@ md5 = hashlib.md5
 
 
 class HashFunctionNameEnum(str, Enum):
-    """Particular pieces of information that can be requested for a dataset."""
+    """Hash function names that can be used to generate checksums for files."""
 
     md5 = "MD5"
     sha1 = "SHA-1"
     sha256 = "SHA-256"
     sha512 = "SHA-512"
+
+
+# IMPORTANT: Keep this literal type in sync with HashFunctionNameEnum values above
+# as well as with HASH_NAME_ALIAS and HASH_NAME_MAP below.
+HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
 
 
 HASH_NAME_ALIAS: Dict[str, str] = {

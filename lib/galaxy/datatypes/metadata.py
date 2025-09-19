@@ -1,4 +1,4 @@
-""" Expose the model metadata module as a datatype module also,
+"""Expose the model metadata module as a datatype module also,
 allowing it to live in galaxy.model means the model module doesn't
 have any dependencies on th datatypes module. This module will need
 to remain here for datatypes living in the tool shed so we might as

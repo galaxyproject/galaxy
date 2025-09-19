@@ -3,28 +3,42 @@ import os
 import subprocess
 from typing import (
     Optional,
-    TYPE_CHECKING,
 )
 
 from cwl_utils.expression import do_eval as _do_eval
+from cwl_utils.types import (
+    CWLObjectType,
+    CWLOutputType,
+)
 
+from galaxy.tool_util_models.tool_source import JavascriptRequirement
 from .util import find_engine
-
-if TYPE_CHECKING:
-    from cwl_utils.types import (
-        CWLObjectType,
-        CWLOutputType,
-    )
 
 FILE_DIRECTORY = os.path.normpath(os.path.dirname(os.path.join(__file__)))
 NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 
 
-def do_eval(expression: str, jobinput: "CWLObjectType", context: Optional["CWLOutputType"] = None):
+def do_eval(
+    expression: str,
+    jobinput: CWLObjectType,
+    javascript_requirements: Optional[list[JavascriptRequirement]] = None,
+    outdir: Optional[str] = None,
+    tmpdir: Optional[str] = None,
+    context: Optional["CWLOutputType"] = None,
+):
+    requirements: list[CWLObjectType] = []
+    if javascript_requirements:
+        for req in javascript_requirements:
+            if expression_lib := req.expression_lib:
+                requirements.append({"class": "InlineJavascriptRequirement", "expressionLib": expression_lib})  # type: ignore[dict-item] # very strange, a list[str] literal works
+            else:
+                requirements.append({"class": "InlineJavascriptRequirement"})
+    else:
+        requirements = [{"class": "InlineJavascriptRequirement"}]
     return _do_eval(
         expression,
         jobinput,
-        [{"class": "InlineJavascriptRequirement"}],
+        requirements,
         None,
         None,
         {},

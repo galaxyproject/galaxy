@@ -2,10 +2,15 @@
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type Activity, useActivityStore } from "@/stores/activityStore";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     activityBarId: string;
@@ -18,7 +23,14 @@ const emit = defineEmits<{
 
 const activityStore = useActivityStore(props.activityBarId);
 
-const optionalActivities = computed(() => activityStore.activities.filter((a) => a.optional));
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
+const optionalActivities = computed(() => {
+    return activityStore.activities.filter(
+        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value,
+    );
+});
 
 const filteredActivities = computed(() => {
     if (props.query?.length > 0) {
@@ -70,8 +82,8 @@ function executeActivity(activity: Activity) {
 </script>
 
 <template>
-    <div class="activity-settings rounded no-highlight">
-        <div v-if="foundActivities" class="activity-settings-content">
+    <div>
+        <div v-if="foundActivities">
             <button
                 v-for="activity in filteredActivities"
                 :key="activity.id"
@@ -86,34 +98,40 @@ function executeActivity(activity: Activity) {
                             }}</span>
                         </span>
                         <div>
-                            <BButton
+                            <GButton
                                 v-if="activity.mutable"
-                                v-b-tooltip.hover
+                                tooltip
                                 data-description="delete activity"
-                                size="sm"
+                                size="small"
+                                transparent
+                                icon-only
+                                color="blue"
                                 title="Delete Activity"
-                                variant="link"
                                 @click.stop="onRemove(activity)">
                                 <FontAwesomeIcon :icon="faTrash" fa-fw />
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-if="activity.visible"
-                                v-b-tooltip.hover
-                                size="sm"
+                                tooltip
+                                size="small"
+                                transparent
+                                icon-only
+                                color="blue"
                                 title="Hide in Activity Bar"
-                                variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStar" fa-fw />
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-else
-                                v-b-tooltip.hover
-                                size="sm"
+                                tooltip
+                                transparent
+                                icon-only
+                                color="blue"
+                                size="small"
                                 title="Show in Activity Bar"
-                                variant="link"
                                 @click.stop="onFavorite(activity)">
                                 <FontAwesomeIcon :icon="faStarRegular" fa-fw />
-                            </BButton>
+                            </GButton>
                         </div>
                     </span>
                 </div>
@@ -122,7 +140,7 @@ function executeActivity(activity: Activity) {
                 </div>
             </button>
         </div>
-        <div v-else class="activity-settings-content">
+        <div v-else>
             <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
         </div>
     </div>
@@ -131,16 +149,6 @@ function executeActivity(activity: Activity) {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.activity-settings {
-    overflow-y: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.activity-settings-content {
-    overflow-y: auto;
-}
-
 .activity-settings-item {
     background: none;
     border: none;
@@ -148,6 +156,7 @@ function executeActivity(activity: Activity) {
     transition: none;
     width: 100%;
 }
+
 .activity-settings-item:hover {
     background: $gray-200;
 }

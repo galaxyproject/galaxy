@@ -1,4 +1,4 @@
-import { type ObjectStoreTemplateType } from "@/api/objectStores";
+import type { ObjectStoreTemplateType } from "@/api/objectStores";
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 
 import { setupTestPinia } from "./testUtils";

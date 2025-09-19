@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { useUserStore } from "@/stores/userStore";
-import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -18,7 +18,7 @@ import UtcDate from "@/components/UtcDate.vue";
 library.add(faBuilding, faUser);
 
 interface Props {
-    workflowInfo: WorkflowSummary;
+    workflowInfo: StoredWorkflowDetailed;
     embedded?: boolean;
 }
 
@@ -27,7 +27,7 @@ const props = defineProps<Props>();
 const userStore = useUserStore();
 
 const gravatarSource = computed(
-    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
+    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`,
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
@@ -43,12 +43,27 @@ const fullLink = computed(() => {
 const userOwned = computed(() => {
     return userStore.matchesCurrentUsername(props.workflowInfo.owner);
 });
+
+const owner = computed(() => {
+    if (props.workflowInfo?.creator_deleted) {
+        return "Archived author";
+    }
+    return props.workflowInfo.owner;
+});
+
+function hasDoi() {
+    if (props.workflowInfo.doi && props.workflowInfo.doi.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 </script>
 
 <template>
     <aside class="workflow-information">
         <hgroup>
-            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+            <Heading h2 size="lg" class="mb-0">About This Workflow</Heading>
             <span class="ml-2">
                 <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
                 {{ workflowInfo.version }}
@@ -58,12 +73,15 @@ const userOwned = computed(() => {
         <div class="workflow-info-box">
             <hgroup class="mb-2">
                 <Heading h3 size="md" class="mb-0">Author</Heading>
-                <span class="ml-2">{{ workflowInfo.owner }}</span>
+                <span class="ml-2">{{ owner }}</span>
             </hgroup>
 
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
-            <RouterLink :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
+            <RouterLink
+                v-if="!props.workflowInfo?.creator_deleted"
+                :to="publishedByUser"
+                :target="props.embedded ? '_blank' : ''">
                 All published Workflows by {{ workflowInfo.owner }}
             </RouterLink>
         </div>
@@ -93,6 +111,11 @@ const userOwned = computed(() => {
             <Heading h3 size="md" class="mb-0">Tags</Heading>
 
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
+        </div>
+
+        <div v-if="hasDoi()" class="workflow-info-box">
+            <Heading h3 size="md" class="mb-0">DOI</Heading>
+            <span v-for="doi in workflowInfo?.doi" :key="doi"> {{ doi }}<br /> </span>
         </div>
 
         <div class="workflow-info-box">

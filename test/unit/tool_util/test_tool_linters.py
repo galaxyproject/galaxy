@@ -231,6 +231,7 @@ INPUTS_DATA_PARAM = """
 INPUTS_DATA_PARAM_OPTIONS = """
 <tool id="id" name="name">
     <inputs>
+        <param name="input" type="data" format="tabular"/>
         <param name="valid_name" type="data" format="txt">
             <options>
                 <filter type="data_meta" key="dbkey" ref="input"/>
@@ -243,6 +244,7 @@ INPUTS_DATA_PARAM_OPTIONS = """
 INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE = """
 <tool id="id" name="name">
     <inputs>
+        <param name="input" type="data" format="tabular"/>
         <param name="valid_name" type="data" format="txt">
             <options options_filter_attribute="metadata.foo">
                 <filter type="data_meta" key="foo" ref="input"/>
@@ -258,7 +260,7 @@ INPUTS_DATA_PARAM_INVALIDOPTIONS = """
         <param name="valid_name" type="data" format="txt">
             <options/>
             <options from_file="blah">
-                <filter type="regexp"/>
+                <filter type="regexp" column="0" value=".*"/>
             </options>
         </param>
     </inputs>
@@ -549,6 +551,48 @@ INPUTS_DUPLICATE_NAMES = """
     </outputs>
 </tool>
 """
+INPUTS_FILTER_INCORRECT = """
+<tool name="name" id="id">
+    <inputs>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes">
+                <filter/><!--missing type-->
+                <filter type="typo"/><!--unknown type-->
+                <filter type="static_value" value="1" keep="true"/><!--missing required attrib (column)-->
+                <filter type="regexp" column="0" value=".*" keep="true" multiple="true"/><!-- unneded attrib (multiple) -->
+                <filter type="remove_value" value="x" key="y"/><!-- remove_value special case-->
+                <filter type="data_meta" column="0" ref="input" key="" multiple="true" separator="," /><!--absent ref-->
+                <filter type="regexp" column="0" value="(*" keep="true"/><!-- wrong regexp -->
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_FILTER_CORRECT = """
+<tool name="name" id="id">
+    <inputs>
+        <param name="select_param" type="select">
+            <options from_data_table="bowtie2_indexes">
+                <filter type="static_value" column="0" value="1" keep="true"/>
+                <filter type="regexp" column="0" value=".*" keep="true" />
+                <filter type="data_meta" column="0" ref="input" key="dbkey" multiple="true" separator="," />
+                <filter type="param_value" column="0" ref="input" ref_attribute="name" keep="true"/>
+                <filter type="unique_value" column="0"/>
+                <filter type="multiple_splitter" column="0" separator=","/>
+                <filter type="attribute_value_splitter" column="0" pair_separator="," name_val_separator=" "/>
+                <filter type="add_value" value="x" name="y" index="1"/>
+                <filter type="remove_value" value="1"/>
+                <filter type="remove_value" ref="input"/>
+                <filter type="remove_value" meta_ref="input" key="dbkey"/>
+                <filter type="sort_by" column="0"/>
+                <filter type="data_table" column="0" table_name="fasta_indices" data_table_column="1" keep="true"/>
+            </options>
+        </param>
+        <param argument="input" type="text"/>
+    </inputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -656,7 +700,7 @@ OUTPUTS_FILTER_EXPRESSION = """
     <outputs>
         <data name="another_valid_name" format="fasta" label="a label">
             <filter>an invalid condition</filter>
-            <filter>an and condition</filter>
+            <filter> an and condition </filter>
         </data>
         <collection name="yet_another_valid_name" type="list" format="fasta" label="another label">
             <filter>another invalid condition</filter>
@@ -844,6 +888,23 @@ VALID_CENTER_OF_MASS = """
             <output name="out_image">
                 <assert_contents>
                     <has_image_center_of_mass center_of_mass="511.07, 223.34" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+"""
+ASSERTS_STRING_COERCION = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name" format="ome.tiff"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="data_name">
+               <assert_contents>
+                    <!-- channels is defined as an integer, so coercion from string must be applied on validation -->
+                    <has_image_channels channels="3" />
                 </assert_contents>
             </output>
         </test>
@@ -1332,7 +1393,7 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_boolean_param(lint_ctx):
+def test_inputs_boolean_param_duplicate_labels(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
@@ -1342,11 +1403,21 @@ def test_inputs_boolean_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_inputs_boolean_param_swapped_labels(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_SWAPPED_LABELS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 2
+    assert not lint_ctx.error_messages
+
+
 def test_inputs_data_param_options(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert not lint_ctx.valid_messages
-    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
@@ -1356,7 +1427,7 @@ def test_inputs_data_param_options_filter_attribute(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert not lint_ctx.valid_messages
-    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
@@ -1508,7 +1579,7 @@ def test_inputs_select_filter(lint_ctx):
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
     assert (
-        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by'}."
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by', 'data_table'}."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
@@ -1609,6 +1680,49 @@ def test_inputs_duplicate_names(lint_ctx):
         "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
     )
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_inputs_filter_correct(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_FILTER_CORRECT)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_filter_incorrect(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_FILTER_INCORRECT)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert (
+        "Select parameter [select_param] 'regexp' filter specifies unnecessary attribute 'multiple'"
+        in lint_ctx.warn_messages
+    )
+    assert len(lint_ctx.warn_messages) == 1
+    assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'typo' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by', 'data_table'}."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'static_value' filter misses required attribute 'column'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'remove_value'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'data_meta'' filter attribute 'ref' refers to non existing parameter 'input'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'regexp'' filter 'value' is not a valid regular expression (nothing to repeat at position 1)'"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 6
 
 
 def test_inputs_repeats(lint_ctx):
@@ -1945,6 +2059,12 @@ def test_tests_asserts(lint_ctx):
     assert len(lint_ctx.error_messages) == 9
 
 
+def test_tests_asserts_string_coercion(lint_ctx):
+    tool_source = get_xml_tool_source(ASSERTS_STRING_COERCION)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert len(lint_ctx.warn_messages) == 0, lint_ctx.warn_messages
+
+
 def test_tests_assertion_models_valid(lint_ctx):
     tool_source = get_xml_tool_source(VALID_CENTER_OF_MASS)
     run_lint_module(lint_ctx, tests, tool_source)
@@ -2029,8 +2149,10 @@ VALID_DATATYPES = """
         <param name="adata" type="data" format="txt"/>
         <param name="bdata" type="data" format="invalid,fasta,custom"/>
         <param name="fdata" type="data" format="fasta.gz"/>
+        <param name="auto_input" type="data" format="auto"/>
     </inputs>
     <outputs>
+        <data name="autoformat" format="auto"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -2045,6 +2167,7 @@ VALID_DATATYPES = """
         <test>
             <param name="adata" ftype="txt"/>
             <param name="bdata" ftype="invalid"/>
+            <param name="auto_test_input" ftype="auto"/>
         </test>
     </tests>
 </tool>
@@ -2082,7 +2205,8 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 6
+    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert len(lint_ctx.error_messages) == 8
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">
@@ -2300,7 +2424,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 137
+    assert len(linter_names) == 142
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

@@ -189,9 +189,9 @@ gravity:
     # Public-facing port of the proxy
     # port: 4002
 
-    # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Database to monitor.
+    # Should be set to the same value as ``interactivetools_map`` (or ``interactivetoolsproxy_map``) in the ``galaxy:`` section. This is
+    # ignored if either ``interactivetools_map`` or ``interactivetoolsproxy_map`` are set.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -935,14 +935,6 @@ galaxy:
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
-  # Whether to enable the tool document cache. This cache stores
-  # expanded XML strings. Enabling the tool cache results in slightly
-  # faster startup times. The tool cache is backed by a SQLite database,
-  # which cannot be stored on certain network disks. The cache location
-  # is configurable with the ``tool_cache_data_dir`` tag in tool config
-  # files.
-  #enable_tool_document_cache: false
-
   # Directory in which the toolbox search index is stored. The value of
   # this option will be resolved with respect to <data_dir>.
   #tool_search_index_dir: tool_search_index
@@ -1217,10 +1209,50 @@ galaxy:
   # <config_dir>.
   #email_domain_allowlist_file: null
 
+  # E-mail ban file is used to specify email addresses that have been
+  # banned. If a user attempts to register a new account using an email
+  # address listed in this file, registration will be denied. This file
+  # does not affect user sign-in. Email addresses are matched against a
+  # canonical address representation based on rules defined in
+  # <canonical_email_rules>. The file should include one email address
+  # per line. Lines starting with the "#" character are ignored.
+  # Example value "banned_emails.conf"
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #email_ban_file: null
+
+  # Specifies how email addresses are reduced to their canonical form by
+  # assigning rules to email service domains and domain aliases.
+  # Available rules - ignore_case   Values are not case-sensitive
+  # (RickDeckard@foo.cOM == rickdeckard@foo.com) - ignore_dots   Periods
+  # in the local-part of an email address are ignored
+  # (rick.deckard@foo.com == rickdeckard@foo.com) - sub_addressing
+  # Suffixes prefixed with <sub_addressing_delim> in the local-part of
+  # an email address are ignored   (rickdeckard+anything@foo.com ==
+  # rickdeckard@foo.com if delimiter is the character '+')
+  #canonical_email_rules:
+  #  all:
+  #    ignore_case: false
+  #    ignore_dots: false
+  #    sub_addressing: false
+  #    sub_addressing_delim: +
+  #  gmail.com:
+  #    aliases:
+  #    - googlemail.com
+  #    ignore_case: true
+  #    ignore_dots: true
+  #    sub_addressing: true
+  #  proton.me:
+  #    aliases:
+  #    - pm.me
+  #    - protonmail.com
+  #    ignore_case: true
+  #    sub_addressing: true
+
   # Registration warning message is used to discourage people from
   # registering multiple accounts.  Applies mostly for the main Galaxy
   # instance. If no message specified the warning box will not be shown.
-  #registration_warning_message: Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+  #registration_warning_message: Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.
 
   # User account activation feature global flag.  If set to false, the
   # rest of the Account activation configuration is ignored and user
@@ -1480,6 +1512,10 @@ galaxy:
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: https://galaxyproject.org/citing-galaxy
 
+  # The BibTeX citation for Galaxy, to be displayed in the History Tool
+  # Reference List
+  #citation_bibtex: '@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}'
+
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
 
@@ -1492,51 +1528,40 @@ galaxy:
   #terms_url: null
 
   # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # via a proxy server. You can use these paths (or ones in the proxy
+  # server) to point to your own styles. The static_* options that refer
+  # to paths are relative to the current working directory.
   #static_enabled: true
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # Value of cache time for static content served by Galaxy. Ignored if
+  # static_enabled is false.
   #static_cache_time: 360
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # Path to the static content dir. Ignored if static_enabled is false.
   #static_dir: static/
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
-  #static_images_dir: static/images
+  # Path to the built Galaxy client application, static/dist/ in the
+  # Galaxy source code after the build is complete. Ignored if
+  # static_enabled is false.
+  #static_dist_dir: static/dist/
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # Path to the static images directory. Ignored if static_enabled is
+  # false.
+  #static_images_dir: static/images/
+
+  # Path to favicon.ico, not the directory that contains it (the name is
+  # a misnomer). Ignored if static_enabled is false.
   #static_favicon_dir: static/favicon.ico
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # Path to the static scripts directory. Ignored if static_enabled is
+  # false.
   #static_scripts_dir: static/scripts/
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
-  #static_style_dir: static/style
+  # Path to the static style directory. Ignored if static_enabled is
+  # false.
+  #static_style_dir: static/style/
 
-  # Serve static content, which must be enabled if you're not serving it
-  # via a proxy server.  These options should be self explanatory and so
-  # are not documented individually.  You can use these paths (or ones
-  # in the proxy server) to point to your own styles.
+  # Path to robots.txt. Ignored if static_enabled is false.
   #static_robots_txt: static/robots.txt
 
   # Incremental Display Options
@@ -2257,6 +2282,23 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
+  # Sets the full sequence of steps that Python Social Auth goes through
+  # when authenticating an OIDC login. Use when you want to completely
+  # customize the pipeline (e.g. for testing).
+  # By default, Galaxy uses galaxy.authnz.psa_authnz.AUTH_PIPELINE - see
+  # there for example steps.
+  # Each element should be an import path to a function, e.g.
+  # galaxy.authnz.psa_authnz.contains_required_data
+  #oidc_auth_pipeline: null
+
+  # Sets additional authentication pipeline steps, added after the
+  # default steps (from galaxy.authnz.psa_authnz.AUTH_PIPELINE).
+  # Use when you want to keep the default pipeline, but add additional
+  # custom processing.
+  # Each element should be an import path to a function, e.g.
+  # galaxy.authnz.psa_authnz.contains_required_data
+  #oidc_auth_pipeline_extra: null
+
   # Sets the prefix for OIDC scopes specific to this Galaxy instance. If
   # an API call is made against this Galaxy instance using an OIDC
   # bearer token, any scopes must be prefixed with this value e.g.
@@ -2544,6 +2586,18 @@ galaxy:
   # throughput is necessary, but doing so can increase CPU usage of
   # handler processes. Float values are allowed.
   #workflow_monitor_sleep: 1.0
+
+  # In which cases Galaxy should calculate a hash for a new dataset.
+  # Dataset hashes can be used by the Galaxy job cache/search to check
+  # if job inputs match. Setting the 'enable_celery_tasks' option to
+  # true is also required for dataset hash calculation. Possible values
+  # are: 'always', 'upload' (the default), 'never'. If set to 'upload',
+  # the hash is calculated only for the outputs of upload jobs.
+  #calculate_dataset_hash: upload
+
+  # Hash function to use if 'calculate_dataset_hash' is enabled.
+  # Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+  #hash_function: sha256
 
   # Determines how metadata will be set. Valid values are `directory`,
   # `extended`, `directory_celery` and `extended_celery`. In extended
@@ -2882,12 +2936,15 @@ galaxy:
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
 
-  # API key for OpenAI (https://openai.com/) to enable the wizard (or
-  # more?)
-  #openai_api_key: null
+  # API key for an AI provider. AI provider is Openai By default
+  # (https://openai.com/) to enable the wizard (or more?)
+  #ai_api_key: null
 
-  # OpenAI model to enable the wizard.
-  #openai_model: gpt-4o
+  # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
+  #ai_api_base_url: null
+
+  # AI model to enable the wizard.
+  #ai_model: gpt-4o
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
@@ -3014,4 +3071,48 @@ galaxy:
   # but outdated contents might be displayed to the user. Currently only
   # affects s3fs file sources.
   #file_source_listings_expiry_time: 60
+
+  # Set the default value in the Admin UI to automatically install tool
+  # dependencies when installing tools from the Tool Shed or not. Tool
+  # dependencies are the software packages and libraries required for a
+  # tool to function properly. Tool dependencies are typically specified
+  # in the tool's XML configuration using <requirement> tags. Galaxy can
+  # automatically install these dependencies if the tool_dependency_dir
+  # is properly configured in the galaxy.yml file. This option should be
+  # set to false if containerized versions of tools are used.
+  #install_tool_dependencies: true
+
+  # Set the default value in the Admin UI to automatically install
+  # repository dependencies when installing tools from the Tool Shed.
+  # Repository dependencies are other Tool Shed repositories that the
+  # tool being installed depends on and they are commonly used with tool
+  # suites. Repository dependencies ensure that all necessary components
+  # are installed for the tool (or suite) to work correctly within the
+  # Galaxy environment.
+  #install_repository_dependencies: true
+
+  # Set the default value in the Admin UI to automatically install
+  # resolver dependencies when installing tools from the Tool Shed.
+  # Resolver dependencies is a mechanism used by Galaxy to locate and
+  # make available the required software packages for Galaxy tools.
+  # Galaxy uses dependency resolvers (e.g., Conda) to determine how to
+  # satisfy these dependencies. This option should be set to false if
+  # containerized versions of tools are used.
+  #install_resolver_dependencies: true
+
+  # Enables the cleanup of failed Galaxy job's working directories. Runs
+  # in a Celery task.
+  #enable_failed_jobs_working_directory_cleanup: false
+
+  # The number of days to keep failed Galaxy job's working directories
+  # before attempting to delete them if
+  # enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a
+  # Celery task.
+  #failed_jobs_working_directory_cleanup_days: 5
+
+  # The interval in seconds between attempts to delete all failed Galaxy
+  # job's working directories from the filesystem (every 24 hours by
+  # default) if enable_failed_jobs_working_directory_cleanup is
+  # ``true``. Runs in a Celery task.
+  #failed_jobs_working_directory_cleanup_interval: 86400
 
