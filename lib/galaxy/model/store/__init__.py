@@ -227,6 +227,15 @@ class SessionlessContext:
     def __init__(self) -> None:
         self.objects: Dict[Type, Dict] = defaultdict(dict)
 
+    def execute(self, query: Any, *args, **kwargs) -> Any:
+        pass
+
+    def delete(self, obj: model.RepresentById) -> None:
+        self.objects[obj.__class__].pop(obj.id, None)
+
+    def scalars(self, query: Any, *args, **kwargs) -> Any:
+        pass
+
     def commit(self) -> None:
         pass
 

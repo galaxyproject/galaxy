@@ -6,6 +6,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy.exc import IntegrityError
@@ -29,6 +30,7 @@ from galaxy.util import (
 
 if TYPE_CHECKING:
     from galaxy.model import User
+    from galaxy.model.store import SessionlessContext
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +48,9 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session: scoped_session, galaxy_session: Optional[GalaxySession] = None) -> None:
+    def __init__(
+        self, sa_session: Union[scoped_session, "SessionlessContext"], galaxy_session: Optional[GalaxySession] = None
+    ) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -64,7 +68,10 @@ class TagHandler:
 
     def create_tag_handler_session(self, galaxy_session: Optional[GalaxySession]):
         # Creates a transient tag handler that avoids repeated flushes
-        return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
+        if isinstance(self.sa_session, scoped_session):
+            return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
+        else:
+            return self
 
     def add_tags_from_list(self, user, item, new_tags_list, flush=True):
         new_tags_set = set(new_tags_list)
@@ -327,7 +334,7 @@ class TagHandler:
     def _create_tag_instance(self, tag_name):
         # For good performance caller should first check if there's already an appropriate tag
         tag = Tag(type=0, name=tag_name)
-        if not self.sa_session:
+        if not isinstance(self.sa_session, scoped_session):
             return tag
         Session = sessionmaker(self.sa_session.bind)
         with Session() as separate_session:
