@@ -10,6 +10,7 @@ This can be used for any scenario where HTTP headers containing sensitive inform
 (like authorization tokens, API keys, etc.) need to be stored securely in the database.
 """
 
+import logging
 import re
 from typing import (
     Any,
@@ -36,6 +37,8 @@ SENSITIVE_HEADER_PATTERNS = [
 
 # Default vault key prefix for headers
 DEFAULT_VAULT_KEY_PREFIX = "headers"
+
+log = logging.getLogger(__name__)
 
 
 def is_sensitive_header(header_name: str) -> bool:
@@ -228,7 +231,9 @@ def _decrypt_headers_dict(
                 decrypted_headers[header_name] = decrypted_value
             else:
                 # Handle case where vault key doesn't exist (shouldn't happen in normal flow)
-                # Log warning and skip this header
+                log.warning(
+                    f"Vault key not found for header '{header_name}' with key '{vault_key}'. Keeping vault reference as fallback."
+                )
                 decrypted_headers[header_name] = header_value  # Keep vault reference as fallback
         else:
             # Keep non-vault headers as-is
