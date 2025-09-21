@@ -123,7 +123,7 @@ DEFAULT_JOB_SHELL = "/bin/bash"
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
-VALID_TOOL_CLASSES = ["local", "requires_galaxy"]
+VALID_TOOL_CLASSES = ["local", "requires_galaxy", "user_defined"]
 
 
 class JobDestination(Bunch):

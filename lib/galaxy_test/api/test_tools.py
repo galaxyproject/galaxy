@@ -33,6 +33,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
     stage_rules_example,
+    TOOL_WITH_SHELL_COMMAND,
 )
 from ._framework import ApiTestCase
 
@@ -52,29 +53,6 @@ MINIMAL_TOOL_NO_ID = {
     "command": "echo 'Hello World 2' > $output1",
     "inputs": [],
     "outputs": {"output1": {"format": "txt", "type": "data"}},
-}
-
-TOOL_WITH_SHELL_COMMAND = {
-    "id": "basecommand",
-    "name": "Base command tool",
-    "class": "GalaxyUserTool",
-    "container": "busybox",
-    "version": "1.0.0",
-    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
-    "inputs": [
-        {
-            "type": "data",
-            "name": "input",
-            "format": "txt",
-        }
-    ],
-    "outputs": [
-        {
-            "type": "data",
-            "from_work_dir": "output.fastq",
-            "name": "output",
-        }
-    ],
 }
 
 

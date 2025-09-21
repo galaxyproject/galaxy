@@ -1160,6 +1160,7 @@ tools:
   # Classes can be used to map groups of tools - the current classes include
   # - local (these special tools that aren't parameterized for remote execution - expression tools, upload, etc..)
   # - requires_galaxy (these special tools require Galaxy's Python environment during execution)
+  # - user_defined (these tools are defined by the user and should be routed to an isolated job execution environment)
   # If a tool matches multiple classes, it will match the first class according to the order listed
   # above in this document (local, requires_galaxy).
   class: local
