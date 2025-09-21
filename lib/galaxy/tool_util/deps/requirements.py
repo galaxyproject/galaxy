@@ -302,7 +302,9 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
         for key in valid_key_set.intersection(set(r.keys())):
             value = r[key]
             key = cast(ResourceType, cwl_to_galaxy.get(key, key))
-            rr.append(ResourceRequirement(value_or_expression=value, resource_type=key))
+            if value is not None:
+                # all resoure requirement fields are optional
+                rr.append(ResourceRequirement(value_or_expression=value, resource_type=key))
     return rr
 
 
