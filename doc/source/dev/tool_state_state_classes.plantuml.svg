@@ -50,10 +50,31 @@ state_representation = "job_internal"
 }
 note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Mapping constructs expanded out.\n (Defaults are inserted?)
 
+class TestCaseToolState {
+state_representation = "test_case"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Object references of the form file name and URIs.\n Mapping constructs not allowed.\n
+
+class WorkflowStepToolState {
+state_representation = "workflow_step"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Nearly everything optional except conditional discriminators.\n
+
+class WorkflowStepLinkedToolState {
+state_representation = "workflow_step_linked"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Expect pre-process ``in`` dictionaries and bring in representation\n of links and defaults and validate them in model.\n
+
 ToolState <|- - RequestToolState
 ToolState <|- - RequestInternalToolState
 ToolState <|- - RequestInternalDereferencedToolState
 ToolState <|- - JobInternalToolState
+ToolState <|- - TestCaseToolState
+ToolState <|- - WorkflowStepToolState
+ToolState <|- - WorkflowStepLinkedToolState
 
 RequestToolState - RequestInternalToolState : decode >
 
@@ -61,6 +82,7 @@ RequestInternalToolState - RequestInternalDereferencedToolState : dereference >
 
 RequestInternalDereferencedToolState o- - JobInternalToolState : expand >
 
+WorkflowStepToolState o- - WorkflowStepLinkedToolState : preprocess_links_and_defaults >
 }
 @enduml
 
@@ -150,10 +172,31 @@ state_representation = "job_internal"
 }
 note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Mapping constructs expanded out.\n (Defaults are inserted?)
 
+class TestCaseToolState {
+state_representation = "test_case"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Object references of the form file name and URIs.\n Mapping constructs not allowed.\n
+
+class WorkflowStepToolState {
+state_representation = "workflow_step"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Nearly everything optional except conditional discriminators.\n
+
+class WorkflowStepLinkedToolState {
+state_representation = "workflow_step_linked"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]    
+}
+note bottom: Expect pre-process ``in`` dictionaries and bring in representation\n of links and defaults and validate them in model.\n
+
 ToolState <|- - RequestToolState
 ToolState <|- - RequestInternalToolState
 ToolState <|- - RequestInternalDereferencedToolState
 ToolState <|- - JobInternalToolState
+ToolState <|- - TestCaseToolState
+ToolState <|- - WorkflowStepToolState
+ToolState <|- - WorkflowStepLinkedToolState
 
 RequestToolState - RequestInternalToolState : decode >
 
@@ -161,6 +204,7 @@ RequestInternalToolState - RequestInternalDereferencedToolState : dereference >
 
 RequestInternalDereferencedToolState o- - JobInternalToolState : expand >
 
+WorkflowStepToolState o- - WorkflowStepLinkedToolState : preprocess_links_and_defaults >
 }
 @enduml
 
