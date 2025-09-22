@@ -358,28 +358,21 @@ class LandingRequestManager:
 
     def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
         if request_state is not None and self.vault:
-            try:
-                return encrypt_headers_in_data(
-                    request_state,
-                    landing_uuid,
-                    self.vault,
-                    key_prefix="landing_request/headers",
-                )
-            except Exception:
-                log.warning("Failed to encrypt headers in landing request state", exc_info=True)
-                pass  # Continue without encryption if vault fails
+            return encrypt_headers_in_data(
+                request_state,
+                landing_uuid,
+                self.vault,
+                key_prefix="landing_request/headers",
+            )
+
         return request_state
 
     def _decrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str):
         if request_state is not None and self.vault:
-            try:
-                return decrypt_headers_in_data(
-                    request_state,
-                    landing_uuid,
-                    self.vault,
-                    key_prefix="landing_request/headers",
-                )
-            except Exception:
-                log.warning("Failed to decrypt headers in landing request state", exc_info=True)
-                pass  # Continue with encrypted state if decryption fails
+            return decrypt_headers_in_data(
+                request_state,
+                landing_uuid,
+                self.vault,
+                key_prefix="landing_request/headers",
+            )
         return request_state
