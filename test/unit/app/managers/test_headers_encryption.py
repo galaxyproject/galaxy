@@ -5,6 +5,7 @@ from galaxy.managers.headers_encryption import (
     create_vault_reference,
     decrypt_headers_in_data,
     encrypt_headers_in_data,
+    has_sensitive_headers,
     is_sensitive_header,
 )
 from galaxy.security.vault import Vault
@@ -70,6 +71,29 @@ class TestSensitiveHeaderDetection:
         # Edge cases that contain keywords but aren't auth headers
         assert not is_sensitive_header("Token-Bucket")
         assert not is_sensitive_header("Key-Value")
+
+
+class TestHasSensitiveHeaders:
+    """Test has_sensitive_headers function that recursively checks for sensitive headers."""
+
+    def test_detects_sensitive_headers(self):
+        """Test detection of sensitive headers in various structures."""
+        assert has_sensitive_headers({"headers": {"Authorization": "Bearer token"}})
+
+        nested_data = {"request_json": {"targets": [{"elements": [{"headers": {"X-API-Key": "secret"}}]}]}}
+        assert has_sensitive_headers(nested_data)
+
+    def test_ignores_non_sensitive_headers(self):
+        """Test that non-sensitive headers are ignored."""
+        data = {"headers": {"Content-Type": "application/json"}}
+        assert not has_sensitive_headers(data)
+
+    def test_handles_missing_or_invalid_headers(self):
+        """Test edge cases with missing or invalid headers."""
+        assert not has_sensitive_headers({})  # Empty data
+        assert not has_sensitive_headers({"no_headers": "value"})  # No headers key
+        assert not has_sensitive_headers({"headers": {}})  # Empty headers
+        assert not has_sensitive_headers({"headers": "not a dict"})  # Invalid headers type
 
 
 class TestVaultKeyAndReference:

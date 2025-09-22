@@ -48,6 +48,34 @@ def is_sensitive_header(header_name: str) -> bool:
     return False
 
 
+def has_sensitive_headers(data: dict) -> bool:
+    """
+    Check if the data structure contains any sensitive headers that would require encryption.
+
+    This function recursively searches through a dictionary structure to detect
+    if any sensitive headers are present that would need to be encrypted.
+
+    Args:
+        data: The data dictionary structure to check for sensitive headers
+
+    Returns:
+        True if sensitive headers are found, False otherwise
+    """
+    for key, value in data.items():
+        if key == "headers" and isinstance(value, dict):
+            for header_name in value.keys():
+                if is_sensitive_header(header_name):
+                    return True
+        elif isinstance(value, dict):
+            if has_sensitive_headers(value):
+                return True
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict) and has_sensitive_headers(item):
+                    return True
+    return False
+
+
 def create_vault_key(context_id: str, header_name: str, key_prefix: Optional[str] = None) -> str:
     """
     Create a vault key for storing a header value.
