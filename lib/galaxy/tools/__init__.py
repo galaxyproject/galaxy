@@ -406,6 +406,8 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    if tool_source.parse_class() == "GalaxyUserTool":
+        return UserDefinedTool(config_file, tool_source, app, **kwds)
     if (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
@@ -1405,6 +1407,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 tool_classes.append("local")
             if self.requires_galaxy_python_environment:
                 tool_classes.append("requires_galaxy")
+            if self.tool_type == "user_defined":
+                tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
 
@@ -3155,6 +3159,11 @@ class OutputParameterJSONTool(Tool):
             raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
         with open(json_filename, "w") as out:
             out.write(json.dumps(json_params))
+
+
+class UserDefinedTool(Tool):
+    tool_type = "user_defined"
+    requires_js_runtime = True
 
 
 class ExpressionTool(Tool):

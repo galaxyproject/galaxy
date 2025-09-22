@@ -141,6 +141,29 @@ workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
+# example of user defined tool
+TOOL_WITH_SHELL_COMMAND = {
+    "id": "basecommand",
+    "name": "Base command tool",
+    "class": "GalaxyUserTool",
+    "container": "busybox",
+    "version": "1.0.0",
+    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+            "format": "txt",
+        }
+    ],
+    "outputs": [
+        {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    ],
+}
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
