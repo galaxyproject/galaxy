@@ -28,7 +28,7 @@ jobs:
         run: echo "TARGET_BRANCH=$GITHUB_BASE_REF" >> $GITHUB_ENV
       - name: Show target branch name
         run: echo $TARGET_BRANCH
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false

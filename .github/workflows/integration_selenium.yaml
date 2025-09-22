@@ -50,7 +50,7 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: 'galaxy root'
           persist-credentials: false
