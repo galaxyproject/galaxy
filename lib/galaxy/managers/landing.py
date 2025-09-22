@@ -38,7 +38,10 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.security.vault import Vault
+from galaxy.security.vault import (
+    InvalidVaultConfigException,
+    Vault,
+)
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -57,6 +60,7 @@ from .context import ProvidesUserContext
 from .headers_encryption import (
     decrypt_headers_in_data,
     encrypt_headers_in_data,
+    has_sensitive_headers,
 )
 from .tools import (
     get_tool_from_toolbox,
@@ -357,14 +361,21 @@ class LandingRequestManager:
         sa_session.commit()
 
     def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
-        if request_state is not None and self.vault:
-            return encrypt_headers_in_data(
-                request_state,
-                landing_uuid,
-                self.vault,
-                key_prefix="landing_request/headers",
-            )
-
+        if request_state is not None:
+            if has_sensitive_headers(request_state):
+                # Sensitive headers found - vault is required
+                if not self.vault:
+                    raise InvalidVaultConfigException(
+                        "Sensitive headers detected in landing request but no vault is configured. "
+                        "Configure a vault to securely store sensitive header information."
+                    )
+                # Encrypt the sensitive headers
+                return encrypt_headers_in_data(
+                    request_state,
+                    landing_uuid,
+                    self.vault,
+                    key_prefix="landing_request/headers",
+                )
         return request_state
 
     def _decrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str):
