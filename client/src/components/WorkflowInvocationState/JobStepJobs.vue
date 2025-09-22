@@ -117,9 +117,7 @@ watch(
             </template>
 
             <template v-slot:cell(update_time)="data">
-                <div class="d-flex flex-gapx-1 align-items-center">
-                    <UtcDate :date="data.item.update_time" mode="timeonly" />
-                </div>
+                <UtcDate :date="data.item.update_time" mode="timeonly" />
             </template>
 
             <template v-slot:cell(state)="data">
