@@ -45,10 +45,20 @@ export const useToolsServiceCredentialsDefinitionsStore = defineStore("toolsServ
         return definition;
     }
 
+    function getToolServiceCredentialsDefinitionLabelFor(
+        toolId: string,
+        toolVersion: string,
+        serviceIdentifier: ServiceCredentialsIdentifier,
+    ) {
+        const definition = getToolServiceCredentialsDefinitionFor(toolId, toolVersion, serviceIdentifier);
+        return definition?.label || definition?.name;
+    }
+
     return {
         toolsServiceCredentialsDefinitions,
         getToolServiceCredentialsDefinitionsFor,
         setToolServiceCredentialsDefinitionFor,
         getToolServiceCredentialsDefinitionFor,
+        getToolServiceCredentialsDefinitionLabelFor,
     };
 });
