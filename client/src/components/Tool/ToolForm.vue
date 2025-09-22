@@ -122,6 +122,7 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 
 import { canMutateHistory } from "@/api";
+import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useTourStore } from "@/stores/tourStore";
@@ -243,6 +244,9 @@ export default {
             if (this.hasConfigOrValErrors) {
                 return "Please resolve highlighted issues before running the tool.";
             }
+            if (this.hasCredentialsErrors) {
+                return "Please provide all required credentials before running the tool.";
+            }
             if (this.showExecuting) {
                 return "Tool is being executed...";
             }
@@ -271,8 +275,18 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
+        hasCredentialsErrors() {
+            if (this.formConfig.credentials?.length) {
+                const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
+                return !hasUserProvidedAllRequiredServiceCredentials.value;
+            }
+            return false;
+        },
         runButtonDisabled() {
-            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors;
+            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors || this.hasCredentialsErrors;
         },
         /** If there are any backend returned `formConfig.errors` or internal/client checked validation errors. */
         hasConfigOrValErrors() {
