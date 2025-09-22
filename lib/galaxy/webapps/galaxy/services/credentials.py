@@ -31,15 +31,15 @@ from galaxy.model import (
 )
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
-    CredentialGroupResponse,
     CredentialPayload,
     ExtendedUserCredentialsListResponse,
-    ExtendedUserCredentialsResponse,
     SelectServiceCredentialPayload,
-    ServiceGroupPayload,
+    ServiceCredentialGroupPayload,
+    ServiceCredentialGroupResponse,
     SOURCE_TYPE,
-    UserCredentialsListResponse,
-    UserCredentialsResponse,
+    UserServiceCredentialsListResponse,
+    UserServiceCredentialsResponse,
+    UserServiceCredentialsWithDefinitionResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import FlexibleUserIdType
@@ -72,7 +72,7 @@ class CredentialsService:
         source_id: Optional[str] = None,
         source_version: Optional[str] = None,
         include_definition: bool = False,
-    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
+    ) -> Union[UserServiceCredentialsListResponse, ExtendedUserCredentialsListResponse]:
         """Lists all credentials the user has provided (credentials themselves are not included)."""
         user = self._ensure_user_access(trans, user_id)
         return self._list_user_credentials(user, source_type, source_id, source_version, include_definition)
@@ -82,7 +82,7 @@ class CredentialsService:
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
-    ) -> CredentialGroupResponse:
+    ) -> ServiceCredentialGroupResponse:
         """Allows users to provide credentials for a group of secrets and variables."""
         user = self._ensure_user_access(trans, user_id)
         credentials = self._create_credentials(trans.sa_session, user, payload)
@@ -93,8 +93,8 @@ class CredentialsService:
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         group_id: DecodedDatabaseIdField,
-        payload: ServiceGroupPayload,
-    ) -> CredentialGroupResponse:
+        payload: ServiceCredentialGroupPayload,
+    ) -> ServiceCredentialGroupResponse:
         """Updates user credentials for a specific group."""
         user = self._ensure_user_access(trans, user_id)
         return self._update_credentials(trans.sa_session, user, group_id, payload)
@@ -262,7 +262,7 @@ class CredentialsService:
         source_id: Optional[str] = None,
         source_version: Optional[str] = None,
         include_definition: bool = False,
-    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
+    ) -> Union[UserServiceCredentialsListResponse, ExtendedUserCredentialsListResponse]:
         existing_user_credentials = self.credentials_manager.get_user_credentials(
             user.id, source_type, source_id, source_version
         )
@@ -333,27 +333,27 @@ class CredentialsService:
         # Convert groups from dictionary to list for each user credentials
         for cred_id, cred_data in user_credentials_dict.items():
             cred_data["groups"] = [
-                CredentialGroupResponse(**group_data)
+                ServiceCredentialGroupResponse(**group_data)
                 for (c_id, g_id), group_data in groups_dict.items()
                 if c_id == cred_id
             ]
 
         if include_definition:
             extended_user_credentials_list = [
-                ExtendedUserCredentialsResponse(**cred) for cred in user_credentials_dict.values()
+                UserServiceCredentialsWithDefinitionResponse(**cred) for cred in user_credentials_dict.values()
             ]
             return ExtendedUserCredentialsListResponse(root=extended_user_credentials_list)
         else:
-            user_credentials_list = [UserCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
-            return UserCredentialsListResponse(root=user_credentials_list)
+            user_credentials_list = [UserServiceCredentialsResponse(**cred) for cred in user_credentials_dict.values()]
+            return UserServiceCredentialsListResponse(root=user_credentials_list)
 
     def _update_credentials(
         self,
         session: scoped_session,
         user: User,
         group_id: DecodedDatabaseIdField,
-        payload: ServiceGroupPayload,
-    ) -> CredentialGroupResponse:
+        payload: ServiceCredentialGroupPayload,
+    ) -> ServiceCredentialGroupResponse:
         group_name, variables, secrets = payload.name, payload.variables, payload.secrets
         existing_user_credentials = self.credentials_manager.get_user_credentials(user.id, group_id=group_id)
         if not existing_user_credentials:
@@ -412,7 +412,7 @@ class CredentialsService:
         session: scoped_session,
         user: User,
         payload: CreateSourceCredentialsPayload,
-    ) -> CredentialGroupResponse:
+    ) -> ServiceCredentialGroupResponse:
         source_type, source_id, source_version, service = (
             payload.source_type,
             payload.source_id,
@@ -491,7 +491,7 @@ class CredentialsService:
         group_id: int,
         group_name: str,
         group_credentials: CredentialsAssociation,
-    ) -> CredentialGroupResponse:
+    ) -> ServiceCredentialGroupResponse:
         updated_variables = []
         updated_secrets = []
         for *_, credential in group_credentials:
@@ -517,7 +517,7 @@ class CredentialsService:
             "secrets": updated_secrets,
             "update_time": group_credentials[0][1].update_time,
         }
-        return CredentialGroupResponse(**group_data)
+        return ServiceCredentialGroupResponse(**group_data)
 
     def _validate_credentials_against_definition(
         self,

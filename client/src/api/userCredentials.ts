@@ -8,14 +8,15 @@ import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServic
 type ServiceCredentialsIdentifierKey = string;
 
 export type CredentialType = "variable" | "secret";
-export type ServiceCredentialsGroup = components["schemas"]["CredentialGroupResponse"];
+export type ServiceCredentialGroupResponse = components["schemas"]["ServiceCredentialGroupResponse"];
 export type CreateSourceCredentialsPayload = components["schemas"]["CreateSourceCredentialsPayload"];
-export type UserCredentialsResponse = components["schemas"]["UserCredentialsResponse"];
+export type UserServiceCredentialsResponse = components["schemas"]["UserServiceCredentialsResponse"];
 export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
-export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
-export type UserToolsServiceCredentialsFull = components["schemas"]["ExtendedUserCredentialsResponse"];
+export type ServiceCredentialGroupPayload = components["schemas"]["ServiceCredentialGroupPayload"];
+export type UserServiceCredentialsWithDefinitionResponse =
+    components["schemas"]["UserServiceCredentialsWithDefinitionResponse"];
 export type SelectCurrentGroupPayload = components["schemas"]["SelectCurrentGroupPayload"];
-export type ServiceParameterDefinition = components["schemas"]["CredentialDefinitionResponse"];
+export type ServiceParameterDefinition = components["schemas"]["ServiceParameterDefinition"];
 export type ServiceCredentialsDefinition = components["schemas"]["ServiceCredentialsDefinition"];
 
 export interface ServiceCredentialsIdentifier {

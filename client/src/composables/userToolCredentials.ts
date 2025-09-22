@@ -6,11 +6,11 @@ import { getToolKey } from "@/api/tools";
 import type {
     CreateSourceCredentialsPayload,
     SelectCurrentGroupPayload,
+    ServiceCredentialGroupPayload,
     ServiceCredentialsDefinition,
     ServiceCredentialsIdentifier,
-    ServiceGroupPayload,
     SourceCredentialsDefinition,
-    UserCredentialsResponse,
+    UserServiceCredentialsResponse,
 } from "@/api/userCredentials";
 import { getKeyFromCredentialsIdentifier, transformToSourceCredentials } from "@/api/userCredentials";
 import { useUserStore } from "@/stores/userStore";
@@ -68,13 +68,13 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     function buildGroupsFromUserCredentials(
         definition: ServiceCredentialsDefinition,
-        initialUserCredentials?: UserCredentialsResponse,
-    ): ServiceGroupPayload[] {
-        const groups: ServiceGroupPayload[] = [];
+        initialUserCredentials?: UserServiceCredentialsResponse,
+    ): ServiceCredentialGroupPayload[] {
+        const groups: ServiceCredentialGroupPayload[] = [];
         if (initialUserCredentials) {
             const existingGroups = Object.values(initialUserCredentials.groups);
             for (const group of existingGroups) {
-                const newGroup: ServiceGroupPayload = {
+                const newGroup: ServiceCredentialGroupPayload = {
                     name: group.name,
                     variables: definition.variables.map((variable) => ({
                         name: variable.name,
@@ -170,7 +170,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     /**
      * Check if all credentials (required and optional) are set by the user
      */
-    function serviceHasCurrentGroupId(sourceService: UserCredentialsResponse): boolean {
+    function serviceHasCurrentGroupId(sourceService: UserServiceCredentialsResponse): boolean {
         if (sourceService.groups && sourceService.current_group_id) {
             return true;
         }
@@ -211,7 +211,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     /**
      * Save user credentials for the tool
      */
-    async function saveUserCredentials(groupId: string, serviceGroupPayload: ServiceGroupPayload) {
+    async function saveUserCredentials(groupId: string, serviceGroupPayload: ServiceCredentialGroupPayload) {
         try {
             await userToolsServiceCredentialsStore.updateUserCredentialsForTool(
                 toolId,

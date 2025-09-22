@@ -3,10 +3,10 @@ import flushPromises from "flush-promises";
 import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import type {
+    ServiceCredentialGroupResponse,
     ServiceCredentialsDefinition,
-    ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
-    UserCredentialsResponse,
+    UserServiceCredentialsResponse,
 } from "@/api/userCredentials";
 import { setupTestPinia } from "@/stores/testUtils";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -74,7 +74,7 @@ const TEST_OPTIONAL_SERVICE_DEFINITION: ServiceCredentialsDefinition = {
     ],
 };
 
-const TEST_CREDENTIALS_GROUP: ServiceCredentialsGroup = {
+const TEST_CREDENTIALS_GROUP: ServiceCredentialGroupResponse = {
     id: "group-123",
     name: "Test Group",
     update_time: "2023-01-01T00:00:00Z",
@@ -96,7 +96,7 @@ const TEST_CREDENTIALS_GROUP: ServiceCredentialsGroup = {
     ],
 };
 
-const TEST_USER_SOURCE_SERVICE: UserCredentialsResponse = {
+const TEST_USER_SOURCE_SERVICE: UserServiceCredentialsResponse = {
     id: "service-123",
     user_id: TEST_USER_ID,
     source_type: "tool",
@@ -108,7 +108,7 @@ const TEST_USER_SOURCE_SERVICE: UserCredentialsResponse = {
     groups: [TEST_CREDENTIALS_GROUP],
 };
 
-const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserCredentialsResponse = {
+const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserServiceCredentialsResponse = {
     id: "service-456",
     user_id: TEST_USER_ID,
     source_type: "tool",
@@ -394,7 +394,7 @@ describe("useUserToolCredentials", () => {
 
         it("should return success when all credentials provided", async () => {
             // Set up both services with current groups
-            const serviceWithCurrentGroup: UserCredentialsResponse = {
+            const serviceWithCurrentGroup: UserServiceCredentialsResponse = {
                 ...TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP,
                 current_group_id: "group-456",
             };

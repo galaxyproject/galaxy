@@ -8622,53 +8622,6 @@ export interface components {
              */
             username: string;
         };
-        /** CredentialDefinitionResponse */
-        CredentialDefinitionResponse: {
-            /**
-             * Description
-             * @description A description of what this credential is used for.
-             */
-            description: string;
-            /**
-             * Label
-             * @description The human-readable label for the credential.
-             */
-            label: string;
-            /**
-             * Name
-             * @description The name of the credential definition.
-             */
-            name: string;
-            /**
-             * Optional
-             * @description Whether this credential is optional or required.
-             */
-            optional: boolean;
-        };
-        /** CredentialGroupResponse */
-        CredentialGroupResponse: {
-            /**
-             * Id
-             * @description Encoded ID of the credential group.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Name
-             * @description The name of the credential group.
-             */
-            name: string;
-            /** Secrets */
-            secrets: components["schemas"]["SecretResponse"][];
-            /**
-             * Update Time
-             * Format: date-time
-             * @description The last time the credential group was updated.
-             */
-            update_time: string;
-            /** Variables */
-            variables: components["schemas"]["VariableResponse"][];
-        };
         /** CredentialPayload */
         CredentialPayload: {
             /**
@@ -11098,56 +11051,7 @@ export interface components {
             type: "expression";
         };
         /** ExtendedUserCredentialsListResponse */
-        ExtendedUserCredentialsListResponse: components["schemas"]["ExtendedUserCredentialsResponse"][];
-        /** ExtendedUserCredentialsResponse */
-        ExtendedUserCredentialsResponse: {
-            /**
-             * Current Group Id
-             * @description The ID of the currently active credential group.
-             */
-            current_group_id?: string | null;
-            definition: components["schemas"]["ServiceCredentialsDefinition"];
-            /** Groups */
-            groups: components["schemas"]["CredentialGroupResponse"][];
-            /**
-             * Id
-             * @description The encoded ID of the user credentials.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Name
-             * @description The name of the service requiring credentials.
-             */
-            name: string;
-            /**
-             * Source Id
-             * @description The ID of the source (e.g., tool ID).
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description The type of source (e.g., 'tool').
-             * @constant
-             */
-            source_type: "tool";
-            /**
-             * Source Version
-             * @description The version of the source.
-             */
-            source_version: string;
-            /**
-             * User Id
-             * @description The ID of the user who owns these credentials.
-             * @example 0123456789ABCDEF
-             */
-            user_id: string;
-            /**
-             * Version
-             * @description The version of the service.
-             */
-            version: string;
-        };
+        ExtendedUserCredentialsListResponse: components["schemas"]["UserServiceCredentialsWithDefinitionResponse"][];
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -20115,10 +20019,52 @@ export interface components {
              */
             version: string;
         };
+        /** ServiceCredentialGroupPayload */
+        ServiceCredentialGroupPayload: {
+            /**
+             * Name
+             * @description The name of the credential group (minimum 3 characters).
+             */
+            name: string;
+            /**
+             * Secrets
+             * @description List of secrets for this credential group.
+             */
+            secrets: components["schemas"]["CredentialPayload"][];
+            /**
+             * Variables
+             * @description List of variables for this credential group.
+             */
+            variables: components["schemas"]["CredentialPayload"][];
+        };
+        /** ServiceCredentialGroupResponse */
+        ServiceCredentialGroupResponse: {
+            /**
+             * Id
+             * @description Encoded ID of the credential group.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the credential group.
+             */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["SecretResponse"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time the credential group was updated.
+             */
+            update_time: string;
+            /** Variables */
+            variables: components["schemas"]["VariableResponse"][];
+        };
         /** ServiceCredentialPayload */
         ServiceCredentialPayload: {
             /** @description The credential group containing variables and secrets. */
-            group: components["schemas"]["ServiceGroupPayload"];
+            group: components["schemas"]["ServiceCredentialGroupPayload"];
             /**
              * Name
              * @description The name of the service requiring credentials.
@@ -20153,32 +20099,37 @@ export interface components {
              */
             optional: boolean;
             /** Secrets */
-            secrets: components["schemas"]["CredentialDefinitionResponse"][];
+            secrets: components["schemas"]["ServiceParameterDefinition"][];
             /** Variables */
-            variables: components["schemas"]["CredentialDefinitionResponse"][];
+            variables: components["schemas"]["ServiceParameterDefinition"][];
             /**
              * Version
              * @description The version of the service.
              */
             version: string;
         };
-        /** ServiceGroupPayload */
-        ServiceGroupPayload: {
+        /** ServiceParameterDefinition */
+        ServiceParameterDefinition: {
+            /**
+             * Description
+             * @description A description of what this credential is used for.
+             */
+            description: string;
+            /**
+             * Label
+             * @description The human-readable label for the credential.
+             */
+            label: string;
             /**
              * Name
-             * @description The name of the credential group (minimum 3 characters).
+             * @description The name of the credential definition.
              */
             name: string;
             /**
-             * Secrets
-             * @description List of secrets for this credential group.
+             * Optional
+             * @description Whether this credential is optional or required.
              */
-            secrets: components["schemas"]["CredentialPayload"][];
-            /**
-             * Variables
-             * @description List of variables for this credential group.
-             */
-            variables: components["schemas"]["CredentialPayload"][];
+            optional: boolean;
         };
         /** ServiceType */
         ServiceType: {
@@ -22289,56 +22240,6 @@ export interface components {
              */
             username: string;
         };
-        /** UserCredentialsListResponse */
-        UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
-        /** UserCredentialsResponse */
-        UserCredentialsResponse: {
-            /**
-             * Current Group Id
-             * @description The ID of the currently active credential group.
-             */
-            current_group_id?: string | null;
-            /** Groups */
-            groups: components["schemas"]["CredentialGroupResponse"][];
-            /**
-             * Id
-             * @description The encoded ID of the user credentials.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Name
-             * @description The name of the service requiring credentials.
-             */
-            name: string;
-            /**
-             * Source Id
-             * @description The ID of the source (e.g., tool ID).
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description The type of source (e.g., 'tool').
-             * @constant
-             */
-            source_type: "tool";
-            /**
-             * Source Version
-             * @description The version of the source.
-             */
-            source_version: string;
-            /**
-             * User Id
-             * @description The ID of the user who owns these credentials.
-             * @example 0123456789ABCDEF
-             */
-            user_id: string;
-            /**
-             * Version
-             * @description The version of the service.
-             */
-            version: string;
-        };
         /** UserDeletionPayload */
         UserDeletionPayload: {
             /**
@@ -22602,6 +22503,105 @@ export interface components {
             quota_source_label?: string | null;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserServiceCredentialsListResponse */
+        UserServiceCredentialsListResponse: components["schemas"]["UserServiceCredentialsResponse"][];
+        /** UserServiceCredentialsResponse */
+        UserServiceCredentialsResponse: {
+            /**
+             * Current Group Id
+             * @description The ID of the currently active credential group.
+             */
+            current_group_id?: string | null;
+            /** Groups */
+            groups: components["schemas"]["ServiceCredentialGroupResponse"][];
+            /**
+             * Id
+             * @description The encoded ID of the user credentials.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the service requiring credentials.
+             */
+            name: string;
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source (e.g., 'tool').
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+            /**
+             * User Id
+             * @description The ID of the user who owns these credentials.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
+        };
+        /** UserServiceCredentialsWithDefinitionResponse */
+        UserServiceCredentialsWithDefinitionResponse: {
+            /**
+             * Current Group Id
+             * @description The ID of the currently active credential group.
+             */
+            current_group_id?: string | null;
+            definition: components["schemas"]["ServiceCredentialsDefinition"];
+            /** Groups */
+            groups: components["schemas"]["ServiceCredentialGroupResponse"][];
+            /**
+             * Id
+             * @description The encoded ID of the user credentials.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the service requiring credentials.
+             */
+            name: string;
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source (e.g., 'tool').
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+            /**
+             * User Id
+             * @description The ID of the user who owns these credentials.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
         };
         /** UserToolSource */
         "UserToolSource-Input": {
@@ -40356,7 +40356,7 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["UserCredentialsListResponse"]
+                        | components["schemas"]["UserServiceCredentialsListResponse"]
                         | components["schemas"]["ExtendedUserCredentialsListResponse"];
                 };
             };
@@ -40449,7 +40449,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CredentialGroupResponse"];
+                    "application/json": components["schemas"]["ServiceCredentialGroupResponse"];
                 };
             };
             /** @description Request Error */
@@ -40487,7 +40487,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ServiceGroupPayload"];
+                "application/json": components["schemas"]["ServiceCredentialGroupPayload"];
             };
         };
         responses: {
@@ -40497,7 +40497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CredentialGroupResponse"];
+                    "application/json": components["schemas"]["ServiceCredentialGroupResponse"];
                 };
             };
             /** @description Request Error */

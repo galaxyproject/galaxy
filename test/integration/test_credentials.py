@@ -308,7 +308,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
     def test_delete_default_credential_group(self):
         created_user_credentials = self._provide_user_credentials()
-        # The new API returns a single CredentialGroupResponse, not a list
+        # The new API returns a single ServiceCredentialGroupResponse, not a list
         group_id = created_user_credentials["id"]
 
         # Get the user credentials to find the service credentials ID

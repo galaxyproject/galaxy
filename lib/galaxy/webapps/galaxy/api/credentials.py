@@ -17,12 +17,12 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
-    CredentialGroupResponse,
     ExtendedUserCredentialsListResponse,
     SelectServiceCredentialPayload,
-    ServiceGroupPayload,
+    ServiceCredentialGroupPayload,
+    ServiceCredentialGroupResponse,
     SOURCE_TYPE,
-    UserCredentialsListResponse,
+    UserServiceCredentialsListResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import FlexibleUserIdType
@@ -66,7 +66,7 @@ class FastAPICredentials:
             False,
             description="Whether to include extended credential definition information.",
         ),
-    ) -> Union[UserCredentialsListResponse, ExtendedUserCredentialsListResponse]:
+    ) -> Union[UserServiceCredentialsListResponse, ExtendedUserCredentialsListResponse]:
         return self.service.list_user_credentials(
             trans, user_id, source_type, source_id, source_version, include_definition
         )
@@ -80,7 +80,7 @@ class FastAPICredentials:
         user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> CredentialGroupResponse:
+    ) -> ServiceCredentialGroupResponse:
         return self.service.provide_credential(trans, user_id, payload)
 
     @router.put(
@@ -91,9 +91,9 @@ class FastAPICredentials:
         self,
         user_id: FlexibleUserIdType,
         group_id: DecodedDatabaseIdField,
-        payload: ServiceGroupPayload,
+        payload: ServiceCredentialGroupPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> CredentialGroupResponse:
+    ) -> ServiceCredentialGroupResponse:
         return self.service.update_user_credentials(trans, user_id, group_id, payload)
 
     @router.put(

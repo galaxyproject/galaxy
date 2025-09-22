@@ -18,9 +18,9 @@ import { computed, ref } from "vue";
 import type {
     CreateSourceCredentialsPayload,
     CredentialType,
+    ServiceCredentialGroupPayload,
+    ServiceCredentialGroupResponse,
     ServiceCredentialsDefinition,
-    ServiceCredentialsGroup,
-    ServiceGroupPayload,
 } from "@/api/userCredentials";
 import type { CardAction, CardIndicator } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -36,7 +36,7 @@ import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroup
 interface EditGroup {
     groupId: string;
     isNewGroup: boolean;
-    groupPayload: ServiceGroupPayload;
+    groupPayload: ServiceCredentialGroupPayload;
 }
 
 interface Props {
@@ -70,7 +70,7 @@ const serviceName = computed<string>(() => {
     return props.serviceDefinition.label || props.serviceDefinition.name || "Unknown Service";
 });
 
-const userServicesGroups = computed<ServiceCredentialsGroup[]>(() => {
+const userServicesGroups = computed<ServiceCredentialGroupResponse[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
 
@@ -106,7 +106,7 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
     return definition?.optional || false;
 }
 
-function validateGroupData(groupData: ServiceGroupPayload): boolean {
+function validateGroupData(groupData: ServiceCredentialGroupPayload): boolean {
     if (!groupData.name?.trim()) {
         return false;
     }
@@ -135,7 +135,7 @@ const disableSaveButton = computed(() => {
     };
 });
 
-function generateUniqueName(template: string, currentGroups: ServiceCredentialsGroup[]): string {
+function generateUniqueName(template: string, currentGroups: ServiceCredentialGroupResponse[]): string {
     let name = template;
     let counter = 1;
     while (currentGroups.some((group) => group.name === name)) {
@@ -146,7 +146,7 @@ function generateUniqueName(template: string, currentGroups: ServiceCredentialsG
 }
 
 function createTemporaryGroup() {
-    const editableGroup: ServiceGroupPayload = {
+    const editableGroup: ServiceCredentialGroupPayload = {
         name: generateUniqueName("new group", userServicesGroups.value),
         variables: props.serviceDefinition.variables.map((variable) => ({
             name: variable.name,
@@ -176,7 +176,7 @@ function editGroup(groupId: string) {
         return;
     }
 
-    const editableGroup: ServiceGroupPayload = {
+    const editableGroup: ServiceCredentialGroupPayload = {
         name: groupToEdit.name,
         secrets: groupToEdit.secrets.map((secret) => ({
             name: secret.name,
@@ -203,7 +203,7 @@ function discardGroupChanges(groupId: string) {
     editingGroups.value = remainingGroups;
 }
 
-function updateCurrentGroup(selectedGroup?: ServiceCredentialsGroup) {
+function updateCurrentGroup(selectedGroup?: ServiceCredentialGroupResponse) {
     emit("update-current-group", selectedGroup?.id);
 }
 
@@ -259,7 +259,7 @@ async function updateGroup(groupId: string) {
     }
 }
 
-async function deleteGroup(groupToDelete: ServiceCredentialsGroup) {
+async function deleteGroup(groupToDelete: ServiceCredentialGroupResponse) {
     const confirmed = await confirm(`Are you sure you want to delete the credentials group "${groupToDelete.name}"?`, {
         title: "Delete credentials group",
         okTitle: "Delete group",
@@ -279,7 +279,7 @@ async function deleteGroup(groupToDelete: ServiceCredentialsGroup) {
     }
 }
 
-const primaryActions = computed(() => (groupData: ServiceCredentialsGroup): CardAction[] => {
+const primaryActions = computed(() => (groupData: ServiceCredentialGroupResponse): CardAction[] => {
     const editingGroup = editingGroups.value[groupData.id];
     const isBeingEdited = Boolean(editingGroup);
     const isCurrentGroup = currentServiceCredentialsGroup.value?.id === groupData.id;
@@ -367,7 +367,7 @@ const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAct
     ];
 });
 
-const groupIndicators = computed(() => (group: ServiceCredentialsGroup): CardIndicator[] => {
+const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): CardIndicator[] => {
     const isCurrentGroup = currentServiceCredentialsGroup.value?.id === group.id;
     const isBeingEdited = Boolean(editingGroups.value[group.id]);
 

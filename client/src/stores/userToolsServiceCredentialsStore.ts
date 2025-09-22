@@ -5,13 +5,13 @@ import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
     CreateSourceCredentialsPayload,
     SelectCurrentGroupPayload,
+    ServiceCredentialGroupPayload,
+    ServiceCredentialGroupResponse,
     ServiceCredentialsContext,
     ServiceCredentialsDefinition,
-    ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
-    ServiceGroupPayload,
-    UserCredentialsResponse,
-    UserToolsServiceCredentialsFull,
+    UserServiceCredentialsResponse,
+    UserServiceCredentialsWithDefinitionResponse,
 } from "@/api/userCredentials";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -26,7 +26,7 @@ export interface ToolsCurrentGroupIds {
     [userToolKey: string]: ServiceCredentialsCurrentGroupIds;
 }
 
-export interface ServiceCredentialsGroupDetails extends ServiceCredentialsGroup {
+export interface ServiceCredentialsGroupDetails extends ServiceCredentialGroupResponse {
     sourceId: string;
     sourceVersion: string;
     serviceDefinition: ServiceCredentialsDefinition;
@@ -36,8 +36,8 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
 
-    const userToolsServices = ref<Record<string, UserCredentialsResponse[]>>({});
-    const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialsGroup>>({});
+    const userToolsServices = ref<Record<string, UserServiceCredentialsResponse[]>>({});
+    const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialGroupResponse>>({});
 
     const { setToolServiceCredentialsDefinitionFor, getToolServiceCredentialsDefinitionsFor } =
         useToolsServiceCredentialsDefinitionsStore();
@@ -113,7 +113,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return userToolsServices.value[userToolKey];
     });
 
-    function updateUserToolServiceGroups(userSourceServices: UserCredentialsResponse[]) {
+    function updateUserToolServiceGroups(userSourceServices: UserServiceCredentialsResponse[]) {
         for (const sourceService of userSourceServices) {
             for (const group of sourceService.groups) {
                 userToolServiceCredentialsGroups.value[group.id] = group;
@@ -138,7 +138,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         toolId: string,
         toolVersion: string,
         serviceIdentifier: ServiceCredentialsIdentifier,
-    ): UserCredentialsResponse | undefined {
+    ): UserServiceCredentialsResponse | undefined {
         const userToolKey = getUserToolKey(toolId, toolVersion);
         const service = userToolsServices.value[userToolKey]?.find(
             (service) => service.name === serviceIdentifier.name && service.version === serviceIdentifier.version,
@@ -147,7 +147,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return service;
     }
 
-    function updateUserToolServiceGroup(group: ServiceCredentialsGroup) {
+    function updateUserToolServiceGroup(group: ServiceCredentialGroupResponse) {
         set(userToolServiceCredentialsGroups.value, group.id, group);
 
         for (const userToolKey in userToolsServices.value) {
@@ -190,7 +190,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
             for (const usc of data) {
                 if (includeDefinition) {
-                    const withDefinition = usc as UserToolsServiceCredentialsFull;
+                    const withDefinition = usc as UserServiceCredentialsWithDefinitionResponse;
 
                     setToolServiceCredentialsDefinitionFor(withDefinition.source_id, withDefinition.source_version, [
                         withDefinition.definition,
@@ -251,7 +251,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
     async function createNewCredentialsGroupForTool(
         serviceIdentifier: ServiceCredentialsIdentifier,
         createSourceCredentialsPayload: CreateSourceCredentialsPayload,
-    ): Promise<ServiceCredentialsGroup> {
+    ): Promise<ServiceCredentialGroupResponse> {
         const userId = ensureUserIsRegistered();
 
         busyMessage.value = "Creating your credentials";
@@ -303,8 +303,8 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         toolId: string,
         toolVersion: string,
         groupId: string,
-        serviceGroupPayload: ServiceGroupPayload,
-    ): Promise<ServiceCredentialsGroup> {
+        serviceGroupPayload: ServiceCredentialGroupPayload,
+    ): Promise<ServiceCredentialGroupResponse> {
         const userId = ensureUserIsRegistered();
 
         const serviceGroupPayloadCopy = structuredClone(serviceGroupPayload);
@@ -480,7 +480,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return currentUser.value.id;
     }
 
-    function removeSecretPlaceholders(serviceGroupPayload: ServiceGroupPayload) {
+    function removeSecretPlaceholders(serviceGroupPayload: ServiceCredentialGroupPayload) {
         serviceGroupPayload.secrets.forEach((secret) => {
             if (secret.value === SECRET_PLACEHOLDER) {
                 secret.value = null;

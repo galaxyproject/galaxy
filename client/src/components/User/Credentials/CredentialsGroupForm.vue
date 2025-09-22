@@ -4,15 +4,15 @@ import { computed } from "vue";
 
 import type {
     CredentialType,
+    ServiceCredentialGroupPayload,
     ServiceCredentialsDefinition,
-    ServiceGroupPayload,
     ServiceParameterDefinition,
 } from "@/api/userCredentials";
 
 interface EditGroup {
     groupId: string;
     isNewGroup: boolean;
-    groupPayload: ServiceGroupPayload;
+    groupPayload: ServiceCredentialGroupPayload;
 }
 
 interface Props {

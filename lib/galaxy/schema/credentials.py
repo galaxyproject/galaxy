@@ -48,7 +48,7 @@ class SecretResponse(CredentialResponse):
 
 
 # TODO: ServiceCredentialsGroupResponse
-class CredentialGroupResponse(Model):
+class ServiceCredentialGroupResponse(Model):
     id: Annotated[
         EncodedDatabaseIdField,
         Field(
@@ -71,7 +71,7 @@ class CredentialGroupResponse(Model):
     ]
 
 
-class CredentialDefinitionResponse(Model):
+class ServiceParameterDefinition(Model):
     name: Annotated[
         str,
         Field(
@@ -99,7 +99,7 @@ class CredentialDefinitionResponse(Model):
 
 
 # TODO: Rename the class to UserSourceServicesResponse
-class UserCredentialsResponse(Model):
+class UserServiceCredentialsResponse(Model):
     user_id: Annotated[
         EncodedDatabaseIdField,
         Field(
@@ -149,11 +149,11 @@ class UserCredentialsResponse(Model):
             description="The ID of the currently active credential group.",
         ),
     ]
-    groups: list[CredentialGroupResponse]
+    groups: list[ServiceCredentialGroupResponse]
 
 
-class UserCredentialsListResponse(RootModel):
-    root: list[UserCredentialsResponse]
+class UserServiceCredentialsListResponse(RootModel):
+    root: list[UserServiceCredentialsResponse]
 
 
 class ServiceCredentialsDefinition(Model):
@@ -188,16 +188,16 @@ class ServiceCredentialsDefinition(Model):
             description="If true, tools can run without credentials; if false, credentials must be provided before execution.",
         ),
     ]
-    variables: list[CredentialDefinitionResponse]
-    secrets: list[CredentialDefinitionResponse]
+    variables: list[ServiceParameterDefinition]
+    secrets: list[ServiceParameterDefinition]
 
 
-class ExtendedUserCredentialsResponse(UserCredentialsResponse):
+class UserServiceCredentialsWithDefinitionResponse(UserServiceCredentialsResponse):
     definition: ServiceCredentialsDefinition
 
 
 class ExtendedUserCredentialsListResponse(RootModel):
-    root: list[ExtendedUserCredentialsResponse]
+    root: list[UserServiceCredentialsWithDefinitionResponse]
 
 
 class CredentialPayload(Model):
@@ -217,7 +217,7 @@ class CredentialPayload(Model):
     ]
 
 
-class ServiceGroupPayload(Model):
+class ServiceCredentialGroupPayload(Model):
     name: Annotated[
         str,
         Field(
@@ -274,7 +274,7 @@ class ServiceCredentialPayload(Model):
         ),
     ]
     group: Annotated[
-        ServiceGroupPayload,
+        ServiceCredentialGroupPayload,
         Field(
             description="The credential group containing variables and secrets.",
         ),
